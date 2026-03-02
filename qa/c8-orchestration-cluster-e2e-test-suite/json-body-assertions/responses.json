@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "89fd3db77ece80b872cc0631f82f425fb4a8f0fc",
-    "generatedAt": "2026-02-27T14:20:28.877Z",
+    "commit": "9791e838a8d18c515768d16d36fad2191d7bff0a",
+    "generatedAt": "2026-03-02T16:54:01.929Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "bcb077a076753ccfd9bbdc078455c1549c1184b3f8c773667d8751e058713618"
+    "specSha256": "bd8eca74bbad23e0ae1a11c0e234958dc1c6f21b7420f4ab3a2d5f69d92d2f27"
   },
   "responses": [
     {
@@ -19,33 +19,24 @@
             "children": {
               "required": [
                 {
-                  "name": "rootProcessInstanceKey",
+                  "name": "actorId",
                   "type": "string",
                   "nullable": true
-                }
-              ],
-              "optional": [
-                {
-                  "name": "actorId",
-                  "type": "string"
                 },
                 {
                   "name": "actorType",
                   "type": "string",
-                  "enumValues": [
-                    "ANONYMOUS",
-                    "CLIENT",
-                    "UNKNOWN",
-                    "USER"
-                  ]
+                  "nullable": true
                 },
                 {
                   "name": "agentElementId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "annotation",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "auditLogKey",
@@ -53,11 +44,13 @@
                 },
                 {
                   "name": "batchOperationKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "batchOperationType",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "category",
@@ -70,35 +63,43 @@
                 },
                 {
                   "name": "decisionDefinitionId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "decisionDefinitionKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "decisionEvaluationKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "decisionRequirementsId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "decisionRequirementsKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "deploymentKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "elementInstanceKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "entityDescription",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "entityKey",
@@ -127,11 +128,13 @@
                 },
                 {
                   "name": "formKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "jobKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "operationType",
@@ -155,27 +158,33 @@
                 },
                 {
                   "name": "processDefinitionId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processDefinitionKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processInstanceKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "relatedEntityKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "relatedEntityType",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "resourceKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "result",
@@ -186,8 +195,14 @@
                   ]
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "tenantId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "timestamp",
@@ -195,9 +210,11 @@
                 },
                 {
                   "name": "userTaskKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -205,12 +222,6 @@
             "type": "object",
             "children": {
               "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
                 {
                   "name": "endCursor",
                   "type": "string",
@@ -224,8 +235,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -239,33 +255,24 @@
       "schema": {
         "required": [
           {
-            "name": "rootProcessInstanceKey",
+            "name": "actorId",
             "type": "string",
             "nullable": true
-          }
-        ],
-        "optional": [
-          {
-            "name": "actorId",
-            "type": "string"
           },
           {
             "name": "actorType",
             "type": "string",
-            "enumValues": [
-              "ANONYMOUS",
-              "CLIENT",
-              "UNKNOWN",
-              "USER"
-            ]
+            "nullable": true
           },
           {
             "name": "agentElementId",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "annotation",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "auditLogKey",
@@ -273,11 +280,13 @@
           },
           {
             "name": "batchOperationKey",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "batchOperationType",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "category",
@@ -290,35 +299,43 @@
           },
           {
             "name": "decisionDefinitionId",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "decisionDefinitionKey",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "decisionEvaluationKey",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "decisionRequirementsId",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "decisionRequirementsKey",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "deploymentKey",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "elementInstanceKey",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "entityDescription",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "entityKey",
@@ -347,11 +364,13 @@
           },
           {
             "name": "formKey",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "jobKey",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "operationType",
@@ -375,27 +394,33 @@
           },
           {
             "name": "processDefinitionId",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "processDefinitionKey",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "processInstanceKey",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "relatedEntityKey",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "relatedEntityType",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "resourceKey",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "result",
@@ -406,8 +431,14 @@
             ]
           },
           {
+            "name": "rootProcessInstanceKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
             "name": "tenantId",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "timestamp",
@@ -415,9 +446,11 @@
           },
           {
             "name": "userTaskKey",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -591,12 +624,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -609,8 +636,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -766,12 +798,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -784,8 +810,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -842,10 +873,7 @@
                     "CLIENT",
                     "UNKNOWN",
                     "USER"
-                  ],
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "actorType",
-                  "wrapper": true
+                  ]
                 },
                 {
                   "name": "batchOperationKey",
@@ -914,12 +942,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -932,8 +954,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -985,10 +1012,7 @@
               "CLIENT",
               "UNKNOWN",
               "USER"
-            ],
-            "underlyingPrimitive": "string",
-            "rawRefName": "actorType",
-            "wrapper": true
+            ]
           },
           {
             "name": "batchOperationKey",
@@ -1194,12 +1218,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -1212,8 +1230,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -1426,12 +1449,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -1444,8 +1461,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -1683,12 +1705,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -1701,8 +1717,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -1810,7 +1831,10 @@
                 },
                 {
                   "name": "decisionEvaluationInstanceKey",
-                  "type": "string"
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "schema",
+                  "wrapper": true
                 },
                 {
                   "name": "decisionEvaluationKey",
@@ -1859,12 +1883,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -1877,8 +1895,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -2006,7 +2029,10 @@
           },
           {
             "name": "decisionEvaluationInstanceKey",
-            "type": "string"
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "schema",
+            "wrapper": true
           },
           {
             "name": "decisionEvaluationKey",
@@ -2124,12 +2150,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -2142,8 +2162,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -2198,8 +2223,7 @@
             "name": "deployments",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "decisionDefinition",
                   "type": "object",
@@ -2368,7 +2392,8 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -2784,12 +2809,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -2802,8 +2821,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -3014,12 +3038,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -3032,8 +3050,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -3069,14 +3092,12 @@
       "schema": {
         "required": [
           {
-            "name": "eventTypes",
-            "type": "array<string>"
-          }
-        ],
-        "optional": [
-          {
             "name": "afterNonGlobal",
             "type": "boolean"
+          },
+          {
+            "name": "eventTypes",
+            "type": "array<string>"
           },
           {
             "name": "id",
@@ -3105,7 +3126,8 @@
             "name": "type",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -3115,14 +3137,12 @@
       "schema": {
         "required": [
           {
-            "name": "eventTypes",
-            "type": "array<string>"
-          }
-        ],
-        "optional": [
-          {
             "name": "afterNonGlobal",
             "type": "boolean"
+          },
+          {
+            "name": "eventTypes",
+            "type": "array<string>"
           },
           {
             "name": "id",
@@ -3151,7 +3171,8 @@
             "name": "type",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -3161,14 +3182,12 @@
       "schema": {
         "required": [
           {
-            "name": "eventTypes",
-            "type": "array<string>"
-          }
-        ],
-        "optional": [
-          {
             "name": "afterNonGlobal",
             "type": "boolean"
+          },
+          {
+            "name": "eventTypes",
+            "type": "array<string>"
           },
           {
             "name": "id",
@@ -3197,7 +3216,8 @@
             "name": "type",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -3212,14 +3232,12 @@
             "children": {
               "required": [
                 {
-                  "name": "eventTypes",
-                  "type": "array<string>"
-                }
-              ],
-              "optional": [
-                {
                   "name": "afterNonGlobal",
                   "type": "boolean"
+                },
+                {
+                  "name": "eventTypes",
+                  "type": "array<string>"
                 },
                 {
                   "name": "id",
@@ -3248,7 +3266,8 @@
                   "name": "type",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -3256,12 +3275,6 @@
             "type": "object",
             "children": {
               "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
                 {
                   "name": "endCursor",
                   "type": "string",
@@ -3275,8 +3288,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -3338,12 +3356,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -3356,8 +3368,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -3433,12 +3450,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -3451,8 +3462,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -3496,12 +3512,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -3514,8 +3524,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -3555,12 +3570,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -3573,8 +3582,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -3609,12 +3623,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -3627,8 +3635,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -3735,12 +3748,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -3753,8 +3760,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -3904,12 +3916,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -3922,8 +3928,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -3963,12 +3974,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -3981,8 +3986,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -4316,12 +4326,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -4334,8 +4338,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -4498,12 +4507,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -4516,8 +4519,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -4606,11 +4614,112 @@
             "children": {
               "required": [
                 {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "totalItems",
                   "type": "number"
                 }
               ],
-              "optional": [
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/jobs/statistics/time-series",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "completed",
+                  "type": "failed",
+                  "rawRefName": "failed",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "count",
+                        "type": "number"
+                      },
+                      {
+                        "name": "lastUpdatedAt",
+                        "type": "string",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "created",
+                  "type": "failed",
+                  "rawRefName": "failed",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "count",
+                        "type": "number"
+                      },
+                      {
+                        "name": "lastUpdatedAt",
+                        "type": "string",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "failed",
+                  "type": "failed",
+                  "rawRefName": "failed",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "count",
+                        "type": "number"
+                      },
+                      {
+                        "name": "lastUpdatedAt",
+                        "type": "string",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "time",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
                 {
                   "name": "endCursor",
                   "type": "string",
@@ -4624,8 +4733,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -4722,12 +4836,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -4740,8 +4848,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -4880,12 +4993,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -4898,8 +5005,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -5001,12 +5113,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -5019,8 +5125,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -5068,12 +5179,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -5086,8 +5191,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -5146,12 +5256,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -5164,8 +5268,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -5335,12 +5444,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -5353,8 +5456,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -5567,6 +5675,11 @@
             "children": {
               "required": [
                 {
+                  "name": "businessId",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "endDate",
                   "type": "string",
                   "nullable": true
@@ -5651,12 +5764,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -5669,8 +5776,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -5683,6 +5795,11 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "businessId",
+            "type": "string",
+            "nullable": true
+          },
           {
             "name": "endDate",
             "type": "string",
@@ -5901,12 +6018,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -5919,8 +6030,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -6053,6 +6169,15 @@
       }
     },
     {
+      "path": "/resources/{resourceKey}/content",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [],
+        "optional": []
+      }
+    },
+    {
       "path": "/resources/{resourceKey}/deletion",
       "method": "POST",
       "status": "200",
@@ -6152,12 +6277,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -6170,8 +6289,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -6247,12 +6371,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -6265,8 +6383,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -6298,12 +6421,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -6316,8 +6433,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -6361,12 +6483,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -6379,8 +6495,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -6415,12 +6536,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -6433,8 +6548,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -6576,12 +6696,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -6594,8 +6708,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -6677,12 +6796,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -6695,8 +6808,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -6728,12 +6846,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -6746,8 +6858,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -6791,12 +6908,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -6809,8 +6920,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -6850,12 +6966,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -6868,8 +6978,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -6904,12 +7019,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -6922,8 +7031,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -7083,12 +7197,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -7101,8 +7209,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -7300,12 +7413,6 @@
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
                   "name": "endCursor",
                   "type": "string",
                   "nullable": true
@@ -7318,8 +7425,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -7468,33 +7580,24 @@
             "children": {
               "required": [
                 {
-                  "name": "rootProcessInstanceKey",
+                  "name": "actorId",
                   "type": "string",
                   "nullable": true
-                }
-              ],
-              "optional": [
-                {
-                  "name": "actorId",
-                  "type": "string"
                 },
                 {
                   "name": "actorType",
                   "type": "string",
-                  "enumValues": [
-                    "ANONYMOUS",
-                    "CLIENT",
-                    "UNKNOWN",
-                    "USER"
-                  ]
+                  "nullable": true
                 },
                 {
                   "name": "agentElementId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "annotation",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "auditLogKey",
@@ -7502,11 +7605,13 @@
                 },
                 {
                   "name": "batchOperationKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "batchOperationType",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "category",
@@ -7519,35 +7624,43 @@
                 },
                 {
                   "name": "decisionDefinitionId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "decisionDefinitionKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "decisionEvaluationKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "decisionRequirementsId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "decisionRequirementsKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "deploymentKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "elementInstanceKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "entityDescription",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "entityKey",
@@ -7576,11 +7689,13 @@
                 },
                 {
                   "name": "formKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "jobKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "operationType",
@@ -7604,27 +7719,33 @@
                 },
                 {
                   "name": "processDefinitionId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processDefinitionKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processInstanceKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "relatedEntityKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "relatedEntityType",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "resourceKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "result",
@@ -7635,8 +7756,14 @@
                   ]
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "tenantId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "timestamp",
@@ -7644,9 +7771,11 @@
                 },
                 {
                   "name": "userTaskKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -7654,12 +7783,6 @@
             "type": "object",
             "children": {
               "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
                 {
                   "name": "endCursor",
                   "type": "string",
@@ -7673,8 +7796,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -7723,23 +7851,17 @@
             "children": {
               "required": [
                 {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
-                }
-              ],
-              "optional": [
-                {
-                  "name": "isTruncated",
-                  "type": "boolean"
-                },
-                {
                   "name": "name",
                   "type": "string"
                 },
                 {
                   "name": "processInstanceKey",
                   "type": "string"
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "scopeKey",
@@ -7750,11 +7872,17 @@
                   "type": "string"
                 },
                 {
-                  "name": "value",
+                  "name": "variableKey",
                   "type": "string"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "isTruncated",
+                  "type": "boolean"
                 },
                 {
-                  "name": "variableKey",
+                  "name": "value",
                   "type": "string"
                 }
               ]
@@ -7765,12 +7893,6 @@
             "type": "object",
             "children": {
               "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
                 {
                   "name": "endCursor",
                   "type": "string",
@@ -7784,8 +7906,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -7804,23 +7931,17 @@
             "children": {
               "required": [
                 {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
-                }
-              ],
-              "optional": [
-                {
-                  "name": "isTruncated",
-                  "type": "boolean"
-                },
-                {
                   "name": "name",
                   "type": "string"
                 },
                 {
                   "name": "processInstanceKey",
                   "type": "string"
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "scopeKey",
@@ -7831,11 +7952,17 @@
                   "type": "string"
                 },
                 {
-                  "name": "value",
+                  "name": "variableKey",
                   "type": "string"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "isTruncated",
+                  "type": "boolean"
                 },
                 {
-                  "name": "variableKey",
+                  "name": "value",
                   "type": "string"
                 }
               ]
@@ -7846,12 +7973,6 @@
             "type": "object",
             "children": {
               "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
                 {
                   "name": "endCursor",
                   "type": "string",
@@ -7865,8 +7986,13 @@
                   "name": "startCursor",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -7880,19 +8006,17 @@
       "schema": {
         "required": [
           {
-            "name": "rootProcessInstanceKey",
-            "type": "string",
-            "nullable": true
-          }
-        ],
-        "optional": [
-          {
             "name": "name",
             "type": "string"
           },
           {
             "name": "processInstanceKey",
             "type": "string"
+          },
+          {
+            "name": "rootProcessInstanceKey",
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "scopeKey",
@@ -7903,11 +8027,13 @@
             "type": "string"
           },
           {
-            "name": "value",
-            "type": "string"
-          },
-          {
             "name": "variableKey",
+            "type": "string"
+          }
+        ],
+        "optional": [
+          {
+            "name": "value",
             "type": "string"
           }
         ]
