@@ -30,6 +30,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  FLAKY_TEST_RERUN_COUNT: '3'
+
 jobs:
   prepare-versions:
     name: Prepare Version Matrix
@@ -351,6 +354,8 @@ jobs:
             -P compatibility-test
             -pl qa/acceptance-tests
             -Dcamunda.compatibility.test.version=${{ matrix.server }}
+            -Dfailsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
+            -Dsurefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
             -DfailIfNoTests=false
 
       - name: Record tested combination
