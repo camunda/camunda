@@ -7,8 +7,7 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, getQueryRequestBodySchema, type Endpoint} from '../common';
-import {getQueryResponseBodySchema} from './common';
+import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from './common';
 
 const getIncidentProcessInstanceStatisticsByError = {
 	method: 'POST',

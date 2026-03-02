@@ -17,16 +17,16 @@ import {
 } from './common';
 import {
 	auditLogOperationTypeSchema,
-	auditLogResultSchema,
+	auditLogResultStatusSchema,
 	auditLogActorTypeSchema,
-	auditLogSortFieldEnum,
 	queryAuditLogsResponseBodySchema,
 } from './audit-log';
+import {auditLogSearchQuerySortRequestSchema} from './gen';
 
 const userTaskAuditLogFilterSchema = z
 	.object({
 		operationType: getEnumFilterSchema(auditLogOperationTypeSchema).optional(),
-		result: getEnumFilterSchema(auditLogResultSchema).optional(),
+		result: getEnumFilterSchema(auditLogResultStatusSchema).optional(),
 		timestamp: advancedDateTimeFilterSchema.optional(),
 		actorType: getEnumFilterSchema(auditLogActorTypeSchema).optional(),
 		actorId: advancedStringFilterSchema.optional(),
@@ -35,7 +35,7 @@ const userTaskAuditLogFilterSchema = z
 type UserTaskAuditLogFilter = z.infer<typeof userTaskAuditLogFilterSchema>;
 
 const queryUserTaskAuditLogsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: auditLogSortFieldEnum.options as [string, ...string[]],
+	sortFields: auditLogSearchQuerySortRequestSchema.shape.field.options as [string, ...string[]],
 	filter: userTaskAuditLogFilterSchema,
 });
 type QueryUserTaskAuditLogsRequestBody = z.infer<typeof queryUserTaskAuditLogsRequestBodySchema>;
