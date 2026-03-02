@@ -296,7 +296,10 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     final var timer = Timer.start();
     return client
         .deleteByQuery(request)
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverDelete(timer), executor)
+        .whenCompleteAsync(
+            (response, error) ->
+                metrics.measureArchiverDelete(response != null ? response.total() : null, timer),
+            executor)
         .thenApplyAsync(DeleteByQueryResponse::total, executor)
         .thenApplyAsync(ok -> null, executor);
   }
@@ -324,7 +327,10 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     final var timer = Timer.start();
     return client
         .reindex(request)
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverReindex(timer), executor)
+        .whenCompleteAsync(
+            (response, error) ->
+                metrics.measureArchiverReindex(response != null ? response.total() : null, timer),
+            executor)
         .thenApplyAsync(ignored -> null, executor);
   }
 

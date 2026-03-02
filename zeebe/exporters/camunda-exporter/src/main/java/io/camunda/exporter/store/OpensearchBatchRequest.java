@@ -257,6 +257,9 @@ public class OpensearchBatchRequest implements BatchRequest {
       final BulkResponse bulkItemResponses = osClient.bulk(bulkRequest);
       final List<BulkResponseItem> items = bulkItemResponses.items();
       validateNoErrors(items, customErrorHandlers);
+      if (metrics != null) {
+        metrics.recordBulkOperations(bulkRequest.operations().size());
+      }
     } catch (final IOException | OpenSearchException ex) {
       throw new PersistenceException(
           "Error when processing bulk request against OpenSearch: " + ex.getMessage(), ex);
