@@ -202,11 +202,7 @@ class BackupPrioritiesTest {
             "camunda-usage-metric-8.8.0_*",
             "-camunda-usage-metric-8.8.0_",
             "camunda-usage-metric-tu-8.8.0_*",
-            "-camunda-usage-metric-tu-8.8.0_",
-            "camunda-audit-log-8.9.0_*",
-            "-camunda-audit-log-8.9.0_",
-            "camunda-job-metrics-batch-8.9.0_*",
-            "-camunda-job-metrics-batch-8.9.0_");
+            "-camunda-usage-metric-tu-8.8.0_");
 
     for (final var indexList : indices) {
       assertThat(indexList.allIndices())
