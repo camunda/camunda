@@ -7,6 +7,8 @@
  */
 package io.camunda.search.query;
 
+import io.camunda.search.aggregation.AggregationBase;
+import io.camunda.search.aggregation.JobTimeSeriesStatisticsAggregation;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.JobTimeSeriesStatisticsFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -36,8 +38,8 @@ public record JobTimeSeriesStatisticsQuery(
   }
 
   @Override
-  public io.camunda.search.aggregation.AggregationBase aggregation() {
-    return null;
+  public AggregationBase aggregation() {
+    return new JobTimeSeriesStatisticsAggregation(page, filter);
   }
 
   @Override

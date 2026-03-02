@@ -11,4 +11,5 @@ import io.camunda.search.entities.JobTypeStatisticsEntity;
 import java.util.List;
 
 public record JobTypeStatisticsAggregationResult(
-    List<JobTypeStatisticsEntity> items, String endCursor) implements AggregationResultBase {}
+    List<JobTypeStatisticsEntity> items, String endCursor)
+    implements CursorForwardPaginatedAggregationResult<JobTypeStatisticsEntity> {}
