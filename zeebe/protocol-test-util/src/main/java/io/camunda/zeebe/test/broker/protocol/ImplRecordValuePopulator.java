@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.broker.protocol;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.BaseProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
@@ -17,8 +18,6 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.PackedProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.spec.MsgPackReader;
-import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -77,8 +76,8 @@ final class ImplRecordValuePopulator {
           populateArrayProperty(field, implInstance, random);
         } else if (fieldType.equals(ObjectProperty.class)) {
           populateObjectProperty(field, implInstance, random);
-        } else if (fieldType.equals(MsgPackWriter.class) || fieldType.equals(MsgPackReader.class)) {
-          // Skip other msgpack types that are more complex
+        } else if (!BaseProperty.class.isAssignableFrom(fieldType)) {
+          // Skip non-property fields (e.g. caches, internal state, MsgPackWriter/Reader)
         } else {
           throw new IllegalArgumentException(
               "Unsupported field type: "

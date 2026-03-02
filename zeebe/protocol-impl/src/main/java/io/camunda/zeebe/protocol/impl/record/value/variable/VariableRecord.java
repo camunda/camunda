@@ -51,6 +51,12 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private final ObjectProperty<VariableSourceRecord> sourceProp =
       new ObjectProperty<>(SOURCE_KEY, new VariableSourceRecord());
 
+  /**
+   * Cached JSON representation of the value. Lazily computed on first call to {@link #getValue()}
+   * and invalidated when the underlying value changes via {@link #setValue} or {@link #wrap}.
+   */
+  private String cachedJsonValue;
+
   public VariableRecord() {
     super(9);
     declareProperty(nameProp)
@@ -65,13 +71,22 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   }
 
   @Override
+  public void reset() {
+    super.reset();
+    cachedJsonValue = null;
+  }
+
+  @Override
   public String getName() {
     return BufferUtil.bufferAsString(nameProp.getValue());
   }
 
   @Override
   public String getValue() {
-    return MsgPackConverter.convertToJson(valueProp.getValue());
+    if (cachedJsonValue == null) {
+      cachedJsonValue = MsgPackConverter.convertToJson(valueProp.getValue());
+    }
+    return cachedJsonValue;
   }
 
   @Override
@@ -136,6 +151,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
 
   public VariableRecord setValue(final DirectBuffer value) {
     valueProp.setValue(value);
+    cachedJsonValue = null;
     return this;
   }
 
@@ -146,6 +162,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
 
   public VariableRecord setValue(final DirectBuffer value, final int offset, final int length) {
     valueProp.setValue(value, offset, length);
+    cachedJsonValue = null;
     return this;
   }
 
