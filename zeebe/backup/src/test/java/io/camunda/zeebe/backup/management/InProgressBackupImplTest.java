@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -197,6 +198,32 @@ class InProgressBackupImplTest {
     // then
     assertThat(backup.descriptor().snapshotId()).hasValue(oldValidSnapshot.getId());
     verify(oldValidSnapshot).reserve();
+  }
+
+  @Test
+  void shouldRetryReservationByRediscoveringSnapshots(
+      @Mock final SnapshotReservation snapshotReservation) {
+    // given - a snapshot that was deleted between find and reserve (e.g. after leader change)
+    final var deletedSnapshot = snapshotWith(1L, 5L);
+    failOnReserve(deletedSnapshot);
+
+    // a new snapshot becomes available on retry
+    final var newSnapshot = snapshotWith(2L, 6L);
+    onReserve(newSnapshot, snapshotReservation);
+
+    // first discovery returns the soon-to-be-deleted snapshot,
+    // second discovery (after retry) returns the new one
+    when(snapshotStore.getAvailableSnapshots())
+        .thenReturn(TestActorFuture.completedFuture(Set.of(deletedSnapshot)))
+        .thenReturn(TestActorFuture.completedFuture(Set.of(newSnapshot)));
+
+    // when
+    final var future = inProgressBackup.reserveSnapshot();
+
+    // then - succeeds after re-discovering snapshots
+    assertThat(future).succeedsWithin(Duration.ofMillis(100));
+    verify(newSnapshot).reserve();
+    verify(snapshotStore, times(2)).getAvailableSnapshots();
   }
 
   @Test
