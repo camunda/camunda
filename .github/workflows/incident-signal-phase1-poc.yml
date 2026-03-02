@@ -5,6 +5,11 @@
 name: Incident Signal Phase 1 PoC
 
 on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/incident-signal-phase1-poc.yml"
   workflow_dispatch:
     inputs:
       failure-stage:
@@ -41,13 +46,16 @@ jobs:
       - name: Simulate deployment pipeline failure
         id: simulate
         run: |
+          failure_stage="helm-update"
           run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          echo "failure_stage=${{ inputs.failure-stage }}" >> "$GITHUB_OUTPUT"
-          echo "run_url=${run_url}" >> "$GITHUB_OUTPUT"
+          {
+            echo "failure_stage=${failure_stage}"
+            echo "run_url=${run_url}"
+          } >> "$GITHUB_OUTPUT"
 
           {
             echo "## Phase 1 PoC - forced failure"
-            echo "- Stage: ${{ inputs.failure-stage }}"
+            echo "- Stage: ${failure_stage}"
             echo "- Run URL: ${run_url}"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -107,7 +115,7 @@ jobs:
             **Run URL:** ${{ needs.simulate-deploy-failure.outputs.run_url }}
             **Actor:** ${{ github.actor }}
           severity: "high"
-          deduplication-key: "${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-${{ needs.simulate-deploy-failure.outputs.failure_stage }}-${{ inputs.deduplication-suffix }}"
+          deduplication-key: "${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-${{ needs.simulate-deploy-failure.outputs.failure_stage }}"
           source-url: ${{ needs.simulate-deploy-failure.outputs.run_url }}
 
       - name: Record incident.io evidence
