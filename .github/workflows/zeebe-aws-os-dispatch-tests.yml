@@ -12,7 +12,7 @@ on:
         type: choice
         options:
           - "2.19"
-          - "3.3"
+          - "3.4"
   schedule:
     - cron: "0 4 * * Mon-Fri"
 
@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os_version: ${{ fromJSON(format('[{0}]', inputs.os_version || '"2.19", "3.3"')) }}
+        os_version: ${{ fromJSON(inputs.os_version && format('["{0}"]', inputs.os_version) || '["2.19","3.4"]') }}
         group:
         - os-exporter
         - search-client-os
@@ -80,7 +80,7 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_19_URL;
-            secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_3_3_URL;
+            secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_3_4_URL;
       - name: Set temp GH envs
         id: temp-vars
         run: |
@@ -96,12 +96,12 @@ jobs:
           then
             echo "Using OS 2.19"
             OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_19_URL }};
-          elif [[ "${{ matrix.os_version }}" = "3.3" ]]
+          elif [[ "${{ matrix.os_version }}" = "3.4" ]]
           then
-            echo "Using OS 3.3"
-            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_3_3_URL }};
+            echo "Using OS 3.4"
+            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_3_4_URL }};
           else
-            echo "Incorrect on usupported version of OpenSearch"
+            echo "Unsupported OpenSearch version '${{ matrix.os_version }}'. Supported versions are: 2.19, 3.4."
             exit 1
           fi
           echo "OS_URL=$OS_URL" >> "$GITHUB_ENV"
