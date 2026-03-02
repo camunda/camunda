@@ -8,7 +8,7 @@
 
 import {isRouteErrorResponse, useRouteError} from 'react-router-dom';
 import {CodeSnippet} from '@carbon/react';
-import {ErrorWrapper} from './ErrorWrapper.tsx';
+import {ErrorWrapper} from './ErrorWrapper';
 
 const PageErrorBoundary: React.FC = () => {
   const error = useRouteError();
