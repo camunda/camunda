@@ -18,7 +18,6 @@ import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
-import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
@@ -104,14 +103,10 @@ public class BackupPriorityConfiguration {
         List.of(
             // OPERATE
             new BatchOperationTemplate(indexPrefix, isElasticsearch),
-            new OperationTemplate(indexPrefix, isElasticsearch));
-
-    final List<Prio4Backup> prio4 =
-        List.of(
+            new OperationTemplate(indexPrefix, isElasticsearch),
             // CAMUNDA
             new CorrelatedMessageSubscriptionTemplate(indexPrefix, isElasticsearch),
             // OPERATE
-            new DecisionIndex(indexPrefix, isElasticsearch),
             new DecisionInstanceTemplate(indexPrefix, isElasticsearch),
             new MessageSubscriptionTemplate(indexPrefix, isElasticsearch),
             new FlowNodeInstanceTemplate(indexPrefix, isElasticsearch),
@@ -125,9 +120,10 @@ public class BackupPriorityConfiguration {
             new DraftTaskVariableTemplate(indexPrefix, isElasticsearch),
             new SnapshotTaskVariableTemplate(indexPrefix, isElasticsearch));
 
-    final List<Prio5Backup> prio5 =
+    final List<Prio4Backup> prio4 =
         List.of(
             // OPERATE
+            new DecisionIndex(indexPrefix, isElasticsearch),
             new DecisionRequirementsIndex(indexPrefix, isElasticsearch),
             new MetricIndex(indexPrefix, isElasticsearch),
             new ProcessIndex(indexPrefix, isElasticsearch),
@@ -157,7 +153,6 @@ public class BackupPriorityConfiguration {
     LOG.debug("Prio2 are {}", prio2);
     LOG.debug("Prio3 are {}", prio3);
     LOG.debug("Prio4 are {}", prio4);
-    LOG.debug("Prio5 are {}", prio5);
-    return new BackupPriorities(prio1, prio2, prio3, prio4, prio5);
+    return new BackupPriorities(prio1, prio2, prio3, prio4);
   }
 }
