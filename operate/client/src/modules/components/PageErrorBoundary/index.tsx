@@ -22,7 +22,8 @@ const PageErrorBoundary: React.FC = () => {
         <CodeSnippet type="multi">{error.data}</CodeSnippet>
       </ErrorWrapper>
     );
-  } else if (error instanceof Error) {
+  }
+  if (error instanceof Error) {
     const stackTrace = error.stack ?? 'No stack trace available';
     return (
       <ErrorWrapper>
@@ -31,13 +32,12 @@ const PageErrorBoundary: React.FC = () => {
         <CodeSnippet type="multi">{stackTrace}</CodeSnippet>
       </ErrorWrapper>
     );
-  } else {
-    return (
-      <ErrorWrapper>
-        <CodeSnippet type="single">Unknown error</CodeSnippet>
-      </ErrorWrapper>
-    );
   }
+  return (
+    <ErrorWrapper>
+      <CodeSnippet type="single">Unknown error</CodeSnippet>
+    </ErrorWrapper>
+  );
 };
 
 export {PageErrorBoundary};
