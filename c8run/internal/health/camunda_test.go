@@ -67,7 +67,7 @@ func TestPrintStatus_NonDockerUsesPortFlag(t *testing.T) {
     expectedEndpoints := map[string]string{
         "Operate":                   "http://localhost:9090/operate",
         "Tasklist":                  "http://localhost:9090/tasklist",
-        "Identity":                  "http://localhost:9090/identity",
+        "Admin":                     "http://localhost:9090/admin",
         "Orchestration Cluster API": "http://localhost:9090/v2/",
         "Orchestration Cluster":     "http://localhost:9090/mcp/cluster",
     }
@@ -93,7 +93,7 @@ func TestPrintStatus_DockerModeIgnoresPortFlag(t *testing.T) {
     expectedEndpoints := map[string]string{
         "Operate":                   "http://localhost:8080/operate",
         "Tasklist":                  "http://localhost:8080/tasklist",
-        "Identity":                  "http://localhost:8080/identity",
+        "Admin":                     "http://localhost:8080/admin",
         "Orchestration Cluster API": "http://localhost:8080/v2/",
         "Orchestration Cluster":     "http://localhost:8080/mcp/cluster",
     }
@@ -101,7 +101,7 @@ func TestPrintStatus_DockerModeIgnoresPortFlag(t *testing.T) {
         assertEndpointForLabel(t, out, label, endpoint)
     }
     // Ensure the provided (ignored) port is not shown for those endpoints
-    if strings.Contains(out, "http://localhost:9090/operate") || strings.Contains(out, "http://localhost:9090/tasklist") || strings.Contains(out, "http://localhost:9090/identity") || strings.Contains(out, "http://localhost:9090/v2/") || strings.Contains(out, "http://localhost:9090/mcp/cluster") {
+    if strings.Contains(out, "http://localhost:9090/operate") || strings.Contains(out, "http://localhost:9090/tasklist") || strings.Contains(out, "http://localhost:9090/admin") || strings.Contains(out, "http://localhost:9090/v2/") || strings.Contains(out, "http://localhost:9090/mcp/cluster") {
         t.Fatalf("docker mode should ignore custom port 9090; output: %s", out)
     }
 }
