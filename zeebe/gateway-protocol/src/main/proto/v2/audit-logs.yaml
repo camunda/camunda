@@ -73,7 +73,38 @@ components:
       description: Audit log item.
       type: object
       required:
+        - auditLogKey
+        - entityKey
+        - entityType
+        - operationType
+        - batchOperationKey
+        - batchOperationType
+        - timestamp
+        - actorId
+        - actorType
+        - agentElementId
+        - tenantId
+        - result
+        - annotation
+        - category
+        - processDefinitionId
+        - processDefinitionKey
+        - processInstanceKey
         - rootProcessInstanceKey
+        - elementInstanceKey
+        - jobKey
+        - userTaskKey
+        - decisionRequirementsId
+        - decisionRequirementsKey
+        - decisionDefinitionId
+        - decisionDefinitionKey
+        - decisionEvaluationKey
+        - deploymentKey
+        - formKey
+        - resourceKey
+        - relatedEntityKey
+        - relatedEntityType
+        - entityDescription
       properties:
         auditLogKey:
           allOf:
@@ -89,10 +120,12 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/BatchOperationKey'
           description: Key of the batch operation.
+          nullable: true
         batchOperationType:
           allOf:
             - $ref: 'batch-operations.yaml#/components/schemas/BatchOperationTypeEnum'
           description: The type of batch operation performed, if this is part of a batch.
+          nullable: true
         timestamp:
           type: string
           description: The timestamp when the operation occurred.
@@ -100,34 +133,44 @@ components:
         actorId:
           type: string
           description: The ID of the actor who performed the operation.
+          nullable: true
         actorType:
-          $ref: '#/components/schemas/AuditLogActorTypeEnum'
+          allOf:
+            - $ref: '#/components/schemas/AuditLogActorTypeEnum'
+          description: The type of the actor who performed the operation.
+          nullable: true
         agentElementId:
           type: string
           description: The element ID of the agent that performed the operation (e.g. ad-hoc subprocess element ID).
+          nullable: true
         tenantId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
           description: The tenant ID of the audit log.
+          nullable: true
         result:
           $ref: '#/components/schemas/AuditLogResultEnum'
         annotation:
           type: string
           description: Additional notes about the operation.
+          nullable: true
         category:
           $ref: '#/components/schemas/AuditLogCategoryEnum'
         processDefinitionId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
           description: The process definition ID.
+          nullable: true
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
           description: The key of the process definition.
+          nullable: true
         processInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The key of the process instance.
+          nullable: true
         rootProcessInstanceKey:
           description: |
             The key of the root process instance. The root process instance is the top-level
@@ -140,62 +183,76 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
           description: The key of the element instance.
+          nullable: true
         jobKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
           description: The key of the job.
+          nullable: true
         userTaskKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/UserTaskKey'
           description: The key of the user task.
+          nullable: true
         decisionRequirementsId:
           type: string
           description: The decision requirements ID.
+          nullable: true
         decisionRequirementsKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
           description: The assigned key of the decision requirements.
+          nullable: true
         decisionDefinitionId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
           description: The decision definition ID.
+          nullable: true
         decisionDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
           description: The key of the decision definition.
+          nullable: true
         decisionEvaluationKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationKey'
           description: The key of the decision evaluation.
+          nullable: true
         deploymentKey:
           allOf:
             - $ref: 'deployments.yaml#/components/schemas/DeploymentKey'
           description: The key of the deployment.
+          nullable: true
         formKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/FormKey'
           description: The key of the form.
+          nullable: true
         resourceKey:
           allOf:
             - $ref: 'deployments.yaml#/components/schemas/ResourceKey'
           description: The system-assigned key for this resource.
+          nullable: true
         relatedEntityKey:
           allOf:
             - $ref: '#/components/schemas/AuditLogEntityKey'
           description: |
             The key of the related entity. The content depends on the operation type and entity type.
             For example, for authorization operations, this will contain the ID of the owner (e.g., user or group) the authorization belongs to.
+          nullable: true
         relatedEntityType:
           allOf:
             - $ref: '#/components/schemas/AuditLogEntityTypeEnum'
           description: |
             The type of the related entity. The content depends on the operation type and entity type.
             For example, for authorization operations, this will contain the type of the owner (e.g., USER or GROUP) the authorization belongs to.
+          nullable: true
         entityDescription:
           type: string
           description: |
             Additional description of the entity affected by the operation.
             For example, for variable operations, this will contain the variable name.
+          nullable: true
     AuditLogSearchQuerySortRequest:
       type: object
       additionalProperties: false
