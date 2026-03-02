@@ -32,10 +32,10 @@ import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class EvaluateExpressionCommandImpl
+    extends CommandWithVariables<EvaluateExpressionCommandStep2>
     implements EvaluateExpressionCommandStep1, EvaluateExpressionCommandStep2 {
 
   private final ExpressionEvaluationRequest request;
-  private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
@@ -43,7 +43,7 @@ public class EvaluateExpressionCommandImpl
       final CamundaClientConfiguration config,
       final HttpClient httpClient,
       final JsonMapper jsonMapper) {
-    this.jsonMapper = jsonMapper;
+    super(jsonMapper);
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     request = new ExpressionEvaluationRequest();
@@ -64,6 +64,12 @@ public class EvaluateExpressionCommandImpl
   }
 
   @Override
+  protected EvaluateExpressionCommandStep2 setVariablesInternal(final String variables) {
+    request.setVariables(objectMapper.fromJsonAsMap(variables));
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<EvaluateExpressionResponse> requestTimeout(
       final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -75,7 +81,7 @@ public class EvaluateExpressionCommandImpl
     final HttpCamundaFuture<EvaluateExpressionResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
         "/expression/evaluation",
-        jsonMapper.toJson(request),
+        objectMapper.toJson(request),
         httpRequestConfig.build(),
         ExpressionEvaluationResult.class,
         EvaluateExpressionResponseImpl::new,

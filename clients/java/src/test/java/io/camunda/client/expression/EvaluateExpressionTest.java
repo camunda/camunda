@@ -26,12 +26,24 @@ import io.camunda.client.protocol.rest.ExpressionEvaluationResult;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import io.camunda.client.util.RestGatewayService;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public final class EvaluateExpressionTest extends ClientRestTest {
+
+  private static Map<String, Object> variablesMap(
+      final String k1, final Object v1, final String k2, final Object v2) {
+    final Map<String, Object> map = new HashMap<>();
+    map.put(k1, v1);
+    map.put(k2, v2);
+    return map;
+  }
 
   @Test
   void shouldEvaluateExpression() {
@@ -68,6 +80,107 @@ public final class EvaluateExpressionTest extends ClientRestTest {
         .hasUrl(RestGatewayPaths.getExpressionEvaluationUrl())
         .extractingBody(ExpressionEvaluationRequest.class)
         .isEqualTo(new ExpressionEvaluationRequest().expression(expression).tenantId(tenantId));
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithVariablesAsMap() {
+    // given
+    final String expression = "=x + y";
+    final Map<String, Object> variables = variablesMap("x", 10, "y", 20);
+    gatewayService.onExpressionEvaluationRequest(
+        new ExpressionEvaluationResult().expression(expression).result(30));
+
+    // when
+    client.newEvaluateExpressionCommand().expression(expression).variables(variables).send().join();
+
+    // then
+    assertThat(RestGatewayService.getLastRequest())
+        .hasMethod(RequestMethod.POST)
+        .hasUrl(RestGatewayPaths.getExpressionEvaluationUrl())
+        .extractingBody(ExpressionEvaluationRequest.class)
+        .isEqualTo(
+            new ExpressionEvaluationRequest()
+                .expression(expression)
+                .tenantId("<default>")
+                .variables(variables));
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithVariablesAsJsonString() {
+    // given
+    final String expression = "=x + y";
+    final String variablesJson = "{\"x\": 10, \"y\": 20}";
+    gatewayService.onExpressionEvaluationRequest(
+        new ExpressionEvaluationResult().expression(expression).result(30));
+
+    // when
+    client
+        .newEvaluateExpressionCommand()
+        .expression(expression)
+        .variables(variablesJson)
+        .send()
+        .join();
+
+    // then
+    assertThat(RestGatewayService.getLastRequest())
+        .hasMethod(RequestMethod.POST)
+        .hasUrl(RestGatewayPaths.getExpressionEvaluationUrl())
+        .extractingBody(ExpressionEvaluationRequest.class)
+        .isEqualTo(
+            new ExpressionEvaluationRequest()
+                .expression(expression)
+                .tenantId("<default>")
+                .variables(variablesMap("x", 10, "y", 20)));
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithVariablesAsInputStream() {
+    // given
+    final String expression = "=x + y";
+    final String variablesJson = "{\"x\": 10, \"y\": 20}";
+    gatewayService.onExpressionEvaluationRequest(
+        new ExpressionEvaluationResult().expression(expression).result(30));
+
+    // when
+    client
+        .newEvaluateExpressionCommand()
+        .expression(expression)
+        .variables(new ByteArrayInputStream(variablesJson.getBytes(StandardCharsets.UTF_8)))
+        .send()
+        .join();
+
+    // then
+    assertThat(RestGatewayService.getLastRequest())
+        .hasMethod(RequestMethod.POST)
+        .hasUrl(RestGatewayPaths.getExpressionEvaluationUrl())
+        .extractingBody(ExpressionEvaluationRequest.class)
+        .isEqualTo(
+            new ExpressionEvaluationRequest()
+                .expression(expression)
+                .tenantId("<default>")
+                .variables(variablesMap("x", 10, "y", 20)));
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithSingleVariable() {
+    // given
+    final String expression = "=x * 2";
+    gatewayService.onExpressionEvaluationRequest(
+        new ExpressionEvaluationResult().expression(expression).result(20));
+
+    // when
+    client.newEvaluateExpressionCommand().expression(expression).variable("x", 10).send().join();
+
+    // then
+    assertThat(RestGatewayService.getLastRequest())
+        .hasMethod(RequestMethod.POST)
+        .hasUrl(RestGatewayPaths.getExpressionEvaluationUrl())
+        .extractingBody(ExpressionEvaluationRequest.class)
+        .isEqualTo(
+            new ExpressionEvaluationRequest()
+                .expression(expression)
+                .tenantId("<default>")
+                .variables(Collections.singletonMap("x", 10)));
   }
 
   @Test
