@@ -86,10 +86,13 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   private final Timer archiverSearchTimer;
   private final Timer archiverDeleteTimer;
+  private final Counter archiverDeletedDocs;
+  private final Counter archiverReindexedDocs;
   private final Timer archiverReindexTimer;
   private Timer.Sample flushLatencyMeasurement;
   private final Timer archivingDuration;
   private final DistributionSummary bulkSize;
+  private final Counter bulkOperations;
   private final Timer flushDuration;
   private final Counter failedFlush;
   private final Timer recordExportDuration;
@@ -193,12 +196,23 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .tags("type", "delete")
             .publishPercentileHistogram()
             .register(meterRegistry);
+    archiverDeletedDocs =
+        Counter.builder(meterName("archiver.docs"))
+            .tags("type", "delete")
+            .description("Count of how many documents the archiver has deleted from old indices.")
+            .register(meterRegistry);
     archiverReindexTimer =
         Timer.builder(meterName("archiver.request.duration"))
             .description(
                 "Duration of how long it takes to run the reindex request to copy over to the dated indices, from old indices.")
             .tags("type", "reindex")
             .publishPercentileHistogram()
+            .register(meterRegistry);
+    archiverReindexedDocs =
+        Counter.builder(meterName("archiver.docs"))
+            .tags("type", "reindex")
+            .description(
+                "Count of how many documents the archiver has reindexed to copy over to the dated indices, from old indices.")
             .register(meterRegistry);
     archivingDuration =
         Timer.builder(meterName("archiver.duration"))
@@ -226,6 +240,11 @@ public class CamundaExporterMetrics implements AutoCloseable {
         DistributionSummary.builder(meterName("bulk.size"))
             .description("How many items were exported in one bulk request")
             .serviceLevelObjectives(10, 100, 1_000, 10_000, 100_000)
+            .register(meterRegistry);
+    bulkOperations =
+        Counter.builder(meterName("bulk.operations"))
+            .description(
+                "Count of many secondary storage operations have been done via exporter bulk requests")
             .register(meterRegistry);
     flushDuration =
         Timer.builder(meterName("flush.duration.seconds"))
@@ -278,6 +297,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   public void recordBulkSize(final int bulkSize) {
     this.bulkSize.record(bulkSize);
+  }
+
+  public void recordBulkOperations(final int operations) {
+    bulkOperations.increment(operations);
   }
 
   public void recordFailedFlush() {
@@ -395,11 +418,17 @@ public class CamundaExporterMetrics implements AutoCloseable {
     return NAMESPACE + "." + name;
   }
 
-  public void measureArchiverDelete(final Sample timer) {
+  public void measureArchiverDelete(final Long docsDeleted, final Sample timer) {
+    if (docsDeleted != null) {
+      archiverDeletedDocs.increment(docsDeleted);
+    }
     timer.stop(archiverDeleteTimer);
   }
 
-  public void measureArchiverReindex(final Sample timer) {
+  public void measureArchiverReindex(final Long docsReindexed, final Sample timer) {
+    if (docsReindexed != null) {
+      archiverReindexedDocs.increment(docsReindexed);
+    }
     timer.stop(archiverReindexTimer);
   }
 
@@ -417,9 +446,12 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(batchOperationsArchiving);
     meterRegistry.remove(archiverSearchTimer);
     meterRegistry.remove(archiverDeleteTimer);
+    meterRegistry.remove(archiverDeletedDocs);
     meterRegistry.remove(archiverReindexTimer);
+    meterRegistry.remove(archiverReindexedDocs);
     meterRegistry.remove(archivingDuration);
     meterRegistry.remove(bulkSize);
+    meterRegistry.remove(bulkOperations);
     meterRegistry.remove(flushDuration);
     meterRegistry.remove(failedFlush);
     meterRegistry.remove(recordExportDuration);
