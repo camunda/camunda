@@ -10,10 +10,10 @@ import {z} from 'zod';
 import {API_VERSION, type Endpoint} from '../common';
 import {partitionSchema, brokerInfoSchema, topologyResponseSchema} from './gen';
 
-const partitionRoleSchema = z.enum(['leader', 'follower', 'inactive']);
+const partitionRoleSchema = partitionSchema.shape.role;
 type PartitionRole = z.infer<typeof partitionRoleSchema>;
 
-const partitionHealthSchema = z.enum(['healthy', 'unhealthy', 'dead']);
+const partitionHealthSchema = partitionSchema.shape.health;
 type PartitionHealth = z.infer<typeof partitionHealthSchema>;
 
 const clusterPartitionSchema = partitionSchema;

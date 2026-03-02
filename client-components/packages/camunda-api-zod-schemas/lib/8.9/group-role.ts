@@ -11,19 +11,12 @@
  */
 
 import {z} from 'zod';
+import {groupResultSchema, roleResultSchema} from './gen';
 
-const groupSchema = z.object({
-	groupId: z.string(),
-	name: z.string(),
-	description: z.string(),
-});
+const groupSchema = groupResultSchema;
 type Group = z.infer<typeof groupSchema>;
 
-const roleSchema = z.object({
-	roleId: z.string(),
-	name: z.string(),
-	description: z.string(),
-});
+const roleSchema = roleResultSchema;
 type Role = z.infer<typeof roleSchema>;
 
 export {groupSchema, roleSchema};

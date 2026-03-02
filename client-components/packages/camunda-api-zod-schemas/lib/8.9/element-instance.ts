@@ -20,35 +20,7 @@ import {
 const elementInstanceStateSchema = elementInstanceStateEnumSchema;
 type ElementInstanceState = z.infer<typeof elementInstanceStateSchema>;
 
-const elementInstanceTypeSchema = z.enum([
-	'UNSPECIFIED',
-	'PROCESS',
-	'SUB_PROCESS',
-	'EVENT_SUB_PROCESS',
-	'AD_HOC_SUB_PROCESS',
-	'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
-	'START_EVENT',
-	'INTERMEDIATE_CATCH_EVENT',
-	'INTERMEDIATE_THROW_EVENT',
-	'BOUNDARY_EVENT',
-	'END_EVENT',
-	'SERVICE_TASK',
-	'RECEIVE_TASK',
-	'USER_TASK',
-	'MANUAL_TASK',
-	'TASK',
-	'EXCLUSIVE_GATEWAY',
-	'INCLUSIVE_GATEWAY',
-	'PARALLEL_GATEWAY',
-	'EVENT_BASED_GATEWAY',
-	'SEQUENCE_FLOW',
-	'MULTI_INSTANCE_BODY',
-	'CALL_ACTIVITY',
-	'BUSINESS_RULE_TASK',
-	'SCRIPT_TASK',
-	'SEND_TASK',
-	'UNKNOWN',
-]);
+const elementInstanceTypeSchema = elementInstanceResultSchema.shape.type;
 type ElementInstanceType = z.infer<typeof elementInstanceTypeSchema>;
 
 const elementInstanceSchema = elementInstanceResultSchema;
