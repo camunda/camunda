@@ -31,7 +31,7 @@ permissions: {}
 jobs:
   test-token-auth:
     name: "Debug: Duplicate Auth Header"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     timeout-minutes: 15
     permissions:
       contents: write
@@ -59,13 +59,8 @@ jobs:
       # ── 3. Dump auth state after checkout ──────────────────────────────
       - name: "State 1: after checkout"
         run: |
-          echo "=== extraheader entries ==="
-          git config --get-all http.https://github.com/.extraheader 2>/dev/null | wc -l
-          git config --get-all http.https://github.com/.extraheader 2>/dev/null | sed 's/AUTHORIZATION: basic .*/AUTHORIZATION: basic <REDACTED>/' || echo "(none)"
-
-          echo ""
-          echo "=== credential helpers ==="
-          git config --get-all credential.helper 2>/dev/null || echo "(none)"
+          echo "=== extraheader entries (source file → value) ==="
+          git config --list --show-origin | grep -i extraheader | sed 's/AUTHORIZATION: basic .*/AUTHORIZATION: basic <REDACTED>/' || echo "(none)"
 
           echo ""
           echo "=== git remote -v ==="
@@ -88,13 +83,8 @@ jobs:
       # ── 6. Dump auth state after setup-build ───────────────────────────
       - name: "State 2: after setup-build"
         run: |
-          echo "=== extraheader entries ==="
-          git config --get-all http.https://github.com/.extraheader 2>/dev/null | wc -l
-          git config --get-all http.https://github.com/.extraheader 2>/dev/null | sed 's/AUTHORIZATION: basic .*/AUTHORIZATION: basic <REDACTED>/' || echo "(none)"
-
-          echo ""
-          echo "=== credential helpers ==="
-          git config --get-all credential.helper 2>/dev/null || echo "(none)"
+          echo "=== extraheader entries (source file → value) ==="
+          git config --list --show-origin | grep -i extraheader | sed 's/AUTHORIZATION: basic .*/AUTHORIZATION: basic <REDACTED>/' || echo "(none)"
 
       # ── 7. First push test (should work — single token) ────────────────
       - name: Create test commit
@@ -111,82 +101,38 @@ jobs:
           }
           echo "✅ Push 1 succeeded"
 
-      # ── 8. Renew the token (simulates what would happen on token expiry) ─
-      - name: Generate GitHub App token (2nd time — renewal)
-        id: github-token-renewed
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+      # ── 8. Renew token via composite action ─────────────────────────────
+      #    This is the reusable action that properly handles checkout@v6's
+      #    external credential file, avoiding duplicate Authorization headers.
+      - name: "Renew token via composite action"
+        uses: ./.github/actions/renew-github-token
         with:
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
           github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
           github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
-          vault-auth-method: approle
-          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          vault-url: ${{ secrets.VAULT_ADDR }}
 
-      # ── 9. Inject the renewed token into git config (naïve approach) ───
-      #    This is the likely cause of the duplicate header: adding a second
-      #    extraheader without removing the first one.
-      - name: Inject renewed token into git (naïve — may duplicate)
+      - name: "State 3: after token renewal"
         run: |
-          RENEWED_TOKEN="${{ steps.github-token-renewed.outputs.token }}"
-          ENCODED=$(echo -n "x-access-token:${RENEWED_TOKEN}" | base64)
-          # This ADD creates a second extraheader entry (the bug!)
-          git config --add http.https://github.com/.extraheader "AUTHORIZATION: basic ${ENCODED}"
+          echo "=== All auth-related config after renewal (with origins) ==="
+          git config --list --show-origin | grep -i -E 'extraheader|includeif' || echo "(none)"
 
-      # ── 10. Dump auth state — expect TWO extraheader entries ───────────
-      - name: "State 3: after naïve token injection"
-        run: |
-          echo "=== extraheader entries (expecting 2 = BUG) ==="
-          COUNT=$(git config --get-all http.https://github.com/.extraheader 2>/dev/null | wc -l)
-          echo "Count: ${COUNT}"
-          git config --get-all http.https://github.com/.extraheader 2>/dev/null | sed 's/AUTHORIZATION: basic .*/AUTHORIZATION: basic <REDACTED>/'
-
-          if [ "${COUNT}" -gt 1 ]; then
-            echo ""
-            echo "⚠️  DUPLICATE AUTHORIZATION HEADERS DETECTED — this causes the 400 error"
-          fi
-
-      # ── 11. Push test 2 — should fail with "Duplicate header" ─────────
-      - name: "Push test 2: after naïve renewal (dry-run, expect failure)"
-        id: push-test-2
-        continue-on-error: true
+      # ── 9. Push test 2 — should succeed after renewal ────────────────
+      - name: "Push test 2: after token renewal (dry-run)"
         run: |
           git commit --allow-empty -m "test: second commit after renewal [skip ci]"
-          echo "=== Attempting dry-run push (expect 'Duplicate header' failure) ==="
+          echo "=== Attempting dry-run push after renewal ==="
           GIT_CURL_VERBOSE=1 git push --dry-run origin HEAD 2>&1 | head -80 || {
-            echo ""
-            echo "❌ Push 2 FAILED as expected (exit $?) — duplicate header reproduced!"
-            exit 1
-          }
-          echo "✅ Push 2 succeeded (duplicate header NOT reproduced)"
-
-      # ── 12. Fix: replace extraheaders with single renewed token ────────
-      - name: "Fix: replace all extraheaders with single renewed token"
-        run: |
-          echo "=== Unsetting ALL extraheaders ==="
-          git config --unset-all http.https://github.com/.extraheader 2>/dev/null || true
-
-          RENEWED_TOKEN="${{ steps.github-token-renewed.outputs.token }}"
-          ENCODED=$(echo -n "x-access-token:${RENEWED_TOKEN}" | base64)
-          git config http.https://github.com/.extraheader "AUTHORIZATION: basic ${ENCODED}"
-
-          echo "=== extraheader entries after fix ==="
-          git config --get-all http.https://github.com/.extraheader 2>/dev/null | wc -l
-
-      # ── 13. Push test 3 — should succeed with fix ─────────────────────
-      - name: "Push test 3: after fix (dry-run)"
-        run: |
-          echo "=== Attempting dry-run push after fix ==="
-          GIT_CURL_VERBOSE=1 git push --dry-run origin HEAD 2>&1 | head -80 || {
-            echo "❌ Push 3 FAILED even after fix (exit $?)"
+            echo "❌ Push 2 FAILED after renewal (exit $?)"
             git config --list --show-origin | grep -i -E 'auth|header|credential' || true
             exit 1
           }
-          echo "✅ Push 3 succeeded — fix works!"
+          echo "✅ Push 2 succeeded — renewal works!"
 
-      # ── 14. Cleanup ───────────────────────────────────────────────────
+      # ── 10. Cleanup ──────────────────────────────────────────────────
       - name: Reset test commits
         if: always()
         run: |
