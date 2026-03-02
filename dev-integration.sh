@@ -20,15 +20,13 @@
 set -euo pipefail
 
 # ── Configure these ──────────────────────────────────────────────────────────
-BASE="main"
+BASE="stable/8.9"
 INTEGRATION="integration"
 
 # Branches to merge, in order. Dependencies before dependents.
 # Format: "branch-name  # optional comment"
 TOPICS=(
   "jwulf/dev-scripts                          # chore: dev workflow scripts"
-  "copilot/fix-rdbms-null-value-storage     # fix: RDBMS NULL variable value (#46401)"
-  "46224-enforce-response-arrays-required-not-nullable # ci: spectral enforcement rule"
 )
 # ─────────────────────────────────────────────────────────────────────────────
 
