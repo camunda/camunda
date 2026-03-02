@@ -10,10 +10,10 @@ package io.camunda.webapps.schema.descriptors.index;
 import static io.camunda.webapps.schema.descriptors.ComponentNames.CAMUNDA;
 
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
-import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import java.util.Optional;
 
-public class ClusterVariableIndex extends AbstractIndexDescriptor implements Prio5Backup {
+public class ClusterVariableIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
   public static final String INDEX_NAME = "cluster-variable";
   public static final String INDEX_VERSION = "8.9.0";
