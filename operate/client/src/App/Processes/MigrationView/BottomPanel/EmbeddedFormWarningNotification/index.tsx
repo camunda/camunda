@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ActionableNotification, Link} from '@carbon/react';
+import {Link} from '@carbon/react';
+import {ActionableNotification} from './styled';
 
 const EmbeddedFormWarningNotification: React.FC = () => {
   return (
@@ -18,6 +19,7 @@ const EmbeddedFormWarningNotification: React.FC = () => {
       hasFocus={false}
       lowContrast={true}
       inline
+      actionButtonLabel=""
     >
       <Link
         aria-describedby="documentation-link"
