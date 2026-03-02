@@ -309,8 +309,16 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .maxDocs(MAX_DELETE_DOCS)
             .build();
 
+    // From: https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-delete-by-query
+    //
+    // Parameters like requests_per_second and max_docs on a request with slices are distributed
+    // proportionally to each sub-request. Combine that with the earlier point about distribution
+    // being uneven and you should conclude that using max_docs with slices might not result in
+    // exactly max_docs documents being deleted.
+    //
+    // so we need to always do an extra call to ensure we have definitely deleted everything
     return AsyncRepeatUntil.repeatUntil(
-        () -> deleteDocuments(request), reindexed -> reindexed < MAX_DELETE_DOCS);
+        () -> deleteDocuments(request), reindexed -> reindexed == 0);
   }
 
   @Override
