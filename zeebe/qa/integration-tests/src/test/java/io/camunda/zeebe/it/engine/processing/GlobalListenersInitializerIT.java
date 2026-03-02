@@ -103,10 +103,13 @@ final class GlobalListenersInitializerIT {
             .collect(Collectors.groupingBy(Record::getPartitionId));
     // Check that events are distributed to all partitions
     Assertions.assertThat(listenerRecordsByPartition.keySet())
+        .as("Expected events to be generated in all partitions")
         .containsExactlyInAnyOrderElementsOf(PARTITION_IDS);
     // Check that for each partition, we have the expected events with the expected types
     for (final var records : listenerRecordsByPartition.values()) {
       assertThat(records)
+          .as(
+              "Expected 3 events for each partition: an UPDATE for the old listener, a CREATE for the new listener and a CONFIGURED")
           .hasSize(3)
           .anyMatch(
               record ->
@@ -114,14 +117,14 @@ final class GlobalListenersInitializerIT {
                       && ((GlobalListenerRecordValue) record.getValue())
                           .getId()
                           .equals("GlobalListener_global1"),
-              "Expected an UPDATE event for GlobalListener_global1")
+              "Expected an UPDATE event for the old listener")
           .anyMatch(
               record ->
                   record.getIntent() == GlobalListenerIntent.CREATED
                       && ((GlobalListenerRecordValue) record.getValue())
                           .getId()
                           .equals("GlobalListener_global2"),
-              "Expected a CREATE event for GlobalListener_global2")
+              "Expected a CREATE event for the new listener")
           .anyMatch(
               record -> record.getIntent() == GlobalListenerBatchIntent.CONFIGURED,
               "Expected a CONFIGURED event");
@@ -135,7 +138,9 @@ final class GlobalListenersInitializerIT {
             .map(GlobalListenerBatchRecord.class::cast)
             .map(GlobalListenerBatchRecord::getGlobalListenerBatchKey)
             .collect(Collectors.toSet());
-    Assertions.assertThat(configurationKeys).hasSize(1);
+    Assertions.assertThat(configurationKeys)
+        .as("Expected the same configuration key to be used in all partitions")
+        .hasSize(1);
   }
 
   @Test
@@ -176,10 +181,13 @@ final class GlobalListenersInitializerIT {
             .collect(Collectors.groupingBy(Record::getPartitionId));
     // Check that events are distributed to all partitions
     Assertions.assertThat(listenerRecordsByPartition.keySet())
+        .as("Expected events to be generated in all partitions")
         .containsExactlyInAnyOrderElementsOf(PARTITION_IDS);
     // Check that for each partition, we have the expected events with the expected types
     for (final var records : listenerRecordsByPartition.values()) {
       assertThat(records)
+          .as(
+              "Expected 2 events for each partition: a DELETE for the old listener and a CONFIGURED")
           .hasSize(2)
           .anyMatch(
               record ->
@@ -187,7 +195,7 @@ final class GlobalListenersInitializerIT {
                       && ((GlobalListenerRecordValue) record.getValue())
                           .getId()
                           .equals("GlobalListener_global"),
-              "Expected a DELETE event for GlobalListener_global")
+              "Expected a DELETE event for the old listener")
           .anyMatch(
               record -> record.getIntent() == GlobalListenerBatchIntent.CONFIGURED,
               "Expected a CONFIGURED event");
@@ -201,7 +209,9 @@ final class GlobalListenersInitializerIT {
             .map(GlobalListenerBatchRecord.class::cast)
             .map(GlobalListenerBatchRecord::getGlobalListenerBatchKey)
             .collect(Collectors.toSet());
-    Assertions.assertThat(configurationKeys).hasSize(1);
+    Assertions.assertThat(configurationKeys)
+        .as("Expected the same configuration key to be used in all partitions")
+        .hasSize(1);
   }
 
   @Test
@@ -234,6 +244,7 @@ final class GlobalListenersInitializerIT {
                 .limit(r -> r.getIntent().equals(ClockIntent.RESET))
                 .globalListenerBatchRecords()
                 .withIntent(GlobalListenerBatchIntent.CONFIGURED))
+        .as("Expected no CONFIGURED event to be generated when the configuration is not changed")
         .hasSize(0);
   }
 
