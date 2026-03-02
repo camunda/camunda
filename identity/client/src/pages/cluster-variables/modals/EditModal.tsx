@@ -13,22 +13,15 @@ import useTranslate from "src/utility/localization";
 import { beautify, isValid } from "src/utility/components/editor/jsonUtils.ts";
 import JSONEditor from "src/components/form/JSONEditor.tsx";
 import { useApiCall } from "src/utility/api";
-import {
-  ClusterVariable,
-  updateClusterVariable,
-} from "src/utility/api/cluster-variables";
+import { updateClusterVariable } from "src/utility/api/cluster-variables";
 import { useNotifications } from "src/components/notifications";
-
-type ClusterVariableEntity = Pick<
-  ClusterVariable,
-  "name" | "value" | "scope" | "tenantId"
->;
+import type { ClusterVariable } from "@camunda/camunda-api-zod-schemas/8.9";
 
 type FormData = {
   value: string;
 };
 
-const EditModal: FC<UseEntityModalProps<ClusterVariableEntity>> = ({
+const EditModal: FC<UseEntityModalProps<ClusterVariable>> = ({
   open,
   onClose,
   onSuccess,

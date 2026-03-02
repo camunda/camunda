@@ -17,12 +17,9 @@ import {
   ALL_RESOURCE_TYPES,
   createAuthorization,
   NewAuthorization,
-  OwnerType,
-  PermissionType,
   RESOURCE_TYPES_WITHOUT_TENANT,
   OWNER_TYPES,
   RESOURCE_PROPERTY_NAMES,
-  ResourceType,
   type ResourcePropertyName,
 } from "src/utility/api/authorizations";
 import { useNotifications } from "src/components/notifications";
@@ -37,6 +34,11 @@ import {
   isValidResourceId,
   getIdPattern,
 } from "src/utility/validate";
+import type {
+  OwnerType,
+  PermissionType,
+  ResourceType,
+} from "@camunda/camunda-api-zod-schemas/8.9";
 
 const resourcePermissions: Record<ResourceType, PermissionType[]> = {
   AUDIT_LOG: ["READ"],

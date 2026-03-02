@@ -6,15 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type { AuditLog } from "@camunda/camunda-api-zod-schemas/8.9";
+import type {
+  QueryAuditLogsResponseBody,
+  QueryAuditLogsRequestBody,
+} from "@camunda/camunda-api-zod-schemas/8.9";
 import { ApiDefinition, apiPost } from "src/utility/api/request";
-import { SearchResponse } from "src/utility/api";
-
-export type { AuditLog };
 
 export const AUDIT_LOGS_ENDPOINT = "/audit-logs";
 
 export const searchAuditLogs: ApiDefinition<
-  SearchResponse<AuditLog>,
-  Record<string, unknown> | undefined
+  QueryAuditLogsResponseBody,
+  QueryAuditLogsRequestBody | undefined
 > = (params) => apiPost(`${AUDIT_LOGS_ENDPOINT}/search`, params);

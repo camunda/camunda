@@ -10,7 +10,7 @@ import { FC } from "react";
 import { useApiCall } from "src/utility/api";
 import {
   deleteMappingRule,
-  DeleteMappingRuleParams,
+  type MappingRule,
 } from "src/utility/api/mapping-rules";
 import useTranslate from "src/utility/localization";
 import {
@@ -19,9 +19,12 @@ import {
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
 
-const DeleteMappingRulesModal: FC<
-  UseEntityModalProps<DeleteMappingRuleParams>
-> = ({ open, onClose, onSuccess, entity: { mappingRuleId, name } }) => {
+const DeleteMappingRulesModal: FC<UseEntityModalProps<MappingRule>> = ({
+  open,
+  onClose,
+  onSuccess,
+  entity: { mappingRuleId, name },
+}) => {
   const { t, Translate } = useTranslate("mappingRules");
   const { enqueueNotification } = useNotifications();
   const [apiCall, { loading }] = useApiCall(deleteMappingRule);

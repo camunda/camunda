@@ -12,10 +12,7 @@ import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
-import {
-  GlobalTaskListener,
-  searchGlobalTaskListeners,
-} from "src/utility/api/global-task-listeners";
+import { searchGlobalTaskListeners } from "src/utility/api/global-task-listeners";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/global-task-listeners/modals/AddModal";
@@ -114,15 +111,13 @@ const List: FC = () => {
           {
             label: t("editGlobalTaskListener"),
             icon: Edit,
-            onClick: (entity) =>
-              editGlobalTaskListener(entity as unknown as GlobalTaskListener),
+            onClick: (entity) => editGlobalTaskListener(entity),
           },
           {
             label: t("delete"),
             icon: TrashCan,
             isDangerous: true,
-            onClick: (entity) =>
-              deleteGlobalTaskListener(entity as unknown as GlobalTaskListener),
+            onClick: (entity) => deleteGlobalTaskListener(entity),
           },
         ]}
         searchPlaceholder={t("searchById")}

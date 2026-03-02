@@ -14,17 +14,12 @@ import {
 } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api";
-import {
-  deleteClusterVariable,
-  DeleteClusterVariableParams,
-} from "src/utility/api/cluster-variables";
+import { deleteClusterVariable } from "src/utility/api/cluster-variables";
+import type { ClusterVariable } from "@camunda/camunda-api-zod-schemas/8.9";
 
-const DeleteModal: FC<UseEntityModalProps<DeleteClusterVariableParams>> = ({
-  open,
-  onClose,
-  onSuccess,
-  entity: deleteClusterVariableParams,
-}) => {
+const DeleteModal: FC<
+  UseEntityModalProps<Pick<ClusterVariable, "scope" | "tenantId" | "name">>
+> = ({ open, onClose, onSuccess, entity: deleteClusterVariableParams }) => {
   const { t, Translate } = useTranslate("clusterVariables");
   const { enqueueNotification } = useNotifications();
   const [apiCall, { loading }] = useApiCall(deleteClusterVariable);

@@ -59,7 +59,7 @@ export const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       name: data.name.trim(),
       value: JSON.parse(data.value.trim()),
       scope: data.scope,
-      tenantId: isTenantScoped ? data.tenantId : "",
+      tenantId: isTenantScoped ? (data.tenantId ?? null) : "",
     });
 
     if (success) {
