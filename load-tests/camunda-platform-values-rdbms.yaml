@@ -78,6 +78,12 @@ elasticsearch:
 #    #       #######  #####     #     #####  #     # #######  #####
 #
 ###########################################################################
+# Use the internal registry mirror to avoid Docker Hub rate limiting in the benchmark cluster
+image:
+  registry: europe-west1-docker.pkg.dev
+  repository: camunda-benchmark/dockerhub/bitnami/postgresql
+  tag: latest
+
 postgresqlSharedPreloadLibraries: pg_stat_statements
 
 primary:
