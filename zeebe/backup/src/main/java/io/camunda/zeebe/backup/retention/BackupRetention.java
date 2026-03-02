@@ -201,15 +201,17 @@ public class BackupRetention extends Actor {
     final ActorFuture<Collection<BackupStatus>> requestFuture = createFuture();
     backupStore
         .list(identifier)
-        .thenApply(backups -> backups.stream().sorted(BACKUP_STATUS_COMPARATOR).toList())
-        .whenComplete(
+        .thenApplyAsync(
+            backups -> backups.stream().sorted(BACKUP_STATUS_COMPARATOR).toList(), actor)
+        .whenCompleteAsync(
             (backups, throwable) -> {
               if (throwable != null) {
                 requestFuture.completeExceptionally(throwable);
               } else {
                 requestFuture.complete(backups);
               }
-            });
+            },
+            actor);
     return requestFuture;
   }
 
@@ -310,7 +312,7 @@ public class BackupRetention extends Actor {
     }
 
     CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
-        .thenAccept(
+        .thenAcceptAsync(
             ignore -> {
               metrics
                   .forPartition(context.partitionId)
@@ -320,8 +322,9 @@ public class BackupRetention extends Actor {
                     .forPartition(context.partitionId)
                     .setEarliestBackupId(context.earliestBackupInNewRange);
               }
-            })
-        .whenComplete(
+            },
+            actor)
+        .whenCompleteAsync(
             (result, error) -> {
               if (error != null) {
                 LOG.error(
@@ -329,8 +332,9 @@ public class BackupRetention extends Actor {
                     context.partitionId,
                     error);
               }
-            })
-        .whenComplete(future);
+            },
+            actor)
+        .whenCompleteAsync(future, actor);
     return future;
   }
 

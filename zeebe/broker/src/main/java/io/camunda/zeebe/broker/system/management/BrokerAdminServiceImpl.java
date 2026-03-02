@@ -98,15 +98,16 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
                     .map(
                         partition ->
                             getPartitionStatus(partition)
-                                .whenComplete(
+                                .whenCompleteAsync(
                                     (ps, error) -> {
                                       if (error == null) {
                                         partitionStatuses.put(partition.getPartitionId(), ps);
                                       }
-                                    }))
+                                    },
+                                    actor))
                     .toList();
             CompletableFuture.allOf(statusFutures.toArray(CompletableFuture[]::new))
-                .thenAccept(r -> future.complete(partitionStatuses));
+                .thenAcceptAsync(r -> future.complete(partitionStatuses), actor);
           }
         });
 

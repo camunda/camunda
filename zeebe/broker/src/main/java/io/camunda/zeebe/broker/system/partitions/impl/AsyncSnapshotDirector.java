@@ -271,7 +271,7 @@ public final class AsyncSnapshotDirector extends Actor
     try {
       flushLog
           .call()
-          .whenComplete(
+          .whenCompleteAsync(
               (ignore, error) -> {
                 if (error != null) {
                   LOG.warn("Failed to flush journal before committing snapshot", error);
@@ -279,7 +279,8 @@ public final class AsyncSnapshotDirector extends Actor
                 } else {
                   future.complete(null);
                 }
-              });
+              },
+              actor);
     } catch (final Exception e) {
       LOG.warn("Failed to flush journal before committing snapshot", e);
       future.completeExceptionally(e);
