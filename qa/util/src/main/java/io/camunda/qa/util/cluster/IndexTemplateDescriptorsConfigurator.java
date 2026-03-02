@@ -12,9 +12,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
-import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
@@ -51,12 +49,6 @@ public class IndexTemplateDescriptorsConfigurator {
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new DecisionRequirementsIndex(
         operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
-  }
-
-  @Bean
-  public MetricIndex getMetricIndex(
-      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new MetricIndex(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
@@ -177,14 +169,6 @@ public class IndexTemplateDescriptorsConfigurator {
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
     return new FormIndex(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
-  }
-
-  @Bean
-  public TasklistMetricIndex getTasklistMetricIndex(
-      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
-    return new TasklistMetricIndex(
-        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
   @Bean
