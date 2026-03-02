@@ -168,7 +168,7 @@ test.describe('process detail', () => {
     await page.getByRole('button', {name: /continue/i}).click();
     await page.getByTestId('diagram').getByText('Signal user task').click();
     await page
-      .getByRole('button', {name: 'Add single flow node instance'})
+      .getByRole('button', {name: 'Add single element instance'})
       .click();
 
     const modificationModeResults = await makeAxeBuilder()

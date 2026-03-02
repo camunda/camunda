@@ -143,7 +143,7 @@ describe('selectedRunningInstanceCount', () => {
     ]);
 
     expect(
-      await screen.findByText(/Flow Node Modifications/),
+      await screen.findByText(/Element Modifications/),
     ).toBeInTheDocument();
 
     expect(
@@ -166,7 +166,7 @@ describe('selectedRunningInstanceCount', () => {
     );
 
     expect(
-      await screen.findByText(/Flow Node Modifications/),
+      await screen.findByText(/Element Modifications/),
     ).toBeInTheDocument();
 
     expect(

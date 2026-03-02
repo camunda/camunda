@@ -46,8 +46,8 @@ const INITIAL_ADD_MODIFICATION: ElementModification = {
   payload: {
     affectedTokenCount: 1,
     flowNode: {
-      id: 'flow_node_0',
-      name: 'flow node 0',
+      id: 'element_0',
+      name: 'element 0',
     },
     operation: 'ADD_TOKEN',
     parentScopeIds: {},
@@ -98,22 +98,22 @@ const TestSelectionControls: React.FC = () => {
         type="button"
         onClick={() =>
           selectElementInstance({
-            elementId: 'TEST_FLOW_NODE',
+            elementId: 'TEST_ELEMENT',
             elementInstanceKey: 'instance_id',
           })
         }
       >
-        select flow node instance
+        select element instance
       </button>
       <button
         type="button"
         onClick={() =>
           selectElement({
-            elementId: 'flow-node-that-has-not-run-yet',
+            elementId: 'element-that-has-not-run-yet',
           })
         }
       >
-        select flow node from diagram
+        select element from diagram
       </button>
       <button type="button" onClick={() => clearSelection()}>
         clear selection
@@ -179,7 +179,7 @@ describe('New Variable Modifications', () => {
   beforeEach(async () => {
     const statisticsData = [
       {
-        elementId: 'TEST_FLOW_NODE',
+        elementId: 'TEST_ELEMENT',
         active: 0,
         canceled: 0,
         incidents: 0,
@@ -723,7 +723,7 @@ describe('New Variable Modifications', () => {
     vi.useRealTimers();
   });
 
-  it('should be able to remove the first added variable modification after switching between flow node instances', async () => {
+  it('should be able to remove the first added variable modification after switching between element instances', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
     modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
@@ -791,8 +791,8 @@ describe('New Variable Modifications', () => {
 
     mockFetchElementInstance('instance_id').withSuccess({
       elementInstanceKey: 'instance_id',
-      elementId: 'TEST_FLOW_NODE',
-      elementName: 'Test Flow Node',
+      elementId: 'TEST_ELEMENT',
+      elementName: 'Test Element',
       type: 'SERVICE_TASK',
       state: 'ACTIVE',
       startDate: '2018-06-21',
@@ -825,7 +825,7 @@ describe('New Variable Modifications', () => {
     });
 
     await user.click(
-      screen.getByRole('button', {name: /select flow node instance/i}),
+      screen.getByRole('button', {name: /select element instance/i}),
     );
 
     mockSearchVariables().withSuccess({
@@ -868,7 +868,7 @@ describe('New Variable Modifications', () => {
     vi.useRealTimers();
   });
 
-  it('should be able to add variable when a flow node that has no tokens on it is selected from the diagram', async () => {
+  it('should be able to add variable when a element that has no tokens on it is selected from the diagram', async () => {
     mockSearchJobs().withSuccess({
       items: [],
       page: {
@@ -904,8 +904,8 @@ describe('New Variable Modifications', () => {
       payload: {
         operation: 'ADD_TOKEN',
         flowNode: {
-          id: 'flow-node-that-has-not-run-yet',
-          name: 'some-flow-node',
+          id: 'element-that-has-not-run-yet',
+          name: 'some-element',
         },
         scopeId: 'some-scope-id',
         affectedTokenCount: 1,
@@ -937,12 +937,12 @@ describe('New Variable Modifications', () => {
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {
         wrapper: getWrapper([
-          `${Paths.processInstance('instance_id')}?elementId=flow-node-that-has-not-run-yet`,
+          `${Paths.processInstance('instance_id')}?elementId=element-that-has-not-run-yet`,
         ]),
       },
     );
     expect(
-      await screen.findByText('The Flow Node has no Variables'),
+      await screen.findByText('The element has no variables'),
     ).toBeInTheDocument();
 
     await waitFor(() => {
@@ -995,7 +995,7 @@ describe('New Variable Modifications', () => {
     });
 
     await user.click(
-      screen.getByRole('button', {name: /select flow node from diagram/i}),
+      screen.getByRole('button', {name: /select element from diagram/i}),
     );
 
     expect(await screen.findByDisplayValue('test1')).toBeInTheDocument();

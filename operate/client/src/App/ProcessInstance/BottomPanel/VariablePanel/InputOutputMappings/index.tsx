@@ -17,9 +17,9 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 
 const INFORMATION_TEXT = {
   Input:
-    'Input mappings are defined while modelling the diagram. They are used to create new local variables inside the flow node scope with the specified assignment.',
+    'Input mappings are defined while modelling the diagram. They are used to create new local variables inside the element scope with the specified assignment.',
   Output:
-    'Output mappings are defined while modelling the diagram. They are used to control the variable propagation from the flow node scope. Process variables in the parent scopes are created/updated with the specified assignment.',
+    'Output mappings are defined while modelling the diagram. They are used to control the variable propagation from the element scope. Process variables in the parent scopes are created/updated with the specified assignment.',
 };
 
 type Props = {

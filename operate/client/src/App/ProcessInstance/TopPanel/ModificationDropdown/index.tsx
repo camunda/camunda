@@ -131,14 +131,14 @@ const ModificationDropdown: React.FC<Props> = observer(
         autoUpdatePosition
       >
         <Stack gap={3}>
-          <Title>Flow Node Modifications</Title>
+          <Title>Element Modifications</Title>
           <Stack gap={4}>
             {(() => {
               if (isFetchingElement) {
                 return <InlineLoading data-testid="dropdown-spinner" />;
               }
               if (!canBeModified) {
-                return <Unsupported>Unsupported flow node type</Unsupported>;
+                return <Unsupported>Unsupported element type</Unsupported>;
               }
 
               if (availableModifications.length === 0) {
@@ -164,8 +164,8 @@ const ModificationDropdown: React.FC<Props> = observer(
                       businessObjects && (
                         <Button
                           kind="ghost"
-                          title="Add single flow node instance"
-                          aria-label="Add single flow node instance"
+                          title="Add single element instance"
+                          aria-label="Add single element instance"
                           size="sm"
                           renderIcon={Add}
                           onClick={() => {
@@ -222,8 +222,8 @@ const ModificationDropdown: React.FC<Props> = observer(
                       businessObjects && (
                         <Button
                           kind="ghost"
-                          title="Cancel selected instance in this flow node"
-                          aria-label="Cancel selected instance in this flow node"
+                          title="Cancel selected instance in this element"
+                          aria-label="Cancel selected instance in this element"
                           size="sm"
                           renderIcon={Error}
                           onClick={() => {
@@ -247,8 +247,8 @@ const ModificationDropdown: React.FC<Props> = observer(
                       businessObjects && (
                         <Button
                           kind="ghost"
-                          title="Cancel all running flow node instances in this flow node"
-                          aria-label="Cancel all running flow node instances in this flow node"
+                          title="Cancel all running element instances in this element"
+                          aria-label="Cancel all running element instances in this element"
                           size="sm"
                           renderIcon={Error}
                           onClick={() => {
@@ -273,8 +273,8 @@ const ModificationDropdown: React.FC<Props> = observer(
                       !isNil(resolvedElementInstanceKey) && (
                         <Button
                           kind="ghost"
-                          title="Move selected instance in this flow node to another target"
-                          aria-label="Move selected instance in this flow node to another target"
+                          title="Move selected instance in this element to another target"
+                          aria-label="Move selected instance in this element to another target"
                           size="sm"
                           renderIcon={ArrowRight}
                           onClick={() => {
@@ -291,7 +291,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                     {availableModifications.includes('move-all') && (
                       <Button
                         kind="ghost"
-                        title="Move all running instances in this flow node to another target"
+                        title="Move all running instances in this element to another target"
                         size="sm"
                         renderIcon={ArrowRight}
                         onClick={() => {

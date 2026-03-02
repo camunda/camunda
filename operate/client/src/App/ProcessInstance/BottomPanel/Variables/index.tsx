@@ -106,7 +106,7 @@ const Variables: React.FC<Props> = observer(
         {isViewMode && displayStatus === 'skeleton' && <Skeleton />}
         {isViewMode && displayStatus === 'no-variables' && (
           <EmptyMessageWrapper>
-            <EmptyMessage message="The Flow Node has no Variables" />
+            <EmptyMessage message="The element has no variables" />
           </EmptyMessageWrapper>
         )}
         {(!isViewMode || displayStatus === 'variables') && (
