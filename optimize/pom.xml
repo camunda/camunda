@@ -51,7 +51,7 @@
     <zeebe.docker.version>8.9</zeebe.docker.version>
 
     <!-- maven plugins -->
-    <surefire-plugin.version>3.5.4</surefire-plugin.version>
+    <surefire-plugin.version>3.5.5</surefire-plugin.version>
 
     <!-- maven dependency plugin -->
     <dependencyAnalyzeFailOnWarning>false</dependencyAnalyzeFailOnWarning>
@@ -60,7 +60,7 @@
     <!-- DATABASE -->
     <!-- Elasticsearch-->
     <version.elasticsearch>8.16.6</version.elasticsearch>
-    <version.elasticsearch-java-client>8.19.11</version.elasticsearch-java-client>
+    <version.elasticsearch-java-client>8.19.12</version.elasticsearch-java-client>
     <!-- The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>8.19.11</elasticsearch.test.version>
     <!-- The ElasticSearch version of the previous Optimize version -->
@@ -75,7 +75,7 @@
     <quartz.version>2.5.2</quartz.version>
 
     <!-- testing config -->
-    <mockito.version>5.21.0</mockito.version>
+    <mockito.version>5.22.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <mockserver.version>5.15.0</mockserver.version>
     <assertj.version>3.27.7</assertj.version>

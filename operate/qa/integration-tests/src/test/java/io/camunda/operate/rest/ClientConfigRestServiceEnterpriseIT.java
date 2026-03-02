@@ -53,13 +53,11 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
       OperateProperties.PREFIX + ".cloud.mixpanelAPIHost=https://fake.mixpanel.com",
       "camunda.security.multiTenancy.checksEnabled=true",
       "camunda.security.authorizations.enabled=false"
-      // CAMUNDA_OPERATE_CLOUD_CLUSTERID=clusterId  -- leave out to test for null values
     })
 public class ClientConfigRestServiceEnterpriseIT extends OperateAbstractIT {
 
   @Test
   public void testGetClientConfig() throws Exception {
-    // when
     final MockHttpServletRequestBuilder request = get("/operate/client-config.js");
     final MvcResult mvcResult =
         mockMvc
@@ -68,7 +66,6 @@ public class ClientConfigRestServiceEnterpriseIT extends OperateAbstractIT {
             .andExpect(content().contentTypeCompatibleWith("text/javascript"))
             .andReturn();
 
-    // then
     assertThat(mvcResult.getResponse().getContentAsString())
         .isEqualTo(
             "window.clientConfig = {"

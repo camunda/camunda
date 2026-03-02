@@ -42,15 +42,6 @@ public interface BackupStore {
 
   CompletableFuture<BackupStatusCode> markDeleted(BackupIdentifier id);
 
-  /** Returns all range markers stored for this partition. */
-  CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(int partitionId);
-
-  /** Stores a given {@link BackupRangeMarker} for the given partition. */
-  CompletableFuture<Void> storeRangeMarker(int partitionId, BackupRangeMarker marker);
-
-  /** Deletes a given {@link BackupRangeMarker} for the given partition. */
-  CompletableFuture<Void> deleteRangeMarker(int partitionId, BackupRangeMarker marker);
-
   /**
    * Stores backup metadata content for the given partition. The content is an opaque byte array
    * (JSON).

@@ -279,7 +279,9 @@ public class OperateV1ApiPermissionsIT {
 
     try (final var client = STANDALONE_CAMUNDA.newOperateClient(user, user)) {
       final int statusCode =
-          client.sendDeleteRequest("v1/process-instances", processInstanceToDeleteKey).statusCode();
+          client
+              .sendDeleteRequest(PROCESS_INSTANCE_ENDPOINT, processInstanceToDeleteKey)
+              .statusCode();
       assertThat(statusCode).isEqualTo(expectedStatus);
     }
   }

@@ -69,9 +69,13 @@ public final class CheckpointCreateProcessor {
 
     final boolean scalingInProgress = scalingStatusSupplier.isScalingInProgress();
     final var checkpointRecord = record.getValue();
+    final long checkpointId = checkpointRecord.getCheckpointId();
+    final var checkpointType = checkpointRecord.getCheckpointType();
+    final var checkpointPosition = record.getPosition();
+    final var checkpointTimestamp = record.getTimestamp();
+
     // Get current partition count from routing information if available
     final int currentPartitionCount = partitionCountSupplier.getCurrentPartitionCount();
-    final long checkpointId = checkpointRecord.getCheckpointId();
     final var latestBackupPosition = checkpointState.getLatestBackupPosition();
     final var descriptor =
         BackupDescriptorImpl.from(record, latestBackupPosition, currentPartitionCount);
@@ -81,21 +85,22 @@ public final class CheckpointCreateProcessor {
       // We want to mark the backup as failed for observability
       backupManager.createFailedBackup(
           checkpointId, descriptor, "Cannot create checkpoint while scaling is in progress");
-    } else if (checkpointRecord.getCheckpointType().shouldCreateBackup()) {
+    } else if (checkpointType.shouldCreateBackup()) {
       backupManager.takeBackup(checkpointId, descriptor);
     }
 
     // Create follow-up record
     final var followupRecord =
         new CheckpointRecord()
-            .setCheckpointId(checkpointRecord.getCheckpointId())
-            .setCheckpointPosition(record.getPosition())
-            .setCheckpointType(checkpointRecord.getCheckpointType());
+            .setCheckpointId(checkpointId)
+            .setCheckpointPosition(checkpointPosition)
+            .setCheckpointType(checkpointType);
 
     // Checkpoint should be created even if we don't take a backup for checkpoint-consistency
+    metrics.created(checkpointId, checkpointPosition);
     appendCheckpointCreatedEvent(record, resultBuilder, followupRecord);
 
-    checkpointCreatedApplier.apply(followupRecord, record.getTimestamp());
+    checkpointCreatedApplier.apply(followupRecord, checkpointTimestamp);
 
     // Handle client response based on scaling state
     if (scalingInProgress) {

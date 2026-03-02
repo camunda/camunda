@@ -22,7 +22,7 @@ import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {Maximize} from '@carbon/react/icons';
 import {LoadingTextfield} from './LoadingTextField';
 import {Layer} from '@carbon/react';
-import {useSelectedFlowNodeName} from 'modules/hooks/flowNodeSelection';
+import {useSelectedElementName} from 'modules/hooks/elementSelection';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -42,7 +42,7 @@ const createModification = ({
   name,
   oldValue,
   newValue,
-  selectedFlowNodeName,
+  selectedElementName,
 }: {
   scopeId: string | null;
   isValid: boolean;
@@ -50,7 +50,7 @@ const createModification = ({
   name: string;
   oldValue: string;
   newValue: string;
-  selectedFlowNodeName: string;
+  selectedElementName: string;
 }) => {
   if (
     !modificationsStore.isModificationModeEnabled ||
@@ -79,7 +79,7 @@ const createModification = ({
         operation: 'EDIT_VARIABLE',
         id: name,
         scopeId,
-        flowNodeName: selectedFlowNodeName,
+        flowNodeName: selectedElementName,
         name,
         oldValue,
         newValue,
@@ -92,7 +92,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
   ({id, variableName, variableValue, isPreview}) => {
     const {isModificationModeEnabled} = modificationsStore;
     const formState = useFormState();
-    const selectedFlowNodeName = useSelectedFlowNodeName() || '';
+    const selectedElementName = useSelectedElementName() || '';
     const [isModalVisible, setIsModalVisible] = useState(false);
     const form = useForm();
     const {
@@ -199,7 +199,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
                   newValue: input.value ?? '',
                   isDirty: getInitialValue(variable) !== input.value,
                   isValid: isValid ?? false,
-                  selectedFlowNodeName,
+                  selectedElementName,
                 });
 
                 input.onBlur(event);
@@ -234,7 +234,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
                 newValue: value ?? '',
                 isDirty: getInitialValue(variable) !== value,
                 isValid: isValid ?? false,
-                selectedFlowNodeName,
+                selectedElementName,
               });
             }}
           />

@@ -38,6 +38,11 @@ public final class BackupEndpointStandalone {
     return backupEndpoint.take();
   }
 
+  @WriteOperation
+  public WebEndpointResponse<?> write(@Selector(match = Match.ALL_REMAINING) final String[] path) {
+    return backupEndpoint.write(path);
+  }
+
   @ReadOperation
   public WebEndpointResponse<?> listAll() {
     return backupEndpoint.listAll();

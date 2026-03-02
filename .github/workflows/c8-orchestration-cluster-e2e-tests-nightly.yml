@@ -198,7 +198,7 @@ jobs:
 
       - name: Upload json report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: json-report-nightly-api-${{ steps.sanitize.outputs.safe_branch }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
@@ -215,7 +215,102 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  api-tests-rdbms:
+    name: API Tests (H2/RDBMS) (${{ matrix.branch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [stable/8.9, main]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions: {}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ matrix.branch }}
 
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: e2e-h2-api-tests
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Build Camunda distribution
+        run: ./mvnw install -Dquickly -T1C
+
+      - name: Extract distribution
+        run: |
+          mkdir -p dev-dist
+          exploded="dist/target/camunda-zeebe"
+          if [ -d "$exploded/bin" ]; then
+            cp -a "$exploded"/. dev-dist/
+          else
+            tarball=$(find dist/target -maxdepth 1 -name 'camunda-zeebe-*.tar.gz' | head -1)
+            if [ -z "$tarball" ]; then
+              echo "ERROR: No dist build output found."
+              exit 1
+            fi
+            tar xzf "$tarball" --strip-components=1 -C dev-dist
+          fi
+
+      - name: Start Camunda with H2/RDBMS
+        run: |
+          chmod +x dev-dist/bin/camunda
+          export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin"
+          export ZEEBE_CLOCK_CONTROLLED="true"
+          # (keep your existing env exports here)
+          dev-dist/bin/camunda > dev-dist/camunda.log 2>&1 &
+          echo $! > dev-dist/camunda.pid
+
+      - name: Wait for Camunda to be ready
+        run: |
+          for i in $(seq 1 90); do
+            if curl -sf -u demo:demo http://localhost:8080/v2/topology >/dev/null 2>&1; then
+              exit 0
+            fi
+            echo "Attempt $i: Camunda not ready yet"
+            sleep 5
+          done
+          tail -100 dev-dist/camunda.log
+          exit 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
+
+      - name: Clean install dependencies
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Run API tests
+        env:
+          LOCAL_TEST: "false"
+          CORE_APPLICATION_URL: "http://localhost:8080"
+          ZEEBE_REST_ADDRESS: "http://localhost:8080"
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
+        run: npm run test -- --project=api-tests
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Stop Camunda
+        if: always()
+        run: |
+          if [ -f dev-dist/camunda.pid ]; then
+            kill "$(cat dev-dist/camunda.pid)" 2>/dev/null || true
+          fi
   nightly-tests:
     name: nightly-tests (${{ matrix.branch }} - Tasklist ${{ matrix.tasklist_mode }} mode)
     strategy:
@@ -429,7 +524,7 @@ jobs:
 
       - name: Upload json report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: json-report-nightly-e2e-${{ steps.sanitize.outputs.safe_branch }}${{ matrix.tasklist_mode && format('-{0}', matrix.tasklist_mode) || '' }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**

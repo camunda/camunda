@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -28,7 +29,7 @@ final class RestorePointResolverTest {
   void shouldResolveWithSinglePartitionSingleBackup() {
     // given – one partition, one SCHEDULED_BACKUP checkpoint, one range covering it
     final var t1 = Instant.parse("2025-01-01T00:00:00Z");
-    final var cp = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
+    final var cp = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
     final var meta = metadata(1, List.of(cp), List.of(new RangeEntry(1, 1)));
 
     // when
@@ -46,10 +47,10 @@ final class RestorePointResolverTest {
     final var t1 = Instant.parse("2025-01-01T00:00:00Z");
     final var t2 = Instant.parse("2025-01-02T00:00:00Z");
 
-    final var cp1p1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
-    final var cp2p1 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101);
-    final var cp1p2 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
-    final var cp2p2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101);
+    final var cp1p1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2p1 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var cp1p2 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2p2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
 
     final var metadataByPartition =
         List.of(
@@ -72,10 +73,10 @@ final class RestorePointResolverTest {
     final var t2 = Instant.parse("2025-06-01T00:00:00Z");
     final var to = Instant.parse("2025-01-15T00:00:00Z"); // much closer to t1
 
-    final var cp1p1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
-    final var cp2p1 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101);
-    final var cp1p2 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
-    final var cp2p2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101);
+    final var cp1p1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2p1 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var cp1p2 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2p2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
 
     final var metadataByPartition =
         List.of(
@@ -86,7 +87,7 @@ final class RestorePointResolverTest {
     final var result = RestorePointResolver.resolve(metadataByPartition, null, to, Map.of());
 
     // then – checkpoint 1 is closest to 'to'
-    assertThat(result.globalCheckpointId()).isEqualTo(1);
+    assertThat(result.globalCheckpointId()).isOne();
     assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1p1);
     assertThat(result.backupsByPartitionId().get(2)).containsExactly(cp1p2);
   }
@@ -98,9 +99,9 @@ final class RestorePointResolverTest {
     final var t2 = Instant.parse("2025-01-02T00:00:00Z");
     final var t3 = Instant.parse("2025-01-03T00:00:00Z");
 
-    final var marker = entry(1, 100, t1, CheckpointType.MARKER, 50);
-    final var backup1 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101);
-    final var backup2 = entry(3, 300, t3, CheckpointType.MANUAL_BACKUP, 201);
+    final var marker = entry(1, 100, t1, CheckpointType.MARKER, OptionalLong.empty());
+    final var backup1 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var backup2 = entry(3, 300, t3, CheckpointType.MANUAL_BACKUP, OptionalLong.of(201));
 
     final var meta = metadata(1, List.of(marker, backup1, backup2), List.of(new RangeEntry(1, 3)));
 
@@ -119,9 +120,9 @@ final class RestorePointResolverTest {
     final var t2 = Instant.parse("2025-01-02T00:00:00Z");
     final var t3 = Instant.parse("2025-01-03T00:00:00Z");
 
-    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
-    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101);
-    final var cp3 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, 201);
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var cp3 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201));
 
     final var meta = metadata(1, List.of(cp1, cp2, cp3), List.of(new RangeEntry(1, 3)));
 
@@ -141,10 +142,10 @@ final class RestorePointResolverTest {
     final var t3 = Instant.parse("2025-03-01T00:00:00Z");
     final var t4 = Instant.parse("2025-04-01T00:00:00Z");
 
-    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
-    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101);
-    final var cp3 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, 201);
-    final var cp4 = entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, 301);
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var cp3 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201));
+    final var cp4 = entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(301));
 
     final var meta =
         metadata(
@@ -168,10 +169,10 @@ final class RestorePointResolverTest {
     final var t3 = Instant.parse("2025-03-01T00:00:00Z");
     final var t4 = Instant.parse("2025-04-01T00:00:00Z");
 
-    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
-    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101);
-    final var cp3 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, 201);
-    final var cp4 = entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, 301);
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var cp3 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201));
+    final var cp4 = entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(301));
 
     final var meta =
         metadata(
@@ -192,8 +193,8 @@ final class RestorePointResolverTest {
     final var t1 = Instant.parse("2025-01-01T00:00:00Z");
     final var t2 = Instant.parse("2025-01-02T00:00:00Z");
 
-    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
-    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101);
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
 
     final var meta = metadata(1, List.of(cp1, cp2), List.of(new RangeEntry(1, 2)));
 
@@ -215,8 +216,8 @@ final class RestorePointResolverTest {
     final var t1 = Instant.parse("2025-01-01T00:00:00Z");
     final var t2 = Instant.parse("2025-01-02T00:00:00Z");
 
-    final var cp1p1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
-    final var cp2p2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101);
+    final var cp1p1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2p2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
 
     final var metadataByPartition =
         List.of(
@@ -235,7 +236,7 @@ final class RestorePointResolverTest {
   void shouldHandleManualBackupType() {
     // given – single partition with MANUAL_BACKUP checkpoint
     final var t1 = Instant.parse("2025-01-01T00:00:00Z");
-    final var cp = entry(1, 100, t1, CheckpointType.MANUAL_BACKUP, 50);
+    final var cp = entry(1, 100, t1, CheckpointType.MANUAL_BACKUP, OptionalLong.of(50));
     final var meta = metadata(1, List.of(cp), List.of(new RangeEntry(1, 1)));
 
     // when
@@ -255,11 +256,11 @@ final class RestorePointResolverTest {
     final var t4 = Instant.parse("2025-01-04T00:00:00Z");
     final var t5 = Instant.parse("2025-01-05T00:00:00Z");
 
-    final var marker1 = entry(1, 100, t1, CheckpointType.MARKER, 50);
-    final var backup1 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101);
-    final var marker2 = entry(3, 300, t3, CheckpointType.MARKER, 250);
-    final var backup2 = entry(4, 400, t4, CheckpointType.MANUAL_BACKUP, 201);
-    final var marker3 = entry(5, 500, t5, CheckpointType.MARKER, 450);
+    final var marker1 = entry(1, 100, t1, CheckpointType.MARKER, OptionalLong.empty());
+    final var backup1 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var marker2 = entry(3, 300, t3, CheckpointType.MARKER, OptionalLong.empty());
+    final var backup2 = entry(4, 400, t4, CheckpointType.MANUAL_BACKUP, OptionalLong.of(201));
+    final var marker3 = entry(5, 500, t5, CheckpointType.MARKER, OptionalLong.empty());
 
     final var meta =
         metadata(
@@ -284,20 +285,20 @@ final class RestorePointResolverTest {
             metadata(
                 1,
                 List.of(
-                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50),
-                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101)),
+                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50)),
+                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101))),
                 List.of(new RangeEntry(1, 2))),
             metadata(
                 2,
                 List.of(
-                    entry(1, 110, t1, CheckpointType.SCHEDULED_BACKUP, 60),
-                    entry(2, 210, t2, CheckpointType.SCHEDULED_BACKUP, 111)),
+                    entry(1, 110, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(60)),
+                    entry(2, 210, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(111))),
                 List.of(new RangeEntry(1, 2))),
             metadata(
                 3,
                 List.of(
-                    entry(1, 120, t1, CheckpointType.SCHEDULED_BACKUP, 70),
-                    entry(2, 220, t2, CheckpointType.SCHEDULED_BACKUP, 121)),
+                    entry(1, 120, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(70)),
+                    entry(2, 220, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(121))),
                 List.of(new RangeEntry(1, 2))));
 
     // when
@@ -324,16 +325,16 @@ final class RestorePointResolverTest {
             metadata(
                 1,
                 List.of(
-                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50),
-                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101),
-                    entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, 201)),
+                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50)),
+                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101)),
+                    entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201))),
                 List.of(new RangeEntry(1, 3))),
             metadata(
                 2,
                 List.of(
-                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101),
-                    entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, 201),
-                    entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, 301)),
+                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101)),
+                    entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201)),
+                    entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(301))),
                 List.of(new RangeEntry(2, 4))));
 
     // when – no 'to', so picks closest to now; checkpoint 3 is common and closer to now than 2
@@ -356,16 +357,16 @@ final class RestorePointResolverTest {
             metadata(
                 1,
                 List.of(
-                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50),
-                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101),
-                    entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, 201)),
+                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50)),
+                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101)),
+                    entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201))),
                 List.of(new RangeEntry(1, 3))),
             metadata(
                 2,
                 List.of(
-                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50),
-                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101),
-                    entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, 201)),
+                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50)),
+                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101)),
+                    entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201))),
                 List.of(new RangeEntry(1, 3))));
 
     // when
@@ -384,9 +385,9 @@ final class RestorePointResolverTest {
     final var t2 = Instant.parse("2025-01-02T00:00:00Z");
     final var t3 = Instant.parse("2025-01-03T00:00:00Z");
 
-    final var marker = entry(1, 100, t1, CheckpointType.MARKER, 50);
-    final var backup = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101);
-    final var markerAfter = entry(3, 300, t3, CheckpointType.MARKER, 250);
+    final var marker = entry(1, 100, t1, CheckpointType.MARKER, OptionalLong.empty());
+    final var backup = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var markerAfter = entry(3, 300, t3, CheckpointType.MARKER, OptionalLong.empty());
 
     final var meta =
         metadata(1, List.of(marker, backup, markerAfter), List.of(new RangeEntry(1, 3)));
@@ -407,10 +408,10 @@ final class RestorePointResolverTest {
     final var t3 = Instant.parse("2025-03-01T00:00:00Z");
     final var t4 = Instant.parse("2025-04-01T00:00:00Z");
 
-    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
-    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101);
-    final var cp3 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, 201);
-    final var cp4 = entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, 301);
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var cp3 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201));
+    final var cp4 = entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(301));
 
     // from=t2: range [1,2] start=cp1 at t1, t1.isAfter(t2)=false -> qualifies
     //          range [3,4] start=cp3 at t3, t3.isAfter(t2)=true -> filtered out
@@ -423,7 +424,7 @@ final class RestorePointResolverTest {
     final var result = RestorePointResolver.resolve(List.of(meta), t2, t1, Map.of());
 
     // then
-    assertThat(result.globalCheckpointId()).isEqualTo(1);
+    assertThat(result.globalCheckpointId()).isOne();
     assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1);
   }
 
@@ -431,7 +432,7 @@ final class RestorePointResolverTest {
   void shouldHandleExportedPositionFilteringOutAllRanges() {
     // given – exportedPosition is too small for any range
     final var t1 = Instant.parse("2025-01-01T00:00:00Z");
-    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
 
     final var meta = metadata(1, List.of(cp1), List.of(new RangeEntry(1, 1)));
 
@@ -452,10 +453,10 @@ final class RestorePointResolverTest {
     final var t3 = Instant.parse("2025-03-01T00:00:00Z");
     final var t4 = Instant.parse("2025-04-01T00:00:00Z");
 
-    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
-    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101);
-    final var cp3 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, 201);
-    final var cp4 = entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, 301);
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var cp3 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201));
+    final var cp4 = entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(301));
 
     final var meta =
         metadata(
@@ -476,8 +477,8 @@ final class RestorePointResolverTest {
     final var t1 = Instant.parse("2025-01-01T00:00:00Z");
     final var t2 = Instant.parse("2025-01-02T00:00:00Z");
 
-    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
-    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101);
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
 
     final var meta = metadata(1, List.of(cp1, cp2), List.of(new RangeEntry(1, 2)));
 
@@ -498,10 +499,10 @@ final class RestorePointResolverTest {
     final var t3 = Instant.parse("2025-01-03T00:00:00Z");
     final var t4 = Instant.parse("2025-01-04T00:00:00Z");
 
-    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
-    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101);
-    final var cp3 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, 201);
-    final var cp4 = entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, 301);
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var cp3 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201));
+    final var cp4 = entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(301));
 
     final var meta = metadata(1, List.of(cp1, cp2, cp3, cp4), List.of(new RangeEntry(1, 4)));
 
@@ -526,14 +527,14 @@ final class RestorePointResolverTest {
             metadata(
                 1,
                 List.of(
-                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50),
-                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101)),
+                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50)),
+                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101))),
                 List.of(new RangeEntry(1, 2))),
             metadata(
                 2,
                 List.of(
-                    entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, 201),
-                    entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, 301)),
+                    entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201)),
+                    entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(301))),
                 List.of(new RangeEntry(3, 4))));
 
     // when/then – from=t2 filters out P2's range (t3 > t2)
@@ -555,14 +556,14 @@ final class RestorePointResolverTest {
             metadata(
                 1,
                 List.of(
-                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50),
-                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101)),
+                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50)),
+                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101))),
                 List.of(new RangeEntry(1, 2))),
             metadata(
                 2,
                 List.of(
-                    entry(1, 110, t1, CheckpointType.SCHEDULED_BACKUP, 60),
-                    entry(2, 210, t2, CheckpointType.SCHEDULED_BACKUP, 111)),
+                    entry(1, 110, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(60)),
+                    entry(2, 210, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(111))),
                 List.of(new RangeEntry(1, 2))));
 
     // when – P2 exportedPosition=200 means cp1 on P2 (checkpointPosition=110) < 200 -> skip cp1
@@ -582,11 +583,11 @@ final class RestorePointResolverTest {
         List.of(
             metadata(
                 1,
-                List.of(entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50)),
+                List.of(entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50))),
                 List.of(new RangeEntry(1, 1))),
             metadata(
                 2,
-                List.of(entry(1, 110, t1, CheckpointType.SCHEDULED_BACKUP, 60)),
+                List.of(entry(1, 110, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(60))),
                 List.of(new RangeEntry(1, 1))));
 
     // when – P1 exportedPosition=500 > cp1.checkpointPosition=100 -> range filtered out
@@ -610,18 +611,18 @@ final class RestorePointResolverTest {
             metadata(
                 1,
                 List.of(
-                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50),
-                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101),
-                    entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, 201),
-                    entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, 301)),
+                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50)),
+                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101)),
+                    entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201)),
+                    entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(301))),
                 List.of(new RangeEntry(1, 2), new RangeEntry(3, 4))),
             metadata(
                 2,
                 List.of(
-                    entry(1, 110, t1, CheckpointType.SCHEDULED_BACKUP, 60),
-                    entry(2, 210, t2, CheckpointType.SCHEDULED_BACKUP, 111),
-                    entry(3, 310, t3, CheckpointType.SCHEDULED_BACKUP, 211),
-                    entry(4, 410, t4, CheckpointType.SCHEDULED_BACKUP, 311)),
+                    entry(1, 110, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(60)),
+                    entry(2, 210, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(111)),
+                    entry(3, 310, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(211)),
+                    entry(4, 410, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(311))),
                 List.of(new RangeEntry(1, 2), new RangeEntry(3, 4))));
 
     // when – P1 exportedPosition=250 filters out range [1,2] (end cp2.pos=200 < 250)
@@ -647,14 +648,14 @@ final class RestorePointResolverTest {
             metadata(
                 1,
                 List.of(
-                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50),
-                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101)),
+                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50)),
+                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101))),
                 List.of(new RangeEntry(1, 2))),
             metadata(
                 2,
                 List.of(
-                    entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, 201),
-                    entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, 301)),
+                    entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201)),
+                    entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(301))),
                 List.of(new RangeEntry(3, 4))));
 
     // when/then
@@ -672,9 +673,9 @@ final class RestorePointResolverTest {
     final var t1 = Instant.parse("2025-01-01T00:00:00Z");
     final var t2 = Instant.parse("2025-01-02T00:00:00Z");
 
-    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
     // firstLogPosition=300 creates a gap with cp1.checkpointPosition=100
-    final var cp2 = entry(2, 400, t2, CheckpointType.SCHEDULED_BACKUP, 300);
+    final var cp2 = entry(2, 400, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(300));
 
     final var meta = metadata(1, List.of(cp1, cp2), List.of(new RangeEntry(1, 2)));
 
@@ -692,8 +693,8 @@ final class RestorePointResolverTest {
     final var t1 = Instant.parse("2025-01-01T00:00:00Z");
     final var t2 = Instant.parse("2025-01-02T00:00:00Z");
 
-    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
-    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101);
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
 
     final var meta = metadata(1, List.of(cp1, cp2), List.of(new RangeEntry(1, 2)));
 
@@ -711,8 +712,8 @@ final class RestorePointResolverTest {
     final var t1 = Instant.parse("2025-01-01T00:00:00Z");
     final var t2 = Instant.parse("2025-01-02T00:00:00Z");
 
-    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 10);
-    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 50);
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(10));
+    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
 
     final var meta = metadata(1, List.of(cp1, cp2), List.of(new RangeEntry(1, 2)));
 
@@ -731,10 +732,10 @@ final class RestorePointResolverTest {
     final var t2 = Instant.parse("2025-01-02T00:00:00Z");
     final var t3 = Instant.parse("2025-01-03T00:00:00Z");
 
-    final var backup1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
-    final var marker = entry(2, 200, t2, CheckpointType.MARKER, 101);
+    final var backup1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var marker = entry(2, 200, t2, CheckpointType.MARKER, OptionalLong.empty());
     // firstLogPosition=300 creates a gap with backup1.checkpointPosition=100
-    final var backup2 = entry(3, 400, t3, CheckpointType.SCHEDULED_BACKUP, 300);
+    final var backup2 = entry(3, 400, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(300));
 
     final var meta = metadata(1, List.of(backup1, marker, backup2), List.of(new RangeEntry(1, 3)));
 
@@ -755,15 +756,15 @@ final class RestorePointResolverTest {
             metadata(
                 1,
                 List.of(
-                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50),
-                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, 101)),
+                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50)),
+                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101))),
                 List.of(new RangeEntry(1, 2))),
             metadata(
                 2,
                 List.of(
-                    entry(1, 110, t1, CheckpointType.SCHEDULED_BACKUP, 60),
+                    entry(1, 110, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(60)),
                     // firstLogPosition=500 creates a gap with cp1.checkpointPosition=110
-                    entry(2, 600, t2, CheckpointType.SCHEDULED_BACKUP, 500)),
+                    entry(2, 600, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(500))),
                 List.of(new RangeEntry(1, 2))));
 
     // when/then – gap detected on partition 2
@@ -778,7 +779,7 @@ final class RestorePointResolverTest {
       final long position,
       final Instant timestamp,
       final CheckpointType type,
-      final long firstLogPosition) {
+      final OptionalLong firstLogPosition) {
     return new CheckpointEntry(id, position, timestamp, type, firstLogPosition);
   }
 

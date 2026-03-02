@@ -104,6 +104,9 @@ components:
       type: object
       required:
         - totalItems
+        - hasMoreTotalItems
+        - startCursor
+        - endCursor
       x-semantic-provider:
         - startCursor
         - endCursor

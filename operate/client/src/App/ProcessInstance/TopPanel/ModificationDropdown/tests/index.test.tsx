@@ -11,7 +11,7 @@ import {mockProcessWithEventBasedGateway} from 'modules/mocks/mockProcessWithEve
 import {modificationsStore} from 'modules/stores/modifications';
 import {renderPopover} from './mocks';
 import {open} from 'modules/mocks/diagrams';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
@@ -127,10 +127,10 @@ describe('Modification Dropdown', () => {
       tags: [],
     };
 
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: statisticsData,
     });
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: statisticsData,
     });
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
@@ -151,7 +151,7 @@ describe('Modification Dropdown', () => {
   });
 
   it('should not support add modification for non-selectable events attached to event based gateway', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: 'message_intermediate_catch_non_selectable',
@@ -205,7 +205,7 @@ describe('Modification Dropdown', () => {
   });
 
   it('should support add modification for selectable events attached to event based gateway', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: 'message_intermediate_catch_selectable',
@@ -231,7 +231,7 @@ describe('Modification Dropdown', () => {
   });
 
   it('should not support add modification for non-selectable timer events attached to event based gateway', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: 'timer_intermediate_catch_non_selectable',
@@ -257,7 +257,7 @@ describe('Modification Dropdown', () => {
   });
 
   it('should support add modification for selectable message throw events', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: 'message_intermediate_throw_selectable',
@@ -283,7 +283,7 @@ describe('Modification Dropdown', () => {
   });
 
   it('should support add modification for selectable timer events', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: 'timer_intermediate_catch_selectable',
@@ -409,7 +409,7 @@ describe('Modification Dropdown', () => {
   });
 
   it('should not support move operation for non-multi-instance sub processes', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: 'multi-instance-subprocess',
@@ -530,7 +530,7 @@ describe('Modification Dropdown', () => {
       open('diagramForModifications.bpmn'),
     );
 
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: statisticsData,
     });
 

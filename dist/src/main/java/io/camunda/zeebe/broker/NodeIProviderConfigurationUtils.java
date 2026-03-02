@@ -72,6 +72,7 @@ public class NodeIProviderConfigurationUtils {
                 config.getLeaseDuration(),
                 config.getLeaseAcquireMaxDelay(),
                 config.getReadinessCheckTimeout(),
+                config.getExpiredLeaseThreshold(),
                 taskId,
                 () -> {
                   log.warn("NodeIdProvider terminating the process");

@@ -181,6 +181,7 @@ import io.camunda.client.api.statistics.request.GlobalJobStatisticsRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByErrorRequest;
 import io.camunda.client.api.statistics.request.JobTypeStatisticsRequest;
+import io.camunda.client.api.statistics.request.JobWorkerStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
@@ -1023,6 +1024,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   JobTypeStatisticsRequest newJobTypeStatisticsRequest(
       final OffsetDateTime from, final OffsetDateTime to);
+
+  /**
+   * Executes a request to query job statistics grouped by worker for a specific job type.
+   *
+   * <pre>
+   * camundaClient
+   *  .newJobWorkerStatisticsRequest(OffsetDateTime.now().minusDays(1), OffsetDateTime.now(), "fetch-customer-data")
+   *  .send();
+   * </pre>
+   *
+   * @param from the start of the time range (inclusive)
+   * @param to the end of the time range (inclusive)
+   * @param jobType the job type to return worker statistics for
+   * @return a builder for the job worker statistics request
+   */
+  JobWorkerStatisticsRequest newJobWorkerStatisticsRequest(
+      final OffsetDateTime from, final OffsetDateTime to, final String jobType);
 
   /**
    * Executes a search request to query process instance sequence flows.

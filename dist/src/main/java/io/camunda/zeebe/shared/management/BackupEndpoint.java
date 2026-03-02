@@ -108,6 +108,24 @@ public final class BackupEndpoint {
     }
   }
 
+  @WriteOperation
+  public WebEndpointResponse<?> write(@Selector(match = Match.ALL_REMAINING) final String[] path) {
+    if (path.length == 2 && BackupApi.STATE.equals(path[0]) && BackupApi.SYNC.equals(path[1])) {
+      try {
+        final var updatedRangesFuture = api.syncMetadata().toCompletableFuture();
+        final var checkpointStateFuture = api.getCheckpointState().toCompletableFuture();
+        final var checkpointState = checkpointStateFuture.join();
+        final var ranges = updatedRangesFuture.join();
+        return new WebEndpointResponse<>(toCheckpointState(checkpointState, ranges));
+      } catch (final Exception e) {
+        return mapErrorResponse(e);
+      }
+    }
+    return new WebEndpointResponse<>(
+        new Error().message("Unknown write operation: " + String.join("/", path)),
+        WebEndpointResponse.STATUS_BAD_REQUEST);
+  }
+
   @ReadOperation
   public WebEndpointResponse<?> listAll() {
     return listPrefix(BackupApi.WILDCARD);
@@ -217,7 +235,6 @@ public final class BackupEndpoint {
     response.setPartitionId(range.partitionId());
     response.setStart(range.first() == null ? null : toBackupState(range.first()));
     response.setEnd(range.last() == null ? null : toBackupState(range.last()));
-    response.setMissingCheckpoints(range.missingCheckpoints().stream().toList());
     return response;
   }
 
@@ -325,6 +342,7 @@ public final class BackupEndpoint {
       case FAILED -> StateCode.FAILED;
       case DOES_NOT_EXIST -> StateCode.DOES_NOT_EXIST;
       case INCOMPLETE -> StateCode.INCOMPLETE;
+      case DELETED -> StateCode.DELETED;
     };
   }
 
@@ -334,6 +352,7 @@ public final class BackupEndpoint {
       case COMPLETED -> StateCode.COMPLETED;
       case FAILED -> StateCode.FAILED;
       case DOES_NOT_EXIST -> StateCode.DOES_NOT_EXIST;
+      case DELETED -> StateCode.DELETED;
       default -> throw new IllegalStateException("Unknown BackupState %s".formatted(status));
     };
   }

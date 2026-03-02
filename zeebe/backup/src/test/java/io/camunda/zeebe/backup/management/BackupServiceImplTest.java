@@ -10,11 +10,9 @@ package io.camunda.zeebe.backup.management;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.collection;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -26,8 +24,7 @@ import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
-import io.camunda.zeebe.backup.api.BackupRangeMarker.End;
-import io.camunda.zeebe.backup.api.BackupRangeMarker.Start;
+import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupRangeStatus.CheckpointInfo;
 import io.camunda.zeebe.backup.api.BackupStatus;
@@ -39,7 +36,6 @@ import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointMetadataValue;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
-import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -54,6 +50,7 @@ import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.util.Either;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -84,7 +81,9 @@ class BackupServiceImplTest {
 
   @BeforeEach
   void setup() {
-    backupService = new BackupServiceImpl(backupStore, logStreamWriter, null, null);
+    backupService =
+        new BackupServiceImpl(
+            backupStore, logStreamWriter, null, null, 1, new SimpleMeterRegistry());
 
     lenient()
         .when(notExistingBackupStatus.statusCode())
@@ -508,88 +507,7 @@ class BackupServiceImplTest {
     // then — deleteBackup only writes to the log; the stream processor does the rest
     verify(logStreamWriter).tryWrite(eq(WriteContext.internal()), any(LogAppendEntry.class));
     verify(backupStore, never()).delete(any());
-    verify(backupStore, never()).storeRangeMarker(anyInt(), any());
     verify(backupStore, never()).markFailed(any(), anyString());
-  }
-
-  @Test
-  void shouldExtendRangeByStoringNewEndMarkerAndDeletingPreviousOne() {
-    // given
-    final int partitionId = 1;
-    final long previousCheckpointId = 5L;
-    final long newCheckpointId = 10L;
-
-    when(backupStore.storeRangeMarker(anyInt(), any()))
-        .thenReturn(CompletableFuture.completedFuture(null));
-    when(backupStore.deleteRangeMarker(anyInt(), any()))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    // when
-    backupService.extendRange(partitionId, previousCheckpointId, newCheckpointId);
-
-    // then - verify storeRangeMarker is called before deleteRangeMarker
-    final var inOrder = inOrder(backupStore);
-    inOrder
-        .verify(backupStore, timeout(1000))
-        .storeRangeMarker(partitionId, new End(newCheckpointId));
-    inOrder
-        .verify(backupStore, timeout(1000))
-        .deleteRangeMarker(partitionId, new End(previousCheckpointId));
-  }
-
-  @Test
-  void shouldNotDeletePreviousEndMarkerIfStoringNewEndMarkerFails() {
-    // given
-    final int partitionId = 1;
-    final long previousCheckpointId = 5L;
-    final long newCheckpointId = 10L;
-
-    when(backupStore.storeRangeMarker(anyInt(), any()))
-        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")));
-
-    // when
-    backupService.extendRange(partitionId, previousCheckpointId, newCheckpointId);
-
-    // then
-    verify(backupStore, timeout(1000)).storeRangeMarker(partitionId, new End(newCheckpointId));
-    verify(backupStore, never()).deleteRangeMarker(anyInt(), any());
-  }
-
-  @Test
-  void shouldStartNewRangeByStoringStartAndEndMarkers() {
-    // given
-    final int partitionId = 1;
-    final long checkpointId = 10L;
-
-    when(backupStore.storeRangeMarker(anyInt(), any()))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    // when
-    backupService.startNewRange(partitionId, checkpointId);
-
-    // then - verify Start marker is stored before End marker
-    final var inOrder = inOrder(backupStore);
-    inOrder
-        .verify(backupStore, timeout(1000))
-        .storeRangeMarker(partitionId, new Start(checkpointId));
-    inOrder.verify(backupStore, timeout(1000)).storeRangeMarker(partitionId, new End(checkpointId));
-  }
-
-  @Test
-  void shouldNotStoreEndMarkerIfStoringStartMarkerFails() {
-    // given
-    final int partitionId = 1;
-    final long checkpointId = 10L;
-
-    when(backupStore.storeRangeMarker(eq(partitionId), eq(new Start(checkpointId))))
-        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")));
-
-    // when
-    backupService.startNewRange(partitionId, checkpointId);
-
-    // then
-    verify(backupStore, timeout(1000)).storeRangeMarker(partitionId, new Start(checkpointId));
-    verify(backupStore, never()).storeRangeMarker(partitionId, new End(checkpointId));
   }
 
   private <T> ActorFuture<T> failedFuture() {
@@ -613,7 +531,12 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore,
+            logStreamWriter,
+            backupRangeState,
+            checkpointMetadataState,
+            1,
+            new SimpleMeterRegistry());
     when(backupRangeState.getAllRanges()).thenReturn(List.of());
 
     // when
@@ -633,7 +556,12 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore,
+            logStreamWriter,
+            backupRangeState,
+            checkpointMetadataState,
+            1,
+            new SimpleMeterRegistry());
 
     when(backupRangeState.getAllRanges()).thenReturn(List.of(new BackupRange(1L, 5L)));
 
@@ -651,14 +579,13 @@ class BackupServiceImplTest {
         .succeedsWithin(Duration.ofMillis(100))
         .asInstanceOf(collection(BackupRangeStatus.class))
         .singleElement()
-        .isInstanceOf(BackupRangeStatus.Complete.class)
+        .isInstanceOf(BackupRangeStatus.class)
         .satisfies(
             status -> {
-              final var complete = (BackupRangeStatus.Complete) status;
-              assertThat(complete.first())
+              assertThat(status.first())
                   .isEqualTo(
                       new CheckpointInfo(1L, 100L, 1000L, CheckpointType.MANUAL_BACKUP, 50L));
-              assertThat(complete.last())
+              assertThat(status.last())
                   .isEqualTo(
                       new CheckpointInfo(5L, 500L, 5000L, CheckpointType.SCHEDULED_BACKUP, 400L));
             });
@@ -671,7 +598,12 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore,
+            logStreamWriter,
+            backupRangeState,
+            checkpointMetadataState,
+            1,
+            new SimpleMeterRegistry());
 
     when(backupRangeState.getAllRanges())
         .thenReturn(List.of(new BackupRange(1L, 3L), new BackupRange(5L, 8L)));
@@ -693,8 +625,7 @@ class BackupServiceImplTest {
     assertThat(result)
         .succeedsWithin(Duration.ofMillis(100))
         .asInstanceOf(collection(BackupRangeStatus.class))
-        .hasSize(2)
-        .allSatisfy(status -> assertThat(status).isInstanceOf(BackupRangeStatus.Complete.class));
+        .hasSize(2);
   }
 
   @Test
@@ -704,7 +635,12 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore,
+            logStreamWriter,
+            backupRangeState,
+            checkpointMetadataState,
+            1,
+            new SimpleMeterRegistry());
 
     when(backupRangeState.getAllRanges()).thenReturn(List.of(new BackupRange(1L, 5L)));
     when(checkpointMetadataState.getCheckpoint(1L)).thenReturn(null);
@@ -726,7 +662,12 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore,
+            logStreamWriter,
+            backupRangeState,
+            checkpointMetadataState,
+            1,
+            new SimpleMeterRegistry());
 
     when(backupRangeState.getAllRanges()).thenReturn(List.of(new BackupRange(1L, 5L)));
     final var firstMeta = mock(CheckpointMetadataValue.class);
@@ -750,7 +691,12 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore,
+            logStreamWriter,
+            backupRangeState,
+            checkpointMetadataState,
+            1,
+            new SimpleMeterRegistry());
 
     when(backupRangeState.getAllRanges()).thenReturn(List.of(new BackupRange(1L, 5L)));
     when(checkpointMetadataState.getCheckpoint(1L)).thenReturn(null);
@@ -773,7 +719,12 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore,
+            logStreamWriter,
+            backupRangeState,
+            checkpointMetadataState,
+            1,
+            new SimpleMeterRegistry());
 
     when(backupRangeState.getAllRanges())
         .thenReturn(List.of(new BackupRange(1L, 3L), new BackupRange(5L, 8L)));
@@ -796,12 +747,10 @@ class BackupServiceImplTest {
         .succeedsWithin(Duration.ofMillis(100))
         .asInstanceOf(collection(BackupRangeStatus.class))
         .singleElement()
-        .isInstanceOf(BackupRangeStatus.Complete.class)
         .satisfies(
             status -> {
-              final var complete = (BackupRangeStatus.Complete) status;
-              assertThat(complete.first().checkpointId()).isEqualTo(5L);
-              assertThat(complete.last().checkpointId()).isEqualTo(8L);
+              assertThat(status.first().checkpointId()).isEqualTo(5L);
+              assertThat(status.last().checkpointId()).isEqualTo(8L);
             });
   }
 
@@ -812,7 +761,12 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore,
+            logStreamWriter,
+            backupRangeState,
+            checkpointMetadataState,
+            1,
+            new SimpleMeterRegistry());
 
     when(backupRangeState.getAllRanges()).thenThrow(new RuntimeException("DB error"));
 
@@ -833,7 +787,12 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore,
+            logStreamWriter,
+            backupRangeState,
+            checkpointMetadataState,
+            1,
+            new SimpleMeterRegistry());
 
     when(backupRangeState.getAllRanges()).thenReturn(List.of(new BackupRange(3L, 3L)));
 
@@ -850,9 +809,8 @@ class BackupServiceImplTest {
         .singleElement()
         .satisfies(
             status -> {
-              final var complete = (BackupRangeStatus.Complete) status;
-              assertThat(complete.first()).isEqualTo(complete.last());
-              assertThat(complete.first().checkpointId()).isEqualTo(3L);
+              assertThat(status.first()).isEqualTo(status.last());
+              assertThat(status.first().checkpointId()).isEqualTo(3L);
             });
   }
 

@@ -219,6 +219,66 @@ public class BackupRequestHandlerTest extends GatewayTest {
   }
 
   @Test
+  public void shouldReturnIncompleteStatusWhenOnePartitionBackupIsDeleted() {
+    // given
+    final BackupQueryStub stub = new BackupQueryStub();
+    stub.withDeletedResponseFor(2);
+    stub.registerWith(brokerClient);
+
+    // when
+    final var future = requestHandler.getStatus(1);
+
+    // then
+    assertThat(future)
+        .succeedsWithin(Duration.ofMillis(500))
+        .returns(State.DELETED, BackupStatus::status);
+
+    final var status = future.toCompletableFuture().join();
+    assertThat(status.partitions())
+        .hasSize(brokerClient.getTopologyManager().getTopology().getPartitionsCount());
+  }
+
+  @Test
+  public void shouldReturnDeletedStatusWhenBackupIsDeleted() {
+    // given
+    final BackupQueryStub stub = new BackupQueryStub();
+    stub.withDeletedResponseFor(1);
+    stub.registerWith(brokerClient);
+
+    // when
+    final var future = requestHandler.getStatus(1);
+
+    // then
+    assertThat(future)
+        .succeedsWithin(Duration.ofMillis(500))
+        .returns(State.DELETED, BackupStatus::status);
+
+    final var status = future.toCompletableFuture().join();
+    assertThat(status.partitions())
+        .hasSize(brokerClient.getTopologyManager().getTopology().getPartitionsCount());
+  }
+
+  @Test
+  public void shouldReturnDeletedStatusOnAtLeastOneDeleted() {
+    // given
+    final BackupQueryStub stub = new BackupQueryStub();
+    stub.withDeletedResponseFor(2).withDoesNotExistFor(3);
+    stub.registerWith(brokerClient);
+
+    // when
+    final var future = requestHandler.getStatus(1);
+
+    // then
+    assertThat(future)
+        .succeedsWithin(Duration.ofMillis(500))
+        .returns(State.DELETED, BackupStatus::status);
+
+    final var status = future.toCompletableFuture().join();
+    assertThat(status.partitions())
+        .hasSize(brokerClient.getTopologyManager().getTopology().getPartitionsCount());
+  }
+
+  @Test
   public void shouldFailWhenQueryToOnePartitionFails() {
     // given
     final BackupQueryStub stub = new BackupQueryStub();
@@ -397,8 +457,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
                           1L,
                           CheckpointType.SCHEDULED_BACKUP,
                           now.minus(1, ChronoUnit.DAYS)),
-                      new CheckpointInfo(10, 100L, 150L, CheckpointType.SCHEDULED_BACKUP, now),
-                      Set.of(5L))));
+                      new CheckpointInfo(10, 100L, 150L, CheckpointType.SCHEDULED_BACKUP, now))));
           return new BrokerResponse<>(response);
         });
 

@@ -29,7 +29,7 @@ import {tracking} from 'modules/tracking';
 import {HelperModal} from 'modules/components/HelperModal';
 import {useProcessDefinitionKeyContext} from '../../../processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
-import {getFlowNode} from 'modules/utils/flowNodes';
+import {getElement} from 'modules/utils/elements';
 
 const localStorageKey = 'hideMoveModificationHelperModal';
 
@@ -45,9 +45,9 @@ const MoveAction: React.FC = observer(() => {
   });
 
   const businessObject: BusinessObject | null = flowNodeId
-    ? (getFlowNode({
+    ? (getElement({
         businessObjects: processDefinitionData?.diagramModel.elementsById,
-        flowNodeId,
+        elementId: flowNodeId,
       }) ?? null)
     : null;
 

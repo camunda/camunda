@@ -101,6 +101,7 @@ const DateRangeModal: React.FC<Props> = ({
                 <Stack gap={6}>
                   <div>
                     <DatePicker
+                      value={[defaultValues.fromDate, defaultValues.toDate]}
                       datePickerType="range"
                       onChange={(event) => {
                         const [fromDateTime, toDateTime] = event;

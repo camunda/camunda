@@ -1,0 +1,53 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {skipToken, useQuery, type UseQueryResult} from '@tanstack/react-query';
+import type {RequestError} from 'modules/request';
+import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import {fetchElementInstancesStatistics} from 'modules/api/v2/elementInstances/fetchElementInstancesStatistics';
+import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
+import isEmpty from 'lodash/isEmpty';
+import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
+import {useIsProcessInstanceRunning} from '../processInstance/useIsProcessInstanceRunning';
+import {queryKeys} from '../queryKeys';
+
+const useElementInstancesStatistics = <
+  T = GetProcessInstanceStatisticsResponseBody,
+>(
+  select?: (data: GetProcessInstanceStatisticsResponseBody) => T,
+  enabled: boolean = true,
+): UseQueryResult<T, RequestError> => {
+  const {processInstanceId} = useProcessInstancePageParams();
+  const {data: businessObjects} = useBusinessObjects();
+  const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
+
+  return useQuery({
+    queryKey: queryKeys.elementInstancesStatistics.get(processInstanceId ?? ''),
+    queryFn:
+      enabled && !!processInstanceId && !isEmpty(businessObjects)
+        ? async () => {
+            const {response, error} =
+              await fetchElementInstancesStatistics(processInstanceId);
+
+            if (response !== null) {
+              return response;
+            }
+
+            throw error;
+          }
+        : skipToken,
+    select,
+    refetchInterval: () => {
+      if (isProcessInstanceRunning) {
+        return 5000;
+      }
+    },
+  });
+};
+
+export {useElementInstancesStatistics};

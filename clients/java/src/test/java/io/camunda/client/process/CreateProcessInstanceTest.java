@@ -59,6 +59,7 @@ public final class CreateProcessInstanceTest extends ClientTest {
     assertThat(response.getVersion()).isEqualTo(12);
     assertThat(response.getProcessInstanceKey()).isEqualTo(32);
     assertThat(response.getTenantId()).isEqualTo("");
+    assertThat(response.getBusinessId()).isNull();
 
     final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
     assertThat(request.getProcessDefinitionKey()).isEqualTo(123);

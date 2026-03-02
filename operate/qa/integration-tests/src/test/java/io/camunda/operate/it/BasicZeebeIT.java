@@ -9,29 +9,24 @@ package io.camunda.operate.it;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
-import static io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto.INCIDENT;
+import static io.camunda.operate.webapp.reader.dto.listview.ProcessInstanceStateDto.INCIDENT;
 import static io.camunda.webapps.schema.entities.incident.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.webapps.schema.entities.listview.ProcessInstanceState.ACTIVE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
+import io.camunda.operate.webapp.reader.dto.activity.FlowNodeInstanceDto;
+import io.camunda.operate.webapp.reader.dto.activity.FlowNodeInstanceQueryDto;
+import io.camunda.operate.webapp.reader.dto.listview.ListViewProcessInstanceDto;
+import io.camunda.operate.webapp.reader.dto.listview.ListViewRequestDto;
+import io.camunda.operate.webapp.reader.dto.listview.ListViewResponseDto;
+import io.camunda.operate.webapp.reader.dto.listview.ProcessInstanceStateDto;
+import io.camunda.operate.webapp.reader.dto.metadata.FlowNodeInstanceMetadataDto;
+import io.camunda.operate.webapp.reader.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
@@ -43,8 +38,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 public class BasicZeebeIT extends OperateZeebeAbstractIT {
 
@@ -292,21 +285,8 @@ public class BasicZeebeIT extends OperateZeebeAbstractIT {
   protected void assertListViewResponse() throws Exception {
     final ListViewRequestDto listViewRequest = createGetAllProcessInstancesRequest();
     listViewRequest.setPageSize(100);
-    final MockHttpServletRequestBuilder request =
-        post(query())
-            .content(mockMvcTestRule.json(listViewRequest))
-            .contentType(mockMvcTestRule.getContentType());
-
-    final MvcResult mvcResult =
-        mockMvc
-            .perform(request)
-            .andExpect(status().isOk())
-            .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-            .andReturn();
-
-    // check that nothing is returned
     final ListViewResponseDto listViewResponse =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<ListViewResponseDto>() {});
+        listViewReader.queryProcessInstances(listViewRequest);
     assertThat(listViewResponse.getTotalCount()).isEqualTo(0);
     assertThat(listViewResponse.getProcessInstances()).hasSize(0);
   }
@@ -494,9 +474,5 @@ public class BasicZeebeIT extends OperateZeebeAbstractIT {
     assertThat(activity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
     assertThat(activity.getEndDate()).isAfterOrEqualTo(activity.getStartDate());
     assertThat(activity.getEndDate()).isBeforeOrEqualTo(OffsetDateTime.now());
-  }
-
-  private String query() {
-    return PROCESS_INSTANCE_URL;
   }
 }

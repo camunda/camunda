@@ -83,6 +83,20 @@ public class BackupQueryStub
         .setFailureReason("");
   }
 
+  private BackupStatusResponse getDeletedStatus(final BackupStatusRequest request) {
+    return new BackupStatusResponse()
+        .setBackupId(request.getBackupId())
+        .setStatus(BackupStatusCode.DELETED)
+        .setSnapshotId("sid")
+        .setFailureReason("")
+        .setCheckpointPosition(100)
+        .setBrokerId(1)
+        .setPartitionId(request.getPartitionId())
+        .setBrokerVersion("test")
+        .setCreatedAt(Instant.now().toString())
+        .setLastUpdated(Instant.now().toString());
+  }
+
   public BackupQueryStub withErrorResponseFor(final int partitionId) {
     responses.put(
         partitionId,
@@ -102,6 +116,11 @@ public class BackupQueryStub
 
   public BackupQueryStub withDoesNotExistFor(final int partitionId) {
     responses.put(partitionId, request -> new BrokerResponse<>(getDoesNotExistStatus(request)));
+    return this;
+  }
+
+  public BackupQueryStub withDeletedResponseFor(final int partitionId) {
+    responses.put(partitionId, request -> new BrokerResponse<>(getDeletedStatus(request)));
     return this;
   }
 }

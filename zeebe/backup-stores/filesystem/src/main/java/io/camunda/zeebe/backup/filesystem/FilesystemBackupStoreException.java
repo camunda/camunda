@@ -12,11 +12,4 @@ public abstract class FilesystemBackupStoreException extends RuntimeException {
   protected FilesystemBackupStoreException(final String message, final Throwable cause) {
     super(message, cause);
   }
-
-  public static final class BlobAlreadyExists extends FilesystemBackupStoreException {
-
-    public BlobAlreadyExists(final String message, final Throwable cause) {
-      super(message, cause);
-    }
-  }
 }

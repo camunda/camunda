@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import io.camunda.operate.webapp.reader.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
 import io.camunda.zeebe.protocol.record.value.PermissionType;

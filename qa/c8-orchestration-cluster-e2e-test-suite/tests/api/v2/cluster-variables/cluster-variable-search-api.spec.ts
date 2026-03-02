@@ -13,6 +13,7 @@ import {
   assertUnauthorizedRequest,
   assertBadRequest,
   assertPaginatedRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
@@ -20,7 +21,9 @@ import {
   createTenantClusterVariable,
   assertClusterVariableInResponse,
   createTenantAndStoreResponseFields,
+  assertClusterVariableUpdate,
 } from '@requestHelpers';
+import {validateResponse} from '../../../../json-body-assertions';
 
 test.describe.parallel('Search Cluster Variables API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -399,5 +402,55 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         totalItemsEqualTo: 0,
       });
     }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Finds Updated Cluster Variable Value', async ({request}) => {
+    await test.step('Create a global cluster variable', async () => {
+      await createGlobalClusterVariable(request, state, 'updatedSearchVar');
+      const variableName = state['updatedSearchVarName'] as string;
+      createdVariables.push({name: variableName});
+    });
+
+    const variableName = state['updatedSearchVarName'] as string;
+    const updatedValue = {status: 'updated', timestamp: Date.now()};
+
+    await test.step('Update the variable with a new value', async () => {
+      await assertClusterVariableUpdate(
+        request,
+        buildUrl('/cluster-variables/global/{name}', {name: variableName}),
+        updatedValue,
+        variableName,
+        'GLOBAL',
+      );
+    });
+
+    await test.step('Search for the variable and verify updated value', async () => {
+      await expect(async () => {
+        const res = await request.post(buildUrl('/cluster-variables/search'), {
+          headers: jsonHeaders(),
+          data: {
+            filter: {
+              name: variableName,
+            },
+          },
+        });
+
+        await assertStatusCode(res, 200);
+        await validateResponse(
+          {path: '/cluster-variables/search', method: 'POST', status: '200'},
+          res,
+        );
+        const body = await res.json();
+        expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
+        expect(body.items.length).toBeGreaterThan(0);
+
+        const found = body.items.find(
+          (item: Record<string, unknown>) => item.name === variableName,
+        );
+        expect(found).toBeDefined();
+        expect(found!.scope).toBe('GLOBAL');
+        expect(JSON.parse(found!.value as string)).toEqual(updatedValue);
+      }).toPass(defaultAssertionOptions);
+    });
   });
 });

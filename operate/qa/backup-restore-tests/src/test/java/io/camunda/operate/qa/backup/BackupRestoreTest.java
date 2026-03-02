@@ -200,6 +200,6 @@ public class BackupRestoreTest {
       "io.camunda.operate.util.rest",
       "io.camunda.operate.testhelpers",
       "io.camunda.operate.qa.backup",
-      "io.camunda.operate.webapp.rest.dto"
+      "io.camunda.operate.webapp.reader.dto"
     })
 class TestConfig {}

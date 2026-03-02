@@ -9,12 +9,12 @@ package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
-import io.camunda.zeebe.backup.api.BackupRangeMarker;
-import io.camunda.zeebe.backup.api.BackupRangeMarker.Deletion;
+import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.Checkpoint;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointMetadataValue;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
@@ -32,11 +32,13 @@ import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.SequencedCollection;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
@@ -51,17 +53,23 @@ final class BackupServiceImpl {
   private final LogStreamWriter logStreamWriter;
   private final DbBackupRangeState backupRangeState;
   private final DbCheckpointMetadataState checkpointMetadataState;
+  private final BackupMetadataSyncer metadataSyncer;
+  private final int partitionId;
   private ConcurrencyControl concurrencyControl;
 
   BackupServiceImpl(
       final BackupStore backupStore,
       final LogStreamWriter logStreamWriter,
       final DbBackupRangeState backupRangeState,
-      final DbCheckpointMetadataState checkpointMetadataState) {
+      final DbCheckpointMetadataState checkpointMetadataState,
+      final int partitionId,
+      final MeterRegistry meterRegistry) {
     this.backupStore = backupStore;
     this.logStreamWriter = logStreamWriter;
     this.backupRangeState = backupRangeState;
     this.checkpointMetadataState = checkpointMetadataState;
+    this.partitionId = partitionId;
+    metadataSyncer = new BackupMetadataSyncer(backupStore, meterRegistry);
   }
 
   void close() {
@@ -70,6 +78,7 @@ final class BackupServiceImpl {
         .setMessage("Closing backup service")
         .log();
     backupsInProgress.forEach(InProgressBackup::close);
+    metadataSyncer.close();
   }
 
   ActorFuture<Void> takeBackup(
@@ -361,11 +370,6 @@ final class BackupServiceImpl {
                             backup ->
                                 backupStore
                                     .markDeleted(backup.id())
-                                    .thenCompose(
-                                        ignored ->
-                                            backupStore.storeRangeMarker(
-                                                backup.id().partitionId(),
-                                                new Deletion(checkpointId)))
                                     .thenCompose(ignored -> backupStore.delete(backup.id())))
                         .toArray(CompletableFuture[]::new)))
         .exceptionally(
@@ -406,25 +410,7 @@ final class BackupServiceImpl {
         () -> {
           try {
             final var ranges = backupRangeState.getAllRanges();
-            final var result = new ArrayList<BackupRangeStatus>(ranges.size());
-            for (final var range : ranges) {
-              final var firstMeta = checkpointMetadataState.getCheckpoint(range.start());
-              final var lastMeta = checkpointMetadataState.getCheckpoint(range.end());
-              if (firstMeta == null || lastMeta == null) {
-                LOG.atWarn()
-                    .addKeyValue("rangeStart", range.start())
-                    .addKeyValue("rangeEnd", range.end())
-                    .addKeyValue("firstMetaPresent", firstMeta != null)
-                    .addKeyValue("lastMetaPresent", lastMeta != null)
-                    .setMessage("Checkpoint metadata missing for range boundary, skipping range")
-                    .log();
-                continue;
-              }
-              final var first = toCheckpointInfo(range.start(), firstMeta);
-              final var last = toCheckpointInfo(range.end(), lastMeta);
-              result.add(new BackupRangeStatus.Complete(first, last));
-            }
-            future.complete(result);
+            buildRangeStatuses(future, ranges);
           } catch (final Exception e) {
             LOG.atError()
                 .setMessage("Failed to read backup ranges from column families")
@@ -472,53 +458,54 @@ final class BackupServiceImpl {
         });
   }
 
-  public void extendRange(
-      final int partitionId, final long previousCheckpointId, final long newCheckpointId) {
-    backupStore
-        .storeRangeMarker(partitionId, new BackupRangeMarker.End(newCheckpointId))
-        .thenCompose(
-            ignored ->
-                backupStore.deleteRangeMarker(
-                    partitionId, new BackupRangeMarker.End(previousCheckpointId)))
-        .thenAccept(
-            ignored ->
-                LOG.atDebug()
-                    .addKeyValue("previousCheckpointId", previousCheckpointId)
-                    .addKeyValue("newCheckpointId", newCheckpointId)
-                    .setMessage("Extended backup range")
-                    .log())
-        .exceptionally(
-            error -> {
-              LOG.atWarn()
-                  .addKeyValue("previousCheckpointId", previousCheckpointId)
-                  .addKeyValue("newCheckpointId", newCheckpointId)
-                  .setCause(error)
-                  .setMessage("Failed to extend backup range")
-                  .log();
-              return null;
-            });
+  ActorFuture<Collection<BackupRangeStatus>> syncMetadata(
+      final SequencedCollection<Checkpoint> checkpoints,
+      final SequencedCollection<BackupRange> ranges,
+      final ConcurrencyControl executor) {
+    LOG.atDebug().setMessage("Syncing backup metadata").log();
+    final var future = executor.<Collection<BackupRangeStatus>>createFuture();
+    executor.run(
+        () -> {
+          try {
+            metadataSyncer
+                .store(partitionId, checkpoints, ranges)
+                .whenComplete(
+                    (ignore, error) -> {
+                      if (error != null) {
+                        future.completeExceptionally(error);
+                      } else {
+                        buildRangeStatuses(future, ranges);
+                      }
+                    });
+          } catch (final Exception e) {
+            LOG.atError().setCause(e).log("Failed to sync backup metadata");
+            future.completeExceptionally(e);
+          }
+        });
+    return future;
   }
 
-  public void startNewRange(final int partitionId, final long checkpointId) {
-    backupStore
-        .storeRangeMarker(partitionId, new BackupRangeMarker.Start(checkpointId))
-        .thenCompose(
-            ignored ->
-                backupStore.storeRangeMarker(partitionId, new BackupRangeMarker.End(checkpointId)))
-        .thenAccept(
-            ignored ->
-                LOG.atDebug()
-                    .addKeyValue("checkpointId", checkpointId)
-                    .setMessage("Started new backup range")
-                    .log())
-        .exceptionally(
-            error -> {
-              LOG.atWarn()
-                  .addKeyValue("checkpointId", checkpointId)
-                  .setCause(error)
-                  .setMessage("Failed to start new backup range")
-                  .log();
-              return null;
-            });
+  private void buildRangeStatuses(
+      final ActorFuture<Collection<BackupRangeStatus>> future,
+      final SequencedCollection<BackupRange> ranges) {
+    final var result = new ArrayList<BackupRangeStatus>(ranges.size());
+    for (final var range : ranges) {
+      final var firstMeta = checkpointMetadataState.getCheckpoint(range.start());
+      final var lastMeta = checkpointMetadataState.getCheckpoint(range.end());
+      if (firstMeta == null || lastMeta == null) {
+        LOG.atWarn()
+            .addKeyValue("rangeStart", range.start())
+            .addKeyValue("rangeEnd", range.end())
+            .addKeyValue("firstMetaPresent", firstMeta != null)
+            .addKeyValue("lastMetaPresent", lastMeta != null)
+            .setMessage("Checkpoint metadata missing for range boundary, skipping range")
+            .log();
+        continue;
+      }
+      final var first = toCheckpointInfo(range.start(), firstMeta);
+      final var last = toCheckpointInfo(range.end(), lastMeta);
+      result.add(new BackupRangeStatus(first, last));
+    }
+    future.complete(result);
   }
 }

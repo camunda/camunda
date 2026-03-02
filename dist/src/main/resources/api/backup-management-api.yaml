@@ -130,6 +130,25 @@ paths:
         '504':
           description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
+  /backupRuntime/state/sync:
+    post:
+      summary: Force-write backup metadata for all partitions
+      description: |
+        Triggers a sync of backup metadata (checkpoint entries and backup ranges) from
+        the internal state to the backup store for every partition, independent of any
+        backup being taken or confirmed.
+      responses:
+        '200':
+          $ref: '#/components/responses/CheckpointState'
+        '500':
+          description: Internal Error
+          $ref: '#/components/responses/Error'
+        '502':
+          description: Gateway failed to send request to the broker.
+          $ref: '#/components/responses/Error'
+        '504':
+          description: Request from gateway to broker timed out
+          $ref: '#/components/responses/Error'
 
 
   # Section on historic backups
@@ -673,12 +692,6 @@ components:
         end:
           allOf:
             - $ref: '#/components/schemas/PartitionBackupState'
-        missingCheckpoints:
-          type: array
-          description: List of missing checkpoint IDs within the backup range
-          items:
-            allOf:
-              - $ref: '#/components/schemas/CheckpointId'
 
     BackupType:
       title: Backup Type

@@ -21,6 +21,8 @@ import {
   Grid,
   ColumnRightPadding,
   CenteredRow,
+  StickySection,
+  EntityListStickyWrapper,
 } from "./components/styled";
 import {
   Button,
@@ -29,36 +31,26 @@ import {
   Dropdown,
   Heading,
   MultiSelect,
-  Section,
   Stack,
   TextInput,
 } from "@carbon/react";
-import {
-  AuditLogEntityType,
-  AuditLogOperationType,
-  AuditLogResult,
-  auditLogResultSchema,
-} from "@camunda/camunda-api-zod-schemas/8.9";
+import { auditLogResultSchema } from "@camunda/camunda-api-zod-schemas/8.9";
 import useDebounce from "react-debounced";
 import { useForm } from "react-hook-form";
 import { CellProperty } from "src/pages/operations-log/CellProperty";
 import { User } from "@carbon/react/icons";
 import { DateRangeField } from "src/components/form/DateRangeField";
+import {
+  ALLOWED_ENTITY_TYPES,
+  ALLOWED_OPERATION_TYPES,
+  ALLOWED_RESULT_TYPES,
+  AuditLogFilters,
+  auditLogSearchParamsSync,
+} from "src/pages/operations-log/filters";
+import { useSearchParamsFilters } from "src/utility/filters/useSearchParamsFilters";
+import { useUpdateEffect } from "src/utility/hooks/useUpdateEffect.ts";
 
 type AuditLogSort = { field: string; order: "asc" | "desc" };
-
-type DateRange = {
-  from?: string;
-  to?: string;
-};
-
-type Filters = {
-  operationType: AuditLogOperationType[];
-  entityType: AuditLogEntityType[];
-  result: AuditLogResult | "all";
-  actor: string;
-  timestampRange: DateRange;
-};
 
 const DEFAULT_SORT: AuditLogSort[] = [{ field: "timestamp", order: "desc" }];
 
@@ -67,42 +59,20 @@ const ORDER_MAP: Record<SortConfig["order"], AuditLogSort["order"]> = {
   DESC: "desc",
 };
 
-const ALLOWED_OPERATION_TYPES: AuditLogOperationType[] = [
-  "CREATE",
-  "ASSIGN",
-  "UNASSIGN",
-  "DELETE",
-  "UPDATE",
-] as const;
-
-const ALLOWED_ENTITY_TYPES: AuditLogEntityType[] = [
-  "AUTHORIZATION",
-  "ROLE",
-  "USER",
-  "GROUP",
-  "MAPPING_RULE",
-  "TENANT",
-] as const;
-
 const List: FC = () => {
   const { t } = useTranslate("operationsLog");
   const { t: tComponents } = useTranslate();
+  const { searchParamsFilters, setSearchParamsFilters } =
+    useSearchParamsFilters(auditLogSearchParamsSync);
 
-  const { watch, setValue, reset } = useForm<Filters>({
-    defaultValues: {
-      operationType: [],
-      entityType: [],
-      result: "all",
-      actor: "",
-      timestampRange: {},
-    },
+  const { watch, setValue, reset } = useForm<AuditLogFilters>({
+    values: searchParamsFilters,
   });
+  const filters = watch();
 
-  const operationType = watch("operationType");
-  const entityType = watch("entityType");
-  const result = watch("result");
-  const actor = watch("actor");
-  const timestampRange = watch("timestampRange");
+  useUpdateEffect(() => {
+    setSearchParamsFilters(filters);
+  }, [filters]);
 
   const debounce = useDebounce();
   const [debouncedActor, setDebouncedActor] = useState<string>();
@@ -142,19 +112,21 @@ const List: FC = () => {
       category: {
         $eq: "ADMIN",
       },
-      result: result !== "all" ? result : undefined,
+      result: filters.result !== "all" ? filters.result : undefined,
       operationType:
-        operationType && operationType.length > 0
-          ? { $in: operationType }
+        filters.operationType && filters.operationType.length > 0
+          ? { $in: filters.operationType }
           : undefined,
       entityType:
-        entityType && entityType.length > 0 ? { $in: entityType } : undefined,
+        filters.entityType && filters.entityType.length > 0
+          ? { $in: filters.entityType }
+          : undefined,
       actorId: debouncedActor,
       timestamp:
-        timestampRange.from && timestampRange.to
+        filters.timestampFrom && filters.timestampTo
           ? {
-              $gte: timestampRange.from,
-              $lte: timestampRange.to,
+              $gte: filters.timestampFrom,
+              $lte: filters.timestampTo,
             }
           : undefined,
     },
@@ -180,7 +152,7 @@ const List: FC = () => {
       />
       <Grid condensed fullWidth>
         <ColumnRightPadding sm={4} md={3} lg={4} xlg={3}>
-          <Section level={4}>
+          <StickySection level={4}>
             <Stack gap={5}>
               <Heading>{t("filter")}</Heading>
               <MultiSelect
@@ -188,7 +160,7 @@ const List: FC = () => {
                 items={ALLOWED_OPERATION_TYPES}
                 titleText={t("operationType")}
                 label={t("multiSelectLabel")}
-                selectedItems={operationType ? operationType : []}
+                selectedItems={filters.operationType}
                 itemToString={(selectedItem) =>
                   spaceAndCapitalize(selectedItem)
                 }
@@ -204,7 +176,7 @@ const List: FC = () => {
                 items={ALLOWED_ENTITY_TYPES}
                 titleText={t("entityType")}
                 label={t("multiSelectLabel")}
-                selectedItems={entityType ? entityType : []}
+                selectedItems={filters.entityType}
                 itemToString={(selectedItem) =>
                   spaceAndCapitalize(selectedItem)
                 }
@@ -228,7 +200,7 @@ const List: FC = () => {
                       : auditLogResultSchema.parse(selectedItem),
                   );
                 }}
-                items={["all", ...auditLogResultSchema.options]}
+                items={[...ALLOWED_RESULT_TYPES]}
                 itemToString={(item) =>
                   item === "all"
                     ? t("selectAll")
@@ -236,14 +208,14 @@ const List: FC = () => {
                       ? spaceAndCapitalize(item)
                       : ""
                 }
-                selectedItem={result}
+                selectedItem={filters.result}
                 size="sm"
               />
               <TextInput
                 id="actorId"
                 labelText={t("actor")}
                 placeholder={t("actorPlaceholder")}
-                value={actor}
+                value={filters.actor}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   const value = e.target.value.trim();
                   setValue("actor", value);
@@ -256,14 +228,12 @@ const List: FC = () => {
                 onModalClose={() => setIsDateRangeModalOpen(false)}
                 onClick={() => setIsDateRangeModalOpen(true)}
                 value={{
-                  from: timestampRange.from ?? "",
-                  to: timestampRange.to ?? "",
+                  from: filters.timestampFrom ?? "",
+                  to: filters.timestampTo ?? "",
                 }}
                 onChange={([from, to]) => {
-                  setValue("timestampRange", {
-                    from: from ? from.toISOString() : undefined,
-                    to: to ? to.toISOString() : undefined,
-                  });
+                  setValue("timestampFrom", from ? from.toISOString() : "");
+                  setValue("timestampTo", to ? to.toISOString() : "");
                 }}
                 popoverTitle="Filter by timestamp date range"
                 label={t("date")}
@@ -273,12 +243,12 @@ const List: FC = () => {
                   kind="ghost"
                   size="sm"
                   disabled={
-                    operationType.length === 0 &&
-                    entityType.length === 0 &&
-                    result === "all" &&
-                    !actor &&
-                    !timestampRange.from &&
-                    !timestampRange.to
+                    filters.operationType.length === 0 &&
+                    filters.entityType.length === 0 &&
+                    filters.result === "all" &&
+                    !filters.actor &&
+                    !filters.timestampFrom &&
+                    !filters.timestampTo
                   }
                   type="reset"
                   onClick={() => {
@@ -287,7 +257,8 @@ const List: FC = () => {
                       entityType: [],
                       result: "all",
                       actor: "",
-                      timestampRange: {},
+                      timestampFrom: "",
+                      timestampTo: "",
                     });
                     setDebouncedActor(undefined);
                   }}
@@ -296,59 +267,65 @@ const List: FC = () => {
                 </Button>
               </CenteredRow>
             </Stack>
-          </Section>
+          </StickySection>
         </ColumnRightPadding>
         <Column sm={4} md={5} lg={12} xlg={13}>
-          <EntityList
-            data={
-              auditLogs?.items.map((log) => ({
-                id: log.auditLogKey,
-                result:
-                  log.result === "SUCCESS" ? (
-                    <SuccessIcon size={20} />
-                  ) : (
-                    <ErrorIcon size={20} />
+          <EntityListStickyWrapper>
+            <EntityList
+              data={
+                auditLogs?.items.map((log) => ({
+                  id: log.auditLogKey,
+                  result:
+                    log.result === "SUCCESS" ? (
+                      <SuccessIcon size={20} />
+                    ) : (
+                      <ErrorIcon size={20} />
+                    ),
+                  operationType: (
+                    <OperationLogName>
+                      {spaceAndCapitalize(log.operationType)}
+                    </OperationLogName>
                   ),
-                operationType: (
-                  <OperationLogName>
-                    {spaceAndCapitalize(log.operationType)}
-                  </OperationLogName>
-                ),
-                entityType: spaceAndCapitalize(log.entityType),
-                reference: (
-                  <CodeSnippet type="inline">{log.entityKey}</CodeSnippet>
-                ),
-                property: <CellProperty item={log} />,
-                actorId: log.actorId ? (
-                  <OperationLogName>
-                    <User /> {log.actorId}
-                  </OperationLogName>
-                ) : (
-                  "-"
-                ),
-                timestamp: new Date(log.timestamp).toLocaleString(),
-              })) || []
-            }
-            headers={[
-              { header: "", key: "result" },
-              {
-                header: t("operationType"),
-                key: "operationType",
-                isSortable: true,
-              },
-              { header: t("entityType"), key: "entityType", isSortable: true },
-              { header: t("reference"), key: "reference" },
-              { header: t("property"), key: "property" },
-              { header: t("actor"), key: "actorId", isSortable: true },
-              { header: t("date"), key: "timestamp", isSortable: true },
-            ]}
-            loading={loading}
-            setSort={handleSort}
-            page={{ ...page, ...auditLogs?.page }}
-            pageSizes={[50, 100, 200]}
-            setPageNumber={setPageNumber}
-            setPageSize={setPageSize}
-          />
+                  entityType: spaceAndCapitalize(log.entityType),
+                  reference: (
+                    <CodeSnippet type="inline">{log.entityKey}</CodeSnippet>
+                  ),
+                  property: <CellProperty item={log} />,
+                  actorId: log.actorId ? (
+                    <OperationLogName>
+                      <User /> {log.actorId}
+                    </OperationLogName>
+                  ) : (
+                    "-"
+                  ),
+                  timestamp: new Date(log.timestamp).toLocaleString(),
+                })) || []
+              }
+              headers={[
+                { header: "", key: "result" },
+                {
+                  header: t("operationType"),
+                  key: "operationType",
+                  isSortable: true,
+                },
+                {
+                  header: t("entityType"),
+                  key: "entityType",
+                  isSortable: true,
+                },
+                { header: t("reference"), key: "reference" },
+                { header: t("property"), key: "property" },
+                { header: t("actor"), key: "actorId", isSortable: true },
+                { header: t("date"), key: "timestamp", isSortable: true },
+              ]}
+              loading={loading}
+              setSort={handleSort}
+              page={{ ...page, ...auditLogs?.page }}
+              pageSizes={[50, 100, 200]}
+              setPageNumber={setPageNumber}
+              setPageSize={setPageSize}
+            />
+          </EntityListStickyWrapper>
         </Column>
       </Grid>
       {!loading && !success && (

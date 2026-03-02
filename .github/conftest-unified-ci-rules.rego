@@ -21,10 +21,10 @@ warn[msg] {
     # only enforced on workflows that opted-in
     input.env.GHA_BEST_PRACTICES_LINTER == "enabled"
 
-    count(get_jobs_with_timeoutminutes_higher_than(input.jobs, 15)) > 0
+    count(get_jobs_with_timeoutminutes_higher_than(input.jobs, 30)) > 0
 
-    msg := sprintf("There are GitHub Actions jobs with too high (>15) timeout-minutes! Affected job IDs: %s",
-        [concat(", ", get_jobs_with_timeoutminutes_higher_than(input.jobs, 15))])
+    msg := sprintf("There are GitHub Actions jobs with too high (>30) timeout-minutes! Affected job IDs: %s",
+        [concat(", ", get_jobs_with_timeoutminutes_higher_than(input.jobs, 30))])
 }
 
 deny[msg] {
@@ -167,6 +167,9 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         job_id != "setup-tests"
         job_id != "utils-flaky-tests-summary"
         job_id != "fe-unit-tests-merge"
+        # temporary for docker-build-helm-integration.yml workflow from alwaysgreen
+        job_id != "format-identifier"
+        job_id != "should-run"
 
         # not enforced on jobs that invoke other reusable workflows (instead enforced there)
         not job.uses

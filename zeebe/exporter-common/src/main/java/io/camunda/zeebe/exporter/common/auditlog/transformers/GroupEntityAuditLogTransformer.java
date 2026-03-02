@@ -22,6 +22,7 @@ public class GroupEntityAuditLogTransformer implements AuditLogTransformer<Group
   public void transform(final Record<GroupRecordValue> record, final AuditLogEntry log) {
     final GroupRecordValue value = record.getValue();
     log.setEntityKey(value.getGroupId())
+        .setEntityDescription(value.getName())
         .setRelatedEntityKey(value.getEntityId())
         .setRelatedEntityType(
             AuditLogTransformerConfigs.mapEntityTypeToAuditLogEntityType(value.getEntityType()));

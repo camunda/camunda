@@ -1,0 +1,183 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {modificationsStore} from 'modules/stores/modifications';
+import {
+  useModificationsByElement,
+  useWillAllElementsBeCanceled,
+} from './modifications';
+import {useElementInstancesStatistics} from 'modules/queries/elementInstancesStatistics/useElementInstancesStatistics';
+import {TOKEN_OPERATIONS} from 'modules/constants';
+import {hasPendingCancelOrMoveModification} from 'modules/utils/modifications';
+import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {getElementName} from 'modules/utils/elements';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
+import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
+import {useEffect} from 'react';
+import {reaction} from 'mobx';
+
+const useHasPendingCancelOrMoveModification = () => {
+  const willAllElementsBeCanceled = useWillAllElementsBeCanceled();
+  const modificationsByElement = useModificationsByElement();
+  const {hasSelection, selectedElementInstanceKey, selectedElementId} =
+    useProcessInstanceElementSelection();
+
+  if (!hasSelection || selectedElementId === null) {
+    return willAllElementsBeCanceled;
+  }
+
+  if (modificationsByElement[selectedElementId]?.areAllTokensCanceled) {
+    return true;
+  }
+
+  return (
+    selectedElementInstanceKey !== null &&
+    hasPendingCancelOrMoveModification({
+      flowNodeId: selectedElementId,
+      flowNodeInstanceKey: selectedElementInstanceKey,
+      modificationsByFlowNode: modificationsByElement,
+    })
+  );
+};
+
+/**
+ * This hook adds a reaction to the flow node modifications when mounted
+ * and removes the reaction when unmounted.
+ *
+ * When the user adds or moves a token to an element and
+ * when the user selects the newly created placeholder element from the instance history and
+ * when the user undoes the last modification
+ * then the element selection is cleared.
+ */
+const useClearSelectionOnModificationUndo = () => {
+  const {
+    selectedElementId,
+    selectedElementInstanceKey,
+    resolvedElementInstance,
+    clearSelection,
+  } = useProcessInstanceElementSelection();
+
+  useEffect(() => {
+    const lastModificationRemovedDisposer = reaction(
+      () => modificationsStore.flowNodeModifications,
+      (modificationsNext, modificationsPrev) => {
+        if (
+          selectedElementId === null ||
+          modificationsNext.length >= modificationsPrev.length
+        ) {
+          return;
+        }
+
+        const elementInstanceKey =
+          resolvedElementInstance?.elementInstanceKey ??
+          selectedElementInstanceKey;
+
+        if (elementInstanceKey === null) {
+          return;
+        }
+
+        const newScopeIds = modificationsStore.flowNodeModifications.reduce<
+          string[]
+        >((scopeIds, modification) => {
+          if (modification.operation === 'ADD_TOKEN') {
+            return [
+              ...scopeIds,
+              ...Object.values(modification.parentScopeIds),
+              modification.scopeId,
+            ];
+          }
+
+          if (modification.operation === 'MOVE_TOKEN') {
+            return [
+              ...scopeIds,
+              ...Object.values(modification.parentScopeIds),
+              ...modification.scopeIds,
+            ];
+          }
+
+          return scopeIds;
+        }, []);
+
+        if (!newScopeIds.includes(elementInstanceKey)) {
+          clearSelection();
+        }
+      },
+    );
+
+    return () => lastModificationRemovedDisposer();
+  }, [
+    clearSelection,
+    selectedElementId,
+    selectedElementInstanceKey,
+    resolvedElementInstance,
+  ]);
+};
+
+const useHasRunningOrFinishedTokens = () => {
+  const {data: statistics} = useElementInstancesStatistics();
+  const {selectedElementId} = useProcessInstanceElementSelection();
+
+  return (
+    selectedElementId !== null &&
+    statistics?.items.some(({elementId}) => elementId === selectedElementId)
+  );
+};
+
+const useNewTokenCountForSelectedNode = () => {
+  const modificationsByElement = useModificationsByElement();
+  const {selectedElementId} = useProcessInstanceElementSelection();
+
+  if (!selectedElementId) {
+    return 0;
+  }
+
+  return (
+    (modificationsByElement[selectedElementId]?.newTokens ?? 0) +
+    modificationsStore.flowNodeModifications.filter(
+      (modification) =>
+        modification.operation !== TOKEN_OPERATIONS.CANCEL_TOKEN &&
+        Object.keys(modification.parentScopeIds).includes(selectedElementId),
+    ).length
+  );
+};
+
+const useIsPlaceholderSelected = () => {
+  const hasRunningOrFinishedTokens = useHasRunningOrFinishedTokens();
+  const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
+  const {isSelectedInstancePlaceholder} = useProcessInstanceElementSelection();
+
+  return (
+    isSelectedInstancePlaceholder ||
+    (!hasRunningOrFinishedTokens && newTokenCountForSelectedNode === 1)
+  );
+};
+
+const useSelectedElementName = () => {
+  const {data: processInstance} = useProcessInstance();
+  const {data: businessObjects} = useBusinessObjects();
+  const {hasSelection, selectedElementId} =
+    useProcessInstanceElementSelection();
+
+  if (!hasSelection) {
+    return processInstance?.processDefinitionName ?? '';
+  }
+
+  return getElementName({
+    businessObjects,
+    elementId: selectedElementId ?? undefined,
+  });
+};
+
+export {
+  useHasPendingCancelOrMoveModification,
+  useHasRunningOrFinishedTokens,
+  useIsPlaceholderSelected,
+  useNewTokenCountForSelectedNode,
+  useSelectedElementName,
+  useClearSelectionOnModificationUndo,
+};

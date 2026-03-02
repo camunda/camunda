@@ -63,7 +63,7 @@ jobs:
     name: "Unit - Front End"
     if: inputs.runFeTests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -94,7 +94,7 @@ jobs:
         run: yarn test:ci
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: optimize-unit-tests-frontend-junit
           path: |

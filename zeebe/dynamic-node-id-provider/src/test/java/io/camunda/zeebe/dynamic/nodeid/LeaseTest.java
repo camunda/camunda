@@ -68,6 +68,32 @@ public class LeaseTest {
   }
 
   @Test
+  public void shouldReturnIsExpiredBeyondThreshold() {
+    final var threshold = Duration.ofSeconds(10);
+
+    // lease is still valid
+    assertThat(lease.isExpiredBeyondThreshold(Instant.ofEpochMilli(originalTimestamp), threshold))
+        .isFalse();
+
+    // lease just expired, within threshold
+    assertThat(
+            lease.isExpiredBeyondThreshold(Instant.ofEpochMilli(originalTimestamp + 1), threshold))
+        .isFalse();
+
+    // lease expired exactly at threshold boundary
+    assertThat(
+            lease.isExpiredBeyondThreshold(
+                Instant.ofEpochMilli(originalTimestamp + threshold.toMillis()), threshold))
+        .isTrue();
+
+    // lease expired beyond threshold
+    assertThat(
+            lease.isExpiredBeyondThreshold(
+                Instant.ofEpochMilli(originalTimestamp + threshold.toMillis() + 1), threshold))
+        .isTrue();
+  }
+
+  @Test
   public void shouldSerializeDeserializeToJson() {
     // when
     final var serialized = lease.toJson(OBJECT_MAPPER);

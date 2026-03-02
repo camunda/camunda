@@ -1,6 +1,6 @@
 {
 	"name": "@camunda/camunda-api-zod-schemas",
-	"version": "0.0.45",
+	"version": "0.0.46",
 	"license": "LicenseRef-Camunda-1.0",
 	"description": "Zod schemas and TypeScript types for Camunda 8 unified API",
 	"author": "Vinicius Goulart <vinicius.goulart@camunda.com>",
@@ -378,14 +378,26 @@
 				"default": "./dist/8.9/incident.js"
 			}
 		},
+		"./8.9/cluster-variable": {
+			"import": {
+				"types": "./dist/8.9/cluster-variable.d.ts",
+				"default": "./dist/8.9/cluster-variable.js"
+			}
+		},
+		"./8.9/global-task-listener": {
+			"import": {
+				"types": "./dist/8.9/global-task-listener.d.ts",
+				"default": "./dist/8.9/global-task-listener.js"
+			}
+		},
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
 		"access": "public"
 	},
-	"packageManager": "npm@11.10.0",
+	"packageManager": "npm@11.11.0",
 	"devDependencies": {
-		"@types/node": "25.3.0",
+		"@types/node": "25.3.3",
 		"changelogen": "0.6.2",
 		"typescript": "5.9.3",
 		"vite": "7.3.1",

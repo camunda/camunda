@@ -10,7 +10,6 @@ import {
   CodeSnippet,
   Modal,
   StructuredListBody,
-  StructuredListCell,
   StructuredListWrapper,
 } from '@carbon/react';
 import {Link} from 'modules/components/Link';
@@ -21,6 +20,8 @@ import {
   CheckmarkOutline,
   EventSchedule,
   UserAvatar,
+  Password,
+  ParentNode,
 } from '@carbon/react/icons';
 import {
   TitleListCell,
@@ -29,6 +30,7 @@ import {
   ParagraphWithIcon,
   VerticallyAlignedRow,
   IconTextWithTopMargin,
+  SecondColumn,
 } from './styled';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
@@ -37,10 +39,13 @@ import {
   formatBatchTitle,
   formatModalHeading,
   getActorIcon,
+  mapToCellDetailsData,
+  mapToCellEntityKeyData,
 } from 'modules/utils/operationsLog';
 import {Paths} from 'modules/Routes';
 import {useMemo} from 'react';
 import AiAgentIcon from 'modules/components/Icon/ai-agent.svg?react';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 type Props = {
   isOpen: boolean;
@@ -55,6 +60,14 @@ type DetailsModalState = {
 
 const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
   const ActorIcon = useMemo(() => getActorIcon(auditLog), [auditLog]);
+  const clientConfig = getClientConfig();
+  const entityKeyData = mapToCellEntityKeyData(
+    auditLog,
+    auditLog.processDefinitionId,
+    auditLog.decisionDefinitionId,
+    clientConfig?.tasklistUrl ?? undefined,
+  );
+  const detailsData = mapToCellDetailsData(auditLog);
 
   return (
     <Modal
@@ -86,7 +99,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 Status
               </IconText>
             </FirstColumn>
-            <StructuredListCell>
+            <SecondColumn>
               <IconText>
                 <OperationsLogStateIcon
                   state={auditLog.result}
@@ -94,7 +107,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 />
                 {spaceAndCapitalize(auditLog.result.toString())}
               </IconText>
-            </StructuredListCell>
+            </SecondColumn>
           </VerticallyAlignedRow>
           <VerticallyAlignedRow>
             <FirstColumn>
@@ -103,23 +116,72 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 Actor
               </IconText>
             </FirstColumn>
-            <StructuredListCell>
+            <SecondColumn>
               {!ActorIcon ? (
                 auditLog.actorId
               ) : (
                 <IconText>
                   <ActorIcon />
-                  <CodeSnippet wrapText>{auditLog.actorId}</CodeSnippet>
+                  <CodeSnippet type="inline" wrapText>
+                    {auditLog.actorId}
+                  </CodeSnippet>
                 </IconText>
               )}
               {auditLog.agentElementId && (
                 <IconTextWithTopMargin>
                   <AiAgentIcon />
-                  <CodeSnippet wrapText>{auditLog.agentElementId}</CodeSnippet>
+                  <CodeSnippet type="inline" wrapText>
+                    {auditLog.agentElementId}
+                  </CodeSnippet>
                 </IconTextWithTopMargin>
               )}
-            </StructuredListCell>
+            </SecondColumn>
           </VerticallyAlignedRow>
+          <VerticallyAlignedRow>
+            <FirstColumn noWrap>
+              <IconText>
+                <Password />
+                Entity key
+              </IconText>
+            </FirstColumn>
+            <SecondColumn>
+              {entityKeyData.link ? (
+                <Link
+                  to={entityKeyData.link}
+                  title={entityKeyData.linkLabel}
+                  aria-label={entityKeyData.linkLabel}
+                >
+                  {entityKeyData.label}
+                </Link>
+              ) : (
+                entityKeyData.label
+              )}
+              &nbsp;
+              {auditLog.entityDescription ?? entityKeyData.name}
+            </SecondColumn>
+          </VerticallyAlignedRow>
+          {['USER_TASK', 'INCIDENT', 'VARIABLE'].includes(
+            auditLog.entityType,
+          ) ? (
+            <VerticallyAlignedRow>
+              <FirstColumn noWrap>
+                <IconText>
+                  <ParentNode />
+                  Parent entity
+                </IconText>
+              </FirstColumn>
+              <SecondColumn>
+                <Link
+                  to={Paths.processInstance(auditLog.processInstanceKey)}
+                  aria-label={`View process instance ${auditLog.processInstanceKey}`}
+                >
+                  {auditLog.processInstanceKey}
+                </Link>
+                &nbsp;
+                <em>{auditLog.processDefinitionId}</em>
+              </SecondColumn>
+            </VerticallyAlignedRow>
+          ) : undefined}
           <VerticallyAlignedRow>
             <FirstColumn noWrap>
               <IconText>
@@ -127,9 +189,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 Date
               </IconText>
             </FirstColumn>
-            <StructuredListCell>
-              {formatDate(auditLog.timestamp)}
-            </StructuredListCell>
+            <SecondColumn>{formatDate(auditLog.timestamp)}</SecondColumn>
           </VerticallyAlignedRow>
           {auditLog.entityType === 'BATCH' && (
             <>
@@ -147,7 +207,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                     </CodeSnippet>
                   </IconText>
                 </FirstColumn>
-                <StructuredListCell>
+                <SecondColumn>
                   <IconText>
                     <Link
                       to={Paths.batchOperation(
@@ -159,10 +219,21 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                       <ArrowRight />
                     </Link>
                   </IconText>
-                </StructuredListCell>
+                </SecondColumn>
               </VerticallyAlignedRow>
             </>
           )}
+          {detailsData.property ? (
+            <>
+              <VerticallyAlignedRow>
+                <TitleListCell>Details:</TitleListCell>
+              </VerticallyAlignedRow>
+              <VerticallyAlignedRow>
+                <FirstColumn noWrap>{detailsData.property}</FirstColumn>
+                <SecondColumn>{detailsData.value}</SecondColumn>
+              </VerticallyAlignedRow>
+            </>
+          ) : undefined}
         </StructuredListBody>
       </StructuredListWrapper>
     </Modal>

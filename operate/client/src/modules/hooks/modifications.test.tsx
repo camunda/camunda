@@ -11,14 +11,14 @@ import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {
-  useModificationsByFlowNode,
-  useWillAllFlowNodesBeCanceled,
+  useModificationsByElement,
+  useWillAllElementsBeCanceled,
   useNewScopeKeyForElement,
   useAvailableModifications,
 } from './modifications';
 import {modificationsStore} from 'modules/stores/modifications';
 import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {
@@ -54,7 +54,7 @@ const getWrapper = () => {
 };
 
 describe('modifications hooks', () => {
-  describe('useWillAllFlowNodesBeCanceled', () => {
+  describe('useWillAllElementsBeCanceled', () => {
     beforeEach(() => {
       modificationsStore.reset();
       mockFetchProcessInstance().withSuccess(mockProcessInstance);
@@ -80,12 +80,12 @@ describe('modifications hooks', () => {
         ],
       };
 
-      mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+      mockFetchElementInstancesStatistics().withSuccess(mockData);
       mockFetchProcessDefinitionXml().withSuccess(
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
+      const {result} = renderHook(() => useWillAllElementsBeCanceled(), {
         wrapper: getWrapper(),
       });
 
@@ -111,7 +111,7 @@ describe('modifications hooks', () => {
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
+      const {result} = renderHook(() => useWillAllElementsBeCanceled(), {
         wrapper: getWrapper(),
       });
 
@@ -138,12 +138,12 @@ describe('modifications hooks', () => {
         ],
       };
 
-      mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+      mockFetchElementInstancesStatistics().withSuccess(mockData);
       mockFetchProcessDefinitionXml().withSuccess(
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
+      const {result} = renderHook(() => useWillAllElementsBeCanceled(), {
         wrapper: getWrapper(),
       });
 
@@ -170,12 +170,12 @@ describe('modifications hooks', () => {
         ],
       };
 
-      mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+      mockFetchElementInstancesStatistics().withSuccess(mockData);
       mockFetchProcessDefinitionXml().withSuccess(
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
+      const {result} = renderHook(() => useWillAllElementsBeCanceled(), {
         wrapper: getWrapper(),
       });
 
@@ -183,12 +183,12 @@ describe('modifications hooks', () => {
     });
 
     it('should return false if there are no statistics', async () => {
-      mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+      mockFetchElementInstancesStatistics().withSuccess({items: []});
       mockFetchProcessDefinitionXml().withSuccess(
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
+      const {result} = renderHook(() => useWillAllElementsBeCanceled(), {
         wrapper: getWrapper(),
       });
 
@@ -196,7 +196,7 @@ describe('modifications hooks', () => {
     });
   });
 
-  describe('useModificationsByFlowNode', () => {
+  describe('useModificationsByElement', () => {
     beforeEach(() => {
       mockFetchProcessInstance().withSuccess(mockProcessInstance);
     });
@@ -218,7 +218,7 @@ describe('modifications hooks', () => {
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useModificationsByFlowNode(), {
+      const {result} = renderHook(() => useModificationsByElement(), {
         wrapper: getWrapper(),
       });
 
@@ -248,7 +248,7 @@ describe('modifications hooks', () => {
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useModificationsByFlowNode(), {
+      const {result} = renderHook(() => useModificationsByElement(), {
         wrapper: getWrapper(),
       });
 
@@ -281,7 +281,7 @@ describe('modifications hooks', () => {
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useModificationsByFlowNode(), {
+      const {result} = renderHook(() => useModificationsByElement(), {
         wrapper: getWrapper(),
       });
 
@@ -422,7 +422,7 @@ describe('modifications hooks', () => {
     beforeEach(() => {
       mockFetchProcessInstance().withSuccess(mockProcessInstance);
       mockFetchProcessDefinitionXml().withSuccess(eventSubProcess);
-      mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+      mockFetchElementInstancesStatistics().withSuccess({items: []});
     });
 
     afterEach(() => {
@@ -491,7 +491,7 @@ describe('modifications hooks', () => {
     });
 
     it('should include add, cancel-instance, and move-instance with single active instance', async () => {
-      mockFetchFlownodeInstancesStatistics().withSuccess({
+      mockFetchElementInstancesStatistics().withSuccess({
         items: [
           {
             elementId: 'ServiceTask_1daop2o',
@@ -523,7 +523,7 @@ describe('modifications hooks', () => {
     });
 
     it('should include add, cancel-all, and move-all with multiple active instances', async () => {
-      mockFetchFlownodeInstancesStatistics().withSuccess({
+      mockFetchElementInstancesStatistics().withSuccess({
         items: [
           {
             elementId: 'ServiceTask_1daop2o',
@@ -549,7 +549,7 @@ describe('modifications hooks', () => {
     });
 
     it('should not include move options for subprocess even with active instances', async () => {
-      mockFetchFlownodeInstancesStatistics().withSuccess({
+      mockFetchElementInstancesStatistics().withSuccess({
         items: [
           {
             elementId: 'ServiceTask_0ruokei',

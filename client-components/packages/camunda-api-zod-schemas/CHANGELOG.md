@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.46
+
+### 🚀 Enhancements
+
+- extend zod schemas ([#46832](https://github.com/camunda/camunda/issues/46832))
+
+### ❤️ Contributors
+
+- Yuliia Saienko ([@juliasaienko](https://github.com/juliasaienko))
+
 ## v0.0.45
 
 ### 🩹 Fixes

@@ -53,6 +53,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-cluster-config</artifactId>
     </dependency>
 
@@ -196,11 +201,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>dynamic-node-id-provider</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
     </dependency>
   </dependencies>
 

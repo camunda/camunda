@@ -104,6 +104,14 @@ public class NodeIdProvider {
     private Duration readinessCheckTimeout = Duration.ofMinutes(2);
 
     /**
+     * If a lease has been expired for longer than this threshold, treat it as if the previous node
+     * gracefully shut down. This timeout avoid copying the data folder from the previous version,
+     * reducing I/O and making the startup faster. However, it should be high enough so that the
+     * previous node is terminated or removed from the RAFT replication group.
+     */
+    private Duration expiredLeaseThreshold = Duration.ofMinutes(2);
+
+    /**
      * Name of the bucket where the leases will be stored. The bucket must be already created. The
      * bucket must not be shared with other zeebe clusters. bucketName must not be empty.
      */
@@ -246,6 +254,15 @@ public class NodeIdProvider {
     public void setReadinessCheckTimeout(final Duration readinessCheckTimeout) {
       this.readinessCheckTimeout =
           Objects.requireNonNull(readinessCheckTimeout, "readinessCheckTimeout cannot be null");
+    }
+
+    public Duration getExpiredLeaseThreshold() {
+      return expiredLeaseThreshold;
+    }
+
+    public void setExpiredLeaseThreshold(final Duration expiredLeaseThreshold) {
+      this.expiredLeaseThreshold =
+          Objects.requireNonNull(expiredLeaseThreshold, "expiredLeaseThreshold cannot be null");
     }
   }
 

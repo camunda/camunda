@@ -89,6 +89,7 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.JsonSerializable;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -652,7 +653,8 @@ final class JsonSerializableToJsonTest {
                   .setExpression("=10 + 5")
                   .setResultValue(wrapString("15"))
                   .setTenantId("test-tenant")
-                  .setWarnings(List.of("warning1", "warning2"));
+                  .setWarnings(List.of("warning1", "warning2"))
+                  .setVariables(VARIABLES_MSGPACK);
               return record;
             },
         """
@@ -660,7 +662,10 @@ final class JsonSerializableToJsonTest {
                   "tenantId":"test-tenant",
                   "expression":"=10 + 5",
                   "resultValue":49,
-                  "warnings":["warning1","warning2"]
+                  "warnings":["warning1","warning2"],
+                  "variables":{
+                    "foo":"bar"
+                  }
                 }
                 """
       },
@@ -1603,6 +1608,7 @@ final class JsonSerializableToJsonTest {
               final long processDefinitionKey = 4;
               final String bpmnProcessId = "process";
               final long rootProcessInstanceKey = 5;
+              final VariableSourceRecord source = VariableSourceRecord.api();
 
               return new VariableRecord()
                   .setName(wrapString(name))
@@ -1611,6 +1617,7 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(processInstanceKey)
                   .setProcessDefinitionKey(processDefinitionKey)
                   .setBpmnProcessId(wrapString(bpmnProcessId))
+                  .setSource(source)
                   .setRootProcessInstanceKey(rootProcessInstanceKey);
             },
         """
@@ -1623,7 +1630,10 @@ final class JsonSerializableToJsonTest {
                   "value": "1",
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": 5,
-                  "elementInstanceKey": 3
+                  "elementInstanceKey": 3,
+                  "source": {
+                    "type":"API"
+                  }
                 }
                 """
       },
@@ -1640,6 +1650,7 @@ final class JsonSerializableToJsonTest {
               final long processDefinitionKey = 4;
               final String bpmnProcessId = "process";
               final long rootProcessInstanceKey = 5;
+              final VariableSourceRecord source = VariableSourceRecord.api();
 
               return new VariableRecord()
                   .setName(wrapString(name))
@@ -1648,6 +1659,7 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(processInstanceKey)
                   .setProcessDefinitionKey(processDefinitionKey)
                   .setBpmnProcessId(wrapString(bpmnProcessId))
+                  .setSource(source)
                   .setTenantId("tenant-test")
                   .setRootProcessInstanceKey(rootProcessInstanceKey);
             },
@@ -1661,7 +1673,10 @@ final class JsonSerializableToJsonTest {
                   "value": "1",
                   "tenantId": "tenant-test",
                   "rootProcessInstanceKey": 5,
-                  "elementInstanceKey": 3
+                  "elementInstanceKey": 3,
+                  "source": {
+                    "type":"API"
+                  }
                 }
                 """
       },

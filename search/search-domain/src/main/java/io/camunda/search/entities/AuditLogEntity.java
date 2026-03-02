@@ -317,6 +317,7 @@ public record AuditLogEntity(
     PROCESS_INSTANCE,
     VARIABLE,
     INCIDENT,
+    JOB,
     USER_TASK,
     DECISION,
     BATCH,

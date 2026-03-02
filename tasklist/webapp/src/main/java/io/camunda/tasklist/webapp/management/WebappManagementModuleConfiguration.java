@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.management;
 
-import io.camunda.configuration.conditions.ConditionalOnWebappEnabled;
+import io.camunda.spring.utils.ConditionalOnWebappEnabled;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;

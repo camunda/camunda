@@ -12,7 +12,7 @@ import pluralSuffix from 'modules/utils/pluralSuffix';
 import {Container, InlineNotification, Button} from './styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
-import {getFlowNodeName} from 'modules/utils/flowNodes';
+import {getElementName} from 'modules/utils/elements';
 import {getSelectedProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';
 
 type Props = {
@@ -40,14 +40,14 @@ const BatchModificationNotification: React.FC<Props> = observer(
       sourceFlowNodeId,
     );
 
-    const sourceFlowNodeName = getFlowNodeName({
+    const sourceFlowNodeName = getElementName({
       businessObjects: processDefinitionData?.diagramModel.elementsById,
-      flowNodeId: sourceFlowNodeId,
+      elementId: sourceFlowNodeId,
     });
 
-    const targetFlowNodeName = getFlowNodeName({
+    const targetFlowNodeName = getElementName({
       businessObjects: processDefinitionData?.diagramModel.elementsById,
-      flowNodeId: targetFlowNodeId,
+      elementId: targetFlowNodeId,
     });
 
     return (

@@ -22,9 +22,8 @@ import io.camunda.operate.qa.util.ZeebeTestUtil;
 import io.camunda.operate.testhelpers.StatefulRestTemplate;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.operate.util.ThreadUtil;
-import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
-import io.camunda.operate.webapp.rest.dto.SequenceFlowDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.operate.webapp.reader.dto.listview.ListViewProcessInstanceDto;
+import io.camunda.operate.webapp.reader.dto.listview.ListViewResponseDto;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -303,17 +302,19 @@ public class DataGenerator {
   }
 
   private void assertDataOneAttempt() {
-    final ProcessGroupDto[] groupedProcesses = operateAPICaller.getGroupedProcesses();
-    assertThat(groupedProcesses).hasSize(1);
-    assertThat(groupedProcesses[0].getBpmnProcessId()).isEqualTo(PROCESS_BPMN_PROCESS_ID);
-
     final ListViewResponseDto processInstances = operateAPICaller.getProcessInstances();
+    final var bpmnProcessIds =
+        processInstances.getProcessInstances().stream()
+            .map(ListViewProcessInstanceDto::getBpmnProcessId)
+            .distinct()
+            .toList();
+    assertThat(bpmnProcessIds).containsExactly(PROCESS_BPMN_PROCESS_ID);
     assertThat(processInstances.getProcessInstances().size()).isEqualTo(PROCESS_INSTANCE_COUNT);
 
     // check sequence flows from random process instances
     int count = 0;
     while (count <= 10) {
-      final SequenceFlowDto[] sequenceFlows =
+      final String[] sequenceFlows =
           operateAPICaller.getSequenceFlows(
               processInstances
                   .getProcessInstances()
@@ -379,12 +380,14 @@ public class DataGenerator {
         .retryConsumer(
             () -> {
               try {
-                final ProcessGroupDto[] groupedProcesses = operateAPICaller.getGroupedProcesses();
-                assertThat(groupedProcesses).hasSize(2);
-                assertThat(groupedProcesses)
-                    .extracting(ProcessGroupDto::getBpmnProcessId)
-                    .containsExactlyInAnyOrder(PROCESS_BPMN_PROCESS_ID, NEW_BPMN_PROCESS_ID);
                 final ListViewResponseDto processInstances = operateAPICaller.getProcessInstances();
+                final var bpmnProcessIds =
+                    processInstances.getProcessInstances().stream()
+                        .map(ListViewProcessInstanceDto::getBpmnProcessId)
+                        .distinct()
+                        .toList();
+                assertThat(bpmnProcessIds)
+                    .containsExactlyInAnyOrder(PROCESS_BPMN_PROCESS_ID, NEW_BPMN_PROCESS_ID);
                 assertThat(processInstances.getProcessInstances().size())
                     .isEqualTo(
                         PROCESS_INSTANCE_COUNT

@@ -13,7 +13,7 @@ import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariable
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockProcessXml} from 'modules/mocks/mockProcessXml';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
@@ -33,7 +33,7 @@ describe('Skeleton', () => {
       mockProcessXml,
     );
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: 'StartEvent_1',

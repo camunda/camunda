@@ -19,7 +19,6 @@ import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -27,9 +26,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -199,19 +195,28 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
       final int no = ThreadLocalRandom.current().nextInt(operationsCount);
       final Long processInstanceKey = processInstanceKeys.get(no);
       final OperationType type = getType(i);
-      final Map<String, Object> request =
-          getCreateBatchOperationRequestBody(processInstanceKey, type);
-      final RequestEntity<Map<String, Object>> requestEntity =
-          RequestEntity.method(
-                  HttpMethod.POST, restTemplate.getURL("/api/process-instances/batch-operation"))
-              .contentType(MediaType.APPLICATION_JSON)
-              .body(request);
-      final ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);
-      if (!response.getStatusCode().equals(HttpStatus.OK)) {
+      final ResponseEntity<String> response = createOperationViaV2(processInstanceKey, type);
+      if (!response.getStatusCode().is2xxSuccessful()) {
         throw new OperateRuntimeException(
             String.format("Unable to create operations. REST response: %s", response));
       }
     }
+  }
+
+  private ResponseEntity<String> createOperationViaV2(
+      final Long processInstanceKey, final OperationType type) {
+    final String operationPath =
+        switch (type) {
+          case CANCEL_PROCESS_INSTANCE -> "/v2/process-instances/%d/cancellation";
+          case RESOLVE_INCIDENT -> "/v2/process-instances/%d/incident-resolution";
+          default ->
+              throw new OperateRuntimeException(
+                  "Unsupported operation type for dev data generation: " + type);
+        };
+    final RequestEntity<Void> requestEntity =
+        RequestEntity.post(restTemplate.getURL(operationPath.formatted(processInstanceKey)))
+            .build();
+    return restTemplate.exchange(requestEntity, String.class);
   }
 
   @Override
@@ -560,18 +565,6 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     super.deployVersion4();
     ZeebeTestUtil.deployProcess(
         true, client, getTenant(TENANT_A), "develop/user-task-annual-leave.bpmn");
-  }
-
-  private Map<String, Object> getCreateBatchOperationRequestBody(
-      final Long processInstanceKey, final OperationType type) {
-    final Map<String, Object> request = new HashMap<>();
-    final Map<String, Object> listViewRequest = new HashMap<>();
-    listViewRequest.put("running", true);
-    listViewRequest.put("active", true);
-    listViewRequest.put("ids", new Long[] {processInstanceKey});
-    request.put("query", listViewRequest);
-    request.put("operationType", type.toString());
-    return request;
   }
 
   private OperationType getType(final int i) {

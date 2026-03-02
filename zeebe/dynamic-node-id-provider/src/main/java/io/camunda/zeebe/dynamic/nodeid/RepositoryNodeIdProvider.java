@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease.Initialized;
 import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Map;
@@ -40,6 +41,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private volatile StoredLease.Initialized currentLease;
   private final Duration leaseDuration;
   private final Duration readinessCheckTimeout;
+  private final Duration expiredLeaseThreshold;
   private final String taskId;
   private final Runnable onLeaseFailure;
   private final ScheduledExecutorService executor;
@@ -59,6 +61,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
       final Duration expiryDuration,
       final Duration leaseAcquireMaxDelay,
       final Duration readinessCheckTimeout,
+      final Duration expiredLeaseThreshold,
       final String taskId,
       final Runnable onLeaseFailure) {
     this.nodeIdRepository =
@@ -67,6 +70,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     leaseDuration = Objects.requireNonNull(expiryDuration, "expiryDuration cannot be null");
     this.readinessCheckTimeout =
         Objects.requireNonNull(readinessCheckTimeout, "readinessCheckTimeout cannot be null");
+    this.expiredLeaseThreshold =
+        Objects.requireNonNull(expiredLeaseThreshold, "expiredLeaseThreshold cannot be null");
     this.taskId = Objects.requireNonNull(taskId, "taskId cannot be null");
     this.onLeaseFailure = Objects.requireNonNull(onLeaseFailure, "onLeaseFailure cannot be null");
     backoff = new ExponentialBackoffRetryDelay(leaseAcquireMaxDelay, Duration.ofSeconds(1));
@@ -180,21 +185,36 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     return currentLease;
   }
 
-  private void renew() {
-    if (currentLease == null) {
-      LOG.warn(
-          "No current lease found, skipping renew. The process is shutting down already {}",
-          shutdownInitiated.get());
+  @VisibleForTesting
+  void renew() {
+    final var lease = currentLease;
+
+    if (lease == null) {
+      if (shutdownInitiated.get()) {
+        LOG.debug("Skipping lease renewal because the process is shutting down.");
+      } else {
+        LOG.error(
+            "Current lease is null during renewal but shutdown was not initiated. "
+                + "Triggering failure handler.");
+        onLeaseFailure.run();
+      }
+      return;
     }
+
     try {
-      final var newLease =
-          currentLease.lease().renew(clock.millis(), leaseDuration, knownVersionMappings);
-      LOG.trace("Renewing lease with {}", newLease);
-      currentLease = nodeIdRepository.acquire(newLease, currentLease.eTag());
+      final var newLease = lease.lease().renew(clock.millis(), leaseDuration, knownVersionMappings);
+      if (!shutdownInitiated.get()) {
+        LOG.trace("Renewing lease with {}", newLease);
+        currentLease = nodeIdRepository.acquire(newLease, lease.eTag());
+      }
     } catch (final Exception e) {
-      LOG.warn("Failed to renew the lease: process is going to shut down immediately.", e);
-      currentLease = null;
-      onLeaseFailure.run();
+      if (shutdownInitiated.get()) {
+        LOG.debug("Exception during lease renewal while shutting down, ignoring.", e);
+      } else {
+        LOG.warn("Failed to renew the lease: process is going to shut down immediately.", e);
+        currentLease = null;
+        onLeaseFailure.run();
+      }
     }
   }
 
@@ -244,7 +264,15 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
           "Acquired lease w/ nodeId={}.  {}", currentLease.lease().nodeInstance(), currentLease);
       // storedLease should always be non-null as currentLease is not null.
       if (storedLease != null) {
-        previousNodeGracefullyShutdown.complete(!storedLease.isInitialized());
+        final var gracefullyShutdown =
+            switch (storedLease) {
+              case StoredLease.Uninitialized u -> true;
+              case StoredLease.Initialized initialized ->
+                  initialized
+                      .lease()
+                      .isExpiredBeyondThreshold(clock.instant(), expiredLeaseThreshold);
+            };
+        previousNodeGracefullyShutdown.complete(gracefullyShutdown);
       }
       backoff.reset();
     } else {

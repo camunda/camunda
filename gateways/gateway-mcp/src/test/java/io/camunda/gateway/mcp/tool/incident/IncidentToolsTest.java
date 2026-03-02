@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mcp.tool.incident;
 
+import static io.camunda.gateway.mcp.tool.CallToolResultAssertions.assertTextContentFallback;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
@@ -142,6 +143,8 @@ class IncidentToolsTest extends ToolsTest {
       assertExampleIncident(incident);
 
       verify(incidentServices).getByKey(5L);
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -160,7 +163,6 @@ class IncidentToolsTest extends ToolsTest {
 
       // then
       assertThat(result.isError()).isTrue();
-      assertThat(result.content()).isEmpty();
       assertThat(result.structuredContent()).isNotNull();
 
       final var problemDetail =
@@ -168,6 +170,8 @@ class IncidentToolsTest extends ToolsTest {
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -285,6 +289,8 @@ class IncidentToolsTest extends ToolsTest {
 
       assertThat(capturedQuery.page().size()).isEqualTo(25);
       assertThat(capturedQuery.page().after()).isEqualTo("WzEwMjRd");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -300,7 +306,6 @@ class IncidentToolsTest extends ToolsTest {
 
       // then
       assertThat(result.isError()).isTrue();
-      assertThat(result.content()).isEmpty();
       assertThat(result.structuredContent()).isNotNull();
 
       final var problemDetail =
@@ -308,6 +313,8 @@ class IncidentToolsTest extends ToolsTest {
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+
+      assertTextContentFallback(result);
     }
   }
 
@@ -406,7 +413,6 @@ class IncidentToolsTest extends ToolsTest {
 
       // then
       assertThat(result.isError()).isTrue();
-      assertThat(result.content()).isEmpty();
       assertThat(result.structuredContent()).isNotNull();
 
       final var problemDetail =
@@ -418,6 +424,8 @@ class IncidentToolsTest extends ToolsTest {
       verify(incidentServices).resolveIncident(5L, null);
       verify(incidentServices).getByKey(5L);
       verify(jobServices).updateJob(4L, null, new UpdateJobChangeset(1, null));
+
+      assertTextContentFallback(result);
     }
 
     @Test

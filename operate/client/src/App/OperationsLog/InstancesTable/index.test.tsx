@@ -99,7 +99,7 @@ describe('OperationsLog InstancesTable', () => {
     expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
   });
 
-  it('should render empty state when no operations are found', async () => {
+  it('should render empty state when no operations are found without filters', async () => {
     mockQueryAuditLogs().withSuccess({
       items: [],
       page: {
@@ -112,6 +112,47 @@ describe('OperationsLog InstancesTable', () => {
 
     render(<InstancesTable />, {
       wrapper: Wrapper,
+    });
+
+    expect(
+      await screen.findByText('No operation log items yet'),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        'Operations that you perform in UI or via the API will appear here.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should render empty state when no operations are found with filters', async () => {
+    mockQueryAuditLogs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    const WrapperWithFilter: React.FC<{children: React.ReactNode}> = ({
+      children,
+    }) => {
+      return (
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter
+            initialEntries={['/operations-log?operationType=CREATE']}
+          >
+            <Routes>
+              <Route path="/operations-log" element={children} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      );
+    };
+
+    render(<InstancesTable />, {
+      wrapper: WrapperWithFilter,
     });
 
     expect(
@@ -146,10 +187,13 @@ describe('OperationsLog InstancesTable', () => {
       screen.getByRole('columnheader', {name: /entity type/i}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('columnheader', {name: /reference to entity/i}),
+      screen.getByRole('columnheader', {name: /entity key/i}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('columnheader', {name: /property/i}),
+      screen.getByRole('columnheader', {name: /parent entity/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', {name: /details/i}),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('columnheader', {name: /actor/i}),
@@ -251,8 +295,6 @@ describe('OperationsLog InstancesTable', () => {
     expect(screen.getByTestId('FAIL-icon')).toBeInTheDocument();
     expect(screen.getAllByText('user1').at(0)).toBeInTheDocument();
     expect(screen.getAllByText('user2').at(0)).toBeInTheDocument();
-    expect(screen.getByText(/variable name/i)).toBeInTheDocument();
-    expect(await screen.findByText(/error code/i)).toBeInTheDocument();
     expect(screen.getByText('variableName')).toBeInTheDocument();
     expect(screen.getByText('ERROR_CODE')).toBeInTheDocument();
   });
@@ -311,7 +353,6 @@ describe('OperationsLog InstancesTable', () => {
     expect(screen.getByText('Batch')).toBeInTheDocument();
     expect(screen.getByText(/batch operation type/i)).toBeInTheDocument();
     expect(screen.getByText(/cancel process instance/i)).toBeInTheDocument();
-    expect(screen.getByText(/multiple process instances/i)).toBeInTheDocument();
     expect(screen.getByText('batch-123')).toHaveAttribute(
       'href',
       '/batch-operations/batch-123',
@@ -556,10 +597,10 @@ describe('OperationsLog InstancesTable', () => {
     });
 
     expect(
-      await screen.findByRole('link', {name: 'View decision 888'}),
+      await screen.findByRole('link', {name: 'View decision instance 888'}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('link', {name: 'View decision 888'}),
+      screen.getByRole('link', {name: 'View decision instance 888'}),
     ).toHaveAttribute('href', '/decisions/888');
   });
 });

@@ -21,7 +21,6 @@ import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.PartitionBackupInfo;
 import io.camunda.management.backups.StateCode;
-import io.camunda.zeebe.backup.api.Interval;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
@@ -114,7 +113,7 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     // given - deploy a process and create instances, then take continuous backups.
     final long processKey;
 
-    final Interval<Instant> interval;
+    final Interval interval;
     try (final var client = broker.newClientBuilder().build()) {
       processKey = deployTestProcess(client);
 
@@ -145,7 +144,7 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     // given - some process instances with backups between them
     final long processKey;
 
-    final Interval<Instant> interval;
+    final Interval interval;
     try (final var client = broker.newClientBuilder().build()) {
       processKey = deployTestProcess(client);
       interval = createProcessInstancesAndTakeBackups(client, processKey);
@@ -259,7 +258,7 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
         .getProcessDefinitionKey();
   }
 
-  private Interval<Instant> createProcessInstancesAndTakeBackups(
+  private Interval createProcessInstancesAndTakeBackups(
       final CamundaClient client, final long processKey) {
 
     // Create some process instances to have data to verify after restore
@@ -283,7 +282,7 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     // Record "to" after second backup
     final Instant to = currentTime(broker);
     LOG.info("Time range to = {}", to);
-    return Interval.closed(from, to);
+    return new Interval(from, to);
   }
 
   private BackupInfo takeAndAwaitBackup() {
@@ -332,7 +331,7 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
   }
 
   @SuppressWarnings("resource")
-  private TestRestoreApp testRestoreApp(final Interval<Instant> interval) {
+  private TestRestoreApp testRestoreApp(final Interval interval) {
     return new TestRestoreApp()
         .withUnifiedConfig(this::configureRestoreApp)
         .withAdditionalProperties(H2_PROPERTIES)
@@ -347,4 +346,6 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
         .withAdditionalProperties(H2_PROPERTIES)
         .withWorkingDirectory(workingDirectory);
   }
+
+  private record Interval(Instant start, Instant end) {}
 }

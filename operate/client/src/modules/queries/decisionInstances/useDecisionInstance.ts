@@ -16,10 +16,14 @@ type UnauthorizedError = {
   variant: 'unauthorized-error';
 };
 
+type NotFoundError = {
+  variant: 'not-found-error';
+};
+
 const useDecisionInstance = (decisionEvaluationInstanceKey: string) => {
   return useQuery<
     GetDecisionInstanceResponseBody,
-    UnauthorizedError | RequestError
+    UnauthorizedError | NotFoundError | RequestError
   >({
     queryKey: queryKeys.decisionInstances.get(decisionEvaluationInstanceKey),
     queryFn: async () => {
@@ -32,6 +36,10 @@ const useDecisionInstance = (decisionEvaluationInstanceKey: string) => {
 
       if (error?.response?.status === 403) {
         throw {variant: 'unauthorized-error'} satisfies UnauthorizedError;
+      }
+
+      if (error?.response?.status === 404) {
+        throw {variant: 'not-found-error'} satisfies NotFoundError;
       }
 
       throw error;

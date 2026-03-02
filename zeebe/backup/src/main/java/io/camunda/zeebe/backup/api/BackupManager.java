@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.api;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Collection;
+import java.util.SequencedCollection;
 
 /** Manages backup of a partition * */
 public interface BackupManager {
@@ -75,7 +76,10 @@ public interface BackupManager {
    */
   ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus();
 
-  void extendRange(final long previousCheckpointId, final long newCheckpointId);
-
-  void startNewRange(final long checkpointId);
+  /**
+   * Force-write the backup metadata file for this partition using the provided checkpoints and
+   * ranges.
+   */
+  ActorFuture<Collection<BackupRangeStatus>> syncMetadata(
+      SequencedCollection<Checkpoint> checkpoints, SequencedCollection<BackupRange> ranges);
 }

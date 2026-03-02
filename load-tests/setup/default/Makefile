@@ -13,7 +13,7 @@ additional_platform_configuration ?=
 # Optional: additional Helm configuration for the load test release.
 # Use this to pass extra `--set`/`-f` flags when installing/upgrading the load tests.
 # See the load test README for example values and guidance.
-additional_load_test_configuration ?=
+additional_load_test_configuration ?= --set global.image.repository=registry.camunda.cloud/team-zeebe --set global.image.pullSecrets[0].name=harbor-registry
 
 # Construct platform values files based on configuration
 platform_values := -f camunda-platform-values.yaml
@@ -23,8 +23,8 @@ ifeq ($(secondary_storage),postgresql)
 platform_values += -f camunda-platform-values-rdbms.yaml
 else ifeq ($(secondary_storage),opensearch)
 platform_values += -f camunda-platform-values-opensearch.yaml
-else # default is elasticsearch
-platform_values += -f camunda-platform-values-elasticsearch.yaml
+else ifeq ($(secondary_storage),none)
+platform_values += -f camunda-platform-no-secondary-storage.yaml
 endif
 
 # Add Optimize values if enabled
@@ -39,29 +39,35 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 all: install
 
 .PHONY: install
-install: install-storage install-platform install-load-test install-elasticsearch-exporter
+install: install-storage create-credentials install-platform install-load-test install-elasticsearch-exporter
 
 .PHONY: install-stable
-install-stable: install-storage install-platform-stable install-load-test install-elasticsearch-exporter
+install-stable: install-storage create-credentials install-platform-stable install-load-test install-elasticsearch-exporter
 
 # Install PostgreSQL database if secondary_storage is postgresql, or OpenSearch if secondary_storage is opensearch
 .PHONY: install-storage
 install-storage:
 ifeq ($(secondary_storage),postgresql)
 	@echo "Installing PostgreSQL database for namespace $(namespace)..."
-	# Install Postgres database - all configuration in secondary-storage-values-postgresql.yaml
+	# Install Postgres database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-rdbms.yaml
 	helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
 		--namespace $(namespace) \
-		-f secondary-storage-values-postgresql.yaml
+		$(platform_values)
 else ifeq ($(secondary_storage),opensearch)
 	@echo "Installing OpenSearch cluster for namespace $(namespace)..."
 	helm upgrade --install opensearch opensearch/opensearch \
 		--version "2.31.0" \
 		--namespace $(namespace) \
-		-f secondary-storage-values-opensearch.yaml
+		$(platform_values)
 else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
 endif
+
+# Create camunda-credentials secret
+.PHONY: create-credentials
+create-credentials:
+	@echo "Creating camunda-credentials secret for namespace $(namespace)..."
+	./createCredsLoadTest.sh $(namespace)
 
 # Install Elasticsearch Prometheus exporter if secondary_storage is elasticsearch
 .PHONY: install-elasticsearch-exporter

@@ -12,7 +12,7 @@ import {type ModifyProcessInstanceRequestBody} from '@camunda/camunda-api-zod-sc
 import {modifyProcessInstance} from 'modules/api/v2/processInstances/modifyProcessInstance';
 import {logger} from 'modules/logger';
 import {tracking} from 'modules/tracking';
-import {getFlowNodeName} from 'modules/utils/flowNodes';
+import {getElementName} from 'modules/utils/elements';
 import {getFlowNodesInBetween} from 'modules/utils/processInstanceDetailsDiagram';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {generateParentScopeIds} from 'modules/utils/modifications';
@@ -86,7 +86,7 @@ type VariableModificationPayload = {
   newValue: string;
 };
 
-type FlowNodeModification = {
+type ElementModification = {
   type: 'token';
   payload: FlowNodeModificationPayload;
 };
@@ -96,7 +96,7 @@ type VariableModification = {
   payload: VariableModificationPayload;
 };
 
-type Modification = FlowNodeModification | VariableModification;
+type Modification = ElementModification | VariableModification;
 type RemovedModificationSource = 'variables' | 'summaryModal' | 'footer';
 
 type State = {
@@ -197,9 +197,9 @@ class Modifications {
           flowNode: {
             id: this.state.sourceFlowNodeIdForAddOperation,
             name:
-              getFlowNodeName({
+              getElementName({
                 businessObjects,
-                flowNodeId: this.state.sourceFlowNodeIdForAddOperation,
+                elementId: this.state.sourceFlowNodeIdForAddOperation,
               }) ?? '',
           },
           affectedTokenCount: 1,
@@ -367,7 +367,7 @@ class Modifications {
   get flowNodeModifications() {
     function isFlowNodeModification(
       modification: Modification,
-    ): modification is FlowNodeModification {
+    ): modification is ElementModification {
       const {type} = modification;
 
       return type === 'token';
@@ -669,7 +669,7 @@ class Modifications {
         operation: 'CANCEL_TOKEN',
         flowNode: {
           id: flowNodeId,
-          name: getFlowNodeName({businessObjects, flowNodeId}),
+          name: getElementName({businessObjects, elementId: flowNodeId}),
         },
         flowNodeInstanceKey,
         affectedTokenCount,
@@ -719,17 +719,17 @@ class Modifications {
         operation: 'MOVE_TOKEN',
         flowNode: {
           id: sourceFlowNodeId,
-          name: getFlowNodeName({
+          name: getElementName({
             businessObjects,
-            flowNodeId: sourceFlowNodeId,
+            elementId: sourceFlowNodeId,
           }),
         },
         flowNodeInstanceKey: sourceFlowNodeInstanceKey,
         targetFlowNode: {
           id: targetFlowNodeId,
-          name: getFlowNodeName({
+          name: getElementName({
             businessObjects,
-            flowNodeId: targetFlowNodeId,
+            elementId: targetFlowNodeId,
           }),
         },
         affectedTokenCount,
@@ -753,6 +753,6 @@ class Modifications {
   };
 }
 
-export type {FlowNodeModification, AncestorScopeType};
+export type {ElementModification, AncestorScopeType};
 export const modificationsStore = new Modifications();
 export {EMPTY_MODIFICATION};

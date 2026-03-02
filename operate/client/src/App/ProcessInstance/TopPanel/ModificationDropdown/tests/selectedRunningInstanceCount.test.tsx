@@ -10,7 +10,7 @@ import {screen} from 'modules/testing-library';
 import {modificationsStore} from 'modules/stores/modifications';
 import {renderPopover} from './mocks';
 import {open} from 'modules/mocks/diagrams';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
@@ -66,7 +66,7 @@ describe('selectedRunningInstanceCount', () => {
         }));
       },
     );
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: 'StartEvent_1',

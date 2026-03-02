@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.util;
 
-import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
-import io.camunda.operate.webapp.rest.dto.operation.OperationTypeDto;
+import io.camunda.operate.webapp.operation.dto.BatchOperationDto;
+import io.camunda.operate.webapp.operation.dto.OperationTypeDto;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.time.OffsetDateTime;

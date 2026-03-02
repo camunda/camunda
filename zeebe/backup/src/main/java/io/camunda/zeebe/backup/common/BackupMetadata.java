@@ -7,10 +7,14 @@
  */
 package io.camunda.zeebe.backup.common;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Instant;
 import java.util.List;
+import java.util.OptionalLong;
 
 /**
  * Per-partition JSON manifest containing checkpoint metadata and pre-computed backup ranges. Synced
@@ -31,7 +35,18 @@ public record BackupMetadata(
       @JsonProperty("checkpointPosition") long checkpointPosition,
       @JsonProperty("checkpointTimestamp") Instant checkpointTimestamp,
       @JsonProperty("checkpointType") CheckpointType checkpointType,
-      @JsonProperty("firstLogPosition") long firstLogPosition) {}
+      @JsonProperty("firstLogPosition") @JsonInclude(Include.NON_ABSENT)
+          OptionalLong firstLogPosition) {
+
+    /**
+     * Returns the first log position if present, or -1 if not. -1 is the value for {@link
+     * CheckpointType#MARKER} checkpoints
+     */
+    @JsonIgnore
+    public long getFirstLogPositionOrDefault() {
+      return firstLogPosition.orElse(-1L);
+    }
+  }
 
   /** A contiguous backup range [start, end]. */
   public record RangeEntry(@JsonProperty("start") long start, @JsonProperty("end") long end) {}

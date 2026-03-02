@@ -12,7 +12,7 @@ import io.camunda.client.api.command.CommandWithOperationReferenceStep;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.operate.util.ConditionalOnOperateCompatibility;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
+import io.camunda.operate.webapp.operation.dto.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessZeebeWrapper;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;

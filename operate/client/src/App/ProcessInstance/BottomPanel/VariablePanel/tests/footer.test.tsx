@@ -9,7 +9,7 @@
 import {render, screen, waitFor} from 'modules/testing-library';
 import {mockProcessInstance} from './mocks';
 import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
@@ -84,7 +84,7 @@ describe('Footer', () => {
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: 'start',

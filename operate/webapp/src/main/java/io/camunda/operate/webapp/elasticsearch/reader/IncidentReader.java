@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.elasticsearch.reader;
 
-import static io.camunda.operate.webapp.rest.dto.incidents.IncidentDto.FALLBACK_PROCESS_DEFINITION_NAME;
+import static io.camunda.operate.webapp.reader.dto.incidents.IncidentDto.FALLBACK_PROCESS_DEFINITION_NAME;
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -15,10 +15,10 @@ import io.camunda.operate.store.FlowNodeStore;
 import io.camunda.operate.store.IncidentStore;
 import io.camunda.operate.webapp.data.IncidentDataHolder;
 import io.camunda.operate.webapp.reader.OperationReader;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentErrorTypeDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentFlowNodeDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
+import io.camunda.operate.webapp.reader.dto.incidents.IncidentDto;
+import io.camunda.operate.webapp.reader.dto.incidents.IncidentErrorTypeDto;
+import io.camunda.operate.webapp.reader.dto.incidents.IncidentFlowNodeDto;
+import io.camunda.operate.webapp.reader.dto.incidents.IncidentResponseDto;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;

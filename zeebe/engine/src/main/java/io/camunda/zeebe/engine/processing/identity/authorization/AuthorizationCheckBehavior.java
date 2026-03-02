@@ -115,6 +115,9 @@ public final class AuthorizationCheckBehavior {
    *     {@link Void} if the user is authorized
    */
   public Either<Rejection, Void> isAuthorized(final AuthorizationRequest request) {
+    if (shouldSkipAllChecks()) {
+      return AUTHORIZED;
+    }
     try {
       return authorizationsCache.get(request);
     } catch (final ExecutionException e) {
@@ -139,6 +142,9 @@ public final class AuthorizationCheckBehavior {
   public Either<Rejection, Void> isAnyAuthorized(final AuthorizationRequest... requests) {
     if (requests == null || requests.length == 0) {
       throw new IllegalArgumentException("No authorization requests provided");
+    }
+    if (shouldSkipAllChecks()) {
+      return AUTHORIZED;
     }
 
     final List<Rejection> rejections = new ArrayList<>();
@@ -167,6 +173,16 @@ public final class AuthorizationCheckBehavior {
   }
 
   /**
+   * Returns {@code true} when both authorization and multi-tenancy are disabled, meaning no
+   * authorization or tenant check will ever reject a request. Callers can use this to avoid
+   * constructing an {@link AuthorizationRequest} (and the associated allocations) when the result
+   * would always be authorized.
+   */
+  public boolean shouldSkipAllChecks() {
+    return !authorizationsEnabled && !multiTenancyEnabled;
+  }
+
+  /**
    * Checks if a user is authorized through ANY of the provided authorization requests, or if the
    * request is triggered by an internal command (in which case authorization is bypassed). Returns
    * success if at least one request is authorized (OR/disjunctive logic).
@@ -179,6 +195,9 @@ public final class AuthorizationCheckBehavior {
       final AuthorizationRequest... requests) {
     if (requests == null || requests.length == 0) {
       throw new IllegalArgumentException("No authorization requests provided");
+    }
+    if (shouldSkipAllChecks()) {
+      return AUTHORIZED;
     }
 
     // bypass authorization if any request is from an internal command
@@ -223,10 +242,8 @@ public final class AuthorizationCheckBehavior {
     return Either.left(RejectionAggregator.aggregate(aggregatedRejections));
   }
 
-  // Helper methods
   private boolean shouldSkipAuthorization(final AuthorizationRequest request) {
-    return (!authorizationsEnabled && !multiTenancyEnabled)
-        || claimsExtractor.isAuthorizedAnonymousUser(request.claims());
+    return shouldSkipAllChecks() || claimsExtractor.isAuthorizedAnonymousUser(request.claims());
   }
 
   private AuthorizationResult checkPrimaryAuthorization(

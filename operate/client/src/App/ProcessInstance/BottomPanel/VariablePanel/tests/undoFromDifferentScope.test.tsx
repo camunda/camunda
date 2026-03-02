@@ -11,7 +11,7 @@ import {render, screen, waitFor, type UserEvent} from 'modules/testing-library';
 import {createVariable} from 'modules/testUtils';
 import {
   modificationsStore,
-  type FlowNodeModification,
+  type ElementModification,
 } from 'modules/stores/modifications';
 import {act} from 'react';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
@@ -22,7 +22,7 @@ import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstan
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {getWrapper as getBaseWrapper, mockProcessInstance} from './mocks';
 
-const INITIAL_ADD_MODIFICATION: FlowNodeModification = {
+const INITIAL_ADD_MODIFICATION: ElementModification = {
   type: 'token',
   payload: {
     affectedTokenCount: 1,

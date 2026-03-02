@@ -13,6 +13,7 @@ import io.camunda.search.aggregation.GlobalJobStatisticsAggregation;
 import io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation;
 import io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByErrorAggregation;
 import io.camunda.search.aggregation.JobTypeStatisticsAggregation;
+import io.camunda.search.aggregation.JobWorkerStatisticsAggregation;
 import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
 import io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation;
 import io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation;
@@ -27,6 +28,7 @@ import io.camunda.search.aggregation.result.GlobalJobStatisticsAggregationResult
 import io.camunda.search.aggregation.result.IncidentProcessInstanceStatisticsByDefinitionAggregationResult;
 import io.camunda.search.aggregation.result.IncidentProcessInstanceStatisticsByErrorAggregationResult;
 import io.camunda.search.aggregation.result.JobTypeStatisticsAggregationResult;
+import io.camunda.search.aggregation.result.JobWorkerStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.ProcessDefinitionInstanceStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.ProcessDefinitionInstanceVersionStatisticsAggregationResult;
@@ -45,6 +47,7 @@ import io.camunda.search.clients.transformers.aggregation.GlobalJobStatisticsAgg
 import io.camunda.search.clients.transformers.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.IncidentProcessInstanceStatisticsByErrorAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.JobTypeStatisticsAggregationTransformer;
+import io.camunda.search.clients.transformers.aggregation.JobWorkerStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionFlowNodeStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionInstanceStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregationTransformer;
@@ -59,6 +62,7 @@ import io.camunda.search.clients.transformers.aggregation.result.GlobalJobStatis
 import io.camunda.search.clients.transformers.aggregation.result.IncidentProcessInstanceStatisticsByDefinitionAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.IncidentProcessInstanceStatisticsByErrorAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.JobTypeStatisticsAggregationResultTransformer;
+import io.camunda.search.clients.transformers.aggregation.result.JobWorkerStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionInstanceStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionInstanceVersionStatisticsAggregationResultTransformer;
@@ -115,6 +119,7 @@ import io.camunda.search.clients.transformers.filter.GroupMemberFilterTransforme
 import io.camunda.search.clients.transformers.filter.IncidentFilterTransformer;
 import io.camunda.search.clients.transformers.filter.JobFilterTransformer;
 import io.camunda.search.clients.transformers.filter.JobTypeStatisticsFilterTransformer;
+import io.camunda.search.clients.transformers.filter.JobWorkerStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.MappingRuleFilterTransformer;
 import io.camunda.search.clients.transformers.filter.MessageSubscriptionFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessDefinitionFilterTransformer;
@@ -186,6 +191,7 @@ import io.camunda.search.filter.GroupMemberFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.JobTypeStatisticsFilter;
+import io.camunda.search.filter.JobWorkerStatisticsFilter;
 import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
@@ -224,6 +230,7 @@ import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
+import io.camunda.search.query.JobWorkerStatisticsQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
@@ -438,6 +445,7 @@ public final class ServiceTransformers {
             IncidentProcessInstanceStatisticsByDefinitionQuery.class,
             GlobalJobStatisticsQuery.class,
             JobTypeStatisticsQuery.class,
+            JobWorkerStatisticsQuery.class,
             GlobalListenerQuery.class)
         .forEach(cls -> mappers.put(cls, searchQueryTransformer));
 
@@ -592,6 +600,10 @@ public final class ServiceTransformers {
         new JobTypeStatisticsFilterTransformer(
             indexDescriptors.get(JobMetricsBatchTemplate.class)));
     mappers.put(
+        JobWorkerStatisticsFilter.class,
+        new JobWorkerStatisticsFilterTransformer(
+            indexDescriptors.get(JobMetricsBatchTemplate.class)));
+    mappers.put(
         ProcessDefinitionStatisticsFilter.class,
         new ProcessDefinitionStatisticsFilterTransformer(
             mappers, indexDescriptors.get(ListViewTemplate.class)));
@@ -666,6 +678,8 @@ public final class ServiceTransformers {
     mappers.put(
         GlobalJobStatisticsAggregation.class, new GlobalJobStatisticsAggregationTransformer());
     mappers.put(JobTypeStatisticsAggregation.class, new JobTypeStatisticsAggregationTransformer());
+    mappers.put(
+        JobWorkerStatisticsAggregation.class, new JobWorkerStatisticsAggregationTransformer());
 
     // aggregation result
     mappers.put(
@@ -705,5 +719,8 @@ public final class ServiceTransformers {
     mappers.put(
         JobTypeStatisticsAggregationResult.class,
         new JobTypeStatisticsAggregationResultTransformer());
+    mappers.put(
+        JobWorkerStatisticsAggregationResult.class,
+        new JobWorkerStatisticsAggregationResultTransformer());
   }
 }

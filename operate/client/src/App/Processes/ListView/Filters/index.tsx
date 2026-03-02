@@ -20,7 +20,7 @@ import {
 import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {ProcessField} from './ProcessField';
 import {ProcessVersionField} from './ProcessVersionField';
-import {FlowNodeField} from './FlowNodeField';
+import {ElementField} from './ElementField';
 import {
   Container,
   Title,
@@ -150,7 +150,7 @@ const Filters: React.FC = observer(() => {
                   <Stack gap={5}>
                     <ProcessField />
                     <ProcessVersionField />
-                    <FlowNodeField />
+                    <ElementField />
                   </Stack>
                 </div>
                 <div>

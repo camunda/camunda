@@ -12,8 +12,10 @@ import static java.util.Optional.ofNullable;
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.GlobalJobStatisticsDbQuery;
 import io.camunda.db.rdbms.read.domain.JobTypeStatisticsDbQuery;
+import io.camunda.db.rdbms.read.domain.JobWorkerStatisticsDbQuery;
 import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.db.rdbms.sql.columns.JobTypeStatisticsColumn;
+import io.camunda.db.rdbms.sql.columns.JobWorkerStatisticsColumn;
 import io.camunda.search.clients.reader.JobMetricsBatchReader;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
@@ -25,6 +27,7 @@ import io.camunda.search.query.JobTypeStatisticsQuery;
 import io.camunda.search.query.JobWorkerStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.JobTypeStatisticsSort;
+import io.camunda.search.sort.JobWorkerStatisticsSort;
 import io.camunda.security.reader.ResourceAccessChecks;
 import java.util.Collections;
 import java.util.Optional;
@@ -42,18 +45,18 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
       JobTypeStatisticsSort.of(b -> b.jobType().asc());
 
   // Fixed sort: worker asc
-  //  private static final JobWorkerStatisticsSort JOB_WORKER_STATS_FIXED_SORT =
-  //      JobWorkerStatisticsSort.of(b -> b.worker().asc());
+  private static final JobWorkerStatisticsSort JOB_WORKER_STATS_FIXED_SORT =
+      JobWorkerStatisticsSort.of(b -> b.worker().asc());
 
   private final JobMetricsBatchMapper jobMetricsBatchMapper;
 
-  // private final AbstractEntityReader<JobWorkerStatisticsEntity> workerStatsReader;
+  private final AbstractEntityReader<JobWorkerStatisticsEntity> workerStatsReader;
 
   public JobMetricsBatchDbReader(
       final JobMetricsBatchMapper jobMetricsBatchMapper, final RdbmsReaderConfig readerConfig) {
     super(JobTypeStatisticsColumn.values(), readerConfig);
     this.jobMetricsBatchMapper = jobMetricsBatchMapper;
-    // workerStatsReader = new WorkerStatsReader(readerConfig);
+    workerStatsReader = new WorkerStatsReader(readerConfig);
   }
 
   @Override
@@ -124,52 +127,48 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
   public SearchQueryResult<JobWorkerStatisticsEntity> getJobWorkerStatistics(
       final JobWorkerStatisticsQuery query, final ResourceAccessChecks resourceAccessChecks) {
     LOG.trace("[RDBMS DB] Search job worker statistics with {}", query);
-    // TODO enabled in a follow up PR
-    throw new UnsupportedOperationException("Job worker statistics is not yet supported");
-    //    if (shouldReturnEmptyResult(resourceAccessChecks)) {
-    //      return EmptyResults.JOB_WORKER_STATISTICS;
-    //    }
-    //    final var dbSort = workerStatsReader.convertSort(JOB_WORKER_STATS_FIXED_SORT);
-    //    final var dbPage =
-    //        workerStatsReader.convertPaging(
-    //            dbSort, Optional.ofNullable(query.page()).orElse(SearchQueryPage.DEFAULT));
-    //    final var dbQuery =
-    //        JobWorkerStatisticsDbQuery.of(
-    //            b ->
-    //                b.filter(query.filter())
-    //                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
-    //                    .sort(dbSort)
-    //                    .page(dbPage));
-    //
-    //    final var results = jobMetricsBatchMapper.jobWorkerStatistics(dbQuery);
-    //    final var entities =
-    //        results.stream()
-    //            .map(
-    //                result ->
-    //                    new JobWorkerStatisticsEntity(
-    //                        result.worker(),
-    //                        new StatusMetric(
-    //                            ofNullable(result.createdCount()).orElse(0L),
-    // result.lastCreatedAt()),
-    //                        new StatusMetric(
-    //                            ofNullable(result.completedCount()).orElse(0L),
-    //                            result.lastCompletedAt()),
-    //                        new StatusMetric(
-    //                            ofNullable(result.failedCount()).orElse(0L),
-    // result.lastFailedAt())))
-    //            .toList();
-    //
-    //    return workerStatsReader.buildSearchQueryResult(entities.size(), entities, dbSort);
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+      return EmptyResults.JOB_WORKER_STATISTICS;
+    }
+    final var dbSort = workerStatsReader.convertSort(JOB_WORKER_STATS_FIXED_SORT);
+    final var dbPage =
+        workerStatsReader.convertPaging(
+            dbSort, Optional.ofNullable(query.page()).orElse(SearchQueryPage.DEFAULT));
+    final var dbQuery =
+        JobWorkerStatisticsDbQuery.of(
+            b ->
+                b.filter(query.filter())
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
+                    .sort(dbSort)
+                    .page(dbPage));
+
+    final var results = jobMetricsBatchMapper.jobWorkerStatistics(dbQuery);
+    final var entities =
+        results.stream()
+            .map(
+                result ->
+                    new JobWorkerStatisticsEntity(
+                        result.worker(),
+                        new StatusMetric(
+                            ofNullable(result.createdCount()).orElse(0L), result.lastCreatedAt()),
+                        new StatusMetric(
+                            ofNullable(result.completedCount()).orElse(0L),
+                            result.lastCompletedAt()),
+                        new StatusMetric(
+                            ofNullable(result.failedCount()).orElse(0L), result.lastFailedAt())))
+            .toList();
+
+    return workerStatsReader.buildSearchQueryResult(entities.size(), entities, dbSort);
   }
 
-  //  /** Inner reader for worker statistics to provide typed AbstractEntityReader methods. */
-  //  private static final class WorkerStatsReader
-  //      extends AbstractEntityReader<JobWorkerStatisticsEntity> {
-  //
-  //    WorkerStatsReader(final RdbmsReaderConfig readerConfig) {
-  //      super(JobWorkerStatisticsColumn.values(), readerConfig);
-  //    }
-  //  }
+  /** Inner reader for worker statistics to provide typed AbstractEntityReader methods. */
+  private static final class WorkerStatsReader
+      extends AbstractEntityReader<JobWorkerStatisticsEntity> {
+
+    WorkerStatsReader(final RdbmsReaderConfig readerConfig) {
+      super(JobWorkerStatisticsColumn.values(), readerConfig);
+    }
+  }
 
   private static final class EmptyResults {
     private static final SearchQueryResult<JobTypeStatisticsEntity> JOB_TYPE_STATISTICS =

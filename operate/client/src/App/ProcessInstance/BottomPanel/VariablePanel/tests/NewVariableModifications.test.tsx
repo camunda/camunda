@@ -20,13 +20,13 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {createVariable} from 'modules/testUtils';
 import {
   modificationsStore,
-  type FlowNodeModification,
+  type ElementModification,
 } from 'modules/stores/modifications';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
@@ -41,7 +41,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
  * Variables can only be added and modified in the root if a pending add/move token modification exists.
  * Tests need to queue this modification first, before they can make changes to the root variables.
  */
-const INITIAL_ADD_MODIFICATION: FlowNodeModification = {
+const INITIAL_ADD_MODIFICATION: ElementModification = {
   type: 'token',
   payload: {
     affectedTokenCount: 1,
@@ -194,7 +194,7 @@ describe('New Variable Modifications', () => {
       },
     ];
 
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: statisticsData,
     });
     mockSearchVariables().withSuccess({

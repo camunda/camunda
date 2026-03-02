@@ -8,26 +8,48 @@
 
 import {useMemo, useCallback} from 'react';
 import {PaginatedSortableTable} from 'modules/components/PaginatedSortableTable';
-import {Link} from 'react-router-dom';
 import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchOperationItems';
 import {BatchStateIndicator} from 'App/BatchOperations/BatchStateIndicator';
 import {formatDate} from 'modules/utils/date';
 import {Paths} from 'modules/Routes';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
+import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.9';
+import {ItemKeyCell} from './ItemKeyCell';
 
-const TABLE_HEADERS = [
-  {key: 'processInstanceKey', header: 'Process instance key', isDisabled: true},
+const COMMON_HEADER_COLUMNS = [
   {key: 'state', header: 'Batch state', isDisabled: true},
   {key: 'processedDate', header: 'Date', sortKey: 'processedDate'},
 ];
 
+const DEFAULT_HEADER_COLUMNS = [
+  {key: 'processInstanceKey', header: 'Process instance key', isDisabled: true},
+  ...COMMON_HEADER_COLUMNS,
+];
+
+const DELETE_DECISION_INSTANCE_HEADER_COLUMNS = [
+  {
+    key: 'decisionInstanceKey',
+    header: 'Decision instance key',
+    isDisabled: true,
+  },
+  ...COMMON_HEADER_COLUMNS,
+];
+
+const RESOLVE_INCIDENT_HEADER_COLUMNS = [
+  {key: 'processInstanceKey', header: 'Process instance key', isDisabled: true},
+  {key: 'incidentKey', header: 'Incident key', isDisabled: true},
+  ...COMMON_HEADER_COLUMNS,
+];
+
 type Props = {
   batchOperationKey: string;
+  batchOperationType: BatchOperationType | undefined;
   isLoading: boolean;
 };
 
 export const BatchItemsTable: React.FC<Props> = ({
   batchOperationKey,
+  batchOperationType,
   isLoading,
 }) => {
   const {
@@ -55,23 +77,69 @@ export const BatchItemsTable: React.FC<Props> = ({
   const hasMoreTotalItems =
     data?.pages?.at(0)?.page?.hasMoreTotalItems ?? false;
 
+  const headerColumns = (() => {
+    if (batchOperationType === 'DELETE_DECISION_INSTANCE') {
+      return DELETE_DECISION_INSTANCE_HEADER_COLUMNS;
+    }
+    if (batchOperationType === 'RESOLVE_INCIDENT') {
+      return RESOLVE_INCIDENT_HEADER_COLUMNS;
+    }
+    return DEFAULT_HEADER_COLUMNS;
+  })();
+
   const rows = useMemo(
     () =>
-      items.map(({itemKey, processInstanceKey, state, processedDate}) => ({
-        id: itemKey.toString(),
-        processInstanceKey: (
-          <Link
-            to={Paths.processInstance(processInstanceKey)}
-            title={`View process instance ${processInstanceKey}`}
-            aria-label={`View process instance ${processInstanceKey}`}
-          >
-            {processInstanceKey}
-          </Link>
-        ),
-        state: <BatchStateIndicator status={state} />,
-        processedDate: formatDate(processedDate ?? ''),
-      })),
-    [items],
+      items.map(({itemKey, processInstanceKey, state, processedDate}) => {
+        const commonCells = {
+          id: itemKey.toString(),
+          state: <BatchStateIndicator status={state} />,
+          processedDate: formatDate(processedDate ?? ''),
+        };
+
+        if (batchOperationType === 'DELETE_DECISION_INSTANCE') {
+          return {
+            ...commonCells,
+            decisionInstanceKey: (
+              <ItemKeyCell
+                itemKey={itemKey}
+                fallbackText="No decision instance"
+                to={Paths.decisionInstance(itemKey)}
+                label={`View decision instance ${itemKey}`}
+              />
+            ),
+          };
+        }
+
+        if (batchOperationType === 'RESOLVE_INCIDENT') {
+          return {
+            ...commonCells,
+            processInstanceKey: (
+              <ItemKeyCell
+                itemKey={processInstanceKey}
+                fallbackText="No process instance"
+                to={Paths.processInstance(processInstanceKey)}
+                label={`View process instance ${processInstanceKey}`}
+              />
+            ),
+            incidentKey: (
+              <ItemKeyCell itemKey={itemKey} fallbackText="No incident" />
+            ),
+          };
+        }
+
+        return {
+          ...commonCells,
+          processInstanceKey: (
+            <ItemKeyCell
+              itemKey={processInstanceKey}
+              fallbackText="No process instance"
+              to={Paths.processInstance(processInstanceKey)}
+              label={`View process instance ${processInstanceKey}`}
+            />
+          ),
+        };
+      }),
+    [items, batchOperationType],
   );
 
   const rowOperationError = useCallback(
@@ -115,7 +183,7 @@ export const BatchItemsTable: React.FC<Props> = ({
         batchOperationId={batchOperationKey}
         state={getTableState()}
         rows={rows}
-        headerColumns={TABLE_HEADERS}
+        headerColumns={headerColumns}
         rowOperationError={rowOperationError}
         emptyMessage={{message: 'No items found'}}
         stickyHeader

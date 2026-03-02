@@ -37,8 +37,6 @@ public interface ProcessStore {
   /// Process instance methods
   ProcessInstanceForListViewEntity getProcessInstanceListViewByKey(Long processInstanceKey);
 
-  Map<String, Long> getCoreStatistics(@Nullable Set<String> allowedBPMNids);
-
   String getProcessInstanceTreePathById(final String processInstanceId);
 
   List<Map<String, String>> createCallHierarchyFor(

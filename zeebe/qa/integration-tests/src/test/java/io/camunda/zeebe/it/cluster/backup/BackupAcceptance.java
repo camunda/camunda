@@ -172,7 +172,6 @@ public interface BackupAcceptance {
                       range -> {
                         assertThat(range.getStart().getCheckpointId()).isEqualTo(backupId);
                         assertThat(range.getEnd().getCheckpointId()).isEqualTo(backupId);
-                        assertThat(range.getMissingCheckpoints()).isEmpty();
                       });
             });
   }

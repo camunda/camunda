@@ -10,7 +10,7 @@ import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {
   modificationsStore,
-  type FlowNodeModification,
+  type ElementModification,
 } from 'modules/stores/modifications';
 import {getVisibleChildPlaceholders} from 'modules/utils/instanceHistoryModification';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
@@ -42,7 +42,7 @@ const businessObjects: BusinessObjects = {
   },
 };
 
-const startEventModification: FlowNodeModification = {
+const startEventModification: ElementModification = {
   type: 'token',
   payload: {
     operation: 'ADD_TOKEN',
@@ -54,7 +54,7 @@ const startEventModification: FlowNodeModification = {
   },
 };
 
-const endEvent1Modification: FlowNodeModification = {
+const endEvent1Modification: ElementModification = {
   type: 'token',
   payload: {
     operation: 'MOVE_TOKEN',
@@ -67,7 +67,7 @@ const endEvent1Modification: FlowNodeModification = {
   },
 };
 
-const endEvent2Modification: FlowNodeModification = {
+const endEvent2Modification: ElementModification = {
   type: 'token',
   payload: {
     operation: 'CANCEL_TOKEN',
@@ -77,7 +77,7 @@ const endEvent2Modification: FlowNodeModification = {
   },
 };
 
-const subprocessModification: FlowNodeModification = {
+const subprocessModification: ElementModification = {
   type: 'token',
   payload: {
     operation: 'MOVE_TOKEN',

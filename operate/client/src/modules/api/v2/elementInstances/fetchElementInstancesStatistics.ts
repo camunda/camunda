@@ -1,0 +1,25 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {
+  endpoints,
+  type GetProcessInstanceStatisticsResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.9';
+import {requestWithThrow} from 'modules/request';
+
+const fetchElementInstancesStatistics = async (processInstanceKey: string) => {
+  return requestWithThrow<GetProcessInstanceStatisticsResponseBody>({
+    url: endpoints.getProcessInstanceStatistics.getUrl({
+      processInstanceKey,
+      statisticName: 'element-instances',
+    }),
+    method: endpoints.getProcessInstanceStatistics.method,
+  });
+};
+
+export {fetchElementInstancesStatistics};

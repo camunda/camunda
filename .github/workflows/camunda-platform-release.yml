@@ -317,6 +317,7 @@ jobs:
           export TAG_REVISION
           echo "tagRevision=${TAG_REVISION}" >> "$GITHUB_OUTPUT"
           popd
+
       - name: Debug Optimize Versions
         if: ${{ inputs.includeOptimize && inputs.dryRun }}
         run: |
@@ -348,7 +349,7 @@ jobs:
           
           echo "dir=${ARTIFACT_DIR}" >> "$GITHUB_OUTPUT"
       - name: Upload Release Artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
           path: ${{ steps.release-artifacts.outputs.dir }}
@@ -442,7 +443,7 @@ jobs:
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Zeebe Docker Image
@@ -547,7 +548,7 @@ jobs:
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Operate Docker Image
@@ -655,7 +656,7 @@ jobs:
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Tasklist Docker Image
@@ -780,7 +781,7 @@ jobs:
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Optimize Docker Image
@@ -901,7 +902,7 @@ jobs:
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Camunda Docker Image
@@ -1079,7 +1080,7 @@ jobs:
           # To show the changelog also as step summary
           echo "$changelog" >> "$GITHUB_STEP_SUMMARY"
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
           path: release-artifacts
@@ -1162,9 +1163,9 @@ jobs:
             secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
       - name: Get FOSSA context
         id: fossa-context
-        uses: camunda/infra-global-github-actions/fossa/info@ed51d624a3a96d3c7385ba00df93c01c6c0036bf
+        uses: camunda/infra-global-github-actions/fossa/info@ddce99387a10a4d578e4d7d8e6c6626dcd3d8fd3
       - name: Wait for FOSSA scan completion
-        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@ed51d624a3a96d3c7385ba00df93c01c6c0036bf
+        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@ddce99387a10a4d578e4d7d8e6c6626dcd3d8fd3
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}
@@ -1172,7 +1173,7 @@ jobs:
           revision-id: ${{ steps.fossa-context.outputs.head-revision }}
           dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
       - name: Create FOSSA releases and generate reports
-        uses: camunda/infra-global-github-actions/fossa/release@ed51d624a3a96d3c7385ba00df93c01c6c0036bf
+        uses: camunda/infra-global-github-actions/fossa/release@ddce99387a10a4d578e4d7d8e6c6626dcd3d8fd3
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}

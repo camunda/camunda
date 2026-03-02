@@ -61,6 +61,7 @@ public class ProcessInstanceCreateIT {
     assertThat(processInstanceCreation.getVersion()).isEqualTo(process.getVersion());
     assertThat(processInstanceCreation.getTenantId()).isEqualTo(process.getTenantId());
     assertThat(processInstanceCreation.getTags()).isEqualTo(TAGS);
+    assertThat(processInstanceCreation.getBusinessId()).isNull();
 
     waitForProcessInstance(
         camundaClient,
@@ -111,6 +112,7 @@ public class ProcessInstanceCreateIT {
     assertThat(processInstanceCreation.getTenantId()).isEqualTo(process.getTenantId());
     assertThat(processInstanceCreation.getVariablesAsMap()).isEqualTo(variables);
     assertThat(processInstanceCreation.getTags()).isEqualTo(TAGS);
+    assertThat(processInstanceCreation.getBusinessId()).isNull();
 
     waitForProcessInstance(
         camundaClient,
@@ -158,11 +160,23 @@ public class ProcessInstanceCreateIT {
     assertThat(processInstanceCreation.getTenantId()).isEqualTo(process.getTenantId());
     assertThat(processInstanceCreation.getBusinessId()).isEqualTo(BUSINESS_ID);
 
-    // we are not checking the business id in the process instance result as it is not supported in
-    // fetching the process instance result yet.
-    // FIXME add assertion for business id in the process instance result once visibility of
-    // business id in the process instance result is supported.
-    // https://github.com/camunda/product-hub/issues/3436
+    waitForProcessInstance(
+        camundaClient,
+        f -> f.processInstanceKey(processInstanceCreation.getProcessInstanceKey()),
+        f -> assertThat(f).hasSize(1));
+
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceGetRequest(processInstanceCreation.getProcessInstanceKey())
+            .send()
+            .join();
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.getProcessInstanceKey())
+        .isEqualTo(processInstanceCreation.getProcessInstanceKey());
+    assertThat(result.getBusinessId()).isEqualTo(BUSINESS_ID);
   }
 
   @Test
@@ -191,10 +205,22 @@ public class ProcessInstanceCreateIT {
     assertThat(processInstanceCreation.getVariablesAsMap()).isEqualTo(variables);
     assertThat(processInstanceCreation.getBusinessId()).isEqualTo(BUSINESS_ID + "-with-result");
 
-    // we are not checking the business id in the process instance result as it is not supported in
-    // fetching the process instance result yet.
-    // FIXME add assertion for business id in the process instance result once visibility of
-    // business id in the process instance result is supported.
-    // https://github.com/camunda/product-hub/issues/3436
+    waitForProcessInstance(
+        camundaClient,
+        f -> f.processInstanceKey(processInstanceCreation.getProcessInstanceKey()),
+        f -> assertThat(f).hasSize(1));
+
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceGetRequest(processInstanceCreation.getProcessInstanceKey())
+            .send()
+            .join();
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.getProcessInstanceKey())
+        .isEqualTo(processInstanceCreation.getProcessInstanceKey());
+    assertThat(result.getBusinessId()).isEqualTo(BUSINESS_ID + "-with-result");
   }
 }

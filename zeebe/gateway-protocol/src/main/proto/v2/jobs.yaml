@@ -415,7 +415,12 @@ components:
         listenerEventType:
           $ref: '#/components/schemas/JobListenerEventTypeEnum'
         userTask:
-          $ref: '#/components/schemas/UserTaskProperties'
+          description: |
+            User task properties, if the job is a user task.
+            This is `null` if the job is not a user task.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/UserTaskProperties'
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
         rootProcessInstanceKey:
@@ -682,9 +687,12 @@ components:
             - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
           description: The element instance key associated with the job.
         endTime:
-          description: When the job ended.
+          description: |
+            End date of the job.
+            This is `null` if the job is not in an end state yet.
           type: string
           format: date-time
+          nullable: true
         errorCode:
           description: The error code provided for a failed job.
           type: string

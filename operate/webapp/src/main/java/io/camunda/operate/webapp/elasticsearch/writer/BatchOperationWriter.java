@@ -21,10 +21,10 @@ import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.OperationStore;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.exception.NotFoundException;
+import io.camunda.operate.webapp.operation.dto.CreateOperationRequestDto;
+import io.camunda.operate.webapp.operation.dto.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.reader.*;
-import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
-import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.writer.ProcessInstanceSource;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
@@ -200,7 +200,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
       final String script =
           "if (ctx._source.batchOperationIds == null){"
               + "ctx._source.batchOperationIds = new String[]{params.batchOperationId};"
-              + "} else {"
+              + "} else if (!ctx._source.batchOperationIds.contains(params.batchOperationId)) {"
               + "ctx._source.batchOperationIds.add(params.batchOperationId);"
               + "}";
       batchRequest.updateWithScript(
@@ -265,7 +265,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
       final var script =
           "if (ctx._source.batchOperationIds == null){"
               + "ctx._source.batchOperationIds = new String[]{params.batchOperationId};"
-              + "} else {"
+              + "} else if (!ctx._source.batchOperationIds.contains(params.batchOperationId)) {"
               + "ctx._source.batchOperationIds.add(params.batchOperationId);"
               + "}";
 

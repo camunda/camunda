@@ -94,11 +94,7 @@ public abstract class BrokerRequest<T> implements ClientRequest {
       }
     } catch (final Exception e) {
       // Log response buffer for debugging purpose
-      LOGGER.error(
-          "Failed to read response: {}{}{}",
-          e.getMessage(),
-          System.lineSeparator(),
-          BufferUtil.bufferAsHexString(responseBuffer));
+      LOGGER.error("Failed to read response:{}", BufferUtil.bufferAsHexString(responseBuffer), e);
       throw e;
     }
   }

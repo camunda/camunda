@@ -241,9 +241,9 @@ const queryKeys = {
       elementInstanceKey,
     ],
   },
-  flowNodeInstancesStatistics: {
+  elementInstancesStatistics: {
     get: (processInstanceKey: string) => [
-      'flowNodeInstancesStatistics',
+      'elementInstancesStatistics',
       processInstanceKey,
     ],
   },

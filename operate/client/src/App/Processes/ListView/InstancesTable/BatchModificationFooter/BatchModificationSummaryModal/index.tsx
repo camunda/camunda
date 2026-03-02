@@ -17,7 +17,7 @@ import {Title, DataTable} from './styled';
 import {tracking} from 'modules/tracking';
 import {useInstancesCount} from 'modules/queries/processInstancesStatistics/useInstancesCount';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
-import {getFlowNodeName} from 'modules/utils/flowNodes';
+import {getElementName} from 'modules/utils/elements';
 import {handleOperationError} from 'modules/utils/notifications';
 import {useModifyProcessInstancesBatchOperation} from 'modules/mutations/processes/useModifyProcessInstancesBatchOperation';
 import {useBatchOperationMutationRequestBody} from 'modules/hooks/useBatchOperationMutationRequestBody';
@@ -42,14 +42,14 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
       processDefinitionKey: process?.processDefinitionKey,
     });
 
-    const sourceFlowNodeName = getFlowNodeName({
+    const sourceFlowNodeName = getElementName({
       businessObjects: processDefinitionData?.diagramModel.elementsById,
-      flowNodeId: sourceElementId,
+      elementId: sourceElementId,
     });
 
-    const targetFlowNodeName = getFlowNodeName({
+    const targetFlowNodeName = getElementName({
       businessObjects: processDefinitionData?.diagramModel.elementsById,
-      flowNodeId: selectedTargetElementId ?? undefined,
+      elementId: selectedTargetElementId ?? undefined,
     });
 
     const {data: instancesCount} = useInstancesCount(

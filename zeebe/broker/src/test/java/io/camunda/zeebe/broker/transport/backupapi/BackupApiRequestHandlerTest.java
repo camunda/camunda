@@ -24,6 +24,8 @@ import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
+import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -53,7 +55,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 import org.agrona.ExpandableArrayBuffer;
@@ -81,6 +82,8 @@ final class BackupApiRequestHandlerTest {
 
   @Mock BackupManager backupManager;
   @Mock CheckpointState checkpointState;
+  @Mock DbCheckpointMetadataState checkpointMetadataState;
+  @Mock DbBackupRangeState backupRangeState;
 
   BackupApiRequestHandler handler;
   private ResponseReader serverOutput;
@@ -90,7 +93,14 @@ final class BackupApiRequestHandlerTest {
   void setup() {
     handler =
         new BackupApiRequestHandler(
-            transport, logStreamWriter, backupManager, checkpointState, 1, true);
+            transport,
+            logStreamWriter,
+            backupManager,
+            checkpointState,
+            checkpointMetadataState,
+            backupRangeState,
+            1,
+            true);
     scheduler.submitActor(handler);
     scheduler.workUntilDone();
 
@@ -552,8 +562,8 @@ final class BackupApiRequestHandlerTest {
     final var info3 = createCheckpointInfo(checkpointId2);
     final var info4 = createCheckpointInfo(checkpointId3);
 
-    final var range1 = new BackupRangeStatus.Complete(info1, info2);
-    final var range2 = new BackupRangeStatus.Incomplete(info3, info4, Set.of(25L));
+    final var range1 = new BackupRangeStatus(info1, info2);
+    final var range2 = new BackupRangeStatus(info3, info4);
 
     when(backupManager.getBackupRangeStatus())
         .thenReturn(CompletableActorFuture.completed(List.of(range1, range2)));
@@ -571,9 +581,65 @@ final class BackupApiRequestHandlerTest {
     assertThat(rangesResponse.getRanges())
         .containsExactlyInAnyOrder(
             new BackupRangesResponse.PartitionBackupRange(
-                1, toResponseCheckpointInfo(info1), toResponseCheckpointInfo(info2), Set.of()),
+                1, toResponseCheckpointInfo(info1), toResponseCheckpointInfo(info2)),
             new BackupRangesResponse.PartitionBackupRange(
-                1, toResponseCheckpointInfo(info3), toResponseCheckpointInfo(info4), Set.of(25L)));
+                1, toResponseCheckpointInfo(info3), toResponseCheckpointInfo(info4)));
+  }
+
+  @Test
+  void shouldSyncMetadata() {
+    // given
+    final long checkpointId1 = 10;
+    final long checkpointId2 = 20;
+    final long checkpointId3 = 30;
+
+    final var info1 = createCheckpointInfo(checkpointId1);
+    final var info2 = createCheckpointInfo(checkpointId2);
+    final var info3 = createCheckpointInfo(checkpointId2);
+    final var info4 = createCheckpointInfo(checkpointId3);
+    final var range1 = new BackupRangeStatus(info1, info2);
+    final var range2 = new BackupRangeStatus(info3, info4);
+    final var request =
+        new BackupRequest().setType(BackupRequestType.SYNC_METADATA).setPartitionId(1);
+
+    when(backupManager.syncMetadata(any(), any()))
+        .thenReturn(CompletableActorFuture.completed(List.of(range1, range2)));
+
+    // when
+    final var rangeResponse = new BackupRangesResponse();
+    serverOutput.setResponseObject(rangeResponse);
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
+    assertThat(rangeResponse.getRanges())
+        .containsExactlyInAnyOrder(
+            new BackupRangesResponse.PartitionBackupRange(
+                1, toResponseCheckpointInfo(info1), toResponseCheckpointInfo(info2)),
+            new BackupRangesResponse.PartitionBackupRange(
+                1, toResponseCheckpointInfo(info3), toResponseCheckpointInfo(info4)));
+  }
+
+  @Test
+  void shouldReturnErrorWhenSyncMetadataFails() {
+    // given
+    final var request =
+        new BackupRequest().setType(BackupRequestType.SYNC_METADATA).setPartitionId(1);
+
+    when(backupManager.syncMetadata(any(), any()))
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(new RuntimeException("sync failed")));
+
+    // when
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofMillis(100))
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .returns(ErrorCode.INTERNAL_ERROR, ErrorResponse::getErrorCode)
+        .returns("sync failed", error -> BufferUtil.bufferAsString(error.getErrorData()));
   }
 
   private static BackupRangeStatus.CheckpointInfo createCheckpointInfo(final long checkpointId) {

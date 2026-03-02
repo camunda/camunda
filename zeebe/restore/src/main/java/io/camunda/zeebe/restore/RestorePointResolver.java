@@ -113,7 +113,7 @@ public class RestorePointResolver {
       return;
     }
 
-    final var firstLogPosition = checkpoint.firstLogPosition();
+    final var firstLogPosition = checkpoint.getFirstLogPositionOrDefault();
     final var previousBackup = previousBackups.getLast();
     final var previousBackupPosition = previousBackup.checkpointPosition();
     if (firstLogPosition > previousBackupPosition + 1) {
@@ -233,7 +233,7 @@ public class RestorePointResolver {
         .filter(
             checkpointEntry -> {
               final var checkpointPosition = checkpointEntry.checkpointPosition();
-              return (checkpointPosition >= restorableRange.start().firstLogPosition())
+              return (checkpointPosition >= restorableRange.start().getFirstLogPositionOrDefault())
                   && (checkpointPosition <= restorableRange.end().checkpointPosition());
             })
         .collect(Collectors.toCollection(ArrayList::new));
@@ -272,7 +272,8 @@ public class RestorePointResolver {
                         from);
                 return;
               }
-              if (exportedPosition != null && startInfo.firstLogPosition() > exportedPosition) {
+              if (exportedPosition != null
+                  && startInfo.getFirstLogPositionOrDefault() > exportedPosition) {
                 LOG.atTrace()
                     .addKeyValue("partition", metadata.partitionId())
                     .log(

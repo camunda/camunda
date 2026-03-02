@@ -9,8 +9,8 @@ package io.camunda.operate.webapp.zeebe.operation;
 
 import static io.camunda.webapps.schema.entities.operation.OperationType.RESOLVE_INCIDENT;
 
+import io.camunda.operate.webapp.exception.NotFoundException;
 import io.camunda.operate.webapp.reader.IncidentReader;
-import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;

@@ -45,7 +45,8 @@ public class ClusterNodeIdProviderTest {
         assertThat(cluster.getNodeIdProvider()).returns(Type.S3, NodeIdProvider::getType);
         assertThat(cluster.getNodeIdProvider().s3())
             .returns("bucketExample", S3::getBucketName)
-            .returns(Duration.ofSeconds(10), S3::getLeaseDuration);
+            .returns(Duration.ofSeconds(10), S3::getLeaseDuration)
+            .returns(Duration.ofMinutes(2), S3::getExpiredLeaseThreshold);
       }
     }
 
@@ -60,6 +61,7 @@ public class ClusterNodeIdProviderTest {
           "camunda.cluster.node-id-provider.s3.region=us-east-1",
           "camunda.cluster.node-id-provider.s3.accessKey=myAccessKey",
           "camunda.cluster.node-id-provider.s3.secretKey=mySecretKey",
+          "camunda.cluster.node-id-provider.s3.expired-lease-threshold=PT5m",
         })
     class WithAllProperties {
 
@@ -80,7 +82,8 @@ public class ClusterNodeIdProviderTest {
             .returns(Optional.of("https://s3.example.com"), S3::getEndpoint)
             .returns(Optional.of("us-east-1"), S3::getRegion)
             .returns(Optional.of("myAccessKey"), S3::getAccessKey)
-            .returns(Optional.of("mySecretKey"), S3::getSecretKey);
+            .returns(Optional.of("mySecretKey"), S3::getSecretKey)
+            .returns(Duration.ofMinutes(5), S3::getExpiredLeaseThreshold);
 
         assertThatThrownBy(cluster::getNodeId).isInstanceOf(IllegalStateException.class);
       }

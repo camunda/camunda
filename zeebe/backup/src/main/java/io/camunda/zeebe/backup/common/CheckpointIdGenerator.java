@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.backup.common;
 
-import java.time.Instant;
 import java.time.InstantSource;
 
 /**
@@ -64,9 +63,5 @@ public final class CheckpointIdGenerator {
       return timestamp + offset;
     }
     return timestamp;
-  }
-
-  public Instant toInstant(final long checkpointId) {
-    return Instant.ofEpochMilli(checkpointId - offset);
   }
 }

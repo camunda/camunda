@@ -44,12 +44,13 @@ import {
 } from '@camunda/camunda-api-zod-schemas/8.9';
 import {formatToISO} from 'modules/utils/date/formatDate';
 import {PaginatedSortableTable} from 'modules/components/PaginatedSortableTable';
-import {CellOperationType} from './Cell/CellOperationType';
+import {CellEntityKey} from './Cell/CellEntityKey';
 import {CellResult} from './Cell/CellResult';
-import {CellReference} from './Cell/CellReference';
-import {CellProperty} from './Cell/CellProperty';
+import {CellParentEntity} from './Cell/CellParentEntity';
+import {CellDetails} from './Cell/CellDetails';
 import {CellActor} from './Cell/CellActor';
 import {CellComment} from './Cell/CellComment';
+import {useDecisionDefinitions} from 'modules/hooks/decisionDefinitions';
 
 const headerColumns = [
   {
@@ -67,13 +68,18 @@ const headerColumns = [
     sortKey: 'entityType',
   },
   {
-    header: 'Reference to entity',
-    key: 'reference',
+    header: 'Entity key',
+    key: 'entityKey',
+    sortKey: 'entityKey',
+  },
+  {
+    header: 'Parent entity',
+    key: 'parentEntity',
     isDisabled: true,
   },
   {
-    header: 'Property',
-    key: 'property',
+    header: 'Details',
+    key: 'details',
     isDisabled: true,
   },
   {
@@ -188,6 +194,9 @@ const InstancesTable: React.FC = observer(() => {
     isLoading: isLoadingProcessDefinitionNames,
   } = useProcessDefinitionNames(selectedTenantId);
 
+  const {data: decisionDefinitionNameArray} =
+    useDecisionDefinitions(selectedTenantId);
+
   const [detailsModal, setDetailsModal] = useState<DetailsModalState>({
     isOpen: false,
   });
@@ -208,27 +217,43 @@ const InstancesTable: React.FC = observer(() => {
 
   const rows = useMemo(
     () =>
-      data?.auditLogs.map((item: AuditLog) => ({
-        id: item.auditLogKey,
-        result: <CellResult item={item} />,
-        operationType: <CellOperationType item={item} />,
-        entityType: spaceAndCapitalize(item.entityType),
-        reference: (
-          <CellReference
-            item={item}
-            processDefinitionName={
-              item.processDefinitionKey
-                ? processDefinitionNameMap?.[item.processDefinitionKey]
-                : undefined
-            }
-          />
-        ),
-        property: <CellProperty item={item} />,
-        user: <CellActor item={item} />,
-        timestamp: formatDate(item.timestamp),
-        comment: <CellComment item={item} setDetailsModal={setDetailsModal} />,
-      })) || [],
-    [data, processDefinitionNameMap],
+      data?.auditLogs.map((item: AuditLog) => {
+        const processDefinitionName = item.processDefinitionKey
+          ? processDefinitionNameMap?.[item.processDefinitionKey]
+          : undefined;
+        const decisionDefinitionName =
+          item.decisionDefinitionKey && decisionDefinitionNameArray
+            ? decisionDefinitionNameArray.find(
+                (dd) => dd.decisionDefinitionKey === item.decisionDefinitionKey,
+              )?.name
+            : undefined;
+        return {
+          id: item.auditLogKey,
+          result: <CellResult item={item} />,
+          operationType: spaceAndCapitalize(item.operationType),
+          entityType: spaceAndCapitalize(item.entityType),
+          entityKey: (
+            <CellEntityKey
+              item={item}
+              processDefinitionName={processDefinitionName}
+              decisionDefinitionName={decisionDefinitionName}
+            />
+          ),
+          parentEntity: (
+            <CellParentEntity
+              item={item}
+              processDefinitionName={processDefinitionName}
+            />
+          ),
+          details: <CellDetails item={item} />,
+          user: <CellActor item={item} />,
+          timestamp: formatDate(item.timestamp),
+          comment: (
+            <CellComment item={item} setDetailsModal={setDetailsModal} />
+          ),
+        };
+      }) || [],
+    [data, processDefinitionNameMap, decisionDefinitionNameArray],
   );
 
   const getTableState = () => {
@@ -242,16 +267,27 @@ const InstancesTable: React.FC = observer(() => {
     return 'content';
   };
 
+  const emptyMessage = useMemo(() => {
+    if (Object.keys(filterValues).length === 0) {
+      return {
+        message: 'No operation log items yet',
+        additionalInfo:
+          'Operations that you perform in UI or via the API will appear here.',
+      };
+    }
+    return {
+      message: 'No operations log found',
+      additionalInfo: 'Try adjusting your filters or check back later.',
+    };
+  }, [filterValues]);
+
   return (
     <Container>
       <BasePanelHeader title="Operations Log" count={data?.totalCount} />
       <PaginatedSortableTable
         state={getTableState()}
         rows={rows}
-        emptyMessage={{
-          message: 'No operations log found',
-          additionalInfo: 'Try adjusting your filters or check back later.',
-        }}
+        emptyMessage={emptyMessage}
         headerColumns={headerColumns}
         pagination={{
           hasPreviousPage,

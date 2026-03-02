@@ -11,8 +11,11 @@ import {
   CheckmarkOutline as BaseCheckmarkOutline,
   ErrorOutline as BaseErrorOutline,
 } from "@carbon/react/icons";
-import { Column, Grid as CarbonGrid } from "@carbon/react";
+import { Column, Grid as CarbonGrid, Section } from "@carbon/react";
 import { styles } from "@carbon/elements";
+
+// The height of the header and the spacing between the header and the table
+const HEADER_HEIGHT = 229;
 
 const OperationLogName = styled.div`
   display: flex;
@@ -50,6 +53,28 @@ const OwnerInfo = styled.div`
   white-space: nowrap;
 `;
 
+const StickySection = styled(Section)`
+  position: sticky;
+  top: 0;
+`;
+
+const EntityListStickyWrapper = styled("section")`
+  .cds--data-table-container {
+    height: calc(100vh - ${HEADER_HEIGHT}px);
+    overflow-y: auto;
+  }
+
+  thead {
+    position: sticky;
+    top: 0;
+  }
+
+  .cds--pagination {
+    position: sticky;
+    bottom: 0;
+  }
+`;
+
 export {
   OperationLogName,
   SuccessIcon,
@@ -59,4 +84,6 @@ export {
   CenteredRow,
   PropertyText,
   OwnerInfo,
+  StickySection,
+  EntityListStickyWrapper,
 };

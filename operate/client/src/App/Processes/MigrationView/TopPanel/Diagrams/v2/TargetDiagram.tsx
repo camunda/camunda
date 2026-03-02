@@ -18,7 +18,7 @@ import {Diagram} from 'modules/components/Diagram';
 import {useEffect} from 'react';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
-import {useProcessInstancesFlowNodeStates} from 'modules/queries/processInstancesStatistics/useFlowNodeStates';
+import {useProcessInstancesElementStates} from 'modules/queries/processInstancesStatistics/useElementStates';
 import {useMigrationTargetXml} from 'modules/queries/processDefinitions/useMigrationTargetXml';
 import {getMigrationProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';
 
@@ -52,7 +52,7 @@ const TargetDiagram: React.FC = observer(() => {
     );
   }, [selectedTargetProcessId]);
 
-  const {data: flowNodeData} = useProcessInstancesFlowNodeStates(
+  const {data: flowNodeData} = useProcessInstancesElementStates(
     {
       filter: {
         processInstanceKey: getMigrationProcessInstancesFilter(),
@@ -87,7 +87,7 @@ const TargetDiagram: React.FC = observer(() => {
             .filter((state) => {
               return (
                 state.flowNodeId === sourceElementId &&
-                ['active', 'incidents'].includes(state.flowNodeState)
+                ['active', 'incidents'].includes(state.elementState)
               );
             })
             .reduce((count, state) => {

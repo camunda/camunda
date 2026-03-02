@@ -11,10 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableOperationType;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
@@ -26,22 +28,32 @@ class VariableAddUpdateAuditLogTransformerTest {
       new VariableAddUpdateAuditLogTransformer();
 
   @Test
+  void shouldSupportVariableRecordWithApiSource() {
+    // given
+    final var variableSource = new VariableSourceRecord().setType(VariableOperationType.API);
+    final var record = variableRecord(VariableIntent.CREATED, variableSource);
+
+    // then
+    assertThat(transformer.supports(record)).isTrue();
+  }
+
+  @Test
+  void shouldNotSupportVariableRecordWithUnknownSource() {
+    // given
+    final var record =
+        variableRecord(
+            VariableIntent.CREATED,
+            new VariableSourceRecord().setType(VariableOperationType.UNKNOWN));
+
+    // then
+    assertThat(transformer.supports(record)).isFalse();
+  }
+
+  @Test
   void shouldTransformVariableRecord() {
     // given
-    final VariableRecordValue recordValue =
-        ImmutableVariableRecordValue.builder()
-            .from(factory.generateObject(VariableRecordValue.class))
-            .withName("variable-name")
-            .withProcessDefinitionKey(456L)
-            .withBpmnProcessId("bpmn-process-id")
-            .withTenantId("tenant-1")
-            .withProcessInstanceKey(123L)
-            .withScopeKey(789L)
-            .build();
-
     final Record<VariableRecordValue> record =
-        factory.generateRecord(
-            ValueType.VARIABLE, r -> r.withIntent(VariableIntent.CREATED).withValue(recordValue));
+        variableRecord(VariableIntent.CREATED, VariableSourceRecord.api());
 
     // when
     final var entity = AuditLogEntry.of(record);
@@ -58,5 +70,23 @@ class VariableAddUpdateAuditLogTransformerTest {
         .isPositive()
         .isEqualTo(record.getValue().getRootProcessInstanceKey());
     assertThat(entity.getEntityDescription()).isEqualTo("variable-name");
+  }
+
+  private Record<VariableRecordValue> variableRecord(
+      final VariableIntent intent, final VariableSourceRecord variableSource) {
+    final VariableRecordValue recordValue =
+        ImmutableVariableRecordValue.builder()
+            .from(factory.generateObject(VariableRecordValue.class))
+            .withName("variable-name")
+            .withProcessDefinitionKey(456L)
+            .withBpmnProcessId("bpmn-process-id")
+            .withTenantId("tenant-1")
+            .withProcessInstanceKey(123L)
+            .withScopeKey(789L)
+            .withSource(variableSource)
+            .build();
+
+    return factory.generateRecord(
+        ValueType.VARIABLE, r -> r.withIntent(intent).withValue(recordValue));
   }
 }

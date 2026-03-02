@@ -19,7 +19,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
 
@@ -30,7 +30,7 @@ describe('ElementInstancesTree - Event Subprocess', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(mockEventSubprocessInstance);
     mockFetchProcessDefinitionXml().withSuccess(eventSubProcess);
-    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockFetchElementInstancesStatistics().withSuccess({items: []});
     mockQueryBatchOperationItems().withSuccess(searchResult([]));
     mockSearchElementInstances().withSuccess(
       eventSubProcessElementInstances.level1,

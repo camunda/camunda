@@ -60,21 +60,21 @@ class CsrfRequireMatcherTest {
   @Test
   void shouldNotMatchForPublicAPIAccessWithBearerToken() {
     when(request.getMethod()).thenReturn("POST");
-    when(request.getServletPath()).thenReturn("/v1/process-definitions/search");
+    when(request.getServletPath()).thenReturn("/v2/process-instances/search");
     when(request.getHeader("Referer")).thenReturn(null);
     when(request.getRequestURL())
-        .thenReturn(new StringBuffer("http://localhost:8080/v1/process-definitions/search"));
+        .thenReturn(new StringBuffer("http://localhost:8080/v2/process-instances/search"));
     when(request.getHeader("Authorization")).thenReturn("Bearer eyBlackCoffee");
     assertThat(csrfRequireMatcher.matches(request)).isFalse();
   }
 
   @Test
-  void shouldMatchForInternalAPIAccess() {
+  void shouldMatchForStateChangingRequestWithoutBearerToken() {
     when(request.getMethod()).thenReturn("POST");
-    when(request.getServletPath()).thenReturn("/api/processes/grouped");
+    when(request.getServletPath()).thenReturn("/v2/process-instances/search");
     when(request.getHeader("Referer")).thenReturn(null);
     when(request.getRequestURL())
-        .thenReturn(new StringBuffer("http://localhost:8080//api/processes/grouped"));
+        .thenReturn(new StringBuffer("http://localhost:8080/v2/process-instances/search"));
     assertThat(csrfRequireMatcher.matches(request)).isTrue();
   }
 }

@@ -8,9 +8,7 @@
 package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.backup.api.BackupManager;
-import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.CheckpointListener;
-import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
 import io.camunda.zeebe.backup.metrics.CheckpointMetrics;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
@@ -52,7 +50,6 @@ public final class CheckpointRecordsProcessor
   //  Can be accessed concurrently by other threads to add new listeners. Hence we have to use a
   // thread safe collection
   private final Set<CheckpointListener> checkpointListeners = new CopyOnWriteArraySet<>();
-  private final BackupMetadataSyncer syncer;
   private final CheckpointMetrics metrics;
   private DbCheckpointState checkpointState;
   private DbCheckpointMetadataState checkpointMetadataState;
@@ -62,12 +59,9 @@ public final class CheckpointRecordsProcessor
   private PartitionCountSupplier partitionCountSupplier;
 
   public CheckpointRecordsProcessor(
-      final BackupManager backupManager,
-      final BackupStore backupStore,
-      final MeterRegistry registry) {
+      final BackupManager backupManager, final MeterRegistry registry) {
     this.backupManager = backupManager;
     metrics = new CheckpointMetrics(registry);
-    syncer = new BackupMetadataSyncer(backupStore);
   }
 
   public void setScalingInProgressSupplier(final ScalingStatusSupplier scalingInProgressSupplier) {
@@ -117,11 +111,11 @@ public final class CheckpointRecordsProcessor
 
     checkpointConfirmBackupProcessor =
         new CheckpointConfirmBackupProcessor(
-            checkpointState, checkpointMetadataState, backupRangeState, backupManager, syncer);
+            checkpointState, checkpointMetadataState, backupRangeState, backupManager);
 
     checkpointDeleteBackupProcessor =
         new CheckpointDeleteBackupProcessor(
-            checkpointMetadataState, backupRangeState, checkpointState, backupManager, syncer);
+            checkpointMetadataState, backupRangeState, checkpointState, backupManager);
 
     checkpointCreatedEventApplier =
         new CheckpointCreatedEventApplier(

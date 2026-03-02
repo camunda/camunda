@@ -18,7 +18,7 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.AggregationDSL;
-import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
+import io.camunda.operate.webapp.operation.dto.BatchOperationDto;
 import io.camunda.operate.webapp.transform.DataAggregator;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;

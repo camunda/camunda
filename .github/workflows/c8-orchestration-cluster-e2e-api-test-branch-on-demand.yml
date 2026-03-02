@@ -241,7 +241,7 @@ jobs:
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: C8 Orchestration Cluster API Test Result
@@ -323,16 +323,15 @@ jobs:
           export CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_1="lisa"
 
           # H2 in-memory database with RDBMS secondary storage
-          export CAMUNDA_DATABASE_URL="jdbc:h2:mem:cpt;DB_CLOSE_DELAY=-1;MODE=PostgreSQL"
-          export CAMUNDA_DATABASE_TYPE="rdbms"
-          export CAMUNDA_DATABASE_USERNAME="sa"
-          export CAMUNDA_DATABASE_PASSWORD=""
           export CAMUNDA_DATA_SECONDARY_STORAGE_TYPE="rdbms"
-          export ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME="io.camunda.exporter.rdbms.RdbmsExporter"
-          export ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_FLUSH_INTERVAL="PT0S"
-          export ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_DEFAULT_HISTORY_TTL="PT2S"
-          export ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MIN_HISTORY_CLEANUP_INTERVAL="PT2S"
-          export ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MAX_HISTORY_CLEANUP_INTERVAL="PT5S"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL="jdbc:h2:mem:cpt;DB_CLOSE_DELAY=-1;MODE=PostgreSQL"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_USERNAME="sa"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_PASSWORD=""
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_AUTO_DDL="true"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_FLUSH_INTERVAL="PT0S"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_HISTORY_DEFAULT_HISTORY_TTL="PT60S"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_HISTORY_MIN_HISTORY_CLEANUP_INTERVAL="PT10S"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_HISTORY_MAX_HISTORY_CLEANUP_INTERVAL="PT60S"
 
           # Audit log
           export CAMUNDA_DATA_AUDITLOG_ENABLED="true"
@@ -401,7 +400,7 @@ jobs:
           echo "=== Camunda logs ==="
           cat dev-dist/camunda.log
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: C8 Orchestration Cluster API Test Result (H2-RDBMS)

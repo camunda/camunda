@@ -33,6 +33,7 @@ defaults:
 env:
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
   GHA_BEST_PRACTICES_LINTER: enabled
+  FLAKY_TEST_RERUN_COUNT: ${{ github.event_name == 'pull_request' && '3' || '7' }}
 
 jobs:
   detect-changes:
@@ -110,7 +111,7 @@ jobs:
     name: "Lint / Commitlint"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
       - name: Determine fetch depth for checkout
@@ -143,7 +144,7 @@ jobs:
     name: "Lint / Maven Spotless"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v6
@@ -168,7 +169,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "Java Checks"
     needs: [ detect-changes ]
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     steps:
@@ -195,7 +196,7 @@ jobs:
     if: needs.detect-changes.outputs.frontend-changes == 'true'
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v6
@@ -256,7 +257,7 @@ jobs:
       # IT Engine = ZEEBE_CORE_FEATURES_MODULES + ZEEBE_PROTOCOL_MODULES + ZEEBE_GATEWAY_MODULES + ZEEBE_CLIENT_MODULES (explicit list)
       ZEEBE_IT_ENGINE_MODULES: ${{ steps.set-constants.outputs.it_engine }}
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 5
     permissions: { }
     steps:
       - name: Set all test constants
@@ -323,7 +324,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "General / Unit - Back End"
     needs: [ detect-changes, setup-tests ]
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     outputs:
@@ -355,7 +356,7 @@ jobs:
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
           -D forkCount=7
-          -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
+          -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ env.GENERAL_UT_MODULES }}
@@ -389,7 +390,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "Zeebe / Unit - ${{matrix.component}}"
     needs: [ detect-changes, setup-tests ]
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     outputs:
@@ -449,7 +450,7 @@ jobs:
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
           -D forkCount=3
-          -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
+          -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -D junitThreadCount=16
           -D argLine="@{argLine} -Xmx4g"
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
@@ -561,7 +562,7 @@ jobs:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
     needs: [ detect-changes ]
     name: "General / Integration / RDBMS ITs"
-    timeout-minutes: 15
+    timeout-minutes: 30
     runs-on: gcp-perf-core-8-default
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
@@ -588,7 +589,7 @@ jobs:
           -D forkCount=1
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
           -P rdbms,extract-flaky-tests
           -pl qa/acceptance-tests
           verify
@@ -820,7 +821,7 @@ jobs:
           -D forkCount=${{ matrix.maven-test-fork-count }}
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
           -Dio.camunda.process.test.camundaDockerImageName="${{ env.CAMUNDA_DOCKER_IMAGE_NAME }}"
           -Dio.camunda.process.test.camundaDockerImageVersion="${{ env.DOCKER_IMAGE_TAG }}"
           -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}"
@@ -870,7 +871,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "General / Unit - ArchUnit"
     needs: [ detect-changes ]
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     env:
@@ -901,7 +902,7 @@ jobs:
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
           ./mvnw -B --no-snapshot-updates
-          -D skipITs -D skipQaBuild=false -D skipChecks -Dsurefire.rerunFailingTestsCount=3
+          -D skipITs -D skipQaBuild=false -D skipChecks -Dsurefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -P skipFrontendBuild,extract-flaky-tests
           -pl :camunda-archunit-tests
           -am
@@ -940,7 +941,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       security-events: write
     services:
@@ -971,6 +972,7 @@ jobs:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
         with:
+          maven-cache-key-modifier: docker-checks
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -1021,8 +1023,8 @@ jobs:
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
-          ./mvnw -f dist --no-snapshot-updates -DskipChecks -Dassembly.skipAssembly=true
-          -DskipUTs -Dit.test=*DockerIT -Dfailsafe.rerunFailingTestsCount=3
+          ./mvnw -pl dist/ --no-snapshot-updates -DskipChecks -Dassembly.skipAssembly=true
+          -DskipUTs -Dit.test=*DockerIT -Dfailsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -P parallel-tests,extract-flaky-tests
           -Dcamunda.docker.test.enabled=true
           -Dcamunda.docker.test.image="${{ env.LOCAL_DOCKER_IMAGE }}:${{ steps.build-camunda-docker.outputs.version }}"
@@ -1128,7 +1130,7 @@ jobs:
     name: "Identity / Unit - Front End"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -1271,7 +1273,7 @@ jobs:
     if: needs.detect-changes.outputs.openapi-changes == 'true'
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=npm depName=@stoplight/spectral-cli
@@ -1320,7 +1322,7 @@ jobs:
     name: "Lint / Renovate Config Validator"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v6

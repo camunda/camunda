@@ -68,6 +68,7 @@ public final class CreateProcessInstanceTest {
     assertThat(processInstance.getBpmnProcessId()).isEqualTo(processId);
     assertThat(processInstance.getVersion()).isEqualTo(2);
     assertThat(processInstance.getProcessDefinitionKey()).isEqualTo(secondProcessDefinitionKey);
+    assertThat(processInstance.getBusinessId()).isNull();
   }
 
   @ParameterizedTest
@@ -85,6 +86,7 @@ public final class CreateProcessInstanceTest {
     assertThat(processInstance.getBpmnProcessId()).isEqualTo(processId);
     assertThat(processInstance.getVersion()).isEqualTo(1);
     assertThat(processInstance.getProcessDefinitionKey()).isEqualTo(firstProcessDefinitionKey);
+    assertThat(processInstance.getBusinessId()).isNull();
   }
 
   @ParameterizedTest
@@ -101,6 +103,7 @@ public final class CreateProcessInstanceTest {
     assertThat(processInstance.getBpmnProcessId()).isEqualTo(processId);
     assertThat(processInstance.getVersion()).isEqualTo(1);
     assertThat(processInstance.getProcessDefinitionKey()).isEqualTo(firstProcessDefinitionKey);
+    assertThat(processInstance.getBusinessId()).isNull();
   }
 
   @ParameterizedTest
@@ -153,6 +156,25 @@ public final class CreateProcessInstanceTest {
             .getFirst();
 
     assertThat(createdEvent.getValue().getTags()).isEqualTo(tags);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateWithBusinessId(final boolean useRest, final TestInfo testInfo) {
+    // given
+    deployProcesses(testInfo, useRest);
+
+    // when
+    final ProcessInstanceEvent processInstance =
+        getCommand(client, useRest)
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .businessId("bizniz")
+            .send()
+            .join();
+
+    // then
+    assertThat(processInstance.getBusinessId()).isEqualTo("bizniz");
   }
 
   @ParameterizedTest

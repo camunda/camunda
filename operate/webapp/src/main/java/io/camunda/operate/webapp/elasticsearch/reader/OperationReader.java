@@ -37,8 +37,8 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.ScrollException;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.webapp.rest.dto.DtoCreator;
-import io.camunda.operate.webapp.rest.dto.OperationDto;
+import io.camunda.operate.webapp.reader.dto.DtoCreator;
+import io.camunda.operate.webapp.reader.dto.OperationDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
@@ -257,33 +257,6 @@ public class OperationReader extends AbstractReader
     } catch (final ScrollException e) {
       final String message =
           String.format("Exception occurred, while obtaining operations: %s", e.getMessage());
-      LOGGER.error(message, e);
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
-  @Override
-  public List<OperationDto> getOperationsByBatchOperationId(final String batchOperationId) {
-    final var query =
-        ElasticsearchUtil.joinWithAnd(
-            ElasticsearchUtil.termsQuery(BATCH_OPERATION_ID, batchOperationId),
-            allowedOperationsQuery());
-
-    final var searchRequestBuilder =
-        new SearchRequest.Builder().index(whereToSearch(operationTemplate, ALL)).query(query);
-
-    try {
-      final var operationEntities =
-          scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)
-              .flatMap(res -> res.hits().hits().stream())
-              .map(Hit::source)
-              .toList();
-      return DtoCreator.create(operationEntities, OperationDto.class);
-    } catch (final ScrollException e) {
-      final String message =
-          String.format(
-              "Exception occurred, while searching for operation with batchOperationId: %s",
-              e.getMessage());
       LOGGER.error(message, e);
       throw new OperateRuntimeException(message, e);
     }

@@ -28,6 +28,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -72,7 +73,8 @@ public final class VariableDocumentUpdateProcessor
     this.userTaskState = userTaskState;
     processState = processingState.getProcessState();
     this.keyGenerator = keyGenerator;
-    variableBehavior = bpmnBehaviors.variableBehavior();
+    variableBehavior =
+        bpmnBehaviors.variableBehavior().withVariableSource(VariableSourceRecord.api());
     jobBehavior = bpmnBehaviors.jobBehavior();
     userTaskBehavior = bpmnBehaviors.userTaskBehavior();
     this.writers = writers;
@@ -133,6 +135,7 @@ public final class VariableDocumentUpdateProcessor
       writers.state().appendFollowUpEvent(variableDocKey, VariableDocumentIntent.UPDATING, value);
 
       final var userTaskRecord = userTaskState.getUserTask(userTaskKey);
+
       if (hasVariables(value)) {
         userTaskRecord.setVariables(value.getVariablesBuffer()).setVariablesChanged();
       }
@@ -200,6 +203,7 @@ public final class VariableDocumentUpdateProcessor
     final long processInstanceKey = scope.getValue().getProcessInstanceKey();
     final long rootProcessInstanceKey = scope.getValue().getRootProcessInstanceKey();
     final DirectBuffer bpmnProcessId = scope.getValue().getBpmnProcessIdBuffer();
+
     try {
       if (value.getUpdateSemantics() == VariableDocumentUpdateSemantic.LOCAL) {
         variableBehavior.mergeLocalDocument(

@@ -25,6 +25,7 @@ env:
   GHA_BEST_PRACTICES_LINTER: enabled
   TEST_OWNER: Core Features
   TEST_TYPE: Unit
+  FLAKY_TEST_RERUN_COUNT: ${{ github.event_name == 'pull_request' && '3' || '7' }}
 
 defaults:
   run:
@@ -66,7 +67,7 @@ jobs:
           ./mvnw -Dtest=${{inputs.componentName}}${{inputs.suite}}TestSuite
           -Dsurefire.failIfNoSpecifiedTests=false -B -T 2 --no-snapshot-updates
           -D forkCount=7 -D skipITs -D skipQaBuild=true -D skipChecks -Dskip.docker
-          -D surefire.rerunFailingTestsCount=3 -D junitThreadCount=16 -P skipFrontendBuild
+          -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D junitThreadCount=16 -P skipFrontendBuild
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs

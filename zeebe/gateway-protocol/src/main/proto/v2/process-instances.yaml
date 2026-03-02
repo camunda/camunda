@@ -1213,6 +1213,7 @@ components:
         - parentElementInstanceKey
         - rootProcessInstanceKey
         - tags
+        - businessId
       properties:
         processDefinitionId:
           $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
@@ -1272,6 +1273,11 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+        businessId:
+          description: The business id associated with this process instance.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
 
     CancelProcessInstanceRequest:
       type: object
@@ -1447,9 +1453,7 @@ components:
             Set to -1 to create the new element instance within an existing element instance of the
             flow scope. If multiple instances of the target element's flow scope exist, choose one
             specifically with this property by providing its key.
-          oneOf:
-            - type: string
-              default: "-1"
+          allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
       required:
         - elementId
@@ -1581,8 +1585,6 @@ components:
             flow scope. If multiple instances of the target element's flow scope exist, choose one
             specifically with this property by providing its key.
           oneOf:
-            - type: string
-              default: "-1"
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
       required:
         - ancestorElementInstanceKey

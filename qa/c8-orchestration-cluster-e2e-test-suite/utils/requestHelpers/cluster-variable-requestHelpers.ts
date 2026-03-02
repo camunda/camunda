@@ -15,6 +15,7 @@ import {
 } from '../http';
 import {defaultAssertionOptions} from '../constants';
 import {CREATE_CLUSTER_VARIABLE} from '../beans/requestBeans';
+import {validateResponse} from '../../json-body-assertions';
 
 /**
  * Creates a global cluster variable and stores the response fields in state
@@ -33,6 +34,10 @@ export async function createGlobalClusterVariable(
       data,
     });
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {path: '/cluster-variables/global', method: 'POST', status: '200'},
+      res,
+    );
     await extractAndStoreIds(res, state);
     const json = await res.json();
     state[`${stateKey}Name`] = json.name;
@@ -62,6 +67,10 @@ export async function createTenantClusterVariable(
       },
     );
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {path: '/cluster-variables/tenants/{tenantId}', method: 'POST', status: '200'},
+      res,
+    );
     await extractAndStoreIds(res, state);
     const json = await res.json();
     state[`${stateKey}Name`] = json.name;
@@ -145,4 +154,45 @@ export function assertClusterVariableInResponse(
   for (const key of Object.keys(expectedBody)) {
     expect(found![key]).toEqual(expectedBody[key]);
   }
+}
+
+/**
+ * Performs a cluster variable update with retry and full validation.
+ * Consolidates the repeated PUT + status/shape check pattern used across multiple tests.
+ */
+export async function assertClusterVariableUpdate(
+  request: APIRequestContext,
+  url: string,
+  value: unknown,
+  expectedName: string,
+  expectedScope: 'GLOBAL' | 'TENANT',
+  expectedTenantId?: string,
+): Promise<void> {
+  await expect(async () => {
+    const res = await request.put(url, {
+      headers: jsonHeaders(),
+      data: {value},
+    });
+
+    await assertStatusCode(res, 200);
+    
+    // Determine the correct path for validation based on scope
+    const path = expectedScope === 'GLOBAL' 
+      ? '/cluster-variables/global/{name}' as const
+      : '/cluster-variables/tenants/{tenantId}/{name}' as const;
+    
+    await validateResponse(
+      {path, method: 'PUT', status: '200'},
+      res,
+    );
+    
+    const json = await res.json();
+    expect(json.name).toBe(expectedName);
+    expect(json.scope).toBe(expectedScope);
+    if (expectedTenantId) {
+      expect(json.tenantId).toBe(expectedTenantId);
+    }
+    // Value is returned as JSON string
+    expect(JSON.parse(json.value)).toEqual(value);
+  }).toPass(defaultAssertionOptions);
 }

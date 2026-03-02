@@ -7,10 +7,12 @@
  */
 
 import {useEffect} from 'react';
-import {useParams} from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {PAGE_TITLE} from 'modules/constants';
 import {tracking} from 'modules/tracking';
+import {Locations} from 'modules/Routes';
+import {notificationsStore} from 'modules/stores/notifications';
 import {InstanceDetail} from '../Layout/InstanceDetail';
 import {DecisionPanel} from './DecisionPanel';
 import {Header} from './Header';
@@ -24,6 +26,7 @@ import {useDrdPanelState} from 'modules/queries/decisionInstances/useDrdPanelSta
 
 const DecisionInstance: React.FC = () => {
   const {decisionInstanceId = ''} = useParams<{decisionInstanceId: string}>();
+  const navigate = useNavigate();
   const [drdPanelState, setDrdPanelState] = useDrdPanelState();
   const {data, error, isFetchedAfterMount} =
     useDecisionInstance(decisionInstanceId);
@@ -48,6 +51,17 @@ const DecisionInstance: React.FC = () => {
       });
     }
   }, [isFetchedAfterMount, data?.state]);
+
+  useEffect(() => {
+    if (error?.variant === 'not-found-error' && decisionInstanceId) {
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: `Decision instance ${decisionInstanceId} could not be found`,
+        isDismissable: true,
+      });
+      navigate(Locations.decisions(), {replace: true});
+    }
+  }, [error, decisionInstanceId, navigate]);
 
   if (error?.variant === 'unauthorized-error') {
     return <Forbidden />;
