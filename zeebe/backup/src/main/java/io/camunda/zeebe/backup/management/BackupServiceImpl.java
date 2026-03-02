@@ -9,15 +9,16 @@ package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
+import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.Checkpoint;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointMetadataValue;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
-import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -60,13 +62,14 @@ final class BackupServiceImpl {
       final LogStreamWriter logStreamWriter,
       final DbBackupRangeState backupRangeState,
       final DbCheckpointMetadataState checkpointMetadataState,
-      final int partitionId) {
+      final int partitionId,
+      final MeterRegistry meterRegistry) {
     this.backupStore = backupStore;
     this.logStreamWriter = logStreamWriter;
     this.backupRangeState = backupRangeState;
     this.checkpointMetadataState = checkpointMetadataState;
     this.partitionId = partitionId;
-    metadataSyncer = new BackupMetadataSyncer(backupStore);
+    metadataSyncer = new BackupMetadataSyncer(backupStore, meterRegistry);
   }
 
   void close() {
@@ -75,6 +78,7 @@ final class BackupServiceImpl {
         .setMessage("Closing backup service")
         .log();
     backupsInProgress.forEach(InProgressBackup::close);
+    metadataSyncer.close();
   }
 
   ActorFuture<Void> takeBackup(
@@ -454,14 +458,15 @@ final class BackupServiceImpl {
         });
   }
 
-  ActorFuture<Collection<BackupRangeStatus>> syncMetadata(final ConcurrencyControl executor) {
+  ActorFuture<Collection<BackupRangeStatus>> syncMetadata(
+      final SequencedCollection<Checkpoint> checkpoints,
+      final SequencedCollection<BackupRange> ranges,
+      final ConcurrencyControl executor) {
     LOG.atDebug().setMessage("Syncing backup metadata").log();
     final var future = executor.<Collection<BackupRangeStatus>>createFuture();
     executor.run(
         () -> {
           try {
-            final var checkpoints = checkpointMetadataState.getAllCheckpoints();
-            final var ranges = backupRangeState.getAllRanges();
             metadataSyncer
                 .store(partitionId, checkpoints, ranges)
                 .whenComplete(

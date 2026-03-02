@@ -13,18 +13,20 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.Checkpoint;
 import io.camunda.zeebe.backup.common.BackupMetadata;
-import io.camunda.zeebe.backup.common.BackupMetadata.CheckpointEntry;
 import io.camunda.zeebe.backup.common.BackupMetadata.RangeEntry;
-import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
-import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
+import io.camunda.zeebe.backup.metrics.BackupMetadataSyncerMetrics;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.SequencedCollection;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * Syncs checkpoint metadata and backup ranges from RocksDB column families to a per-partition JSON
  * file in the backup store.
  */
-public final class BackupMetadataSyncer {
+public final class BackupMetadataSyncer implements AutoCloseable {
 
   static final ObjectMapper MAPPER =
       new ObjectMapper()
@@ -41,9 +43,11 @@ public final class BackupMetadataSyncer {
           .disable(WRITE_DATES_AS_TIMESTAMPS);
   private static final Logger LOG = LoggerFactory.getLogger(BackupMetadataSyncer.class);
   private final BackupStore backupStore;
+  private final BackupMetadataSyncerMetrics metrics;
 
-  public BackupMetadataSyncer(final BackupStore backupStore) {
+  public BackupMetadataSyncer(final BackupStore backupStore, final MeterRegistry meterRegistry) {
     this.backupStore = backupStore;
+    metrics = new BackupMetadataSyncerMetrics(meterRegistry);
   }
 
   /**
@@ -58,44 +62,56 @@ public final class BackupMetadataSyncer {
    */
   public CompletableFuture<Void> store(
       final int partitionId,
-      final SequencedCollection<DbCheckpointMetadataState.CheckpointEntry> checkpoints,
+      final SequencedCollection<Checkpoint> checkpoints,
       final SequencedCollection<BackupRange> ranges) {
-
-    final var manifest =
-        new BackupMetadata(
-            BackupMetadata.VERSION,
-            partitionId,
-            Instant.now(),
-            checkpoints.stream()
-                .map(
-                    entry ->
-                        new CheckpointEntry(
-                            entry.checkpointId(),
-                            entry.checkpointPosition(),
-                            Instant.ofEpochMilli(entry.checkpointTimestamp()),
-                            entry.checkpointType(),
-                            entry.firstLogPosition() > 0
-                                ? OptionalLong.of(entry.firstLogPosition())
-                                : OptionalLong.empty()))
-                .toList(),
-            ranges.stream().map(range -> new RangeEntry(range.start(), range.end())).toList());
+    final var timer = metrics.startSyncTimer(partitionId);
+    final var metadata = createMetadata(partitionId, checkpoints, ranges);
 
     try {
-      final var content = MAPPER.writeValueAsBytes(manifest);
+      final var content = MAPPER.writeValueAsBytes(metadata);
+      final var serializedSize = content.length;
       return backupStore
           .storeBackupMetadata(partitionId, content)
           .whenComplete(
               (result, error) -> {
+                timer.close();
                 if (error != null) {
                   LOG.warn("Failed to sync backup metadata", error);
+                  metrics.recordFailedSync(partitionId);
                 } else {
                   LOG.debug("Synced backup metadata");
+                  metrics.recordSuccessfulSync(partitionId, serializedSize);
                 }
               });
     } catch (final JsonProcessingException e) {
       LOG.error("Failed to serialize backup metadata", e);
+      timer.close();
+      metrics.recordFailedSync(partitionId);
       return CompletableFuture.failedFuture(e);
     }
+  }
+
+  private static @NonNull BackupMetadata createMetadata(
+      final int partitionId,
+      @NonNull final SequencedCollection<Checkpoint> checkpoints,
+      @NonNull final SequencedCollection<BackupRange> ranges) {
+    return new BackupMetadata(
+        BackupMetadata.VERSION,
+        partitionId,
+        Instant.now(),
+        checkpoints.stream()
+            .map(
+                entry ->
+                    new BackupMetadata.CheckpointEntry(
+                        entry.checkpointId(),
+                        entry.checkpointPosition(),
+                        Instant.ofEpochMilli(entry.checkpointTimestamp()),
+                        entry.checkpointType(),
+                        entry.firstLogPosition() > 0
+                            ? OptionalLong.of(entry.firstLogPosition())
+                            : OptionalLong.empty()))
+            .toList(),
+        ranges.stream().map(range -> new RangeEntry(range.start(), range.end())).toList());
   }
 
   /**
@@ -124,5 +140,10 @@ public final class BackupMetadataSyncer {
               LOG.warn("Failed to load backup metadata", error);
               return Optional.empty();
             });
+  }
+
+  @Override
+  public void close() {
+    metrics.close();
   }
 }

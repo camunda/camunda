@@ -12,6 +12,8 @@ import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
+import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
@@ -53,6 +55,8 @@ public final class BackupApiRequestHandler
   private final BackupManager backupManager;
   private final AtomixServerTransport transport;
   private final CheckpointState checkpointState;
+  private final DbCheckpointMetadataState checkpointMetadataState;
+  private final DbBackupRangeState backupRangeState;
   private final int partitionId;
   private final boolean backupFeatureEnabled;
 
@@ -61,6 +65,8 @@ public final class BackupApiRequestHandler
       final LogStreamWriter logStreamWriter,
       final BackupManager backupManager,
       final CheckpointState checkpointState,
+      final DbCheckpointMetadataState checkpointMetadataState,
+      final DbBackupRangeState backupRangeState,
       final int partitionId,
       final boolean backupFeatureEnabled) {
     super(BackupApiRequestReader::new, BackupApiResponseWriter::new);
@@ -68,6 +74,8 @@ public final class BackupApiRequestHandler
     this.transport = transport;
     this.backupManager = backupManager;
     this.checkpointState = checkpointState;
+    this.checkpointMetadataState = checkpointMetadataState;
+    this.backupRangeState = backupRangeState;
     this.partitionId = partitionId;
     this.backupFeatureEnabled = backupFeatureEnabled;
     transport.unsubscribe(partitionId, RequestType.BACKUP);
@@ -298,14 +306,16 @@ public final class BackupApiRequestHandler
           final BackupApiResponseWriter responseWriter, final ErrorResponseWriter errorWriter) {
     final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
         new CompletableActorFuture<>();
+    final var checkpoints = checkpointMetadataState.getAllCheckpoints();
+    final var ranges = backupRangeState.getAllRanges();
     backupManager
-        .syncMetadata()
+        .syncMetadata(checkpoints, ranges)
         .onComplete(
-            (ranges, error) -> {
+            (syncedRanges, error) -> {
               if (error == null) {
                 final var response = new BackupRangesResponse();
                 response.setRanges(
-                    ranges.stream()
+                    syncedRanges.stream()
                         .map(
                             r ->
                                 new PartitionBackupRange(

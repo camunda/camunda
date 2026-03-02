@@ -9,12 +9,15 @@ package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.Checkpoint;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Collection;
+import java.util.SequencedCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +94,9 @@ public class NoopBackupManager implements BackupManager {
   }
 
   @Override
-  public ActorFuture<Collection<BackupRangeStatus>> syncMetadata() {
+  public ActorFuture<Collection<BackupRangeStatus>> syncMetadata(
+      final SequencedCollection<Checkpoint> checkpoints,
+      final SequencedCollection<BackupRange> ranges) {
     return CompletableActorFuture.completedExceptionally(
         new UnsupportedOperationException(errorMessage));
   }

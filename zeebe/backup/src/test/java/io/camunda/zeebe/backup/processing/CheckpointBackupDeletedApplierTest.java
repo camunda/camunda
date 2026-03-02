@@ -9,8 +9,8 @@ package io.camunda.zeebe.backup.processing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
-import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;

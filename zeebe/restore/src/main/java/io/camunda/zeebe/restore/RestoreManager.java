@@ -86,7 +86,7 @@ public class RestoreManager implements CloseableSilently {
       final MeterRegistry meterRegistry) {
     this.configuration = configuration;
     this.backupStore = backupStore;
-    metadataSyncer = new BackupMetadataSyncer(backupStore);
+    metadataSyncer = new BackupMetadataSyncer(backupStore, meterRegistry);
     this.exporterPositionMapper = exporterPositionMapper;
     this.meterRegistry = meterRegistry;
     executor =
@@ -413,6 +413,8 @@ public class RestoreManager implements CloseableSilently {
   @Override
   public void close() {
     try {
+      backupStore.closeAsync().join();
+      metadataSyncer.close();
       executor.shutdown();
       if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
         executor.shutdownNow();
