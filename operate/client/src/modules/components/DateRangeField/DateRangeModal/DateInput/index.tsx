@@ -39,7 +39,7 @@ const DateInput = forwardRef<HTMLDivElement, Props>(
               placeholder="YYYY-MM-DD"
               // @ts-expect-error - Carbon types are wrong
               pattern={'\\d{4}-\\d{1,2}-\\d{1,2}'}
-              defaultValue={input.value}
+              value={input.value}
               maxLength={10}
               autoComplete="off"
             />
