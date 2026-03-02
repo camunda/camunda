@@ -8,6 +8,7 @@ functions:
   - verifyEventuallyConsistent
   - verifyRequiredPropertiesExist
   - verifyArrayPropertiesRequired
+  - verifyResponsePropertiesRequired
   - verifyDeprecatedEnumMembers
 functionsDir: ./spectral-functions
 rules:
@@ -121,6 +122,14 @@ rules:
     message: "{{error}}"
     then:
       function: verifyArrayPropertiesRequired
+
+  response-properties-must-be-required:
+    description: "All response body properties must be listed in `required`."
+    severity: error
+    given: "$.paths[*]"
+    message: "{{error}}"
+    then:
+      function: verifyResponsePropertiesRequired
 
   no-eventually-consistent-on-commands:
     description: "Command (mutating) operations must not have x-eventually-consistent: true."

@@ -1,0 +1,17 @@
+# Shared search models for response-properties-required fixture.
+components:
+  schemas:
+    SearchQueryResponse:
+      type: object
+      required:
+        - page
+      properties:
+        page:
+          type: object
+          description: Pagination information about the search results.
+          required:
+            - totalItems
+          properties:
+            totalItems:
+              type: integer
+              description: The total number of items matching the query.
