@@ -14,30 +14,30 @@ import {type BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
  * @returns true if bpmnProcessId is found, false otherwise.
  */
 const hasParentProcess = ({
-  flowNode,
+  element,
   bpmnProcessId,
 }: {
-  flowNode?: BusinessObject;
+  element?: BusinessObject;
   bpmnProcessId?: string;
 }) => {
-  if (flowNode === undefined) {
-    throw Error('Please provide flowNode');
+  if (element === undefined) {
+    throw Error('Please provide element');
   }
 
   if (bpmnProcessId === undefined) {
     throw Error('Please provide bpmnProcessId');
   }
 
-  if (flowNode.$parent === undefined) {
+  if (element.$parent === undefined) {
     return false;
   }
 
-  if (flowNode.$parent.id === bpmnProcessId) {
+  if (element.$parent.id === bpmnProcessId) {
     return true;
   }
 
   return hasParentProcess({
-    flowNode: flowNode.$parent,
+    element: element.$parent,
     bpmnProcessId,
   });
 };

@@ -18,7 +18,7 @@ type OverlayData = {
 };
 
 type StatisticsPayload = {
-  flowNodeState: ElementState;
+  elementState: ElementState;
   count: number;
 };
 
@@ -33,7 +33,7 @@ const isStatisticsPayload = (
   return (
     typeof payload === 'object' &&
     payload !== null &&
-    'flowNodeState' in payload &&
+    'elementState' in payload &&
     'count' in payload
   );
 };

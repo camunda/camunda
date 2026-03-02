@@ -9,7 +9,7 @@
 import React, {useRef, useEffect, useLayoutEffect, useState} from 'react';
 import {
   BpmnJS,
-  type OnFlowNodeSelection,
+  type OnElementSelection,
   type OverlayData,
 } from 'modules/bpmn-js/BpmnJS';
 import DiagramControls from './DiagramControls';
@@ -23,25 +23,25 @@ type OnRootChange = (
   getSelectionRootId: (elementId: string) => string | undefined,
 ) => void;
 
-type SelectedFlowNodeOverlayProps = {
-  selectedFlowNodeRef: SVGElement;
+type SelectedElementOverlayProps = {
+  selectedElementRef: SVGElement;
   diagramCanvasRef: React.Ref<Element>;
 };
 
 type Props = {
   xml: string;
   processDefinitionKey?: string;
-  selectableFlowNodes?: string[];
-  selectedFlowNodeIds?: string[];
-  onFlowNodeSelection?: OnFlowNodeSelection;
+  selectableElements?: string[];
+  selectedElementIds?: string[];
+  onElementSelection?: OnElementSelection;
   onRootChange?: OnRootChange;
   overlaysData?: OverlayData[];
   children?: React.ReactNode;
-  selectedFlowNodeOverlay?:
-    | React.ReactElement<SelectedFlowNodeOverlayProps>
+  selectedElementOverlay?:
+    | React.ReactElement<SelectedElementOverlayProps>
     | false;
   highlightedSequenceFlows?: string[];
-  highlightedFlowNodeIds?: string[];
+  highlightedElementIds?: string[];
   nonSelectableNodeTooltipText?: string;
   hasOuterBorderOnSelection?: boolean;
 };
@@ -50,15 +50,15 @@ const Diagram: React.FC<Props> = observer(
   ({
     xml,
     processDefinitionKey,
-    selectableFlowNodes,
-    selectedFlowNodeIds,
-    onFlowNodeSelection,
+    selectableElements,
+    selectedElementIds,
+    onElementSelection,
     onRootChange,
     overlaysData,
-    selectedFlowNodeOverlay,
+    selectedElementOverlay,
     children,
     highlightedSequenceFlows,
-    highlightedFlowNodeIds,
+    highlightedElementIds,
     nonSelectableNodeTooltipText,
     hasOuterBorderOnSelection = true,
   }) => {
@@ -82,11 +82,11 @@ const Diagram: React.FC<Props> = observer(
           await viewer.render({
             container: diagramCanvasRef.current,
             xml,
-            selectableFlowNodes,
-            selectedFlowNodeIds,
+            selectableElements,
+            selectedElementIds,
             overlaysData,
             highlightedSequenceFlows,
-            highlightedFlowNodeIds,
+            highlightedElementIds,
             nonSelectableNodeTooltipText,
             hasOuterBorderOnSelection,
           });
@@ -96,19 +96,19 @@ const Diagram: React.FC<Props> = observer(
       renderDiagram();
     }, [
       xml,
-      selectableFlowNodes,
-      selectedFlowNodeIds,
+      selectableElements,
+      selectedElementIds,
       overlaysData,
       viewer,
       highlightedSequenceFlows,
-      highlightedFlowNodeIds,
+      highlightedElementIds,
       nonSelectableNodeTooltipText,
       hasOuterBorderOnSelection,
     ]);
 
     useEffect(() => {
-      if (onFlowNodeSelection !== undefined) {
-        viewer.onFlowNodeSelection = onFlowNodeSelection;
+      if (onElementSelection !== undefined) {
+        viewer.onElementSelection = onElementSelection;
         viewer.onViewboxChange = setIsViewboxChanging;
 
         viewer.onRootChange = (rootElementId) => {
@@ -117,7 +117,7 @@ const Diagram: React.FC<Props> = observer(
           onRootChange?.(rootElementId, getSelectionRootId);
         };
       }
-    }, [viewer, onFlowNodeSelection, onRootChange]);
+    }, [viewer, onElementSelection, onRootChange]);
 
     useEffect(() => {
       return () => {
@@ -148,9 +148,9 @@ const Diagram: React.FC<Props> = observer(
             {children}
           </>
         )}
-        {!isViewboxChanging && React.isValidElement(selectedFlowNodeOverlay)
-          ? React.cloneElement(selectedFlowNodeOverlay, {
-              selectedFlowNodeRef: viewer.selectedFlowNode,
+        {!isViewboxChanging && React.isValidElement(selectedElementOverlay)
+          ? React.cloneElement(selectedElementOverlay, {
+              selectedElementRef: viewer.selectedElement,
               diagramCanvasRef,
             })
           : null}
