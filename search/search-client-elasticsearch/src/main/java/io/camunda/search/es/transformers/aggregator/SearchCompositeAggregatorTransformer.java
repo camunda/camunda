@@ -11,9 +11,12 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregationSource;
+import co.elastic.clients.elasticsearch._types.aggregations.CompositeDateHistogramAggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeTermsAggregation.Builder;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.aggregator.SearchCompositeAggregator;
+import io.camunda.search.clients.aggregator.SearchDateHistogramAggregator;
+import io.camunda.search.clients.aggregator.SearchDateHistogramAggregator.DateHistogramInterval;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.transformers.query.Cursor;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
@@ -60,11 +63,27 @@ public class SearchCompositeAggregatorTransformer
                               case final SearchTermsAggregator terms ->
                                   sourceBuilder.terms(
                                       termsBuilder -> buildTerms(terms, termsBuilder));
+                              case final SearchDateHistogramAggregator dateHistogram ->
+                                  sourceBuilder.dateHistogram(
+                                      b -> buildDateHistogram(dateHistogram, b));
                               default ->
                                   throw new IllegalStateException(
                                       "Unsupported aggregator type: " + agg.getClass());
                             })))
         .collect(Collectors.toList());
+  }
+
+  private CompositeDateHistogramAggregation.Builder buildDateHistogram(
+      final SearchDateHistogramAggregator dateHistogram,
+      final CompositeDateHistogramAggregation.Builder builder) {
+    builder.field(dateHistogram.field());
+    switch (dateHistogram.interval()) {
+      case final DateHistogramInterval.Fixed fixed ->
+          builder.fixedInterval(i -> i.time(fixed.toExpression()));
+      case final DateHistogramInterval.Calendar calendar ->
+          builder.calendarInterval(i -> i.time(calendar.getExpression()));
+    }
+    return builder;
   }
 
   private Builder buildTerms(final SearchTermsAggregator terms, final Builder termsBuilder) {

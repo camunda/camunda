@@ -12,6 +12,7 @@ import io.camunda.search.clients.aggregator.SearchBucketSortAggregator;
 import io.camunda.search.clients.aggregator.SearchCardinalityAggregator;
 import io.camunda.search.clients.aggregator.SearchChildrenAggregator;
 import io.camunda.search.clients.aggregator.SearchCompositeAggregator;
+import io.camunda.search.clients.aggregator.SearchDateHistogramAggregator;
 import io.camunda.search.clients.aggregator.SearchFilterAggregator;
 import io.camunda.search.clients.aggregator.SearchFiltersAggregator;
 import io.camunda.search.clients.aggregator.SearchMaxAggregator;
@@ -51,6 +52,7 @@ import io.camunda.search.es.transformers.aggregator.SearchBucketSortAggregationT
 import io.camunda.search.es.transformers.aggregator.SearchCardinalityAggregationTransformer;
 import io.camunda.search.es.transformers.aggregator.SearchChildrenAggregatorTransformer;
 import io.camunda.search.es.transformers.aggregator.SearchCompositeAggregatorTransformer;
+import io.camunda.search.es.transformers.aggregator.SearchDateHistogramAggregatorTransformer;
 import io.camunda.search.es.transformers.aggregator.SearchFilterAggregatorTransformer;
 import io.camunda.search.es.transformers.aggregator.SearchFiltersAggregatorTransformer;
 import io.camunda.search.es.transformers.aggregator.SearchMaxAggregatorTransformer;
@@ -153,6 +155,8 @@ public final class ElasticsearchTransformers {
     mappers.put(SearchTermsAggregator.class, new SearchTermsAggregatorTransformer(mappers));
     mappers.put(SearchTopHitsAggregator.class, new SearchTopHitsAggregatorTransformer(mappers));
     mappers.put(SearchCompositeAggregator.class, new SearchCompositeAggregatorTransformer(mappers));
+    mappers.put(
+        SearchDateHistogramAggregator.class, new SearchDateHistogramAggregatorTransformer(mappers));
     mappers.put(SearchChildrenAggregator.class, new SearchChildrenAggregatorTransformer(mappers));
     mappers.put(SearchParentAggregator.class, new SearchParentAggregatorTransformer(mappers));
     mappers.put(SearchSumAggregator.class, new SearchSumAggregatorTransformer(mappers));
