@@ -54,9 +54,6 @@ class ProcessInstanceMigrationMappingStore {
     });
   }
 
-  /**
-   * Returns an array of source elements which each contains an array of mappable target elements.
-   */
   getMappableElements(
     selectableSourceElements?: BusinessObject[],
     selectableTargetElements?: BusinessObject[],
