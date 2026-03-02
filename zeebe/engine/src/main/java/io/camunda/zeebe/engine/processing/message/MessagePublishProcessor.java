@@ -95,20 +95,22 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
   @Override
   public void processRecord(final TypedRecord<MessageRecord> command) {
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.MESSAGE)
-            .permissionType(PermissionType.CREATE)
-            .tenantId(command.getValue().getTenantId())
-            .newResource()
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
-      return;
+    if (!authCheckBehavior.shouldSkipAllChecks()) {
+      final var authRequest =
+          AuthorizationRequest.builder()
+              .command(command)
+              .resourceType(AuthorizationResourceType.MESSAGE)
+              .permissionType(PermissionType.CREATE)
+              .tenantId(command.getValue().getTenantId())
+              .newResource()
+              .build();
+      final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+      if (isAuthorized.isLeft()) {
+        final var rejection = isAuthorized.getLeft();
+        rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+        responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+        return;
+      }
     }
 
     messageRecord = command.getValue();

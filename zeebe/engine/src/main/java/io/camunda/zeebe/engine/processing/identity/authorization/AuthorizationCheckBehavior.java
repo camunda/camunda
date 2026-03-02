@@ -52,6 +52,7 @@ public final class AuthorizationCheckBehavior {
       "Expected to %s with key '%s', but no %s was found";
   public static final String NOT_FOUND_FOR_TENANT_ERROR_MESSAGE =
       "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
+  private static final Either<Rejection, Void> AUTHORIZED = Either.right(null);
   private final MappingRuleState mappingRuleState;
   private final ClaimsExtractor claimsExtractor;
   private final TenantResolver tenantResolver;
@@ -110,6 +111,9 @@ public final class AuthorizationCheckBehavior {
    *     {@link Void} if the user is authorized
    */
   public Either<Rejection, Void> isAuthorized(final AuthorizationRequest request) {
+    if (shouldSkipAllChecks()) {
+      return AUTHORIZED;
+    }
     try {
       return authorizationsCache.get(request);
     } catch (final ExecutionException e) {
@@ -124,11 +128,11 @@ public final class AuthorizationCheckBehavior {
     if (request.isTriggeredByInternalCommand()) {
       return Either.right(null);
     }
+
     return isAuthorized(request);
   }
 
   private Either<Rejection, Void> checkAuthorized(final AuthorizationRequest request) {
-
     if (shouldSkipAuthorization(request)) {
       return Either.right(null);
     }
@@ -139,23 +143,31 @@ public final class AuthorizationCheckBehavior {
         checkPrimaryAuthorization(request, aggregatedRejections);
 
     if (primaryResult.hasBothAccess()) {
-      return Either.right(null);
+      return AUTHORIZED;
     }
 
     final AuthorizationResult mappingRuleResult =
         checkMappingRuleAuthorization(request, primaryResult, aggregatedRejections);
 
     if (mappingRuleResult.hasBothAccess()) {
-      return Either.right(null);
+      return AUTHORIZED;
     }
 
     return getRejection(aggregatedRejections);
   }
 
-  // Helper methods
+  /**
+   * Returns {@code true} when both authorization and multi-tenancy are disabled, meaning no
+   * authorization or tenant check will ever reject a request. Callers can use this to avoid
+   * constructing an {@link AuthorizationRequest} (and the associated allocations) when the result
+   * would always be authorized.
+   */
+  public boolean shouldSkipAllChecks() {
+    return !authorizationsEnabled && !multiTenancyEnabled;
+  }
+
   private boolean shouldSkipAuthorization(final AuthorizationRequest request) {
-    return (!authorizationsEnabled && !multiTenancyEnabled)
-        || claimsExtractor.isAuthorizedAnonymousUser(request.claims());
+    return shouldSkipAllChecks() || claimsExtractor.isAuthorizedAnonymousUser(request.claims());
   }
 
   private AuthorizationResult checkPrimaryAuthorization(

@@ -151,6 +151,11 @@ public class ProcessInstanceCreationHelper {
   public Either<Rejection, DeployedProcess> isAuthorized(
       final TypedRecord<ProcessInstanceCreationRecord> command,
       final DeployedProcess deployedProcess) {
+    // skip authorization and multi-tenancy checks if all such checks are disabled
+    if (authCheckBehavior.shouldSkipAllChecks()) {
+      return Either.right(deployedProcess);
+    }
+
     final var processId = bufferAsString(deployedProcess.getBpmnProcessId());
     final var request =
         AuthorizationRequest.builder()
