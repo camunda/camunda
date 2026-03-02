@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.processing.clock;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -57,7 +57,11 @@ public final class ClockProcessor implements DistributedTypedRecordProcessor<Clo
   @Override
   public void processNewCommand(final TypedRecord<ClockRecord> command) {
     final var authRequest =
-        new AuthorizationRequest(command, AuthorizationResourceType.SYSTEM, PermissionType.UPDATE);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.SYSTEM)
+            .permissionType(PermissionType.UPDATE)
+            .build();
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();

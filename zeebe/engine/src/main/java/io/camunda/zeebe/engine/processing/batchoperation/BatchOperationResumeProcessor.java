@@ -11,8 +11,8 @@ import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -88,7 +88,11 @@ public final class BatchOperationResumeProcessor
   public void processNewCommand(
       final TypedRecord<BatchOperationLifecycleManagementRecord> command) {
     final var request =
-        new AuthorizationRequest(command, AuthorizationResourceType.BATCH, PermissionType.UPDATE);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.BATCH)
+            .permissionType(PermissionType.UPDATE)
+            .build();
     final var authorizationResult = authCheckBehavior.isAuthorizedOrInternalCommand(request);
     if (authorizationResult.isLeft()) {
       final Rejection rejection = authorizationResult.getLeft();

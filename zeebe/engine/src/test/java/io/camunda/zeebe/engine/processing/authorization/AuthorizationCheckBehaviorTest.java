@@ -18,8 +18,8 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.appliers.AuthorizationCreatedApplier;
 import io.camunda.zeebe.engine.state.appliers.AuthorizationDeletedApplier;
 import io.camunda.zeebe.engine.state.appliers.GroupCreatedApplier;
@@ -102,15 +102,23 @@ final class AuthorizationCheckBehaviorTest {
     final var user = createUser();
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var resourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var resourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
-        user.getUsername(), AuthorizationOwnerType.USER, resourceType, permissionType, resourceId);
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        resourceIdScope);
     final var command = mockCommand(user.getUsername());
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType)
-            .addAuthorizationScope(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -128,7 +136,12 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceId)
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -153,7 +166,12 @@ final class AuthorizationCheckBehaviorTest {
     final var command = mockCommand(user.getUsername());
 
     // when
-    final var request = new AuthorizationRequest(command, resourceType, permissionType);
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .build();
     final var resourceIdentifiers = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
@@ -169,7 +187,12 @@ final class AuthorizationCheckBehaviorTest {
     final var command = mockCommand(user.getUsername());
 
     // when
-    final var request = new AuthorizationRequest(command, resourceType, permissionType);
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .build();
     final var resourceIdentifiers = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
@@ -183,15 +206,23 @@ final class AuthorizationCheckBehaviorTest {
     final var role = createRoleAndAssignEntity(user.getUsername(), EntityType.USER);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var resourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var resourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
-        role.getRoleId(), AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
+        role.getRoleId(),
+        AuthorizationOwnerType.ROLE,
+        resourceType,
+        permissionType,
+        resourceIdScope);
     final var command = mockCommand(user.getUsername());
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType)
-            .addAuthorizationScope(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -217,7 +248,12 @@ final class AuthorizationCheckBehaviorTest {
     final var command = mockCommand(user.getUsername());
 
     // when
-    final var request = new AuthorizationRequest(command, resourceType, permissionType);
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .build();
     final var resourceIdentifiers = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
@@ -231,15 +267,23 @@ final class AuthorizationCheckBehaviorTest {
     final var group = createGroupAndAssignEntity(user.getUsername(), EntityType.USER);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var resourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var resourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
-        group.getGroupId(), AuthorizationOwnerType.GROUP, resourceType, permissionType, resourceId);
+        group.getGroupId(),
+        AuthorizationOwnerType.GROUP,
+        resourceType,
+        permissionType,
+        resourceIdScope);
     final var command = mockCommand(user.getUsername());
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType)
-            .addAuthorizationScope(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -266,7 +310,12 @@ final class AuthorizationCheckBehaviorTest {
     final var command = mockCommand(user.getUsername());
 
     // when
-    final var request = new AuthorizationRequest(command, resourceType, permissionType);
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .build();
     final var resourceIdentifiers = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
@@ -279,15 +328,23 @@ final class AuthorizationCheckBehaviorTest {
     final var user = createUser();
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var resourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var resourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
-        user.getUsername(), AuthorizationOwnerType.USER, resourceType, permissionType, resourceId);
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        resourceIdScope);
     final var command = mockCommandWithAnonymousUser();
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType)
-            .addAuthorizationScope(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -302,19 +359,23 @@ final class AuthorizationCheckBehaviorTest {
     final var mappingRule = createMappingRule(claimName, claimValue);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var resourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var resourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
         mappingRule.getMappingRuleId(),
         AuthorizationOwnerType.MAPPING_RULE,
         resourceType,
         permissionType,
-        resourceId);
+        resourceIdScope);
     final var command = mockCommandWithMappingRule(claimName, claimValue);
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType)
-            .addAuthorizationScope(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -330,15 +391,23 @@ final class AuthorizationCheckBehaviorTest {
     final var group = createGroupAndAssignEntity(mappingRuleId, EntityType.MAPPING_RULE);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var resourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var resourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
-        group.getGroupId(), AuthorizationOwnerType.GROUP, resourceType, permissionType, resourceId);
+        group.getGroupId(),
+        AuthorizationOwnerType.GROUP,
+        resourceType,
+        permissionType,
+        resourceIdScope);
     final var command = mockCommandWithMappingRule(claimName, claimValue);
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType)
-            .addAuthorizationScope(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -355,16 +424,24 @@ final class AuthorizationCheckBehaviorTest {
         createRoleAndAssignEntity(mappingRule.getMappingRuleId(), EntityType.MAPPING_RULE);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var resourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var resourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
-        role.getRoleId(), AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
+        role.getRoleId(),
+        AuthorizationOwnerType.ROLE,
+        resourceType,
+        permissionType,
+        resourceIdScope);
 
     final var command = mockCommandWithMappingRule(claimName, claimValue);
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType)
-            .addAuthorizationScope(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -381,8 +458,12 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, AuthorizationResourceType.RESOURCE, PermissionType.DELETE)
-            .addResourceId(UUID.randomUUID().toString());
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.RESOURCE)
+            .permissionType(PermissionType.DELETE)
+            .addResourceId(UUID.randomUUID().toString())
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -401,20 +482,20 @@ final class AuthorizationCheckBehaviorTest {
 
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var firstResourceId = AuthorizationScope.of(UUID.randomUUID().toString());
-    final var secondResourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var firstResourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var secondResourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
         firstMapping.getMappingRuleId(),
         AuthorizationOwnerType.MAPPING_RULE,
         resourceType,
         permissionType,
-        firstResourceId);
+        firstResourceIdScope);
     addPermission(
         secondMapping.getMappingRuleId(),
         AuthorizationOwnerType.MAPPING_RULE,
         resourceType,
         permissionType,
-        secondResourceId);
+        secondResourceIdScope);
 
     // when
     final var command = mock(TypedRecord.class);
@@ -428,13 +509,21 @@ final class AuthorizationCheckBehaviorTest {
     // then
     EitherAssert.assertThat(
             authorizationCheckBehavior.isAuthorized(
-                new AuthorizationRequest(command, resourceType, permissionType)
-                    .addAuthorizationScope(firstResourceId)))
+                AuthorizationRequest.builder()
+                    .command(command)
+                    .resourceType(resourceType)
+                    .permissionType(permissionType)
+                    .addResourceId(firstResourceIdScope.getResourceId())
+                    .build()))
         .isRight();
     EitherAssert.assertThat(
             authorizationCheckBehavior.isAuthorized(
-                new AuthorizationRequest(command, resourceType, permissionType)
-                    .addAuthorizationScope(secondResourceId)))
+                AuthorizationRequest.builder()
+                    .command(command)
+                    .resourceType(resourceType)
+                    .permissionType(permissionType)
+                    .addResourceId(secondResourceIdScope.getResourceId())
+                    .build()))
         .isRight();
   }
 
@@ -449,20 +538,20 @@ final class AuthorizationCheckBehaviorTest {
 
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var firstResourceId = AuthorizationScope.of(UUID.randomUUID().toString());
-    final var secondResourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var firstResourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var secondResourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
         firstMapping.getMappingRuleId(),
         AuthorizationOwnerType.MAPPING_RULE,
         resourceType,
         permissionType,
-        firstResourceId);
+        firstResourceIdScope);
     addPermission(
         secondMapping.getMappingRuleId(),
         AuthorizationOwnerType.MAPPING_RULE,
         resourceType,
         permissionType,
-        secondResourceId);
+        secondResourceIdScope);
 
     // when
     final var command = mock(TypedRecord.class);
@@ -475,13 +564,21 @@ final class AuthorizationCheckBehaviorTest {
     // then
     EitherAssert.assertThat(
             authorizationCheckBehavior.isAuthorized(
-                new AuthorizationRequest(command, resourceType, permissionType)
-                    .addAuthorizationScope(firstResourceId)))
+                AuthorizationRequest.builder()
+                    .command(command)
+                    .resourceType(resourceType)
+                    .permissionType(permissionType)
+                    .addResourceId(firstResourceIdScope.getResourceId())
+                    .build()))
         .isRight();
     EitherAssert.assertThat(
             authorizationCheckBehavior.isAuthorized(
-                new AuthorizationRequest(command, resourceType, permissionType)
-                    .addAuthorizationScope(secondResourceId)))
+                AuthorizationRequest.builder()
+                    .command(command)
+                    .resourceType(resourceType)
+                    .permissionType(permissionType)
+                    .addResourceId(secondResourceIdScope.getResourceId())
+                    .build()))
         .isRight();
   }
 
@@ -493,23 +590,27 @@ final class AuthorizationCheckBehaviorTest {
     final var mappingRule = createMappingRule(claimName, claimValue);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var resourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var resourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
         mappingRule.getMappingRuleId(),
         AuthorizationOwnerType.MAPPING_RULE,
         resourceType,
         permissionType,
-        resourceId);
+        resourceIdScope);
     final var command = mockCommandWithMappingRule(claimName, claimValue);
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType)
-            .addAuthorizationScope(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorizations = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
-    assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
+    assertThat(authorizations).containsExactlyInAnyOrder(resourceIdScope);
   }
 
   @Test
@@ -520,13 +621,13 @@ final class AuthorizationCheckBehaviorTest {
     final var mappingRule = createMappingRule(claimName, claimValue);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var resourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var resourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
         mappingRule.getMappingRuleId(),
         AuthorizationOwnerType.MAPPING_RULE,
         resourceType,
         permissionType,
-        resourceId);
+        resourceIdScope);
     final var command = mock(TypedRecord.class);
     when(command.getAuthorizations())
         .thenReturn(Map.of(USER_TOKEN_CLAIMS, Map.of("nested", Map.of("claim", claimValue))));
@@ -534,12 +635,16 @@ final class AuthorizationCheckBehaviorTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType)
-            .addAuthorizationScope(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorizations = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
-    assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
+    assertThat(authorizations).containsExactlyInAnyOrder(resourceIdScope);
   }
 
   @Test
@@ -552,19 +657,27 @@ final class AuthorizationCheckBehaviorTest {
         createRoleAndAssignEntity(mappingRule.getMappingRuleId(), EntityType.MAPPING_RULE);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var resourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var resourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
-        role.getRoleId(), AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
+        role.getRoleId(),
+        AuthorizationOwnerType.ROLE,
+        resourceType,
+        permissionType,
+        resourceIdScope);
     final var command = mockCommandWithMappingRule(claimName, claimValue);
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType)
-            .addAuthorizationScope(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorizations = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
-    assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
+    assertThat(authorizations).containsExactlyInAnyOrder(resourceIdScope);
   }
 
   @Test
@@ -577,19 +690,27 @@ final class AuthorizationCheckBehaviorTest {
         createGroupAndAssignEntity(mappingRule.getMappingRuleId(), EntityType.MAPPING_RULE);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var resourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var resourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
-        group.getGroupId(), AuthorizationOwnerType.GROUP, resourceType, permissionType, resourceId);
+        group.getGroupId(),
+        AuthorizationOwnerType.GROUP,
+        resourceType,
+        permissionType,
+        resourceIdScope);
     final var command = mockCommandWithMappingRule(claimName, claimValue);
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType)
-            .addAuthorizationScope(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorizations = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
-    assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
+    assertThat(authorizations).containsExactlyInAnyOrder(resourceIdScope);
   }
 
   @Test
@@ -601,15 +722,23 @@ final class AuthorizationCheckBehaviorTest {
 
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var resourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var resourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
-        role.getRoleId(), AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
+        role.getRoleId(),
+        AuthorizationOwnerType.ROLE,
+        resourceType,
+        permissionType,
+        resourceIdScope);
     final var command = mockCommand(user.getUsername());
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType)
-            .addAuthorizationScope(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -625,15 +754,23 @@ final class AuthorizationCheckBehaviorTest {
 
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var resourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var resourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
-        role.getRoleId(), AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
+        role.getRoleId(),
+        AuthorizationOwnerType.ROLE,
+        resourceType,
+        permissionType,
+        resourceIdScope);
     final var command = mockCommand(user.getUsername());
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType)
-            .addAuthorizationScope(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var allAuthorizedResourceIdentifiers =
         authorizationCheckBehavior.getAllAuthorizedScopes(request);
     final var directAuthorizedResourceIdentifiers =
@@ -641,7 +778,7 @@ final class AuthorizationCheckBehaviorTest {
             AuthorizationOwnerType.USER, user.getUsername(), resourceType, permissionType);
 
     // then
-    assertThat(allAuthorizedResourceIdentifiers).containsExactly(resourceId);
+    assertThat(allAuthorizedResourceIdentifiers).containsExactly(resourceIdScope);
     assertThat(directAuthorizedResourceIdentifiers).isEmpty();
   }
 
@@ -656,16 +793,24 @@ final class AuthorizationCheckBehaviorTest {
 
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var resourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var resourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
-        role.getRoleId(), AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
+        role.getRoleId(),
+        AuthorizationOwnerType.ROLE,
+        resourceType,
+        permissionType,
+        resourceIdScope);
     final var command =
         mockCommandWithMappingRule(mappingRule.getClaimName(), mappingRule.getClaimValue());
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType)
-            .addAuthorizationScope(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -683,16 +828,24 @@ final class AuthorizationCheckBehaviorTest {
 
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var resourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var resourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
-        role.getRoleId(), AuthorizationOwnerType.ROLE, resourceType, permissionType, resourceId);
+        role.getRoleId(),
+        AuthorizationOwnerType.ROLE,
+        resourceType,
+        permissionType,
+        resourceIdScope);
     final var command =
         mockCommandWithMappingRule(mappingRule.getClaimName(), mappingRule.getClaimValue());
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType)
-            .addAuthorizationScope(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var allAuthorizedResourceIdentifiers =
         authorizationCheckBehavior.getAllAuthorizedScopes(request);
     final var directAuthorizedResourceIdentifiers =
@@ -703,7 +856,7 @@ final class AuthorizationCheckBehaviorTest {
             permissionType);
 
     // then
-    assertThat(allAuthorizedResourceIdentifiers).containsExactly(resourceId);
+    assertThat(allAuthorizedResourceIdentifiers).containsExactly(resourceIdScope);
     assertThat(directAuthorizedResourceIdentifiers).isEmpty();
   }
 
@@ -713,15 +866,19 @@ final class AuthorizationCheckBehaviorTest {
     final var clientId = createClientId();
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
-    final var resourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var resourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     addPermission(
-        clientId, AuthorizationOwnerType.CLIENT, resourceType, permissionType, resourceId);
+        clientId, AuthorizationOwnerType.CLIENT, resourceType, permissionType, resourceIdScope);
     final var command = mockCommandWithClientId(clientId);
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType)
-            .addAuthorizationScope(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -734,13 +891,17 @@ final class AuthorizationCheckBehaviorTest {
     final var clientId = createClientId();
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.DELETE;
-    final var resourceId = AuthorizationScope.of(UUID.randomUUID().toString());
+    final var resourceIdScope = AuthorizationScope.of(UUID.randomUUID().toString());
     final var command = mockCommandWithClientId(clientId);
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType)
-            .addAuthorizationScope(resourceId);
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(resourceIdScope.getResourceId())
+            .build();
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
@@ -765,7 +926,12 @@ final class AuthorizationCheckBehaviorTest {
     final var command = mockCommandWithClientId(clientId);
 
     // when
-    final var request = new AuthorizationRequest(command, resourceType, permissionType);
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .build();
     final var resourceIdentifiers = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
@@ -781,7 +947,12 @@ final class AuthorizationCheckBehaviorTest {
     final var command = mockCommandWithClientId(clientId);
 
     // when
-    final var request = new AuthorizationRequest(command, resourceType, permissionType);
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .build();
     final var resourceIdentifiers = authorizationCheckBehavior.getAllAuthorizedScopes(request);
 
     // then
