@@ -53,7 +53,7 @@ const StateOverlay: React.FC<Props> = observer(
       >
         {['FAILED', 'incidents'].includes(state) && <WarningFilled />}
         {state === 'active' && <RadioButtonChecked />}
-        {['EVALUATED', 'completedEndEvents'].includes(state) && (
+        {['EVALUATED', 'completedEndEvents', 'completed'].includes(state) && (
           <CheckmarkOutline />
         )}
         {state === 'canceled' && <Error />}

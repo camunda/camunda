@@ -127,6 +127,7 @@ const InstanceOperations: React.FC<Props> = ({
       operations={operations}
       processInstanceKey={processInstanceKey}
       isLoading={isLoading}
+      useIcons={true}
     />
   );
 };
