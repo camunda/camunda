@@ -12,6 +12,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.CardinalityAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeBucket;
+import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramBucket;
 import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
 import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketAggregateBase;
 import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
@@ -141,6 +142,7 @@ public class SearchAggregationResultTransformer<T>
                   case final StringTermsBucket b -> b.key().stringValue();
                   case final LongTermsBucket b ->
                       b.keyAsString() != null ? b.keyAsString() : String.valueOf(b.key());
+                  case final DateHistogramBucket b -> String.valueOf(b.key());
                   case final CompositeBucket b ->
                       b.key().values().stream()
                           .map(SearchAggregationResultTransformer::fieldValueToString)
@@ -197,6 +199,7 @@ public class SearchAggregationResultTransformer<T>
             case Sterms -> res = transformMultiBucketAggregate(warnDocError(aggregate.sterms()));
             case Lterms -> res = transformMultiBucketAggregate(warnDocError(aggregate.lterms()));
             case Composite -> res = transformMultiBucketAggregate(aggregate.composite());
+            case DateHistogram -> res = transformMultiBucketAggregate(aggregate.dateHistogram());
             case TopHits -> res = transformTopHitsAggregate(key, aggregate.topHits());
             case Sum -> res = transformSingleMetricAggregate(aggregate.sum());
             case Max -> res = transformSingleMetricAggregate(aggregate.max());

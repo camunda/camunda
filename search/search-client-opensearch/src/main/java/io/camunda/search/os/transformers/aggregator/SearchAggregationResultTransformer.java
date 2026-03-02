@@ -29,6 +29,7 @@ import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.CardinalityAggregate;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregate;
 import org.opensearch.client.opensearch._types.aggregations.CompositeBucket;
+import org.opensearch.client.opensearch._types.aggregations.DateHistogramBucket;
 import org.opensearch.client.opensearch._types.aggregations.LongTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.MultiBucketAggregateBase;
 import org.opensearch.client.opensearch._types.aggregations.MultiBucketBase;
@@ -144,6 +145,7 @@ public class SearchAggregationResultTransformer<T>
                   case final StringTermsBucket b -> b.key();
                   case final LongTermsBucket b ->
                       b.keyAsString() != null ? b.keyAsString() : String.valueOf(b.key().signed());
+                  case final DateHistogramBucket b -> String.valueOf(b.key());
                   case final CompositeBucket b ->
                       b.key().values().stream()
                           .map(SearchAggregationResultTransformer::fieldValueToString)
@@ -200,6 +202,7 @@ public class SearchAggregationResultTransformer<T>
             case Sterms -> res = transformMultiBucketAggregate(warnDocError(aggregate.sterms()));
             case Lterms -> res = transformMultiBucketAggregate(warnDocError(aggregate.lterms()));
             case Composite -> res = transformMultiBucketAggregate(aggregate.composite());
+            case DateHistogram -> res = transformMultiBucketAggregate(aggregate.dateHistogram());
             case TopHits -> res = transformTopHitsAggregate(key, aggregate.topHits());
             case Sum -> res = transformSingleMetricAggregate(aggregate.sum());
             case Max -> res = transformSingleMetricAggregate(aggregate.max());
