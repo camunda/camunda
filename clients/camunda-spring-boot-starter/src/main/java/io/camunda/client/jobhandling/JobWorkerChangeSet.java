@@ -151,6 +151,7 @@ public sealed interface JobWorkerChangeSet {
               reset(jobWorkerValue.getStreamEnabled(), jobWorkerValue::setStreamEnabled),
               reset(jobWorkerValue.getStreamTimeout(), jobWorkerValue::setStreamTimeout),
               reset(jobWorkerValue.getMaxRetries(), jobWorkerValue::setMaxRetries),
+              reset(jobWorkerValue.getRetryBackoff(), jobWorkerValue::setRetryBackoff),
               reset(jobWorkerValue.getTenantFilter(), jobWorkerValue::setTenantFilter))
           .reduce(false, Boolean::logicalOr);
     }

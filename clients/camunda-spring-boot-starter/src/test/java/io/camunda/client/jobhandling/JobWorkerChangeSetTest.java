@@ -34,6 +34,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class JobWorkerChangeSetTest {
+
   @Test
   void shouldUpdateTenantIds() {
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
@@ -173,5 +174,17 @@ public class JobWorkerChangeSetTest {
     resetChangeSet.applyChanges(jobWorkerValue);
     assertThat(jobWorkerValue.getTenantFilter())
         .isEqualTo(new FromAnnotation<>(TenantFilter.PROVIDED));
+  }
+
+  @Test
+  void shouldResetRetryBackoff() {
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setRetryBackoff(
+        new FromRuntimeOverride<>(
+            Duration.ofSeconds(10), new FromAnnotation<>(Duration.ofSeconds(20))));
+    final ResetChangeSet resetChangeSet = new ResetChangeSet();
+    resetChangeSet.applyChanges(jobWorkerValue);
+    assertThat(jobWorkerValue.getRetryBackoff())
+        .isEqualTo(new FromAnnotation<>(Duration.ofSeconds(20)));
   }
 }
