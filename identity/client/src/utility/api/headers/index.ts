@@ -9,8 +9,6 @@
 import type { License } from "@camunda/camunda-api-zod-schemas/8.9";
 import { ApiDefinition, apiGet } from "../request";
 
-export type { License };
-
 export const LICENSE_ENDPOINT = "/license";
 
 export const checkLicense: ApiDefinition<License> = () =>

@@ -12,7 +12,6 @@ import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";
 import Page, { PageHeader } from "src/components/layout/Page";
 import {
-  type ResourceType,
   ALL_RESOURCE_TYPES,
   RESOURCE_TYPES_WITHOUT_TENANT,
   searchAuthorization,
@@ -26,6 +25,7 @@ import {
 } from "./components";
 import AuthorizationList from "./AuthorizationsList";
 import { isTenantsApiEnabled } from "src/configuration";
+import type { ResourceType } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const List: FC = () => {
   const { t } = useTranslate("authorizations");

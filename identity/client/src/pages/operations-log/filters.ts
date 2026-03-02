@@ -30,22 +30,22 @@ export type AuditLogFilters = {
   timestampTo: string;
 };
 
-export const ALLOWED_OPERATION_TYPES: AuditLogOperationType[] = [
+export const ALLOWED_OPERATION_TYPES = [
   "CREATE",
   "ASSIGN",
   "UNASSIGN",
   "DELETE",
   "UPDATE",
-] as const;
+] as const satisfies readonly AuditLogOperationType[];
 
-export const ALLOWED_ENTITY_TYPES: AuditLogEntityType[] = [
+export const ALLOWED_ENTITY_TYPES = [
   "AUTHORIZATION",
   "ROLE",
   "USER",
   "GROUP",
   "MAPPING_RULE",
   "TENANT",
-] as const;
+] as const satisfies readonly AuditLogEntityType[];
 
 export const ALLOWED_RESULT_TYPES = [
   "all",
@@ -57,7 +57,9 @@ const auditLogSearchParamsSync = createSearchParamsSync<AuditLogFilters>({
     parse: (params) => {
       return parseArrayParam<AuditLogOperationType>(
         params.get("operationType"),
-      ).filter((item) => ALLOWED_OPERATION_TYPES.includes(item));
+      ).filter((item): item is (typeof ALLOWED_OPERATION_TYPES)[number] =>
+        ALLOWED_OPERATION_TYPES.some((t) => t === item),
+      );
     },
     serialize: (value, params) => {
       const v = buildArrayParam(value);
@@ -67,9 +69,8 @@ const auditLogSearchParamsSync = createSearchParamsSync<AuditLogFilters>({
 
   entityType: {
     parse: (params) => {
-      const entityType = params.get("entityType") as AuditLogEntityType;
-
-      return ALLOWED_ENTITY_TYPES.includes(entityType) ? entityType : undefined;
+      const entityType = params.get("entityType");
+      return ALLOWED_ENTITY_TYPES.find((t) => t === entityType);
     },
     serialize: (value, params) => {
       if (value) params.set("entityType", value);
@@ -78,13 +79,8 @@ const auditLogSearchParamsSync = createSearchParamsSync<AuditLogFilters>({
 
   relatedEntityType: {
     parse: (params) => {
-      const relatedEntityType = params.get(
-        "relatedEntityType",
-      ) as AuditLogEntityType;
-
-      return ALLOWED_ENTITY_TYPES.includes(relatedEntityType)
-        ? relatedEntityType
-        : undefined;
+      const relatedEntityType = params.get("relatedEntityType");
+      return ALLOWED_ENTITY_TYPES.find((t) => t === relatedEntityType);
     },
     serialize: (value, params) => {
       if (value) params.set("relatedEntityType", value);
@@ -100,13 +96,8 @@ const auditLogSearchParamsSync = createSearchParamsSync<AuditLogFilters>({
 
   result: {
     parse: (params) => {
-      const result = params.get("result") as AuditLogResult;
-
-      if (result && ALLOWED_RESULT_TYPES.includes(result)) {
-        return result;
-      }
-
-      return "all";
+      const result = params.get("result");
+      return ALLOWED_RESULT_TYPES.find((t) => t === result) ?? "all";
     },
     serialize: (value, params) => {
       if (value !== "all") {

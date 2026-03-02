@@ -8,20 +8,18 @@
 
 import type {
   AuthorizationResult,
-  PermissionType,
   OwnerType,
   ResourceType,
+  QueryAuthorizationsRequestBody,
+  QueryAuthorizationsResponseBody,
 } from "@camunda/camunda-api-zod-schemas/8.9";
 import {
   resourceTypeSchema,
   ownerTypeSchema,
 } from "@camunda/camunda-api-zod-schemas/8.9";
 import { ApiDefinition, apiDelete, apiPost } from "src/utility/api/request";
-import { SearchResponse } from "src/utility/api";
 
 export const AUTHORIZATIONS_ENDPOINT = "/authorizations";
-
-export { PermissionType, OwnerType, ResourceType };
 
 export const ALL_RESOURCE_TYPES: ResourceType[] = [
   ...resourceTypeSchema.options,
@@ -53,11 +51,6 @@ export type NewAuthorization = Omit<
   resourcePropertyName: ResourcePropertyName | null;
 };
 
-export enum PatchAuthorizationAction {
-  ADD = "ADD",
-  REMOVE = "REMOVE",
-}
-
 export type searchAuthorizationsParams = {
   filter: {
     resourceType: ResourceType;
@@ -65,20 +58,16 @@ export type searchAuthorizationsParams = {
 };
 
 export const searchAuthorization: ApiDefinition<
-  SearchResponse<Authorization>,
-  searchAuthorizationsParams
+  QueryAuthorizationsResponseBody,
+  QueryAuthorizationsRequestBody
 > = (param) => apiPost(`${AUTHORIZATIONS_ENDPOINT}/search`, param);
 
 export const createAuthorization: ApiDefinition<undefined, NewAuthorization> = (
   authorization,
 ) => apiPost(AUTHORIZATIONS_ENDPOINT, authorization);
 
-export type DeleteAuthorizationParams = {
-  authorizationKey: string;
-};
-
 export const deleteAuthorization: ApiDefinition<
   undefined,
-  DeleteAuthorizationParams
+  Pick<Authorization, "authorizationKey">
 > = ({ authorizationKey }) =>
   apiDelete(`${AUTHORIZATIONS_ENDPOINT}/${authorizationKey}`);

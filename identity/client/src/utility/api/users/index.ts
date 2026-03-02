@@ -6,66 +6,55 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type { User } from "@camunda/camunda-api-zod-schemas/8.9";
-import { PageSearchParams } from "../hooks/usePagination";
-import { ApiDefinition, apiDelete, apiPost, apiPut } from "../request";
-import { SearchResponse } from "src/utility/api";
+import type {
+  User,
+  QueryUsersRequestBody,
+  QueryUsersResponseBody,
+  CreateUserRequestBody,
+  UpdateUserRequestBody,
+} from "@camunda/camunda-api-zod-schemas/8.9";
 
-export type { User };
+import { ApiDefinition, apiDelete, apiPost, apiPut } from "../request";
 
 export type UserKeys = keyof User;
 
 export const USERS_ENDPOINT = "/users";
 
-type SearchUserParams = {
-  usernames: string[];
-};
-
 export const searchUser: ApiDefinition<
-  SearchResponse<User>,
-  Partial<SearchUserParams & PageSearchParams> | undefined
+  QueryUsersResponseBody,
+  (QueryUsersRequestBody & { usernames?: string[] }) | undefined
 > = (params = {}) => {
   const { usernames, ...restParams } = params;
 
-  const filters = usernames
+  const filters: QueryUsersRequestBody | undefined = usernames
     ? { filter: { username: { $in: usernames } } }
     : undefined;
 
   return apiPost(`${USERS_ENDPOINT}/search`, { ...restParams, ...filters });
 };
 
-type GetUserParams = {
-  username: string;
-};
-
 export const getUserDetails: ApiDefinition<
-  SearchResponse<User>,
-  GetUserParams
+  QueryUsersResponseBody,
+  Pick<User, "username">
 > = ({ username }) =>
   apiPost(`${USERS_ENDPOINT}/search`, { filter: { username } });
 
-type CreateUserParams = { password: string } & User;
-
-export const createUser: ApiDefinition<undefined, CreateUserParams> = (user) =>
-  apiPost(USERS_ENDPOINT, { ...user });
-
-type UpdateUserParams = { password?: string } & User;
-
-export const updateUser: ApiDefinition<undefined, UpdateUserParams> = (
+export const createUser: ApiDefinition<undefined, CreateUserRequestBody> = (
   user,
-) => {
+) => apiPost(USERS_ENDPOINT, { ...user });
+
+export const updateUser: ApiDefinition<
+  undefined,
+  UpdateUserRequestBody & Pick<User, "username">
+> = (user) => {
   const { name, email, username, password } = user;
   return apiPut(`${USERS_ENDPOINT}/${username}`, {
     name,
     email,
-    password: password ?? "",
+    password,
   });
 };
 
-type DeleteUserParams = {
-  username: string;
-};
-
-export const deleteUser: ApiDefinition<undefined, DeleteUserParams> = ({
+export const deleteUser: ApiDefinition<undefined, Pick<User, "username">> = ({
   username,
 }) => apiDelete(`${USERS_ENDPOINT}/${username}`);

@@ -15,13 +15,15 @@ import { useApiCall } from "src/utility/api";
 import TextField from "src/components/form/TextField";
 import {
   updateGlobalTaskListener,
-  GlobalTaskListener,
-  GlobalTaskListenerEventType,
   LISTENER_EVENT_TYPES,
-  CreateGlobalTaskListenerParams,
 } from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
 import { LISTENER_TYPE_PATTERN } from "src/pages/global-task-listeners";
+import type {
+  CreateGlobalTaskListenerRequestBody,
+  GlobalTaskListener,
+  GlobalTaskListenerEventType,
+} from "@camunda/camunda-api-zod-schemas/8.9";
 
 const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
   open,
@@ -39,7 +41,7 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
   );
 
   const { control, handleSubmit, watch, setValue, reset } =
-    useForm<CreateGlobalTaskListenerParams>({
+    useForm<CreateGlobalTaskListenerRequestBody>({
       defaultValues: {
         id: entity.id,
         type: entity.type,
@@ -120,7 +122,7 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
     return labels[eventType];
   };
 
-  const onSubmit = async (data: CreateGlobalTaskListenerParams) => {
+  const onSubmit = async (data: CreateGlobalTaskListenerRequestBody) => {
     const eventTypes = data.eventTypes.includes("all")
       ? ["all" as const]
       : data.eventTypes.filter((type) => type !== "all");

@@ -9,7 +9,7 @@
 import { FC } from "react";
 import { Add, TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
-import { Authorization, ResourceType } from "src/utility/api/authorizations";
+import { Authorization } from "src/utility/api/authorizations";
 import { SearchResponse, usePagination } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import EntityList from "src/components/entityList";
@@ -17,6 +17,7 @@ import { useEntityModal } from "src/components/modal/useModal";
 import { AddModal } from "./modals/add-modal";
 import DeleteModal from "./modals/DeleteModal";
 import { DataTableHeader } from "src/components/entityList/EntityList";
+import type { ResourceType } from "@camunda/camunda-api-zod-schemas/8.9";
 
 type AuthorizationListProps = {
   tab: ResourceType;

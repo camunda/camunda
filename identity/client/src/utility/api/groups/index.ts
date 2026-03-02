@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type { Group } from "@camunda/camunda-api-zod-schemas/8.9";
+import type {
+  Group,
+  TenantClient as Client,
+} from "@camunda/camunda-api-zod-schemas/8.9";
 import { ApiDefinition, apiDelete, apiGet, apiPost, apiPut } from "../request";
 import { SearchResponse } from "src/utility/api";
 import { Role, ROLES_ENDPOINT } from "src/utility/api/roles";
@@ -123,9 +126,7 @@ type GetGroupClientsParams = {
   groupId: string;
 };
 
-export type Client = {
-  clientId: string;
-};
+export type { Client };
 
 export const getClientsByGroupId: ApiDefinition<
   SearchResponse<Client>,

@@ -15,13 +15,15 @@ import { useApiCall } from "src/utility/api";
 import TextField from "src/components/form/TextField";
 import {
   createGlobalTaskListener,
-  CreateGlobalTaskListenerParams,
-  GlobalTaskListener,
-  GlobalTaskListenerEventType,
   LISTENER_EVENT_TYPES,
 } from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
 import { LISTENER_TYPE_PATTERN } from "src/pages/global-task-listeners";
+import type {
+  CreateGlobalTaskListenerRequestBody,
+  GlobalTaskListener,
+  GlobalTaskListenerEventType,
+} from "@camunda/camunda-api-zod-schemas/8.9";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("globalTaskListeners");
@@ -34,7 +36,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   );
 
   const { control, handleSubmit, watch, setValue } =
-    useForm<CreateGlobalTaskListenerParams>({
+    useForm<CreateGlobalTaskListenerRequestBody>({
       defaultValues: {
         id: "",
         type: "",
@@ -103,7 +105,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     return labels[eventType];
   };
 
-  const onSubmit = async (data: CreateGlobalTaskListenerParams) => {
+  const onSubmit = async (data: CreateGlobalTaskListenerRequestBody) => {
     const eventTypes = data.eventTypes.includes("all")
       ? ["all" as const]
       : data.eventTypes.filter((type) => type !== "all");

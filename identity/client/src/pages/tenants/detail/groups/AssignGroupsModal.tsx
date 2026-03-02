@@ -16,7 +16,8 @@ import { searchGroups, Group } from "src/utility/api/groups";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
-import { assignTenantGroup, Tenant } from "src/utility/api/tenants";
+import { assignTenantGroup } from "src/utility/api/tenants";
+import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const SelectedGroups = styled.div`
   margin-top: 0;

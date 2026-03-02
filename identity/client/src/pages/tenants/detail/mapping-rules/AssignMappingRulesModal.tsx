@@ -16,7 +16,8 @@ import { TranslatedErrorInlineNotification } from "src/components/notifications/
 import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
-import { assignTenantMappingRule, Tenant } from "src/utility/api/tenants";
+import { assignTenantMappingRule } from "src/utility/api/tenants";
+import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const SelectedMappingRules = styled.div`
   margin-top: 0;
@@ -24,7 +25,7 @@ const SelectedMappingRules = styled.div`
 
 const AssignMappingRulesModal: FC<
   UseEntityModalCustomProps<
-    { id: Tenant["tenantKey"] },
+    { id: Tenant["tenantId"] },
     { assignedMappingRules: MappingRule[] }
   >
 > = ({ entity: tenant, assignedMappingRules, onSuccess, open, onClose }) => {

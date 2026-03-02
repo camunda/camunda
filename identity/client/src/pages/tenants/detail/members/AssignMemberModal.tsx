@@ -11,12 +11,11 @@ import { UseEntityModalCustomProps } from "src/components/modal";
 import { assignTenantMember } from "src/utility/api/membership";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api";
-import { User } from "src/utility/api/users";
 import FormModal from "src/components/modal/FormModal";
-import { Tenant } from "src/utility/api/tenants";
 import TextField from "src/components/form/TextField";
 import { Caption } from "src/pages/authorizations/modals/components.tsx";
 import { DocumentationLink } from "src/components/documentation";
+import type { Tenant, User } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const AssignMemberModal: FC<
   UseEntityModalCustomProps<

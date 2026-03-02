@@ -6,47 +6,35 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type { MappingRuleResult } from "@camunda/camunda-api-zod-schemas/8.9";
+import type {
+  MappingRuleResult,
+  QueryMappingRulesRequestBody,
+  QueryMappingRulesResponseBody,
+  UpdateMappingRuleRequestBody,
+} from "@camunda/camunda-api-zod-schemas/8.9";
 import {
   ApiDefinition,
   apiDelete,
   apiPut,
   apiPost,
 } from "src/utility/api/request";
-import { SearchResponse } from "src/utility/api";
-
-export type MappingRule = MappingRuleResult;
 
 export const MAPPING_RULES_ENDPOINT = "/mapping-rules";
 
-type MappingRuleSearchParams = {
-  filter?: {
-    name?: string;
-    claimName?: string;
-    claimValue?: string;
-    mappingRuleId?: string;
-  };
-};
+export type MappingRule = MappingRuleResult;
 
 export const searchMappingRule: ApiDefinition<
-  SearchResponse<MappingRule>,
-  MappingRuleSearchParams | undefined
+  QueryMappingRulesResponseBody,
+  QueryMappingRulesRequestBody | undefined
 > = (params) => apiPost(`${MAPPING_RULES_ENDPOINT}/search`, params);
 
 export const createMappingRule: ApiDefinition<undefined, MappingRule> = (
   mappingRule,
 ) => apiPost(MAPPING_RULES_ENDPOINT, mappingRule);
 
-export type UpdateMappingRuleParams = {
-  mappingRuleId: string;
-  name: string;
-  claimName: string;
-  claimValue: string;
-};
-
 export const updateMappingRule: ApiDefinition<
   undefined,
-  UpdateMappingRuleParams
+  UpdateMappingRuleRequestBody & Pick<MappingRule, "mappingRuleId">
 > = ({ mappingRuleId, claimName, claimValue, name }) =>
   apiPut(`${MAPPING_RULES_ENDPOINT}/${mappingRuleId}`, {
     name,
@@ -54,9 +42,8 @@ export const updateMappingRule: ApiDefinition<
     claimValue,
   });
 
-export type DeleteMappingRuleParams = UpdateMappingRuleParams;
 export const deleteMappingRule: ApiDefinition<
   undefined,
-  { mappingRuleId: string }
+  Pick<MappingRule, "mappingRuleId">
 > = ({ mappingRuleId }) =>
   apiDelete(`${MAPPING_RULES_ENDPOINT}/${mappingRuleId}`);
