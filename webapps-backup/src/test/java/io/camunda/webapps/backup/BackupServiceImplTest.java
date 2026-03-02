@@ -44,8 +44,7 @@ public class BackupServiceImplTest {
           List.of(() -> "prio1"),
           List.of(() -> "prio2"),
           List.of(() -> "prio3"),
-          List.of(() -> "prio4"),
-          List.of(() -> "prio5"));
+          List.of(() -> "prio4"));
   String repositoryName = "test-repository";
   MockBackupRepository backupRepository;
 
@@ -90,11 +89,10 @@ public class BackupServiceImplTest {
     assertThat(backup.getScheduledSnapshots())
         .isEqualTo(
             List.of(
-                "camunda_webapps_1_8.3_part_1_of_5",
-                "camunda_webapps_1_8.3_part_2_of_5",
-                "camunda_webapps_1_8.3_part_3_of_5",
-                "camunda_webapps_1_8.3_part_4_of_5",
-                "camunda_webapps_1_8.3_part_5_of_5"));
+                "camunda_webapps_1_8.3_part_1_of_4",
+                "camunda_webapps_1_8.3_part_2_of_4",
+                "camunda_webapps_1_8.3_part_3_of_4",
+                "camunda_webapps_1_8.3_part_4_of_4"));
 
     Awaitility.await("All backups are done")
         .untilAsserted(
@@ -103,18 +101,13 @@ public class BackupServiceImplTest {
               assertThat(backupState).isNotNull();
               assertThat(backupState.getBackupId()).isEqualTo(1L);
               assertThat(backupState.getState()).isEqualTo(BackupStateDto.COMPLETED);
-              assertThat(backupState.getDetails()).hasSize(5);
+              assertThat(backupState.getDetails()).hasSize(4);
               assertThat(backupState.getDetails())
                   .allSatisfy(detail -> detail.getState().equals("COMPLETED"));
             });
     final var snapshotRequests = backupRepository.snapshotRequests.get(1L);
     assertThat(snapshotRequests.stream().map(i -> i.indices().allIndices()))
-        .containsExactly(
-            List.of("prio1"),
-            List.of("prio2"),
-            List.of("prio3"),
-            List.of("prio4"),
-            List.of("prio5"));
+        .containsExactly(List.of("prio1"), List.of("prio2"), List.of("prio3"), List.of("prio4"));
   }
 
   @Test
@@ -135,11 +128,7 @@ public class BackupServiceImplTest {
     backupService =
         makeBackupService(
             new BackupPriorities(
-                List.of(() -> "prio1"),
-                List.of(() -> "prio2"),
-                List.of(() -> "prio3"),
-                List.of(),
-                List.of()));
+                List.of(() -> "prio1"), List.of(() -> "prio2"), List.of(() -> "prio3"), List.of()));
     // backup #1 is taken with only 3 parts
     final var response = backupService.takeBackup(new TakeBackupRequestDto().setBackupId(1L));
     assertThat(response.getScheduledSnapshots()).hasSize(3);

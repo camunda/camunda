@@ -10,11 +10,11 @@ package io.camunda.webapps.schema.descriptors.template;
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import java.util.Optional;
 
-public class UsageMetricTUTemplate extends AbstractTemplateDescriptor implements Prio5Backup {
-  public static final String INDEX_NAME = "usage-metric-tu";
+public class UsageMetricTUTemplate extends AbstractTemplateDescriptor implements Prio4Backup {
+  public static final String INDEX_NAME = "usage-metric-tu"; // usage metrics task users
   public static final String INDEX_VERSION = "8.8.0";
 
   public static final String ID = "id";
