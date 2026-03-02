@@ -17,7 +17,7 @@ const Warning: React.FC = () => {
       title=""
       children={
         <Text>
-          The planned modifications will cancel all remaining running flow node
+          The planned modifications will cancel all remaining running element
           instances. Applying these modifications will cancel the entire process
           instance.
         </Text>

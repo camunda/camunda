@@ -46,7 +46,7 @@ const ModificationHelperModal: React.FC<Props> = observer(
             modifications on a process instance.
           </p>
           <p>
-            By clicking on a flow node, you can select one of following
+            By clicking on an element, you can select one of following
             modifications if applicable:
           </p>
           <Modifications>
@@ -54,25 +54,25 @@ const ModificationHelperModal: React.FC<Props> = observer(
               <ModificationType>
                 Add <AddIcon />
               </ModificationType>
-              a single flow node instance
+              a single element instance
             </Modification>
             <Modification>
               <ModificationType>
                 Cancel <CancelIcon />
               </ModificationType>
-              all running flow node instances
+              all running element instances
             </Modification>
             <Modification>
               <ModificationType>
                 Move <MoveIcon />
               </ModificationType>
-              all the running instances to a different target flow node in the
-              diagram
+              all the running element instances to a different target element in
+              the diagram
             </Modification>
           </Modifications>
           <p>
-            Additionally, you add/edit variables by selecting the flow node
-            scope in the Instance History panel.
+            Additionally, you add/edit variables by selecting the element scope
+            in the Instance History panel.
           </p>
           <p>
             A summary of all planned modifications will be shown after clicking

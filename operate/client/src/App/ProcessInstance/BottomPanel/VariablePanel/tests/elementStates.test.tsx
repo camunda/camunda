@@ -34,7 +34,7 @@ vi.mock('modules/stores/notifications', () => ({
 
 const defaultStatistics = [
   {
-    elementId: 'TEST_FLOW_NODE',
+    elementId: 'TEST_ELEMENT',
     active: 0,
     canceled: 0,
     incidents: 0,
@@ -129,7 +129,7 @@ const TestSelectionControls: React.FC = () => {
           })
         }
       >
-        select activity flow node
+        select activity element
       </button>
       <button
         type="button"
@@ -158,17 +158,17 @@ const TestSelectionControls: React.FC = () => {
         type="button"
         onClick={() =>
           selectElement({
-            elementId: 'flowNode-without-running-tokens',
+            elementId: 'element-without-running-tokens',
           })
         }
       >
-        select no-token flow node
+        select no-token element
       </button>
       <button
         type="button"
         onClick={() =>
           selectElementInstance({
-            elementId: 'flowNode-without-running-tokens',
+            elementId: 'element-without-running-tokens',
             elementInstanceKey: 'some-new-scope-id-1',
             isPlaceholder: true,
           })
@@ -180,7 +180,7 @@ const TestSelectionControls: React.FC = () => {
         type="button"
         onClick={() =>
           selectElementInstance({
-            elementId: 'another-flownode-without-any-tokens',
+            elementId: 'another-element-without-any-tokens',
             elementInstanceKey: 'some-new-parent-scope-id',
             isPlaceholder: true,
           })
@@ -252,7 +252,7 @@ describe('VariablePanel element states', () => {
     mockSearchJobs().withSuccess(emptyJobsResponse);
 
     await user.click(
-      screen.getByRole('button', {name: /^select activity flow node$/i}),
+      screen.getByRole('button', {name: /^select activity element$/i}),
     );
 
     act(() => {
@@ -273,7 +273,7 @@ describe('VariablePanel element states', () => {
           operation: 'ADD_TOKEN',
           flowNode: {
             id: 'Activity_0qtp1k6',
-            name: 'Flow Node with running tokens',
+            name: 'Element with running tokens',
           },
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
@@ -285,7 +285,7 @@ describe('VariablePanel element states', () => {
 
     expect(
       await screen.findByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+        'To view the variables, select a single element instance in the instance history.',
       ),
     ).toBeInTheDocument();
     expect(
@@ -297,7 +297,7 @@ describe('VariablePanel element states', () => {
         operation: 'CANCEL_TOKEN',
         flowNode: {
           id: 'Activity_0qtp1k6',
-          name: 'Flow Node with running tokens',
+          name: 'Element with running tokens',
         },
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
@@ -306,7 +306,7 @@ describe('VariablePanel element states', () => {
 
     expect(
       await screen.findByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+        'To view the variables, select a single element instance in the instance history.',
       ),
     ).toBeInTheDocument();
     expect(
@@ -325,11 +325,11 @@ describe('VariablePanel element states', () => {
 
     expect(
       screen.queryByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+        'To view the variables, select a single element instance in the instance history.',
       ),
     ).not.toBeInTheDocument();
     expect(
-      await screen.findByText('The Flow Node has no Variables'),
+      await screen.findByText('The element has no variables'),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: /add variable/i}),
@@ -341,11 +341,11 @@ describe('VariablePanel element states', () => {
 
     expect(
       screen.queryByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+        'To view the variables, select a single element instance in the instance history.',
       ),
     ).not.toBeInTheDocument();
     expect(
-      await screen.findByText('The Flow Node has no Variables'),
+      await screen.findByText('The element has no variables'),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: /add variable/i}),
@@ -389,7 +389,7 @@ describe('VariablePanel element states', () => {
     mockSearchJobs().withSuccess(emptyJobsResponse);
 
     await user.click(
-      screen.getByRole('button', {name: /^select no-token flow node$/i}),
+      screen.getByRole('button', {name: /^select no-token element$/i}),
     );
 
     expect(
@@ -397,7 +397,7 @@ describe('VariablePanel element states', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText('testVariableName')).not.toBeInTheDocument();
     expect(
-      screen.getByText('The Flow Node has no Variables'),
+      screen.getByText('The element has no variables'),
     ).toBeInTheDocument();
 
     act(() => {
@@ -406,21 +406,21 @@ describe('VariablePanel element states', () => {
         payload: {
           operation: 'ADD_TOKEN',
           flowNode: {
-            id: 'flowNode-without-running-tokens',
-            name: 'Flow Node without running tokens',
+            id: 'element-without-running-tokens',
+            name: 'Element without running tokens',
           },
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           scopeId: 'some-new-scope-id',
           parentScopeIds: {
-            'another-flownode-without-any-tokens': 'some-new-parent-scope-id',
+            'another-element-without-any-tokens': 'some-new-parent-scope-id',
           },
         },
       });
     });
 
     expect(
-      await screen.findByText('The Flow Node has no Variables'),
+      await screen.findByText('The element has no variables'),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: /add variable/i}),
@@ -431,7 +431,7 @@ describe('VariablePanel element states', () => {
 
     await user.click(screen.getByRole('tab', {name: 'Variables'}));
     expect(
-      await screen.findByText('The Flow Node has no Variables'),
+      await screen.findByText('The element has no variables'),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
 
@@ -441,8 +441,8 @@ describe('VariablePanel element states', () => {
         payload: {
           operation: 'ADD_TOKEN',
           flowNode: {
-            id: 'flowNode-without-running-tokens',
-            name: 'Flow Node without running tokens',
+            id: 'element-without-running-tokens',
+            name: 'Element without running tokens',
           },
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
@@ -454,7 +454,7 @@ describe('VariablePanel element states', () => {
 
     expect(
       await screen.findByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+        'To view the variables, select a single element instance in the instance history.',
       ),
     ).toBeInTheDocument();
     expect(
@@ -469,7 +469,7 @@ describe('VariablePanel element states', () => {
     );
 
     expect(
-      await screen.findByText('The Flow Node has no Variables'),
+      await screen.findByText('The element has no variables'),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: /add variable/i}),
@@ -483,7 +483,7 @@ describe('VariablePanel element states', () => {
     );
 
     expect(
-      await screen.findByText('The Flow Node has no Variables'),
+      await screen.findByText('The element has no variables'),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: /add variable/i}),
@@ -533,14 +533,14 @@ describe('VariablePanel element states', () => {
     mockSearchJobs().withSuccess(emptyJobsResponse);
 
     await user.click(
-      screen.getByRole('button', {name: /^select activity flow node$/i}),
+      screen.getByRole('button', {name: /^select activity element$/i}),
     );
 
     await waitFor(() =>
       expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument(),
     );
     expect(
-      await screen.findByText(/the flow node has no variables/i),
+      await screen.findByText(/the element has no variables/i),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: /add variable/i}),
@@ -553,7 +553,7 @@ describe('VariablePanel element states', () => {
           operation: 'ADD_TOKEN',
           flowNode: {
             id: 'Activity_0qtp1k6',
-            name: 'Flow Node with finished tokens',
+            name: 'Element with finished tokens',
           },
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
@@ -565,7 +565,7 @@ describe('VariablePanel element states', () => {
 
     expect(
       await screen.findByText(
-        /to view the variables, select a single flow node instance in the instance history/i,
+        /to view the variables, select a single element instance in the instance history/i,
       ),
     ).toBeInTheDocument();
     expect(
@@ -578,7 +578,7 @@ describe('VariablePanel element states', () => {
     );
     expect(
       await screen.findByText(
-        /to view the variables, select a single flow node instance in the instance history/i,
+        /to view the variables, select a single element instance in the instance history/i,
       ),
     ).toBeInTheDocument();
 
@@ -593,7 +593,7 @@ describe('VariablePanel element states', () => {
       expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument(),
     );
     expect(
-      await screen.findByText(/the flow node has no variables/i),
+      await screen.findByText(/the element has no variables/i),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: /add variable/i}),

@@ -248,7 +248,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should show and remove two add modification flow nodes', async () => {
+  it('should show and remove two add modification elements', async () => {
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockSearchElementInstances().withSuccess(
       searchResult([
@@ -363,7 +363,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     expect(screen.queryByTestId('cancel-icon')).not.toBeInTheDocument();
   });
 
-  it('should show and remove one cancel modification flow nodes', async () => {
+  it('should show and remove one cancel modification elements', async () => {
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockSearchElementInstances().withSuccess(
       searchResult([

@@ -16,7 +16,7 @@ import {mockProcessXml} from 'modules/mocks/mockProcessXml';
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 
-const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
+const EMPTY_PLACEHOLDER = 'The element has no variables';
 
 describe('Skeleton', () => {
   it('should display empty content if there are no variables', async () => {

@@ -73,15 +73,15 @@ const Listeners: React.FC<Props> = observer(
     const handleEmptyMessages = () => {
       if (hasUserTaskSelected) {
         if (selectedOption === 'All listeners') {
-          return 'This flow node has no execution listeners nor user task listeners';
+          return 'This element has no execution listeners nor user task listeners';
         }
 
         if (selectedOption === 'User task listeners') {
-          return 'This flow node has no user task listeners';
+          return 'This element has no user task listeners';
         }
       }
 
-      return 'This flow node has no execution listeners';
+      return 'This element has no execution listeners';
     };
 
     const listeners = jobs ?? [];

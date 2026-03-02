@@ -498,7 +498,7 @@ describe.todo(
       ).toHaveLength(4);
     });
 
-    it('should visualize placeholders correctly after adding tokens on flow nodes that requires and does not require ancestor selection', async () => {
+    it('should visualize placeholders correctly after adding tokens on elements that requires and does not require ancestor selection', async () => {
       render(
         <ElementInstancesTree
           processInstance={mockNestedSubProcessInstance}

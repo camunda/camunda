@@ -44,7 +44,7 @@ describe('stores/modifications', () => {
     expect(modificationsStore.isModificationModeEnabled).toBe(false);
   });
 
-  it('should add/remove flow node modifications', async () => {
+  it('should add/remove element modifications', async () => {
     const uniqueID = generateUniqueID();
     const uniqueIDForMove = generateUniqueID();
     expect(modificationsStore.state.modifications).toEqual([]);
@@ -107,7 +107,7 @@ describe('stores/modifications', () => {
     ]);
 
     modificationsStore.removeFlowNodeModification({
-      flowNode: {id: 'non-existing-flow-node', name: ''},
+      flowNode: {id: 'non-existing-element', name: ''},
       operation: 'ADD_TOKEN',
       scopeId: '1',
       affectedTokenCount: 1,
@@ -168,7 +168,7 @@ describe('stores/modifications', () => {
     createAddVariableModification({
       id: '1',
       scopeId: '1',
-      flowNodeName: 'flow-node-1',
+      flowNodeName: 'element-1',
       name: 'variable1',
       value: 'variable1-newValue',
     });
@@ -178,7 +178,7 @@ describe('stores/modifications', () => {
       name: 'variable1',
       oldValue: 'variable2-oldValue',
       newValue: 'variable2-newValue',
-      flowNodeName: 'flow-node-2',
+      flowNodeName: 'element-2',
       scopeId: '2',
     });
 
@@ -211,7 +211,7 @@ describe('stores/modifications', () => {
     expect(modificationsStore.state.lastRemovedModification).toEqual({
       modification: {
         payload: {
-          flowNodeName: 'flow-node-1',
+          flowNodeName: 'element-1',
           id: '1',
           name: 'variable1',
           newValue: 'variable1-newValue',
@@ -225,7 +225,7 @@ describe('stores/modifications', () => {
     expect(modificationsStore.state.modifications).toEqual([
       {
         payload: {
-          flowNodeName: 'flow-node-2',
+          flowNodeName: 'element-2',
           id: 'variable1',
           scopeId: '2',
           name: 'variable1',
@@ -247,7 +247,7 @@ describe('stores/modifications', () => {
     expect(modificationsStore.state.lastRemovedModification).toEqual({
       modification: {
         payload: {
-          flowNodeName: 'flow-node-2',
+          flowNodeName: 'element-2',
           id: 'variable1',
           name: 'variable1',
           newValue: 'variable2-newValue',
@@ -329,7 +329,7 @@ describe('stores/modifications', () => {
 
   it('should retrieve variable modifications', () => {
     createAddVariableModification({
-      scopeId: 'flow-node-1',
+      scopeId: 'element-1',
       flowNodeName: 'flowNode1',
       id: '1',
       name: 'name1',
@@ -337,7 +337,7 @@ describe('stores/modifications', () => {
     });
 
     createAddVariableModification({
-      scopeId: 'flow-node-1',
+      scopeId: 'element-1',
       flowNodeName: 'flowNode1',
       id: '1',
       name: 'name1',
@@ -347,7 +347,7 @@ describe('stores/modifications', () => {
     expect(modificationsStore.variableModifications).toEqual([
       {
         operation: 'ADD_VARIABLE',
-        scopeId: 'flow-node-1',
+        scopeId: 'element-1',
         flowNodeName: 'flowNode1',
         id: '1',
         name: 'name1',
@@ -356,7 +356,7 @@ describe('stores/modifications', () => {
     ]);
 
     createAddVariableModification({
-      scopeId: 'flow-node-1',
+      scopeId: 'element-1',
       flowNodeName: 'flowNode1',
       id: '1',
       name: 'name2',
@@ -366,7 +366,7 @@ describe('stores/modifications', () => {
     expect(modificationsStore.variableModifications).toEqual([
       {
         operation: 'ADD_VARIABLE',
-        scopeId: 'flow-node-1',
+        scopeId: 'element-1',
         flowNodeName: 'flowNode1',
         id: '1',
         name: 'name2',
@@ -375,7 +375,7 @@ describe('stores/modifications', () => {
     ]);
 
     createEditVariableModification({
-      scopeId: 'flow-node-1',
+      scopeId: 'element-1',
       flowNodeName: 'flowNode1',
       name: 'existing-variable',
       oldValue: '12',
@@ -383,7 +383,7 @@ describe('stores/modifications', () => {
     });
 
     createEditVariableModification({
-      scopeId: 'flow-node-1',
+      scopeId: 'element-1',
       flowNodeName: 'flowNode1',
       name: 'existing-variable',
       oldValue: '12',
@@ -393,7 +393,7 @@ describe('stores/modifications', () => {
     expect(modificationsStore.variableModifications).toEqual([
       {
         operation: 'ADD_VARIABLE',
-        scopeId: 'flow-node-1',
+        scopeId: 'element-1',
         flowNodeName: 'flowNode1',
         id: '1',
         name: 'name2',
@@ -401,7 +401,7 @@ describe('stores/modifications', () => {
       },
       {
         operation: 'EDIT_VARIABLE',
-        scopeId: 'flow-node-1',
+        scopeId: 'element-1',
         flowNodeName: 'flowNode1',
         id: 'existing-variable',
         name: 'existing-variable',
@@ -411,7 +411,7 @@ describe('stores/modifications', () => {
     ]);
 
     createAddVariableModification({
-      scopeId: 'flow-node-2',
+      scopeId: 'element-2',
       flowNodeName: 'flowNode2',
       id: '1',
       name: 'name2',
@@ -421,7 +421,7 @@ describe('stores/modifications', () => {
     expect(modificationsStore.variableModifications).toEqual([
       {
         operation: 'ADD_VARIABLE',
-        scopeId: 'flow-node-1',
+        scopeId: 'element-1',
         flowNodeName: 'flowNode1',
         id: '1',
         name: 'name2',
@@ -429,7 +429,7 @@ describe('stores/modifications', () => {
       },
       {
         operation: 'EDIT_VARIABLE',
-        scopeId: 'flow-node-1',
+        scopeId: 'element-1',
         flowNodeName: 'flowNode1',
         id: 'existing-variable',
         name: 'existing-variable',
@@ -438,7 +438,7 @@ describe('stores/modifications', () => {
       },
       {
         operation: 'ADD_VARIABLE',
-        scopeId: 'flow-node-2',
+        scopeId: 'element-2',
         flowNodeName: 'flowNode2',
         id: '1',
         name: 'name2',
@@ -491,17 +491,17 @@ describe('stores/modifications', () => {
   });
 
   it('should retrieve "edit variable" modifications', async () => {
-    const FLOW_NODE_INSTANCE_ID = 'test-flow-node';
+    const ELEMENT_INSTANCE_ID = 'test-element';
 
     createEditVariableModification({
-      scopeId: FLOW_NODE_INSTANCE_ID,
+      scopeId: ELEMENT_INSTANCE_ID,
       name: 'test',
       oldValue: '12',
       newValue: '123',
     });
     expect(
       modificationsStore.getLastVariableModification(
-        FLOW_NODE_INSTANCE_ID,
+        ELEMENT_INSTANCE_ID,
         'test',
         'EDIT_VARIABLE',
       ),
@@ -509,21 +509,21 @@ describe('stores/modifications', () => {
       operation: 'EDIT_VARIABLE',
       flowNodeName: 'flow-node-name',
       id: 'test',
-      scopeId: FLOW_NODE_INSTANCE_ID,
+      scopeId: ELEMENT_INSTANCE_ID,
       name: 'test',
       oldValue: '12',
       newValue: '123',
     });
 
     createEditVariableModification({
-      scopeId: FLOW_NODE_INSTANCE_ID,
+      scopeId: ELEMENT_INSTANCE_ID,
       name: 'test2',
       oldValue: '123',
       newValue: '1234',
     });
     expect(
       modificationsStore.getLastVariableModification(
-        FLOW_NODE_INSTANCE_ID,
+        ELEMENT_INSTANCE_ID,
         'test2',
         'EDIT_VARIABLE',
       ),
@@ -531,21 +531,21 @@ describe('stores/modifications', () => {
       operation: 'EDIT_VARIABLE',
       flowNodeName: 'flow-node-name',
       id: 'test2',
-      scopeId: FLOW_NODE_INSTANCE_ID,
+      scopeId: ELEMENT_INSTANCE_ID,
       name: 'test2',
       oldValue: '123',
       newValue: '1234',
     });
 
     createEditVariableModification({
-      scopeId: FLOW_NODE_INSTANCE_ID,
+      scopeId: ELEMENT_INSTANCE_ID,
       name: 'test',
       oldValue: '12',
       newValue: '12345',
     });
     expect(
       modificationsStore.getLastVariableModification(
-        FLOW_NODE_INSTANCE_ID,
+        ELEMENT_INSTANCE_ID,
         'test',
         'EDIT_VARIABLE',
       ),
@@ -553,7 +553,7 @@ describe('stores/modifications', () => {
       operation: 'EDIT_VARIABLE',
       flowNodeName: 'flow-node-name',
       id: 'test',
-      scopeId: FLOW_NODE_INSTANCE_ID,
+      scopeId: ELEMENT_INSTANCE_ID,
       name: 'test',
       oldValue: '12',
       newValue: '12345',
@@ -561,11 +561,11 @@ describe('stores/modifications', () => {
   });
 
   it('should retrieve "add variable" modifications', async () => {
-    const FLOW_NODE_INSTANCE_ID = 'test-flow-node';
+    const ELEMENT_INSTANCE_ID = 'test-element';
 
     expect(modificationsStore.state.modifications).toEqual([]);
     createAddVariableModification({
-      scopeId: FLOW_NODE_INSTANCE_ID,
+      scopeId: ELEMENT_INSTANCE_ID,
       id: '1',
       name: 'test',
       value: '123',
@@ -573,20 +573,20 @@ describe('stores/modifications', () => {
 
     expect(
       modificationsStore.getLastVariableModification(
-        FLOW_NODE_INSTANCE_ID,
+        ELEMENT_INSTANCE_ID,
         '1',
         'ADD_VARIABLE',
       ),
     ).toEqual({
       operation: 'ADD_VARIABLE',
-      scopeId: FLOW_NODE_INSTANCE_ID,
+      scopeId: ELEMENT_INSTANCE_ID,
       flowNodeName: 'flow-node-name',
       id: '1',
       name: 'test',
       newValue: '123',
     });
     expect(
-      modificationsStore.getAddVariableModifications(FLOW_NODE_INSTANCE_ID),
+      modificationsStore.getAddVariableModifications(ELEMENT_INSTANCE_ID),
     ).toEqual([
       {
         id: '1',
@@ -596,7 +596,7 @@ describe('stores/modifications', () => {
     ]);
 
     createAddVariableModification({
-      scopeId: FLOW_NODE_INSTANCE_ID,
+      scopeId: ELEMENT_INSTANCE_ID,
       id: '1',
       name: 'test',
       value: '1234',
@@ -604,20 +604,20 @@ describe('stores/modifications', () => {
 
     expect(
       modificationsStore.getLastVariableModification(
-        FLOW_NODE_INSTANCE_ID,
+        ELEMENT_INSTANCE_ID,
         '1',
         'ADD_VARIABLE',
       ),
     ).toEqual({
       operation: 'ADD_VARIABLE',
-      scopeId: FLOW_NODE_INSTANCE_ID,
+      scopeId: ELEMENT_INSTANCE_ID,
       flowNodeName: 'flow-node-name',
       id: '1',
       name: 'test',
       newValue: '1234',
     });
     expect(
-      modificationsStore.getAddVariableModifications(FLOW_NODE_INSTANCE_ID),
+      modificationsStore.getAddVariableModifications(ELEMENT_INSTANCE_ID),
     ).toEqual([
       {
         id: '1',
@@ -627,7 +627,7 @@ describe('stores/modifications', () => {
     ]);
 
     createAddVariableModification({
-      scopeId: FLOW_NODE_INSTANCE_ID,
+      scopeId: ELEMENT_INSTANCE_ID,
       id: '1',
       name: 'test-updated',
       value: '1234',
@@ -635,20 +635,20 @@ describe('stores/modifications', () => {
 
     expect(
       modificationsStore.getLastVariableModification(
-        FLOW_NODE_INSTANCE_ID,
+        ELEMENT_INSTANCE_ID,
         '1',
         'ADD_VARIABLE',
       ),
     ).toEqual({
       operation: 'ADD_VARIABLE',
-      scopeId: FLOW_NODE_INSTANCE_ID,
+      scopeId: ELEMENT_INSTANCE_ID,
       flowNodeName: 'flow-node-name',
       id: '1',
       name: 'test-updated',
       newValue: '1234',
     });
     expect(
-      modificationsStore.getAddVariableModifications(FLOW_NODE_INSTANCE_ID),
+      modificationsStore.getAddVariableModifications(ELEMENT_INSTANCE_ID),
     ).toEqual([
       {
         id: '1',
@@ -658,7 +658,7 @@ describe('stores/modifications', () => {
     ]);
 
     createAddVariableModification({
-      scopeId: FLOW_NODE_INSTANCE_ID,
+      scopeId: ELEMENT_INSTANCE_ID,
       id: '2',
       name: 'another-variable',
       value: '987',
@@ -666,13 +666,13 @@ describe('stores/modifications', () => {
 
     expect(
       modificationsStore.getLastVariableModification(
-        FLOW_NODE_INSTANCE_ID,
+        ELEMENT_INSTANCE_ID,
         '1',
         'ADD_VARIABLE',
       ),
     ).toEqual({
       operation: 'ADD_VARIABLE',
-      scopeId: FLOW_NODE_INSTANCE_ID,
+      scopeId: ELEMENT_INSTANCE_ID,
       flowNodeName: 'flow-node-name',
       id: '1',
       name: 'test-updated',
@@ -680,20 +680,20 @@ describe('stores/modifications', () => {
     });
     expect(
       modificationsStore.getLastVariableModification(
-        FLOW_NODE_INSTANCE_ID,
+        ELEMENT_INSTANCE_ID,
         '2',
         'ADD_VARIABLE',
       ),
     ).toEqual({
       operation: 'ADD_VARIABLE',
-      scopeId: FLOW_NODE_INSTANCE_ID,
+      scopeId: ELEMENT_INSTANCE_ID,
       flowNodeName: 'flow-node-name',
       id: '2',
       name: 'another-variable',
       newValue: '987',
     });
     expect(
-      modificationsStore.getAddVariableModifications(FLOW_NODE_INSTANCE_ID),
+      modificationsStore.getAddVariableModifications(ELEMENT_INSTANCE_ID),
     ).toEqual([
       {
         id: '1',
@@ -709,7 +709,7 @@ describe('stores/modifications', () => {
 
     expect(modificationsStore.getAddVariableModifications(null)).toEqual([]);
     expect(
-      modificationsStore.getAddVariableModifications('non-existing-flow-node'),
+      modificationsStore.getAddVariableModifications('non-existing-element'),
     ).toEqual([]);
   });
 
@@ -718,7 +718,7 @@ describe('stores/modifications', () => {
       type: 'token',
       payload: {
         operation: 'ADD_TOKEN',
-        flowNode: {id: 'flow_node_0', name: 'flow node 0'},
+        flowNode: {id: 'element_0', name: 'element 0'},
         scopeId: 'random-scope-id-0',
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
@@ -729,7 +729,7 @@ describe('stores/modifications', () => {
       type: 'token',
       payload: {
         operation: 'ADD_TOKEN',
-        flowNode: {id: 'flow_node_1', name: 'flow node 1'},
+        flowNode: {id: 'element_1', name: 'element 1'},
         scopeId: 'random-scope-id-1',
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
@@ -739,14 +739,14 @@ describe('stores/modifications', () => {
         },
       },
     });
-    cancelAllTokens('flow_node_2', 0, 0, {});
+    cancelAllTokens('element_2', 0, 0, {});
 
     modificationsStore.addModification({
       type: 'token',
       payload: {
         operation: 'MOVE_TOKEN',
-        flowNode: {id: 'flow_node_3', name: 'flow node 3'},
-        targetFlowNode: {id: 'flow_node_4', name: 'flow node 4'},
+        flowNode: {id: 'element_3', name: 'element 3'},
+        targetFlowNode: {id: 'element_4', name: 'element 4'},
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
         scopeIds: ['random-scope-id-2'],
@@ -767,7 +767,7 @@ describe('stores/modifications', () => {
         name: 'name1',
         newValue: '"value1"',
         id: '1',
-        flowNodeName: 'flow node 1',
+        flowNodeName: 'element 1',
       },
     });
     modificationsStore.addModification({
@@ -778,7 +778,7 @@ describe('stores/modifications', () => {
         name: 'name2',
         newValue: '"value2"',
         id: '2',
-        flowNodeName: 'flow node 1',
+        flowNodeName: 'element 1',
       },
     });
 
@@ -791,7 +791,7 @@ describe('stores/modifications', () => {
         name: 'name3',
         newValue: '"value3"',
         id: '3',
-        flowNodeName: 'flow node 5',
+        flowNodeName: 'element 5',
       },
     });
     modificationsStore.addModification({
@@ -802,7 +802,7 @@ describe('stores/modifications', () => {
         name: 'name4',
         newValue: '"value4"',
         id: '4',
-        flowNodeName: 'flow node 5',
+        flowNodeName: 'element 5',
       },
     });
     modificationsStore.addModification({
@@ -814,7 +814,7 @@ describe('stores/modifications', () => {
         oldValue: '"value5"',
         newValue: '"value5-edited"',
         id: '5',
-        flowNodeName: 'flow node 5',
+        flowNodeName: 'element 5',
       },
     });
     modificationsStore.addModification({
@@ -826,7 +826,7 @@ describe('stores/modifications', () => {
         oldValue: '"value5"',
         newValue: '"value5-edited2"',
         id: '5',
-        flowNodeName: 'flow node 5',
+        flowNodeName: 'element 5',
       },
     });
 
@@ -838,7 +838,7 @@ describe('stores/modifications', () => {
         name: 'name6',
         newValue: '"value6"',
         id: '6',
-        flowNodeName: 'flow node 4',
+        flowNodeName: 'element 4',
       },
     });
 
@@ -850,7 +850,7 @@ describe('stores/modifications', () => {
         name: 'name7',
         newValue: '"value7"',
         id: '7',
-        flowNodeName: 'flow node 7',
+        flowNodeName: 'element 7',
       },
     });
 
@@ -862,7 +862,7 @@ describe('stores/modifications', () => {
         name: 'name8',
         newValue: '"value8"',
         id: '8',
-        flowNodeName: 'flow node 7',
+        flowNodeName: 'element 7',
       },
     });
 
@@ -874,7 +874,7 @@ describe('stores/modifications', () => {
         name: 'name9',
         newValue: '"value9"',
         id: '9',
-        flowNodeName: 'flow node 9',
+        flowNodeName: 'element 9',
       },
     });
 
@@ -886,15 +886,15 @@ describe('stores/modifications', () => {
         name: 'name10',
         newValue: '"value10"',
         id: '10',
-        flowNodeName: 'flow node 10',
+        flowNodeName: 'element 10',
       },
     });
 
-    modificationsStore.cancelToken('flow_node_5', 'some_instance_key', {});
+    modificationsStore.cancelToken('element_5', 'some_instance_key', {});
     modificationsStore.addMoveModification({
-      sourceFlowNodeId: 'flow_node_6',
+      sourceFlowNodeId: 'element_6',
       sourceFlowNodeInstanceKey: 'some_instance_key_2',
-      targetFlowNodeId: 'flow_node_7',
+      targetFlowNodeId: 'element_7',
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
@@ -906,7 +906,7 @@ describe('stores/modifications', () => {
       type: 'token',
       payload: {
         operation: 'ADD_TOKEN',
-        flowNode: {id: 'flow_node_11', name: 'flow node 11'},
+        flowNode: {id: 'element_11', name: 'element 11'},
         scopeId: 'random-scope-id-11',
         affectedTokenCount: 1,
         ancestorElement: {
@@ -945,11 +945,11 @@ describe('stores/modifications', () => {
     expect(requestBody).toStrictEqual({
       activateInstructions: [
         {
-          elementId: 'flow_node_0',
+          elementId: 'element_0',
           variableInstructions: [],
         },
         {
-          elementId: 'flow_node_1',
+          elementId: 'element_1',
           variableInstructions: [
             {
               variables: {name10: 'value10'},
@@ -957,12 +957,12 @@ describe('stores/modifications', () => {
             },
             {
               variables: {name1: 'value1', name2: 'value2'},
-              scopeId: 'flow_node_1',
+              scopeId: 'element_1',
             },
           ],
         },
         {
-          elementId: 'flow_node_11',
+          elementId: 'element_11',
           ancestorElementInstanceKey: 'some-ancestor-instance-key',
           variableInstructions: [],
         },
@@ -971,9 +971,9 @@ describe('stores/modifications', () => {
         {
           sourceElementInstruction: {
             sourceType: 'byId',
-            sourceElementId: 'flow_node_3',
+            sourceElementId: 'element_3',
           },
-          targetElementId: 'flow_node_4',
+          targetElementId: 'element_4',
           variableInstructions: [
             {
               variables: {name7: 'value7', name8: 'value8'},
@@ -985,7 +985,7 @@ describe('stores/modifications', () => {
             },
             {
               variables: {name6: 'value6'},
-              scopeId: 'flow_node_4',
+              scopeId: 'element_4',
             },
           ],
         },
@@ -994,12 +994,12 @@ describe('stores/modifications', () => {
             sourceType: 'byKey',
             sourceElementInstanceKey: 'some_instance_key_2',
           },
-          targetElementId: 'flow_node_7',
+          targetElementId: 'element_7',
           variableInstructions: [],
         },
       ],
       terminateInstructions: [
-        {elementId: 'flow_node_2'},
+        {elementId: 'element_2'},
         {elementInstanceKey: 'some_instance_key'},
       ],
     });
@@ -1010,7 +1010,7 @@ describe('stores/modifications', () => {
       type: 'token',
       payload: {
         operation: 'ADD_TOKEN',
-        flowNode: {id: 'flow_node_0', name: 'flow node 0'},
+        flowNode: {id: 'element_0', name: 'element 0'},
         scopeId: 'random-scope-id-0',
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
@@ -1048,7 +1048,7 @@ describe('stores/modifications', () => {
         name: 'name',
         newValue: '"value"',
         id: '0',
-        flowNodeName: 'flow node 0',
+        flowNodeName: 'element 0',
       },
     });
 
@@ -1079,7 +1079,7 @@ describe('stores/modifications', () => {
     expect(requestBody).toStrictEqual({
       activateInstructions: [
         {
-          elementId: 'flow_node_0',
+          elementId: 'element_0',
           variableInstructions: [
             {variables: {name1: 'value1', name2: 'value2-edited'}},
           ],
@@ -1092,9 +1092,9 @@ describe('stores/modifications', () => {
 
   it('should attach root variable modifications to a move instruction', async () => {
     modificationsStore.addMoveModification({
-      sourceFlowNodeId: 'flow_node_6',
+      sourceFlowNodeId: 'element_6',
       sourceFlowNodeInstanceKey: 'some_instance_key_2',
-      targetFlowNodeId: 'flow_node_7',
+      targetFlowNodeId: 'element_7',
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
@@ -1132,7 +1132,7 @@ describe('stores/modifications', () => {
         name: 'name',
         newValue: '"value"',
         id: '0',
-        flowNodeName: 'flow node 0',
+        flowNodeName: 'element 0',
       },
     });
 
@@ -1167,7 +1167,7 @@ describe('stores/modifications', () => {
             sourceType: 'byKey',
             sourceElementInstanceKey: 'some_instance_key_2',
           },
-          targetElementId: 'flow_node_7',
+          targetElementId: 'element_7',
           variableInstructions: [
             {variables: {name1: 'value1', name2: 'value2-edited'}},
           ],
@@ -1178,7 +1178,7 @@ describe('stores/modifications', () => {
   });
 
   it('should fail if root variable modifications cannot be attached to an instruction', async () => {
-    modificationsStore.cancelToken('flow_node_5', 'some_instance_key', {});
+    modificationsStore.cancelToken('element_5', 'some_instance_key', {});
     modificationsStore.addModification({
       type: 'variable',
       payload: {
@@ -1291,12 +1291,12 @@ describe('stores/modifications', () => {
         flowNode: {id: 'task-1', name: 'task-1'},
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
-        parentScopeIds: {'parent-flow-node': parentScopeId},
+        parentScopeIds: {'parent-element': parentScopeId},
       },
     });
     createAddVariableModification({
       scopeId: parentScopeId,
-      flowNodeName: 'parent-flow-node',
+      flowNodeName: 'parent-element',
       name: 'var1',
       value: '"value1"',
     });
