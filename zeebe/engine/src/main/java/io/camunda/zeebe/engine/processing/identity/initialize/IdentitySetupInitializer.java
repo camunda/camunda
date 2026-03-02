@@ -190,7 +190,9 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
             switch (assignmentsForEntityType.getKey().toLowerCase()) {
               case "users" -> EntityType.USER;
               case "clients" -> EntityType.CLIENT;
-              case "mappingrules" -> EntityType.MAPPING_RULE;
+              // when using config via env variables,
+              // spring will convert MAPPING_RULES to mapping.rules
+              case "mappingrules", "mapping-rules", "mapping.rules" -> EntityType.MAPPING_RULE;
               case "groups" -> EntityType.GROUP;
               case "roles" -> EntityType.ROLE;
               default ->
