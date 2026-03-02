@@ -185,14 +185,15 @@ final class BackupServiceImpl {
     LOG.atDebug().addKeyValue("backup", inProgressBackup.id()).setMessage("Saving backup").log();
     backupStore
         .save(backup)
-        .whenComplete(
+        .whenCompleteAsync(
             (ignore, error) -> {
               if (error == null) {
                 future.complete(null);
               } else {
                 future.completeExceptionally("Failed to save backup", error);
               }
-            });
+            },
+            concurrencyControl::run);
     return future;
   }
 
@@ -272,7 +273,7 @@ final class BackupServiceImpl {
         () ->
             backupStore
                 .list(pattern)
-                .whenComplete(
+                .whenCompleteAsync(
                     (backupStatuses, throwable) -> {
                       if (throwable != null) {
                         LOG.atError()
@@ -289,7 +290,8 @@ final class BackupServiceImpl {
                             .log();
                         future.complete(backupStatuses.stream().max(BackupStatusCode.BY_STATUS));
                       }
-                    }));
+                    },
+                    executor::run));
     return future;
   }
 
@@ -380,7 +382,7 @@ final class BackupServiceImpl {
                   error);
               return null;
             })
-        .whenComplete(result);
+        .whenCompleteAsync(result, executor::run);
     return result;
   }
 
@@ -469,14 +471,15 @@ final class BackupServiceImpl {
           try {
             metadataSyncer
                 .store(partitionId, checkpoints, ranges)
-                .whenComplete(
+                .whenCompleteAsync(
                     (ignore, error) -> {
                       if (error != null) {
                         future.completeExceptionally(error);
                       } else {
                         buildRangeStatuses(future, ranges);
                       }
-                    });
+                    },
+                    executor::run);
           } catch (final Exception e) {
             LOG.atError().setCause(e).log("Failed to sync backup metadata");
             future.completeExceptionally(e);
