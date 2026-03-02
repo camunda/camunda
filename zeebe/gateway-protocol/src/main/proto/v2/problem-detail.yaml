@@ -6,6 +6,12 @@ components:
         A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).
         There may be additional properties specific to the problem type.
       type: object
+      required: 
+        - type
+        - title
+        - status
+        - detail
+        - instance
       properties:
         type:
           type: string
