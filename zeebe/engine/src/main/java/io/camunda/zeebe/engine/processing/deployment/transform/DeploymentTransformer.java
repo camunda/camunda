@@ -147,10 +147,10 @@ public final class DeploymentTransformer {
     // no records are written. Otherwise, any resource that was individually marked as a duplicate
     // must also be re-versioned so that all resources in the deployment share the same deployment
     // key and version increment (versioning invariant).
-    // Note: the checksum of each resource is computed again here (and once more in the distributed
-    // path of DeploymentCreateProcessor). This is intentional: resource names are not a reliable
-    // join key because a deployment may contain multiple resources with the same filename, so the
-    // content checksum stored in the metadata is used instead.
+    // Note: the resource ID is used as join key here to find the matching metadata entry, since it
+    // is guaranteed to be unique within a deployment (enforced by checkForDuplicateResourceId).
+    // The distributed path in DeploymentCreateProcessor re-computes the checksum instead, since
+    // the resource ID is not available on DeploymentResource without parsing.
     if (success) {
       for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
         success &= writeRecords(deploymentResource, deploymentEvent, errors);

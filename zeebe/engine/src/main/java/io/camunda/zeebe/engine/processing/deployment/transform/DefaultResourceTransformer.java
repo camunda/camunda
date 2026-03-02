@@ -90,25 +90,27 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
     if (deployment.hasDuplicatesOnly()) {
       return;
     }
-    final var checksum = checksumGenerator.checksum(resource.getResourceBuffer());
-    deployment.resourceMetadata().stream()
-        .filter(metadata -> checksum.equals(metadata.getChecksumBuffer()))
-        .findFirst()
-        .ifPresent(
-            metadata -> {
-              if (metadata.isDuplicate()) {
-                // create new version as the deployment contains at least one other non-duplicate
-                // resource and all resources in a deployment should be versioned together
-                metadata
-                    .setResourceKey(keyGenerator.nextKey())
-                    .setVersion(
-                        resourceState.getNextResourceVersion(
-                            metadata.getResourceId(), metadata.getTenantId()))
-                    .setDuplicate(false)
-                    .setDeploymentKey(deployment.getDeploymentKey());
-              }
-              writeResourceRecord(metadata, resource);
-            });
+    parseResourceId(resource)
+        .ifRight(
+            resourceId ->
+                deployment.resourceMetadata().stream()
+                    .filter(metadata -> resourceId.id().equals(metadata.getResourceId()))
+                    .findFirst()
+                    .ifPresent(
+                        metadata -> {
+                          if (metadata.isDuplicate()) {
+                            // create new version as the deployment contains at least one other non-duplicate
+                            // resource and all resources in a deployment should be versioned together
+                            metadata
+                                .setResourceKey(keyGenerator.nextKey())
+                                .setVersion(
+                                    resourceState.getNextResourceVersion(
+                                        metadata.getResourceId(), metadata.getTenantId()))
+                                .setDuplicate(false)
+                                .setDeploymentKey(deployment.getDeploymentKey());
+                          }
+                          writeResourceRecord(metadata, resource);
+                        }));
   }
 
   private void writeResourceRecord(
@@ -161,7 +163,7 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
             latestResource -> {
               if (resourceMetadataRecord.isDuplicateOf(
                   BufferUtil.bufferAsArray(latestResource.getChecksum()),
-                  BufferUtil.bufferAsString(latestResource.getResourceName()))) {
+                  BufferUtil.bufferAsString(latestResource.getResourceId()))) {
                 resourceMetadataRecord
                     .setResourceKey(latestResource.getResourceKey())
                     .setVersion(latestResource.getVersion())

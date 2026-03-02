@@ -247,20 +247,26 @@ public class ResourceDeploymentTest {
   }
 
   @Test
-  public void shouldIncreaseVersionIfResourceNameDiffers() {
-    // given
+  public void shouldBeDuplicateIfResourceNameDiffers() {
+    // given - two deployments with the same content and resource ID but different filenames
     final var resource = readResource(TEST_RESOURCE_1);
-    engine.deployment().withJsonResource(resource, "test-rpa-1.rpa").deploy();
+    final var firstDeployment =
+        engine.deployment().withJsonResource(resource, "test-rpa-1.rpa").deploy();
+    final var resourceV1 = firstDeployment.getValue().getResourceMetadata().get(0);
 
-    // when
+    // when - same content deployed under a different filename
     final var deploymentEvent =
         engine.deployment().withJsonResource(resource, "renamed-test-rpa-1.rpa").deploy();
 
-    // then
+    // then - the resource is a duplicate because resourceId and checksum are unchanged
     assertThat(deploymentEvent.getValue().getResourceMetadata())
-        .extracting(ResourceMetadataValue::getVersion)
-        .describedAs("Expect that the Resource version is increased")
-        .containsExactly(2);
+        .singleElement()
+        .satisfies(
+            resourceMetadata ->
+                Assertions.assertThat(resourceMetadata)
+                    .hasVersion(1)
+                    .hasResourceKey(resourceV1.getResourceKey())
+                    .isDuplicate());
   }
 
   @Test

@@ -63,10 +63,10 @@ public interface ResourceMetadataValue extends RecordValue, TenantOwned {
 
   /**
    * Returns {@code true} if this resource metadata represents the same content as the given
-   * checksum and resource name. Both parameters must be non-null.
+   * checksum and resource id. Both parameters must be non-null.
    */
-  default boolean isDuplicateOf(final byte[] checksum, final String resourceName) {
-    return Arrays.equals(getChecksum(), checksum) && getResourceName().equals(resourceName);
+  default boolean isDuplicateOf(final byte[] checksum, final String resourceId) {
+    return Arrays.equals(getChecksum(), checksum) && getResourceId().equals(resourceId);
   }
 
   /**
