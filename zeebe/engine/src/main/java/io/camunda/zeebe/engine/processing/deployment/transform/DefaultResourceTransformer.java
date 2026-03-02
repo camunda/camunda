@@ -97,6 +97,8 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
         .ifPresent(
             metadata -> {
               if (metadata.isDuplicate()) {
+                // create new version as the deployment contains at least one other non-duplicate
+                // resource and all resources in a deployment should be versioned together
                 metadata
                     .setResourceKey(keyGenerator.nextKey())
                     .setVersion(

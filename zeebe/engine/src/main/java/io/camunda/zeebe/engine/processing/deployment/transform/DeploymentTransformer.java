@@ -142,7 +142,15 @@ public final class DeploymentTransformer {
       }
     }
 
-    // step 2: update metadata (optionally) and write actual event records
+    // step 2: update metadata (optionally) and write actual event records.
+    // Note: if every resource in the deployment turned out to be a duplicate (hasDuplicatesOnly),
+    // no records are written. Otherwise, any resource that was individually marked as a duplicate
+    // must also be re-versioned so that all resources in the deployment share the same deployment
+    // key and version increment (versioning invariant).
+    // Note: the checksum of each resource is computed again here (and once more in the distributed
+    // path of DeploymentCreateProcessor). This is intentional: resource names are not a reliable
+    // join key because a deployment may contain multiple resources with the same filename, so the
+    // content checksum stored in the metadata is used instead.
     if (success) {
       for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
         success &= writeRecords(deploymentResource, deploymentEvent, errors);

@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.deployment.transform.ValidationErrorFo
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResource;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import java.io.StringWriter;
 import java.util.List;
@@ -25,11 +26,13 @@ public class BpmnDeploymentBindingValidator {
   private final ZeebeCalledElementDeploymentBindingValidator calledElementValidator;
   private final ZeebeCalledDecisionDeploymentBindingValidator calledDecisionValidator;
   private final ZeebeFormDefinitionDeploymentBindingValidator formDefinitionValidator;
+  private final ZeebeLinkedResourceDeploymentBindingValidator linkedResourceValidator;
 
   public BpmnDeploymentBindingValidator(final DeploymentRecord deployment) {
     calledElementValidator = new ZeebeCalledElementDeploymentBindingValidator(deployment);
     calledDecisionValidator = new ZeebeCalledDecisionDeploymentBindingValidator(deployment);
     formDefinitionValidator = new ZeebeFormDefinitionDeploymentBindingValidator(deployment);
+    linkedResourceValidator = new ZeebeLinkedResourceDeploymentBindingValidator(deployment);
   }
 
   public String validate(final BpmnElementsWithDeploymentBinding elements) {
@@ -38,6 +41,7 @@ public class BpmnDeploymentBindingValidator {
     validateCalledElements(elements.getCalledElements(), resultsCollector);
     validateCalledDecisions(elements.getCalledDecisions(), resultsCollector);
     validateFormDefinitions(elements.getFormDefinitions(), resultsCollector);
+    validateLinkedResources(elements.getLinkedResources(), resultsCollector);
 
     final var validationResults = resultsCollector.getResults();
 
@@ -71,6 +75,16 @@ public class BpmnDeploymentBindingValidator {
         element -> {
           collector.setCurrentElement(element);
           formDefinitionValidator.validate(element, collector);
+        });
+  }
+
+  private void validateLinkedResources(
+      final List<ZeebeLinkedResource> linkedResources,
+      final ValidationResultsCollectorImpl collector) {
+    linkedResources.forEach(
+        element -> {
+          collector.setCurrentElement(element);
+          linkedResourceValidator.validate(element, collector);
         });
   }
 
