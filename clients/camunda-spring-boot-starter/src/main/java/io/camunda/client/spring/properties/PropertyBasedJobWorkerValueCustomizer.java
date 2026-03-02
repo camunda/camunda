@@ -28,6 +28,8 @@ import io.camunda.client.annotation.value.SourceAware.FromDefaultProperty;
 import io.camunda.client.annotation.value.SourceAware.FromOverrideProperty;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -92,16 +94,21 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
     final String workerName = editedJobWorkerValue.getName().value();
     findWorkerOverride(workerType, workerName)
         .ifPresent(
-            jobWorkerValue -> {
-              LOG.debug("Worker '{}': Applying overrides {}", workerType, jobWorkerValue);
-              copyProperties(jobWorkerValue, editedJobWorkerValue, OverrideSource.worker);
+            e -> {
+              LOG.debug("Worker {}: Applying overrides {}", e.getKey(), e.getValue());
+              copyProperties(e.getValue(), editedJobWorkerValue, OverrideSource.worker);
             });
   }
 
-  private Optional<CamundaClientJobWorkerProperties> findWorkerOverride(
+  private Optional<Entry<String, CamundaClientJobWorkerProperties>> findWorkerOverride(
       final String type, final String name) {
+    final String template = "with %s '%s'";
     return ofNullable(camundaClientProperties.getWorker().getOverride().get(type))
-        .or(() -> ofNullable(camundaClientProperties.getWorker().getOverride().get(name)));
+        .map(p -> Map.entry(String.format(template, "type", type), p))
+        .or(
+            () ->
+                ofNullable(camundaClientProperties.getWorker().getOverride().get(name))
+                    .map(p -> Map.entry(String.format(template, "name", name), p)));
   }
 
   private Supplier<List<String>> fetchVariablesSuppliers(
