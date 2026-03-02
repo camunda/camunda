@@ -63,7 +63,7 @@ const BatchModificationNotification: React.FC<Props> = observer(
               : `Modification scheduled: Move ${pluralSuffix(
                   instancesCount,
                   'instance',
-                )} from “${sourceFlowNodeName}” to “${targetFlowNodeName}”. Press “Apply Modification” button to confirm.`
+                )} from “${sourceFlowNodeName}” to “${targetFlowNodeName}”. Press “Review Modification” button to confirm.`
           }
         />
         {targetFlowNodeId && onUndoClick && (

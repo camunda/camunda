@@ -16,7 +16,7 @@ export class OperateProcessInstanceViewModificationModePage {
   readonly moveAllButtononPopup: Locator;
   readonly cancelButtonPopup: Locator;
   readonly cancelAllButtonPopup: Locator;
-  readonly applyModificationsButton: Locator;
+  readonly reviewModificationsButton: Locator;
   readonly discardAllModificationsButton: Locator;
   readonly cancelButtonModificationDialog: Locator;
   readonly applyButtonModificationsDialog: Locator;
@@ -100,8 +100,8 @@ export class OperateProcessInstanceViewModificationModePage {
     this.cancelAllButtonPopup = page.getByTitle(
       'Cancel all running flow node instances in this flow node',
     );
-    this.applyModificationsButton = page.getByTestId(
-      'apply-modifications-button',
+    this.reviewModificationsButton = page.getByTestId(
+      'review-modifications-button',
     );
     this.discardAllModificationsButton = page.getByTestId('discard-all-button');
     this.cancelButtonModificationDialog = page
@@ -362,8 +362,8 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.cancelAllButtonPopup.click();
   }
 
-  async clickApplyModificationsButton(): Promise<void> {
-    await this.applyModificationsButton.click();
+  async clickReviewModificationsButton(): Promise<void> {
+    await this.reviewModificationsButton.click();
   }
 
   async clickDiscardAllModificationsButton(): Promise<void> {
@@ -435,7 +435,7 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async applyChanges(): Promise<void> {
-    await this.clickApplyModificationsButton();
+    await this.clickReviewModificationsButton();
     await this.clickApplyButtonModificationsDialog();
   }
 
@@ -592,8 +592,8 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async applyModifications(): Promise<void> {
-    await expect(this.applyModificationsButton).toBeEnabled();
-    await this.applyModificationsButton.click();
+    await expect(this.reviewModificationsButton).toBeEnabled();
+    await this.reviewModificationsButton.click();
     await this.applyButtonModificationsDialog.click();
   }
 

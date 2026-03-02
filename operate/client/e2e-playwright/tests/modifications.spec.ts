@@ -153,7 +153,7 @@ test.describe('Modifications', () => {
 
     await page
       .getByRole('button', {
-        name: /apply modifications/i,
+        name: /review modifications/i,
       })
       .click();
 
@@ -353,7 +353,7 @@ test.describe('Modifications', () => {
 
     await page
       .getByRole('button', {
-        name: /apply modifications/i,
+        name: /review modifications/i,
       })
       .click();
 
@@ -392,7 +392,7 @@ test.describe('Modifications', () => {
 
     await page
       .getByRole('button', {
-        name: /apply modifications/i,
+        name: /review modifications/i,
       })
       .click();
 

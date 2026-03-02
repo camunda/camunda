@@ -78,18 +78,18 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
 );
 
 describe('BatchModificationFooter', () => {
-  it('should disable apply button when no instances are selected', async () => {
+  it('should disable review button when no instances are selected', async () => {
     const {user} = render(<BatchModificationFooter />, {wrapper: Wrapper});
 
     await user.click(
       screen.getByRole('button', {name: /select target flow node/i}),
     );
     expect(
-      screen.getByRole('button', {name: /apply modification/i}),
+      screen.getByRole('button', {name: /review modification/i}),
     ).toBeDisabled();
   });
 
-  it('should enable apply button when all instances are selected', async () => {
+  it('should enable review button when all instances are selected', async () => {
     const {user} = render(<BatchModificationFooter />, {wrapper: Wrapper});
 
     await user.click(
@@ -101,7 +101,7 @@ describe('BatchModificationFooter', () => {
       screen.getByRole('button', {name: /toggle select all instances/i}),
     );
     expect(
-      screen.getByRole('button', {name: /apply modification/i}),
+      screen.getByRole('button', {name: /review modification/i}),
     ).toBeEnabled();
 
     // deselect all instances
@@ -109,11 +109,11 @@ describe('BatchModificationFooter', () => {
       screen.getByRole('button', {name: /toggle select all instances/i}),
     );
     expect(
-      screen.getByRole('button', {name: /apply modification/i}),
+      screen.getByRole('button', {name: /review modification/i}),
     ).toBeDisabled();
   });
 
-  it('should enable apply button when one instance is selected', async () => {
+  it('should enable review button when one instance is selected', async () => {
     const {user} = render(<BatchModificationFooter />, {wrapper: Wrapper});
 
     await user.click(
@@ -123,11 +123,11 @@ describe('BatchModificationFooter', () => {
       screen.getByRole('button', {name: /select single instance/i}),
     );
     expect(
-      screen.getByRole('button', {name: /apply modification/i}),
+      screen.getByRole('button', {name: /review modification/i}),
     ).toBeEnabled();
   });
 
-  it('should enable apply button when one instance is excluded', async () => {
+  it('should enable review button when one instance is excluded', async () => {
     const {user} = render(<BatchModificationFooter />, {wrapper: Wrapper});
 
     await user.click(
@@ -140,25 +140,25 @@ describe('BatchModificationFooter', () => {
       screen.getByRole('button', {name: /select single instance/i}),
     );
     expect(
-      screen.getByRole('button', {name: /apply modification/i}),
+      screen.getByRole('button', {name: /review modification/i}),
     ).toBeEnabled();
   });
 
-  it('should disable apply button when no target flow node is selected', async () => {
+  it('should disable review button when no target flow node is selected', async () => {
     const {user} = render(<BatchModificationFooter />, {wrapper: Wrapper});
 
     await user.click(
       screen.getByRole('button', {name: /select single instance/i}),
     );
     expect(
-      screen.getByRole('button', {name: /apply modification/i}),
+      screen.getByRole('button', {name: /review modification/i}),
     ).toBeDisabled();
 
     await user.click(
       screen.getByRole('button', {name: /select target flow node/i}),
     );
     expect(
-      screen.getByRole('button', {name: /apply modification/i}),
+      screen.getByRole('button', {name: /review modification/i}),
     ).toBeEnabled();
   });
 
@@ -176,7 +176,9 @@ describe('BatchModificationFooter', () => {
       screen.queryByText('MockedBatchModificationSummaryModal'),
     ).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: /apply modification/i}));
+    await user.click(
+      screen.getByRole('button', {name: /review modification/i}),
+    );
 
     expect(
       screen.getByText('MockedBatchModificationSummaryModal'),

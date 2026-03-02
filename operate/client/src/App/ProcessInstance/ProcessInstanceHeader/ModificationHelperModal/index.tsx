@@ -76,8 +76,8 @@ const ModificationHelperModal: React.FC<Props> = observer(
           </p>
           <p>
             A summary of all planned modifications will be shown after clicking
-            on “Apply Modifications”. The modification will be applied after the
-            confirmation of the summary.
+            on “Review Modifications”. The modification will be applied after
+            the confirmation of the summary.
           </p>
           {currentTheme.theme === 'light' ? <DiagramLight /> : <DiagramDark />}
         </Container>
