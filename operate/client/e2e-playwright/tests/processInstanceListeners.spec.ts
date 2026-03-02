@@ -91,7 +91,7 @@ test.describe('Process Instance Listeners', () => {
     await page
       .getByRole('button', {name: 'Add single flow node instance'})
       .click();
-    await page.getByRole('button', {name: 'Apply Modifications'}).click();
+    await page.getByRole('button', {name: 'Review Modifications'}).click();
     //confirm modal
     await page.getByRole('button', {name: 'Apply', exact: true}).click();
 
@@ -215,7 +215,7 @@ test.describe('Process Instance Listeners', () => {
       })
       .click();
     await processInstancePage.diagram.clickEvent('End event');
-    await page.getByRole('button', {name: 'Apply Modifications'}).click();
+    await page.getByRole('button', {name: 'Review Modifications'}).click();
     await page.getByRole('button', {name: 'Apply', exact: true}).click();
 
     await expect

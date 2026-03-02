@@ -45,7 +45,7 @@ describe('ProcessInstance - modification mode', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByTestId('discard-all-button')).not.toBeInTheDocument();
     expect(
-      screen.queryByTestId('apply-modifications-button'),
+      screen.queryByTestId('review-modifications-button'),
     ).not.toBeInTheDocument();
 
     storeStateLocally({
@@ -68,7 +68,7 @@ describe('ProcessInstance - modification mode', () => {
     ).toBeInTheDocument();
     expect(screen.getByTestId('discard-all-button')).toBeInTheDocument();
     expect(
-      screen.getByTestId('apply-modifications-button'),
+      screen.getByTestId('review-modifications-button'),
     ).toBeInTheDocument();
 
     mockRequests();
@@ -86,7 +86,7 @@ describe('ProcessInstance - modification mode', () => {
 
     expect(screen.queryByTestId('discard-all-button')).not.toBeInTheDocument();
     expect(
-      screen.queryByTestId('apply-modifications-button'),
+      screen.queryByTestId('review-modifications-button'),
     ).not.toBeInTheDocument();
   });
 
@@ -133,7 +133,7 @@ describe('ProcessInstance - modification mode', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should disable apply modifications button if there are no modifications pending', async () => {
+  it('should disable review modifications button if there are no modifications pending', async () => {
     mockSearchVariables().withSuccess(searchResult([]));
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
 
@@ -150,10 +150,10 @@ describe('ProcessInstance - modification mode', () => {
         name: /modify instance/i,
       }),
     );
-    expect(screen.getByTestId('apply-modifications-button')).toBeDisabled();
+    expect(screen.getByTestId('review-modifications-button')).toBeDisabled();
   });
 
-  it('should display summary modifications modal when apply modifications is clicked during the modification mode', async () => {
+  it('should display summary modifications modal when review modifications is clicked during the modification mode', async () => {
     mockSearchVariables().withSuccess(searchResult([createVariable()]));
     mockSearchVariables().withSuccess(searchResult([createVariable()]));
     mockSearchJobs().withSuccess(searchResult([]));
@@ -211,7 +211,7 @@ describe('ProcessInstance - modification mode', () => {
 
     mockSearchVariables().withSuccess(searchResult([createVariable()]));
 
-    await user.click(screen.getByTestId('apply-modifications-button'));
+    await user.click(screen.getByTestId('review-modifications-button'));
 
     expect(
       await screen.findByText(/Planned modifications for Process Instance/i),
@@ -298,7 +298,7 @@ describe('ProcessInstance - modification mode', () => {
 
     mockRequests();
 
-    await user.click(screen.getByTestId('apply-modifications-button'));
+    await user.click(screen.getByTestId('review-modifications-button'));
     fireEvent.click(await screen.findByRole('button', {name: 'Apply'}));
     expect(screen.getByTestId('loading-overlay')).toBeInTheDocument();
 

@@ -15,7 +15,7 @@ export class OperateProcessModificationModePage {
     continueButton: Locator;
   };
   readonly undoButton: Locator;
-  readonly applyModificationButton: Locator;
+  readonly reviewModificationButton: Locator;
   readonly applyModificationsModal: {
     title: Locator;
     applyButton: Locator;
@@ -42,8 +42,8 @@ export class OperateProcessModificationModePage {
 
     this.undoButton = page.getByRole('button', {name: /undo/i});
 
-    this.applyModificationButton = page.getByRole('button', {
-      name: /apply modification/i,
+    this.reviewModificationButton = page.getByRole('button', {
+      name: /review modification/i,
     });
 
     this.applyModificationsModal = {
@@ -87,8 +87,8 @@ export class OperateProcessModificationModePage {
     await this.undoButton.click();
   }
 
-  async clickApplyModificationButton(): Promise<void> {
-    await this.applyModificationButton.click();
+  async clickReviewModificationButton(): Promise<void> {
+    await this.reviewModificationButton.click();
   }
 
   async confirmApplyModifications(): Promise<void> {
@@ -127,9 +127,9 @@ export class OperateProcessModificationModePage {
     await expect(this.batchModificationModeText).toBeVisible();
   }
 
-  async applyAndConfirmModification(): Promise<void> {
-    await expect(this.applyModificationButton).toBeVisible();
-    await this.clickApplyModificationButton();
+  async reviewAndConfirmModification(): Promise<void> {
+    await expect(this.reviewModificationButton).toBeVisible();
+    await this.clickReviewModificationButton();
     await expect(this.applyModificationsModal.title).toBeVisible();
     await this.confirmApplyModifications();
   }

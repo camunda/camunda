@@ -47,7 +47,7 @@ class OperateProcessInstancePage {
   readonly variableAddedBanner: Locator;
   readonly migratedTag: Locator;
   readonly continueButton: Locator;
-  readonly applyModificationsButton: Locator;
+  readonly reviewModificationsButton: Locator;
   readonly applyButton: Locator;
   readonly addSingleFlowNodeInstanceButton: Locator;
   readonly moveSelectedInstanceButton: Locator;
@@ -165,8 +165,8 @@ class OperateProcessInstancePage {
       hasText: /^Migrated/,
     });
     this.continueButton = page.getByRole('button', {name: 'Continue'});
-    this.applyModificationsButton = page.getByRole('button', {
-      name: 'Apply Modifications',
+    this.reviewModificationsButton = page.getByRole('button', {
+      name: 'Review Modifications',
     });
     this.applyButton = page.getByRole('button', {name: 'Apply', exact: true});
     this.addSingleFlowNodeInstanceButton = page.getByRole('button', {
@@ -374,8 +374,8 @@ class OperateProcessInstancePage {
     await this.undoModificationButton.click();
   }
 
-  async clickApplyModifications() {
-    await this.applyModificationsButton.click();
+  async clickReviewModifications() {
+    await this.reviewModificationsButton.click();
   }
 
   async clickAddVariable() {
@@ -594,9 +594,9 @@ class OperateProcessInstancePage {
   }
 
   async applyModifications(): Promise<void> {
-    await expect(this.applyModificationsButton).toBeEnabled({timeout: 10000});
+    await expect(this.reviewModificationsButton).toBeEnabled({timeout: 10000});
 
-    await this.applyModificationsButton.click();
+    await this.reviewModificationsButton.click();
     await this.applyButton.click();
   }
 
