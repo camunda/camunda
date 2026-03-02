@@ -84,7 +84,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
         payload: {
           operation: 'ADD_TOKEN',
           scopeId: generateUniqueID(),
-          flowNode: {id: 'user_task', name: 'User Task'},
+          element: {id: 'user_task', name: 'User Task'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           parentScopeIds: generateParentScopeIds(
@@ -99,7 +99,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
         payload: {
           operation: 'ADD_TOKEN',
           scopeId: generateUniqueID(),
-          flowNode: {id: 'user_task', name: 'User Task'},
+          element: {id: 'user_task', name: 'User Task'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           parentScopeIds: generateParentScopeIds(
@@ -317,7 +317,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
         payload: {
           operation: 'ADD_TOKEN',
           scopeId: generateUniqueID(),
-          flowNode: {id: 'peterJoin', name: 'Peter Join'},
+          element: {id: 'peterJoin', name: 'Peter Join'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           parentScopeIds: generateParentScopeIds({}, 'peterJoin'),
@@ -328,7 +328,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
         payload: {
           operation: 'ADD_TOKEN',
           scopeId: generateUniqueID(),
-          flowNode: {id: 'peterJoin', name: 'Peter Join'},
+          element: {id: 'peterJoin', name: 'Peter Join'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           parentScopeIds: generateParentScopeIds({}, 'peterJoin'),
@@ -476,7 +476,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
         payload: {
           operation: 'ADD_TOKEN',
           scopeId: generateUniqueID(),
-          flowNode: {id: 'user_task', name: 'User Task'},
+          element: {id: 'user_task', name: 'User Task'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           parentScopeIds: generateParentScopeIds(
@@ -491,7 +491,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
         payload: {
           operation: 'ADD_TOKEN',
           scopeId: generateUniqueID(),
-          flowNode: {id: 'user_task', name: 'User Task'},
+          element: {id: 'user_task', name: 'User Task'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           parentScopeIds: generateParentScopeIds(

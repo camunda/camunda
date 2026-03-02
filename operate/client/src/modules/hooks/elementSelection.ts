@@ -38,9 +38,9 @@ const useHasPendingCancelOrMoveModification = () => {
   return (
     selectedElementInstanceKey !== null &&
     hasPendingCancelOrMoveModification({
-      flowNodeId: selectedElementId,
-      flowNodeInstanceKey: selectedElementInstanceKey,
-      modificationsByFlowNode: modificationsByElement,
+      elementId: selectedElementId,
+      elementInstanceKey: selectedElementInstanceKey,
+      modificationsByElement,
     })
   );
 };
@@ -64,7 +64,7 @@ const useClearSelectionOnModificationUndo = () => {
 
   useEffect(() => {
     const lastModificationRemovedDisposer = reaction(
-      () => modificationsStore.flowNodeModifications,
+      () => modificationsStore.elementModifications,
       (modificationsNext, modificationsPrev) => {
         if (
           selectedElementId === null ||
@@ -81,7 +81,7 @@ const useClearSelectionOnModificationUndo = () => {
           return;
         }
 
-        const newScopeIds = modificationsStore.flowNodeModifications.reduce<
+        const newScopeIds = modificationsStore.elementModifications.reduce<
           string[]
         >((scopeIds, modification) => {
           if (modification.operation === 'ADD_TOKEN') {
@@ -138,7 +138,7 @@ const useNewTokenCountForSelectedNode = () => {
 
   return (
     (modificationsByElement[selectedElementId]?.newTokens ?? 0) +
-    modificationsStore.flowNodeModifications.filter(
+    modificationsStore.elementModifications.filter(
       (modification) =>
         modification.operation !== TOKEN_OPERATIONS.CANCEL_TOKEN &&
         Object.keys(modification.parentScopeIds).includes(selectedElementId),

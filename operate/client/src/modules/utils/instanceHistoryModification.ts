@@ -104,7 +104,7 @@ const getParentInstanceIdForPlaceholder = (
   if (
     'ancestorElement' in modificationPayload &&
     modificationPayload.ancestorElement !== undefined &&
-    parentFlowNodeId === modificationPayload.ancestorElement.flowNodeId
+    parentFlowNodeId === modificationPayload.ancestorElement.elementId
   ) {
     return modificationPayload.ancestorElement.instanceKey;
   }
@@ -162,7 +162,7 @@ const getModificationPlaceholders = (
   processDefinitionId?: string,
   processInstanceKey?: string,
 ) => {
-  return modificationsStore.flowNodeModifications.reduce<
+  return modificationsStore.elementModifications.reduce<
     ModificationPlaceholder[]
   >((modificationPlaceHolders, modificationPayload) => {
     const {operation} = modificationPayload;
@@ -172,8 +172,8 @@ const getModificationPlaceholders = (
 
     const flowNodeId =
       operation === 'MOVE_TOKEN'
-        ? modificationPayload.targetFlowNode.id
-        : modificationPayload.flowNode.id;
+        ? modificationPayload.targetElement.id
+        : modificationPayload.element.id;
 
     const flowNode = businessObjects[flowNodeId];
 

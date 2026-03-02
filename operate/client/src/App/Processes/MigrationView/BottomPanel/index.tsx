@@ -219,7 +219,7 @@ const BottomPanel: React.FC = observer(() => {
               },
             ]}
             onRowClick={(rowId) => {
-              processInstanceMigrationStore.selectSourceFlowNode(rowId);
+              processInstanceMigrationStore.selectSourceElement(rowId);
             }}
             checkIsRowSelected={handleCheckIsRowSelected(
               selectedSourceElementIds,

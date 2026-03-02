@@ -38,14 +38,14 @@ function useScopeProperties() {
 
 const useAppendableElements = () => {
   const {
-    state: {status, sourceFlowNodeIdForMoveOperation},
+    state: {status, sourceElementIdForMoveOperation},
     isMoveAllOperation,
   } = modificationsStore;
 
   const elements = useElementBusinessObjects();
   const {hasEffectiveSingleScope, hasMultipleScopes} = useScopeProperties();
   const sourceElement = elements.find(
-    ({id}) => id === sourceFlowNodeIdForMoveOperation,
+    ({id}) => id === sourceElementIdForMoveOperation,
   );
 
   return elements
@@ -107,7 +107,7 @@ const useModifiableElements = () => {
   if (modificationsStore.state.status === 'moving-token') {
     return appendableElements.filter(
       (elementId) =>
-        elementId !== modificationsStore.state.sourceFlowNodeIdForMoveOperation,
+        elementId !== modificationsStore.state.sourceElementIdForMoveOperation,
     );
   } else {
     return Array.from(new Set([...appendableElements, ...cancellableElements]));

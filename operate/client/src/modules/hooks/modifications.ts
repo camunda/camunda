@@ -40,7 +40,7 @@ const useWillAllElementsBeCanceled = () => {
   const modificationsByElement = useModificationsByElement();
 
   if (
-    modificationsStore.flowNodeModifications.some(
+    modificationsStore.elementModifications.some(
       ({operation}) =>
         operation === TOKEN_OPERATIONS.ADD_TOKEN ||
         operation === TOKEN_OPERATIONS.MOVE_TOKEN,
@@ -59,24 +59,27 @@ const useWillAllElementsBeCanceled = () => {
 };
 
 const useModificationsByElement = () => {
-  const flowNodeIds = modificationsStore.flowNodeModifications.map(
-    (modification) => modification.flowNode.id,
+  const modificationElementIds = modificationsStore.elementModifications.map(
+    (modification) => modification.element.id,
   );
   const {data: businessObjects} = useBusinessObjects();
 
-  const {data: flowNodeDataArray} =
-    useTotalRunningInstancesForElements(flowNodeIds);
-  const flowNodeData = useMemo(() => {
-    return flowNodeIds.reduce(
-      (acc, id) => {
-        acc[id] = flowNodeDataArray?.[id] ?? 0;
+  const {data: totalRunningInstancesForModificationElements} =
+    useTotalRunningInstancesForElements(modificationElementIds);
+  const totalRunningInstancesByModificationElements = useMemo(() => {
+    return modificationElementIds.reduce(
+      (acc, modificationElementId) => {
+        acc[modificationElementId] =
+          totalRunningInstancesForModificationElements?.[
+            modificationElementId
+          ] ?? 0;
         return acc;
       },
       {} as Record<string, number>,
     );
-  }, [flowNodeIds, flowNodeDataArray]);
+  }, [modificationElementIds, totalRunningInstancesForModificationElements]);
 
-  const elementIds = flowNodeIds.flatMap((elementId) =>
+  const elementIds = modificationElementIds.flatMap((elementId) =>
     getFlowElementIds(businessObjects?.[elementId]),
   );
 
@@ -101,7 +104,7 @@ const useModificationsByElement = () => {
     );
   }, [elementIds, elementCancelledTokens, elementVisibleCancelledTokens]);
 
-  return modificationsStore.flowNodeModifications.reduce<{
+  return modificationsStore.elementModifications.reduce<{
     [key: string]: {
       newTokens: number;
       cancelledTokens: number;
@@ -110,60 +113,59 @@ const useModificationsByElement = () => {
       areAllTokensCanceled: boolean;
     };
   }>((modificationsByElement, payload) => {
-    const {flowNode, operation, affectedTokenCount, visibleAffectedTokenCount} =
+    const {element, operation, affectedTokenCount, visibleAffectedTokenCount} =
       payload;
 
-    const sourceFlowNode = modificationsByElement[flowNode.id] ?? {
+    const sourceElement = modificationsByElement[element.id] ?? {
       ...EMPTY_MODIFICATION,
     };
 
-    const totalRunningInstancesCount = flowNodeData[flowNode.id] ?? 0;
+    const totalRunningInstancesCount =
+      totalRunningInstancesByModificationElements[element.id] ?? 0;
 
     if (operation === TOKEN_OPERATIONS.ADD_TOKEN) {
-      sourceFlowNode.newTokens += affectedTokenCount;
-      modificationsByElement[flowNode.id] = sourceFlowNode;
+      sourceElement.newTokens += affectedTokenCount;
+      modificationsByElement[element.id] = sourceElement;
       return modificationsByElement;
     }
 
-    if (sourceFlowNode.areAllTokensCanceled) {
+    if (sourceElement.areAllTokensCanceled) {
       return modificationsByElement;
     }
 
-    if (payload.flowNodeInstanceKey === undefined) {
-      sourceFlowNode.cancelledTokens = affectedTokenCount;
-      sourceFlowNode.visibleCancelledTokens = visibleAffectedTokenCount;
+    if (payload.elementInstanceKey === undefined) {
+      sourceElement.cancelledTokens = affectedTokenCount;
+      sourceElement.visibleCancelledTokens = visibleAffectedTokenCount;
     } else {
-      sourceFlowNode.cancelledTokens += affectedTokenCount;
-      sourceFlowNode.visibleCancelledTokens += visibleAffectedTokenCount;
+      sourceElement.cancelledTokens += affectedTokenCount;
+      sourceElement.visibleCancelledTokens += visibleAffectedTokenCount;
     }
 
-    sourceFlowNode.areAllTokensCanceled =
-      sourceFlowNode.cancelledTokens === totalRunningInstancesCount;
+    sourceElement.areAllTokensCanceled =
+      sourceElement.cancelledTokens === totalRunningInstancesCount;
 
     if (operation === TOKEN_OPERATIONS.MOVE_TOKEN) {
-      const targetFlowNode = modificationsByElement[
-        payload.targetFlowNode.id
+      const targetElement = modificationsByElement[
+        payload.targetElement.id
       ] ?? {
         ...EMPTY_MODIFICATION,
       };
 
-      targetFlowNode.newTokens += isMultiInstance(
-        businessObjects?.[flowNode.id],
-      )
+      targetElement.newTokens += isMultiInstance(businessObjects?.[element.id])
         ? 1
         : affectedTokenCount;
 
-      modificationsByElement[payload.targetFlowNode.id] = targetFlowNode;
+      modificationsByElement[payload.targetElement.id] = targetElement;
     }
 
     if (operation === TOKEN_OPERATIONS.CANCEL_TOKEN) {
-      if (sourceFlowNode.areAllTokensCanceled) {
-        // set cancel token counts for child elements if flow node has any
-        const elementIds = getFlowElementIds(businessObjects?.[flowNode.id]);
+      if (sourceElement.areAllTokensCanceled) {
+        // set cancel token counts for child elements if element has any
+        const elementIds = getFlowElementIds(businessObjects?.[element.id]);
 
         let affectedChildTokenCount = 0;
         elementIds.forEach((elementId) => {
-          const childFlowNode = modificationsByElement[elementId] ?? {
+          const childElement = modificationsByElement[elementId] ?? {
             ...EMPTY_MODIFICATION,
           };
 
@@ -171,24 +173,24 @@ const useModificationsByElement = () => {
             elementData[elementId] || {};
 
           if (cancelledTokens) {
-            childFlowNode.cancelledTokens = cancelledTokens;
+            childElement.cancelledTokens = cancelledTokens;
           }
           if (visibleCancelledTokens) {
-            childFlowNode.visibleCancelledTokens = visibleCancelledTokens;
+            childElement.visibleCancelledTokens = visibleCancelledTokens;
           }
 
-          childFlowNode.areAllTokensCanceled = true;
+          childElement.areAllTokensCanceled = true;
 
-          affectedChildTokenCount += childFlowNode.visibleCancelledTokens;
+          affectedChildTokenCount += childElement.visibleCancelledTokens;
 
-          modificationsByElement[elementId] = childFlowNode;
+          modificationsByElement[elementId] = childElement;
         });
 
-        sourceFlowNode.cancelledChildTokens = affectedChildTokenCount;
+        sourceElement.cancelledChildTokens = affectedChildTokenCount;
       }
     }
 
-    modificationsByElement[flowNode.id] = sourceFlowNode;
+    modificationsByElement[element.id] = sourceElement;
     return modificationsByElement;
   }, {});
 };
@@ -203,20 +205,20 @@ const useNewScopeKeyForElement = (elementId: string | null) => {
     return null;
   }
 
-  const addTokenModification = modificationsStore.flowNodeModifications.find(
+  const addTokenModification = modificationsStore.elementModifications.find(
     (modification) =>
       modification.operation === TOKEN_OPERATIONS.ADD_TOKEN &&
-      modification.flowNode.id === elementId,
+      modification.element.id === elementId,
   );
 
   if (addTokenModification !== undefined && 'scopeId' in addTokenModification) {
     return addTokenModification.scopeId;
   }
 
-  const moveTokenModification = modificationsStore.flowNodeModifications.find(
+  const moveTokenModification = modificationsStore.elementModifications.find(
     (modification) =>
       modification.operation === TOKEN_OPERATIONS.MOVE_TOKEN &&
-      modification.targetFlowNode.id === elementId,
+      modification.targetElement.id === elementId,
   );
 
   if (
@@ -233,7 +235,7 @@ const useCanBeCanceled = (
   runningElementInstanceCount: number,
   elementId?: string,
 ) => {
-  const cancellableFlowNodes = useCancellableElements();
+  const cancellableElements = useCancellableElements();
   const canBeModified = useCanBeModified(elementId);
   const hasPendingCancelOrMoveModification =
     useHasPendingCancelOrMoveModification();
@@ -243,20 +245,20 @@ const useCanBeCanceled = (
   }
 
   return (
-    cancellableFlowNodes.includes(elementId) &&
+    cancellableElements.includes(elementId) &&
     !hasPendingCancelOrMoveModification &&
     runningElementInstanceCount > 0
   );
 };
 
 const useCanBeModified = (elementId?: string) => {
-  const nonModifiableFlowNodes = useNonModifiableElements();
+  const nonModifiableElements = useNonModifiableElements();
 
   if (elementId === undefined) {
     return false;
   }
 
-  return !nonModifiableFlowNodes.includes(elementId);
+  return !nonModifiableElements.includes(elementId);
 };
 
 type UseAvailableModificationsParams = {
@@ -275,7 +277,7 @@ const useAvailableModifications = ({
   isSingleRunningInstanceResolved,
 }: UseAvailableModificationsParams) => {
   const options: ModificationOption[] = [];
-  const appendableFlowNodes = useAppendableElements();
+  const appendableElements = useAppendableElements();
   const {data: businessObjects} = useBusinessObjects();
   const canBeCanceled = useCanBeCanceled(
     runningElementInstanceCount,
@@ -288,7 +290,7 @@ const useAvailableModifications = ({
   }
 
   if (
-    appendableFlowNodes.includes(elementId) &&
+    appendableElements.includes(elementId) &&
     !(isMultiInstance(businessObjects?.[elementId]) && !isMultiInstanceBody) &&
     !isSpecificElementInstanceSelected
   ) {

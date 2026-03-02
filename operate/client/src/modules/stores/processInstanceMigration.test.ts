@@ -129,7 +129,7 @@ describe('processInstanceMigration', () => {
       targetId: TARGET_TASK_A,
     });
 
-    processInstanceMigrationStore.selectSourceFlowNode(SOURCE_TASK_A);
+    processInstanceMigrationStore.selectSourceElement(SOURCE_TASK_A);
 
     expect(processInstanceMigrationStore.selectedSourceElementIds).toEqual([
       SOURCE_TASK_A,
@@ -151,7 +151,7 @@ describe('processInstanceMigration', () => {
       TARGET_TASK_A,
     );
 
-    processInstanceMigrationStore.selectSourceFlowNode();
+    processInstanceMigrationStore.selectSourceElement();
 
     expect(
       processInstanceMigrationStore.selectedSourceElementIds,

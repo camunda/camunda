@@ -44,7 +44,7 @@ const createModification = ({
         operation: 'ADD_VARIABLE',
         scopeId,
         id,
-        flowNodeName: selectedFlowNodeName,
+        elementName: selectedFlowNodeName,
         name,
         newValue: value,
       },

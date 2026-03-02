@@ -554,7 +554,7 @@ describe('Edit variable', () => {
         type: 'token',
         payload: {
           operation: 'ADD_TOKEN',
-          flowNode: {id: 'flow_node_0', name: 'flow node 0'},
+          element: {id: 'flow_node_0', name: 'flow node 0'},
           scopeId: 'random-scope-id-0',
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
@@ -624,7 +624,7 @@ describe('Edit variable', () => {
         type: 'token',
         payload: {
           operation: 'ADD_TOKEN',
-          flowNode: {id: 'flow_node_0', name: 'flow node 0'},
+          element: {id: 'flow_node_0', name: 'flow node 0'},
           scopeId: 'random-scope-id-0',
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
@@ -742,7 +742,7 @@ describe('Edit variable', () => {
         type: 'token',
         payload: {
           operation: 'ADD_TOKEN',
-          flowNode: {id: 'flow_node_0', name: 'flow node 0'},
+          element: {id: 'flow_node_0', name: 'flow node 0'},
           scopeId: 'random-scope-id-0',
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,

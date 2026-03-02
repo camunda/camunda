@@ -69,7 +69,7 @@ class ProcessInstanceMigration {
     return STEPS[this.state.currentStep];
   }
 
-  selectSourceFlowNode = (elementId?: string) => {
+  selectSourceElement = (elementId?: string) => {
     this.state.selectedTargetElementId = undefined;
 
     if (this.state.selectedSourceElementId === elementId) {
@@ -89,9 +89,9 @@ class ProcessInstanceMigration {
     }
   };
 
-  getAllSourceElements = (targetFlowNodeId: string) => {
+  getAllSourceElements = (targetElementId: string) => {
     return Object.entries(this.state.elementMapping)
-      .filter(([_, t]) => t === targetFlowNodeId)
+      .filter(([_, t]) => t === targetElementId)
       .map(([s, _]) => {
         return s;
       });
@@ -101,11 +101,11 @@ class ProcessInstanceMigration {
     const {selectedSourceElementId, selectedTargetElementId} = this.state;
 
     if (selectedSourceElementId !== undefined) {
-      const targetFlowNodeId =
+      const targetElementId =
         this.state.elementMapping[selectedSourceElementId];
 
-      if (targetFlowNodeId !== undefined) {
-        return this.getAllSourceElements(targetFlowNodeId);
+      if (targetElementId !== undefined) {
+        return this.getAllSourceElements(targetElementId);
       }
 
       return [selectedSourceElementId];

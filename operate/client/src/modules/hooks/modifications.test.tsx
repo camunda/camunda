@@ -99,7 +99,7 @@ describe('modifications hooks', () => {
         type: 'token',
         payload: {
           operation: 'ADD_TOKEN',
-          flowNode: {id: 'node1', name: 'Node 1'},
+          element: {id: 'node1', name: 'Node 1'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           scopeId: 'scope1',
@@ -206,7 +206,7 @@ describe('modifications hooks', () => {
         type: 'token',
         payload: {
           operation: 'ADD_TOKEN',
-          flowNode: {id: 'node1', name: 'node1'},
+          element: {id: 'node1', name: 'node1'},
           affectedTokenCount: 5,
           visibleAffectedTokenCount: 3,
           scopeId: 'scope1',
@@ -238,7 +238,7 @@ describe('modifications hooks', () => {
         type: 'token',
         payload: {
           operation: 'CANCEL_TOKEN',
-          flowNode: {id: 'node1', name: 'node1'},
+          element: {id: 'node1', name: 'node1'},
           affectedTokenCount: 5,
           visibleAffectedTokenCount: 3,
         },
@@ -268,8 +268,8 @@ describe('modifications hooks', () => {
         type: 'token',
         payload: {
           operation: 'MOVE_TOKEN',
-          flowNode: {id: 'node1', name: 'node1'},
-          targetFlowNode: {id: 'node2', name: 'node2'},
+          element: {id: 'node1', name: 'node1'},
+          targetElement: {id: 'node2', name: 'node2'},
           affectedTokenCount: 5,
           visibleAffectedTokenCount: 3,
           scopeIds: [],
@@ -326,7 +326,7 @@ describe('modifications hooks', () => {
         type: 'token',
         payload: {
           operation: 'CANCEL_TOKEN',
-          flowNode: {id: 'node1', name: 'node1'},
+          element: {id: 'node1', name: 'node1'},
           affectedTokenCount: 5,
           visibleAffectedTokenCount: 3,
         },
@@ -348,7 +348,7 @@ describe('modifications hooks', () => {
         type: 'token',
         payload: {
           operation: 'ADD_TOKEN',
-          flowNode: {id: 'node1', name: 'node1'},
+          element: {id: 'node1', name: 'node1'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           scopeId: 'scope1',
@@ -372,8 +372,8 @@ describe('modifications hooks', () => {
         type: 'token',
         payload: {
           operation: 'MOVE_TOKEN',
-          flowNode: {id: 'node1', name: 'node1'},
-          targetFlowNode: {id: 'node2', name: 'node2'},
+          element: {id: 'node1', name: 'node1'},
+          targetElement: {id: 'node2', name: 'node2'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           scopeIds: ['scope2', 'scope3'],
@@ -397,8 +397,8 @@ describe('modifications hooks', () => {
         type: 'token',
         payload: {
           operation: 'MOVE_TOKEN',
-          flowNode: {id: 'node1', name: 'node1'},
-          targetFlowNode: {id: 'node2', name: 'node2'},
+          element: {id: 'node1', name: 'node1'},
+          targetElement: {id: 'node2', name: 'node2'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           scopeIds: [],
