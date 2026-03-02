@@ -18,10 +18,10 @@ const NoInstancesEmptyState: React.FC = () => {
   return (
     <EmptyState
       icon={
-        <EmptyStateProcessInstancesByName title="Start by deploying a process" />
+        <EmptyStateProcessInstancesByName title="No running process instances" />
       }
-      heading="Start by deploying a process"
-      description="There are no processes deployed. Deploy and start a process from our Modeler, then come back here to track its progress."
+      heading="No running process instances"
+      description="To view finished instances, go to the Processes view. Start a new process instance to see activity here."
       link={{
         label: 'Learn more about Operate',
         href: 'https://docs.camunda.io/docs/components/operate/operate-introduction/',
