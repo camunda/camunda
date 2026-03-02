@@ -40,10 +40,13 @@ import java.util.concurrent.ConcurrentSkipListMap;
  * Access patterns:
  *
  * <ol>
- *   <li>Calls to {@link #tryAcquire(WriteContext, List)} from the sequencer, serialized through the
- *       sequencers write lock.
- *   <li>Calls to {@link #onAppend(InFlightEntry, long)} from the sequencer, serialized through the
- *       sequencers write lock.
+ *   <li>Calls to {@link #tryAcquire(WriteContext, List)} from the sequencer, outside the
+ *       sequencer's write lock. Multiple calls can overlap concurrently.
+ *   <li>Calls to {@link #registerEntry(long, InFlightEntry)} from the sequencer, under the
+ *       sequencer's write lock. Only one call at a time.
+ *   <li>Calls to {@link #onAppended(InFlightEntry)} from the sequencer, outside the sequencer's
+ *       write lock. Multiple calls can overlap concurrently and may also overlap with {@link
+ *       #onWrite(long, long)} and {@link #onCommit(long, long)} callbacks.
  *   <li>Calls to {@link #onWrite(long, long)} from the log storage, serialized through the single
  *       raft thread.
  *   <li>Calls to {@link #onCommit(long, long)} from the log storage, serialized through the single
@@ -52,23 +55,21 @@ import java.util.concurrent.ConcurrentSkipListMap;
  *       stream processor actor.
  * </ol>
  *
- * The order in which these methods are called is weakly constrained:
+ * The entry is registered in the {@link #inFlight} map via {@link #registerEntry(long,
+ * InFlightEntry)} inside the sequencer lock, before {@code logStorage.append} is called. This
+ * guarantees that the entry is present in the map when {@link #onWrite(long, long)} and {@link
+ * #onCommit(long, long)} callbacks fire.
  *
- * <ul>
- *   <li>{@link #tryAcquire(WriteContext, List)} and {@link #onAppend(InFlightEntry, long)} are
- *       always called in that order and before any other methods.
- *   <li>{@link #onWrite(long, long)} and {@link #onCommit(long, long)} and {@link
- *       #onProcessed(long)} can be called in any order.
- * </ul>
+ * <p>{@link #onWrite(long, long)} and {@link #onCommit(long, long)} and {@link #onProcessed(long)}
+ * can be called in any order.
  *
- * The weak ordering forces us to program quite defensively and carefully choose where and how we
- * modify internal state.
- *
- * <p>The {@link #inFlight} map is only modified in the {@link #onAppend(InFlightEntry, long)}
- * method. All other methods only read from it.
+ * <p>The {@link #inFlight} map is a {@link ConcurrentSkipListMap}. It is modified by {@link
+ * #registerEntry(long, InFlightEntry)} (under the sequencer lock) and read from other methods.
+ * Because readers ({@code onWrite}, {@code onCommit}, {@code onProcessed}) run on different
+ * threads, the concurrent map provides the necessary visibility guarantees.
  *
  * <p>A volatile field {@link #lastProcessedPosition} is only modified in {@link #onProcessed(long)}
- * and used in {@link #onAppend(InFlightEntry, long)} to clean up old entries.
+ * and used in {@link #onAppended(InFlightEntry)} to clean up old entries.
  *
  * <p>The RateMeasurement#observe method only returns true when a new observation value is
  * available. This way we prevent updating the metrics too often with repeated values. We use the
