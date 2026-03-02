@@ -101,7 +101,7 @@ jobs:
 
       - name: Dispatch incident alert
         id: incident-alert
-        uses: incident-io/github-action@v0
+        uses: incident-io/github-action@7aa5f85e67679cd8fdf2a19aed3d5450335a004b
         with:
           api-key: ${{ steps.secrets.outputs.incident_io_api_key }}
           alert-source-id: ${{ steps.secrets.outputs.incident_io_alert_source_id }}
