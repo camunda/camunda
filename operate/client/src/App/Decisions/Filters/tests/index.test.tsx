@@ -85,7 +85,7 @@ describe('<Filters />', () => {
     });
 
     expect(screen.getByText(/^decision$/i)).toBeInTheDocument();
-    expect(screen.getByLabelText('Name')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', {name: 'Name'})).toBeInTheDocument();
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toBeInTheDocument();
@@ -208,7 +208,9 @@ describe('<Filters />', () => {
       wrapper: getWrapper(`/?${new URLSearchParams(MOCK_FILTERS_PARAMS)}`),
     });
 
-    expect(screen.getByLabelText('Name')).toHaveValue('Assign Approver Group');
+    expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
+      'Assign Approver Group',
+    );
     expectVersion('2');
 
     expect(screen.getByLabelText(/evaluated/i)).toBeChecked();

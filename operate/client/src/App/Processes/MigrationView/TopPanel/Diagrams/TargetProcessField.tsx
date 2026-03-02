@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useMemo} from 'react';
 import {Label} from './styled';
 import {observer} from 'mobx-react';
 import isNil from 'lodash/isNil';
@@ -21,6 +22,17 @@ const TargetProcessField: React.FC = observer(() => {
     migrationState: {selectedTargetProcess},
   } = processesStore;
 
+  const items = useMemo(
+    () =>
+      processes.map(({id, label}) => {
+        return {
+          label,
+          id,
+        };
+      }),
+    [processes],
+  );
+
   return (
     <Stack orientation="horizontal" gap={5}>
       <Label htmlFor="targetProcess">Target</Label>
@@ -29,12 +41,7 @@ const TargetProcessField: React.FC = observer(() => {
         title="Target"
         id="targetProcess"
         placeholder="Search by process name"
-        items={processes.map(({id, label}) => {
-          return {
-            label,
-            id,
-          };
-        })}
+        items={items}
         onChange={({selectedItem}) => {
           processInstanceMigrationStore.resetElementMapping();
 

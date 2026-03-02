@@ -61,13 +61,8 @@ describe('Filters', () => {
         screen.getByRole('combobox', {
           name: 'Name',
         }),
-      ).toBeEnabled(),
+      ).toHaveValue('Big variable process'),
     );
-    expect(
-      screen.getByRole('combobox', {
-        name: 'Name',
-      }),
-    ).toHaveValue('Big variable process');
     expect(
       screen.getByRole('combobox', {
         name: /tenant/i,
@@ -103,7 +98,7 @@ describe('Filters', () => {
     });
 
     expect(
-      screen.queryByRole('combobox', {name: 'Tenant'}),
+      screen.queryByRole('combobox', {name: /tenant/i}),
     ).not.toBeInTheDocument();
   });
 
@@ -142,14 +137,18 @@ describe('Filters', () => {
       ),
     );
 
-    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toBeEnabled(),
+    );
 
     await selectProcess({
       user,
       option: 'Big variable process - Tenant A',
     });
 
-    expect(screen.getByLabelText('Name')).toHaveValue('Big variable process');
+    expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
+      'Big variable process',
+    );
     expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
       /tenant a/i,
     );
@@ -177,7 +176,7 @@ describe('Filters', () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
     await waitFor(() => expect(processesStore.state.status).toBe('fetched'));
-    expect(screen.getByLabelText('Name')).toBeDisabled();
+    expect(screen.getByRole('combobox', {name: 'Name'})).toBeDisabled();
   });
 
   it('should clear process and version field when tenant filter is changed', async () => {
@@ -192,21 +191,25 @@ describe('Filters', () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
     await waitFor(() => expect(processesStore.state.status).toBe('fetched'));
-    expect(screen.getByLabelText('Name')).toBeDisabled();
+    expect(screen.getByRole('combobox', {name: 'Name'})).toBeDisabled();
 
     await selectTenant({user, option: 'All tenants'});
     expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
       /all tenants/i,
     );
 
-    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toBeEnabled(),
+    );
 
     await selectProcess({
       user,
       option: 'Big variable process - Default Tenant',
     });
 
-    expect(screen.getByLabelText('Name')).toHaveValue('Big variable process');
+    expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
+      'Big variable process',
+    );
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent('1');
@@ -218,7 +221,7 @@ describe('Filters', () => {
     await selectTenant({user, option: 'Tenant B'});
     await waitFor(() => expect(processesStore.state.status).toBe('fetched'));
 
-    expect(screen.getByLabelText('Name')).toHaveValue('');
+    expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue('');
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent(/select a process version/i);

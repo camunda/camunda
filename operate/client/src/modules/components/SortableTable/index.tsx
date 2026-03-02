@@ -42,27 +42,33 @@ type HeaderColumn = {
   isDisabled?: boolean;
 } & DataTableHeader;
 
-type Props = {
+interface Props<_ extends Record<string, unknown>, ColTypes extends unknown[]> {
   state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
   selectionType?: 'checkbox' | 'row' | 'none';
-  headerColumns: HeaderColumn[];
-  rows: DataTableRow[];
+  headerColumns: (HeaderColumn & {sortKey?: string})[];
+  rows: Omit<DataTableRow<ColTypes>, 'cells'>[];
   emptyMessage?: {message: string; additionalInfo?: string};
   onSelectAll?: () => void;
   onSelect?: (rowId: string) => void;
-  checkIsRowSelected?: (rowId: string) => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
-  rowOperationError?: (rowId: string) => string | null; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
-  checkIsAllSelected?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
-  checkIsIndeterminate?: () => boolean; //must be a function because it depends on a store update: https://mobx.js.org/react-optimizations.html#function-props-
+  checkIsRowSelected?: (rowId: string) => boolean;
+  rowOperationError?: (rowId: string) => React.ReactNode | null;
+  checkIsAllSelected?: () => boolean;
+  checkIsIndeterminate?: () => boolean;
   onSort?: React.ComponentProps<typeof ColumnHeader>['onSort'];
   columnsWithNoContentPadding?: string[];
   batchOperationId?: string;
-} & Pick<
-  React.ComponentProps<typeof InfiniteScroller>,
-  'onVerticalScrollStartReach' | 'onVerticalScrollEndReach'
->;
+  onVerticalScrollStartReach?: React.ComponentProps<
+    typeof InfiniteScroller
+  >['onVerticalScrollStartReach'];
+  onVerticalScrollEndReach?: React.ComponentProps<
+    typeof InfiniteScroller
+  >['onVerticalScrollEndReach'];
+}
 
-const SortableTable: React.FC<Props> = ({
+const SortableTable = <
+  RowType extends Record<string, unknown>,
+  ColTypes extends React.ReactNode[],
+>({
   state,
   selectionType = 'none',
   headerColumns,
@@ -78,7 +84,7 @@ const SortableTable: React.FC<Props> = ({
   onVerticalScrollEndReach,
   columnsWithNoContentPadding,
   batchOperationId,
-}) => {
+}: Props<RowType, ColTypes>) => {
   let scrollableContentRef = useRef<HTMLDivElement | null>(null);
 
   if (['empty', 'error'].includes(state)) {
@@ -103,7 +109,7 @@ const SortableTable: React.FC<Props> = ({
         showHeader={false}
         showToolbar={false}
         headers={headerColumns.map(({header}) => ({
-          header: header.toString(),
+          header,
         }))}
       />
     );
@@ -142,7 +148,7 @@ const SortableTable: React.FC<Props> = ({
                       indeterminate={checkIsIndeterminate?.() ?? false}
                     />
                   )}
-                  {headers.map((header) => {
+                  {headers.map((header, index) => {
                     const {key, ...props} = getHeaderProps({
                       header,
                       isSortable: state === 'content',
@@ -153,9 +159,9 @@ const SortableTable: React.FC<Props> = ({
                         {...props}
                         key={key}
                         label={header.header}
-                        sortKey={header.sortKey ?? header.key}
-                        isDefault={header.isDefault}
-                        isDisabled={header.isDisabled}
+                        sortKey={headerColumns[index].sortKey ?? header.key}
+                        isDefault={headerColumns[index].isDefault}
+                        isDisabled={headerColumns[index].isDisabled}
                       />
                     );
                   })}

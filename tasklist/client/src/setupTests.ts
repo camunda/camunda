@@ -12,6 +12,7 @@ import {configure} from 'common/testing/testing-library';
 import {reactQueryClient} from 'common/react-query/reactQueryClient';
 import en from 'common/i18n/locales/en.json';
 import i18n, {t} from 'i18next';
+import ResizeObserverPolyfill from 'resize-observer-polyfill';
 
 function initTestI18next() {
   i18n.init({
@@ -50,6 +51,7 @@ beforeEach(() => {
   window.localStorage.clear();
 
   vi.stubGlobal('Notification', {permission: 'denied'});
+  vi.stubGlobal('ResizeObserver', ResizeObserverPolyfill);
 });
 
 beforeAll(() => {

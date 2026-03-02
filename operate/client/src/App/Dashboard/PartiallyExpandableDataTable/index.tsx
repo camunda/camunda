@@ -12,6 +12,7 @@ import {
   TableBody,
   TableContainer,
   TableExpandHeader,
+  TableHeader,
   TableRow,
 } from '@carbon/react';
 import {
@@ -49,12 +50,19 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
         getTableContainerProps,
         getTableProps,
         getRowProps,
+        getHeaderProps,
+        getExpandHeaderProps,
       }) => (
         <TableContainer {...getTableContainerProps()} data-testid={dataTestId}>
           <Table {...getTableProps()}>
             <TableHead>
               <TableRow>
-                <TableExpandHeader />
+                <TableExpandHeader {...getExpandHeaderProps()} />
+                {headers.map((header) => (
+                  <TableHeader {...getHeaderProps({header})}>
+                    {header.header}
+                  </TableHeader>
+                ))}
               </TableRow>
             </TableHead>
             <TableBody>

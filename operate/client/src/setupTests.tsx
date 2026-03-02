@@ -135,11 +135,16 @@ const localStorageMock = (function () {
   };
 })();
 
-beforeAll(() =>
+vi.mock('flatpickr/dist/l10n/default', () => ({
+  default: {firstDayOfWeek: 1},
+}));
+
+beforeAll(() => {
+  window.HTMLElement.prototype.scrollIntoView = function () {};
   mockServer.listen({
     onUnhandledRequest: 'error',
-  }),
-);
+  });
+});
 afterEach(() => mockServer.resetHandlers());
 afterAll(() => mockServer.close());
 beforeEach(async () => {
