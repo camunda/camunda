@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Stack} from '@carbon/react';
+import {Stack as BaseStack} from '@carbon/react';
 import styled from 'styled-components';
 
-export const StyledSection = styled('section')`
+const Section = styled.section`
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -17,9 +17,11 @@ export const StyledSection = styled('section')`
   align-items: center;
 `;
 
-export const StyledStack = styled(Stack)`
+const Stack = styled(BaseStack)`
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
 `;
+
+export {Section, Stack};
