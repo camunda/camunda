@@ -81,7 +81,7 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
 
     brokerClient
         .sendRequestWithRetry(new BrokerPartitionBootstrappedRequest(partitionId))
-        .whenComplete(bootstrapFuture);
+        .whenCompleteAsync(bootstrapFuture, concurrencyControl);
     return bootstrapFuture.andThen(
         response -> {
           LOGGER.debug("Received response from partition bootstrap request {}", response);

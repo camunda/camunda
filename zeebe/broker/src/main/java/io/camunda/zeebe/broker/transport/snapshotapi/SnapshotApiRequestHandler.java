@@ -170,14 +170,15 @@ public class SnapshotApiRequestHandler
     final ActorFuture<Long> lastProcessedPosition = actor.createFuture();
     brokerClient
         .sendRequestWithRetry(new GetScaleUpProgress())
-        .thenApply(
+        .thenApplyAsync(
             r -> {
               LOG.atLevel(Level.DEBUG)
                   .addKeyValue("transferId", transferId)
                   .log("Received response from broker {}", r.getResponse());
               return r.getResponse().getScalingPosition();
-            })
-        .whenComplete(lastProcessedPosition);
+            },
+            actor)
+        .whenCompleteAsync(lastProcessedPosition, actor);
     return lastProcessedPosition;
   }
 }

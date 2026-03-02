@@ -76,12 +76,13 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
           try {
             nodeIdProvider
                 .scale(clusterMembers.size())
-                .thenAccept(ignore -> result.complete(null))
-                .exceptionally(
+                .thenAcceptAsync(ignore -> result.complete(null), concurrencyControl)
+                .exceptionallyAsync(
                     e -> {
                       result.completeExceptionally(e);
                       return null;
-                    });
+                    },
+                    concurrencyControl);
           } catch (final Exception e) {
             result.completeExceptionally(e);
           }
@@ -101,12 +102,13 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
           try {
             nodeIdProvider
                 .scale(clusterMembers.size())
-                .thenAccept(ignore -> result.complete(null))
-                .exceptionally(
+                .thenAcceptAsync(ignore -> result.complete(null), concurrencyControl)
+                .exceptionallyAsync(
                     e -> {
                       result.completeExceptionally(e);
                       return null;
-                    });
+                    },
+                    concurrencyControl);
           } catch (final Exception e) {
             result.completeExceptionally(e);
           }
