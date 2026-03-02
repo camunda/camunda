@@ -209,6 +209,8 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/adjust-pom-for-license-analysis
       - name: Check for dependency cycles
+        # Command here is the same used by fossa analyze
+        # and found by enabling the `-debug` flag
         run: |
           ./mvnw com.github.ferstl:depgraph-maven-plugin:4.0.1:aggregate \
             -DgraphFormat=text \
