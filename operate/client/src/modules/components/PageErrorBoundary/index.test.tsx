@@ -41,10 +41,6 @@ describe('PageErrorBoundary', () => {
     });
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('should display error message and reload CTA for route error response', () => {
     const error = {
       status: 404,
