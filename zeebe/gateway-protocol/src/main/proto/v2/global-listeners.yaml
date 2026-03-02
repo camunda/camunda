@@ -257,7 +257,13 @@ components:
     GlobalTaskListenerResult:
       type: object
       required:
+        - id
+        - type
+        - retries
         - eventTypes
+        - afterNonGlobal
+        - priority
+        - source
       allOf:
         - $ref: '#/components/schemas/GlobalTaskListenerBase'
       properties:
