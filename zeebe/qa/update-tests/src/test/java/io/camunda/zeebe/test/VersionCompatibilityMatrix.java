@@ -156,10 +156,25 @@ final class VersionCompatibilityMatrix {
 
   public Stream<Arguments> fromPreviousPatchesToCurrent() {
     final var current = config.getCurrentVersion();
-    return discoverVersions()
-        .map(VersionInfo::version)
-        .filter(version -> version.compareTo(current) < 0)
-        .filter(version -> current.minor() - version.minor() <= 1)
+    final var allPreviousVersions =
+        discoverVersions()
+            .map(VersionInfo::version)
+            .filter(version -> version.compareTo(current) < 0)
+            .toList();
+
+    // Find the highest released minor strictly less than the current minor. This handles the case
+    // where the dev version skips a minor (e.g. 8.10.0-SNAPSHOT while 8.8.x is the latest
+    // released minor), so that the previous minor is resolved dynamically rather than always being
+    // current.minor() - 1.
+    final var previousMinor =
+        allPreviousVersions.stream()
+            .mapToInt(SemanticVersion::minor)
+            .filter(minor -> minor < current.minor())
+            .max()
+            .orElse(current.minor() - 1);
+
+    return allPreviousVersions.stream()
+        .filter(version -> version.minor() == previousMinor || version.minor() == current.minor())
         .filter(version -> isCompatible(version, current))
         .map(version -> Arguments.of(version.toString(), "CURRENT"));
   }
