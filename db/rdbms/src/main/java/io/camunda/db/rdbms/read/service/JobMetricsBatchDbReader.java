@@ -19,10 +19,12 @@ import io.camunda.db.rdbms.sql.columns.JobWorkerStatisticsColumn;
 import io.camunda.search.clients.reader.JobMetricsBatchReader;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
+import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
+import io.camunda.search.query.JobTimeSeriesStatisticsQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
 import io.camunda.search.query.JobWorkerStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -159,6 +161,12 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
             .toList();
 
     return workerStatsReader.buildSearchQueryResult(entities.size(), entities, dbSort);
+  }
+
+  @Override
+  public SearchQueryResult<JobTimeSeriesStatisticsEntity> getJobTimeSeriesStatistics(
+      final JobTimeSeriesStatisticsQuery query, final ResourceAccessChecks resourceAccessChecks) {
+    throw new UnsupportedOperationException("Time series statistics are not implemented yet");
   }
 
   /** Inner reader for worker statistics to provide typed AbstractEntityReader methods. */

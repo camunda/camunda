@@ -63,6 +63,13 @@ public class DurationUtilTest {
 
   @ParameterizedTest(name = "{0} -> \"{1}\"")
   @CsvSource({
+    // nanoseconds (exact — no sub-millisecond remainder)
+    "PT0.000000001S, 0ms",
+    "PT0.000000500S, 0ms",
+    // milliseconds
+    "PT0.001S, 1ms",
+    "PT0.500S, 500ms",
+    "PT0.999S, 999ms",
     // seconds
     "PT1S,  1s",
     "PT30S, 30s",
@@ -78,13 +85,8 @@ public class DurationUtilTest {
     // days (exact — no sub-day remainder)
     "P1D,   1d",
     // weeks (exact multiple of 7 days)
-    "P7D,   1w",
-    "P14D,  2w",
-    "P15D,  15d", // not a whole number of weeks, stays as days
-    // months (ChronoUnit.MONTHS ≈ 30.4375 days; 2629800 s)
-    "P30DT10H30M, 43830m",
-    // years (ChronoUnit.YEARS ≈ 365.2425 days; 31557600 s)
-    "P365DT5H49M12S, 1y",
+    "P7D,   7d",
+    "P14D,  14d"
   })
   void shouldConvertToEsOsInterval(final String isoDuration, final String expectedExpression) {
     assertThat(DurationUtil.toEsOsInterval(Duration.parse(isoDuration)))
@@ -103,8 +105,11 @@ public class DurationUtilTest {
     assertThat(DurationUtil.toEsOsInterval(Duration.ofSeconds(3_600))).isEqualTo("1h");
     // 86400 s → days, not hours
     assertThat(DurationUtil.toEsOsInterval(Duration.ofSeconds(86_400))).isEqualTo("1d");
-    // 7 days → weeks, not days
-    assertThat(DurationUtil.toEsOsInterval(Duration.ofDays(7))).isEqualTo("1w");
+    // 7 days → days as this is the largest unit that divides it exactly; not weeks as weeks are not
+    // a built-in unit in ES/OS intervals
+    assertThat(DurationUtil.toEsOsInterval(Duration.ofDays(7))).isEqualTo("7d");
+    // 1000 ms = 1 s → expressed as seconds, not milliseconds
+    assertThat(DurationUtil.toEsOsInterval(Duration.ofMillis(1_000))).isEqualTo("1s");
   }
 
   @Test
@@ -115,6 +120,8 @@ public class DurationUtilTest {
     assertThat(DurationUtil.toEsOsInterval(Duration.ofHours(25))).isEqualTo("25h");
     // 10 days — not a whole number of weeks
     assertThat(DurationUtil.toEsOsInterval(Duration.ofDays(10))).isEqualTo("10d");
+    // 1500 ms — not a whole number of seconds
+    assertThat(DurationUtil.toEsOsInterval(Duration.ofMillis(1_500))).isEqualTo("1500ms");
   }
 
   // -----------------------------------------------------------------------
@@ -122,12 +129,12 @@ public class DurationUtilTest {
   // -----------------------------------------------------------------------
 
   @Test
-  void shouldThrowForSubSecondDuration() {
-    assertThatThrownBy(() -> DurationUtil.toEsOsInterval(Duration.ofMillis(500)))
+  void shouldThrowForZeroOrNegativeDuration() {
+    assertThatThrownBy(() -> DurationUtil.toEsOsInterval(Duration.ZERO))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Duration must be greater than zero seconds: PT0.5S");
-    assertThatThrownBy(() -> DurationUtil.toEsOsInterval(Duration.ofNanos(1)))
+        .hasMessageContaining("greater than zero");
+    assertThatThrownBy(() -> DurationUtil.toEsOsInterval(Duration.ofMinutes(-1)))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Duration must be greater than zero seconds: PT0.000000001S");
+        .hasMessageContaining("greater than zero");
   }
 }

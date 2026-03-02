@@ -409,7 +409,8 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public SearchQueryResult<JobTimeSeriesStatisticsEntity> getJobTimeSeriesStatistics(
       final JobTimeSeriesStatisticsQuery query) {
-    throw new UnsupportedOperationException("Job time-series statistics is not yet implemented");
+    return doReadWithResourceAccessController(
+        access -> readers.jobMetricsBatchReader().getJobTimeSeriesStatistics(query, access));
   }
 
   @Override
