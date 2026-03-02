@@ -576,7 +576,7 @@ describe('stores/modifications', () => {
     ).toEqual({
       operation: 'ADD_VARIABLE',
       scopeId: ELEMENT_INSTANCE_ID,
-      elementName: 'flow-node-name',
+      elementName: 'element-name',
       id: '1',
       name: 'test',
       newValue: '123',
@@ -607,7 +607,7 @@ describe('stores/modifications', () => {
     ).toEqual({
       operation: 'ADD_VARIABLE',
       scopeId: ELEMENT_INSTANCE_ID,
-      elementName: 'flow-node-name',
+      elementName: 'element-name',
       id: '1',
       name: 'test',
       newValue: '1234',
@@ -638,7 +638,7 @@ describe('stores/modifications', () => {
     ).toEqual({
       operation: 'ADD_VARIABLE',
       scopeId: ELEMENT_INSTANCE_ID,
-      elementName: 'flow-node-name',
+      elementName: 'element-name',
       id: '1',
       name: 'test-updated',
       newValue: '1234',
@@ -669,7 +669,7 @@ describe('stores/modifications', () => {
     ).toEqual({
       operation: 'ADD_VARIABLE',
       scopeId: ELEMENT_INSTANCE_ID,
-      elementName: 'flow-node-name',
+      elementName: 'element-name',
       id: '1',
       name: 'test-updated',
       newValue: '1234',
@@ -683,7 +683,7 @@ describe('stores/modifications', () => {
     ).toEqual({
       operation: 'ADD_VARIABLE',
       scopeId: ELEMENT_INSTANCE_ID,
-      elementName: 'flow-node-name',
+      elementName: 'element-name',
       id: '2',
       name: 'another-variable',
       newValue: '987',
