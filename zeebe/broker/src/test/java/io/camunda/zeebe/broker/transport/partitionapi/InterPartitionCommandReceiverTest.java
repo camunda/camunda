@@ -294,7 +294,7 @@ final class InterPartitionCommandReceiverTest {
             assertArg(
                 (final LogAppendEntry logEntry) ->
                     assertThat(logEntry.recordMetadata().getAuthorization())
-                        .isEqualTo(new AuthInfo())));
+                        .isEqualTo(AuthInfo.empty())));
   }
 
   private byte[] sendCommand(

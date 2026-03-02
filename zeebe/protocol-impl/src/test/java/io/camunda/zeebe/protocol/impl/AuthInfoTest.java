@@ -56,7 +56,7 @@ final class AuthInfoTest {
     @Test
     void shouldEncodeDecodeEmptyAuthInfo() {
       // given
-      final AuthInfo authInfo = new AuthInfo();
+      final AuthInfo authInfo = AuthInfo.empty();
 
       // when
       final var decoded = encodeDecode(authInfo);
@@ -73,7 +73,7 @@ final class AuthInfoTest {
       authInfo.write(buffer, 0);
 
       // decode
-      final var decoded = new AuthInfo();
+      final var decoded = AuthInfo.empty();
       decoded.wrap(buffer, 0, buffer.capacity());
       return decoded;
     }
@@ -121,7 +121,7 @@ final class AuthInfoTest {
     @Test
     void shouldReturnFalseWhenUnknownFormatHasEmptyClaims() {
       // given
-      final AuthInfo authInfo = new AuthInfo();
+      final AuthInfo authInfo = AuthInfo.empty();
 
       // when / then
       assertThat(authInfo.hasAnyClaims()).isFalse();
@@ -167,7 +167,7 @@ final class AuthInfoTest {
     @Test
     void shouldSerializeIdenticallyToNewAuthInfo() {
       final var empty = EmptyAuthInfo.getInstance();
-      final var regular = new AuthInfo();
+      final var regular = AuthInfo.empty();
 
       assertThat(empty.getLength()).isEqualTo(regular.getLength());
       assertThat(empty.toDirectBuffer()).isEqualTo(regular.toDirectBuffer());
@@ -176,38 +176,10 @@ final class AuthInfoTest {
     @Test
     void shouldBeEqualToNewAuthInfo() {
       final var empty = EmptyAuthInfo.getInstance();
-      final var regular = new AuthInfo();
+      final var regular = AuthInfo.empty();
 
       assertThat(empty).isEqualTo(regular);
     }
   }
 
-  @Nested
-  class OfTests {
-    @Test
-    void shouldReturnNullWhenOfCalledWithNull() {
-      // when
-      final AuthInfo result = AuthInfo.of(null);
-
-      // then
-      assertThat(result).isNull();
-    }
-
-    @Test
-    void shouldCopyAuthInfoWhenOfCalledWithNonNull() {
-      // given
-      final AuthInfo original =
-          AuthInfo.withJwt("test-token", Map.of("claim1", "value1", "claim2", "value2"));
-
-      // when
-      final AuthInfo copy = AuthInfo.of(original);
-
-      // then
-      assertThat(copy).isNotNull();
-      assertThat(copy).isNotSameAs(original);
-      assertThat(copy.getFormat()).isEqualTo(original.getFormat());
-      assertThat(copy.getAuthData()).isEqualTo(original.getAuthData());
-      assertThat(copy.getClaims()).isEqualTo(original.getClaims());
-    }
-  }
 }

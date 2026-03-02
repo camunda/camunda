@@ -34,9 +34,18 @@ public class AuthInfo extends UnpackedObject {
   private final DocumentProperty claimsProp = new DocumentProperty("claims").sanitized();
   private transient volatile Map<String, Object> cachedDecodedMap;
 
-  public AuthInfo() {
+  protected AuthInfo() {
     super(3);
     declareProperty(formatProp).declareProperty(authDataProp).declareProperty(claimsProp);
+  }
+
+  /**
+   * Creates a new mutable, empty AuthInfo. Intended for the msgpack {@link
+   * io.camunda.zeebe.msgpack.property.ObjectProperty} framework (which requires a mutable template
+   * instance for deserialization) and for tests that need a default-valued instance.
+   */
+  public static AuthInfo empty() {
+    return new AuthInfo();
   }
 
   // --- Static factory methods ---
@@ -83,16 +92,6 @@ public class AuthInfo extends UnpackedObject {
     auth.formatProp.setValue(AuthDataFormat.PRE_AUTHORIZED);
     auth.claimsProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(claims)));
     auth.cachedDecodedMap = Collections.unmodifiableMap(claims);
-    return auth;
-  }
-
-  public static AuthInfo of(final AuthInfo info) {
-    if (info == null) {
-      return null;
-    }
-
-    final var auth = new AuthInfo();
-    auth.copyFrom(info);
     return auth;
   }
 

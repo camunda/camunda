@@ -41,7 +41,7 @@ public final class ExecuteCommandRequest implements ClientRequest {
   private byte[] encodedCmd;
   private ActorFuture<DirectBuffer> responseFuture;
   private Intent intent = null;
-  private AuthInfo authorization = new AuthInfo();
+  private AuthInfo authorization = AuthInfo.empty();
 
   public ExecuteCommandRequest(
       final ClientTransport output, final String targetAddress, final MsgPackHelper msgPackHelper) {
