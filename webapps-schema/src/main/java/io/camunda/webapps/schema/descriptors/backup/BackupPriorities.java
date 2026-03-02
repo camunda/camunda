@@ -25,16 +25,17 @@ public record BackupPriorities(
 
   public Stream<SnapshotIndexCollection> indicesSplitBySnapshot() {
     return Stream.of(
-        fullQualifiedName(prio1()),
-        fullQualifiedName(prio2()),
-        // dated indices
-        fullQualifiedNameWithMatcher(prio2()),
-        fullQualifiedName(prio3()),
-        // dated indices
-        fullQualifiedNameWithMatcher(prio3()),
-        fullQualifiedName(prio4()),
-        // dated indices
-        fullQualifiedNameWithMatcher(prio4()));
+            fullQualifiedName(prio1()),
+            fullQualifiedName(prio2()),
+            // dated indices
+            fullQualifiedNameWithMatcher(prio2()),
+            fullQualifiedName(prio3()),
+            // dated indices
+            fullQualifiedNameWithMatcher(prio3()),
+            fullQualifiedName(prio4()),
+            // dated indices
+            fullQualifiedNameWithMatcher(prio4()))
+        .filter(snapshotIndexCollection -> !snapshotIndexCollection.isEmpty());
   }
 
   private static <A extends BackupPriority> SnapshotIndexCollection fullQualifiedName(

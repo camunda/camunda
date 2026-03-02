@@ -105,7 +105,9 @@ public class BackupServiceImplTest {
               assertThat(backupState.getState()).isEqualTo(BackupStateDto.COMPLETED);
               assertThat(backupState.getDetails()).hasSize(4);
               assertThat(backupState.getDetails())
-                  .allSatisfy(detail -> detail.getState().equals("COMPLETED"));
+                  .allSatisfy(
+                      detail ->
+                          assertThat(detail.getState()).isEqualTo(MockBackupRepository.SUCCESS));
             });
     final var snapshotRequests = backupRepository.snapshotRequests.get(1L);
     assertThat(snapshotRequests.stream().map(i -> i.indices().allIndices()))
@@ -160,6 +162,7 @@ public class BackupServiceImplTest {
 
   private static class MockBackupRepository implements BackupRepository {
 
+    public static final String SUCCESS = "SUCCESS";
     SnapshotNameProvider snapshotNameProvider;
     // From backupId
     Map<Long, GetBackupStateResponseDto> backups = new HashMap<>();
@@ -260,7 +263,7 @@ public class BackupServiceImplTest {
           backup.getDetails() == null ? new ArrayList<>() : new ArrayList<>(backup.getDetails());
       details.add(
           new GetBackupStateResponseDetailDto()
-              .setState("SUCCESS")
+              .setState(SUCCESS)
               .setSnapshotName(snapshotRequest.snapshotName())
               .setStartTime(startTime));
       backup.setDetails(details);
