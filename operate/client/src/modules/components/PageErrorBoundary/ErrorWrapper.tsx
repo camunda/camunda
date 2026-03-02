@@ -7,12 +7,12 @@
  */
 
 import ErrorRobot from 'modules/components/Icon/error-robot.svg?react';
-import {StyledSection, StyledStack} from './styled';
+import {Section, Stack} from './styled';
 import {Link} from '@carbon/react';
 
 const ErrorWrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
-  <StyledSection>
-    <StyledStack orientation="vertical" gap={5}>
+  <Section>
+    <Stack orientation="vertical" gap={5}>
       <ErrorRobot />
       <h1>Something went wrong</h1>
       {children}
@@ -20,8 +20,8 @@ const ErrorWrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
         Please <Link href={document.location.href}>reload the page</Link> or try
         again later.
       </p>
-    </StyledStack>
-  </StyledSection>
+    </Stack>
+  </Section>
 );
 
 export {ErrorWrapper};
