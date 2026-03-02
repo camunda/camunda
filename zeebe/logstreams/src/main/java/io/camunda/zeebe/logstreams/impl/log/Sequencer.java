@@ -107,21 +107,23 @@ final class Sequencer implements LogStreamWriter, Closeable {
     final int batchLength = calculateBatchLength(appendEntries);
 
     lock.lock();
+    final long highestPosition;
     try {
       final var currentPosition = position;
-      final var highestPosition = currentPosition + batchSize - 1;
+      highestPosition = currentPosition + batchSize - 1;
       final var sequencedBatch =
           new SequencedBatch(
               clock.millis(), currentPosition, sourcePosition, appendEntries, batchLength);
-      flowControl.onAppend(inFlightEntry, highestPosition);
+      flowControl.registerEntry(highestPosition, inFlightEntry);
       logStorage.append(currentPosition, highestPosition, sequencedBatch, flowControl);
       position = currentPosition + batchSize;
-      return Either.right(highestPosition);
     } finally {
       lock.unlock();
       sequencerMetrics.observeBatchLengthBytes(batchLength);
       sequencerMetrics.observeBatchSize(batchSize);
     }
+    flowControl.onAppended(inFlightEntry);
+    return Either.right(highestPosition);
   }
 
   /**
