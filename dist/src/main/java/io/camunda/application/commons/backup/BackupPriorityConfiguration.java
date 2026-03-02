@@ -29,11 +29,9 @@ import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
-import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
@@ -125,11 +123,9 @@ public class BackupPriorityConfiguration {
             // OPERATE
             new DecisionIndex(indexPrefix, isElasticsearch),
             new DecisionRequirementsIndex(indexPrefix, isElasticsearch),
-            new MetricIndex(indexPrefix, isElasticsearch),
             new ProcessIndex(indexPrefix, isElasticsearch),
             // TASKLIST
             new FormIndex(indexPrefix, isElasticsearch),
-            new TasklistMetricIndex(indexPrefix, isElasticsearch),
             // USER MANAGEMENT
             new AuthorizationIndex(indexPrefix, isElasticsearch),
             new GroupIndex(indexPrefix, isElasticsearch),

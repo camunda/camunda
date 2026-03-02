@@ -299,7 +299,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
-      DOCKER_IMAGE_TAG: current-test
+      TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
+      TASKLIST_TEST_DOCKER_IMAGE_TAG: current-test
       TEST_TYPE: Integration
       TEST_OWNER: Data Layer
     strategy:
@@ -330,14 +331,24 @@ jobs:
       - uses: ./.github/actions/build-platform-docker
         id: build-tasklist-docker
         with:
-          repository: localhost:5000/camunda/tasklist
-          version: ${{ env.DOCKER_IMAGE_TAG }}
+          repository: ${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
+          version: ${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
           dockerfile: tasklist.Dockerfile
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Run Tasklist backup restore Tests
         shell: bash
-        run: ./mvnw -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ matrix.database }} -DskipTests=false verify | tee "${BUILD_OUTPUT_FILE_PATH}"
+        run: >
+          ./mvnw
+          -B
+          -pl tasklist/qa/backup-restore-tests
+          -DskipChecks
+          -DtasklistDatabase=${{ matrix.database }}
+          -DskipTests=false
+          -Dtasklist.currentVersion.docker.tag=${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
+          -Dtasklist.currentVersion.docker.repo=${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Upload Test Report
         if: failure()
         uses: ./.github/actions/collect-test-artifacts

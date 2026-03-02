@@ -1025,7 +1025,6 @@ public class SchemaManagerIT {
             newPrefix + "-operate-incident-8.3.1_",
             newPrefix + "-operate-list-view-8.3.0_",
             newPrefix + "-operate-metadata-8.8.0_",
-            newPrefix + "-operate-metric-8.3.0_",
             newPrefix + "-operate-message-8.5.0_",
             newPrefix + "-operate-operation-8.4.1_",
             newPrefix + "-operate-post-importer-queue-8.3.0_",
@@ -1035,7 +1034,6 @@ public class SchemaManagerIT {
             newPrefix + "-operate-job-8.6.0_",
             newPrefix + "-tasklist-draft-task-variable-8.3.0_",
             newPrefix + "-tasklist-form-8.4.0_",
-            newPrefix + "-tasklist-metric-8.3.0_",
             newPrefix + "-tasklist-task-8.8.0_",
             newPrefix + "-tasklist-task-variable-8.3.0_");
   }
