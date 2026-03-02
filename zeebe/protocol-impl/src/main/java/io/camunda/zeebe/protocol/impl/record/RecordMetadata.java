@@ -120,16 +120,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
       decoder.skipRejectionReason();
     }
 
-    final int authorizationLength = decoder.authorizationLength();
-    if (authorizationLength > 0) {
-      final var auth = new AuthInfo();
-      final DirectBuffer authBuffer = new UnsafeBuffer();
-      decoder.wrapAuthorization(authBuffer);
-      auth.wrap(authBuffer);
-      authorization = auth;
-    } else {
-      decoder.skipAuthorization();
-    }
+    authorization = decodeAuthorization(decoder);
 
     final int agentLength = decoder.agentLength();
     if (agentLength > 0) {
@@ -282,9 +273,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public RecordMetadata authorization(final DirectBuffer buffer) {
-    final var auth = new AuthInfo();
-    auth.wrap(buffer);
-    authorization = auth;
+    authorization = AuthInfo.of(buffer);
     return this;
   }
 
@@ -298,6 +287,23 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
    */
   private AuthInfo authorizationOrEmpty() {
     return authorization != null ? authorization : EMPTY_AUTH;
+  }
+
+  /**
+   * Decodes the authorization field from the SBE decoder. Returns null (avoiding allocation) when
+   * the serialized bytes are identical to the empty sentinel, since {@link #authorizationOrEmpty()}
+   * will substitute the shared instance on read.
+   */
+  private static AuthInfo decodeAuthorization(final RecordMetadataDecoder decoder) {
+    final int length = decoder.authorizationLength();
+    if (length <= 0) {
+      decoder.skipAuthorization();
+      return null;
+    }
+
+    final var buffer = new UnsafeBuffer();
+    decoder.wrapAuthorization(buffer);
+    return AuthInfo.of(buffer);
   }
 
   public AgentInfo getAgent() {

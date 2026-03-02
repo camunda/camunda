@@ -95,6 +95,31 @@ public class AuthInfo extends UnpackedObject {
     return auth;
   }
 
+  /**
+   * Creates a new AuthInfo by deserializing from the given buffer. Returns null if the buffer
+   * represents an empty AuthInfo (identical to {@link EmptyAuthInfo}), avoiding allocation.
+   */
+  public static AuthInfo of(final DirectBuffer buffer) {
+    if (buffer.capacity() <= EmptyAuthInfo.getInstance().getLength()
+        && buffer.equals(EmptyAuthInfo.getInstance().toDirectBuffer())) {
+      return null;
+    }
+
+    final var auth = new AuthInfo();
+    auth.wrap(buffer);
+    return auth;
+  }
+
+  public static AuthInfo of(final AuthInfo info) {
+    if (info == null) {
+      return null;
+    }
+
+    final var auth = new AuthInfo();
+    auth.copyFrom(info);
+    return auth;
+  }
+
   // --- Getters ---
 
   public AuthDataFormat getFormat() {

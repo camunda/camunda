@@ -138,9 +138,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   }
 
   public ExecuteCommandRequest setAuthorization(final DirectBuffer buffer) {
-    final var auth = new AuthInfo();
-    auth.wrap(buffer);
-    authorization = auth;
+    authorization = AuthInfo.of(buffer);
     return this;
   }
 
@@ -174,9 +172,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     offset += ExecuteCommandRequestDecoder.authorizationHeaderLength();
 
     if (authorizationLength > 0) {
-      final var auth = new AuthInfo();
-      auth.wrap(buffer, offset, authorizationLength);
-      authorization = auth;
+      authorization = AuthInfo.of(new UnsafeBuffer(buffer, offset, authorizationLength));
     }
     offset += authorizationLength;
 

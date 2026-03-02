@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.ValueTypes;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class CommandApiRequestReader implements RequestReader {
 
@@ -70,9 +71,7 @@ public class CommandApiRequestReader implements RequestReader {
           commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.authorizationHeaderLength();
       final int authLength = commandRequestDecoder.authorizationLength();
       if (authLength > 0) {
-        final var authInfo = new AuthInfo();
-        authInfo.wrap(buffer, authOffset, authLength);
-        metadata.authorization(authInfo);
+        metadata.authorization(AuthInfo.of(new UnsafeBuffer(buffer, authOffset, authLength)));
       }
     }
   }

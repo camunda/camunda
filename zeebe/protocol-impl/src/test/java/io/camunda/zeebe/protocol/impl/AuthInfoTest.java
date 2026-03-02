@@ -182,4 +182,78 @@ final class AuthInfoTest {
     }
   }
 
+  @Nested
+  class OfTests {
+    @Test
+    void shouldReturnNullWhenOfCalledWithNull() {
+      // when
+      final AuthInfo result = AuthInfo.of((AuthInfo) null);
+
+      // then
+      assertThat(result).isNull();
+    }
+
+    @Test
+    void shouldCopyAuthInfoWhenOfCalledWithNonNull() {
+      // given
+      final AuthInfo original =
+          AuthInfo.withJwt("test-token", Map.of("claim1", "value1", "claim2", "value2"));
+
+      // when
+      final AuthInfo copy = AuthInfo.of(original);
+
+      // then
+      assertThat(copy).isNotNull();
+      assertThat(copy).isNotSameAs(original);
+      assertThat(copy.getFormat()).isEqualTo(original.getFormat());
+      assertThat(copy.getAuthData()).isEqualTo(original.getAuthData());
+      assertThat(copy.getClaims()).isEqualTo(original.getClaims());
+    }
+
+    @Test
+    void shouldReturnNullWhenOfBufferCalledWithEmptyAuthInfo() {
+      // given — serialize an empty AuthInfo
+      final var empty = AuthInfo.empty();
+      final var buffer = new UnsafeBuffer(new byte[empty.getLength()]);
+      empty.write(buffer, 0);
+
+      // when
+      final AuthInfo result = AuthInfo.of(buffer);
+
+      // then — should return null (optimization: avoids allocation)
+      assertThat(result).isNull();
+    }
+
+    @Test
+    void shouldDeserializePreAuthorizedFromBuffer() {
+      // given — serialize a PRE_AUTHORIZED AuthInfo
+      final var preAuth = AuthInfo.preAuthorized();
+      final var buffer = new UnsafeBuffer(new byte[preAuth.getLength()]);
+      preAuth.write(buffer, 0);
+
+      // when
+      final AuthInfo result = AuthInfo.of(buffer);
+
+      // then — must NOT return null despite same byte length as empty
+      assertThat(result).isNotNull();
+      assertThat(result.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
+    }
+
+    @Test
+    void shouldDeserializePreAuthorizedWithClaimsFromBuffer() {
+      // given — serialize a PRE_AUTHORIZED AuthInfo with claims
+      final Map<String, Object> claims = Map.of("user", "admin", "role", "operator");
+      final var preAuth = AuthInfo.preAuthorized(claims);
+      final var buffer = new UnsafeBuffer(new byte[preAuth.getLength()]);
+      preAuth.write(buffer, 0);
+
+      // when
+      final AuthInfo result = AuthInfo.of(buffer);
+
+      // then
+      assertThat(result).isNotNull();
+      assertThat(result.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
+      assertThat(result.toDecodedMap()).isEqualTo(claims);
+    }
+  }
 }
