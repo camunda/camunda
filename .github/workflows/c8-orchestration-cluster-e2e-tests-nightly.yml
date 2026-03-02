@@ -152,6 +152,7 @@ jobs:
           VERSION: ${{ matrix.branch }}
           API_TESTS_ONLY: true
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
+          DATABASE: "Elasticsearch"
         run: |
           if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
@@ -302,6 +303,7 @@ jobs:
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
+          DATABASE: "RDBMS"
         run: npm run test -- --project=api-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 

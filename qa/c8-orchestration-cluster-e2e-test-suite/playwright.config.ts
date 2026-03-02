@@ -22,7 +22,10 @@ function getTestTypeLabel(): string {
     return `Nightly V2 Stateless Test Results for Mono Repo - ${process.env.VERSION}`;
   }
   if (isApiTestsOnly) {
-    return `Nightly API Test Results for Mono Repo - ${process.env.VERSION}`;
+    const database = process.env.DATABASE
+      ? ` - Database ${process.env.DATABASE}`
+      : '';
+    return `Nightly API Test Results for Mono Repo - ${process.env.VERSION}${database}`;
   }
   const tasklistMode = isV2ModeEnabled ? 'V2' : 'V1';
   return `Nightly Test Results for Mono Repo - ${process.env.VERSION} (Tasklist ${tasklistMode})`;
