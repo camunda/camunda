@@ -238,11 +238,10 @@ const BottomPanel: React.FC = observer(() => {
                         elementMapping[sourceElement.id] ?? '',
                       ) && (
                         <Tooltip
-                          label={
+                          description={
                             'Embedded form in this user task will be replaced by the form defined in the target element.'
                           }
-                          align="right-bottom"
-                          leaveDelayMs={50}
+                          align="bottom-left"
                         >
                           <WarningFilled />
                         </Tooltip>
