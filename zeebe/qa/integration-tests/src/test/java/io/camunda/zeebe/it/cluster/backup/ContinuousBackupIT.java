@@ -13,6 +13,7 @@ import static org.awaitility.Awaitility.await;
 
 import com.google.cloud.storage.BucketInfo;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.Gcs.GcsBackupStoreAuth;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -148,10 +150,26 @@ final class ContinuousBackupIT {
     // then - result has the expected data: the first three process instances but not the fourth
     broker.start();
     try (final var client = broker.newClientBuilder().build()) {
-      final var jobs =
-          client.newActivateJobsCommand().jobType("task").maxJobsToActivate(3).send().join();
-      assertThat(jobs.getJobs()).hasSize(3);
-      for (final var job : jobs.getJobs()) {
+      // Job activation after restore may time out or return no results initially.
+      // Accumulate activated jobs across polls since each activation locks the returned jobs.
+      final var activated = new ArrayList<ActivatedJob>();
+      await("jobs are available after restore")
+          .atMost(Duration.ofSeconds(60))
+          .pollInterval(Duration.ofMillis(500))
+          .ignoreExceptions()
+          .untilAsserted(
+              () -> {
+                final var response =
+                    client
+                        .newActivateJobsCommand()
+                        .jobType("task")
+                        .maxJobsToActivate(3 - activated.size())
+                        .send()
+                        .join();
+                activated.addAll(response.getJobs());
+                assertThat(activated).hasSize(3);
+              });
+      for (final var job : activated) {
         client.newCompleteCommand(job.getKey()).send().join();
       }
     }
