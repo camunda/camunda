@@ -24,19 +24,7 @@
   </licenses>
 
   <properties>
-    <!-- The Spring Boot version is managed explicitly here to avoid inheriting
-    Spring Boot version from the parent pom.xml, which is the reference for internal modules.
-    This allows decoupled control of the Spring Boot version for this user facing artifact. -->
-    <version.spring-boot>3.5.8</version.spring-boot>
+    <!-- Can be used to override dependency version like spring for client artifacts -->
   </properties>
 
-  <profiles>
-    <profile>
-      <id>spring-boot-3.5</id>
-      <properties>
-        <!-- For testing Spring Boot 3.5 compatibility -->
-        <version.spring-boot>3.5.8</version.spring-boot>
-      </properties>
-    </profile>
-  </profiles>
 </project>
