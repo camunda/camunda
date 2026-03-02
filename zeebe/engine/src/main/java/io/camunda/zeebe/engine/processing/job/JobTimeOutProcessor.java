@@ -56,7 +56,7 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
     if (state == State.ACTIVATED && hasTimedOut(job)) {
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMED_OUT, job);
       jobMetrics.countJobEvent(JobAction.TIMED_OUT, job.getJobKind(), job.getType());
-      jobActivationBehavior.notifyJobAvailableAsSideEffect(job);
+      jobActivationBehavior.publishWork(jobKey, job);
     } else {
       final var reason =
           switch (state) {

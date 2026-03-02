@@ -8,7 +8,6 @@
 package io.camunda.service.query.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import io.camunda.search.clients.query.*;
 import io.camunda.service.ProcessInstanceServices;
@@ -20,7 +19,6 @@ import io.camunda.service.search.query.ProcessInstanceQuery;
 import io.camunda.service.search.query.SearchQueryBuilders;
 import io.camunda.service.search.query.SearchQueryResult;
 import io.camunda.service.util.StubbedCamundaSearchClient;
-import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +33,7 @@ public final class ProcessInstanceFilterTest {
   public void before() {
     client = new StubbedCamundaSearchClient();
     new ProcessInstanceSearchQueryStub().registerWith(client);
-    services = new ProcessInstanceServices(mock(BrokerClient.class), client);
+    services = new ProcessInstanceServices(null, client);
   }
 
   @Test

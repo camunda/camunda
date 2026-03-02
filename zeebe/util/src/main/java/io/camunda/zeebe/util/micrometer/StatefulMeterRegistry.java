@@ -39,17 +39,7 @@ final class StatefulMeterRegistry extends CompositeMeterRegistry {
   }
 
   StatefulGauge registerIfNecessary(final Id id, final Builder builder) {
-    // NOTE: We intentionally use get() + putIfAbsent() instead of computeIfAbsent() here.
-    // Using computeIfAbsent() could cause a deadlock, see issue
-    // https://github.com/camunda/camunda/issues/33941#issuecomment-3965969887
-    final var existing = gauges.get(id);
-    if (existing != null) {
-      return existing;
-    }
-
-    final StatefulGauge statefulGauge = registerStatefulGauge(id, builder);
-    final StatefulGauge previousValue = gauges.putIfAbsent(id, statefulGauge);
-    return previousValue != null ? previousValue : statefulGauge;
+    return gauges.computeIfAbsent(id, metricId -> registerStatefulGauge(metricId, builder));
   }
 
   StatefulGauge registerStatefulGauge(final Id id, final Builder builder) {

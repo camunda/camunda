@@ -1,0 +1,284 @@
+{
+  "config": {
+    "configFile": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/playwright.config.ts",
+    "rootDir": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "junit",
+        {
+          "embedAnnotationsAsProperties": true,
+          "outputFile": "./test-results/junit-report.xml"
+        }
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "html-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "json-report/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "api-tests",
+        "name": "api-tests",
+        "testDir": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "tests/api/*.spec.ts"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/tests",
+        "testIgnore": [
+          "task-panel.spec.ts",
+          "tests/api/*.spec.ts"
+        ],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-subset",
+        "name": "chromium-subset",
+        "testDir": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "task-panel.spec.ts"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/tests",
+        "testIgnore": [
+          "task-panel.spec.ts",
+          "tests/api/*.spec.ts"
+        ],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "firefox-subset",
+        "name": "firefox-subset",
+        "testDir": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "task-panel.spec.ts"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "msedge",
+        "name": "msedge",
+        "testDir": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/tests",
+        "testIgnore": [
+          "task-panel.spec.ts",
+          "tests/api/*.spec.ts"
+        ],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "msedge-subset",
+        "name": "msedge-subset",
+        "testDir": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "task-panel.spec.ts"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "tasklist-e2e",
+        "name": "tasklist-e2e",
+        "testDir": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/tests",
+        "testIgnore": [
+          "task-panel.spec.ts",
+          "tests/api/*.spec.ts"
+        ],
+        "testMatch": [
+          "tests/tasklist/*.spec.ts"
+        ],
+        "timeout": 720000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.53.2",
+    "workers": 4,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "operate/processes.spec.ts",
+      "file": "operate/processes.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Processes",
+          "file": "operate/processes.spec.ts",
+          "line": 68,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Cancel process instance",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "annotations": [
+                    {
+                      "type": "testrail_attachment",
+                      "description": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/test-results/operate-processes-Processes-Cancel-process-instance-chromium/screenshot-cdf2d65e-e894-4663-9941-3017de1c60c5.png"
+                    }
+                  ],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 13279,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Navigate to process to cancel",
+                          "duration": 817
+                        },
+                        {
+                          "title": "Cancel the running instance",
+                          "duration": 11005
+                        }
+                      ],
+                      "startTime": "2026-03-02T15:17:06.264Z",
+                      "annotations": [
+                        {
+                          "type": "testrail_attachment",
+                          "description": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/test-results/operate-processes-Processes-Cancel-process-instance-chromium/screenshot-cdf2d65e-e894-4663-9941-3017de1c60c5.png"
+                        }
+                      ],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/esraagamal/Documents/GitHub/Core_Application_e2e_testsuite/Core_Application/qa/c8-orchestration-cluster-e2e-test-suite/test-results/operate-processes-Processes-Cancel-process-instance-chromium/trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b5225524808b6ee2306b-99844eaab766cc72e3f8",
+              "file": "operate/processes.spec.ts",
+              "line": 268,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-03-02T15:17:04.767Z",
+    "duration": 17807.951,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

@@ -29,8 +29,6 @@ runs:
       # `aether.enhancedLocalRepository.splitRemote` splits remote artifacts into released and snapshot
       # `aether.syncContext.*` config ensures that maven uses file locks to prevent corruption
       #      from downloading multiple artifacts at the same time.
-      # `aether.dependencyCollector.impl=bf` uses a breadth first algorithm when resolving/downloading poms.
-      #     The `bf` collector is suggested when the project contains many modules and dependencies.
       run: |
         tee .mvn/maven.config <<EOF
         --errors
@@ -45,7 +43,6 @@ runs:
         -D aether.syncContext.named.factory=file-lock
         -D aether.syncContext.named.time=120
         -D maven.artifact.threads=32
-        -D aether.dependencyCollector.impl=bf
         EOF
     - name: Get cache path and keys
       env:

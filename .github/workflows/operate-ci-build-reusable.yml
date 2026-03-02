@@ -101,7 +101,6 @@ jobs:
         name: Build setup
         with:
           dockerhub: ${{ env.SHOULD_PUSH_DOCKER_SNAPSHOT == 'true' }}
-          minimus: true
           harbor: true
           java-distribution: adopt
           maven-cache-key-modifier: operate

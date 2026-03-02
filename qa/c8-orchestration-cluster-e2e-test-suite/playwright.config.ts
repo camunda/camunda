@@ -14,7 +14,6 @@ const useReportersWithoutSlack: any[] = [
   ['list'],
   ['junit', testRailOptions],
   ['html', {outputFolder: 'html-report'}],
-  ['json', { outputFile: `json-report/results.json` }],
 ];
 
 // Define reporters with SlackReporter

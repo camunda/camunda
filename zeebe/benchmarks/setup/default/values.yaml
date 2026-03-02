@@ -28,7 +28,7 @@ global:
   # Image configuration to be used in each sub chart
   image:
     # Image.repository defines the repository from which to fetch the docker images
-    repository: "registry.camunda.cloud/team-zeebe"
+    repository: "gcr.io/zeebe-io"
     # Image.tag defines the tag / version which should be used in the chart
     tag: SNAPSHOT
     # Image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy

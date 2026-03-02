@@ -3,7 +3,6 @@ node_modules/
 /jsonReports/
 /playwright-report/
 /html-report/
-/json-report/
 /playwright/.cache/
 .env
 .DS_Store

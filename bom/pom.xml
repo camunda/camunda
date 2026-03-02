@@ -87,43 +87,6 @@
         <artifactId>zeebe-protocol</artifactId>
         <version>${project.version}</version>
       </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>spring-boot-starter-camunda-sdk</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>camunda-spring-boot-3-starter</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>camunda-spring-boot-4-starter</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>camunda-process-test-java</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>camunda-process-test-spring</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>camunda-process-test-spring-4</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
     </dependencies>
   </dependencyManagement>
 

@@ -17,8 +17,6 @@ import io.camunda.service.security.auth.Authentication;
 import io.camunda.service.transformers.ServiceTransformers;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
-import io.camunda.zeebe.gateway.impl.broker.RequestRetryHandler;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
@@ -33,7 +31,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -42,8 +39,6 @@ import java.util.function.Function;
 public final class ProcessInstanceServices
     extends SearchQueryService<
         ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
-
-  private final RequestRetryHandler requestRetryHandler;
 
   public ProcessInstanceServices(
       final BrokerClient brokerClient, final CamundaSearchClient dataStoreClient) {
@@ -56,7 +51,6 @@ public final class ProcessInstanceServices
       final ServiceTransformers transformers,
       final Authentication authentication) {
     super(brokerClient, searchClient, transformers, authentication);
-    requestRetryHandler = new RequestRetryHandler(brokerClient, brokerClient.getTopologyManager());
   }
 
   @Override
@@ -88,7 +82,7 @@ public final class ProcessInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
-    return sendRequestWithRetryPartitions(brokerRequest);
+    return sendBrokerRequest(brokerRequest);
   }
 
   public CompletableFuture<ProcessInstanceResultRecord> createProcessInstanceWithResult(
@@ -106,13 +100,7 @@ public final class ProcessInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
-
-    // Use custom request timeout if provided, otherwise use default
-    if (request.requestTimeout() != null && request.requestTimeout() > 0) {
-      return sendRequestWithRetryPartitions(
-          brokerRequest, Duration.ofMillis(request.requestTimeout()));
-    }
-    return sendRequestWithRetryPartitions(brokerRequest);
+    return sendBrokerRequest(brokerRequest);
   }
 
   public CompletableFuture<ProcessInstanceRecord> cancelProcessInstance(
@@ -153,36 +141,6 @@ public final class ProcessInstanceServices
       brokerRequest.setOperationReference(request.operationReference());
     }
     return sendBrokerRequest(brokerRequest);
-  }
-
-  private <R> CompletableFuture<R> sendRequestWithRetryPartitions(
-      final BrokerRequest<R> brokerRequest) {
-    return sendRequestWithRetryPartitions(brokerRequest, null);
-  }
-
-  private <R> CompletableFuture<R> sendRequestWithRetryPartitions(
-      final BrokerRequest<R> brokerRequest, final Duration requestTimeout) {
-    brokerRequest.setAuthorization(authentication.token());
-    final CompletableFuture<R> responseFuture = new CompletableFuture<>();
-    if (requestTimeout != null) {
-      requestRetryHandler.sendRequest(
-          brokerRequest,
-          (key, response) -> responseFuture.complete(response),
-          responseFuture::completeExceptionally,
-          requestTimeout);
-    } else {
-      requestRetryHandler.sendRequest(
-          brokerRequest,
-          (key, response) -> responseFuture.complete(response),
-          responseFuture::completeExceptionally);
-    }
-    return responseFuture.handleAsync(
-        (response, error) -> {
-          if (error != null) {
-            throw new CamundaServiceException(error);
-          }
-          return response;
-        });
   }
 
   public record ProcessInstanceCreateRequest(

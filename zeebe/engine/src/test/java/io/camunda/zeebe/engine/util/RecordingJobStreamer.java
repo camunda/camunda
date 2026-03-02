@@ -27,8 +27,7 @@ public class RecordingJobStreamer implements JobStreamer {
 
   @Override
   public void notifyWorkAvailable(final String jobType) {
-    final AtomicInteger counter =
-        jobNotifications.computeIfAbsent(jobType, key -> new AtomicInteger(0));
+    final AtomicInteger counter = jobNotifications.getOrDefault(jobType, new AtomicInteger(0));
     counter.getAndIncrement();
   }
 
@@ -40,14 +39,6 @@ public class RecordingJobStreamer implements JobStreamer {
             .filter(jobStream -> predicate.test(jobStream.getProperties()))
             .findAny()
             .get());
-  }
-
-  public int notificationsForJob(final String jobType) {
-    return Optional.ofNullable(jobNotifications.get(jobType)).map(AtomicInteger::get).orElse(0);
-  }
-
-  public void clearStreams() {
-    jobStreams.clear();
   }
 
   public RecordingJobStream addJobStream(

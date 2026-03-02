@@ -7,10 +7,6 @@ on:
       - synchronize
       - closed
 
-env:
-  CLUSTER: camunda-benchmark-prod
-  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
-
 jobs:
   create-benchmark:
     name: Benchmark
@@ -33,18 +29,14 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Set up Teleport
-        uses: teleport-actions/setup@v1
+      - uses: google-github-actions/auth@v2
         with:
-          version: 17.2.2
-      - name: Authenticate to Cluster using Teleport
-        uses: teleport-actions/auth-k8s@v2
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - uses: google-github-actions/get-gke-credentials@v2.2.2
         with:
-          proxy: camunda.teleport.sh:443
-          token: ${{ env.TELEPORT_JOIN_TOKEN }}
-          kubernetes-cluster: ${{ env.CLUSTER }}
+          cluster_name: zeebe-cluster
+          location: europe-west1-b
       - name: Delete benchmarks
         env:
           PR_HEAD_REF: ${{github.event.pull_request.head.ref}}

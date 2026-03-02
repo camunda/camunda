@@ -3,7 +3,7 @@
 operate:
   enabled: true
   image:
-    repository: registry.camunda.cloud/team-zeebe/operate
+    repository: gcr.io/zeebe-io/operate
     tag: 8.7.0
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
