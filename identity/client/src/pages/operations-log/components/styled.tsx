@@ -14,6 +14,9 @@ import {
 import { Column, Grid as CarbonGrid, Section } from "@carbon/react";
 import { styles } from "@carbon/elements";
 
+// The height of the header and the spacing between the header and the table
+const HEADER_HEIGHT = 229;
+
 const OperationLogName = styled.div`
   display: flex;
   align-items: center;
@@ -55,6 +58,23 @@ const StickySection = styled(Section)`
   top: 0;
 `;
 
+const EntityListStickyWrapper = styled("section")`
+  .cds--data-table-container {
+    height: calc(100vh - ${HEADER_HEIGHT}px);
+    overflow-y: auto;
+  }
+
+  thead {
+    position: sticky;
+    top: 0;
+  }
+
+  .cds--pagination {
+    position: sticky;
+    bottom: 0;
+  }
+`;
+
 export {
   OperationLogName,
   SuccessIcon,
@@ -65,4 +85,5 @@ export {
   PropertyText,
   OwnerInfo,
   StickySection,
+  EntityListStickyWrapper,
 };
