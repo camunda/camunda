@@ -8,9 +8,13 @@
 package io.camunda.util;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 
 public final class DurationUtil {
+
+  private static final long MILLIS_PER_DAY = Duration.ofDays(1).toMillis();
+  private static final long MILLIS_PER_HOUR = Duration.ofHours(1).toMillis();
+  private static final long MILLIS_PER_MINUTE = Duration.ofMinutes(1).toMillis();
+  private static final long MILLIS_PER_SECOND = Duration.ofSeconds(1).toMillis();
 
   private DurationUtil() {}
 
@@ -25,27 +29,27 @@ public final class DurationUtil {
   }
 
   public static String toEsOsInterval(final Duration duration) {
-    final long seconds = duration.getSeconds();
-    if (seconds <= 0) {
-      throw new IllegalArgumentException("Duration must be greater than zero seconds: " + duration);
+    if (duration.isNegative() || duration.isZero()) {
+      throw new IllegalArgumentException("Duration must be greater than zero: " + duration);
     }
 
-    if (seconds % ChronoUnit.YEARS.getDuration().getSeconds() == 0) {
-      return (seconds / ChronoUnit.YEARS.getDuration().getSeconds()) + "y";
-    } else if (seconds % ChronoUnit.MONTHS.getDuration().getSeconds() == 0) {
-      return (seconds / ChronoUnit.MONTHS.getDuration().getSeconds()) + "M";
-    } else if (seconds % ChronoUnit.WEEKS.getDuration().getSeconds() == 0) {
-      return (seconds / ChronoUnit.WEEKS.getDuration().getSeconds()) + "w";
-    } else if (seconds % ChronoUnit.DAYS.getDuration().getSeconds() == 0) {
-      return (seconds / ChronoUnit.DAYS.getDuration().getSeconds()) + "d";
-    } else if (seconds % ChronoUnit.HOURS.getDuration().getSeconds() == 0) {
-      return (seconds / ChronoUnit.HOURS.getDuration().getSeconds()) + "h";
-    } else if (seconds % ChronoUnit.MINUTES.getDuration().getSeconds() == 0) {
-      return (seconds / ChronoUnit.MINUTES.getDuration().getSeconds()) + "m";
-    } else if (seconds % ChronoUnit.SECONDS.getDuration().getSeconds() == 0) {
-      return (seconds / ChronoUnit.SECONDS.getDuration().getSeconds()) + "s";
-    } else {
-      throw new IllegalArgumentException("Duration must be a whole number of seconds: " + duration);
+    final long millis = duration.toMillis();
+    if (isWholeMultiple(millis, MILLIS_PER_DAY)) {
+      return (millis / MILLIS_PER_DAY) + "d";
     }
+    if (isWholeMultiple(millis, MILLIS_PER_HOUR)) {
+      return (millis / MILLIS_PER_HOUR) + "h";
+    }
+    if (isWholeMultiple(millis, MILLIS_PER_MINUTE)) {
+      return (millis / MILLIS_PER_MINUTE) + "m";
+    }
+    if (isWholeMultiple(millis, MILLIS_PER_SECOND)) {
+      return (millis / MILLIS_PER_SECOND) + "s";
+    }
+    return millis + "ms";
+  }
+
+  private static boolean isWholeMultiple(final long value, final long unit) {
+    return value > 0 && value % unit == 0;
   }
 }

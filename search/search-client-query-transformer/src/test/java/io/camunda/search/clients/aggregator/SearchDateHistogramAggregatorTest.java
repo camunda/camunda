@@ -39,7 +39,7 @@ class SearchDateHistogramAggregatorTest {
     // hours — exact, no sub-hour remainder
     "PT1H,  1h",
     "PT2H,  2h",
-    "PT48H, 48h",
+    "PT48H, 2d",
     // days — exact, no sub-day remainder
     "P1D,  1d",
     "P7D,  7d",

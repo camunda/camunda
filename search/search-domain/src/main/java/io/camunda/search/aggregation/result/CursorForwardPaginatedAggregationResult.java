@@ -7,9 +7,12 @@
  */
 package io.camunda.search.aggregation.result;
 
-import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import java.util.List;
 
-public record JobWorkerStatisticsAggregationResult(
-    List<JobWorkerStatisticsEntity> items, String endCursor)
-    implements CursorForwardPaginatedAggregationResult<JobWorkerStatisticsEntity> {}
+/** Marker interface for aggregation results that expose a page of items and a cursor. */
+public interface CursorForwardPaginatedAggregationResult<E> extends AggregationResultBase {
+
+  List<E> items();
+
+  String endCursor();
+}
