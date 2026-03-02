@@ -757,6 +757,10 @@ components:
 
     TenantCreateResult:
       type: object
+      required:
+        - tenantId
+        - name
+        - description
       x-semantic-provider:
         - tenantId
       properties:
@@ -770,6 +774,7 @@ components:
           type: string
           description: The description of the tenant.
           example: Customer Service department business processes
+          nullable: true
 
     TenantUpdateRequest:
       type: object
@@ -786,6 +791,10 @@ components:
 
     TenantUpdateResult:
       type: object
+      required:
+        - tenantId
+        - name
+        - description
       properties:
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
@@ -795,10 +804,15 @@ components:
         description:
           type: string
           description: The description of the tenant.
+          nullable: true
 
     TenantResult:
       description: Tenant search response item.
       type: object
+      required:
+        - tenantId
+        - name
+        - description
       properties:
         name:
           type: string
@@ -810,6 +824,7 @@ components:
           type: string
           description: The tenant description.
           example: Customer Service department business processes
+          nullable: true
 
     TenantSearchQuerySortRequest:
       type: object

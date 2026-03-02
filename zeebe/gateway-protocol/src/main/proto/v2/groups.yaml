@@ -620,6 +620,10 @@ components:
 
     GroupCreateResult:
       type: object
+      required:
+        - groupId
+        - name
+        - description
       properties:
         groupId:
           description: The ID of the created group.
@@ -630,6 +634,7 @@ components:
         description:
           description: The description of the created group.
           type: string
+          nullable: true
 
     GroupUpdateRequest:
       type: object
@@ -645,6 +650,10 @@ components:
 
     GroupUpdateResult:
       type: object
+      required:
+        - groupId
+        - name
+        - description
       properties:
         groupId:
           type: string
@@ -655,10 +664,15 @@ components:
         description:
           type: string
           description: The description of the group.
+          nullable: true
 
     GroupResult:
       description: Group search response item.
       type: object
+      required:
+        - name
+        - groupId
+        - description
       properties:
         name:
           type: string
@@ -669,6 +683,7 @@ components:
         description:
           type: string
           description: The group description.
+          nullable: true
 
     GroupSearchQuerySortRequest:
       type: object

@@ -215,6 +215,10 @@ components:
 
     MappingRuleUpdateRequest:
       type: object
+      required:
+        - claimName
+        - claimValue
+        - name
       allOf:
         - $ref: '#/components/schemas/MappingRuleCreateUpdateRequest'
 
@@ -236,6 +240,11 @@ components:
 
     MappingRuleCreateResult:
       type: object
+      required:
+        - mappingRuleId
+        - claimName
+        - claimValue
+        - name
       allOf:
         - $ref: '#/components/schemas/MappingRuleCreateUpdateResult'
 
@@ -259,6 +268,11 @@ components:
 
     MappingRuleResult:
       type: object
+      required:
+        - mappingRuleId
+        - claimName
+        - claimValue
+        - name
       properties:
         claimName:
           type: string

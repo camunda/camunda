@@ -696,6 +696,10 @@ components:
 
     RoleCreateResult:
       type: object
+      required:
+        - roleId
+        - name
+        - description
       properties:
         roleId:
           description: The ID of the created role.
@@ -706,6 +710,7 @@ components:
         description:
           description: The description of the created role.
           type: string
+          nullable: true
 
     RoleUpdateRequest:
       type: object
@@ -721,6 +726,10 @@ components:
 
     RoleUpdateResult:
       type: object
+      required:
+        - name
+        - description
+        - roleId
       properties:
         name:
           type: string
@@ -728,6 +737,7 @@ components:
         description:
           type: string
           description: The description of the updated role.
+          nullable: true
         roleId:
           type: string
           description: The ID of the updated role.
@@ -735,6 +745,10 @@ components:
     RoleResult:
       description: Role search response item.
       type: object
+      required:
+        - name
+        - roleId
+        - description
       properties:
         name:
           type: string
@@ -745,6 +759,7 @@ components:
         description:
           type: string
           description: The description of the role.
+          nullable: true
 
     RoleSearchQuerySortRequest:
       type: object
@@ -854,7 +869,7 @@ components:
 
     RoleClientSearchResult:
       type: object
-      required: 
+      required:
         - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
