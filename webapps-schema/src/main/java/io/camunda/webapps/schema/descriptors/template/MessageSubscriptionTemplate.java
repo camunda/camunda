@@ -11,11 +11,11 @@ import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
-import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import java.util.Optional;
 
 public class MessageSubscriptionTemplate extends AbstractTemplateDescriptor
-    implements ProcessInstanceDependant, Prio4Backup {
+    implements ProcessInstanceDependant, Prio3Backup {
 
   // The name of the index does not align with the class name for historical reasons.
   public static final String INDEX_NAME = "event";
