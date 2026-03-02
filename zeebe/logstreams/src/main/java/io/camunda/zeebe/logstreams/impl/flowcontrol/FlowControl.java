@@ -25,7 +25,7 @@ import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
 import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * Maintains a view of in-flight entries as they are being appended, written, committed and finally
@@ -93,7 +93,7 @@ public final class FlowControl implements AppendListener {
   private volatile long lastProcessedPosition = -1;
   private volatile long lastExportedPosition;
 
-  private final NavigableMap<Long, InFlightEntry> inFlight = new TreeMap<>();
+  private final NavigableMap<Long, InFlightEntry> inFlight = new ConcurrentSkipListMap<>();
 
   public FlowControl(final LogStreamMetrics metrics) {
     this(metrics, StabilizingAIMDLimit.newBuilder().build(), RateLimit.disabled());
