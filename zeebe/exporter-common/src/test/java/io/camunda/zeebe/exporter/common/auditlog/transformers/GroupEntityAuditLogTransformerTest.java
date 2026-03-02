@@ -34,6 +34,7 @@ class GroupEntityAuditLogTransformerTest {
             .from(factory.generateObject(GroupRecordValue.class))
             .withEntityType(EntityType.MAPPING_RULE)
             .withGroupId("test-group")
+            .withName("Test Group")
             .withGroupKey(789L)
             .build();
 
@@ -47,6 +48,7 @@ class GroupEntityAuditLogTransformerTest {
 
     // then
     assertThat(entity.getEntityKey()).isEqualTo("test-group");
+    assertThat(entity.getEntityDescription()).isEqualTo("Test Group");
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.ASSIGN);
     assertThat(entity.getRelatedEntityKey()).isEqualTo(recordValue.getEntityId());
     assertThat(entity.getRelatedEntityType()).isEqualTo(AuditLogEntityType.MAPPING_RULE);
