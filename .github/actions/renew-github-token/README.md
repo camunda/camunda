@@ -1,22 +1,35 @@
 # Renew GitHub Token
 
 Generates a fresh GitHub App token via HashiCorp Vault and safely replaces the
+<<<<<<< HEAD
 git credential set by `actions/checkout`, avoiding duplicate `Authorization`
+=======
+git credential set by `actions/checkout@v6`, avoiding duplicate `Authorization`
+>>>>>>> 1aba450b (feat: Implement token renewal logic)
 headers that cause HTTP 400 errors.
 
 ## Why this is needed
 
+<<<<<<< HEAD
 `actions/checkout` stores the `http.*.extraheader` credential in an external
+=======
+`actions/checkout@v6` stores the `http.*.extraheader` credential in an external
+>>>>>>> 1aba450b (feat: Implement token renewal logic)
 temp config file (`$RUNNER_TEMP/git-credentials-<uuid>.config`) and references it
 from `.git/config` via `includeIf.gitdir` directives. The GitHub App token
 expires after 1 hour. In long-running jobs (e.g. Maven release), the token may
 expire before `git push`.
 
+<<<<<<< HEAD
 A naive `git config --add` to inject a renewed token creates a **second**
+=======
+A naïve `git config --add` to inject a renewed token creates a **second**
+>>>>>>> 1aba450b (feat: Implement token renewal logic)
 extraheader entry — one in `.git/config` and the original in the external file —
 causing git to send two `Authorization` headers, which GitHub rejects with
 HTTP 400 `"Duplicate header: Authorization"`.
 
+<<<<<<< HEAD
 This action safely updates the original credential file used by
 `actions/checkout` so that git continues to use a single `Authorization`
 header with the renewed token.
@@ -42,6 +55,31 @@ header with the renewed token.
 
 |  Name   |         Description          |
 |---------|------------------------------|
+=======
+This action properly clears both locations and writes the renewed token to the
+original credential file used by checkout@v6.
+
+**References:**
+- [checkout@v6 persist-creds change (PR #2286)](https://github.com/actions/checkout/pull/2286)
+- [Token expiry issue (camunda/camunda#28522)](https://github.com/camunda/camunda/issues/28522)
+
+## Inputs
+
+| Name | Required | Default | Description |
+|------|----------|---------|-------------|
+| `vault-url` | Yes | — | Vault server URL |
+| `vault-role-id` | Yes | — | Vault AppRole role ID |
+| `vault-secret-id` | Yes | — | Vault AppRole secret ID |
+| `github-app-id-vault-key` | No | `MONOREPO_RELEASE_APP_ID` | Vault key for the GitHub App ID |
+| `github-app-id-vault-path` | No | `secret/data/products/camunda/ci/camunda` | Vault path for the GitHub App ID |
+| `github-app-private-key-vault-key` | No | `MONOREPO_RELEASE_APP_PRIVATE_KEY` | Vault key for the GitHub App private key |
+| `github-app-private-key-vault-path` | No | `secret/data/products/camunda/ci/camunda` | Vault path for the GitHub App private key |
+
+## Outputs
+
+| Name | Description |
+|------|-------------|
+>>>>>>> 1aba450b (feat: Implement token renewal logic)
 | `token` | The renewed GitHub App token |
 
 ## Example Usage
@@ -55,13 +93,33 @@ header with the renewed token.
     vault-url: ${{ secrets.VAULT_ADDR }}
     vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
     vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+<<<<<<< HEAD
     github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
     github-app-id-vault-path: secret/data/products/camunda/ci/camunda
     github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
     github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+=======
+>>>>>>> 1aba450b (feat: Implement token renewal logic)
 
 - name: Push changes
   if: ${{ !inputs.dryRun }}
   run: git push origin "${RELEASE_BRANCH}"
 ```
 
+<<<<<<< HEAD
+=======
+### With custom GitHub App credentials
+
+```yaml
+- name: Renew GitHub token
+  uses: ./.github/actions/renew-github-token
+  with:
+    vault-url: ${{ secrets.VAULT_ADDR }}
+    vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+    vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+    github-app-id-vault-key: MY_CUSTOM_APP_ID
+    github-app-id-vault-path: secret/data/my/custom/path
+    github-app-private-key-vault-key: MY_CUSTOM_APP_PRIVATE_KEY
+    github-app-private-key-vault-path: secret/data/my/custom/path
+```
+>>>>>>> 1aba450b (feat: Implement token renewal logic)
