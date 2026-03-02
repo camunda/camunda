@@ -264,7 +264,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(max(zeebe_blacklisted_instances_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (namespace, partition))\nor sum(max(zeebe_banned_instances_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (namespace, partition))",
+              "expr": "sum(max(zeebe_blacklisted_instances_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (namespace, partition))\nor sum(max(zeebe_banned_instances_count{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (namespace, partition))",
               "legendFormat": "{{namespace}}",
               "range": true,
               "refId": "A"
@@ -3676,7 +3676,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "max(zeebe_blacklisted_instances_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (namespace, partition)\nor max(zeebe_banned_instances_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (namespace, partition)",
+              "expr": "max(zeebe_blacklisted_instances_total{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (namespace, partition)\nor max(zeebe_banned_instances_count{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (namespace, partition)",
               "legendFormat": "{{namespace}} {{partition}}",
               "range": true,
               "refId": "A"
