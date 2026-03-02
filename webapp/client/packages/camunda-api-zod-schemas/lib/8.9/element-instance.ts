@@ -7,107 +7,30 @@
  */
 
 import {z} from 'zod';
+import {API_VERSION, type Endpoint} from '../common';
 import {
-	API_VERSION,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	getEnumFilterSchema,
-	type Endpoint,
-	advancedDateTimeFilterSchema,
-} from './common';
+	elementInstanceStateEnumSchema,
+	elementInstanceResultSchema,
+	elementInstanceFilterSchema,
+	elementInstanceSearchQuerySchema,
+	elementInstanceSearchQueryResultSchema,
+	setVariableRequestSchema,
+} from './gen';
 import {queryIncidentsRequestBodySchema, queryIncidentsResponseBodySchema} from './incident';
 
-const elementInstanceStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'TERMINATED']);
+const elementInstanceStateSchema = elementInstanceStateEnumSchema;
 type ElementInstanceState = z.infer<typeof elementInstanceStateSchema>;
 
-const elementInstanceTypeSchema = z.enum([
-	'UNSPECIFIED',
-	'PROCESS',
-	'SUB_PROCESS',
-	'EVENT_SUB_PROCESS',
-	'AD_HOC_SUB_PROCESS',
-	'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
-	'START_EVENT',
-	'INTERMEDIATE_CATCH_EVENT',
-	'INTERMEDIATE_THROW_EVENT',
-	'BOUNDARY_EVENT',
-	'END_EVENT',
-	'SERVICE_TASK',
-	'RECEIVE_TASK',
-	'USER_TASK',
-	'MANUAL_TASK',
-	'TASK',
-	'EXCLUSIVE_GATEWAY',
-	'INCLUSIVE_GATEWAY',
-	'PARALLEL_GATEWAY',
-	'EVENT_BASED_GATEWAY',
-	'SEQUENCE_FLOW',
-	'MULTI_INSTANCE_BODY',
-	'CALL_ACTIVITY',
-	'BUSINESS_RULE_TASK',
-	'SCRIPT_TASK',
-	'SEND_TASK',
-	'UNKNOWN',
-]);
+const elementInstanceTypeSchema = elementInstanceResultSchema.shape.type;
 type ElementInstanceType = z.infer<typeof elementInstanceTypeSchema>;
 
-const elementInstanceSchema = z.object({
-	processDefinitionId: z.string(),
-	startDate: z.string(),
-	endDate: z.string().nullable(),
-	elementId: z.string(),
-	elementName: z.string().nullable(),
-	type: elementInstanceTypeSchema,
-	state: elementInstanceStateSchema,
-	hasIncident: z.boolean(),
-	tenantId: z.string(),
-	elementInstanceKey: z.string(),
-	processInstanceKey: z.string(),
-	rootProcessInstanceKey: z.string().nullable(),
-	processDefinitionKey: z.string(),
-	incidentKey: z.string().nullable(),
-});
+const elementInstanceSchema = elementInstanceResultSchema;
 type ElementInstance = z.infer<typeof elementInstanceSchema>;
 
-const elementInstanceFilterSchema = z
-	.object({
-		processDefinitionId: z.string(),
-		state: z.union([elementInstanceStateSchema, getEnumFilterSchema(elementInstanceStateSchema)]),
-		type: elementInstanceTypeSchema,
-		elementId: z.string(),
-		elementName: z.string(),
-		hasIncident: z.boolean(),
-		tenantId: z.string(),
-		elementInstanceKey: z.string(),
-		processInstanceKey: z.string(),
-		processDefinitionKey: z.string(),
-		incidentKey: z.string(),
-		startDate: advancedDateTimeFilterSchema,
-		endDate: advancedDateTimeFilterSchema,
-		elementInstanceScopeKey: z.string(),
-	})
-	.partial();
-
-const queryElementInstancesRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: [
-		'elementInstanceKey',
-		'processInstanceKey',
-		'processDefinitionKey',
-		'processDefinitionId',
-		'startDate',
-		'endDate',
-		'elementId',
-		'elementName',
-		'type',
-		'state',
-		'incidentKey',
-		'tenantId',
-	] as const,
-	filter: elementInstanceFilterSchema,
-});
+const queryElementInstancesRequestBodySchema = elementInstanceSearchQuerySchema;
 type QueryElementInstancesRequestBody = z.infer<typeof queryElementInstancesRequestBodySchema>;
 
-const queryElementInstancesResponseBodySchema = getQueryResponseBodySchema(elementInstanceSchema);
+const queryElementInstancesResponseBodySchema = elementInstanceSearchQueryResultSchema;
 type QueryElementInstancesResponseBody = z.infer<typeof queryElementInstancesResponseBodySchema>;
 
 const queryElementInstances = {
@@ -125,13 +48,10 @@ const getElementInstance = {
 	},
 } as const satisfies Endpoint<Pick<ElementInstance, 'elementInstanceKey'>>;
 
-const getElementInstanceResponseBodySchema = elementInstanceSchema;
+const getElementInstanceResponseBodySchema = elementInstanceResultSchema;
 type GetElementInstanceResponseBody = z.infer<typeof getElementInstanceResponseBodySchema>;
 
-const updateElementInstanceVariablesRequestBodySchema = z.object({
-	variables: z.record(z.string(), z.unknown()),
-	local: z.boolean().optional(),
-});
+const updateElementInstanceVariablesRequestBodySchema = setVariableRequestSchema;
 type UpdateElementInstanceVariablesRequestBody = z.infer<typeof updateElementInstanceVariablesRequestBodySchema>;
 
 const updateElementInstanceVariables = {

@@ -35,6 +35,9 @@ type AuditLogResultStatus = z.infer<typeof auditLogResultStatusSchema>;
 const auditLogCategorySchema = auditLogCategoryEnumSchema;
 type AuditLogCategory = z.infer<typeof auditLogCategorySchema>;
 
+const auditLogBatchOperationTypeSchema = auditLogResultSchema.shape.batchOperationType.unwrap();
+type AuditLogBatchOperationType = z.infer<typeof auditLogBatchOperationTypeSchema>;
+
 const auditLogSchema = auditLogResultSchema;
 type AuditLog = z.infer<typeof auditLogSchema>;
 
@@ -63,6 +66,7 @@ export {
 	auditLogEntityTypeSchema,
 	auditLogOperationTypeSchema,
 	auditLogActorTypeSchema,
+	auditLogBatchOperationTypeSchema,
 	auditLogResultStatusSchema,
 	auditLogCategorySchema,
 	auditLogSchema,
@@ -78,6 +82,7 @@ export type {
 	AuditLogEntityType,
 	AuditLogOperationType,
 	AuditLogActorType,
+	AuditLogBatchOperationType,
 	AuditLogResultStatus,
 	AuditLogCategory,
 	QueryAuditLogsRequestBody,
