@@ -210,6 +210,11 @@ components:
       description: Variable response item.
       type: object
       required:
+        - name
+        - processInstanceKey
+        - tenantId
+        - variableKey
+        - scopeKey
         - rootProcessInstanceKey
       properties:
         name:
