@@ -60,6 +60,8 @@ public final class AuthorizationCheckBehavior {
 
   private final boolean authorizationsEnabled;
   private final boolean multiTenancyEnabled;
+  private final boolean camundaGroupsEnabled;
+  private final boolean camundaUsersEnabled;
 
   private final LoadingCache<AuthorizationRequest, Either<Rejection, Void>> authorizationsCache;
 
@@ -73,6 +75,19 @@ public final class AuthorizationCheckBehavior {
     mappingRuleState = processingState.getMappingRuleState();
     authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
     multiTenancyEnabled = securityConfig.getMultiTenancy().isChecksEnabled();
+    // When authorizations are disabled these defaults are used for entity existence validation.
+    // Default to true (always check existence) since auth-specific flags won't be in the request.
+    if (!authorizationsEnabled) {
+      camundaGroupsEnabled = true;
+      camundaUsersEnabled = true;
+    } else {
+      final var authMethod = securityConfig.getAuthentication().getMethod();
+      camundaGroupsEnabled =
+          !(authMethod == io.camunda.security.entity.AuthenticationMethod.OIDC
+              && securityConfig.getAuthentication().getOidc().isGroupsClaimConfigured());
+      camundaUsersEnabled =
+          authMethod != io.camunda.security.entity.AuthenticationMethod.OIDC;
+    }
     claimsExtractor = new ClaimsExtractor(membershipState);
     tenantResolver =
         new TenantResolver(membershipState, mappingRuleState, claimsExtractor, multiTenancyEnabled);
@@ -100,6 +115,14 @@ public final class AuthorizationCheckBehavior {
                     return checkAuthorized(authorizationRequest);
                   }
                 });
+  }
+
+  public boolean isCamundaGroupsEnabled() {
+    return camundaGroupsEnabled;
+  }
+
+  public boolean isCamundaUsersEnabled() {
+    return camundaUsersEnabled;
   }
 
   /**

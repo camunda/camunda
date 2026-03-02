@@ -50,7 +50,11 @@ public class AuthorizationCreateProcessor
     sideEffectWriter = writers.sideEffect();
     authorizationCheckBehavior = authCheckBehavior;
     permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
-    authorizationEntityChecker = new AuthorizationEntityValidator(processingState);
+    authorizationEntityChecker =
+        new AuthorizationEntityValidator(
+            processingState,
+            authCheckBehavior.isCamundaGroupsEnabled(),
+            authCheckBehavior.isCamundaUsersEnabled());
   }
 
   @Override
