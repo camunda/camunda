@@ -31,6 +31,7 @@ import {getClientConfig} from 'modules/utils/getClientConfig';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
+import {PageErrorBoundary} from 'modules/components/PageErrorBoundary';
 
 const Wrapper: React.FC = () => {
   return (
@@ -44,7 +45,7 @@ const Wrapper: React.FC = () => {
 };
 
 const routes = createRoutesFromElements(
-  <Route path="/" element={<Wrapper />}>
+  <Route path="/" element={<Wrapper />} ErrorBoundary={PageErrorBoundary}>
     <Route
       path={Paths.login()}
       lazy={async () => {
