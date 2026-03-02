@@ -24,7 +24,7 @@ type ElementState =
   | 'completedEndEvents';
 
 type ElementData = {
-  flowNodeId: string;
+  elementId: string;
   count: number;
   elementState: ElementState;
 };
@@ -49,7 +49,7 @@ const elementStatesParser =
           return [
             ...states,
             {
-              flowNodeId: statistics.elementId,
+              elementId: statistics.elementId,
               count,
               elementState:
                 elementState === 'completed' &&

@@ -51,7 +51,7 @@ const BottomPanel: React.FC = observer(() => {
   const {
     toggleMappedFilter,
     state: {isMappedFilterEnabled},
-    getMappableFlowNodes,
+    getMappableElements,
     getMappableSequenceFlows,
   } = processInstanceMigrationMappingStore;
 
@@ -65,7 +65,7 @@ const BottomPanel: React.FC = observer(() => {
     processDefinitionId: targetProcessDefinition?.processDefinitionId,
   });
 
-  const mappableFlowNodes = getMappableFlowNodes(
+  const mappableElements = getMappableElements(
     sourceData?.selectableFlowNodes,
     targetData?.selectableFlowNodes,
   );
@@ -77,7 +77,7 @@ const BottomPanel: React.FC = observer(() => {
     ) ?? [];
 
   const filteredSourceFlowNodes = [
-    ...mappableFlowNodes,
+    ...mappableElements,
     ...mappableSequenceFlows,
   ].filter(({sourceElement}) => {
     return (

@@ -503,7 +503,7 @@ describe('stores/modifications', () => {
       ),
     ).toEqual({
       operation: 'EDIT_VARIABLE',
-      elementName: 'flow-node-name',
+      elementName: 'element-name',
       id: 'test',
       scopeId: ELEMENT_INSTANCE_ID,
       name: 'test',
@@ -525,7 +525,7 @@ describe('stores/modifications', () => {
       ),
     ).toEqual({
       operation: 'EDIT_VARIABLE',
-      elementName: 'flow-node-name',
+      elementName: 'element-name',
       id: 'test2',
       scopeId: ELEMENT_INSTANCE_ID,
       name: 'test2',
@@ -547,7 +547,7 @@ describe('stores/modifications', () => {
       ),
     ).toEqual({
       operation: 'EDIT_VARIABLE',
-      elementName: 'flow-node-name',
+      elementName: 'element-name',
       id: 'test',
       scopeId: ELEMENT_INSTANCE_ID,
       name: 'test',
@@ -576,7 +576,7 @@ describe('stores/modifications', () => {
     ).toEqual({
       operation: 'ADD_VARIABLE',
       scopeId: ELEMENT_INSTANCE_ID,
-      elementName: 'flow-node-name',
+      elementName: 'element-name',
       id: '1',
       name: 'test',
       newValue: '123',
@@ -607,7 +607,7 @@ describe('stores/modifications', () => {
     ).toEqual({
       operation: 'ADD_VARIABLE',
       scopeId: ELEMENT_INSTANCE_ID,
-      elementName: 'flow-node-name',
+      elementName: 'element-name',
       id: '1',
       name: 'test',
       newValue: '1234',
@@ -638,7 +638,7 @@ describe('stores/modifications', () => {
     ).toEqual({
       operation: 'ADD_VARIABLE',
       scopeId: ELEMENT_INSTANCE_ID,
-      elementName: 'flow-node-name',
+      elementName: 'element-name',
       id: '1',
       name: 'test-updated',
       newValue: '1234',
@@ -669,7 +669,7 @@ describe('stores/modifications', () => {
     ).toEqual({
       operation: 'ADD_VARIABLE',
       scopeId: ELEMENT_INSTANCE_ID,
-      elementName: 'flow-node-name',
+      elementName: 'element-name',
       id: '1',
       name: 'test-updated',
       newValue: '1234',
@@ -683,7 +683,7 @@ describe('stores/modifications', () => {
     ).toEqual({
       operation: 'ADD_VARIABLE',
       scopeId: ELEMENT_INSTANCE_ID,
-      elementName: 'flow-node-name',
+      elementName: 'element-name',
       id: '2',
       name: 'another-variable',
       newValue: '987',
@@ -1200,7 +1200,7 @@ describe('stores/modifications', () => {
     expect(errorSpy).toHaveBeenCalledExactlyOnceWith(400);
   });
 
-  it('should add tokens to flow nodes that has multiple running scopes', async () => {
+  it('should add tokens to elements that have multiple running scopes', async () => {
     expect(modificationsStore.state.sourceElementIdForAddOperation).toBeNull();
 
     modificationsStore.startAddingToken('subprocess-service-task');

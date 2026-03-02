@@ -51,11 +51,11 @@ describe('useProcessInstancesElementStates', () => {
     };
 
     const expectedParsedData = [
-      {flowNodeId: 'task1', count: 5, elementState: 'active'},
-      {flowNodeId: 'task1', count: 1, elementState: 'incidents'},
-      {flowNodeId: 'task1', count: 2, elementState: 'canceled'},
-      {flowNodeId: 'task1', count: 3, elementState: 'completed'},
-      {flowNodeId: 'task2', count: 4, elementState: 'completed'},
+      {elementId: 'task1', count: 5, elementState: 'active'},
+      {elementId: 'task1', count: 1, elementState: 'incidents'},
+      {elementId: 'task1', count: 2, elementState: 'canceled'},
+      {elementId: 'task1', count: 3, elementState: 'completed'},
+      {elementId: 'task2', count: 4, elementState: 'completed'},
     ];
 
     mockFetchProcessInstancesStatistics().withSuccess(mockData);

@@ -54,7 +54,7 @@ describe('useProcessInstancesOverlayStatistics', () => {
     ];
     const mockOverlayData = [
       {
-        flowNodeId: 'messageCatchEvent',
+        elementId: 'messageCatchEvent',
         payload: {
           count: 2,
           flowNodeState: 'active',
@@ -66,7 +66,7 @@ describe('useProcessInstancesOverlayStatistics', () => {
         type: 'statistics-active',
       },
       {
-        flowNodeId: 'messageCatchEvent',
+        elementId: 'messageCatchEvent',
         payload: {
           count: 3,
           flowNodeState: 'incidents',
@@ -78,7 +78,7 @@ describe('useProcessInstancesOverlayStatistics', () => {
         type: 'statistics-incidents',
       },
       {
-        flowNodeId: 'messageCatchEvent',
+        elementId: 'messageCatchEvent',
         payload: {
           count: 1,
           flowNodeState: 'canceled',

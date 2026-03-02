@@ -36,13 +36,13 @@ describe('useBatchModificationOverlayData', () => {
       {
         payload: {cancelledTokenCount: 5},
         type: 'batchModificationsBadge',
-        flowNodeId: 'messageCatchEvent',
+        elementId: 'messageCatchEvent',
         position: MODIFICATIONS,
       },
       {
         payload: {newTokenCount: 5},
         type: 'batchModificationsBadge',
-        flowNodeId: 'targetNode',
+        elementId: 'targetNode',
         position: MODIFICATIONS,
       },
     ];

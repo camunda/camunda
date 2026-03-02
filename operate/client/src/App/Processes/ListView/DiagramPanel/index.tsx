@@ -127,7 +127,7 @@ const DiagramPanel: React.FC = observer(() => {
 
   const flowNodeIdsWithIncidents = processInstanceOverlayData
     ?.filter(({type}) => type === 'statistics-incidents')
-    ?.map((overlay) => overlay.flowNodeId);
+    ?.map((overlay) => overlay.elementId);
 
   const selectableFlowNodesWithIncidents = flowNodeIdsWithIncidents?.map(
     (flowNodeId) => businessObjects?.[flowNodeId],
@@ -255,8 +255,8 @@ const DiagramPanel: React.FC = observer(() => {
               }
               return (
                 <StateOverlay
-                  testId={`state-overlay-${overlay.flowNodeId}-${overlay.payload.flowNodeState}`}
-                  key={`${overlay.flowNodeId}-${overlay.payload.flowNodeState}`}
+                  testId={`state-overlay-${overlay.elementId}-${overlay.payload.flowNodeState}`}
+                  key={`${overlay.elementId}-${overlay.payload.flowNodeState}`}
                   state={overlay.payload.flowNodeState}
                   count={overlay.payload.count}
                   container={overlay.container}
@@ -269,7 +269,7 @@ const DiagramPanel: React.FC = observer(() => {
               }
               return (
                 <ModificationBadgeOverlay
-                  key={overlay.flowNodeId}
+                  key={overlay.elementId}
                   container={overlay.container}
                   newTokenCount={overlay.payload.newTokenCount ?? 0}
                   cancelledTokenCount={overlay.payload.cancelledTokenCount ?? 0}

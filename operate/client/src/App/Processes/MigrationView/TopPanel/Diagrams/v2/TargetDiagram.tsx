@@ -74,7 +74,7 @@ const TargetDiagram: React.FC = observer(() => {
         ? flowNodeData
             .filter((state) => {
               return (
-                state.flowNodeId === sourceElementId &&
+                state.elementId === sourceElementId &&
                 ['active', 'incidents'].includes(state.elementState)
               );
             })
@@ -128,7 +128,7 @@ const TargetDiagram: React.FC = observer(() => {
                     ([targetId, count]) => ({
                       payload: {count},
                       type: OVERLAY_TYPE,
-                      flowNodeId: targetId,
+                      elementId: targetId,
                       position: {top: -14, right: -7},
                     }),
                   )
@@ -143,7 +143,7 @@ const TargetDiagram: React.FC = observer(() => {
 
                 return (
                   <ModificationBadgeOverlay
-                    key={overlay.flowNodeId}
+                    key={overlay.elementId}
                     newTokenCount={payload.count}
                     cancelledTokenCount={0}
                     container={overlay.container}
