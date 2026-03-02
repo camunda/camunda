@@ -161,13 +161,16 @@ public final class FlowControl implements AppendListener {
     return Either.right(new InFlightEntry(metrics, copiedMetadata, requestListener));
   }
 
-  public void onAppend(final InFlightEntry entry, final long highestPosition) {
+  public void registerEntry(final long highestPosition, final InFlightEntry entry) {
+    inFlight.put(highestPosition, entry);
+  }
+
+  public void onAppended(final InFlightEntry entry) {
     entry.onAppend();
     metrics.increaseInflightAppends();
     final var clearable = inFlight.headMap(lastProcessedPosition, true);
     clearable.forEach((position, inFlightEntry) -> inFlightEntry.cleanup());
     clearable.clear();
-    inFlight.put(highestPosition, entry);
   }
 
   @Override
