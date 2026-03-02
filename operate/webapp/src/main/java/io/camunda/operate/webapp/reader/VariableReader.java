@@ -7,13 +7,9 @@
  */
 package io.camunda.operate.webapp.reader;
 
-import io.camunda.operate.webapp.rest.dto.VariableDto;
-import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
-import java.util.List;
+import io.camunda.operate.webapp.reader.dto.VariableDto;
 
 public interface VariableReader {
-  List<VariableDto> getVariables(String processInstanceId, VariableRequestDto request);
-
   VariableDto getVariable(String id);
 
   VariableDto getVariableByName(String processInstanceId, String scopeId, String variableName);

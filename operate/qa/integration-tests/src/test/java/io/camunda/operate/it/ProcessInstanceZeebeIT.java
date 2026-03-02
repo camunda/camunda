@@ -9,10 +9,8 @@ package io.camunda.operate.it;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.util.ConversionUtils;
@@ -22,12 +20,12 @@ import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
-import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
-import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
+import io.camunda.operate.webapp.reader.dto.ProcessInstanceReferenceDto;
+import io.camunda.operate.webapp.reader.dto.listview.ListViewProcessInstanceDto;
+import io.camunda.operate.webapp.reader.dto.listview.ListViewRequestDto;
+import io.camunda.operate.webapp.reader.dto.listview.ListViewResponseDto;
+import io.camunda.operate.webapp.reader.dto.listview.ProcessInstanceStateDto;
+import io.camunda.operate.webapp.reader.dto.listview.VariablesQueryDto;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.SequenceFlowEntity;
 import io.camunda.webapps.schema.entities.VariableEntity;
@@ -45,7 +43,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.web.servlet.MvcResult;
 
 public class ProcessInstanceZeebeIT extends OperateZeebeAbstractIT {
 
@@ -102,20 +99,6 @@ public class ProcessInstanceZeebeIT extends OperateZeebeAbstractIT {
     assertThat(allFlowNodeInstances).hasSize(2);
     assertStartFlowNodeCompleted(allFlowNodeInstances.get(0));
     assertFlowNodeIsActive(allFlowNodeInstances.get(1), "taskA");
-  }
-
-  @Test
-  public void processInstanceCreatedIfJobRecordProcessedFirst() {
-    final String processId = "Process_Start_Listener";
-    final Long processDefinitionKey = deployProcess("process-start-listener.bpmn");
-
-    // when
-    final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(camundaClient, processId, null);
-    searchTestRule.waitFor(listenerJobIsCreated, processInstanceKey, processId);
-    searchTestRule.waitFor(processInstanceIsCreatedCheck, processInstanceKey);
-    final ListViewProcessInstanceDto dto = getSingleProcessInstanceForListView();
-    assertThat(dto.getBpmnProcessId()).isEqualTo(processId);
   }
 
   @Test
@@ -821,9 +804,8 @@ public class ProcessInstanceZeebeIT extends OperateZeebeAbstractIT {
 
   private ListViewProcessInstanceDto getProcessInstanceById(final String processInstanceId)
       throws Exception {
-    final String url = String.format("%s/%s", PROCESS_INSTANCE_URL, processInstanceId);
-    final MvcResult result = getRequest(url);
-    return mockMvcTestRule.fromResponse(result, new TypeReference<>() {});
+    return processInstanceReader.getProcessInstanceWithOperationsByKey(
+        Long.valueOf(processInstanceId));
   }
 
   @Test

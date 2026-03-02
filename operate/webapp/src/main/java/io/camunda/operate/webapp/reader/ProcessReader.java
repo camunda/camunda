@@ -8,12 +8,10 @@
 package io.camunda.operate.webapp.reader;
 
 import io.camunda.operate.store.ProcessStore;
-import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -55,17 +53,6 @@ public class ProcessReader {
    */
   public ProcessEntity getProcess(final Long processDefinitionKey) {
     return processStore.getProcessByKey(processDefinitionKey);
-  }
-
-  /**
-   * Returns map of Process entities grouped by bpmnProcessId.
-   *
-   * @return
-   */
-  public Map<ProcessStore.ProcessKey, List<ProcessEntity>> getProcessesGrouped(
-      final ProcessRequestDto request) {
-    return processStore.getProcessesGrouped(
-        request.getTenantId(), getAllowedProcessIdsOrNullForAll());
   }
 
   /**

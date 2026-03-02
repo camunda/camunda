@@ -23,12 +23,9 @@ import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
-import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
-import io.camunda.operate.webapp.rest.dto.VariableDto;
-import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.operate.webapp.reader.dto.listview.ListViewProcessInstanceDto;
+import io.camunda.operate.webapp.reader.dto.listview.ListViewRequestDto;
+import io.camunda.operate.webapp.reader.dto.listview.ListViewResponseDto;
 import io.camunda.spring.utils.ConditionalOnWebappEnabled;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -65,8 +62,6 @@ public class OpensearchChecks {
   @Autowired private RichOpenSearchClient richOpenSearchClient;
   @Autowired private ProcessReader processReader;
   @Autowired private ProcessInstanceReader processInstanceReader;
-
-  @Autowired private ListenerReader listenerReader;
 
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
@@ -552,19 +547,13 @@ public class OpensearchChecks {
       final String varName = (String) objects[2];
       final String varValue = (String) objects[3];
       try {
-        final List<VariableDto> variables = getVariables(processInstanceKey, scopeKey);
-        return variables.stream()
-            .anyMatch(v -> v.getName().equals(varName) && v.getValue().equals(varValue));
+        final var variable =
+            variableReader.getVariableByName(processInstanceKey + "", scopeKey + "", varName);
+        return variable != null && variable.getValue().equals(varValue);
       } catch (final NotFoundException ex) {
         return false;
       }
     };
-  }
-
-  private List<VariableDto> getVariables(final Long processInstanceKey, final Long scopeKey) {
-    return variableReader.getVariables(
-        String.valueOf(processInstanceKey),
-        new VariableRequestDto().setScopeId(String.valueOf(scopeKey)));
   }
 
   /**
@@ -1105,22 +1094,6 @@ public class OpensearchChecks {
       } catch (final NotFoundException ex) {
         return false;
       }
-    };
-  }
-
-  @Bean(name = "listenerJobIsCreated")
-  public Predicate<Object[]> getListenerJobIsCreatedCheck() {
-    return objects -> {
-      assertThat(objects).hasSize(2);
-      assertThat(objects[0]).isInstanceOf(long.class);
-      assertThat(objects[1]).isInstanceOf(String.class);
-      final long processInstanceId = (long) objects[0];
-      final String flowNodeId = (String) objects[1];
-      final ListenerRequestDto dto = new ListenerRequestDto().setFlowNodeId(flowNodeId);
-      return listenerReader
-              .getListenerExecutions(Long.toString(processInstanceId), dto)
-              .getTotalCount()
-          > 0;
     };
   }
 }

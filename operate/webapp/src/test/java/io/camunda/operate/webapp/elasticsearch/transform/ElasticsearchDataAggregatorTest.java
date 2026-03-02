@@ -20,7 +20,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.util.BatchOperationTestDataHelper;
 import io.camunda.operate.webapp.elasticsearch.reader.OperationReader;
-import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
+import io.camunda.operate.webapp.operation.dto.BatchOperationDto;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.util.List;

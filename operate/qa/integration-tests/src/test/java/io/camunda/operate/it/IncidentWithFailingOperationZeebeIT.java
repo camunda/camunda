@@ -7,13 +7,11 @@
  */
 package io.camunda.operate.it;
 
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static io.camunda.webapps.schema.entities.incident.ErrorType.JOB_NO_RETRIES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.operate.property.OperateProperties;
@@ -22,9 +20,8 @@ import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import io.camunda.operate.webapp.operation.dto.CreateOperationRequestDto;
+import io.camunda.operate.webapp.reader.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.webapps.schema.entities.operation.OperationType;
@@ -38,7 +35,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest(
     classes = {TestApplication.class, UnifiedConfigurationHelper.class, UnifiedConfiguration.class},
@@ -102,29 +98,25 @@ public class IncidentWithFailingOperationZeebeIT extends OperateZeebeAbstractIT 
     searchTestRule.waitFor(incidentsAreActiveCheck, processInstanceKey, 3);
 
     // when
-    final MvcResult mvcResult = getRequest(getIncidentsURL(processInstanceKey));
-    final IncidentResponseDto incidentResponse =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    final var incidents = tester.getIncidentsFor(processInstanceKey);
 
     // then
     // one of the incidents won't be recreated, but the other 3 will be
-    assertThat(incidentResponse).isNotNull();
-    assertThat(incidentResponse.getCount()).isEqualTo(3);
-    assertThat(incidentResponse.getIncidents()).hasSize(3);
-    LOGGER.info("Incidents found: " + incidentResponse.getIncidents().toString());
+    assertThat(incidents).hasSize(3);
+    LOGGER.info("Incidents found: " + incidents);
 
     assertIncident(
-        incidentResponse,
+        incidents,
         "Assertion failure on evaluate the expression '{taskOrderId:assert(orderId, orderId!=null, \"no variable found for name 'orderId'\")}': no variable found for name 'orderId'",
         "upperTask",
         ErrorType.IO_MAPPING_ERROR);
     assertIncident(
-        incidentResponse,
+        incidents,
         "Failed to extract the correlation key for 'clientId': The value must be either a string or a number, but was 'NULL'.",
         "messageCatchEvent",
         ErrorType.EXTRACT_VALUE_ERROR);
     assertIncident(
-        incidentResponse,
+        incidents,
         "Expected at least one condition to evaluate to true, or to have a default flow",
         "exclusiveGateway",
         ErrorType.CONDITION_ERROR);
@@ -133,12 +125,12 @@ public class IncidentWithFailingOperationZeebeIT extends OperateZeebeAbstractIT 
   }
 
   private void assertIncident(
-      final IncidentResponseDto incidentResponse,
+      final java.util.List<IncidentDto> incidents,
       final String errorMsg,
       final String activityId,
       final ErrorType errorType) {
     final Optional<IncidentDto> incidentOpt =
-        incidentResponse.getIncidents().stream()
+        incidents.stream()
             .filter(inc -> inc.getErrorType().getName().equals(errorType.getTitle()))
             .findFirst();
     assertThat(incidentOpt).isPresent();
@@ -153,9 +145,5 @@ public class IncidentWithFailingOperationZeebeIT extends OperateZeebeAbstractIT 
     } else {
       assertThat(inc.getJobId()).as(activityId + ".jobKey").isNull();
     }
-  }
-
-  protected String getIncidentsURL(final long processInstanceKey) {
-    return String.format(PROCESS_INSTANCE_URL + "/%s/incidents", processInstanceKey);
   }
 }

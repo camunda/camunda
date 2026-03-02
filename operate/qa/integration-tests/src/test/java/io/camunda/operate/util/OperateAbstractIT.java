@@ -18,7 +18,6 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
-import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.security.reader.TenantAccess;
 import java.time.OffsetDateTime;
@@ -147,53 +146,6 @@ public abstract class OperateAbstractIT {
         post(requestUrl).content(stringContent).contentType(mockMvcTestRule.getContentType());
 
     return mockMvc.perform(request).andExpect(status().isBadRequest()).andReturn();
-  }
-
-  protected MvcResult getRequestShouldFailWithNoAuthorization(final String requestUrl)
-      throws Exception {
-    final MockHttpServletRequestBuilder request =
-        get(requestUrl).accept(mockMvcTestRule.getContentType());
-
-    return mockMvc
-        .perform(request)
-        .andExpect(status().isForbidden())
-        .andExpect(
-            result ->
-                assertThat(result.getResolvedException())
-                    .isInstanceOf(NotAuthorizedException.class))
-        .andReturn();
-  }
-
-  protected MvcResult postRequestShouldFailWithNoAuthorization(
-      final String requestUrl, final Object query) throws Exception {
-    final MockHttpServletRequestBuilder request =
-        post(requestUrl)
-            .content(mockMvcTestRule.json(query))
-            .contentType(mockMvcTestRule.getContentType());
-
-    return mockMvc
-        .perform(request)
-        .andExpect(status().isForbidden())
-        .andExpect(
-            result ->
-                assertThat(result.getResolvedException())
-                    .isInstanceOf(NotAuthorizedException.class))
-        .andReturn();
-  }
-
-  protected MvcResult deleteRequestShouldFailWithNoAuthorization(final String requestUrl)
-      throws Exception {
-    final MockHttpServletRequestBuilder request =
-        delete(requestUrl).accept(mockMvcTestRule.getContentType());
-
-    return mockMvc
-        .perform(request)
-        .andExpect(status().isForbidden())
-        .andExpect(
-            result ->
-                assertThat(result.getResolvedException())
-                    .isInstanceOf(NotAuthorizedException.class))
-        .andReturn();
   }
 
   protected void assertErrorMessageContains(final MvcResult mvcResult, final String text) {

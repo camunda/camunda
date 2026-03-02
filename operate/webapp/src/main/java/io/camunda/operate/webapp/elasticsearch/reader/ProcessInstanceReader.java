@@ -10,15 +10,13 @@ package io.camunda.operate.webapp.elasticsearch.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.webapp.reader.OperationReader;
-import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
-import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
+import io.camunda.operate.webapp.reader.dto.ProcessInstanceReferenceDto;
+import io.camunda.operate.webapp.reader.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,21 +89,6 @@ public class ProcessInstanceReader {
    */
   public ProcessInstanceForListViewEntity getProcessInstanceByKey(final Long processInstanceKey) {
     return processStore.getProcessInstanceListViewByKey(processInstanceKey);
-  }
-
-  public ProcessInstanceCoreStatisticsDto getCoreStatistics() {
-    final Map<String, Long> statistics;
-    final PermissionsService.ResourcesAllowed allowed =
-        permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE);
-    statistics = processStore.getCoreStatistics(allowed.isAll() ? null : allowed.getIds());
-    final Long runningCount = statistics.get("running");
-    final Long incidentCount = statistics.get("incidents");
-    final ProcessInstanceCoreStatisticsDto processInstanceCoreStatisticsDto =
-        new ProcessInstanceCoreStatisticsDto()
-            .setRunning(runningCount)
-            .setActive(runningCount - incidentCount)
-            .setWithIncidents(incidentCount);
-    return processInstanceCoreStatisticsDto;
   }
 
   public String getProcessInstanceTreePath(final String processInstanceId) {

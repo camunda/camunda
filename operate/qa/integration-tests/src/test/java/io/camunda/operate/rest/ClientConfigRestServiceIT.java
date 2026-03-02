@@ -53,8 +53,6 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
       UnifiedConfigurationHelper.class
     },
     properties = {
-      // OperateProperties.PREFIX + ".cloud.organizationId=organizationId",//  -- leave out to test
-      // for null values
       OperateProperties.PREFIX + ".cloud.clusterId=clusterId",
       OperateProperties.PREFIX + ".cloud.mixpanelToken=i-am-a-token",
       OperateProperties.PREFIX + ".cloud.mixpanelAPIHost=https://fake.mixpanel.com"
@@ -73,7 +71,6 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
 
   @Before
   public void setUp() {
-    // Mock the behavior of the security configuration
     given(securityConfiguration.getAuthentication()).willReturn(authenticationConfiguration);
     given(securityConfiguration.getAuthorizations()).willReturn(authorizationsConfiguration);
     given(securityConfiguration.getMultiTenancy()).willReturn(multiTenancyConfiguration);
@@ -84,11 +81,10 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
 
   @Test
   public void testGetClientConfig() throws Exception {
-    // given
     operateProperties.setTasklistUrl("https://tasklist.camunda.io/tl");
     given(authorizationsConfiguration.isEnabled()).willReturn(true);
     given(oidcAuthenticationConfiguration.getOrganizationId()).willReturn(null);
-    // when
+
     final MockHttpServletRequestBuilder request = get("/operate/client-config.js");
     final MvcResult mvcResult =
         mockMvc
@@ -97,7 +93,6 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
             .andExpect(content().contentTypeCompatibleWith("text/javascript"))
             .andReturn();
 
-    // then
     assertThat(mvcResult.getResponse().getContentAsString())
         .isEqualTo(
             "window.clientConfig = {"
@@ -111,78 +106,6 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
                 + "\"mixpanelToken\":\"i-am-a-token\","
                 + "\"isLoginDelegated\":true,"
                 + "\"tasklistUrl\":\"https://tasklist.camunda.io/tl\","
-                + "\"resourcePermissionsEnabled\":true,"
-                + "\"multiTenancyEnabled\":false,"
-                + "\"databaseType\":\"document-store\""
-                + "};");
-  }
-
-  @Test
-  public void testGetClientConfigForCantLogout() throws Exception {
-    // given
-    operateProperties.setTasklistUrl(null);
-    given(oidcAuthenticationConfiguration.getOrganizationId()).willReturn("test-org-id");
-    given(authorizationsConfiguration.isEnabled()).willReturn(true);
-    // when
-    final MockHttpServletRequestBuilder request = get("/operate/client-config.js");
-    final MvcResult mvcResult =
-        mockMvc
-            .perform(request)
-            .andExpect(status().isOk())
-            .andExpect(content().contentTypeCompatibleWith("text/javascript"))
-            .andReturn();
-
-    // then
-    assertThat(mvcResult.getResponse().getContentAsString())
-        .isEqualTo(
-            "window.clientConfig = {"
-                + "\"isEnterprise\":false,"
-                + "\"canLogout\":false,"
-                + "\"contextPath\":\"\","
-                + "\"baseName\":\"/operate\","
-                + "\"organizationId\":null,"
-                + "\"clusterId\":\"clusterId\","
-                + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
-                + "\"mixpanelToken\":\"i-am-a-token\","
-                + "\"isLoginDelegated\":true,"
-                + "\"tasklistUrl\":null,"
-                + "\"resourcePermissionsEnabled\":true,"
-                + "\"multiTenancyEnabled\":false,"
-                + "\"databaseType\":\"document-store\""
-                + "};");
-  }
-
-  @Test
-  public void testGetClientConfigForNoTasklistURL() throws Exception {
-    // given
-    operateProperties.setTasklistUrl(null);
-    given(operateProfileService.isDevelopmentProfileActive()).willReturn(false);
-    given(authorizationsConfiguration.isEnabled()).willReturn(true);
-    given(oidcAuthenticationConfiguration.getOrganizationId()).willReturn("test-org-id");
-
-    // when
-    final MockHttpServletRequestBuilder request = get("/operate/client-config.js");
-    final MvcResult mvcResult =
-        mockMvc
-            .perform(request)
-            .andExpect(status().isOk())
-            .andExpect(content().contentTypeCompatibleWith("text/javascript"))
-            .andReturn();
-
-    // then
-    assertThat(mvcResult.getResponse().getContentAsString())
-        .isEqualTo(
-            "window.clientConfig = {"
-                + "\"isEnterprise\":false,"
-                + "\"canLogout\":false,"
-                + "\"contextPath\":\"\","
-                + "\"baseName\":\"/operate\","
-                + "\"organizationId\":null,"
-                + "\"clusterId\":\"clusterId\","
-                + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
-                + "\"mixpanelToken\":\"i-am-a-token\","
-                + "\"isLoginDelegated\":true,"
-                + "\"tasklistUrl\":null,"
                 + "\"resourcePermissionsEnabled\":true,"
                 + "\"multiTenancyEnabled\":false,"
                 + "\"databaseType\":\"document-store\""

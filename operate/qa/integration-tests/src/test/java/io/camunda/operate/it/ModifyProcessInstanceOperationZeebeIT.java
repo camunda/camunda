@@ -7,17 +7,16 @@
  */
 package io.camunda.operate.it;
 
-import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.*;
+import static io.camunda.operate.webapp.operation.dto.ModifyProcessInstanceRequestDto.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
+import io.camunda.operate.webapp.reader.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessInstanceHandler;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -374,9 +373,31 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
     assertThat(tester.getFlowNodeStateFor("taskB")).isEqualTo(FlowNodeStateDto.ACTIVE);
 
     // Different var scopes
-    final var variables = varsToStrings(tester.getFlowNodeInstanceKeysFor("taskB"));
-    assertThat(variables.get(0)).isEqualTo("[var1=\"val1\", var2=\"val2\"]");
-    assertThat(variables.get(1)).isEqualTo("[var3=\"val3\", var4=\"val4\"]");
+    final var taskBFlowNodeKeys = tester.getFlowNodeInstanceKeysFor("taskB");
+    assertThat(taskBFlowNodeKeys.size()).isEqualTo(2);
+    int firstVariableScopeCount = 0;
+    int secondVariableScopeCount = 0;
+    for (final var flowNodeKey : taskBFlowNodeKeys) {
+      final boolean firstScope =
+          "\"val1\"".equals(tester.getVariable("var1", flowNodeKey))
+              && "\"val2\"".equals(tester.getVariable("var2", flowNodeKey))
+              && tester.getVariable("var3", flowNodeKey) == null
+              && tester.getVariable("var4", flowNodeKey) == null;
+      final boolean secondScope =
+          "\"val3\"".equals(tester.getVariable("var3", flowNodeKey))
+              && "\"val4\"".equals(tester.getVariable("var4", flowNodeKey))
+              && tester.getVariable("var1", flowNodeKey) == null
+              && tester.getVariable("var2", flowNodeKey) == null;
+      assertThat(firstScope || secondScope).isTrue();
+      if (firstScope) {
+        firstVariableScopeCount++;
+      }
+      if (secondScope) {
+        secondVariableScopeCount++;
+      }
+    }
+    assertThat(firstVariableScopeCount).isEqualTo(1);
+    assertThat(secondVariableScopeCount).isEqualTo(1);
   }
 
   @Test
@@ -800,9 +821,26 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
     final var flowNodeStates = tester.getFlowNodeStates();
     assertThat(flowNodeStates.get("taskA")).isEqualTo(FlowNodeStateDto.TERMINATED);
     final var taskCFlowNodeKeys = tester.getFlowNodeInstanceKeysFor("taskC");
-    final var varsAsStrings = varsToStrings(taskCFlowNodeKeys);
-    assertThat(varsAsStrings.get(0)).isEqualTo("[test=1]");
-    assertThat(varsAsStrings.get(1)).isEqualTo("[test2=2]");
+    assertThat(taskCFlowNodeKeys.size()).isEqualTo(2);
+    int firstVariableScopeCount = 0;
+    int secondVariableScopeCount = 0;
+    for (final var flowNodeKey : taskCFlowNodeKeys) {
+      final boolean firstScope =
+          "1".equals(tester.getVariable("test", flowNodeKey))
+              && tester.getVariable("test2", flowNodeKey) == null;
+      final boolean secondScope =
+          "2".equals(tester.getVariable("test2", flowNodeKey))
+              && tester.getVariable("test", flowNodeKey) == null;
+      assertThat(firstScope || secondScope).isTrue();
+      if (firstScope) {
+        firstVariableScopeCount++;
+      }
+      if (secondScope) {
+        secondVariableScopeCount++;
+      }
+    }
+    assertThat(firstVariableScopeCount).isEqualTo(1);
+    assertThat(secondVariableScopeCount).isEqualTo(1);
   }
 
   // From
@@ -876,20 +914,5 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
 
     assertThat(tester.getFlowNodeStateFor("filterMapSubProcess"))
         .isEqualTo(FlowNodeStateDto.TERMINATED);
-  }
-
-  private List<String> varsToStrings(final List<Long> flowNodeKeys) {
-    final var variables =
-        flowNodeKeys.stream()
-            .map(key -> tester.getVariablesForScope(key))
-            .collect(Collectors.toList());
-    return variables.stream()
-        .map(
-            vars ->
-                vars.stream()
-                    .map(v -> v.getName() + "=" + v.getValue())
-                    .collect(Collectors.toList())
-                    .toString())
-        .collect(Collectors.toList());
   }
 }

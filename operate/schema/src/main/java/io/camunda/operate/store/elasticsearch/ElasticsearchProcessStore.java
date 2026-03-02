@@ -9,7 +9,6 @@ package io.camunda.operate.store.elasticsearch;
 
 import static io.camunda.operate.util.ElasticsearchUtil.MAP_CLASS;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
-import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
@@ -17,7 +16,6 @@ import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.BPMN_XML;
 import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.TREE_PATH;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ID;
-import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
@@ -28,7 +26,6 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ST
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOrder;
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.CountRequest;
@@ -337,51 +334,6 @@ public class ElasticsearchProcessStore implements ProcessStore {
       }
     } catch (final IOException e) {
       throw new OperateRuntimeException(e);
-    }
-  }
-
-  @Override
-  public Map<String, Long> getCoreStatistics(@Nullable final Set<String> allowedBPMNIds) {
-    final var incidentsAggQuery =
-        ElasticsearchUtil.joinWithAnd(
-            ElasticsearchUtil.termsQuery(INCIDENT, true),
-            ElasticsearchUtil.termsQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
-    final var incidentsAgg = Aggregation.of(a -> a.filter(incidentsAggQuery));
-
-    final var runningAggQuery = ElasticsearchUtil.termsQuery(STATE, ProcessInstanceState.ACTIVE);
-    final var runningAgg = Aggregation.of(a -> a.filter(runningAggQuery));
-
-    final Query query;
-    if (allowedBPMNIds == null) {
-      query = Query.of(q -> q.matchAll(m -> m));
-    } else {
-      query = ElasticsearchUtil.termsQuery(BPMN_PROCESS_ID, allowedBPMNIds);
-    }
-    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
-
-    try {
-      final var res =
-          esClient.search(
-              s ->
-                  s.index(whereToSearch(listViewTemplate, ONLY_RUNTIME))
-                      .query(tenantAwareQuery)
-                      .aggregations("incidents", incidentsAgg)
-                      .aggregations("running", runningAgg)
-                      .size(0),
-              Void.class);
-
-      final var aggs = res.aggregations();
-      final var runningCount = aggs.get("running").filter().docCount();
-      final var incidentCount = aggs.get("incidents").filter().docCount();
-
-      return Map.of("running", runningCount, "incidents", incidentCount);
-    } catch (final IOException e) {
-      final String message =
-          String.format(
-              "Exception occurred, while obtaining process instance core statistics: %s",
-              e.getMessage());
-      LOGGER.error(message, e);
-      throw new OperateRuntimeException(message, e);
     }
   }
 

@@ -37,8 +37,8 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.dsl.AggregationDSL;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.reader.OperationReader;
-import io.camunda.operate.webapp.rest.dto.DtoCreator;
-import io.camunda.operate.webapp.rest.dto.OperationDto;
+import io.camunda.operate.webapp.reader.dto.DtoCreator;
+import io.camunda.operate.webapp.reader.dto.OperationDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
@@ -193,17 +193,6 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
         searchRequestBuilder(operationTemplate, ALL).query(query).sort(sortOptions(ID, Asc));
 
     return richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class);
-  }
-
-  @Override
-  public List<OperationDto> getOperationsByBatchOperationId(final String batchOperationId) {
-    final var searchRequestBuilder =
-        searchRequestBuilder(operationTemplate, ALL)
-            .query(and(term(BATCH_OPERATION_ID, batchOperationId), allowedOperationsQuery()));
-
-    final List<OperationEntity> operationEntities =
-        richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class);
-    return DtoCreator.create(operationEntities, OperationDto.class);
   }
 
   @Override
