@@ -55,10 +55,6 @@ public class Processing {
   private static final Set<String> LEGACY_FEATURES_ENABLE_MESSAGE_BODY_ON_EXPIRED_PROPERTIES =
       Set.of("zeebe.broker.experimental.features.enableMessageBodyOnExpired");
 
-  private static final Set<String>
-      LEGACY_FEATURES_ENABLE_GENERIC_RESOURCE_DEPLOYMENT_PROPERTIES =
-          Set.of("zeebe.broker.experimental.features.enableGenericResourceDeployment");
-
   /**
    * Configure flow control for user requests. This setting takes precedence over the backpressure
    * configuration.
@@ -337,12 +333,7 @@ public class Processing {
   }
 
   public boolean isEnableGenericResourceDeployment() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".enable-generic-resource-deployment",
-        enableGenericResourceDeployment,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_FEATURES_ENABLE_GENERIC_RESOURCE_DEPLOYMENT_PROPERTIES);
+    return enableGenericResourceDeployment;
   }
 
   public void setEnableGenericResourceDeployment(final boolean enableGenericResourceDeployment) {
