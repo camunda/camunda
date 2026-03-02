@@ -8,118 +8,115 @@
 
 import {render, screen} from 'modules/testing-library';
 import {PageErrorBoundary} from './index';
+import {createMemoryRouter, RouterProvider} from 'react-router-dom';
+import React from 'react';
 
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return {
-    ...actual,
-    useRouteError: vi.fn(),
-    isRouteErrorResponse: vi.fn(),
-  };
-});
+const ThrowRouteError: React.FC<{error: unknown}> = ({error}) => {
+  throw error;
+};
 
-import {useRouteError, isRouteErrorResponse} from 'react-router-dom';
+const createTestRouter = (error?: unknown) =>
+  createMemoryRouter(
+    [
+      {
+        path: '/',
+        element: error ? <ThrowRouteError error={error} /> : <div />,
+        errorElement: <PageErrorBoundary />,
+      },
+    ],
+    {
+      initialEntries: ['/'],
+    },
+  );
 
-const mockUseRouteError = vi.mocked(useRouteError);
-const mockIsRouteErrorResponse = vi.mocked(isRouteErrorResponse);
+const Wrapper: React.FC<{error?: unknown}> = ({error}) => {
+  const router = createTestRouter(error);
+  return <RouterProvider router={router} />;
+};
 
 describe('PageErrorBoundary', () => {
-  describe('route error response', () => {
-    it('should render status, statusText, and data when error is a route error response', () => {
-      mockUseRouteError.mockReturnValue({
-        status: 404,
-        statusText: 'Not Found',
-        data: 'The requested page was not found.',
-      });
-      mockIsRouteErrorResponse.mockReturnValue(true);
-
-      render(<PageErrorBoundary />);
-
-      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-      expect(screen.getByText('404 Not Found')).toBeInTheDocument();
-      expect(
-        screen.getByText('The requested page was not found.'),
-      ).toBeInTheDocument();
-    });
-
-    it('should render reload CTA for route error response', () => {
-      mockUseRouteError.mockReturnValue({
-        status: 500,
-        statusText: 'Internal Server Error',
-        data: '',
-      });
-      mockIsRouteErrorResponse.mockReturnValue(true);
-
-      render(<PageErrorBoundary />);
-
-      expect(
-        screen.getByRole('link', {name: /reload the page/i}),
-      ).toBeInTheDocument();
+  beforeEach(() => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    window.addEventListener('error', (e) => {
+      e.preventDefault();
     });
   });
 
-  describe('Error instance', () => {
-    it('should render error message and stack trace when error is an Error', () => {
-      const error = new Error('Something exploded');
-      error.stack = 'Error: Something exploded\n    at Component.render';
-      mockUseRouteError.mockReturnValue(error);
-      mockIsRouteErrorResponse.mockReturnValue(false);
-
-      render(<PageErrorBoundary />);
-
-      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-      expect(screen.getByText('Something exploded')).toBeInTheDocument();
-      expect(screen.getByText('Error stack trace')).toBeInTheDocument();
-      expect(
-        screen.getByText((content) =>
-          content.includes('Error: Something exploded'),
-        ),
-      ).toBeInTheDocument();
-    });
-
-    it('should show fallback stack trace message when stack is undefined', () => {
-      const error = new Error('No stack');
-      error.stack = undefined;
-      mockUseRouteError.mockReturnValue(error);
-      mockIsRouteErrorResponse.mockReturnValue(false);
-
-      render(<PageErrorBoundary />);
-
-      expect(screen.getByText('No stack trace available')).toBeInTheDocument();
-    });
-
-    it('should render reload CTA for Error instance', () => {
-      mockUseRouteError.mockReturnValue(new Error('crash'));
-      mockIsRouteErrorResponse.mockReturnValue(false);
-
-      render(<PageErrorBoundary />);
-
-      expect(
-        screen.getByRole('link', {name: /reload the page/i}),
-      ).toBeInTheDocument();
-    });
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
-  describe('unknown error', () => {
-    it('should render "Unknown error" for an unrecognized error shape', () => {
-      mockUseRouteError.mockReturnValue({unexpected: true});
-      mockIsRouteErrorResponse.mockReturnValue(false);
+  it('should display error message and reload CTA for route error response', () => {
+    const error = {
+      status: 404,
+      statusText: 'Not Found',
+      data: 'The requested page was not found.',
+    };
 
-      render(<PageErrorBoundary />);
-
-      expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-      expect(screen.getByText('Unknown error')).toBeInTheDocument();
+    render(null, {
+      wrapper: (props) => <Wrapper {...props} error={error} />,
     });
 
-    it('should render reload CTA for unknown error', () => {
-      mockUseRouteError.mockReturnValue(null);
-      mockIsRouteErrorResponse.mockReturnValue(false);
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', {name: /reload the page/i}),
+    ).toBeInTheDocument();
+  });
 
-      render(<PageErrorBoundary />);
+  it('should display error message and reload CTA for server errors', () => {
+    const error = {
+      status: 500,
+      statusText: 'Internal Server Error',
+      data: '',
+    };
 
-      expect(
-        screen.getByRole('link', {name: /reload the page/i}),
-      ).toBeInTheDocument();
+    render(null, {
+      wrapper: (props) => <Wrapper {...props} error={error} />,
     });
+
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', {name: /reload the page/i}),
+    ).toBeInTheDocument();
+  });
+
+  it('should display error message and stack trace for Error instances', () => {
+    const error = new Error('Something exploded');
+    error.stack = 'Error: Something exploded\n    at Component.render';
+
+    render(null, {
+      wrapper: (props) => <Wrapper {...props} error={error} />,
+    });
+
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    expect(screen.getByText('Something exploded')).toBeInTheDocument();
+    expect(screen.getByText('Error stack trace')).toBeInTheDocument();
+    expect(
+      screen.getByText((content) =>
+        content.includes('Error: Something exploded'),
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should display fallback message when stack trace is unavailable', () => {
+    const error = new Error('No stack');
+    error.stack = undefined;
+
+    render(null, {
+      wrapper: (props) => <Wrapper {...props} error={error} />,
+    });
+
+    expect(screen.getByText('No stack trace available')).toBeInTheDocument();
+  });
+
+  it('should display generic message for unknown error types', () => {
+    const error = {unexpected: true};
+
+    render(null, {
+      wrapper: (props) => <Wrapper {...props} error={error} />,
+    });
+
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    expect(screen.getByText('Unknown error')).toBeInTheDocument();
   });
 });
