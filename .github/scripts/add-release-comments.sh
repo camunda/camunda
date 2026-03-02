@@ -31,6 +31,16 @@ echo "$RELEASES" | jq -c '.' | while read -r release; do
   echo ""
   echo "Processing release: $TAG_NAME ($PUBLISHED_AT)"
   echo "Release URL: $RELEASE_URL"
+
+  # Derive major.minor version for Helm chart release notes URL (e.g. 8.6 from 8.6.4 or v8.6.4)
+  MAJOR_MINOR_VERSION=$(echo "$TAG_NAME" | grep -oE '[0-9]+\.[0-9]+' | head -n 1 || true)
+  HELM_RELEASE_NOTES_URL=""
+  if [ -n "$MAJOR_MINOR_VERSION" ]; then
+    HELM_RELEASE_NOTES_URL="https://helm.camunda.io/camunda-platform/version-matrix/camunda-$MAJOR_MINOR_VERSION/"
+    echo "Helm chart release notes URL: $HELM_RELEASE_NOTES_URL"
+  else
+    echo "Could not derive major.minor from tag '$TAG_NAME'; skipping Helm chart release notes link"
+  fi
   
   # Extract issue numbers from release body - patterns: #1234, owner/repo#1234, [#1234], github.com/owner/repo/issues/1234
   ISSUE_NUMBERS=$(echo "$RELEASE_BODY" | \
@@ -83,6 +93,9 @@ echo "$RELEASES" | jq -c '.' | while read -r release; do
     
     # Prepare comment
     COMMENT_BODY="This has been released in version [$TAG_NAME]($RELEASE_URL). See release notes [here]($RELEASE_URL) for details."
+    if [ -n "$HELM_RELEASE_NOTES_URL" ]; then
+      COMMENT_BODY="$COMMENT_BODY Helm chart release notes are available [here]($HELM_RELEASE_NOTES_URL)."
+    fi
     
     if [ "$DRY_RUN" = "true" ]; then
       echo "    [DRY RUN] Would add comment to issue #$ISSUE_NUMBER:"
