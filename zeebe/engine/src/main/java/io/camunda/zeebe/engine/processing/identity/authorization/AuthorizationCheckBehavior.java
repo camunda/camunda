@@ -85,8 +85,7 @@ public final class AuthorizationCheckBehavior {
       camundaGroupsEnabled =
           !(authMethod == io.camunda.security.entity.AuthenticationMethod.OIDC
               && securityConfig.getAuthentication().getOidc().isGroupsClaimConfigured());
-      camundaUsersEnabled =
-          authMethod != io.camunda.security.entity.AuthenticationMethod.OIDC;
+      camundaUsersEnabled = authMethod != io.camunda.security.entity.AuthenticationMethod.OIDC;
     }
     claimsExtractor = new ClaimsExtractor(membershipState);
     tenantResolver =

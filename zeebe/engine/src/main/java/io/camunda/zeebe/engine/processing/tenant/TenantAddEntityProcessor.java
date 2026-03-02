@@ -108,7 +108,8 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(command.getAuthorizations(), entityType, entityId)) {
+    if (!command.isInternalCommand()
+        && !isEntityPresent(command.getAuthorizations(), entityType, entityId)) {
       createEntityNotExistRejectCommand(command, entityId, entityType, tenantId);
       return;
     }

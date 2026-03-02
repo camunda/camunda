@@ -102,7 +102,8 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(command.getAuthorizations(), entityType, entityId)) {
+    if (!command.isInternalCommand()
+        && !isEntityPresent(command.getAuthorizations(), entityType, entityId)) {
       final var errorMessage =
           ENTITY_NOT_FOUND_ERROR_MESSAGE.formatted(entityId, entityType, record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);

@@ -64,6 +64,9 @@ public class AuthorizationEntityValidator {
 
   public Either<Rejection, AuthorizationRecord> ownerAndResourceExists(
       final TypedRecord<AuthorizationRecord> command) {
+    if (command.isInternalCommand()) {
+      return Either.right(command.getValue());
+    }
     final var record = command.getValue();
     final boolean localGroupEnabled =
         (boolean)
@@ -72,9 +75,7 @@ public class AuthorizationEntityValidator {
                 .getOrDefault(IS_CAMUNDA_GROUPS_ENABLED, camundaGroupsEnabled);
     final boolean localUserEnabled =
         (boolean)
-            command
-                .getAuthorizations()
-                .getOrDefault(IS_CAMUNDA_USERS_ENABLED, camundaUsersEnabled);
+            command.getAuthorizations().getOrDefault(IS_CAMUNDA_USERS_ENABLED, camundaUsersEnabled);
     switch (record.getOwnerType()) {
       case GROUP:
         if (localGroupEnabled && groupState.get(record.getOwnerId()).isEmpty()) {
