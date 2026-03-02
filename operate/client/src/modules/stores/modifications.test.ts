@@ -1200,7 +1200,7 @@ describe('stores/modifications', () => {
     expect(errorSpy).toHaveBeenCalledExactlyOnceWith(400);
   });
 
-  it('should add tokens to elements that has multiple running scopes', async () => {
+  it('should add tokens to elements that have multiple running scopes', async () => {
     expect(modificationsStore.state.sourceElementIdForAddOperation).toBeNull();
 
     modificationsStore.startAddingToken('subprocess-service-task');
