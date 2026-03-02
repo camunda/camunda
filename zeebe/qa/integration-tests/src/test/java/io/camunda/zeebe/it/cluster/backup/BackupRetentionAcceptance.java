@@ -62,11 +62,18 @@ public interface BackupRetentionAcceptance extends ClockSupport {
     pinClock(getTestCluster());
     final var actuator = BackupActuator.of(getTestCluster().availableGateway());
 
-    // Wait for 4 completed backups
-    final var firstBackup = awaitNewBackup(0);
-    final var secondBackup = awaitNewBackup(firstBackup);
-    final var thirdBackup = awaitNewBackup(secondBackup);
-    final var fourthBackup = awaitNewBackup(thirdBackup);
+    // The checkpoint scheduler fires immediately on startup, creating an automatic backup.
+    // We must wait for it without advancing the clock to ensure a deterministic backup count.
+    final var firstBackup = awaitBackup(0);
+
+    progressClock(getTestCluster(), BACKUP_INTERVAL.toMillis() + BACKUP_TOLERANCE_MILLIS);
+    final var secondBackup = awaitBackup(firstBackup);
+
+    progressClock(getTestCluster(), BACKUP_INTERVAL.toMillis() + BACKUP_TOLERANCE_MILLIS);
+    final var thirdBackup = awaitBackup(secondBackup);
+
+    progressClock(getTestCluster(), BACKUP_INTERVAL.toMillis() + BACKUP_TOLERANCE_MILLIS);
+    final var fourthBackup = awaitBackup(thirdBackup);
 
     restartClusterWithRetention();
 
@@ -93,8 +100,12 @@ public interface BackupRetentionAcceptance extends ClockSupport {
     assertManifestNotFoundFromStore(secondBackup);
   }
 
-  default long awaitNewBackup(final long previousBackup) {
-    progressClock(getTestCluster(), BACKUP_INTERVAL.toMillis() + BACKUP_TOLERANCE_MILLIS);
+  /**
+   * Waits for a backup with a checkpoint ID greater than {@code previousBackup} to be created on
+   * all partitions. The caller is responsible for advancing the clock before calling this method if
+   * a clock advance is needed to trigger the next scheduled backup.
+   */
+  default long awaitBackup(final long previousBackup) {
     final var actuator = BackupActuator.of(getTestCluster().availableGateway());
     Awaitility.await("Backup is created")
         .atMost(Duration.ofSeconds(30))
