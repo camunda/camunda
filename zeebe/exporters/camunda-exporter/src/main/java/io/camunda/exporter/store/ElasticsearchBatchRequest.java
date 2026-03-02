@@ -258,8 +258,10 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final BulkResponse bulkResponse = esClient.bulk(bulkRequest);
       final List<BulkResponseItem> items = bulkResponse.items();
       validateNoErrors(items, customErrorHandlers);
+      if (metrics != null) {
+        metrics.recordBulkOperations(bulkRequest.operations().size());
+      }
     } catch (final IOException | ElasticsearchException ex) {
-
       throw new PersistenceException(
           "Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
     }
