@@ -53,7 +53,7 @@ const renderPopover = (searchParams?: {
     initialPath += `?${params.toString()}`;
   }
 
-  return render(<MetadataPopover selectedFlowNodeRef={svgElement} />, {
+  return render(<MetadataPopover selectedElementRef={svgElement} />, {
     wrapper: getWrapper(initialPath),
   });
 };

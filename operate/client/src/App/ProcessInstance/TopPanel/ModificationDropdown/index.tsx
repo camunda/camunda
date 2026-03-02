@@ -46,12 +46,12 @@ import {useProcessInstance} from 'modules/queries/processInstance/useProcessInst
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 type Props = {
-  selectedFlowNodeRef?: SVGSVGElement;
+  selectedElementRef?: SVGSVGElement;
   diagramCanvasRef?: React.RefObject<HTMLDivElement | null>;
 };
 
 const ModificationDropdown: React.FC<Props> = observer(
-  ({selectedFlowNodeRef, diagramCanvasRef}) => {
+  ({selectedElementRef, diagramCanvasRef}) => {
     const {
       selectedElementId,
       selectedElementInstanceKey,
@@ -119,7 +119,7 @@ const ModificationDropdown: React.FC<Props> = observer(
 
     return (
       <Popover
-        referenceElement={selectedFlowNodeRef}
+        referenceElement={selectedElementRef}
         middlewareOptions={[
           offset(10),
           flip({

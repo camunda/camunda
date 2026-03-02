@@ -21,10 +21,10 @@ import {Incidents} from './Incidents';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 type Props = {
-  selectedFlowNodeRef?: SVGGraphicsElement | null;
+  selectedElementRef?: SVGGraphicsElement | null;
 };
 
-const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
+const MetadataPopover = observer(({selectedElementRef}: Props) => {
   const {
     selectedElementId,
     selectedElementInstanceKey,
@@ -56,7 +56,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
 
   return (
     <Popover
-      referenceElement={selectedFlowNodeRef}
+      referenceElement={selectedElementRef}
       middlewareOptions={[
         offset(10),
         flip({
