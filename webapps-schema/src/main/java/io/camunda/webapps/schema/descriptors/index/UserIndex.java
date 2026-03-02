@@ -9,9 +9,9 @@ package io.camunda.webapps.schema.descriptors.index;
 
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
-import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 
-public class UserIndex extends AbstractIndexDescriptor implements Prio5Backup {
+public class UserIndex extends AbstractIndexDescriptor implements Prio4Backup {
   public static final String INDEX_NAME = "user";
   public static final String INDEX_VERSION = "8.8.0";
 
