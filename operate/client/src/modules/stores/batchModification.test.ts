@@ -17,7 +17,7 @@ describe('batchModificationStore', () => {
     expect(batchModificationStore.state.isEnabled).toBe(false);
   });
 
-  it('should select target flow node', () => {
+  it('should select target element', () => {
     expect(batchModificationStore.state.selectedTargetElementId).toBeNull();
 
     batchModificationStore.enable();

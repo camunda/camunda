@@ -61,7 +61,7 @@ export function getSubprocessOverlayFromIncidentElements(
         overlays.push({
           payload: {flowNodeState: 'incidents'},
           type: type,
-          flowNodeId: parent.id,
+          elementId: parent.id,
           position: SUBPROCESS_WITH_INCIDENTS,
         });
       }

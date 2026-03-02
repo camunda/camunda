@@ -96,7 +96,7 @@ const SourceDiagram: React.FC = observer(() => {
 
                 return (
                   <StateOverlay
-                    key={`${overlay.flowNodeId}-${payload.flowNodeState}`}
+                    key={`${overlay.elementId}-${payload.flowNodeState}`}
                     state={payload.flowNodeState}
                     count={payload.count}
                     container={overlay.container}

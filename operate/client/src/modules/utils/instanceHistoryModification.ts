@@ -38,32 +38,32 @@ const generateParentPlaceholders = (
   modificationPayload: ElementModification['payload'],
   processDefinitionId?: string,
   processInstanceKey?: string,
-  flowNode?: BusinessObject,
+  element?: BusinessObject,
 ): ModificationPlaceholder[] => {
   if (
-    flowNode === undefined ||
+    element === undefined ||
     modificationPayload.operation === 'CANCEL_TOKEN'
   ) {
     return [];
   }
 
-  const scopeId = modificationPayload.parentScopeIds[flowNode.id];
+  const scopeId = modificationPayload.parentScopeIds[element.id];
   if (scopeId === undefined) {
     return [];
   }
 
-  const parentFlowNode = flowNode?.$parent;
+  const parentElement = element?.$parent;
 
   return [
     ...generateParentPlaceholders(
       modificationPayload,
       processDefinitionId,
       processInstanceKey,
-      parentFlowNode,
+      parentElement,
     ),
     {
       elementInstancePlaceholder: {
-        flowNodeId: flowNode.id,
+        flowNodeId: element.id,
         id: scopeId,
         type: 'SUB_PROCESS',
         startDate: '',
@@ -73,12 +73,12 @@ const generateParentPlaceholders = (
         isPlaceholder: true,
       },
       operation: modificationPayload.operation,
-      parentFlowNodeId: parentFlowNode?.id,
+      parentElementId: parentElement?.id,
       parentInstanceId: getParentInstanceIdForPlaceholder(
         modificationPayload,
         processDefinitionId,
         processInstanceKey,
-        parentFlowNode?.id,
+        parentElement?.id,
       ),
     },
   ];
@@ -88,48 +88,48 @@ const getParentInstanceIdForPlaceholder = (
   modificationPayload: ElementModification['payload'],
   processDefinitionId?: string,
   processInstanceKey?: string,
-  parentFlowNodeId?: string,
+  parentElementId?: string,
 ) => {
   if (
-    parentFlowNodeId === undefined ||
+    parentElementId === undefined ||
     modificationPayload.operation === 'CANCEL_TOKEN'
   ) {
     return undefined;
   }
 
-  if (parentFlowNodeId === processDefinitionId) {
+  if (parentElementId === processDefinitionId) {
     return processInstanceKey;
   }
 
   if (
     'ancestorElement' in modificationPayload &&
     modificationPayload.ancestorElement !== undefined &&
-    parentFlowNodeId === modificationPayload.ancestorElement.elementId
+    parentElementId === modificationPayload.ancestorElement.elementId
   ) {
     return modificationPayload.ancestorElement.instanceKey;
   }
 
   return (
-    modificationPayload.parentScopeIds[parentFlowNodeId] ??
-    modificationsStore.getParentScopeId(parentFlowNodeId)
+    modificationPayload.parentScopeIds[parentElementId] ??
+    modificationsStore.getParentScopeId(parentElementId)
   );
 };
 
 const createModificationPlaceholders = ({
   modificationPayload,
-  flowNode,
+  element,
   processDefinitionId,
   processInstanceKey,
 }: {
   modificationPayload: ElementModification['payload'];
-  flowNode: BusinessObject;
+  element: BusinessObject;
   processDefinitionId?: string;
   processInstanceKey?: string;
 }): ModificationPlaceholder[] => {
-  const parentFlowNodeId = flowNode.$parent?.id;
+  const parentElementId = element.$parent?.id;
 
   if (
-    parentFlowNodeId === undefined ||
+    parentElementId === undefined ||
     modificationPayload.operation === 'CANCEL_TOKEN'
   ) {
     return [];
@@ -137,9 +137,9 @@ const createModificationPlaceholders = ({
 
   return getScopeIds(modificationPayload).map((scopeId) => ({
     elementInstancePlaceholder: {
-      flowNodeId: flowNode.id,
+      flowNodeId: element.id,
       id: scopeId,
-      type: isMultiInstance(flowNode) ? 'MULTI_INSTANCE_BODY' : flowNode.$type,
+      type: isMultiInstance(element) ? 'MULTI_INSTANCE_BODY' : element.$type,
       startDate: '',
       endDate: null,
       sortValues: [],
@@ -147,12 +147,12 @@ const createModificationPlaceholders = ({
       isPlaceholder: true,
     },
     operation: modificationPayload.operation,
-    parentFlowNodeId,
+    parentElementId,
     parentInstanceId: getParentInstanceIdForPlaceholder(
       modificationPayload,
       processDefinitionId,
       processInstanceKey,
-      parentFlowNodeId,
+      parentElementId,
     ),
   }));
 };
@@ -170,14 +170,14 @@ const getModificationPlaceholders = (
       return modificationPlaceHolders;
     }
 
-    const flowNodeId =
+    const elementId =
       operation === 'MOVE_TOKEN'
         ? modificationPayload.targetElement.id
         : modificationPayload.element.id;
 
-    const flowNode = businessObjects[flowNodeId];
+    const element = businessObjects[elementId];
 
-    if (flowNode === undefined) {
+    if (element === undefined) {
       return modificationPlaceHolders;
     }
 
@@ -185,12 +185,12 @@ const getModificationPlaceholders = (
       modificationPayload,
       processDefinitionId,
       processInstanceKey,
-      flowNode.$parent,
+      element.$parent,
     );
 
     const newModificationPlaceholders = createModificationPlaceholders({
       modificationPayload,
-      flowNode,
+      element,
     });
 
     return [
@@ -211,7 +211,7 @@ const getVisibleChildPlaceholders = (
 ) => {
   if (
     isPlaceholder &&
-    !instanceHistoryModificationStore.state.expandedFlowNodeInstanceIds.includes(
+    !instanceHistoryModificationStore.state.expandedElementInstanceIds.includes(
       scopeKey,
     )
   ) {
@@ -236,8 +236,8 @@ const getVisibleChildPlaceholders = (
     processInstanceKey,
   )
     .filter(
-      ({parentInstanceId, parentFlowNodeId}) =>
-        parentInstanceId === undefined && parentFlowNodeId === elementId,
+      ({parentInstanceId, parentElementId}) =>
+        parentInstanceId === undefined && parentElementId === elementId,
     )
     .map(({elementInstancePlaceholder}) => elementInstancePlaceholder);
 };

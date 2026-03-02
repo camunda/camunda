@@ -41,7 +41,7 @@ describe('processInstanceMigration', () => {
     expect(processInstanceMigrationStore.currentStep).toBeNull();
   });
 
-  it('should update flow node mapping', () => {
+  it('should update element mapping', () => {
     processInstanceMigrationStore.enable();
 
     expect(processInstanceMigrationStore.hasElementMapping).toBe(false);
@@ -99,7 +99,7 @@ describe('processInstanceMigration', () => {
     expect(processInstanceMigrationStore.state.elementMapping).toEqual({});
   });
 
-  it('should clear flow node mapping', () => {
+  it('should clear element mapping', () => {
     processInstanceMigrationStore.enable();
 
     expect(processInstanceMigrationStore.state.elementMapping).toEqual({});
@@ -123,7 +123,7 @@ describe('processInstanceMigration', () => {
     expect(processInstanceMigrationStore.state.elementMapping).toEqual({});
   });
 
-  it('should select flow nodes on source flow node selection', () => {
+  it('should select elements on source element selection', () => {
     processInstanceMigrationStore.updateElementMapping({
       sourceId: SOURCE_TASK_A,
       targetId: TARGET_TASK_A,
@@ -161,7 +161,7 @@ describe('processInstanceMigration', () => {
     ).toBeUndefined();
   });
 
-  it('should select flow nodes on target flow node selection', () => {
+  it('should select elements on target element selection', () => {
     processInstanceMigrationStore.updateElementMapping({
       sourceId: SOURCE_TASK_A,
       targetId: TARGET_TASK_A,

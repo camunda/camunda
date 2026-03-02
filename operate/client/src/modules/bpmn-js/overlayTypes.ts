@@ -12,7 +12,7 @@ import type {ElementState} from 'modules/types/operate';
 type OverlayData = {
   payload?: unknown;
   type: string;
-  flowNodeId: string;
+  elementId: string;
   position: OverlayPosition;
   isZoomFixed?: boolean;
 };

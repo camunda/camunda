@@ -80,15 +80,15 @@ describe('<Diagram />', () => {
           {
             payload: 'example data',
             type: OVERLAY_TYPE,
-            flowNodeId: 'startEvent_1',
+            elementId: 'startEvent_1',
             position: {top: 0, left: 0},
           },
         ]}
       >
         {diagramOverlaysStore.state.overlays.map(
-          ({container, payload, flowNodeId}) => (
+          ({container, payload, elementId}) => (
             <Overlay
-              key={flowNodeId}
+              key={elementId}
               container={container}
               data={payload as React.ReactNode}
             />
