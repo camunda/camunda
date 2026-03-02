@@ -276,6 +276,11 @@ components:
   schemas:
     DocumentReference:
       type: object
+      required:
+        - camunda.document.type
+        - storeId
+        - documentId
+        - metadata
       properties:
         camunda.document.type:
           type: string
@@ -292,6 +297,7 @@ components:
         contentHash:
           type: string
           description: The hash of the document.
+          nullable: true
         metadata:
           $ref: '#/components/schemas/DocumentMetadata'
 
@@ -331,7 +337,7 @@ components:
                 $ref: '#/components/schemas/DocumentReference'
 
     DocumentMetadata:
-      required: 
+      required:
         - customProperties
       description: Information about the document.
       type: object
@@ -374,6 +380,9 @@ components:
 
     DocumentLink:
       type: object
+      required:
+        - url
+        - expiresAt
       properties:
         url:
           type: string
