@@ -12,9 +12,10 @@ import type {DiagramModel} from 'bpmn-moddle';
 import {isMigratableElement} from 'modules/bpmn-js/utils/isMigratableElement';
 import {hasParentProcess} from 'modules/bpmn-js/utils/hasParentProcess';
 import {getMappableSequenceFlows} from 'modules/utils/sequenceFlows';
+import {useMemo} from 'react';
 
 const getMigrationSourceXmlParser =
-  (sourceBpmnProcessId?: string) =>
+  (sourceProcessDefinitionId?: string) =>
   ({
     xml,
     diagramModel,
@@ -35,10 +36,10 @@ const getMigrationSourceXmlParser =
         .filter(isMigratableElement)
         .filter((sourceFlowNode) => {
           return (
-            sourceBpmnProcessId !== undefined &&
+            sourceProcessDefinitionId !== undefined &&
             hasParentProcess({
               flowNode: diagramModel?.elementsById[sourceFlowNode.id],
-              bpmnProcessId: sourceBpmnProcessId,
+              bpmnProcessId: sourceProcessDefinitionId,
             })
           );
         })
@@ -51,15 +52,20 @@ const getMigrationSourceXmlParser =
 
 function useMigrationSourceXml({
   processDefinitionKey,
-  bpmnProcessId,
+  processDefinitionId,
 }: {
   processDefinitionKey?: string;
-  bpmnProcessId?: string;
+  processDefinitionId?: string;
 }) {
+  const select = useMemo(
+    () => getMigrationSourceXmlParser(processDefinitionId),
+    [processDefinitionId],
+  );
+
   return useProcessDefinitionXml({
     processDefinitionKey,
-    select: getMigrationSourceXmlParser(bpmnProcessId),
-    enabled: !!bpmnProcessId,
+    select,
+    enabled: !!processDefinitionId,
   });
 }
 

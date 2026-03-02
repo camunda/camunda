@@ -28,7 +28,6 @@ import {
 } from './styled';
 import {useMigrationSourceXml} from 'modules/queries/processDefinitions/useMigrationSourceXml';
 import {useMigrationTargetXml} from 'modules/queries/processDefinitions/useMigrationTargetXml';
-import {processesStore} from 'modules/stores/processes/processes.migration';
 import {hasEmbeddedForm} from 'modules/bpmn-js/utils/hasEmbeddedForm';
 import {isCamundaUserTask} from 'modules/bpmn-js/utils/isCamundaUserTask';
 import {EmbeddedFormWarningNotification} from './EmbeddedFormWarningNotification';
@@ -45,8 +44,9 @@ const BottomPanel: React.FC = observer(() => {
   const {
     updateElementMapping,
     clearElementMapping,
-    state: {elementMapping, sourceProcessDefinitionKey},
+    state: {elementMapping, sourceProcessDefinition, targetProcessDefinition},
   } = processInstanceMigrationStore;
+  const isTargetSelected = !!targetProcessDefinition;
 
   const {
     toggleMappedFilter,
@@ -55,16 +55,14 @@ const BottomPanel: React.FC = observer(() => {
     getMappableSequenceFlows,
   } = processInstanceMigrationMappingStore;
 
-  const {selectedTargetProcessId} = processesStore;
-  const isTargetSelected = !!selectedTargetProcessId;
-
   const {data: sourceData} = useMigrationSourceXml({
-    processDefinitionKey: sourceProcessDefinitionKey ?? undefined,
-    bpmnProcessId: processesStore.getSelectedProcessDetails().bpmnProcessId,
+    processDefinitionKey: sourceProcessDefinition?.processDefinitionKey,
+    processDefinitionId: sourceProcessDefinition?.processDefinitionId,
   });
 
   const {data: targetData} = useMigrationTargetXml({
-    processDefinitionKey: selectedTargetProcessId,
+    processDefinitionKey: targetProcessDefinition?.processDefinitionKey,
+    processDefinitionId: targetProcessDefinition?.processDefinitionId,
   });
 
   const mappableFlowNodes = getMappableFlowNodes(

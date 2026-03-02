@@ -19,7 +19,11 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {open} from 'modules/mocks/diagrams';
-import {createUser, searchResult} from 'modules/testUtils';
+import {
+  createProcessDefinition,
+  createUser,
+  searchResult,
+} from 'modules/testUtils';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import * as clientConfig from 'modules/utils/getClientConfig';
 
@@ -95,7 +99,10 @@ describe('MigrationView', () => {
       mockFetchProcessDefinitionXml({contextPath}).withSuccess(
         open('orderProcess.bpmn'),
       );
-      processInstanceMigrationStore.setSourceProcessDefinitionKey('1');
+      processInstanceMigrationStore.setSourceProcessDefinition(
+        createProcessDefinition({processDefinitionKey: '1'}),
+      );
+      mockSearchProcessDefinitions(contextPath).withSuccess(searchResult([]));
       mockSearchProcessDefinitions(contextPath).withSuccess(searchResult([]));
 
       const {user} = render(<Processes />, {
@@ -164,7 +171,10 @@ describe('MigrationView', () => {
       mockFetchProcessDefinitionXml({contextPath}).withSuccess(
         open('orderProcess.bpmn'),
       );
-      processInstanceMigrationStore.setSourceProcessDefinitionKey('1');
+      processInstanceMigrationStore.setSourceProcessDefinition(
+        createProcessDefinition({processDefinitionKey: '1'}),
+      );
+      mockSearchProcessDefinitions(contextPath).withSuccess(searchResult([]));
       mockSearchProcessDefinitions(contextPath).withSuccess(searchResult([]));
 
       const {user} = render(<Processes />, {
