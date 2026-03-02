@@ -17,7 +17,6 @@ import {
   assertConflictRequest,
   encode,
   assertStatusCode,
-  assertRequiredFields,
   assertForbiddenRequest,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
@@ -26,7 +25,6 @@ import {createUser, grantUserResourceAuthorization} from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
   CREATE_CUSTOM_AUTHORIZATION_BODY,
-  authorizedComponentRequiredFields,
 } from '../../../../utils/beans/requestBeans';
 
 const CREATE_AUTHORIZATION_ENDPOINT = '/authorizations';
@@ -83,9 +81,6 @@ test.describe.serial('Create Authorization API - Success and Conflict', () => {
         },
         authRes,
       );
-
-      const authBody = await authRes.json();
-      assertRequiredFields(authBody, authorizedComponentRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -118,9 +113,6 @@ test.describe.serial('Create Authorization API - Success and Conflict', () => {
         },
         authRes,
       );
-
-      const authBody = await authRes.json();
-      assertRequiredFields(authBody, authorizedComponentRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
 

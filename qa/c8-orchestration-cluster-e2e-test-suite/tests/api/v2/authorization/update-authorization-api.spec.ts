@@ -36,6 +36,7 @@ import {cleanupRoles} from 'utils/rolesCleanup';
 import {cleanupGroups} from 'utils/groupsCleanup';
 import {cleanupMappingRules} from 'utils/mappingRuleCleanup';
 import {sleep} from 'utils/sleep';
+import { validateResponse } from 'json-body-assertions';
 
 test.describe.parallel('Update Authorization API', () => {
   const cleanups: ((request: APIRequestContext) => Promise<void>)[] = [];
@@ -117,6 +118,14 @@ test.describe.parallel('Update Authorization API', () => {
           },
         );
         expect(getAuthRes.status()).toBe(200);
+        await validateResponse(
+          {
+            path: '/authorizations/{authorizationKey}',
+            method: 'GET',
+            status: '200',
+          },
+          getAuthRes,
+        );
 
         const authBody = await getAuthRes.json();
         verifyAuthorizationFields(authBody, expectedUserAuthorization);
@@ -308,6 +317,14 @@ test.describe.parallel('Update Authorization API', () => {
             },
           );
           expect(getAuthRes.status()).toBe(200);
+          await validateResponse(
+          {
+            path: '/authorizations/{authorizationKey}',
+            method: 'GET',
+            status: '200',
+          },
+          getAuthRes,
+        );
 
           const authBody = await getAuthRes.json();
           verifyAuthorizationFields(authBody, expectedGroupAuthorization);
@@ -426,6 +443,14 @@ test.describe.parallel('Update Authorization API', () => {
           },
         );
         expect(getAuthRes.status()).toBe(200);
+        await validateResponse(
+          {
+            path: '/authorizations/{authorizationKey}',
+            method: 'GET',
+            status: '200',
+          },
+          getAuthRes,
+        );
 
         const authBody = await getAuthRes.json();
         verifyAuthorizationFields(authBody, expectedMappingRuleAuthorization);
@@ -516,6 +541,14 @@ test.describe.parallel('Update Authorization API', () => {
           },
         );
         expect(getAuthRes.status()).toBe(200);
+        await validateResponse(
+          {
+            path: '/authorizations/{authorizationKey}',
+            method: 'GET',
+            status: '200',
+          },
+          getAuthRes,
+        );
 
         const authBody = await getAuthRes.json();
         verifyAuthorizationFields(authBody, expectedRoleAuthorization);
@@ -592,6 +625,14 @@ test.describe.parallel('Update Authorization API', () => {
           },
         );
         expect(getAuthRes.status()).toBe(200);
+        await validateResponse(
+          {
+            path: '/authorizations/{authorizationKey}',
+            method: 'GET',
+            status: '200',
+          },
+          getAuthRes,
+        );
 
         const authBody = await getAuthRes.json();
         verifyAuthorizationFields(authBody, expectedUserAuthorization);

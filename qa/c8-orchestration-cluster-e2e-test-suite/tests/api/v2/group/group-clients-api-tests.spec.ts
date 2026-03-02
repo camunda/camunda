@@ -10,13 +10,14 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   assertEqualsForKeys,
   paginatedResponseFields,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertConflictRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {
   assignClientToGroup,
   clientIdFromState,
@@ -63,7 +64,7 @@ test.describe.parallel('Groups Clients API Tests', () => {
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -98,11 +99,17 @@ test.describe.parallel('Groups Clients API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/groups/{groupId}/clients/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(1);
-      assertRequiredFields(json.items[0], requiredFields);
       assertEqualsForKeys(json.items[0], expectedBody, requiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -130,9 +137,16 @@ test.describe.parallel('Groups Clients API Tests', () => {
       },
     );
 
-    expect(res.status()).toBe(200);
+    await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/groups/{groupId}/clients/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
-    assertRequiredFields(json, paginatedResponseFields);
     expect(json.page.totalItems).toBe(0);
     expect(json.items.length).toBe(0);
   });
@@ -150,7 +164,7 @@ test.describe.parallel('Groups Clients API Tests', () => {
             headers: jsonHeaders(),
           },
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 
@@ -165,9 +179,16 @@ test.describe.parallel('Groups Clients API Tests', () => {
             data: {},
           },
         );
-        expect(res.status()).toBe(200);
+        await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/groups/{groupId}/clients/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
-        assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(0);
         expect(json.items.length).toBe(0);
       }).toPass(defaultAssertionOptions);

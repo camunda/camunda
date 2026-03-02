@@ -19,6 +19,7 @@ import {expect} from '@playwright/test';
 import {createMappingRule, createRole} from './role-requestHelpers';
 import {CREATE_NEW_GROUP, groupRequiredFields} from '../beans/requestBeans';
 import {Serializable} from 'playwright-core/types/structs';
+import {validateResponse} from 'json-body-assertions';
 
 export async function assignUsersToGroup(
   request: APIRequestContext,
@@ -38,7 +39,7 @@ export async function assignUsersToGroup(
         headers: jsonHeaders(),
       },
     );
-    expect(res.status()).toBe(204);
+    await assertStatusCode(res, 204);
     state[`username${groupId}${i}`] = user;
   }
 }
@@ -66,7 +67,7 @@ export async function assignMappingToGroup(
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   }
 }
@@ -90,7 +91,7 @@ export async function assignRoleToGroups(
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   }
 }
@@ -113,7 +114,7 @@ export async function assignClientToGroup(
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
       state[`clientId${groupId}${i}`] = clientId;
     }).toPass(defaultAssertionOptions);
   }
@@ -131,6 +132,14 @@ export async function createGroupAndStoreResponseFields(
       data: requestBody,
     });
     await assertStatusCode(res, 201);
+    await validateResponse(
+      {
+        path: '/groups',
+        method: 'POST',
+        status: '201',
+       },
+       res,
+    );
     const json = await res.json();
     assertRequiredFields(json, groupRequiredFields);
     const arrayKey = key ? `${key}${i}` : `${i}`;
@@ -166,6 +175,14 @@ export async function createGroup(
   });
 
   await assertStatusCode(res, 201);
+  await validateResponse(
+    {
+      path: '/groups',
+      method: 'POST',
+      status: '201',
+    },
+    res,
+  );
   const json = await res.json();
   assertRequiredFields(json, groupRequiredFields);
   if (state && key) {

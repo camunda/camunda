@@ -7,10 +7,7 @@
  */
 
 import {expect, test} from '@playwright/test';
-import {waitForAssertion} from '../../../../utils/waitForAssertion';
 import {
-  assertNotFoundRequest,
-  assertRequiredFields,
   assertInvalidArgument,
   assertStatusCode,
   assertUnauthorizedRequest,
@@ -22,7 +19,6 @@ import {
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
-  usageMetricsGetResponseRequiredFields,
   userRequiredFields,
   roleRequiredFields,
 } from '../../../../utils/beans/requestBeans';
@@ -84,7 +80,6 @@ test.describe.serial('Get usage metrics API Tests', () => {
       );
 
       const body = await res.json();
-      assertRequiredFields(body, usageMetricsGetResponseRequiredFields);
       expect(body.activeTenants).toBeGreaterThanOrEqual(0);
       expect(body.processInstances).toBeGreaterThan(0);
       expect(body.decisionInstances).toBeGreaterThanOrEqual(0);
@@ -147,9 +142,16 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
         data: LIMITED_ROLE,
       });
 
-      expect(res.status()).toBe(201);
+      await assertStatusCode(res, 201);
+      await validateResponse(
+        {
+          path: '/roles',
+          method: 'POST',
+          status: '201',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, roleRequiredFields);
       assertEqualsForKeys(json, LIMITED_ROLE, roleRequiredFields);
     });
 
@@ -159,8 +161,15 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
         data: LIMITED_ROLE_AUTHORIZATION,
       });
       expect(authRes.status()).toBe(201);
+      await validateResponse(
+        {
+          path: '/authorizations',
+          method: 'POST',
+          status: '201',
+        },
+        authRes,
+      );
       const authBody = await authRes.json();
-      assertRequiredFields(authBody, ['authorizationKey']);
       limitedAuthorizationKey = authBody.authorizationKey;
     });
 
@@ -170,9 +179,16 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
         data: LIMITED_USER,
       });
 
-      expect(res.status()).toBe(201);
+      await assertStatusCode(res, 201);
+      await validateResponse(
+        {
+          path: CREATE_USER_ENDPOINT,
+          method: 'POST',
+          status: '201',
+        },
+        res,
+      );
       const body = await res.json();
-      assertRequiredFields(body, userRequiredFields);
       assertEqualsForKeys(body, LIMITED_USER, userRequiredFields);
     });
 
@@ -229,6 +245,14 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
         },
       );
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/system/usage-metrics',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
       expect(body.activeTenants).toBe(0);
       expect(body.processInstances).toBe(0);

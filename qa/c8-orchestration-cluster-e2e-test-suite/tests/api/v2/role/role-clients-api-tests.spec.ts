@@ -14,7 +14,9 @@ import {
   assertNotFoundRequest,
   assertConflictRequest,
   assertPaginatedRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {
   defaultAssertionOptions,
   generateUniqueId,
@@ -60,7 +62,7 @@ test.describe.parallel('Role Clients API Tests', () => {
         buildUrl('/roles/{roleId}/clients/{clientId}', p),
         {headers: jsonHeaders()},
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -72,7 +74,7 @@ test.describe.parallel('Role Clients API Tests', () => {
       buildUrl('/roles/{roleId}/clients/{clientId}', p),
       {headers: jsonHeaders()},
     );
-    expect(res.status()).toBe(204);
+    await assertStatusCode(res, 204);
   });
 
   test('Assign Role To Client Non Existent Role Not Found', async ({
@@ -133,6 +135,14 @@ test.describe.parallel('Role Clients API Tests', () => {
         }),
         {headers: jsonHeaders(), data: {}},
       );
+      await validateResponse(
+        {
+          path: '/roles/{roleId}/clients/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         totalItemsEqualTo: 3,
         itemsLengthEqualTo: 3,
@@ -159,6 +169,14 @@ test.describe.parallel('Role Clients API Tests', () => {
       buildUrl('/roles/{roleId}/clients/search', p),
       {headers: jsonHeaders(), data: {}},
     );
+    await validateResponse(
+      {
+        path: '/roles/{roleId}/clients/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     await assertPaginatedRequest(res, {
       totalItemsEqualTo: 0,
       itemsLengthEqualTo: 0,
@@ -176,7 +194,7 @@ test.describe.parallel('Role Clients API Tests', () => {
           buildUrl('/roles/{roleId}/clients/{clientId}', p),
           {headers: jsonHeaders()},
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 
@@ -185,6 +203,14 @@ test.describe.parallel('Role Clients API Tests', () => {
         const res = await request.post(
           buildUrl('/roles/{roleId}/clients/search', p),
           {headers: jsonHeaders(), data: {}},
+        );
+        await validateResponse(
+          {
+            path: '/roles/{roleId}/clients/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
         );
         await assertPaginatedRequest(res, {
           totalItemsEqualTo: 0,

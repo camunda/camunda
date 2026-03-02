@@ -10,11 +10,12 @@ import {test, expect} from '@playwright/test';
 import {
   buildUrl,
   jsonHeaders,
-  assertRequiredFields,
   assertUnauthorizedRequest,
   assertEqualsForKeys,
   encode,
+  assertStatusCode,
 } from '../../../utils/http';
+import {validateResponse} from '../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../utils/constants';
 import {
   createComponentAuthorization,
@@ -71,10 +72,17 @@ test.describe.parallel('Authentication API Tests', () => {
           roles: ['admin'],
         },
       );
-
-      expect(res.status()).toBe(200);
+      
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/authentication/me',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, authenticationRequiredFields);
       assertEqualsForKeys(json, expectedBody, authenticationRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -105,7 +113,7 @@ test.describe.parallel('Authentication API Tests', () => {
             headers: jsonHeaders(),
           },
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 
@@ -121,7 +129,7 @@ test.describe.parallel('Authentication API Tests', () => {
           buildUrl('/roles/{roleId}/users/{username}', p),
           {headers: jsonHeaders()},
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 
@@ -137,7 +145,7 @@ test.describe.parallel('Authentication API Tests', () => {
           buildUrl('/tenants/{tenantId}/users/{username}', p),
           {headers: jsonHeaders()},
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 
@@ -174,9 +182,16 @@ test.describe.parallel('Authentication API Tests', () => {
           ),
         });
 
-        expect(res.status()).toBe(200);
+        await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/authentication/me',
+            method: 'GET',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
-        assertRequiredFields(json, authenticationRequiredFields);
         assertEqualsForKeys(json, expectedBody, authenticationRequiredFields);
       }).toPass(defaultAssertionOptions);
     });
@@ -198,9 +213,16 @@ test.describe.parallel('Authentication API Tests', () => {
         ),
       });
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/authentication/me',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, authenticationRequiredFields);
       assertEqualsForKeys(json, expectedBody, authenticationRequiredFields);
     }).toPass(defaultAssertionOptions);
   });

@@ -35,6 +35,14 @@ test.describe.parallel('Get Process Instance Statistics Tests', () => {
       });
 
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       localState['processInstanceKey'] = json.processInstanceKey;
     });
@@ -101,6 +109,14 @@ test.describe.parallel('Get Process Instance Statistics Tests', () => {
       },
     );
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/process-instances/{processInstanceKey}/statistics/element-instances',
+        method: 'GET',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     expect(json.items).toHaveLength(0);
   });

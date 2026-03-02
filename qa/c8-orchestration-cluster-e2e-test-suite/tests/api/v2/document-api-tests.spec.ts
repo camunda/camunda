@@ -10,7 +10,6 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   defaultHeaders,
   assertEqualsForKeys,
   assertUnauthorizedRequest,
@@ -18,7 +17,9 @@ import {
   assertBadRequest,
   assertNotFoundRequest,
   assertForbiddenRequest,
+  assertStatusCode,
 } from '../../../utils/http';
+import {validateResponse} from '../../../json-body-assertions';
 import {
   CREATE_DOC_INVALID_REQUEST,
   CREATE_DOCUMENT_LINK_REQUEST,
@@ -27,8 +28,6 @@ import {
   CREATE_TXT_DOC_RESPONSE_BODY,
   CREATE_TXT_DOC_RESPONSE_WITH_METADATA,
   CREATE_TXT_DOCUMENT_REQUEST,
-  documentRequiredFields,
-  multipleDocumentsRequiredFields,
 } from '../../../utils/beans/requestBeans';
 import {
   defaultAssertionOptions,
@@ -54,9 +53,16 @@ test.describe.parallel('Document API Tests', () => {
         multipart: payload,
       });
 
-      expect(res.status()).toBe(201);
+      await assertStatusCode(res, 201);
+      await validateResponse(
+        {
+          path: '/documents',
+          method: 'POST',
+          status: '201',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, documentRequiredFields);
       state[`documentId${nth}`] = json.documentId;
       state[`contentHash${nth}`] = json.contentHash;
       state[`storeId${nth}`] = json.storeId;
@@ -140,9 +146,16 @@ test.describe.parallel('Document API Tests', () => {
       multipart: payload,
     });
 
-    expect(res.status()).toBe(201);
+    await assertStatusCode(res, 201);
+    await validateResponse(
+      {
+        path: '/documents',
+        method: 'POST',
+        status: '201',
+      },
+      res,
+    );
     const json = await res.json();
-    assertRequiredFields(json, documentRequiredFields);
     assertEqualsForKeys(json, expectedPostBody, responseKeys);
   });
 
@@ -160,9 +173,16 @@ test.describe.parallel('Document API Tests', () => {
       },
     );
 
-    expect(res.status()).toBe(201);
+    await assertStatusCode(res, 201);
+    await validateResponse(
+      {
+        path: '/documents',
+        method: 'POST',
+        status: '201',
+      },
+      res,
+    );
     const json = await res.json();
-    assertRequiredFields(json, documentRequiredFields);
     assertEqualsForKeys(json, expectedPostBody, responseKeys);
     expect(json.documentId).toBe(uniqueId);
     expect(json.storeId).toBe(storeId);
@@ -178,9 +198,16 @@ test.describe.parallel('Document API Tests', () => {
       multipart: payload,
     });
 
-    expect(res.status()).toBe(201);
+    await assertStatusCode(res, 201);
+    await validateResponse(
+      {
+        path: '/documents',
+        method: 'POST',
+        status: '201',
+      },
+      res,
+    );
     const json = await res.json();
-    assertRequiredFields(json, documentRequiredFields);
     assertEqualsForKeys(json, expectedPostBody, responseKeys);
   });
 
@@ -196,7 +223,8 @@ test.describe.parallel('Document API Tests', () => {
         ),
         {headers: defaultHeaders()},
       );
-      expect(res.status()).toBe(200);
+      
+      await assertStatusCode(res, 200);
       const text = await res.text();
       expect(text).toBe(`Hello World ${state['name1']}!`);
     }).toPass(defaultAssertionOptions);
@@ -271,7 +299,7 @@ test.describe.parallel('Document API Tests', () => {
           }),
           {headers: jsonHeaders()},
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 
@@ -283,7 +311,7 @@ test.describe.parallel('Document API Tests', () => {
           }),
           {headers: jsonHeaders()},
         );
-        expect(res.status()).toBe(404);
+        await assertNotFoundRequest(res, `Document with id '${state.documentId2}' not found`);
       }).toPass(defaultAssertionOptions);
     });
   });
@@ -301,9 +329,16 @@ test.describe.parallel('Document API Tests', () => {
         multipart: payload,
       });
 
-      expect(res.status()).toBe(201);
+      await assertStatusCode(res, 201);
+      await validateResponse(
+        {
+          path: '/documents/batch',
+          method: 'POST',
+          status: '201',
+        },
+        res,
+      );
       json = await res.json();
-      assertRequiredFields(json, multipleDocumentsRequiredFields);
       expect(json['createdDocuments']).toHaveLength(2);
       expect(json['failedDocuments']).toHaveLength(0);
     });
