@@ -28,11 +28,11 @@ describe('NoInstancesEmptyState', () => {
     render(<NoInstancesEmptyState />, {wrapper: Wrapper});
 
     expect(
-      screen.getByText('Start by deploying a process'),
+      screen.getByText('No running process instances'),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'There are no processes deployed. Deploy and start a process from our Modeler, then come back here to track its progress.',
+        'To view finished instances, go to the Processes view. Start a new process instance to see activity here.',
       ),
     ).toBeInTheDocument();
   });
@@ -60,7 +60,7 @@ describe('NoInstancesEmptyState', () => {
 
     render(<NoInstancesEmptyState />, {wrapper: Wrapper});
 
-    await screen.findByText('Start by deploying a process');
+    await screen.findByText('No running process instances');
 
     expect(
       screen.queryByRole('button', {name: 'Go to Modeler'}),
