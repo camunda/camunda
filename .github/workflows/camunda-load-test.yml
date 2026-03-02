@@ -72,7 +72,7 @@ on:
         description: 'Build the frontend as part of the load test image build'
         type: boolean
         required: false
-        default: true
+        default: false
       secondary-storage-type:
         description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch", "postgresql" or "none"'
         type: choice
@@ -141,7 +141,7 @@ on:
         description: 'Build the frontend as part of the load test image build'
         type: boolean
         required: false
-        default: true
+        default: false
       secondary-storage-type:
         description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch", "postgresql" or "none"'
         # type choice is invalid here

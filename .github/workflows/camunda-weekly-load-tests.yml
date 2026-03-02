@@ -55,6 +55,7 @@ jobs:
       ttl: 28
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: typical
+      build-frontend: true
   setup-rdbms-typical-load-test:
     name: Postgres typical load test
     needs:
@@ -67,6 +68,7 @@ jobs:
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       secondary-storage-type: 'postgresql'
       scenario: typical
+      build-frontend: true
   setup-realistic-test:
     name: Realistic load test
     uses: ./.github/workflows/camunda-load-test.yml
@@ -78,6 +80,7 @@ jobs:
       ttl: 28
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: realistic
+      build-frontend: true
   setup-latency-test:
     name: Latency test
     uses: ./.github/workflows/camunda-load-test.yml
@@ -89,6 +92,7 @@ jobs:
       ttl: 28
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: latency
+      build-frontend: true
 
   notify:
     name: Notify on failure
