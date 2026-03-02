@@ -10,6 +10,7 @@ package io.camunda.optimize.dto.zeebe.variable;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableSourceValue;
 import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
@@ -70,13 +71,18 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
   }
 
   @Override
+  public long getRootProcessInstanceKey() {
+    return -1L; // not used in Optimize
+  }
+
+  @Override
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
 
   @Override
-  public long getRootProcessInstanceKey() {
-    return -1L; // not used in Optimize
+  public VariableSourceValue getSource() {
+    return null; // not used in Optimize
   }
 
   public void setBpmnProcessId(final String bpmnProcessId) {
