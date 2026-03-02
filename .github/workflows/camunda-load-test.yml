@@ -33,6 +33,11 @@ on:
         type: string
         default: ""
         required: false
+      use-official-docker-images:
+        description: 'Use official Camunda Docker images from Docker Hub instead of building from source'
+        type: boolean
+        required: false
+        default: false
       load-test-load:
         description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
         required: false
@@ -77,6 +82,11 @@ on:
         type: string
         default: ""
         required: false
+      use-official-docker-images:
+        description: 'Use official Camunda Docker images from Docker Hub instead of building from source'
+        type: boolean
+        required: false
+        default: false
       platform-helm-values:
         description: 'Allows to specify additional values/configurations for the Camunda platform Helm chart, which will be deployed. For example, the Orchestration cluster `resources` can be modified. Allows arbitrary helm arguments, like --set orchestration.resources.limits.memory=2Gi'
         type: string
@@ -269,8 +279,11 @@ jobs:
           file: operate.Dockerfile
 
   build-load-test-images:
+    # Build load test images when:
+    # 1. No reuse-tag is provided (building from scratch), OR
+    # 2. Using official docker images (since there are no official starter/worker images, we must build them)
     name: Build Starter and Worker
-    if: ${{ inputs.reuse-tag == '' }}
+    if: ${{ inputs.reuse-tag == '' || inputs.use-official-docker-images == true }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: calculate-image-tag
@@ -381,9 +394,11 @@ jobs:
           --render-subchart-notes
           --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           --set global.image.pullSecrets[0].name=harbor-registry
-          --set zeebe.image.repository=${{ env.IMAGE_REPOSITORY }}/zeebe
+          --set zeebe.image.repository=${{ inputs.use-official-docker-images && 'camunda/zeebe' || 'team-zeebe/zeebe' }}
+          --set zeebe.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}
           --set zeebe.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set zeebeGateway.image.repository=${{ env.IMAGE_REPOSITORY }}/zeebe
+          --set zeebeGateway.image.repository=${{ inputs.use-official-docker-images && 'camunda/zeebe' || 'team-zeebe/zeebe' }}
+          --set zeebeGateway.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}
           --set zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
