@@ -46,6 +46,9 @@
             },
             "elementInstanceKey": {
               "type": "long"
+            },
+            "source": {
+              "enabled": false
             }
           }
         }
