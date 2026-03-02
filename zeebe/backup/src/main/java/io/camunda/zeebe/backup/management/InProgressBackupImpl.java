@@ -94,8 +94,7 @@ final class InProgressBackupImpl implements InProgressBackup {
     return backupId;
   }
 
-  @Override
-  public ActorFuture<Set<PersistedSnapshot>> findValidSnapshot() {
+  private ActorFuture<Set<PersistedSnapshot>> findValidSnapshot() {
     final ActorFuture<Set<PersistedSnapshot>> result = concurrencyControl.createFuture();
     snapshotStore
         .getAvailableSnapshots()
@@ -140,14 +139,23 @@ final class InProgressBackupImpl implements InProgressBackup {
   @Override
   public ActorFuture<Void> reserveSnapshot() {
     final ActorFuture<Void> future = concurrencyControl.createFuture();
-    if (hasSnapshot) {
-      tryReserveWithRetry(future, MAX_RESERVATION_ATTEMPTS);
-    } else {
-      // No snapshot to reserve
-      future.complete(null);
-    }
-
+    findAndReserveSnapshot(future, MAX_RESERVATION_ATTEMPTS);
     return future;
+  }
+
+  private void findAndReserveSnapshot(final ActorFuture<Void> future, final int remainingAttempts) {
+    findValidSnapshot()
+        .onComplete(
+            (snapshots, findError) -> {
+              if (findError != null) {
+                future.completeExceptionally(findError);
+              } else if (!hasSnapshot) {
+                // No snapshot to reserve
+                future.complete(null);
+              } else {
+                tryReserveWithRetry(future, remainingAttempts);
+              }
+            });
   }
 
   private void tryReserveWithRetry(final ActorFuture<Void> future, final int remainingAttempts) {
@@ -409,19 +417,7 @@ final class InProgressBackupImpl implements InProgressBackup {
                   .setCause(error)
                   .setMessage("Failed to reserve any available snapshot, re-discovering snapshots")
                   .log();
-              findValidSnapshot()
-                  .onComplete(
-                      (snapshots, findError) -> {
-                        if (findError != null) {
-                          future.completeExceptionally(findError);
-                        } else if (!hasSnapshot) {
-                          future.completeExceptionally(
-                              new SnapshotNotFoundException(
-                                  "No snapshots available after re-discovery"));
-                        } else {
-                          tryReserveWithRetry(future, remainingAttempts - 1);
-                        }
-                      });
+              findAndReserveSnapshot(future, remainingAttempts - 1);
             } else {
               LOG.atError()
                   .addKeyValue("backup", backupId)
