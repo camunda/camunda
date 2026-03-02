@@ -33,14 +33,17 @@ import java.util.function.Predicate;
 
 public class JobWorkerFactory {
   private final BackoffSupplier backoffSupplier;
+  private final BackoffSupplier streamNoJobsBackoffSupplier;
   private final JobExceptionHandlerSupplier jobExceptionHandlerSupplier;
   private final JobWorkerMetricsFactory jobWorkerMetricsFactory;
 
   public JobWorkerFactory(
       final BackoffSupplier backoffSupplier,
+      final BackoffSupplier streamNoJobsBackoffSupplier,
       final JobExceptionHandlerSupplier jobExceptionHandlerSupplier,
       final JobWorkerMetricsFactory jobWorkerMetricsFactory) {
     this.backoffSupplier = backoffSupplier;
+    this.streamNoJobsBackoffSupplier = streamNoJobsBackoffSupplier;
     this.jobExceptionHandlerSupplier = jobExceptionHandlerSupplier;
     this.jobWorkerMetricsFactory = jobWorkerMetricsFactory;
   }
@@ -59,6 +62,7 @@ public class JobWorkerFactory {
             .handler(jobHandler)
             .name(jobWorkerValue.getName().value())
             .backoffSupplier(backoffSupplier)
+            .streamNoJobsBackoffSupplier(streamNoJobsBackoffSupplier)
             .jobExceptionHandler(
                 jobExceptionHandlerSupplier.getJobExceptionHandler(
                     new JobExceptionHandlerSupplierContext(
