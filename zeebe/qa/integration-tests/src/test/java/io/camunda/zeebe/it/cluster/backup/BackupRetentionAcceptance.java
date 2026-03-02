@@ -117,7 +117,6 @@ public interface BackupRetentionAcceptance extends ClockSupport {
                 return false;
               }
               return state.getBackupStates().stream()
-                  .filter(f -> Objects.nonNull(f.getCheckpointId()))
                   .allMatch(f -> f.getCheckpointId() > previousBackup);
             });
     return actuator.state().getBackupStates().stream()
