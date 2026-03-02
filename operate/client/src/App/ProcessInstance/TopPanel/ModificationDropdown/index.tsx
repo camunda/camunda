@@ -193,7 +193,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                                 payload: {
                                   operation: 'ADD_TOKEN',
                                   scopeId: generateUniqueID(),
-                                  flowNode: {
+                                  element: {
                                     id: selectedElementId,
                                     name: getElementName({
                                       businessObjects,

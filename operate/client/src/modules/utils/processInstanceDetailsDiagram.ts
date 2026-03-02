@@ -63,57 +63,57 @@ const hasSingleScope = (
     (count) => count === 1,
   );
 
-const getFlowNodesInBetween = (
+const getElementsInBetween = (
   businessObjects: BusinessObjects,
-  fromFlowNodeId: string,
-  toFlowNodeId: string,
+  fromElementId: string,
+  toElementId: string,
 ): string[] => {
-  const fromFlowNode = businessObjects[fromFlowNodeId];
+  const fromElement = businessObjects[fromElementId];
 
   if (
-    fromFlowNode?.$parent === undefined ||
-    fromFlowNode.$parent.id === toFlowNodeId
+    fromElement?.$parent === undefined ||
+    fromElement.$parent.id === toElementId
   ) {
     return [];
   }
 
   return [
-    fromFlowNode.$parent.id,
-    ...getFlowNodesInBetween(
+    fromElement.$parent.id,
+    ...getElementsInBetween(
       businessObjects,
-      fromFlowNode.$parent.id,
-      toFlowNodeId,
+      fromElement.$parent.id,
+      toElementId,
     ),
   ];
 };
 
-const getFlowNodeParents = (
+const getElementParents = (
   businessObjects: BusinessObjects,
-  flowNodeId: string,
+  elementId: string,
   bpmnProcessId?: string,
 ): string[] => {
   if (bpmnProcessId === undefined) {
     return [];
   }
 
-  return getFlowNodesInBetween(businessObjects, flowNodeId, bpmnProcessId);
+  return getElementsInBetween(businessObjects, elementId, bpmnProcessId);
 };
 
 const areInSameRunningScope = (
   businessObjects: BusinessObjects,
-  sourceFlowNodeId: string,
-  targetFlowNodeId: string,
+  sourceElementId: string,
+  targetElementId: string,
   totalRunningInstancesByFlowNode?: Record<string, number>,
 ): boolean => {
-  const sourceFlowNode = businessObjects[sourceFlowNodeId];
-  const targetFlowNode = businessObjects[targetFlowNodeId];
+  const sourceElement = businessObjects[sourceElementId];
+  const targetElement = businessObjects[targetElementId];
 
-  if (!sourceFlowNode || !targetFlowNode) {
+  if (!sourceElement || !targetElement) {
     return false;
   }
 
-  const sourceParent = sourceFlowNode.$parent;
-  const targetParent = targetFlowNode.$parent;
+  const sourceParent = sourceElement.$parent;
+  const targetParent = targetElement.$parent;
 
   if (!sourceParent || !targetParent) {
     return false;
@@ -151,10 +151,10 @@ const getAncestorScopeType = (
 };
 
 export {
-  getFlowNodeParents,
+  getElementParents,
   hasMultipleScopes,
   hasSingleScope,
-  getFlowNodesInBetween,
+  getElementsInBetween,
   areInSameRunningScope,
   getAncestorScopeType,
 };

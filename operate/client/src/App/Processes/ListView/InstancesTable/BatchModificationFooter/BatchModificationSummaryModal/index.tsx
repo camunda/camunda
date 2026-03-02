@@ -78,7 +78,7 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
 
     const headers = [
       {header: 'Operation', key: 'operation', width: '30%'},
-      {header: 'Element', key: 'flowNode', width: '40%'},
+      {header: 'Element', key: 'element', width: '40%'},
       {header: 'Affected instances', key: 'affectedInstances', width: '30%'},
     ];
 
@@ -86,7 +86,7 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
       {
         id: 'batchMove',
         operation: 'Batch move',
-        flowNode: `${sourceFlowNodeName} --> ${targetFlowNodeName}`,
+        element: `${sourceFlowNodeName} --> ${targetFlowNodeName}`,
         affectedInstances: instancesCount,
       },
     ];
