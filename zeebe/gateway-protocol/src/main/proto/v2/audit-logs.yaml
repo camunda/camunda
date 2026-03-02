@@ -130,7 +130,6 @@ components:
           type: string
           description: The timestamp when the operation occurred.
           format: date-time
-          nullable: true
         actorId:
           type: string
           description: The ID of the actor who performed the operation.
