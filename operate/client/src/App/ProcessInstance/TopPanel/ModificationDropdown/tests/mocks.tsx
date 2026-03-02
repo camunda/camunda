@@ -47,7 +47,7 @@ const renderPopover = (
 
   return render(
     <ModificationDropdown
-      selectedFlowNodeRef={svgElement}
+      selectedElementRef={svgElement}
       diagramCanvasRef={ref}
     />,
     {
