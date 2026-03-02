@@ -51,6 +51,7 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
         getTableProps,
         getRowProps,
         getHeaderProps,
+        getExpandedRowProps,
         getExpandHeaderProps,
       }) => (
         <TableContainer {...getTableContainerProps()} data-testid={dataTestId}>
@@ -91,7 +92,7 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
                     {isExpandable && (
                       <TableExpandedRow
                         colSpan={headers.length + 1}
-                        id={`expanded-row-${row.id}`}
+                        {...getExpandedRowProps({row})}
                       >
                         {React.cloneElement(expandedContent, {
                           tabIndex: row.isExpanded ? 0 : -1,
