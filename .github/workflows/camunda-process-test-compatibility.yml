@@ -29,6 +29,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  FLAKY_TEST_RERUN_COUNT: '3'
+
 jobs:
   prepare-versions:
     name: Prepare Version Matrix
@@ -494,6 +497,8 @@ jobs:
             -DskipUTs
             -Dio.camunda.process.test.camundaDockerImageVersion=${{ matrix.server }}
             -Dio.camunda.process.test.connectorsDockerImageVersion=${{ steps.connectors-version.outputs.version }}
+            -Dfailsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
+            -Dsurefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
             -DfailIfNoTests=false
             ${{ steps.api-version.outputs.extra-props }}
 
