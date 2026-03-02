@@ -171,7 +171,7 @@ final class VersionCompatibilityMatrix {
             .mapToInt(SemanticVersion::minor)
             .filter(minor -> minor < current.minor())
             .max()
-            .orElse(current.minor() - 1);
+            .orElse(-1); // -1 is a sentinel: no previous released minor found
 
     return allPreviousVersions.stream()
         .filter(version -> version.minor() == previousMinor || version.minor() == current.minor())
