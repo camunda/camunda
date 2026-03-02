@@ -22,6 +22,7 @@ public class TenantEntityAuditLogTransformer implements AuditLogTransformer<Tena
   public void transform(final Record<TenantRecordValue> record, final AuditLogEntry log) {
     final TenantRecordValue value = record.getValue();
     log.setEntityKey(value.getTenantId())
+        .setEntityDescription(value.getName())
         .setRelatedEntityKey(value.getEntityId())
         .setRelatedEntityType(
             AuditLogTransformerConfigs.mapEntityTypeToAuditLogEntityType(value.getEntityType()));

@@ -44,6 +44,7 @@ class RoleAuditLogTransformerTest {
 
     // then
     assertThat(entity.getEntityKey()).isEqualTo("role-123");
+    assertThat(entity.getEntityDescription()).isEqualTo("Test Role");
   }
 
   @Test
