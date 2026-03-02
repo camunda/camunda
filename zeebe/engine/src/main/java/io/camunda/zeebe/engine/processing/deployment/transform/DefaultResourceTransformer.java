@@ -30,6 +30,27 @@ import org.agrona.DirectBuffer;
  * name (filename) is used as the resource ID. Subclasses can override {@link
  * #parseResourceId(DeploymentResource)} to resolve the resource ID (and optional version tag) from
  * the raw resource content.
+ *
+ * <h2>Duplicate detection</h2>
+ *
+ * <p>A resource deployment is considered a <em>duplicate</em> when both the checksum (MD5 of the
+ * raw bytes) and the resource ID match the previously deployed version. Only if either value
+ * differs will a new version be created.
+ *
+ * <h2>Filename (resourceName) vs. resource ID</h2>
+ *
+ * <p>The {@code resourceName} field always reflects the filename used in the deployment command,
+ * even for duplicates. This lets callers see which filename was used in each deployment. However,
+ * {@code resourceName} is <em>not</em> part of the identity check:
+ *
+ * <ul>
+ *   <li><b>Generic resources</b> (no known extension, e.g. {@code .txt}): the filename <em>is</em>
+ *       the resource ID. Renaming the file therefore creates an entirely new, independently
+ *       versioned resource.
+ *   <li><b>Structured resources</b> (e.g. {@code .rpa}): the resource ID is parsed from the file
+ *       content. Renaming the file while keeping the same content and ID is treated as a duplicate
+ *       — no new version is created.
+ * </ul>
  */
 class DefaultResourceTransformer implements DeploymentResourceTransformer {
 

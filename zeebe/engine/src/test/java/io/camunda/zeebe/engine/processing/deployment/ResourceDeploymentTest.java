@@ -258,7 +258,9 @@ public class ResourceDeploymentTest {
     final var deploymentEvent =
         engine.deployment().withJsonResource(resource, "renamed-test-rpa-1.rpa").deploy();
 
-    // then - the resource is a duplicate because resourceId and checksum are unchanged
+    // then - the resource is a duplicate because resourceId and checksum are unchanged.
+    // Note: the resourceName field reflects the new filename even for duplicates, so users
+    // can see which filename was used in each deployment (rename is tracked).
     assertThat(deploymentEvent.getValue().getResourceMetadata())
         .singleElement()
         .satisfies(
@@ -266,7 +268,46 @@ public class ResourceDeploymentTest {
                 Assertions.assertThat(resourceMetadata)
                     .hasVersion(1)
                     .hasResourceKey(resourceV1.getResourceKey())
+                    .hasResourceName("renamed-test-rpa-1.rpa")
                     .isDuplicate());
+  }
+
+  @Test
+  public void shouldCreateNewResourceWhenGenericResourceIsRenamed() {
+    // given - first deployment under original filename (filename is the resource ID for generic
+    // resources)
+    final var firstDeployment =
+        engine.deployment().withJsonClasspathResource(TEST_GENERIC_RESOURCE_1).deploy();
+    final var resourceV1 = firstDeployment.getValue().getResourceMetadata().get(0);
+
+    // when - same content deployed under a different filename
+    final var secondDeployment =
+        engine
+            .deployment()
+            .withJsonResource(readResource(TEST_GENERIC_RESOURCE_1), "/resource/renamed-generic-1.txt")
+            .deploy();
+
+    // then - a new, separate resource is created because the filename (= resource ID) changed.
+    // For generic resources, renaming the file is the way to create a new, independently
+    // versioned resource. This is distinct from the structured resource case (e.g. RPA) where
+    // the resource ID comes from the content and a filename rename is treated as a duplicate.
+    assertThat(secondDeployment.getValue().getResourceMetadata())
+        .singleElement()
+        .satisfies(
+            resourceMetadata ->
+                Assertions.assertThat(resourceMetadata)
+                    .hasResourceId("/resource/renamed-generic-1.txt")
+                    .hasResourceName("/resource/renamed-generic-1.txt")
+                    .hasVersion(1)
+                    .isNotDuplicate());
+
+    // and the original resource is unaffected (still at version 1 under the old name)
+    assertThat(resourceV1)
+        .satisfies(
+            metadata ->
+                Assertions.assertThat(metadata)
+                    .hasResourceId(TEST_GENERIC_RESOURCE_1)
+                    .hasVersion(1));
   }
 
   @Test
