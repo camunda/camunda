@@ -68,10 +68,9 @@ public interface ResourceMetadataValue extends RecordValue, TenantOwned {
    * non-null.
    *
    * <p>Note: the {@code resourceName} (filename) is intentionally not part of this check. For
-   * structured resources (e.g. RPA), the resource ID comes from the file content, so a renamed
-   * file with the same content is still a duplicate. For generic resources, the filename
-   * <em>is</em> the resource ID, so renaming will produce a different ID and is therefore not a
-   * duplicate.
+   * structured resources (e.g. RPA), the resource ID comes from the file content, so a renamed file
+   * with the same content is still a duplicate. For generic resources, the filename <em>is</em> the
+   * resource ID, so renaming will produce a different ID and is therefore not a duplicate.
    */
   default boolean isDuplicateOf(final byte[] checksum, final String resourceId) {
     return Arrays.equals(getChecksum(), checksum) && getResourceId().equals(resourceId);

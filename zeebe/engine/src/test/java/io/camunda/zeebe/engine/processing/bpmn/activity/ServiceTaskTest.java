@@ -19,7 +19,9 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
@@ -282,6 +284,75 @@ public class ServiceTaskTest {
   }
 
   @Test
+  public void shouldCreateJobWithLinkedGenericResourceDeploymentBinding()
+      throws JsonProcessingException {
+    // Generic resources use the filename as their resource ID.
+    // A job worker can link a generic resource by using the filename as resourceId in BPMN.
+    // After the job is created, the worker reads the resolved resource key from the
+    // "linkedResources" custom header and fetches the content via GET /v2/resources/{key}/content.
+    final var genericResourceContent = "My script content".getBytes(StandardCharsets.UTF_8);
+    final var genericResourceName = "my-generic-script.txt";
+
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("genericResourceProcess")
+            .startEvent()
+            .serviceTask(
+                "my_linked_resource",
+                t ->
+                    t.zeebeLinkedResources(
+                            l ->
+                                l.resourceId(genericResourceName)
+                                    .resourceType("GenericScript")
+                                    .bindingType(ZeebeBindingType.deployment)
+                                    .linkName("my_generic_link"))
+                        .zeebeJobType("type"))
+            .endEvent()
+            .done();
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withJsonResource(genericResourceContent, genericResourceName)
+            .withXmlResource(modelInstance)
+            .deploy();
+
+    // Deploy a second version of the generic resource (should not be used — deployment binding
+    // pins to the version deployed alongside the process definition)
+    ENGINE
+        .deployment()
+        .withJsonResource("Updated content".getBytes(StandardCharsets.UTF_8), genericResourceName)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("genericResourceProcess").create();
+
+    // then
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(jobCreated.getValue().getCustomHeaders()).containsKey("linkedResources");
+    final List<LinkedResourceProps> resourcePropsList =
+        MAPPER.readValue(
+            jobCreated.getValue().getCustomHeaders().get("linkedResources"),
+            new TypeReference<>() {});
+
+    assertThat(resourcePropsList).hasSize(1);
+    final LinkedResourceProps resourceProps = resourcePropsList.get(0);
+    assertThat(resourceProps)
+        .hasFieldOrPropertyWithValue("resourceType", "GenericScript")
+        .hasFieldOrPropertyWithValue("linkName", "my_generic_link");
+
+    // The resource key should refer to the version deployed WITH the process (deployment binding),
+    // not the later version
+    final var expectedResourceKey =
+        deployment.getValue().getResourceMetadata().getFirst().getResourceKey();
+    assertThat(resourceProps.getResourceKey()).isEqualTo(String.valueOf(expectedResourceKey));
+  }
+
+  @Test
   public void shouldHandleNotFoundVersionTagBinding() {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
@@ -338,24 +409,15 @@ public class ServiceTaskTest {
             .endEvent()
             .done();
 
-    final var deployment = ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    // A deployment with bindingType=deployment is rejected at deploy time when the referenced
+    // resource is not included in the same deployment (validated by
+    // ZeebeLinkedResourceDeploymentBindingValidator).
+    final var rejection =
+        ENGINE.deployment().withXmlResource(modelInstance).expectRejection().deploy();
 
-    // when
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // then
-    final IncidentRecordValue incidentRecordValue =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst()
-            .getValue();
-    assertThat(incidentRecordValue.getErrorType()).isEqualTo(ErrorType.RESOURCE_NOT_FOUND);
-    assertThat(incidentRecordValue.getErrorMessage())
-        .isEqualTo(
-            String.format(
-                BpmnJobBehavior.FIND_RESOURCE_BY_ID_IN_SAME_DEPLOYMENT_FAILED_MESSAGE,
-                "2",
-                deployment.getKey()));
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .contains("Expected to find resource with id '2' in current deployment, but not found.");
   }
 
   @Test

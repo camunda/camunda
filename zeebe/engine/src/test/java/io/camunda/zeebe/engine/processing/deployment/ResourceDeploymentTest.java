@@ -284,7 +284,8 @@ public class ResourceDeploymentTest {
     final var secondDeployment =
         engine
             .deployment()
-            .withJsonResource(readResource(TEST_GENERIC_RESOURCE_1), "/resource/renamed-generic-1.txt")
+            .withJsonResource(
+                readResource(TEST_GENERIC_RESOURCE_1), "/resource/renamed-generic-1.txt")
             .deploy();
 
     // then - a new, separate resource is created because the filename (= resource ID) changed.
