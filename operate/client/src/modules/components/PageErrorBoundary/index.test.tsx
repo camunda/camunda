@@ -9,7 +9,6 @@
 import {render, screen} from 'modules/testing-library';
 import {PageErrorBoundary} from './index';
 import {createMemoryRouter, RouterProvider} from 'react-router-dom';
-import React from 'react';
 
 const ThrowRouteError: React.FC<{error: unknown}> = ({error}) => {
   throw error;
