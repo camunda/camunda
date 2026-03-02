@@ -17,6 +17,7 @@ import {reaction, when} from 'mobx';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {elementTimeStampStore} from 'modules/stores/elementTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
+import {ProcessInstanceHeader as ProcessInstanceHeaderNext} from './ProcessInstanceHeaderNext';
 import {TopPanel} from './TopPanel';
 import {BottomPanel, ModificationFooter, Buttons} from './styled';
 import {ElementInstanceLog} from './ElementInstanceLog';
@@ -36,9 +37,10 @@ import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {useClearSelectionOnModificationUndo} from 'modules/hooks/elementSelection';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, Outlet} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
 
 const ProcessInstance: React.FC = observer(() => {
   const {data: processInstance, error} = useProcessInstance();
@@ -156,14 +158,24 @@ const ProcessInstance: React.FC = observer(() => {
                 />
               ) : undefined
             }
-            header={<ProcessInstanceHeader processInstance={processInstance} />}
+            header={
+              IS_NEW_PROCESS_INSTANCE_PAGE ? (
+                <ProcessInstanceHeaderNext processInstance={processInstance} />
+              ) : (
+                <ProcessInstanceHeader processInstance={processInstance} />
+              )
+            }
             topPanel={<TopPanel />}
             bottomPanel={
               <BottomPanel $shouldExpandPanel={isListenerTabSelected}>
                 <ElementInstanceLog />
-                <VariablePanel
-                  setListenerTabVisibility={setListenerTabVisibility}
-                />
+                {IS_NEW_PROCESS_INSTANCE_PAGE ? (
+                  <Outlet />
+                ) : (
+                  <VariablePanel
+                    setListenerTabVisibility={setListenerTabVisibility}
+                  />
+                )}
               </BottomPanel>
             }
             footer={

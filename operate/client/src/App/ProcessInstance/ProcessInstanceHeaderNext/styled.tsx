@@ -6,6 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_NEW_PROCESS_INSTANCE_PAGE = false;
+import {Tag} from '@carbon/react';
+import styled from 'styled-components';
 
-export {IS_NEW_PROCESS_INSTANCE_PAGE};
+const VersionTag = styled(Tag)`
+  margin-left: 0;
+`;
+
+export {VersionTag};
