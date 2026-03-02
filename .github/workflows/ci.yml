@@ -196,7 +196,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "Dependency Cycle Check"
     needs: [ detect-changes ]
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-16-default
     timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
