@@ -70,6 +70,7 @@ jobs:
       name: ${{ needs.benchmark-data.outputs.benchmark }}
       ttl: 1
       scenario: max
+      build-frontend: true
 
   notify:
     name: Notify on failure
