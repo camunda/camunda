@@ -280,6 +280,7 @@ components:
         - camunda.document.type
         - storeId
         - documentId
+        - contentHash
         - metadata
       properties:
         camunda.document.type:
