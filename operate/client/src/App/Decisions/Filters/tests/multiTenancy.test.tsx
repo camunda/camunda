@@ -96,7 +96,9 @@ describe('<Filters />', () => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
     await selectTenant({user, option: 'All tenants'});
 
-    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toBeEnabled(),
+    );
 
     expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
       /all tenants/i,
@@ -149,13 +151,13 @@ describe('<Filters />', () => {
       wrapper: getWrapper(`/?${new URLSearchParams(MOCK_FILTERS_PARAMS)}`),
     });
 
-    expect(screen.getByLabelText('Name')).toHaveValue(
+    expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
       'Assign Approver Group for tenant A',
     );
     expectVersion('2');
 
     await waitFor(() =>
-      expect(screen.getByRole('combobox', {name: 'Tenant'})).toHaveTextContent(
+      expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
         'Tenant A',
       ),
     );
@@ -171,7 +173,7 @@ describe('<Filters />', () => {
     });
 
     expect(
-      screen.queryByRole('combobox', {name: 'Tenant'}),
+      screen.queryByRole('combobox', {name: /tenant/i}),
     ).not.toBeInTheDocument();
   });
 
@@ -189,7 +191,7 @@ describe('<Filters />', () => {
     await waitFor(() =>
       expect(groupedDecisionsStore.state.status).toBe('fetched'),
     );
-    expect(screen.getByLabelText('Name')).toBeDisabled();
+    expect(screen.getByRole('combobox', {name: 'Name'})).toBeDisabled();
   });
 
   it('should clear decision name and version field when tenant filter is changed', async () => {
@@ -206,21 +208,25 @@ describe('<Filters />', () => {
     await waitFor(() =>
       expect(groupedDecisionsStore.state.status).toBe('fetched'),
     );
-    expect(screen.getByLabelText('Name')).toBeDisabled();
+    expect(screen.getByRole('combobox', {name: 'Name'})).toBeDisabled();
 
     await selectTenant({user, option: 'All tenants'});
     expect(screen.getByRole('combobox', {name: /tenant/i})).toHaveTextContent(
       /all tenants/i,
     );
 
-    await waitFor(() => expect(screen.getByLabelText('Name')).toBeEnabled());
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Name'})).toBeEnabled(),
+    );
 
     await selectDecision({
       user,
       option: 'Assign Approver Group - Default Tenant',
     });
 
-    expect(screen.getByLabelText('Name')).toHaveValue('Assign Approver Group');
+    expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue(
+      'Assign Approver Group',
+    );
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent('2');
@@ -234,7 +240,7 @@ describe('<Filters />', () => {
       expect(groupedDecisionsStore.state.status).toBe('fetched'),
     );
 
-    expect(screen.getByLabelText('Name')).toHaveValue('');
+    expect(screen.getByRole('combobox', {name: 'Name'})).toHaveValue('');
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent(/select a decision version/i);

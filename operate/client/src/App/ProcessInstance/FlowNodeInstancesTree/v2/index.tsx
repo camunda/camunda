@@ -282,9 +282,10 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
             }
           }
         }}
+        // @ts-expect-error - Carbon TreeNode onToggle type conflicts with React's ToggleEventHandler
         onToggle={
           isFoldable
-            ? (event) => {
+            ? (event: React.MouseEvent | React.KeyboardEvent) => {
                 event.stopPropagation();
                 return (flowNodeInstance.isPlaceholder &&
                   hasVisibleChildPlaceholders) ||

@@ -9,14 +9,14 @@
 import React from 'react';
 import {Field, useForm} from 'react-final-form';
 import {Checkbox as CarbonCheckbox, Stack} from '@carbon/react';
-import {type Icon} from '@carbon/react/icons';
+import type {CarbonIconType} from '@carbon/react/icons';
 import {Checkbox} from 'modules/components/Checkbox';
 import {Group} from './styled';
 
 type GroupItem = {
   label: string;
   name: string;
-  Icon: Icon;
+  Icon: CarbonIconType;
 };
 
 type Props = {
@@ -28,7 +28,7 @@ type Props = {
 const CheckboxGroup: React.FC<Props> = ({dataTestId, groupLabel, items}) => {
   const form = useForm();
   const fieldValues = items.map(({name}) =>
-    Boolean(form.getState().values[name]),
+    Boolean(form.getState().values?.[name]),
   );
   const isChecked = fieldValues.every((value) => value);
   const isIndeterminate = fieldValues.some((value) => value);

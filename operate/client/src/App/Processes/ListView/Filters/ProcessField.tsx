@@ -38,6 +38,10 @@ const ProcessField: React.FC = observer(() => {
           aria-label="Select a Process"
           placeholder="Search by Process Name"
           onChange={({selectedItem}) => {
+            if (selectedItem?.id === input.value) {
+              return;
+            }
+
             const versions = selectedItem
               ? versionsByProcessAndTenant[selectedItem.id]
               : [];

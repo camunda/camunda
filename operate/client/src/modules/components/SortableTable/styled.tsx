@@ -38,6 +38,7 @@ const Container = styled.div<ContainerProps>`
 
 type TableExpandRowProps = {
   $isClickable?: boolean;
+  onClick?: React.MouseEventHandler<HTMLTableRowElement>;
 };
 
 const TableExpandRow = styled(BaseTableExpandRow)<TableExpandRowProps>`
@@ -186,8 +187,23 @@ const TableCell = styled(BaseTableCell)<TableCellProps>`
     `;
   }}
 `;
-const TableHead = styled(BaseTableHead)`
-  white-space: nowrap;
+
+type TableHeadProps = {
+  $stickyHeader?: boolean;
+};
+
+const TableHead = styled(BaseTableHead)<TableHeadProps>`
+  ${({$stickyHeader}) => {
+    return css`
+      white-space: nowrap;
+      ${$stickyHeader &&
+      css`
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      `}
+    `;
+  }}
 `;
 
 const EmptyMessageContainer = styled.div`
