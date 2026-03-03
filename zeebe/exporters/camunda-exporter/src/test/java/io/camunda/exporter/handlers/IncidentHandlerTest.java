@@ -154,7 +154,9 @@ public class IncidentHandlerTest {
                 "processDefinitionKey",
                 incidentRecordValue.getProcessDefinitionKey(),
                 "treePath",
-                incidentEntity.getTreePath()));
+                incidentEntity.getTreePath(),
+                "state",
+                incidentEntity.getState()));
   }
 
   @Test
