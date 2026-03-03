@@ -184,6 +184,11 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
     get(module: 'zoomScroll'): {
       stepZoom(step: number): void;
     };
+    get(module: 'minimap'): {
+      open(): void;
+      close(): void;
+      isOpen(): boolean;
+    };
 
     on: EventCallback;
     off: EventCallback;

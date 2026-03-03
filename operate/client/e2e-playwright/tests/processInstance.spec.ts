@@ -296,7 +296,7 @@ test.describe('Process Instance', () => {
     await expect(diagram.getElement('fill form')).toBeVisible();
     await expect(popover.getByText(/retries left/i)).toBeVisible();
 
-    await diagram.diagram.getByText('collapsedSubProcess').click();
+    await diagram.diagramCanvas.getByText('collapsedSubProcess').click();
 
     await expect(
       popover.getByText(/flow node instance key/i),
