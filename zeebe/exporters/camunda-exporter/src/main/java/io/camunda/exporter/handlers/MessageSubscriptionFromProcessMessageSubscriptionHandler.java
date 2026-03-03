@@ -94,6 +94,11 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
       final var cached = processCache.get(processDefinitionKey);
       entity.setProcessDefinitionName(cached.map(CachedProcessEntity::name).orElse(null));
       entity.setProcessDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null));
+      entity.setExtensionProperties(
+          cached
+              .map(CachedProcessEntity::extensionPropertiesMap)
+              .map(m -> m.get(recordValue.getElementId()))
+              .orElse(null));
     }
 
     entity
@@ -102,104 +107,6 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
         .setPositionProcessMessageSubscription(record.getPosition())
         .setMessageSubscriptionType(INTERMEDIATE_EVENT_SUBSCRIPTION.name());
-
-    final long activityInstanceKey = recordValue.getElementInstanceKey();
-    if (activityInstanceKey > 0) {
-      entity.setFlowNodeInstanceKey(activityInstanceKey);
-    }
-
-    final MessageSubscriptionMetadataEntity eventMetadata = new MessageSubscriptionMetadataEntity();
-    eventMetadata.setMessageName(recordValue.getMessageName());
-    eventMetadata.setCorrelationKey(recordValue.getCorrelationKey());
-
-    entity.setMetadata(eventMetadata);
-
-    final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
-    if (rootProcessInstanceKey > 0) {
-      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
-    }
-  }
-
-  @Override
-  public void flush(final MessageSubscriptionEntity entity, final BatchRequest batchRequest) {
-    persistEvent(
-        entity,
-        MessageSubscriptionTemplate.POSITION_MESSAGE,
-        entity.getPositionProcessMessageSubscription(),
-        batchRequest);
-  }
-}
-
-
-public class MessageSubscriptionFromProcessMessageSubscriptionHandler
-    extends AbstractEventHandler<ProcessMessageSubscriptionRecordValue> {
-
-  public static final Set<Intent> STATES =
-      Set.of(
-          ProcessMessageSubscriptionIntent.CORRELATED,
-          ProcessMessageSubscriptionIntent.CREATED,
-          ProcessMessageSubscriptionIntent.DELETED,
-          ProcessMessageSubscriptionIntent.MIGRATED);
-
-  private final ExporterMetadata exporterMetadata;
-
-  public MessageSubscriptionFromProcessMessageSubscriptionHandler(
-      final String indexName, final ExporterMetadata exporterMetadata) {
-    super(indexName);
-    this.exporterMetadata = exporterMetadata;
-  }
-
-  @Override
-  public ValueType getHandledValueType() {
-    return ValueType.PROCESS_MESSAGE_SUBSCRIPTION;
-  }
-
-  @Override
-  public boolean handlesRecord(final Record<ProcessMessageSubscriptionRecordValue> record) {
-    return STATES.contains(record.getIntent());
-  }
-
-  @Override
-  public List<String> generateIds(final Record<ProcessMessageSubscriptionRecordValue> record) {
-    if (record.getIntent().equals(ProcessMessageSubscriptionIntent.CREATED)) {
-      exporterMetadata.setFirstProcessMessageSubscriptionKey(record.getKey());
-    }
-    if (exporterMetadata.keyIsBeforeFirstProcessMessageSubscriptionKey(record.getKey())) {
-      return List.of(
-          String.format(
-              ID_PATTERN,
-              record.getValue().getProcessInstanceKey(),
-              record.getValue().getElementInstanceKey()));
-    }
-    return List.of(String.valueOf(record.getKey()));
-  }
-
-  @Override
-  public void updateEntity(
-      final Record<ProcessMessageSubscriptionRecordValue> record,
-      final MessageSubscriptionEntity entity) {
-
-    final ProcessMessageSubscriptionRecordValue recordValue = record.getValue();
-
-    entity.setPositionProcessMessageSubscription(record.getPosition());
-
-    loadEventGeneralData(record, entity);
-
-    final long processInstanceKey = recordValue.getProcessInstanceKey();
-    if (processInstanceKey > 0) {
-      entity.setProcessInstanceKey(processInstanceKey);
-    }
-
-    final long processDefinitionKey = recordValue.getProcessDefinitionKey();
-    if (processDefinitionKey > 0) {
-      entity.setProcessDefinitionKey(processDefinitionKey);
-    }
-
-    entity
-        .setBpmnProcessId(recordValue.getBpmnProcessId())
-        .setFlowNodeId(recordValue.getElementId())
-        .setTenantId(tenantOrDefault(recordValue.getTenantId()))
-        .setPositionProcessMessageSubscription(record.getPosition());
 
     final long activityInstanceKey = recordValue.getElementInstanceKey();
     if (activityInstanceKey > 0) {

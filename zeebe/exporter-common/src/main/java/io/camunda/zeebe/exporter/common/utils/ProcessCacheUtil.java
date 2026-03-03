@@ -113,10 +113,12 @@ public final class ProcessCacheUtil {
     if (reader != null) {
       final List<String> callActivityIds = sortedCallActivityIds(reader.extractCallActivities());
       final Map<String, String> flowNodesMap = getFlowNodesMap(reader.extractFlowNodes());
-      return new ProcessDiagramData(callActivityIds, flowNodesMap);
+      final Map<String, Map<String, String>> extensionPropertiesMap =
+          reader.extractExtensionPropertiesMap();
+      return new ProcessDiagramData(callActivityIds, flowNodesMap, extensionPropertiesMap);
     }
 
-    return new ProcessDiagramData(List.of(), Map.of());
+    return new ProcessDiagramData(List.of(), Map.of(), Map.of());
   }
 
   public static List<String> sortedCallActivityIds(final Collection<CallActivity> callActivities) {

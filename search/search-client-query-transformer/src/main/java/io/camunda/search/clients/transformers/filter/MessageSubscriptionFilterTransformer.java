@@ -27,11 +27,9 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_KEY;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import java.util.ArrayList;
 import java.util.List;
 
 public class MessageSubscriptionFilterTransformer
@@ -43,8 +41,11 @@ public class MessageSubscriptionFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final MessageSubscriptionFilter filter) {
-    // Build the event source type restriction based on messageSubscriptionType filter
-    final var eventSourceTypeFilter = buildEventSourceTypeFilter(filter);
+    final var eventSourceTypeFilter =
+        List.of(
+            stringTerms(
+                EVENT_SOURCE_TYPE,
+                List.of("PROCESS_MESSAGE_SUBSCRIPTION", "MESSAGE_START_EVENT_SUBSCRIPTION")));
 
     return and(
         eventSourceTypeFilter,
@@ -62,25 +63,6 @@ public class MessageSubscriptionFilterTransformer
         stringOperations("metadata.messageName", filter.messageNameOperations()),
         stringOperations("metadata.correlationKey", filter.correlationKeyOperations()),
         stringOperations(TENANT_ID, filter.tenantIdOperations()));
-  }
-
-  private List<SearchQuery> buildEventSourceTypeFilter(final MessageSubscriptionFilter filter) {
-    final var typeOps = filter.messageSubscriptionTypeOperations();
-    if (typeOps != null && !typeOps.isEmpty()) {
-      // If filtering by specific type, let the messageSubscriptionType field filter handle it
-      // but still restrict to known event source types for backward compatibility
-      return List.of(
-          stringTerms(
-              EVENT_SOURCE_TYPE,
-              List.of(
-                  "PROCESS_MESSAGE_SUBSCRIPTION", "MESSAGE_START_EVENT_SUBSCRIPTION")));
-    }
-    // Default: include both intermediate and start event subscriptions
-    return List.of(
-        stringTerms(
-            EVENT_SOURCE_TYPE,
-            List.of(
-                "PROCESS_MESSAGE_SUBSCRIPTION", "MESSAGE_START_EVENT_SUBSCRIPTION")));
   }
 
   @Override

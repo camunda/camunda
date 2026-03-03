@@ -102,6 +102,10 @@
       },
       "messageSubscriptionType": {
         "type": "keyword"
+      },
+      "extensionProperties": {
+        "type": "object",
+        "dynamic": true
       }
 		}
 	}

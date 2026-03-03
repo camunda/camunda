@@ -22,7 +22,9 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.slf4j.Logger;
@@ -83,6 +85,31 @@ public final class ProcessModelReader {
         .getChildElementsByType(FlowNode.class)
         .forEach(fn -> extractCallActivities(callActivities, fn));
     return callActivities;
+  }
+
+  /**
+   * Extracts a map of flow node IDs to their zeebe:properties extension properties.
+   *
+   * @return map of elementId → Map(propertyName → propertyValue); only elements that have
+   *     zeebe:properties defined are included.
+   */
+  public Map<String, Map<String, String>> extractExtensionPropertiesMap() {
+    final Map<String, Map<String, String>> result = new HashMap<>();
+    final List<FlowNode> flowNodes = new ArrayList<>();
+    process.getChildElementsByType(FlowNode.class).forEach(fn -> extractFlowNodes(flowNodes, fn));
+    for (final FlowNode flowNode : flowNodes) {
+      getExtensionElementQuery(flowNode, ZeebeProperties.class)
+          .flatMap(Query::findSingleResult)
+          .ifPresent(
+              props -> {
+                final Map<String, String> propsMap = new HashMap<>();
+                props.getProperties().forEach(p -> propsMap.put(p.getName(), p.getValue()));
+                if (!propsMap.isEmpty()) {
+                  result.put(flowNode.getId(), propsMap);
+                }
+              });
+    }
+    return result;
   }
 
   private boolean isPublic(final ZeebeProperties properties) {

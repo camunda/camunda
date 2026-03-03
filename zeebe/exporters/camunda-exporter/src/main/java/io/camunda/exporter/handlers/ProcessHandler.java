@@ -86,13 +86,18 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
     // update local cache so that the process info is available immediately to the process instance
     // record handler
+    final var extensionPropertiesMap =
+        ProcessModelReader.of(process.getResource(), process.getBpmnProcessId())
+            .map(ProcessModelReader::extractExtensionPropertiesMap)
+            .orElse(Map.of());
     final var cachedProcessEntity =
         new CachedProcessEntity(
             entity.getName(),
             entity.getVersion(),
             entity.getVersionTag(),
             entity.getCallActivityIds(),
-            getFlowNodesMap(entity.getFlowNodes()));
+            getFlowNodesMap(entity.getFlowNodes()),
+            extensionPropertiesMap);
     processCache.put(process.getProcessDefinitionKey(), cachedProcessEntity);
   }
 

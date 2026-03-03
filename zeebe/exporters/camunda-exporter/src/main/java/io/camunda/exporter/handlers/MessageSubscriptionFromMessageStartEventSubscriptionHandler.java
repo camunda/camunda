@@ -71,6 +71,11 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionHandler
       final var cached = processCache.get(processDefinitionKey);
       entity.setProcessDefinitionName(cached.map(CachedProcessEntity::name).orElse(null));
       entity.setProcessDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null));
+      entity.setExtensionProperties(
+          cached
+              .map(CachedProcessEntity::extensionPropertiesMap)
+              .map(m -> m.get(recordValue.getStartEventId()))
+              .orElse(null));
     }
 
     entity

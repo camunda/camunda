@@ -272,6 +272,7 @@ components:
           type: integer
           format: int32
         processInstanceKey:
+          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: |
@@ -290,6 +291,7 @@ components:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
           description: The element ID associated with this message subscription.
         elementInstanceKey:
+          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
           description: |

@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.Objects;
 
 public class MessageSubscriptionEntity
@@ -59,6 +60,10 @@ public class MessageSubscriptionEntity
   /** Attention! This field will be filled in only for data imported after v. 8.10.0. */
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private String messageSubscriptionType;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.10.0. */
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private Map<String, String> extensionProperties;
 
   /**
    * @deprecated since 8.9
@@ -238,6 +243,16 @@ public class MessageSubscriptionEntity
   public MessageSubscriptionEntity setMessageSubscriptionType(
       final String messageSubscriptionType) {
     this.messageSubscriptionType = messageSubscriptionType;
+    return this;
+  }
+
+  public Map<String, String> getExtensionProperties() {
+    return extensionProperties;
+  }
+
+  public MessageSubscriptionEntity setExtensionProperties(
+      final Map<String, String> extensionProperties) {
+    this.extensionProperties = extensionProperties;
     return this;
   }
 

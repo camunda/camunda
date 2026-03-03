@@ -35,6 +35,7 @@ public class MessageSubscriptionEntityTransformer
         .messageName(value.getMetadata() != null ? value.getMetadata().getMessageName() : null)
         .correlationKey(value.getMetadata() != null ? value.getMetadata().getCorrelationKey() : null)
         .tenantId(value.getTenantId())
+        .extensionProperties(value.getExtensionProperties())
         .build();
   }
 

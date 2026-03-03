@@ -11,17 +11,22 @@ import static io.camunda.exporter.handlers.MessageSubscriptionFromProcessMessage
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.CORRELATION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionMetadataEntity;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -31,6 +36,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,12 +50,18 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
   private final ExporterMetadata exporterMetadata =
       new ExporterMetadata(TestObjectMapper.objectMapper());
 
+  @SuppressWarnings("unchecked")
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache =
+      mock(ExporterEntityCache.class);
+
   private final MessageSubscriptionFromProcessMessageSubscriptionHandler underTest =
-      new MessageSubscriptionFromProcessMessageSubscriptionHandler(indexName, exporterMetadata);
+      new MessageSubscriptionFromProcessMessageSubscriptionHandler(
+          indexName, exporterMetadata, processCache);
 
   @BeforeEach
   void resetMetadata() {
     exporterMetadata.setFirstProcessMessageSubscriptionKey(-1);
+    when(processCache.get(Mockito.anyLong())).thenReturn(Optional.empty());
   }
 
   @Test
@@ -262,6 +274,10 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     assertThat(entity.getMetadata().getMessageName()).isEqualTo(messageName);
     assertThat(entity.getMetadata().getCorrelationKey()).isEqualTo(correlationKey);
     assertThat(entity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+    assertThat(entity.getMessageSubscriptionType())
+        .isEqualTo(MessageSubscriptionType.INTERMEDIATE_EVENT_SUBSCRIPTION.name());
+    assertThat(entity.getProcessDefinitionName()).isNull();
+    assertThat(entity.getProcessDefinitionVersion()).isNull();
   }
 
   @Test
@@ -283,6 +299,34 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
 
     // then
     assertThat(entity.getRootProcessInstanceKey()).isNull();
+  }
+
+  @Test
+  void shouldEnrichWithProcessDefinitionInfoFromCache() {
+    // given
+    final int processDefinitionKey = 555;
+    final String processName = "My Process";
+    final int processVersion = 3;
+    final var cachedProcess = new CachedProcessEntity(processName, processVersion, null, null, null, null);
+    when(processCache.get((long) processDefinitionKey)).thenReturn(Optional.of(cachedProcess));
+
+    final var recordValue =
+        ImmutableProcessMessageSubscriptionRecordValue.builder()
+            .withProcessDefinitionKey(processDefinitionKey)
+            .build();
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r -> r.withIntent(ProcessMessageSubscriptionIntent.CREATED).withValue(recordValue));
+    final var entity = new MessageSubscriptionEntity();
+
+    // when
+    underTest.generateIds(record);
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getProcessDefinitionName()).isEqualTo(processName);
+    assertThat(entity.getProcessDefinitionVersion()).isEqualTo(processVersion);
   }
 
   @Test
@@ -317,6 +361,9 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     metadataMap.put(MESSAGE_NAME, metadata.getMessageName());
     metadataMap.put(CORRELATION_KEY, metadata.getCorrelationKey());
     expectedUpdateFields.put("metadata", metadataMap);
+    expectedUpdateFields.put("processDefinitionName", null);
+    expectedUpdateFields.put("processDefinitionVersion", null);
+    expectedUpdateFields.put("messageSubscriptionType", null);
 
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 

@@ -9,6 +9,7 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
+import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record MessageSubscriptionEntity(
@@ -26,7 +27,8 @@ public record MessageSubscriptionEntity(
     OffsetDateTime dateTime,
     String messageName,
     String correlationKey,
-    String tenantId)
+    String tenantId,
+    Map<String, String> extensionProperties)
     implements TenantOwnedEntity {
   public static Builder builder() {
     return new Builder();
@@ -48,6 +50,7 @@ public record MessageSubscriptionEntity(
     private String messageName;
     private String correlationKey;
     private String tenantId;
+    private Map<String, String> extensionProperties;
 
     public Builder messageSubscriptionKey(final Long messageSubscriptionKey) {
       this.messageSubscriptionKey = messageSubscriptionKey;
@@ -125,6 +128,11 @@ public record MessageSubscriptionEntity(
       return this;
     }
 
+    public Builder extensionProperties(final Map<String, String> extensionProperties) {
+      this.extensionProperties = extensionProperties;
+      return this;
+    }
+
     public MessageSubscriptionEntity build() {
       return new MessageSubscriptionEntity(
           messageSubscriptionKey,
@@ -141,7 +149,8 @@ public record MessageSubscriptionEntity(
           dateTime,
           messageName,
           correlationKey,
-          tenantId);
+          tenantId,
+          extensionProperties);
     }
   }
 
