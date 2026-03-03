@@ -49,6 +49,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -87,6 +88,9 @@ import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 final class OpenSearchArchiverRepositoryIT {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OpenSearchArchiverRepositoryIT.class);
+  private static final String TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT_SECONDS =
+      "test.integration.opensearch.aws.timeout.seconds";
+  private static final Duration DEFAULT_AWS_OS_SOCKET_TIMEOUT = Duration.ofMinutes(2);
   @RegisterExtension private static final SearchDBExtension SEARCH_DB = create();
   private static final ObjectMapper MAPPER = TestObjectMapper.objectMapper();
   @AutoClose private final OpenSearchTransport transport = createTransport();
@@ -1411,7 +1415,8 @@ final class OpenSearchArchiverRepositoryIT {
       return new OpenSearchClient(transport);
     } else {
       final URI uri = URI.create(isAWSRun);
-      final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+      final SdkHttpClient httpClient =
+          ApacheHttpClient.builder().socketTimeout(getAwsSocketTimeout()).build();
       final var region = new DefaultAwsRegionProviderChain().getRegion();
       return new OpenSearchClient(
           new AwsSdk2Transport(
@@ -1430,7 +1435,8 @@ final class OpenSearchArchiverRepositoryIT {
       return new OpenSearchAsyncClient(transport);
     } else {
       final URI uri = URI.create(isAWSRun);
-      final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+      final SdkHttpClient httpClient =
+          ApacheHttpClient.builder().socketTimeout(getAwsSocketTimeout()).build();
       final var region = new DefaultAwsRegionProviderChain().getRegion();
       return new OpenSearchAsyncClient(
           new AwsSdk2Transport(
@@ -1441,6 +1447,13 @@ final class OpenSearchArchiverRepositoryIT {
                   .setMapper(new JacksonJsonpMapper(new ObjectMapper()))
                   .build()));
     }
+  }
+
+  private Duration getAwsSocketTimeout() {
+    return Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT_SECONDS))
+        .map(Long::parseLong)
+        .map(Duration::ofSeconds)
+        .orElse(DEFAULT_AWS_OS_SOCKET_TIMEOUT);
   }
 
   private void deleteTestIndices() {
