@@ -18,7 +18,7 @@ type Props = {
   autoFocus?: boolean;
 };
 
-const DateInput = forwardRef<DatePickerInput, Props>(
+const DateInput = forwardRef<HTMLDivElement, Props>(
   ({type, onChange, ...props}, ref) => {
     return (
       <Field name={`${type}Date`}>
@@ -37,8 +37,14 @@ const DateInput = forwardRef<DatePickerInput, Props>(
               }}
               ref={ref}
               placeholder="YYYY-MM-DD"
+<<<<<<< HEAD
               pattern={'\\d{4}-\\d{1,2}-\\d{1,2}'}
               defaultValue={input.value}
+=======
+              // @ts-expect-error - Carbon types are wrong
+              pattern="\\d{4}-\\d{1,2}-\\d{1,2}"
+              value={input.value}
+>>>>>>> fd2a66ad (deps: bump carbon deps)
               maxLength={10}
               autoComplete="off"
             />
