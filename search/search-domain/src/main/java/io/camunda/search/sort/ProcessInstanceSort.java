@@ -91,6 +91,11 @@ public record ProcessInstanceSort(List<FieldSorting> orderings) implements SortO
       return this;
     }
 
+    public Builder businessId() {
+      currentOrdering = new FieldSorting("businessId", null);
+      return this;
+    }
+
     @Override
     protected Builder self() {
       return this;
