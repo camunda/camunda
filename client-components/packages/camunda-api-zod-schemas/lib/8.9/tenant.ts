@@ -180,14 +180,14 @@ const unassignClientFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & {clientId: s
 	getUrl: ({tenantId, clientId}) => `/${API_VERSION}/tenants/${tenantId}/clients/${clientId}`,
 };
 
-const assignMappingRuleToTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<MappingRule, 'mappingId'>> = {
+const assignMappingRuleToTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'PUT',
-	getUrl: ({tenantId, mappingId}) => `/${API_VERSION}/tenants/${tenantId}/mapping-rules/${mappingId}`,
+	getUrl: ({tenantId, mappingRuleId}) => `/${API_VERSION}/tenants/${tenantId}/mapping-rules/${mappingRuleId}`,
 };
 
-const unassignMappingRuleFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<MappingRule, 'mappingId'>> = {
+const unassignMappingRuleFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'DELETE',
-	getUrl: ({tenantId, mappingId}) => `/${API_VERSION}/tenants/${tenantId}/mapping-rules/${mappingId}`,
+	getUrl: ({tenantId, mappingRuleId}) => `/${API_VERSION}/tenants/${tenantId}/mapping-rules/${mappingRuleId}`,
 };
 
 const queryMappingRulesByTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {

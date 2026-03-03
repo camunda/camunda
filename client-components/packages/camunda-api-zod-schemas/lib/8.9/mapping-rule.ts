@@ -10,14 +10,14 @@ import {z} from 'zod';
 import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from './common';
 
 const mappingRuleSchema = z.object({
-	mappingId: z.string(),
+	mappingRuleId: z.string(),
 	claimName: z.string(),
 	claimValue: z.string(),
 	name: z.string(),
 });
 type MappingRule = z.infer<typeof mappingRuleSchema>;
 
-const mappingRuleResultSchema = mappingRuleSchema.omit({mappingId: true}).extend({
+const mappingRuleResultSchema = mappingRuleSchema.omit({mappingRuleId: true}).extend({
 	mappingRuleId: z.string(),
 });
 type MappingRuleResult = z.infer<typeof mappingRuleResultSchema>;
@@ -39,10 +39,10 @@ const updateMappingRuleResponseBodySchema = mappingRuleResultSchema;
 type UpdateMappingRuleResponseBody = z.infer<typeof updateMappingRuleResponseBodySchema>;
 
 const queryMappingRulesRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['mappingId', 'claimName', 'claimValue', 'name'] as const,
+	sortFields: ['mappingRuleId', 'claimName', 'claimValue', 'name'] as const,
 	filter: mappingRuleSchema
 		.pick({
-			mappingId: true,
+			mappingRuleId: true,
 			claimName: true,
 			claimValue: true,
 			name: true,

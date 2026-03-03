@@ -223,21 +223,21 @@ const queryGroupsByRole: Endpoint<Pick<Role, 'roleId'>> = {
 	},
 };
 
-const assignMappingToRole: Endpoint<Pick<Role, 'roleId'> & Pick<MappingRule, 'mappingId'>> = {
+const assignMappingToRole: Endpoint<Pick<Role, 'roleId'> & Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'PUT',
 	getUrl(params) {
-		const {roleId, mappingId} = params;
+		const {roleId, mappingRuleId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/mapping-rules/${mappingId}`;
+		return `/${API_VERSION}/roles/${roleId}/mapping-rules/${mappingRuleId}`;
 	},
 };
 
-const unassignMappingFromRole: Endpoint<Pick<Role, 'roleId'> & Pick<MappingRule, 'mappingId'>> = {
+const unassignMappingFromRole: Endpoint<Pick<Role, 'roleId'> & Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'DELETE',
 	getUrl(params) {
-		const {roleId, mappingId} = params;
+		const {roleId, mappingRuleId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/mapping-rules/${mappingId}`;
+		return `/${API_VERSION}/roles/${roleId}/mapping-rules/${mappingRuleId}`;
 	},
 };
 

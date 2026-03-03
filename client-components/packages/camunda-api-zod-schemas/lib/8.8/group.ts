@@ -208,21 +208,21 @@ const unassignClientFromGroup: Endpoint<Pick<Group, 'groupId'> & {clientId: stri
 	},
 };
 
-const assignMappingToGroup: Endpoint<Pick<Group, 'groupId'> & Pick<MappingRule, 'mappingId'>> = {
+const assignMappingToGroup: Endpoint<Pick<Group, 'groupId'> & Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'PUT',
 	getUrl(params) {
-		const {groupId, mappingId} = params;
+		const {groupId, mappingRuleId} = params;
 
-		return `/${API_VERSION}/groups/${groupId}/mapping-rules/${mappingId}`;
+		return `/${API_VERSION}/groups/${groupId}/mapping-rules/${mappingRuleId}`;
 	},
 };
 
-const unassignMappingFromGroup: Endpoint<Pick<Group, 'groupId'> & Pick<MappingRule, 'mappingId'>> = {
+const unassignMappingFromGroup: Endpoint<Pick<Group, 'groupId'> & Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'DELETE',
 	getUrl(params) {
-		const {groupId, mappingId} = params;
+		const {groupId, mappingRuleId} = params;
 
-		return `/${API_VERSION}/groups/${groupId}/mapping-rules/${mappingId}`;
+		return `/${API_VERSION}/groups/${groupId}/mapping-rules/${mappingRuleId}`;
 	},
 };
 
