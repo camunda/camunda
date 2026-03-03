@@ -11,10 +11,9 @@ import { UseEntityModalCustomProps } from "src/components/modal";
 import { assignTenantGroup } from "src/utility/api/tenants";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api";
-import { Group } from "src/utility/api/groups";
 import FormModal from "src/components/modal/FormModal";
 import TextField from "src/components/form/TextField";
-import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { Group, Tenant } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const AssignGroupModal: FC<
   UseEntityModalCustomProps<

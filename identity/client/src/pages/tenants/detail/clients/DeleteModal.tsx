@@ -15,11 +15,13 @@ import {
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
 import { unassignTenantClient } from "src/utility/api/tenants";
-import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.9";
-import type { Client } from "src/utility/api/tenants";
+import type {
+  Tenant,
+  TenantClient,
+} from "@camunda/camunda-api-zod-schemas/8.9";
 
 type RemoveTenantClientModalProps = UseEntityModalCustomProps<
-  Client,
+  TenantClient,
   {
     tenantId: Tenant["tenantId"];
   }

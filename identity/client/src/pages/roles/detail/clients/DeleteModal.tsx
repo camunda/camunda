@@ -14,11 +14,11 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { Client, Role } from "src/utility/api/roles";
 import { unassignRoleClient } from "src/utility/api/roles";
+import type { Role, TenantClient } from "@camunda/camunda-api-zod-schemas/8.9";
 
 type RemoveRoleClientModalProps = UseEntityModalCustomProps<
-  Client,
+  TenantClient,
   {
     roleId: Role["roleId"];
   }

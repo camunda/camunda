@@ -7,7 +7,7 @@
  */
 
 import type {
-  AuthorizationResult,
+  Authorization,
   OwnerType,
   ResourceType,
   QueryAuthorizationsRequestBody,
@@ -41,8 +41,6 @@ export const RESOURCE_PROPERTY_NAMES: ResourcePropertyName[] = [
   "candidateGroups",
   "candidateUsers",
 ];
-
-export type Authorization = AuthorizationResult;
 
 export type NewAuthorization = Omit<
   Authorization,

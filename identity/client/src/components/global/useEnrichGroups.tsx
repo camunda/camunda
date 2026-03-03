@@ -10,10 +10,11 @@ import { useCallback, useEffect, useState } from "react";
 import { isCamundaGroupsEnabled } from "src/configuration";
 import { useApiCall, usePaginatedApiCall } from "src/utility/api";
 import { ApiDefinition } from "src/utility/api/request";
-import { searchGroups, Group } from "src/utility/api/groups";
+import { searchGroups } from "src/utility/api/groups";
 import type {
   QueryGroupsResponseBody,
   QueryGroupsByRoleResponseBody,
+  Group,
 } from "@camunda/camunda-api-zod-schemas/8.9";
 
 type UseEnrichedGroupsResult = {

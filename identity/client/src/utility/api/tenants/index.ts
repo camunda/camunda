@@ -7,6 +7,7 @@
  */
 
 import type {
+  MappingRule,
   Tenant,
   Group,
   Role,
@@ -22,7 +23,6 @@ import type {
   QueryMappingRulesByTenantResponseBody,
   QueryClientsByTenantRequestBody,
   QueryClientsByTenantResponseBody,
-  MappingRuleResult,
 } from "@camunda/camunda-api-zod-schemas/8.9";
 import {
   ApiDefinition,
@@ -31,11 +31,6 @@ import {
   apiDelete,
   apiPut,
 } from "src/utility/api/request";
-
-// TODO fix
-type MappingRule = MappingRuleResult;
-
-export type Client = QueryClientsByTenantResponseBody["items"][number];
 
 export const TENANTS_ENDPOINT = "/tenants";
 
@@ -92,7 +87,7 @@ export const unassignTenantGroup: ApiDefinition<
 
 export const getRolesByTenantId: ApiDefinition<
   // TODO fix response type
-  Omit<QueryRolesByTenantResponseBody, "items"> & { items: Role[] },
+  QueryRolesByTenantResponseBody,
   QueryRolesByTenantRequestBody & Pick<Tenant, "tenantId">
 > = ({ tenantId, ...body }) =>
   apiPost(`${TENANTS_ENDPOINT}/${tenantId}/roles/search`, body);
@@ -113,9 +108,7 @@ export const unassignTenantRole: ApiDefinition<
 // ----------------- Mapping rules within a Tenant -----------------
 
 export const getMappingRulesByTenantId: ApiDefinition<
-  Omit<QueryMappingRulesByTenantResponseBody, "items"> & {
-    items: MappingRule[];
-  },
+  QueryMappingRulesByTenantResponseBody,
   QueryMappingRulesByTenantRequestBody & Pick<Tenant, "tenantId">
 > = (params) => {
   const { tenantId, ...body } = params;

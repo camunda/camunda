@@ -11,13 +11,13 @@ import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApi, useApiCall } from "src/utility/api";
-import { searchMappingRule, MappingRule } from "src/utility/api/mapping-rules";
+import { searchMappingRule } from "src/utility/api/mapping-rules";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
 import { assignTenantMappingRule } from "src/utility/api/tenants";
-import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { MappingRule, Tenant } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const SelectedMappingRules = styled.div`
   margin-top: 0;

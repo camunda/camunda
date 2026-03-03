@@ -14,8 +14,8 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { Role } from "src/utility/api/roles";
 import { unassignTenantRole } from "src/utility/api/tenants";
+import type { Role } from "@camunda/camunda-api-zod-schemas/8.9";
 
 type RemoveTenantRoleModalProps = UseEntityModalCustomProps<
   Role,

@@ -14,8 +14,8 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { Role } from "src/utility/api/roles";
 import { unassignGroupRole } from "src/utility/api/groups";
+import type { Role } from "@camunda/camunda-api-zod-schemas/8.9";
 
 type RemoveGroupRoleModalProps = UseEntityModalCustomProps<
   Role,

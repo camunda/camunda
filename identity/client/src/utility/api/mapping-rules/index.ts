@@ -7,7 +7,7 @@
  */
 
 import type {
-  MappingRuleResult,
+  MappingRule,
   QueryMappingRulesRequestBody,
   QueryMappingRulesResponseBody,
   UpdateMappingRuleRequestBody,
@@ -20,8 +20,6 @@ import {
 } from "src/utility/api/request";
 
 export const MAPPING_RULES_ENDPOINT = "/mapping-rules";
-
-export type MappingRule = MappingRuleResult;
 
 export const searchMappingRule: ApiDefinition<
   QueryMappingRulesResponseBody,

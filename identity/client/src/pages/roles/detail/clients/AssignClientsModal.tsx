@@ -9,11 +9,11 @@
 import { FC, useEffect, useState } from "react";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api";
-import { Client } from "src/utility/api/roles";
 import FormModal from "src/components/modal/FormModal";
-import { assignRoleClient, Role } from "src/utility/api/roles";
+import { assignRoleClient } from "src/utility/api/roles";
 import TextField from "src/components/form/TextField";
 import { UseEntityModalProps } from "src/components/modal";
+import type { Role, TenantClient } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const AssignClientsModal: FC<UseEntityModalProps<Role["roleId"]>> = ({
   entity: roleId,
@@ -22,7 +22,7 @@ const AssignClientsModal: FC<UseEntityModalProps<Role["roleId"]>> = ({
   onClose,
 }) => {
   const { t, Translate } = useTranslate("roles");
-  const [clientId, setClientId] = useState<Client["clientId"]>("");
+  const [clientId, setClientId] = useState<TenantClient["clientId"]>("");
   const [loadingAssignClient, setLoadingAssignClient] = useState(false);
 
   const [callAssignClient] = useApiCall(assignRoleClient);
