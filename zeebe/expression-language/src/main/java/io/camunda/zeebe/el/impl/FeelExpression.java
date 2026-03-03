@@ -8,9 +8,8 @@
 package io.camunda.zeebe.el.impl;
 
 import io.camunda.zeebe.el.Expression;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.camunda.feel.syntaxtree.Exp;
 import org.camunda.feel.syntaxtree.ParsedExpression;
 import org.camunda.feel.syntaxtree.PathExpression;
@@ -46,9 +45,8 @@ public final class FeelExpression implements Expression {
    * @return an ordered list of distinct top-level variable names referenced by the expression
    */
   @Override
-  public List<String> getVariableNames() {
-    // TODO - integrate with FEEL parser to extract variable names when implemented
-    return new ArrayList<>(List.of("x", "y", "z", "foo", "bar", "a", "b", "c"));
+  public Set<String> getVariableNames() {
+    return expression.getVariableNames();
   }
 
   @Override
