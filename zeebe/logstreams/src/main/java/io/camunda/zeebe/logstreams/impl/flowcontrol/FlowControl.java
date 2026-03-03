@@ -63,10 +63,11 @@ import java.util.List;
  *
  * <p>The {@link #inFlight} ring buffer is a fixed-capacity {@link RingBuffer} indexed by position.
  * It is modified by {@link #registerEntry(long, InFlightEntry)} (under the sequencer lock) and read
- * from other methods. The ring buffer uses an {@link java.util.concurrent.atomic.AtomicReferenceArray}
- * internally, providing volatile read/write semantics per slot. This ensures that entries written by
- * the sequencer thread are visible to the raft thread ({@code onWrite}, {@code onCommit}) and the
- * stream processor thread ({@code onProcessed}) without requiring external synchronization.
+ * from other methods. The ring buffer uses an {@link
+ * java.util.concurrent.atomic.AtomicReferenceArray} internally, providing volatile read/write
+ * semantics per slot. This ensures that entries written by the sequencer thread are visible to the
+ * raft thread ({@code onWrite}, {@code onCommit}) and the stream processor thread ({@code
+ * onProcessed}) without requiring external synchronization.
  *
  * <p>When a new entry is registered and the slot is already occupied (the previous entry was never
  * processed), the displaced entry's {@link InFlightEntry#cleanup()} is called to release resources.
