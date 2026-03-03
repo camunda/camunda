@@ -11,13 +11,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJobResult;
+import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskProperties;
 import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -28,7 +32,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -184,6 +191,143 @@ class ResponseMapperTest {
       public String toString() {
         return name;
       }
+    }
+  }
+
+  @Nested
+  class EvaluateDecisionResponseMappingTest {
+
+    private static final DirectBuffer MSGPACK_NIL = new UnsafeBuffer(MsgPackHelper.NIL);
+
+    @Test
+    void shouldMapDecisionDefinitionTypeInEvaluatedDecisions() {
+      // given
+      final var record =
+          new DecisionEvaluationRecord()
+              .setDecisionId("decisionId")
+              .setDecisionKey(100L)
+              .setDecisionName("decisionName")
+              .setDecisionVersion(1)
+              .setDecisionRequirementsId("drgId")
+              .setDecisionRequirementsKey(200L)
+              .setTenantId("tenant-1");
+
+      final var evaluatedDecision = record.evaluatedDecisions().add();
+      evaluatedDecision
+          .setDecisionId("innerDecisionId")
+          .setDecisionKey(300L)
+          .setDecisionName("innerDecisionName")
+          .setDecisionVersion(2)
+          .setDecisionType("DECISION_TABLE")
+          .setDecisionOutput(MSGPACK_NIL)
+          .setTenantId("tenant-1");
+
+      final var brokerResponse = new BrokerResponse<>(record, 1, 999);
+
+      // when
+      final var response = ResponseMapper.toEvaluateDecisionResponse(brokerResponse);
+
+      // then
+      assertThat(response.getBody()).isNotNull();
+      assertThat(((EvaluateDecisionResult) response.getBody()).getEvaluatedDecisions())
+          .singleElement()
+          .satisfies(
+              evaluated -> {
+                assertThat(evaluated.getDecisionDefinitionId()).isEqualTo("innerDecisionId");
+                assertThat(evaluated.getDecisionDefinitionKey()).isEqualTo("300");
+                assertThat(evaluated.getDecisionDefinitionName()).isEqualTo("innerDecisionName");
+                assertThat(evaluated.getDecisionDefinitionVersion()).isEqualTo(2);
+                assertThat(evaluated.getDecisionDefinitionType()).isEqualTo("DECISION_TABLE");
+                assertThat(evaluated.getTenantId()).isEqualTo("tenant-1");
+              });
+    }
+
+    @Test
+    void shouldMapMultipleEvaluatedDecisionsWithDifferentTypes() {
+      // given
+      final var record =
+          new DecisionEvaluationRecord()
+              .setDecisionId("rootDecisionId")
+              .setDecisionKey(100L)
+              .setDecisionName("rootDecision")
+              .setDecisionVersion(1)
+              .setDecisionRequirementsId("drgId")
+              .setDecisionRequirementsKey(200L)
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final var tableDecision = record.evaluatedDecisions().add();
+      tableDecision
+          .setDecisionId("tableDecisionId")
+          .setDecisionKey(301L)
+          .setDecisionName("tableDecision")
+          .setDecisionVersion(1)
+          .setDecisionType("DECISION_TABLE")
+          .setDecisionOutput(MSGPACK_NIL)
+          .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final var literalDecision = record.evaluatedDecisions().add();
+      literalDecision
+          .setDecisionId("literalDecisionId")
+          .setDecisionKey(302L)
+          .setDecisionName("literalDecision")
+          .setDecisionVersion(1)
+          .setDecisionType("DECISION_LITERAL_EXPRESSION")
+          .setDecisionOutput(MSGPACK_NIL)
+          .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final var brokerResponse = new BrokerResponse<>(record, 1, 999);
+
+      // when
+      final var response = ResponseMapper.toEvaluateDecisionResponse(brokerResponse);
+
+      // then
+      assertThat(response.getBody()).isNotNull();
+      assertThat(((EvaluateDecisionResult) response.getBody()).getEvaluatedDecisions())
+          .hasSize(2)
+          .satisfiesExactlyInAnyOrder(
+              evaluated -> {
+                assertThat(evaluated.getDecisionDefinitionType()).isEqualTo("DECISION_TABLE");
+              },
+              evaluated -> {
+                assertThat(evaluated.getDecisionDefinitionType())
+                    .isEqualTo("DECISION_LITERAL_EXPRESSION");
+              });
+    }
+
+    @Test
+    void shouldMapTopLevelFieldsInEvaluateDecisionResponse() {
+      // given
+      final var record =
+          new DecisionEvaluationRecord()
+              .setDecisionId("myDecisionId")
+              .setDecisionKey(100L)
+              .setDecisionName("myDecision")
+              .setDecisionVersion(3)
+              .setDecisionRequirementsId("myDrgId")
+              .setDecisionRequirementsKey(200L)
+              .setTenantId("my-tenant");
+
+      final var brokerResponse = new BrokerResponse<>(record, 1, 555);
+
+      // when
+      final var response = ResponseMapper.toEvaluateDecisionResponse(brokerResponse);
+
+      // then
+      assertThat(response.getBody()).isNotNull();
+      assertThat(((EvaluateDecisionResult) response.getBody()))
+          .satisfies(
+              result -> {
+                assertThat(result.getDecisionDefinitionId()).isEqualTo("myDecisionId");
+                assertThat(result.getDecisionDefinitionKey()).isEqualTo("100");
+                assertThat(result.getDecisionDefinitionName()).isEqualTo("myDecision");
+                assertThat(result.getDecisionDefinitionVersion()).isEqualTo(3);
+                assertThat(result.getDecisionRequirementsId()).isEqualTo("myDrgId");
+                assertThat(result.getDecisionRequirementsKey()).isEqualTo("200");
+                assertThat(result.getTenantId()).isEqualTo("my-tenant");
+                assertThat(result.getDecisionInstanceKey()).isEqualTo("555");
+                assertThat(result.getDecisionEvaluationKey()).isEqualTo("555");
+                assertThat(result.getEvaluatedDecisions()).isEmpty();
+              });
     }
   }
 }

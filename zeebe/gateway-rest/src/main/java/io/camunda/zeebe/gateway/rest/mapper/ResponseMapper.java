@@ -701,6 +701,7 @@ public final class ResponseMapper {
                         evaluatedDecision.getDecisionEvaluationInstanceKey())
                     .decisionDefinitionName(evaluatedDecision.getDecisionName())
                     .decisionDefinitionVersion(evaluatedDecision.getDecisionVersion())
+                    .decisionDefinitionType(evaluatedDecision.getDecisionType())
                     .output(evaluatedDecision.getDecisionOutput())
                     .tenantId(evaluatedDecision.getTenantId())
                     .evaluatedInputs(buildEvaluatedInputs(evaluatedDecision.getEvaluatedInputs()))
