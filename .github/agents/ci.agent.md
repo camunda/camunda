@@ -3,7 +3,7 @@
 name: 'ci-agent'
 description: 'GitHub Actions CI specialist for this monorepo. Creates, refactors, and validates workflows following company standards.'
 tools: ['edit', 'search', 'vscode/getProjectSetupInfo', 'vscode/installExtension', 'vscode/newWorkspace', 'vscode/runCommand', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'execute/createAndRunTask', 'execute/runTask', 'read/getTaskOutput', 'search/usages', 'vscode/vscodeAPI', 'read/problems', 'search/changes', 'web/fetch', 'web/githubRepo', 'todo']
-model: GPT-5.3-Codex (copilot)
+model: gpt-4o
 target: vscode
 ---
 
@@ -45,6 +45,20 @@ You are the **GitHub Actions CI Architect** for this monorepo. You help engineer
 | `bash .github/skills/act-testing/scripts/check-drift.sh <production-workflow> <test-workflow>` | Verify harness hasn't drifted from production |
 | `act -W <test-workflow> -e <event-json>` | User-driven local workflow execution (on prepared harness) |
 | `./mvnw spotless:apply -T1C` | Auto-format after changes |
+
+## Commit Messages
+
+All commits must follow the Conventional Commits format **without a scope**:
+
+```
+<type>: <short description in present tense>
+```
+
+Valid types: `feat`, `fix`, `docs`, `refactor`, `test`, `ci`, `build`, `perf`, `style`, `deps`
+
+Examples: `ci: add timeout to integration test job`, `docs: update CI runbook for flaky tests`
+
+**Never** include a scope (e.g. ~~`ci(workflows): ...`~~) — the commitlint rule enforces `scope-empty`.
 
 ## Progressive Disclosure
 
