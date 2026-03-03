@@ -101,8 +101,8 @@ class OperateProcessInstancePage {
 
   constructor(page: Page) {
     this.page = page;
-    this.diagram = page.getByTestId('diagram');
-    this.drilldownButton = page.locator('.bjs-drilldown');
+    this.diagram = page.getByTestId('diagram-canvas');
+    this.drilldownButton = this.diagram.locator('.bjs-drilldown').first();
     this.completedIcon = page
       .getByTestId('instance-header')
       .getByTestId('COMPLETED-icon');
@@ -442,7 +442,11 @@ class OperateProcessInstancePage {
   }
 
   async clickFlowNode(flowNodeName: string) {
-    await this.diagram.getByText(flowNodeName).first().click({timeout: 20000});
+    await this.diagram
+      .locator('.djs-element[data-element-id]')
+      .filter({hasText: new RegExp(`${flowNodeName}`, 'i')})
+      .first()
+      .click({timeout: 20000});
   }
 
   async navigateToRootScope() {
@@ -529,12 +533,15 @@ class OperateProcessInstancePage {
     return {
       clickFlowNode: (flowNodeName: string) => {
         return this.diagram
-          .getByText(flowNodeName)
+          .locator('.djs-element[data-element-id]')
+          .filter({hasText: new RegExp(`${flowNodeName}`, 'i')})
           .first()
           .click({timeout: 20000});
       },
       getFlowNode: (flowNodeName: string) => {
-        return this.diagram.getByText(flowNodeName);
+        return this.diagram
+          .locator('.djs-element[data-element-id]')
+          .filter({hasText: new RegExp(`${flowNodeName}`, 'i')});
       },
       clickEvent: async (eventName: string) => {
         await this.diagram

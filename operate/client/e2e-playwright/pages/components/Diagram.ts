@@ -11,6 +11,7 @@ import type {Locator, Page} from '@playwright/test';
 export class Diagram {
   private page: Page;
   readonly diagram: Locator;
+  readonly diagramCanvas: Locator;
   readonly popover: Locator;
   readonly resetDiagramZoomButton: Locator;
   readonly diagramSpinner: Locator;
@@ -19,6 +20,7 @@ export class Diagram {
   constructor(page: Page) {
     this.page = page;
     this.diagram = this.page.getByTestId('diagram');
+    this.diagramCanvas = this.page.getByTestId('diagram-canvas');
     this.popover = this.page.getByTestId('popover');
     this.resetDiagramZoomButton = this.page.getByRole('button', {
       name: /Reset diagram zoom/i,
@@ -64,9 +66,15 @@ export class Diagram {
   }
 
   getElement(elementName: string) {
-    return this.diagram
-      .locator('.djs-element')
+    return this.diagramCanvas
+      .locator('.djs-element[data-element-id]')
       .filter({hasText: new RegExp(`^${elementName}$`, 'i')});
+  }
+
+  getFlowNodeById(elementId: string) {
+    return this.diagramCanvas.locator(
+      `.djs-element[data-element-id="${elementId}"]`,
+    );
   }
 
   clickGateway(gatewayName: string) {
@@ -83,13 +91,13 @@ export class Diagram {
   }
 
   async getLabeledElement(eventName: string) {
-    const eventLabel = this.diagram
+    const eventLabel = this.diagramCanvas
       .locator('.djs-element')
       .filter({hasText: new RegExp(`${eventName}`, 'i')});
 
     const labelId = await eventLabel.getAttribute('data-element-id');
     const eventId = labelId?.split(/_label$/)[0];
-    return this.diagram.locator(`[data-element-id="${eventId}"]`);
+    return this.diagramCanvas.locator(`[data-element-id="${eventId}"]`);
   }
 
   showMetaData() {
@@ -99,7 +107,7 @@ export class Diagram {
   }
 
   getExecutionCount(elementId: string) {
-    return this.diagram.evaluate(
+    return this.diagramCanvas.evaluate(
       (node, {elementId}) => {
         const completedOverlay: HTMLDivElement | null = node.querySelector(
           `[data-container-id="${elementId}"] [data-testid="state-overlay-completed"]`,
