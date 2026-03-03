@@ -9,7 +9,7 @@ package io.camunda.operate.webapp.controllers;
 
 import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
 
-import io.camunda.configuration.conditions.ConditionalOnWebappUiEnabled;
+import io.camunda.spring.utils.ConditionalOnWebappUiEnabled;
 import io.camunda.webapps.controllers.WebappsRequestForwardManager;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;

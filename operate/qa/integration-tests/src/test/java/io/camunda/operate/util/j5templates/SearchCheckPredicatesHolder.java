@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.util.j5templates;
 
-import io.camunda.configuration.conditions.ConditionalOnWebappEnabled;
+import io.camunda.spring.utils.ConditionalOnWebappEnabled;
 import java.util.function.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;

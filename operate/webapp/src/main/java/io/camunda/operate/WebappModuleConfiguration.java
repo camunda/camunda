@@ -7,7 +7,7 @@
  */
 package io.camunda.operate;
 
-import io.camunda.configuration.conditions.ConditionalOnWebappEnabled;
+import io.camunda.spring.utils.ConditionalOnWebappEnabled;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
