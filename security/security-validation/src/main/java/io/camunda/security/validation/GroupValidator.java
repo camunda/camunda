@@ -50,7 +50,7 @@ public final class GroupValidator {
     } else if (name.length() > ValidationConstants.MAX_FIELD_LENGTH) {
       violations.add(
           ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
-              name, ValidationConstants.MAX_FIELD_LENGTH));
+              "name", ValidationConstants.MAX_FIELD_LENGTH));
     }
   }
 }
