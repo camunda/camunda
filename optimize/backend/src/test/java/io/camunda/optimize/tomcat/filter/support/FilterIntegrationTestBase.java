@@ -28,9 +28,9 @@ import org.springframework.web.context.WebApplicationContext;
  * lightweight mock. This gives tests a real HTTP pipeline — real filter ordering, real Security
  * matchers — without any external dependencies.
  *
- * <p>Subclasses must activate the {@code ccsm} profile via {@code @ActiveProfiles("ccsm")}.
- * For SaaS (cloud) mode tests, see {@link io.camunda.optimize.tomcat.SaasFilterChainIT}, which
- * is self-contained and does not extend this class.
+ * <p>Subclasses must activate the {@code ccsm} profile via {@code @ActiveProfiles("ccsm")}. For
+ * SaaS (cloud) mode tests, see {@link io.camunda.optimize.tomcat.SaasFilterChainIT}, which is
+ * self-contained and does not extend this class.
  */
 @SpringBootTest(
     classes = {Main.class},
@@ -66,12 +66,23 @@ public abstract class FilterIntegrationTestBase {
     mvc =
         webAppContextSetup(wac)
             .addFilters(
-                requireNonNull(responseHeadersInjector.getFilter()), // ResponseSecurityHeaderFilter (MAX_VALUE-5)
-                requireNonNull(responseTimezoneFilter.getFilter()), //  ResponseTimezoneFilter       (MAX_VALUE-5)
-                requireNonNull(urlRedirector.getFilter()), //           URLRedirectFilter             (MAX_VALUE-5)
-                requireNonNull(noCachingFilterRegistrationBean.getFilter()), // NoCachingFilter      (MAX_VALUE-5)
-                requireNonNull(ccsmRequestAdjuster.getFilter()), //    CCSMRequestAdjustmentFilter   (MAX_VALUE-5)
-                securityChain) //                                       Spring Security               (MAX_VALUE) — LAST
+                requireNonNull(
+                    responseHeadersInjector
+                        .getFilter()), // ResponseSecurityHeaderFilter (MAX_VALUE-5)
+                requireNonNull(
+                    responseTimezoneFilter
+                        .getFilter()), //  ResponseTimezoneFilter       (MAX_VALUE-5)
+                requireNonNull(
+                    urlRedirector
+                        .getFilter()), //           URLRedirectFilter             (MAX_VALUE-5)
+                requireNonNull(
+                    noCachingFilterRegistrationBean
+                        .getFilter()), // NoCachingFilter      (MAX_VALUE-5)
+                requireNonNull(
+                    ccsmRequestAdjuster
+                        .getFilter()), //    CCSMRequestAdjustmentFilter   (MAX_VALUE-5)
+                securityChain) //                                       Spring Security
+            //  (MAX_VALUE) — LAST
             .build();
   }
 }

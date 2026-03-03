@@ -7,9 +7,9 @@ backend, their execution order, the deployment mode they apply to, and the reaso
 
 ## Deployment Modes
 
-| Symbol | Meaning |
-|--------|---------|
-| **CCSM** | Self-Managed (on-premise). Tomcat `server.servlet.context-path` (e.g. `/optimize`) provides the path prefix natively. |
+|  Symbol  |                                                                                            Meaning                                                                                             |
+|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **CCSM** | Self-Managed (on-premise). Tomcat `server.servlet.context-path` (e.g. `/optimize`) provides the path prefix natively.                                                                          |
 | **SaaS** | Camunda Cloud. No context-path. Instead, a `clusterId` segment (e.g. `/abc-123/…`) is the first URI segment and must be stripped before the request reaches Spring Security or any controller. |
 
 Both modes can run simultaneously — they are mutually exclusive, selected by `CCSMCondition` /
@@ -24,22 +24,22 @@ effective order value, Spring Boot resolves the tie by bean registration order (
 bean name unless an explicit name is set).
 
 ```
- ┌──────────────────────────────────────────────────────────────────────────────────────────┐
- │  Order              Filter / Component                  Mode       Registered in         │
- ├──────────────────────────────────────────────────────────────────────────────────────────┤
- │  Integer.MIN_VALUE  CCSaasRequestAdjustmentFilter       SaaS only  CCSaaSSecurityConfig  │
- │  (default)          ResponseSecurityHeaderFilter        Both       OptimizeTomcatConfig  │
- │  (default)          ResponseTimezoneFilter              Both       OptimizeTomcatConfig  │
- │  (default)          URLRedirectFilter                   Both       OptimizeTomcatConfig  │
- │  (default)          NoCachingFilter                     Both       FilterBeansConfig     │
- │  (default)          CCSMRequestAdjustmentFilter         CCSM only  CCSMSecurityConfig    │
- │  ── Spring Security filter chain boundary ──────────────────────────────────────────────│
- │  (inside chain)     ApiBearerTokenAuthenticationFilter  Both       AbstractSecConfig     │
- │  (inside chain)     CCSMAuthenticationCookieFilter      CCSM only  CCSMSecurityConfig    │
- │  (inside chain)     AuthenticationCookieFilter          SaaS only  CCSaaSSecurityConfig  │
- │  ── DispatcherServlet ───────────────────────────────────────────────────────────────────│
- │  (postHandle)       CacheRequestInterceptor             Both       OptimizeWebMvcConfig  │
- └──────────────────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│  Order              Filter / Component                  Mode       Registered in         │
+├──────────────────────────────────────────────────────────────────────────────────────────┤
+│  Integer.MIN_VALUE  CCSaasRequestAdjustmentFilter       SaaS only  CCSaaSSecurityConfig  │
+│  (default)          ResponseSecurityHeaderFilter        Both       OptimizeTomcatConfig  │
+│  (default)          ResponseTimezoneFilter              Both       OptimizeTomcatConfig  │
+│  (default)          URLRedirectFilter                   Both       OptimizeTomcatConfig  │
+│  (default)          NoCachingFilter                     Both       FilterBeansConfig     │
+│  (default)          CCSMRequestAdjustmentFilter         CCSM only  CCSMSecurityConfig    │
+│  ── Spring Security filter chain boundary ──────────────────────────────────────────────│
+│  (inside chain)     ApiBearerTokenAuthenticationFilter  Both       AbstractSecConfig     │
+│  (inside chain)     CCSMAuthenticationCookieFilter      CCSM only  CCSMSecurityConfig    │
+│  (inside chain)     AuthenticationCookieFilter          SaaS only  CCSaaSSecurityConfig  │
+│  ── DispatcherServlet ───────────────────────────────────────────────────────────────────│
+│  (postHandle)       CacheRequestInterceptor             Both       OptimizeWebMvcConfig  │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 > **Note on "default" order:** `FilterRegistrationBean` defaults to `Integer.MAX_VALUE - 5` when
@@ -47,7 +47,7 @@ bean name unless an explicit name is set).
 > before the Spring Security `FilterChainProxy` (which runs at `Integer.MAX_VALUE`). The relative
 > order among the "default" filters above follows Spring Boot's bean definition order within each
 > `@Configuration` class.
-
+>
 > **Note on `CCSaasRequestAdjustmentFilter`:** It is registered at `Ordered.HIGHEST_PRECEDENCE`
 > (`Integer.MIN_VALUE`), meaning it runs **before every other filter**, including the security
 > headers filter. This is intentional: the cluster-ID prefix must be stripped from the URI before
@@ -59,13 +59,13 @@ bean name unless an explicit name is set).
 
 ### 1. `CCSaasRequestAdjustmentFilter`
 
-| Property | Value |
-|----------|-------|
-| **Package** | `io.camunda.optimize.tomcat` |
+|     Property      |                        Value                        |
+|-------------------|-----------------------------------------------------|
+| **Package**       | `io.camunda.optimize.tomcat`                        |
 | **Registered in** | `CCSaaSSecurityConfigurerAdapter.requestAdjuster()` |
-| **Order** | `Ordered.HIGHEST_PRECEDENCE` (`Integer.MIN_VALUE`) |
-| **URL pattern** | `/*` |
-| **Mode** | **SaaS only** |
+| **Order**         | `Ordered.HIGHEST_PRECEDENCE` (`Integer.MIN_VALUE`)  |
+| **URL pattern**   | `/*`                                                |
+| **Mode**          | **SaaS only**                                       |
 
 **What it does:**
 
@@ -104,13 +104,13 @@ first access.
 
 ### 2. `ResponseSecurityHeaderFilter`
 
-| Property | Value |
-|----------|-------|
-| **Package** | `io.camunda.optimize.tomcat` |
+|     Property      |                      Value                       |
+|-------------------|--------------------------------------------------|
+| **Package**       | `io.camunda.optimize.tomcat`                     |
 | **Registered in** | `OptimizeTomcatConfig.responseHeadersInjector()` |
-| **Order** | default (`Integer.MAX_VALUE - 5`) |
-| **URL pattern** | `/*` |
-| **Mode** | Both |
+| **Order**         | default (`Integer.MAX_VALUE - 5`)                |
+| **URL pattern**   | `/*`                                             |
+| **Mode**          | Both                                             |
 
 **What it does:**
 Reads `SecurityConfiguration.ResponseHeaders` from `ConfigurationService` and adds the configured
@@ -127,13 +127,13 @@ which downstream component writes the body.
 
 ### 3. `ResponseTimezoneFilter`
 
-| Property | Value |
-|----------|-------|
-| **Package** | `io.camunda.optimize.tomcat` |
+|     Property      |                      Value                      |
+|-------------------|-------------------------------------------------|
+| **Package**       | `io.camunda.optimize.tomcat`                    |
 | **Registered in** | `OptimizeTomcatConfig.responseTimezoneFilter()` |
-| **Order** | default (`Integer.MAX_VALUE - 5`) |
-| **URL pattern** | `/*` |
-| **Mode** | Both |
+| **Order**         | default (`Integer.MAX_VALUE - 5`)               |
+| **URL pattern**   | `/*`                                            |
+| **Mode**          | Both                                            |
 
 **What it does:**
 Reads the `X-Optimize-Client-Timezone` request header, resolves it to a `ZoneId`, and stores it
@@ -150,13 +150,13 @@ the client timezone without parsing the header themselves. It must run before
 
 ### 4. `URLRedirectFilter`
 
-| Property | Value |
-|----------|-------|
-| **Package** | `io.camunda.optimize.tomcat` |
+|     Property      |                 Value                  |
+|-------------------|----------------------------------------|
+| **Package**       | `io.camunda.optimize.tomcat`           |
 | **Registered in** | `OptimizeTomcatConfig.urlRedirector()` |
-| **Order** | default (`Integer.MAX_VALUE - 5`) |
-| **URL pattern** | `/*` |
-| **Mode** | Both |
+| **Order**         | default (`Integer.MAX_VALUE - 5`)      |
+| **URL pattern**   | `/*`                                   |
+| **Mode**          | Both                                   |
 
 **What it does:**
 Acts as the gatekeeper for the Single-Page Application (SPA). It processes the URI after
@@ -193,20 +193,20 @@ the context-path prefix.
 
 ### 5. `NoCachingFilter`
 
-| Property | Value |
-|----------|-------|
-| **Package** | `io.camunda.optimize.tomcat` |
-| **Registered in** | `FilterBeansConfig.noCachingFilterRegistrationBean()` |
-| **Order** | default (`Integer.MAX_VALUE - 5`) |
-| **URL pattern** | `/*` |
-| **Dispatcher types** | `REQUEST`, `FORWARD`, `ERROR`, `ASYNC` |
-| **Mode** | Both |
+|       Property       |                         Value                         |
+|----------------------|-------------------------------------------------------|
+| **Package**          | `io.camunda.optimize.tomcat`                          |
+| **Registered in**    | `FilterBeansConfig.noCachingFilterRegistrationBean()` |
+| **Order**            | default (`Integer.MAX_VALUE - 5`)                     |
+| **URL pattern**      | `/*`                                                  |
+| **Dispatcher types** | `REQUEST`, `FORWARD`, `ERROR`, `ASYNC`                |
+| **Mode**             | Both                                                  |
 
 **What it does:**
 Sets the `Cache-Control: no-store` response header for:
 - Any response to a REST API call (URI starts with `/api`).
 - Responses for specific static resources that must not be cached across upgrades:
-  `/` and `/index.html` (defined in `OptimizeResourceConstants.NO_CACHE_RESOURCES`).
+`/` and `/index.html` (defined in `OptimizeResourceConstants.NO_CACHE_RESOURCES`).
 
 **Why it exists:**
 After an Optimize upgrade, browsers may serve stale JavaScript/CSS bundles from the cache,
@@ -219,13 +219,13 @@ internal forwards to `index.html`.
 
 ### 6. `CCSMRequestAdjustmentFilter`
 
-| Property | Value |
-|----------|-------|
-| **Package** | `io.camunda.optimize.tomcat` |
+|     Property      |                       Value                       |
+|-------------------|---------------------------------------------------|
+| **Package**       | `io.camunda.optimize.tomcat`                      |
 | **Registered in** | `CCSMSecurityConfigurerAdapter.requestAdjuster()` |
-| **Order** | default (no explicit order set) |
-| **URL pattern** | `/*` |
-| **Mode** | **CCSM only** |
+| **Order**         | default (no explicit order set)                   |
+| **URL pattern**   | `/*`                                              |
+| **Mode**          | **CCSM only**                                     |
 
 **What it does:**
 
@@ -259,11 +259,11 @@ chain has been entered (i.e. after all `FilterRegistrationBean` filters above ha
 
 ### `CCSMAuthenticationCookieFilter`
 
-| Property | Value |
-|----------|-------|
-| **Registered in** | `CCSMSecurityConfigurerAdapter.configureWebSecurity()` via `addFilterBefore` |
-| **Position in chain** | Before `AbstractPreAuthenticatedProcessingFilter` |
-| **Mode** | **CCSM only** |
+|       Property        |                                    Value                                     |
+|-----------------------|------------------------------------------------------------------------------|
+| **Registered in**     | `CCSMSecurityConfigurerAdapter.configureWebSecurity()` via `addFilterBefore` |
+| **Position in chain** | Before `AbstractPreAuthenticatedProcessingFilter`                            |
+| **Mode**              | **CCSM only**                                                                |
 
 Extracts the Optimize session cookie, verifies the JWT access token inside it via
 `CCSMTokenService` (which delegates to the Identity/Keycloak JWKS endpoint), and sets the
@@ -272,11 +272,11 @@ on failure it clears the cookie and returns `401`.
 
 ### `AuthenticationCookieFilter`
 
-| Property | Value |
-|----------|-------|
-| **Registered in** | `CCSaaSSecurityConfigurerAdapter.configureWebSecurity()` via `addFilterBefore` |
-| **Position in chain** | Before `OAuth2AuthorizationRequestRedirectFilter` |
-| **Mode** | **SaaS only** |
+|       Property        |                                     Value                                      |
+|-----------------------|--------------------------------------------------------------------------------|
+| **Registered in**     | `CCSaaSSecurityConfigurerAdapter.configureWebSecurity()` via `addFilterBefore` |
+| **Position in chain** | Before `OAuth2AuthorizationRequestRedirectFilter`                              |
+| **Mode**              | **SaaS only**                                                                  |
 
 Same responsibility as `CCSMAuthenticationCookieFilter` but for the SaaS (Auth0) cookie scheme.
 Reads the Optimize auth cookie set after a successful OAuth2 login, validates the session token
@@ -288,13 +288,13 @@ via `SessionService`, and populates the `SecurityContext`.
 
 ### `CacheRequestInterceptor`
 
-| Property | Value |
-|----------|-------|
-| **Package** | `io.camunda.optimize.tomcat` |
-| **Registered in** | `OptimizeWebMvcConfigurer.addInterceptors()` |
-| **Type** | `HandlerInterceptor` (not a servlet filter) |
-| **Phase** | `postHandle` — after the controller method returns, before the response is committed |
-| **Mode** | Both |
+|     Property      |                                        Value                                         |
+|-------------------|--------------------------------------------------------------------------------------|
+| **Package**       | `io.camunda.optimize.tomcat`                                                         |
+| **Registered in** | `OptimizeWebMvcConfigurer.addInterceptors()`                                         |
+| **Type**          | `HandlerInterceptor` (not a servlet filter)                                          |
+| **Phase**         | `postHandle` — after the controller method returns, before the response is committed |
+| **Mode**          | Both                                                                                 |
 
 **What it does:**
 For successful (`2xx`) responses from controller methods annotated with `@CacheRequest`, adds a
@@ -316,12 +316,12 @@ only see the raw `HttpServletRequest`.
 Not a filter itself. An `HttpServletRequestWrapper` used by both request adjustment filters to
 override path-related request methods. It overrides:
 
-| Method | Reason |
-|--------|--------|
-| `getRequestURI()` | Returns the rewritten URI. Delegates to `super` during `FORWARD` dispatches to avoid an infinite forward loop via `WelcomePageHandlerMapping`. |
-| `getRequestURL()` | Rebuilt from `getRequestURI()` to stay consistent with the rewritten path. |
+|            Method            |                                                                             Reason                                                                             |
+|------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `getRequestURI()`            | Returns the rewritten URI. Delegates to `super` during `FORWARD` dispatches to avoid an infinite forward loop via `WelcomePageHandlerMapping`.                 |
+| `getRequestURL()`            | Rebuilt from `getRequestURI()` to stay consistent with the rewritten path.                                                                                     |
 | `getRequestDispatcher(path)` | Converts relative dispatch paths (e.g. `index.html`) to absolute paths based on the rewritten URI so `WelcomePageHandlerMapping` forwards to the right target. |
-| `getServletPath()` | **Not overridden** — overriding it breaks Tomcat's internal resource resolution during `FORWARD` dispatches. |
+| `getServletPath()`           | **Not overridden** — overriding it breaks Tomcat's internal resource resolution during `FORWARD` dispatches.                                                   |
 
 ### `ExternalResourcesUtil`
 
