@@ -123,7 +123,7 @@ public final class RemoteStreamTransport<M> extends Actor {
             Function.identity(),
             receiver,
             REQUEST_TIMEOUT)
-        .thenApply(ok -> null);
+        .thenApplyAsync(ok -> null, actor);
   }
 
   private void onRestartStreamsResponse(

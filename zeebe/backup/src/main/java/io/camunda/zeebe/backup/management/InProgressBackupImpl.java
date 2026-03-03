@@ -211,7 +211,7 @@ final class InProgressBackupImpl implements InProgressBackup {
       }
       journalInfoProvider
           .getTailSegments(maxIndex)
-          .whenComplete(
+          .whenCompleteAsync(
               (tailSegments, throwable) -> {
                 if (throwable != null) {
                   LOG.atError()
@@ -244,7 +244,8 @@ final class InProgressBackupImpl implements InProgressBackup {
                   segmentsFileSet = new NamedFileSetImpl(map);
                   filesCollected.complete(null);
                 }
-              });
+              },
+              concurrencyControl);
     } catch (final Exception e) {
       LOG.atError()
           .addKeyValue("backup", backupId)
