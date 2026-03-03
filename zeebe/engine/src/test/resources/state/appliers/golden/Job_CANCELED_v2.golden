@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -19,10 +20,12 @@ public class JobCanceledV2Applier implements TypedEventApplier<JobIntent, JobRec
 
   private final MutableJobState jobState;
   private final MutableJobMetricsState jobMetricsState;
+  private final MutableElementInstanceState elementInstanceState;
 
   JobCanceledV2Applier(final MutableProcessingState state) {
     jobState = state.getJobState();
     jobMetricsState = state.getJobMetricsState();
+    elementInstanceState = state.getElementInstanceState();
   }
 
   @Override
@@ -30,5 +33,13 @@ public class JobCanceledV2Applier implements TypedEventApplier<JobIntent, JobRec
     jobState.cancel(key, value);
 
     jobMetricsState.incrementMetric(value, JobMetricsExportState.FAILED);
+
+    if (value.isJobToUserTaskMigration()) {
+      final var elementInstance = elementInstanceState.getInstance(value.getElementInstanceKey());
+      if (elementInstance != null) {
+        elementInstance.setJobKey(-1L);
+        elementInstanceState.updateInstance(elementInstance);
+      }
+    }
   }
 }
