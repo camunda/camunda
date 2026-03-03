@@ -101,7 +101,7 @@
     "msw": "2.4.13",
     "prettier": "3.3.3",
     "rollup-plugin-license": "3.5.3",
-    "serve": "14.2.5",
+    "serve": "14.2.6",
     "source-map-explorer": "2.5.3",
     "stylelint": "16.9.0",
     "stylelint-prettier": "5.0.3",
