@@ -9,6 +9,7 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -30,6 +31,10 @@ public record MessageSubscriptionEntity(
     String tenantId,
     Map<String, String> extensionProperties)
     implements TenantOwnedEntity {
+  public MessageSubscriptionEntity {
+    extensionProperties = extensionProperties != null ? extensionProperties : new HashMap<>();
+  }
+
   public static Builder builder() {
     return new Builder();
   }

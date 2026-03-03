@@ -30,6 +30,7 @@ import io.camunda.client.util.RestGatewayService;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,8 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
   void shouldSearchWithAllFilters() {
     // Given
     final OffsetDateTime lastUpdatedDate = Instant.now().atOffset(ZoneOffset.UTC);
+    final HashMap<String, String> extensionProperties = new HashMap<String, String>();
+    extensionProperties.put("propertyKey", "propertyValue");
     // When
     client
         .newMessageSubscriptionSearchRequest()
@@ -69,7 +72,8 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
                     .lastUpdatedDate(lastUpdatedDate)
                     .messageName("message-name")
                     .correlationKey("correlation-key")
-                    .tenantId("tenant-id"))
+                    .tenantId("tenant-id")
+                    .extensionProperties(extensionProperties))
         .send()
         .join();
 
@@ -100,6 +104,8 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
     assertThat(request.getFilter().getCorrelationKey().get$Eq()).isEqualTo("correlation-key");
     assertThat(request.getFilter().getTenantId()).isNotNull();
     assertThat(request.getFilter().getTenantId().get$Eq()).isEqualTo("tenant-id");
+    assertThat(request.getFilter().getExtensionProperties())
+        .containsEntry("propertyKey", "propertyValue");
   }
 
   @Test

@@ -11,7 +11,6 @@ import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionS
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
-import java.util.Map;
 import java.util.function.Function;
 
 public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionDbModel> {

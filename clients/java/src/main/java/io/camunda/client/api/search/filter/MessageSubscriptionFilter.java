@@ -22,6 +22,7 @@ import io.camunda.client.api.search.filter.builder.MessageSubscriptionStatePrope
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public interface MessageSubscriptionFilter extends SearchRequestFilter {
@@ -250,4 +251,12 @@ public interface MessageSubscriptionFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   MessageSubscriptionFilter tenantId(Consumer<StringProperty> fn);
+
+  /**
+   * Filter by extension properties. All key-value pairs are combined using AND semantics.
+   *
+   * @param extensionProperties extension properties map
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter extensionProperties(Map<String, String> extensionProperties);
 }

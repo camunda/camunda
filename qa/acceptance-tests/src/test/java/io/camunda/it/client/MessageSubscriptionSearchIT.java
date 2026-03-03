@@ -21,6 +21,7 @@ import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -128,6 +129,23 @@ public class MessageSubscriptionSearchIT {
     assertThat(searchResponse.items().getFirst())
         .extracting("messageName", "messageSubscriptionState")
         .containsExactly("Message1", MessageSubscriptionState.CORRELATED);
+  }
+
+  @Test
+  void shouldFilterByExtensionProperties() {
+    // When
+    final var searchResponse =
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .filter(f -> f.extensionProperties(Map.of("route", "alpha")))
+            .send()
+            .join();
+
+    // Then
+    assertThat(searchResponse.items()).hasSize(1);
+    assertThat(searchResponse.items().getFirst().getElementId()).isEqualTo("receive_task_1");
+    assertThat(searchResponse.items().getFirst().getExtensionProperties())
+        .containsEntry("route", "alpha");
   }
 
   @Test

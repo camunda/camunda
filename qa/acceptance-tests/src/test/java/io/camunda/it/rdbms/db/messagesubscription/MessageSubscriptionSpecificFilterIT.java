@@ -23,6 +23,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.sort.MessageSubscriptionSort;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -52,6 +53,8 @@ public class MessageSubscriptionSpecificFilterIT {
   private static final String FLOW_NODE_ID = CommonFixtures.nextStringId();
   private static final String PROCESS_DEFINITION_ID = CommonFixtures.nextStringId();
   private static final Long PROCESS_INSTANCE_KEY = CommonFixtures.nextKey();
+  private static final String EXTENSION_PROPERTY_KEY = "route";
+  private static final String EXTENSION_PROPERTY_VALUE = "alpha";
 
   @Autowired private RdbmsService rdbmsService;
 
@@ -79,6 +82,9 @@ public class MessageSubscriptionSpecificFilterIT {
                     .flowNodeId(FLOW_NODE_ID)
                     .processDefinitionId(PROCESS_DEFINITION_ID)
                     .processInstanceKey(PROCESS_INSTANCE_KEY)
+                    .extensionProperties(
+                        "{\"%s\":\"%s\"}"
+                            .formatted(EXTENSION_PROPERTY_KEY, EXTENSION_PROPERTY_VALUE))
                     .messageSubscriptionState(MessageSubscriptionState.CORRELATED)));
 
     final var searchResult =
@@ -127,8 +133,9 @@ public class MessageSubscriptionSpecificFilterIT {
             .processInstanceKeyOperations(Operation.eq(PROCESS_INSTANCE_KEY))
             .build(),
         new MessageSubscriptionFilter.Builder().tenantIds(TENANT_ID).build(),
+        new MessageSubscriptionFilter.Builder().tenantIdOperations(Operation.eq(TENANT_ID)).build(),
         new MessageSubscriptionFilter.Builder()
-            .tenantIdOperations(Operation.eq(TENANT_ID))
+            .extensionProperties(Map.of(EXTENSION_PROPERTY_KEY, EXTENSION_PROPERTY_VALUE))
             .build());
   }
 }

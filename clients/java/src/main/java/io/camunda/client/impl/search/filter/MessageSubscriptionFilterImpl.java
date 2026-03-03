@@ -32,6 +32,7 @@ import io.camunda.client.impl.search.filter.builder.MessageSubscriptionTypePrope
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class MessageSubscriptionFilterImpl
@@ -227,6 +228,13 @@ public class MessageSubscriptionFilterImpl
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setTenantId(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public MessageSubscriptionFilter extensionProperties(
+      final Map<String, String> extensionProperties) {
+    filter.setExtensionProperties(extensionProperties);
     return this;
   }
 

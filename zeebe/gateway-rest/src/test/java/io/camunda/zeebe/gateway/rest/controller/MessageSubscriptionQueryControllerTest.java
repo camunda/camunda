@@ -48,7 +48,11 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                   "correlationKey": "test",
                   "tenantId": "test-tenant",
                   "processDefinitionKey": null,
-                  "rootProcessInstanceKey": null
+                  "rootProcessInstanceKey": null,
+                  "processDefinitionName": null,
+                  "processDefinitionVersion": null,
+                  "messageSubscriptionType": null,
+                  "extensionProperties": {}
                 }
             ],
             "page": {
