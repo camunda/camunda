@@ -69,6 +69,12 @@ public final class TestLogStreamBuilder implements LogStreamBuilder {
   }
 
   @Override
+  public TestLogStreamBuilder withInFlightCapacity(final int capacity) {
+    delegate.withInFlightCapacity(capacity);
+    return this;
+  }
+
+  @Override
   public TestLogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
     delegate.withMeterRegistry(meterRegistry);
     return this;

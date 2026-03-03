@@ -69,30 +69,28 @@ final class RingBufferTest {
   }
 
   @Test
-  void constructorRejectsNonPowerOfTwo() {
-    assertThatThrownBy(() -> new RingBuffer(3))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("power of two");
+  void constructorRoundsUpToNextPowerOfTwo() {
+    assertThat(new RingBuffer(1).capacity()).isEqualTo(1);
+    assertThat(new RingBuffer(2).capacity()).isEqualTo(2);
+    assertThat(new RingBuffer(3).capacity()).isEqualTo(4);
+    assertThat(new RingBuffer(5).capacity()).isEqualTo(8);
+    assertThat(new RingBuffer(7).capacity()).isEqualTo(8);
+    assertThat(new RingBuffer(9).capacity()).isEqualTo(16);
+    assertThat(new RingBuffer(1000).capacity()).isEqualTo(1024);
+    assertThat(new RingBuffer(1024).capacity()).isEqualTo(1024);
+    assertThat(new RingBuffer(1025).capacity()).isEqualTo(2048);
   }
 
   @Test
-  void constructorRejectsZero() {
-    assertThatThrownBy(() -> new RingBuffer(0))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("power of two");
+  void constructorUsesDefaultForZero() {
+    final var buffer = new RingBuffer(0);
+    assertThat(buffer.capacity()).isEqualTo(8192);
   }
 
   @Test
   void constructorRejectsNegative() {
     assertThatThrownBy(() -> new RingBuffer(-1))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("power of two");
-  }
-
-  @Test
-  void capacityReturnsConfiguredSize() {
-    final var buffer = new RingBuffer(16);
-    assertThat(buffer.capacity()).isEqualTo(16);
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Nested

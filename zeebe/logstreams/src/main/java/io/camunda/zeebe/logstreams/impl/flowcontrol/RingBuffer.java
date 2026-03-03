@@ -26,22 +26,27 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
  * the ring buffer.
  */
 final class RingBuffer {
+  private static final int DEFAULT_CAPACITY = 8 * 1024; // 8K slots
+
   private final AtomicReferenceArray<InFlightEntry> buffer;
   private final int mask;
 
   /**
-   * Creates a new ring buffer with the given capacity.
+   * Creates a new ring buffer with at least the given capacity. The actual capacity is rounded up to
+   * the next power of two. If {@code minCapacity} is 0, a default of {@value #DEFAULT_CAPACITY} is
+   * used.
    *
-   * @param capacity must be a positive power of two
-   * @throws IllegalArgumentException if capacity is not a positive power of two
+   * @param minCapacity must be non-negative
+   * @throws IllegalArgumentException if minCapacity is negative
    */
-  RingBuffer(final int capacity) {
-    if (capacity <= 0 || (capacity & (capacity - 1)) != 0) {
-      throw new IllegalArgumentException(
-          "capacity must be a positive power of two, got: " + capacity);
+  RingBuffer(final int minCapacity) {
+    if (minCapacity < 0) {
+      throw new IllegalArgumentException("capacity must be non-negative, got: " + minCapacity);
     }
-    mask = capacity - 1;
-    buffer = new AtomicReferenceArray<>(capacity);
+    final int requested = minCapacity == 0 ? DEFAULT_CAPACITY : minCapacity;
+    final int actualCapacity = requested == 1 ? 1 : Integer.highestOneBit(requested - 1) << 1;
+    mask = actualCapacity - 1;
+    buffer = new AtomicReferenceArray<>(actualCapacity);
   }
 
   /**
