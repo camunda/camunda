@@ -19,6 +19,20 @@ public final class InFlightEntry {
   CloseableSilently writeTimer;
   CloseableSilently commitTimer;
 
+  /**
+   * The position this entry was registered at in the ring buffer. Set by {@link RingBuffer#put}
+   * before the entry reference is published into the array. Used by {@link RingBuffer#get} to
+   * verify that the entry in a slot actually belongs to the requested position (guards against
+   * wraparound collisions).
+   *
+   * <p>This field is intentionally <em>not</em> volatile. Visibility is guaranteed by the {@link
+   * java.util.concurrent.atomic.AtomicReferenceArray} used in the ring buffer: {@code put} sets
+   * this field before the volatile write ({@code getAndSet}) that publishes the entry reference.
+   * Readers obtain the reference via a volatile read ({@code get}) on the same array slot, which
+   * establishes a happens-before edge that carries this plain write.
+   */
+  long position;
+
   public InFlightEntry(
       final LogStreamMetrics metrics,
       final LogAppendEntryMetadata entryMetadata,
@@ -75,14 +89,18 @@ public final class InFlightEntry {
     final var requestListener = this.requestListener;
     if (requestListener != null) {
       requestListener.onIgnore();
+      metrics.decreaseInflightRequests();
+      this.requestListener = null;
     }
     final var writeTimer = this.writeTimer;
     if (writeTimer != null) {
       writeTimer.close();
+      this.writeTimer = null;
     }
     final var commitTimer = this.commitTimer;
     if (commitTimer != null) {
       commitTimer.close();
+      this.commitTimer = null;
     }
   }
 }

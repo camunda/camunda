@@ -88,6 +88,19 @@ public final class LimitCfg implements ConfigurationEntry {
   }
 
   /**
+   * Returns the maximum concurrency allowed by the configured algorithm, or 0 if the algorithm does
+   * not define an explicit upper bound. Used to size the in-flight ring buffer in flow control.
+   */
+  public int maxConcurrency() {
+    return switch (algorithm) {
+      case AIMD -> aimd.getMaxLimit();
+      case FIXED -> fixed.getLimit();
+      case LEGACY_VEGAS -> legacyVegas.getMaxConcurrency();
+      default -> 0;
+    };
+  }
+
+  /**
    * @return null if disabled, (windowed) limit otherwise.
    */
   public Limit buildLimit() {

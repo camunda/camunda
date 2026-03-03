@@ -46,13 +46,15 @@ public final class LogStreamImpl implements LogStream, CommitListener {
       final InstantSource clock,
       final Limit requestLimit,
       final RateLimit writeRateLimit,
+      final int inFlightCapacity,
       final MeterRegistry meterRegistry) {
     this.logName = logName;
 
     this.partitionId = partitionId;
     this.logStorage = logStorage;
     flowControl =
-        new FlowControl(new LogStreamMetrics(meterRegistry), requestLimit, writeRateLimit);
+        new FlowControl(
+            new LogStreamMetrics(meterRegistry), requestLimit, writeRateLimit, inFlightCapacity);
     sequencer =
         new Sequencer(
             logStorage,
