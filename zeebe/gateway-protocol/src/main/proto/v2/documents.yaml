@@ -375,6 +375,7 @@ components:
           nullable: true
 
     DocumentMetadataResponse:
+      description: Information about the document that is returned in responses.
       type: object
       allOf:
         - $ref: '#/components/schemas/DocumentMetadata'
