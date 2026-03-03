@@ -77,6 +77,31 @@ public interface MessageSubscriptionFilter extends SearchRequestFilter {
   MessageSubscriptionFilter processDefinitionId(Consumer<StringProperty> fn);
 
   /**
+   * Filter by process definition name.
+   *
+   * @param processDefinitionName the name of the process definition
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter processDefinitionName(String processDefinitionName);
+
+  /**
+   * Filter by process definition name using a {@link StringProperty} consumer.
+   *
+   * @param fn the process definition name {@link StringProperty} consumer for the message
+   *     subscription
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter processDefinitionName(Consumer<StringProperty> fn);
+
+  /**
+   * Filter by process definition version.
+   *
+   * @param processDefinitionVersion the version of the process definition
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter processDefinitionVersion(Integer processDefinitionVersion);
+
+  /**
    * Filter by process instance key.
    *
    * @param processInstanceKey the key of the process instance
@@ -142,6 +167,25 @@ public interface MessageSubscriptionFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   MessageSubscriptionFilter messageSubscriptionState(Consumer<MessageSubscriptionStateProperty> fn);
+
+  /**
+   * Filter by message subscription type.
+   *
+   * @param messageSubscriptionType the type of the message subscription
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter messageSubscriptionType(
+      io.camunda.client.api.search.enums.MessageSubscriptionType messageSubscriptionType);
+
+  /**
+   * Filter by message subscription type using a {@link
+   * io.camunda.client.api.search.filter.builder.MessageSubscriptionTypeProperty} consumer.
+   *
+   * @param fn the message subscription type property consumer
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter messageSubscriptionType(
+      Consumer<io.camunda.client.api.search.filter.builder.MessageSubscriptionTypeProperty> fn);
 
   /**
    * Filter by last updated date.

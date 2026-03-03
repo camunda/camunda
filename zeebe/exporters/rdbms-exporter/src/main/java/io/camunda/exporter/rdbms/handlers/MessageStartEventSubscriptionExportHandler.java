@@ -18,24 +18,23 @@ import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
-import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import java.time.Instant;
 import java.util.Set;
 
-public class MessageSubscriptionExportHandler
-    implements RdbmsExportHandler<ProcessMessageSubscriptionRecordValue> {
+public class MessageStartEventSubscriptionExportHandler
+    implements RdbmsExportHandler<MessageStartEventSubscriptionRecordValue> {
 
-  private static final Set<Intent> STATES =
+  private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(
-          ProcessMessageSubscriptionIntent.CORRELATED,
-          ProcessMessageSubscriptionIntent.CREATED,
-          ProcessMessageSubscriptionIntent.DELETED,
-          ProcessMessageSubscriptionIntent.MIGRATED);
+          MessageStartEventSubscriptionIntent.CREATED,
+          MessageStartEventSubscriptionIntent.DELETED);
+
   private final MessageSubscriptionWriter messageSubscriptionWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
-  public MessageSubscriptionExportHandler(
+  public MessageStartEventSubscriptionExportHandler(
       final MessageSubscriptionWriter messageSubscriptionWriter,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.messageSubscriptionWriter = messageSubscriptionWriter;
@@ -43,19 +42,17 @@ public class MessageSubscriptionExportHandler
   }
 
   @Override
-  public boolean canExport(final Record<ProcessMessageSubscriptionRecordValue> record) {
-    return STATES.contains(record.getIntent());
+  public boolean canExport(final Record<MessageStartEventSubscriptionRecordValue> record) {
+    return SUPPORTED_INTENTS.contains(record.getIntent());
   }
 
   @Override
-  public void export(final Record<ProcessMessageSubscriptionRecordValue> record) {
+  public void export(final Record<MessageStartEventSubscriptionRecordValue> record) {
     switch (record.getIntent()) {
-      case ProcessMessageSubscriptionIntent.CREATED:
+      case MessageStartEventSubscriptionIntent.CREATED:
         messageSubscriptionWriter.create(map(record));
         break;
-      case ProcessMessageSubscriptionIntent.CORRELATED,
-      ProcessMessageSubscriptionIntent.DELETED,
-      ProcessMessageSubscriptionIntent.MIGRATED:
+      case MessageStartEventSubscriptionIntent.DELETED:
         messageSubscriptionWriter.update(map(record));
         break;
       default:
@@ -64,8 +61,8 @@ public class MessageSubscriptionExportHandler
   }
 
   private MessageSubscriptionDbModel map(
-      final Record<ProcessMessageSubscriptionRecordValue> record) {
-    final ProcessMessageSubscriptionRecordValue value = record.getValue();
+      final Record<MessageStartEventSubscriptionRecordValue> record) {
+    final MessageStartEventSubscriptionRecordValue value = record.getValue();
     final var processDefinitionKey = value.getProcessDefinitionKey();
     final var cachedProcess = processCache.get(processDefinitionKey);
     return new MessageSubscriptionDbModel.Builder()
@@ -74,15 +71,11 @@ public class MessageSubscriptionExportHandler
         .processDefinitionKey(processDefinitionKey)
         .processDefinitionName(cachedProcess.map(CachedProcessEntity::name).orElse(null))
         .processDefinitionVersion(cachedProcess.map(CachedProcessEntity::version).orElse(null))
-        .processInstanceKey(value.getProcessInstanceKey())
-        .rootProcessInstanceKey(value.getRootProcessInstanceKey())
-        .flowNodeId(value.getElementId())
-        .flowNodeInstanceKey(value.getElementInstanceKey())
+        .flowNodeId(value.getStartEventId())
         .messageSubscriptionState(MessageSubscriptionState.valueOf(record.getIntent().name()))
-        .messageSubscriptionType(MessageSubscriptionType.INTERMEDIATE_EVENT_SUBSCRIPTION)
+        .messageSubscriptionType(MessageSubscriptionType.START_EVENT_SUBSCRIPTION)
         .dateTime(toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
         .messageName(value.getMessageName())
-        .correlationKey(value.getCorrelationKey())
         .tenantId(value.getTenantId())
         .partitionId(record.getPartitionId())
         .build();

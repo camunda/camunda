@@ -264,10 +264,19 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
           description: The process definition key associated with this message subscription.
+        processDefinitionName:
+          description: The name of the process definition associated with this message subscription.
+          type: string
+        processDefinitionVersion:
+          description: The version of the process definition associated with this message subscription.
+          type: integer
+          format: int32
         processInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
-          description: The process instance key associated with this message subscription.
+          description: |
+            The process instance key associated with this message subscription. This field is only
+            present for message subscriptions of type INTERMEDIATE_EVENT_SUBSCRIPTION.
         rootProcessInstanceKey:
           description: |
             The key of the root process instance. The root process instance is the top-level
@@ -283,9 +292,13 @@ components:
         elementInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
-          description: The element instance key associated with this message subscription.
+          description: |
+            The element instance key associated with this message subscription. This field is only
+            present for message subscriptions of type INTERMEDIATE_EVENT_SUBSCRIPTION.
         messageSubscriptionState:
           $ref: '#/components/schemas/MessageSubscriptionStateEnum'
+        messageSubscriptionType:
+          $ref: '#/components/schemas/MessageSubscriptionTypeEnum'
         lastUpdatedDate:
           description: The last updated date of the message subscription.
           type: string
@@ -308,10 +321,13 @@ components:
           enum:
             - messageSubscriptionKey
             - processDefinitionId
+            - processDefinitionName
+            - processDefinitionVersion
             - processInstanceKey
             - elementId
             - elementInstanceKey
             - messageSubscriptionState
+            - messageSubscriptionType
             - lastUpdatedDate
             - messageName
             - correlationKey
@@ -353,10 +369,20 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The process definition ID associated with this message subscription.
+        processDefinitionName:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The name of the process definition associated with this message subscription.
+        processDefinitionVersion:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+          description: The version of the process definition associated with this message subscription.
         processInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
-          description: The process instance key associated with this message subscription.
+          description: |
+            The process instance key associated with this message subscription. This filter only
+            applies to message subscriptions of type INTERMEDIATE_EVENT_SUBSCRIPTION.
         elementId:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
@@ -369,6 +395,10 @@ components:
           allOf:
             - $ref: '#/components/schemas/MessageSubscriptionStateFilterProperty'
           description: The message subscription state.
+        messageSubscriptionType:
+          allOf:
+            - $ref: '#/components/schemas/MessageSubscriptionTypeFilterProperty'
+          description: The type of the message subscription.
         lastUpdatedDate:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
@@ -519,7 +549,41 @@ components:
         - DELETED
         - MIGRATED
 
+    MessageSubscriptionTypeEnum:
+      description: The type of message subscription.
+      type: string
+      enum:
+        - START_EVENT_SUBSCRIPTION
+        - INTERMEDIATE_EVENT_SUBSCRIPTION
+
     ## Filters
+
+    MessageSubscriptionTypeFilterProperty:
+      description: MessageSubscriptionTypeEnum with full advanced search capabilities.
+      oneOf:
+        - $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+        - $ref: '#/components/schemas/AdvancedMessageSubscriptionTypeFilter'
+
+    AdvancedMessageSubscriptionTypeFilter:
+      type: object
+      description: Advanced MessageSubscriptionTypeEnum filter
+      properties:
+        $eq:
+          $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+        $neq:
+          $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+        $exists:
+          type: boolean
+        $in:
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+        $nin:
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+        $like:
+          type: string
 
     CorrelatedMessageSubscriptionFilter:
       description: Correlated message subscriptions search filter.

@@ -21,10 +21,13 @@ public record MessageSubscriptionFilter(
     List<Operation<Long>> messageSubscriptionKeyOperations,
     List<Operation<String>> processDefinitionIdOperations,
     List<Operation<Long>> processDefinitionKeyOperations,
+    List<Operation<String>> processDefinitionNameOperations,
+    List<Operation<Integer>> processDefinitionVersionOperations,
     List<Operation<Long>> processInstanceKeyOperations,
     List<Operation<String>> flowNodeIdOperations,
     List<Operation<Long>> flowNodeInstanceKeyOperations,
     List<Operation<String>> messageSubscriptionStateOperations,
+    List<Operation<String>> messageSubscriptionTypeOperations,
     List<Operation<OffsetDateTime>> dateTimeOperations,
     List<Operation<String>> messageNameOperations,
     List<Operation<String>> correlationKeyOperations,
@@ -36,10 +39,13 @@ public record MessageSubscriptionFilter(
     private List<Operation<Long>> messageSubscriptionKeyOperations;
     private List<Operation<String>> processDefinitionIdOperations;
     private List<Operation<Long>> processDefinitionKeyOperations;
+    private List<Operation<String>> processDefinitionNameOperations;
+    private List<Operation<Integer>> processDefinitionVersionOperations;
     private List<Operation<Long>> processInstanceKeyOperations;
     private List<Operation<String>> flowNodeIdOperations;
     private List<Operation<Long>> flowNodeInstanceKeyOperations;
     private List<Operation<String>> messageSubscriptionStateOperations;
+    private List<Operation<String>> messageSubscriptionTypeOperations;
     private List<Operation<OffsetDateTime>> dateTimeOperations;
     private List<Operation<String>> messageNameOperations;
     private List<Operation<String>> correlationKeyOperations;
@@ -87,6 +93,37 @@ public record MessageSubscriptionFilter(
 
     public Builder processDefinitionKeyOperations(final List<Operation<Long>> operations) {
       processDefinitionKeyOperations = operations;
+      return this;
+    }
+
+    public Builder processDefinitionNames(final String value, final String... values) {
+      return processDefinitionNameOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder processDefinitionNameOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return processDefinitionNameOperations(collectValues(operation, operations));
+    }
+
+    public Builder processDefinitionNameOperations(final List<Operation<String>> operations) {
+      processDefinitionNameOperations = addValuesToList(processDefinitionNameOperations, operations);
+      return this;
+    }
+
+    public Builder processDefinitionVersions(final Integer value, final Integer... values) {
+      return processDefinitionVersionOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder processDefinitionVersionOperations(
+        final Operation<Integer> operation, final Operation<Integer>... operations) {
+      return processDefinitionVersionOperations(collectValues(operation, operations));
+    }
+
+    public Builder processDefinitionVersionOperations(final List<Operation<Integer>> operations) {
+      processDefinitionVersionOperations =
+          addValuesToList(processDefinitionVersionOperations, operations);
       return this;
     }
 
@@ -148,6 +185,22 @@ public record MessageSubscriptionFilter(
     public Builder messageSubscriptionStateOperations(final List<Operation<String>> operations) {
       messageSubscriptionStateOperations =
           addValuesToList(messageSubscriptionStateOperations, operations);
+      return this;
+    }
+
+    public Builder messageSubscriptionTypes(final String value, final String... values) {
+      return messageSubscriptionTypeOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder messageSubscriptionTypeOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return messageSubscriptionTypeOperations(collectValues(operation, operations));
+    }
+
+    public Builder messageSubscriptionTypeOperations(final List<Operation<String>> operations) {
+      messageSubscriptionTypeOperations =
+          addValuesToList(messageSubscriptionTypeOperations, operations);
       return this;
     }
 
@@ -217,10 +270,13 @@ public record MessageSubscriptionFilter(
           Objects.requireNonNullElse(messageSubscriptionKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionNameOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionVersionOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(flowNodeIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(flowNodeInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(messageSubscriptionStateOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(messageSubscriptionTypeOperations, Collections.emptyList()),
           Objects.requireNonNullElse(dateTimeOperations, Collections.emptyList()),
           Objects.requireNonNullElse(messageNameOperations, Collections.emptyList()),
           Objects.requireNonNullElse(correlationKeyOperations, Collections.emptyList()),

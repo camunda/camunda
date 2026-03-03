@@ -15,11 +15,14 @@ public record MessageSubscriptionEntity(
     Long messageSubscriptionKey,
     String processDefinitionId,
     Long processDefinitionKey,
+    String processDefinitionName,
+    Integer processDefinitionVersion,
     Long processInstanceKey,
     Long rootProcessInstanceKey,
     String flowNodeId,
     Long flowNodeInstanceKey,
     MessageSubscriptionState messageSubscriptionState,
+    MessageSubscriptionType messageSubscriptionType,
     OffsetDateTime dateTime,
     String messageName,
     String correlationKey,
@@ -33,11 +36,14 @@ public record MessageSubscriptionEntity(
     private Long messageSubscriptionKey;
     private String processDefinitionId;
     private Long processDefinitionKey;
+    private String processDefinitionName;
+    private Integer processDefinitionVersion;
     private Long processInstanceKey;
     private Long rootProcessInstanceKey;
     private String flowNodeId;
     private Long flowNodeInstanceKey;
     private MessageSubscriptionState messageSubscriptionState;
+    private MessageSubscriptionType messageSubscriptionType;
     private OffsetDateTime dateTime;
     private String messageName;
     private String correlationKey;
@@ -55,6 +61,16 @@ public record MessageSubscriptionEntity(
 
     public Builder processDefinitionKey(final Long processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
+      return this;
+    }
+
+    public Builder processDefinitionName(final String processDefinitionName) {
+      this.processDefinitionName = processDefinitionName;
+      return this;
+    }
+
+    public Builder processDefinitionVersion(final Integer processDefinitionVersion) {
+      this.processDefinitionVersion = processDefinitionVersion;
       return this;
     }
 
@@ -84,6 +100,11 @@ public record MessageSubscriptionEntity(
       return this;
     }
 
+    public Builder messageSubscriptionType(final MessageSubscriptionType messageSubscriptionType) {
+      this.messageSubscriptionType = messageSubscriptionType;
+      return this;
+    }
+
     public Builder dateTime(final OffsetDateTime dateTime) {
       this.dateTime = dateTime;
       return this;
@@ -109,11 +130,14 @@ public record MessageSubscriptionEntity(
           messageSubscriptionKey,
           processDefinitionId,
           processDefinitionKey,
+          processDefinitionName,
+          processDefinitionVersion,
           processInstanceKey,
           rootProcessInstanceKey,
           flowNodeId,
           flowNodeInstanceKey,
           messageSubscriptionState,
+          messageSubscriptionType,
           dateTime,
           messageName,
           correlationKey,
@@ -126,5 +150,10 @@ public record MessageSubscriptionEntity(
     CREATED,
     DELETED,
     MIGRATED
+  }
+
+  public enum MessageSubscriptionType {
+    START_EVENT_SUBSCRIPTION,
+    INTERMEDIATE_EVENT_SUBSCRIPTION
   }
 }

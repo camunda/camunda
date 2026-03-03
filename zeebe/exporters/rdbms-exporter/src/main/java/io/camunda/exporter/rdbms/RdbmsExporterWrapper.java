@@ -35,6 +35,7 @@ import io.camunda.exporter.rdbms.handlers.IncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.JobExportHandler;
 import io.camunda.exporter.rdbms.handlers.JobMetricsBatchExportHandler;
 import io.camunda.exporter.rdbms.handlers.MappingRuleExportHandler;
+import io.camunda.exporter.rdbms.handlers.MessageStartEventSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.MessageSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceExportHandler;
@@ -263,7 +264,12 @@ public class RdbmsExporterWrapper implements Exporter {
             rdbmsWriters.getUsageMetricWriter(), rdbmsWriters.getUsageMetricTUWriter()));
     builder.withHandler(
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-        new MessageSubscriptionExportHandler(rdbmsWriters.getMessageSubscriptionWriter()));
+        new MessageSubscriptionExportHandler(
+            rdbmsWriters.getMessageSubscriptionWriter(), processCache));
+    builder.withHandler(
+        ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+        new MessageStartEventSubscriptionExportHandler(
+            rdbmsWriters.getMessageSubscriptionWriter(), processCache));
     builder.withHandler(
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
         new CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHandler(

@@ -89,6 +89,7 @@ import io.camunda.gateway.protocol.model.MatchedDecisionRuleItem;
 import io.camunda.gateway.protocol.model.MessageSubscriptionResult;
 import io.camunda.gateway.protocol.model.MessageSubscriptionSearchQueryResult;
 import io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum;
+import io.camunda.gateway.protocol.model.MessageSubscriptionTypeEnum;
 import io.camunda.gateway.protocol.model.OwnerTypeEnum;
 import io.camunda.gateway.protocol.model.PermissionTypeEnum;
 import io.camunda.gateway.protocol.model.ProcessDefinitionElementStatisticsQueryResult;
@@ -1043,13 +1044,22 @@ public final class SearchQueryResponseMapper {
         .messageSubscriptionKey(KeyUtil.keyToString(messageSubscription.messageSubscriptionKey()))
         .processDefinitionId(messageSubscription.processDefinitionId())
         .processDefinitionKey(KeyUtil.keyToString(messageSubscription.processDefinitionKey()))
+        .processDefinitionName(messageSubscription.processDefinitionName())
+        .processDefinitionVersion(messageSubscription.processDefinitionVersion())
         .processInstanceKey(KeyUtil.keyToString(messageSubscription.processInstanceKey()))
         .rootProcessInstanceKey(KeyUtil.keyToString(messageSubscription.rootProcessInstanceKey()))
         .elementId(messageSubscription.flowNodeId())
         .elementInstanceKey(KeyUtil.keyToString(messageSubscription.flowNodeInstanceKey()))
         .messageSubscriptionState(
-            MessageSubscriptionStateEnum.fromValue(
-                messageSubscription.messageSubscriptionState().name()))
+            messageSubscription.messageSubscriptionState() != null
+                ? MessageSubscriptionStateEnum.fromValue(
+                    messageSubscription.messageSubscriptionState().name())
+                : null)
+        .messageSubscriptionType(
+            messageSubscription.messageSubscriptionType() != null
+                ? MessageSubscriptionTypeEnum.fromValue(
+                    messageSubscription.messageSubscriptionType().name())
+                : null)
         .lastUpdatedDate(formatDate(messageSubscription.dateTime()))
         .messageName(messageSubscription.messageName())
         .correlationKey(messageSubscription.correlationKey())

@@ -93,6 +93,15 @@
       },
       "rootProcessInstanceKey": {
         "type": "long"
+      },
+      "processDefinitionName": {
+        "type": "keyword"
+      },
+      "processDefinitionVersion": {
+        "type": "integer"
+      },
+      "messageSubscriptionType": {
+        "type": "keyword"
       }
 		}
 	}

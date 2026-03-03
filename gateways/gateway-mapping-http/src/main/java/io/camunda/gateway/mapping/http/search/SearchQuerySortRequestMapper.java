@@ -786,10 +786,13 @@ public class SearchQuerySortRequestMapper {
       switch (field) {
         case MESSAGE_SUBSCRIPTION_KEY -> builder.messageSubscriptionKey();
         case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case PROCESS_DEFINITION_NAME -> builder.processDefinitionName();
+        case PROCESS_DEFINITION_VERSION -> builder.processDefinitionVersion();
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
         case ELEMENT_ID -> builder.flowNodeId();
         case ELEMENT_INSTANCE_KEY -> builder.flowNodeInstanceKey();
         case MESSAGE_SUBSCRIPTION_STATE -> builder.messageSubscriptionState();
+        case MESSAGE_SUBSCRIPTION_TYPE -> builder.messageSubscriptionType();
         case LAST_UPDATED_DATE -> builder.dateTime();
         case MESSAGE_NAME -> builder.messageName();
         case CORRELATION_KEY -> builder.correlationKey();

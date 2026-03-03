@@ -37,6 +37,16 @@ public record MessageSubscriptionSort(List<FieldSorting> orderings) implements S
       return this;
     }
 
+    public Builder processDefinitionName() {
+      currentOrdering = new FieldSorting("processDefinitionName", null);
+      return this;
+    }
+
+    public Builder processDefinitionVersion() {
+      currentOrdering = new FieldSorting("processDefinitionVersion", null);
+      return this;
+    }
+
     public Builder processInstanceKey() {
       currentOrdering = new FieldSorting("processInstanceKey", null);
       return this;
@@ -54,6 +64,11 @@ public record MessageSubscriptionSort(List<FieldSorting> orderings) implements S
 
     public Builder messageSubscriptionState() {
       currentOrdering = new FieldSorting("messageSubscriptionState", null);
+      return this;
+    }
+
+    public Builder messageSubscriptionType() {
+      currentOrdering = new FieldSorting("messageSubscriptionType", null);
       return this;
     }
 

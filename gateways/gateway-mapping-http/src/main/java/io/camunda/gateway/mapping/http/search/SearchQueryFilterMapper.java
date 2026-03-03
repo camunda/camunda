@@ -961,6 +961,12 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getProcessDefinitionId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::processDefinitionIdOperations);
+      ofNullable(filter.getProcessDefinitionName())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::processDefinitionNameOperations);
+      ofNullable(filter.getProcessDefinitionVersion())
+          .map(mapToOperations(Integer.class))
+          .ifPresent(builder::processDefinitionVersionOperations);
       ofNullable(filter.getProcessInstanceKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::processInstanceKeyOperations);
@@ -973,6 +979,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getMessageSubscriptionState())
           .map(mapToOperations(String.class))
           .ifPresent(builder::messageSubscriptionStateOperations);
+      ofNullable(filter.getMessageSubscriptionType())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::messageSubscriptionTypeOperations);
       ofNullable(filter.getLastUpdatedDate())
           .map(mapToOperations(OffsetDateTime.class))
           .ifPresent(builder::dateTimeOperations);

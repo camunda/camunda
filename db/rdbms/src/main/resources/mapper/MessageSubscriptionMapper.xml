@@ -30,11 +30,14 @@
     MESSAGE_SUBSCRIPTION_KEY,
     PROCESS_DEFINITION_ID,
     PROCESS_DEFINITION_KEY,
+    PROCESS_DEFINITION_NAME,
+    PROCESS_DEFINITION_VERSION,
     PROCESS_INSTANCE_KEY,
     ROOT_PROCESS_INSTANCE_KEY,
     FLOW_NODE_ID,
     FLOW_NODE_INSTANCE_KEY,
     MESSAGE_SUBSCRIPTION_STATE,
+    MESSAGE_SUBSCRIPTION_TYPE,
     DATE_TIME,
     MESSAGE_NAME,
     CORRELATION_KEY,
@@ -89,6 +92,18 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+    <if test="filter.processDefinitionNameOperations != null and !filter.processDefinitionNameOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionNameOperations" item="operation">
+        AND PROCESS_DEFINITION_NAME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.processDefinitionVersionOperations != null and !filter.processDefinitionVersionOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionVersionOperations" item="operation">
+        AND PROCESS_DEFINITION_VERSION
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
     <if test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
       <foreach collection="filter.processInstanceKeyOperations" item="operation">
         AND PROCESS_INSTANCE_KEY
@@ -110,6 +125,12 @@
     <if test="filter.messageSubscriptionStateOperations != null and !filter.messageSubscriptionStateOperations.isEmpty()">
       <foreach collection="filter.messageSubscriptionStateOperations" item="operation">
         AND MESSAGE_SUBSCRIPTION_STATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.messageSubscriptionTypeOperations != null and !filter.messageSubscriptionTypeOperations.isEmpty()">
+      <foreach collection="filter.messageSubscriptionTypeOperations" item="operation">
+        AND MESSAGE_SUBSCRIPTION_TYPE
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
@@ -145,11 +166,14 @@
     </constructor>
     <result column="PROCESS_DEFINITION_ID" property="processDefinitionId" javaType="java.lang.String" />
     <result column="PROCESS_DEFINITION_KEY" property="processDefinitionKey" javaType="java.lang.Long" />
+    <result column="PROCESS_DEFINITION_NAME" property="processDefinitionName" javaType="java.lang.String" />
+    <result column="PROCESS_DEFINITION_VERSION" property="processDefinitionVersion" javaType="java.lang.Integer" />
     <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" javaType="java.lang.Long" />
     <result column="ROOT_PROCESS_INSTANCE_KEY" property="rootProcessInstanceKey" javaType="java.lang.Long" />
     <result column="FLOW_NODE_ID" property="flowNodeId" javaType="java.lang.String" />
     <result column="FLOW_NODE_INSTANCE_KEY" property="flowNodeInstanceKey" javaType="java.lang.Long" />
     <result column="MESSAGE_SUBSCRIPTION_STATE" property="messageSubscriptionState" javaType="io.camunda.search.entities.MessageSubscriptionEntity$MessageSubscriptionState" />
+    <result column="MESSAGE_SUBSCRIPTION_TYPE" property="messageSubscriptionType" javaType="io.camunda.search.entities.MessageSubscriptionEntity$MessageSubscriptionType" />
     <result column="DATE_TIME" property="dateTime" javaType="java.time.OffsetDateTime" />
     <result column="MESSAGE_NAME" property="messageName" javaType="java.lang.String" />
     <result column="CORRELATION_KEY" property="correlationKey" javaType="java.lang.String" />
@@ -163,11 +187,14 @@
                                                MESSAGE_SUBSCRIPTION_KEY,
                                                PROCESS_DEFINITION_ID,
                                                PROCESS_DEFINITION_KEY,
+                                               PROCESS_DEFINITION_NAME,
+                                               PROCESS_DEFINITION_VERSION,
                                                PROCESS_INSTANCE_KEY,
                                                ROOT_PROCESS_INSTANCE_KEY,
                                                FLOW_NODE_ID,
                                                FLOW_NODE_INSTANCE_KEY,
                                                MESSAGE_SUBSCRIPTION_STATE,
+                                               MESSAGE_SUBSCRIPTION_TYPE,
                                                DATE_TIME,
                                                MESSAGE_NAME,
                                                CORRELATION_KEY,
@@ -178,11 +205,14 @@
             #{messageSubscriptionKey},
             #{processDefinitionId},
             #{processDefinitionKey},
+            #{processDefinitionName},
+            #{processDefinitionVersion},
             #{processInstanceKey},
             #{rootProcessInstanceKey},
             #{flowNodeId},
             #{flowNodeInstanceKey},
             #{messageSubscriptionState},
+            #{messageSubscriptionType},
             #{dateTime, jdbcType=TIMESTAMP},
             #{messageName},
             #{correlationKey},
@@ -195,6 +225,8 @@
     UPDATE ${prefix}MESSAGE_SUBSCRIPTION
     SET PROCESS_DEFINITION_ID = #{processDefinitionId},
         PROCESS_DEFINITION_KEY = #{processDefinitionKey},
+        PROCESS_DEFINITION_NAME = #{processDefinitionName},
+        PROCESS_DEFINITION_VERSION = #{processDefinitionVersion},
         PROCESS_INSTANCE_KEY = #{processInstanceKey},
         FLOW_NODE_ID = #{flowNodeId},
         FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey},

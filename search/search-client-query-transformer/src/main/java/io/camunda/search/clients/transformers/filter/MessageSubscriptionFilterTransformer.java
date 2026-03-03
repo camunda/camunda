@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
@@ -20,12 +21,17 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.FLOW_NODE_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_SUBSCRIPTION_STATE;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_SUBSCRIPTION_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_NAME;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_VERSION;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_KEY;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MessageSubscriptionFilterTransformer
@@ -37,21 +43,44 @@ public class MessageSubscriptionFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final MessageSubscriptionFilter filter) {
-    final var messageSubscriptionTerm =
-        stringTerms(EVENT_SOURCE_TYPE, List.of("PROCESS_MESSAGE_SUBSCRIPTION"));
+    // Build the event source type restriction based on messageSubscriptionType filter
+    final var eventSourceTypeFilter = buildEventSourceTypeFilter(filter);
+
     return and(
-        List.of(messageSubscriptionTerm),
+        eventSourceTypeFilter,
         longOperations(KEY, filter.messageSubscriptionKeyOperations()),
         stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()),
         longOperations(PROCESS_KEY, filter.processDefinitionKeyOperations()),
+        stringOperations(PROCESS_DEFINITION_NAME, filter.processDefinitionNameOperations()),
+        intOperations(PROCESS_DEFINITION_VERSION, filter.processDefinitionVersionOperations()),
         longOperations("processInstanceKey", filter.processInstanceKeyOperations()),
         stringOperations(FLOW_NODE_ID, filter.flowNodeIdOperations()),
         longOperations(FLOW_NODE_INSTANCE_KEY, filter.flowNodeInstanceKeyOperations()),
         stringOperations(MESSAGE_SUBSCRIPTION_STATE, filter.messageSubscriptionStateOperations()),
+        stringOperations(MESSAGE_SUBSCRIPTION_TYPE, filter.messageSubscriptionTypeOperations()),
         dateTimeOperations(DATE_TIME, filter.dateTimeOperations()),
         stringOperations("metadata.messageName", filter.messageNameOperations()),
         stringOperations("metadata.correlationKey", filter.correlationKeyOperations()),
         stringOperations(TENANT_ID, filter.tenantIdOperations()));
+  }
+
+  private List<SearchQuery> buildEventSourceTypeFilter(final MessageSubscriptionFilter filter) {
+    final var typeOps = filter.messageSubscriptionTypeOperations();
+    if (typeOps != null && !typeOps.isEmpty()) {
+      // If filtering by specific type, let the messageSubscriptionType field filter handle it
+      // but still restrict to known event source types for backward compatibility
+      return List.of(
+          stringTerms(
+              EVENT_SOURCE_TYPE,
+              List.of(
+                  "PROCESS_MESSAGE_SUBSCRIPTION", "MESSAGE_START_EVENT_SUBSCRIPTION")));
+    }
+    // Default: include both intermediate and start event subscriptions
+    return List.of(
+        stringTerms(
+            EVENT_SOURCE_TYPE,
+            List.of(
+                "PROCESS_MESSAGE_SUBSCRIPTION", "MESSAGE_START_EVENT_SUBSCRIPTION")));
   }
 
   @Override

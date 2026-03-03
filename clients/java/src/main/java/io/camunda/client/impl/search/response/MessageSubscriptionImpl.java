@@ -16,6 +16,7 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
+import io.camunda.client.api.search.enums.MessageSubscriptionType;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
@@ -28,11 +29,14 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   private final Long messageSubscriptionKey;
   private final String processDefinitionId;
   private final Long processDefinitionKey;
+  private final String processDefinitionName;
+  private final Integer processDefinitionVersion;
   private final Long processInstanceKey;
   private final Long rootProcessInstanceKey;
   private final String elementId;
   private final Long elementInstanceKey;
   private final MessageSubscriptionState messageSubscriptionState;
+  private final MessageSubscriptionType messageSubscriptionType;
   private final OffsetDateTime lastUpdatedDate;
   private final String messageName;
   private final String correlationKey;
@@ -42,12 +46,16 @@ public class MessageSubscriptionImpl implements MessageSubscription {
     messageSubscriptionKey = ParseUtil.parseLongOrNull(item.getMessageSubscriptionKey());
     processDefinitionId = item.getProcessDefinitionId();
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
+    processDefinitionName = item.getProcessDefinitionName();
+    processDefinitionVersion = item.getProcessDefinitionVersion();
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
     rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     elementId = item.getElementId();
     elementInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
     messageSubscriptionState =
         EnumUtil.convert(item.getMessageSubscriptionState(), MessageSubscriptionState.class);
+    messageSubscriptionType =
+        EnumUtil.convert(item.getMessageSubscriptionType(), MessageSubscriptionType.class);
     lastUpdatedDate = ParseUtil.parseOffsetDateTimeOrNull(item.getLastUpdatedDate());
     messageName = item.getMessageName();
     correlationKey = item.getCorrelationKey();
@@ -67,6 +75,16 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   @Override
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;
+  }
+
+  @Override
+  public String getProcessDefinitionName() {
+    return processDefinitionName;
+  }
+
+  @Override
+  public Integer getProcessDefinitionVersion() {
+    return processDefinitionVersion;
   }
 
   @Override
@@ -95,6 +113,11 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   }
 
   @Override
+  public MessageSubscriptionType getMessageSubscriptionType() {
+    return messageSubscriptionType;
+  }
+
+  @Override
   public OffsetDateTime getLastUpdatedDate() {
     return lastUpdatedDate;
   }
@@ -120,11 +143,14 @@ public class MessageSubscriptionImpl implements MessageSubscription {
         messageSubscriptionKey,
         processDefinitionId,
         processDefinitionKey,
+        processDefinitionName,
+        processDefinitionVersion,
         processInstanceKey,
         rootProcessInstanceKey,
         elementId,
         elementInstanceKey,
         messageSubscriptionState,
+        messageSubscriptionType,
         lastUpdatedDate,
         messageName,
         correlationKey,
@@ -143,11 +169,14 @@ public class MessageSubscriptionImpl implements MessageSubscription {
     return Objects.equals(messageSubscriptionKey, subscription.messageSubscriptionKey)
         && Objects.equals(processDefinitionId, subscription.processDefinitionId)
         && Objects.equals(processDefinitionKey, subscription.processDefinitionKey)
+        && Objects.equals(processDefinitionName, subscription.processDefinitionName)
+        && Objects.equals(processDefinitionVersion, subscription.processDefinitionVersion)
         && Objects.equals(processInstanceKey, subscription.processInstanceKey)
         && Objects.equals(rootProcessInstanceKey, subscription.rootProcessInstanceKey)
         && Objects.equals(elementId, subscription.elementId)
         && Objects.equals(elementInstanceKey, subscription.elementInstanceKey)
         && messageSubscriptionState == subscription.messageSubscriptionState
+        && messageSubscriptionType == subscription.messageSubscriptionType
         && Objects.equals(lastUpdatedDate, subscription.lastUpdatedDate)
         && Objects.equals(messageName, subscription.messageName)
         && Objects.equals(correlationKey, subscription.correlationKey)

@@ -16,14 +16,19 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
+import io.camunda.client.api.search.enums.MessageSubscriptionType;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.MessageSubscriptionStateProperty;
+import io.camunda.client.api.search.filter.builder.MessageSubscriptionTypeProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.MessageSubscriptionStatePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.MessageSubscriptionTypePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import java.time.OffsetDateTime;
@@ -80,6 +85,32 @@ public class MessageSubscriptionFilterImpl
   }
 
   @Override
+  public MessageSubscriptionFilter processDefinitionName(final String processDefinitionName) {
+    return processDefinitionName(f -> f.eq(processDefinitionName));
+  }
+
+  @Override
+  public MessageSubscriptionFilter processDefinitionName(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionName(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public MessageSubscriptionFilter processDefinitionVersion(
+      final Integer processDefinitionVersion) {
+    return processDefinitionVersion(f -> f.eq(processDefinitionVersion));
+  }
+
+  public MessageSubscriptionFilter processDefinitionVersion(final Consumer<IntegerProperty> fn) {
+    final IntegerProperty property = new IntegerPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionVersion(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public MessageSubscriptionFilter processInstanceKey(final Long processInstanceKey) {
     return processInstanceKey(f -> f.eq(processInstanceKey));
   }
@@ -130,6 +161,20 @@ public class MessageSubscriptionFilterImpl
     final MessageSubscriptionStateProperty property = new MessageSubscriptionStatePropertyImpl();
     fn.accept(property);
     filter.setMessageSubscriptionState(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public MessageSubscriptionFilter messageSubscriptionType(
+      final MessageSubscriptionType messageSubscriptionType) {
+    return messageSubscriptionType(f -> f.eq(messageSubscriptionType));
+  }
+
+  public MessageSubscriptionFilter messageSubscriptionType(
+      final Consumer<MessageSubscriptionTypeProperty> fn) {
+    final MessageSubscriptionTypeProperty property = new MessageSubscriptionTypePropertyImpl();
+    fn.accept(property);
+    filter.setMessageSubscriptionType(provideSearchRequestProperty(property));
     return this;
   }
 

@@ -23,7 +23,10 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_NAME;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_SUBSCRIPTION_STATE;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_SUBSCRIPTION_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.METADATA;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_NAME;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_VERSION;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_KEY;
 
 import io.camunda.exporter.store.BatchRequest;
@@ -113,6 +116,9 @@ public abstract class AbstractEventHandler<R extends RecordValue>
     }
 
     // write event
+    jsonMap.put(PROCESS_DEFINITION_NAME, entity.getProcessDefinitionName());
+    jsonMap.put(PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
+    jsonMap.put(MESSAGE_SUBSCRIPTION_TYPE, entity.getMessageSubscriptionType());
     batchRequest.upsert(indexName, entity.getId(), entity, jsonMap);
   }
 }

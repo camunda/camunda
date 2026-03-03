@@ -15,6 +15,9 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.FLOW_NODE_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_SUBSCRIPTION_STATE;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_SUBSCRIPTION_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_NAME;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.PROCESS_DEFINITION_VERSION;
 
 public class MessageSubscriptionFieldSortingTransformer implements FieldSortingTransformer {
 
@@ -23,10 +26,13 @@ public class MessageSubscriptionFieldSortingTransformer implements FieldSortingT
     return switch (domainField) {
       case "messageSubscriptionKey" -> KEY;
       case "processDefinitionId" -> BPMN_PROCESS_ID;
+      case "processDefinitionName" -> PROCESS_DEFINITION_NAME;
+      case "processDefinitionVersion" -> PROCESS_DEFINITION_VERSION;
       case "processInstanceKey" -> PROCESS_INSTANCE_KEY;
       case "flowNodeId" -> FLOW_NODE_ID;
       case "flowNodeInstanceKey" -> FLOW_NODE_INSTANCE_KEY;
       case "messageSubscriptionState" -> MESSAGE_SUBSCRIPTION_STATE;
+      case "messageSubscriptionType" -> MESSAGE_SUBSCRIPTION_TYPE;
       case "dateTime" -> DATE_TIME;
       case "messageName" -> "metadata.messageName";
       case "correlationKey" -> "metadata.correlationKey";

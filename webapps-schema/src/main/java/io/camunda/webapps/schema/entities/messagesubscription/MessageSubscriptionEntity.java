@@ -48,6 +48,18 @@ public class MessageSubscriptionEntity
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long rootProcessInstanceKey;
 
+  /** Attention! This field will be filled in only for data imported after v. 8.10.0. */
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String processDefinitionName;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.10.0. */
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private Integer processDefinitionVersion;
+
+  /** Attention! This field will be filled in only for data imported after v. 8.10.0. */
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  private String messageSubscriptionType;
+
   /**
    * @deprecated since 8.9
    */
@@ -200,6 +212,35 @@ public class MessageSubscriptionEntity
     return this;
   }
 
+  public String getProcessDefinitionName() {
+    return processDefinitionName;
+  }
+
+  public MessageSubscriptionEntity setProcessDefinitionName(final String processDefinitionName) {
+    this.processDefinitionName = processDefinitionName;
+    return this;
+  }
+
+  public Integer getProcessDefinitionVersion() {
+    return processDefinitionVersion;
+  }
+
+  public MessageSubscriptionEntity setProcessDefinitionVersion(
+      final Integer processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
+    return this;
+  }
+
+  public String getMessageSubscriptionType() {
+    return messageSubscriptionType;
+  }
+
+  public MessageSubscriptionEntity setMessageSubscriptionType(
+      final String messageSubscriptionType) {
+    this.messageSubscriptionType = messageSubscriptionType;
+    return this;
+  }
+
   /**
    * @deprecated since 8.9
    */
@@ -288,7 +329,10 @@ public class MessageSubscriptionEntity
         positionIncident,
         positionProcessMessageSubscription,
         positionJob,
-        rootProcessInstanceKey);
+        rootProcessInstanceKey,
+        processDefinitionName,
+        processDefinitionVersion,
+        messageSubscriptionType);
   }
 
   @Override
@@ -318,6 +362,9 @@ public class MessageSubscriptionEntity
         && Objects.equals(
             positionProcessMessageSubscription, that.positionProcessMessageSubscription)
         && Objects.equals(positionJob, that.positionJob)
-        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
+        && Objects.equals(processDefinitionName, that.processDefinitionName)
+        && Objects.equals(processDefinitionVersion, that.processDefinitionVersion)
+        && Objects.equals(messageSubscriptionType, that.messageSubscriptionType);
   }
 }
