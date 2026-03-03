@@ -84,16 +84,26 @@ jobs:
       matrix:
         os_version: ${{ fromJSON(format('[{0}]', github.event.inputs.opensearch-version || '"2.19", "3.3"')) }}
         group:
-        - camunda-qa-acceptance-tests
+        - camunda-qa-acceptance-tests-client
+        - camunda-qa-acceptance-tests-non-client
         - search-client-opensearch
         - camunda-exporter
         - zeebe-opensearch-exporter
         include:
-          - group: camunda-qa-acceptance-tests
-            name: "Camunda QA Integration Module"
+          - group: camunda-qa-acceptance-tests-client
+            name: "Camunda QA Module Client Tests"
             maven-modules: "'io.camunda:camunda-qa-acceptance-tests'"
             maven-build-threads: 2
             maven-test-fork-count: 7
+            maven-test-profiles: multi-db-test-client
+            runs-on: aws-core-8-default
+            owner: "General"
+          - group: camunda-qa-acceptance-tests-non-client
+            name: "Camunda QA Module Non-Client Tests"
+            maven-modules: "'io.camunda:camunda-qa-acceptance-tests'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            maven-test-profiles: multi-db-test-non-client
             runs-on: aws-core-8-default
             owner: "General"
           - group: search-client-opensearch
@@ -101,6 +111,7 @@ jobs:
             maven-modules: "'io.camunda:camunda-search-client-connect,io.camunda:camunda-search-client-opensearch'"
             maven-build-threads: 2
             maven-test-fork-count: 7
+            maven-test-profiles: multi-db-test
             runs-on: aws-core-8-default
             owner: "Core Features"
           - group: camunda-exporter
@@ -108,6 +119,7 @@ jobs:
             maven-modules: "'io.camunda:camunda-exporter'"
             maven-build-threads: 2
             maven-test-fork-count: 7
+            maven-test-profiles: multi-db-test
             runs-on: aws-core-8-default
             owner: "Data Layer"
           - group: zeebe-opensearch-exporter
@@ -115,6 +127,7 @@ jobs:
             maven-modules: "'io.camunda:zeebe-opensearch-exporter'"
             maven-build-threads: 2
             maven-test-fork-count: 7
+            maven-test-profiles: multi-db-test
             runs-on: aws-core-8-default
             owner: "Data Layer"
     steps:
@@ -149,7 +162,7 @@ jobs:
           -D test.integration.opensearch.aws.url="${{ env.OPENSEARCH_URL }}"
           -D test.integration.camunda.database.type=AWS_OS
           -D test.integration.opensearch.aws.timeout.seconds=180
-          -P parallel-tests,extract-flaky-tests,multi-db-test
+          -P parallel-tests,extract-flaky-tests,${{ matrix.maven-test-profiles }}
           -pl ${{ matrix.maven-modules }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
