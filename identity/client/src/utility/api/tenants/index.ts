@@ -86,7 +86,6 @@ export const unassignTenantGroup: ApiDefinition<
 // ----------------- Roles within a Tenant -----------------
 
 export const getRolesByTenantId: ApiDefinition<
-  // TODO fix response type
   QueryRolesByTenantResponseBody,
   QueryRolesByTenantRequestBody & Pick<Tenant, "tenantId">
 > = ({ tenantId, ...body }) =>

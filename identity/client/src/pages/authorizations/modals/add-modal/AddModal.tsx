@@ -78,6 +78,8 @@ const resourcePermissions: Record<ResourceType, PermissionType[]> = {
   MESSAGE: ["CREATE", "READ"],
   PROCESS_DEFINITION: [
     "CANCEL_PROCESS_INSTANCE",
+    "CLAIM_USER_TASK",
+    "COMPLETE_USER_TASK",
     "CREATE_PROCESS_INSTANCE",
     "DELETE_PROCESS_INSTANCE",
     "MODIFY_PROCESS_INSTANCE",
@@ -86,7 +88,6 @@ const resourcePermissions: Record<ResourceType, PermissionType[]> = {
     "READ_USER_TASK",
     "UPDATE_PROCESS_INSTANCE",
     "UPDATE_USER_TASK",
-    "CLAIM_USER_TASK",
   ],
   USER_TASK: ["READ", "UPDATE", "CLAIM", "COMPLETE"],
   ROLE: ["CREATE", "DELETE", "READ", "UPDATE"],
