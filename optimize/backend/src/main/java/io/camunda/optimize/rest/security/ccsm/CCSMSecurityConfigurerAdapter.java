@@ -32,6 +32,7 @@ import io.camunda.optimize.tomcat.CCSMRequestAdjustmentFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +42,8 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.AuthenticationException;
@@ -87,14 +89,13 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
   }
 
   @Bean
-  public CCSMAuthenticationCookieFilter ccsmAuthenticationCookieFilter(final HttpSecurity http)
-      throws Exception {
-    return new CCSMAuthenticationCookieFilter(
-        configurationService,
-        ccsmTokenService,
-        http.getSharedObject(AuthenticationManagerBuilder.class)
-            .authenticationProvider(preAuthenticatedAuthenticationProvider)
-            .build());
+  public CCSMAuthenticationCookieFilter ccsmAuthenticationCookieFilter(
+      final AuthenticationManager authenticationManager) {
+    final CCSMAuthenticationCookieFilter filter =
+        new CCSMAuthenticationCookieFilter(configurationService, ccsmTokenService);
+
+    filter.setAuthenticationManager(authenticationManager);
+    return filter;
   }
 
   @Bean
@@ -122,8 +123,14 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
 
   @Bean
   @Order(2)
-  protected SecurityFilterChain configureWebSecurity(final HttpSecurity http) {
+  protected SecurityFilterChain configureWebSecurity(
+      final HttpSecurity http, final CCSMAuthenticationCookieFilter cookieFilter) {
     try {
+      // Wire the AuthenticationManager directly via ProviderManager to avoid triggering
+      // AlreadyBuiltException — manually calling build() on the shared AuthenticationManagerBuilder
+      // conflicts with Spring Security's own internal build lifecycle.
+      cookieFilter.setAuthenticationManager(
+          new ProviderManager(List.of(preAuthenticatedAuthenticationProvider)));
       return super.configureGenericSecurityOptions(http)
           // Then we configure the specific web security for CCSM
           .authorizeHttpRequests(
@@ -179,8 +186,7 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
                       .permitAll()
                       .anyRequest()
                       .authenticated())
-          .addFilterBefore(
-              ccsmAuthenticationCookieFilter(http), AbstractPreAuthenticatedProcessingFilter.class)
+          .addFilterBefore(cookieFilter, AbstractPreAuthenticatedProcessingFilter.class)
           .exceptionHandling(
               exceptionHandling ->
                   exceptionHandling
