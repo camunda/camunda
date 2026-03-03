@@ -221,6 +221,9 @@ paths:
 components:
   schemas:
     BatchOperationCreatedResult:
+      required:
+        - batchOperationKey
+        - batchOperationType
       description: The created batch operation.
       type: object
       properties:
