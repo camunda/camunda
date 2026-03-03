@@ -31,8 +31,8 @@ public class CamundaClientJobWorkerProperties {
   private String type;
 
   /**
-   * The name of the worker owner. If set to default, it is generated as
-   * `${beanName}#${methodName}`.
+   * The name of the worker owner. If set to default, it is generated as <code>
+   * ${beanName}#${methodName}</code>.
    */
   private String name;
 
@@ -68,7 +68,7 @@ public class CamundaClientJobWorkerProperties {
    */
   private List<String> tenantIds;
 
-  /** Sets whether all variables are fetched. Overrides `fetch-variables`. */
+  /** Sets whether all variables are fetched. Overrides <code>fetch-variables</code>. */
   private Boolean forceFetchAllVariables;
 
   /**
