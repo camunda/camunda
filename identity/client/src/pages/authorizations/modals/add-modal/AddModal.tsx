@@ -86,6 +86,7 @@ const resourcePermissions: Record<ResourceType, PermissionType[]> = {
     "READ_USER_TASK",
     "UPDATE_PROCESS_INSTANCE",
     "UPDATE_USER_TASK",
+    "CLAIM_USER_TASK",
   ],
   USER_TASK: ["READ", "UPDATE", "CLAIM", "COMPLETE"],
   ROLE: ["CREATE", "DELETE", "READ", "UPDATE"],

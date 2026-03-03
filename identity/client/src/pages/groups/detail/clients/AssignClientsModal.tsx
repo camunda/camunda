@@ -9,19 +9,19 @@
 import { FC, useEffect, useState } from "react";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api";
-import { Client } from "src/utility/api/groups";
 import FormModal from "src/components/modal/FormModal";
-import { assignGroupClient, Group } from "src/utility/api/groups";
+import { assignGroupClient } from "src/utility/api/groups";
 import TextField from "src/components/form/TextField";
 import { UseEntityModalProps } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
+import type { Group, TenantClient } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const AssignClientsModal: FC<
   UseEntityModalProps<{ groupId: Group["groupId"] }>
 > = ({ entity: { groupId }, onSuccess, open, onClose }) => {
   const { t } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
-  const [clientId, setClientId] = useState<Client["clientId"]>("");
+  const [clientId, setClientId] = useState<TenantClient["clientId"]>("");
   const [loadingAssignClient, setLoadingAssignClient] = useState(false);
 
   const [callAssignClient] = useApiCall(assignGroupClient);

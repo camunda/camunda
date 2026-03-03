@@ -54,7 +54,7 @@ const OwnerSelection = <T,>({
         itemToString={(item) => (item ? itemToString(item) : "")}
         shouldFilterItem={({ inputValue, item }) => {
           if (item && inputValue) {
-            const value = (itemToString(item) ?? "").toLowerCase();
+            const value = itemToString(item).toLowerCase();
             return value.includes(inputValue.toLowerCase());
           }
           return true;
