@@ -115,7 +115,7 @@ class MappingRuleValidatorTest {
     assertThat(violations)
         .contains(
             ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
-                longClaimName, ValidationConstants.MAX_FIELD_LENGTH));
+                "claimName", ValidationConstants.MAX_FIELD_LENGTH));
   }
 
   @ParameterizedTest
@@ -143,7 +143,7 @@ class MappingRuleValidatorTest {
     assertThat(violations)
         .contains(
             ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
-                longClaimValue, ValidationConstants.MAX_FIELD_LENGTH));
+                "claimValue", ValidationConstants.MAX_FIELD_LENGTH));
   }
 
   @ParameterizedTest
@@ -171,7 +171,7 @@ class MappingRuleValidatorTest {
     assertThat(violations)
         .contains(
             ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
-                longName, ValidationConstants.MAX_FIELD_LENGTH));
+                "name", ValidationConstants.MAX_FIELD_LENGTH));
   }
 
   @Test
@@ -238,7 +238,7 @@ class MappingRuleValidatorTest {
     assertThat(violations)
         .contains(
             ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
-                longClaimName, ValidationConstants.MAX_FIELD_LENGTH));
+                "claimName", ValidationConstants.MAX_FIELD_LENGTH));
   }
 
   @ParameterizedTest
@@ -265,7 +265,7 @@ class MappingRuleValidatorTest {
     assertThat(violations)
         .contains(
             ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
-                longClaimValue, ValidationConstants.MAX_FIELD_LENGTH));
+                "claimValue", ValidationConstants.MAX_FIELD_LENGTH));
   }
 
   @ParameterizedTest
@@ -293,7 +293,7 @@ class MappingRuleValidatorTest {
     assertThat(violations)
         .contains(
             ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
-                longName, ValidationConstants.MAX_FIELD_LENGTH));
+                "name", ValidationConstants.MAX_FIELD_LENGTH));
   }
 
   @Test

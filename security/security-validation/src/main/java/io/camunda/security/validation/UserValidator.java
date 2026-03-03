@@ -50,14 +50,16 @@ public class UserValidator {
     }
     if (email != null && email.length() > ValidationConstants.MAX_FIELD_LENGTH) {
       violations.add(
-          ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(email, ValidationConstants.MAX_FIELD_LENGTH));
+          ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
+              "email", ValidationConstants.MAX_FIELD_LENGTH));
     }
   }
 
   private static void validateName(final String name, final List<String> violations) {
     if (name != null && !name.isBlank() && name.length() > ValidationConstants.MAX_FIELD_LENGTH) {
       violations.add(
-          ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(name, ValidationConstants.MAX_FIELD_LENGTH));
+          ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
+              "name", ValidationConstants.MAX_FIELD_LENGTH));
     }
   }
 }
