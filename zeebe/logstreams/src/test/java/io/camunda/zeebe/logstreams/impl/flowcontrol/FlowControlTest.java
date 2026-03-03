@@ -83,6 +83,31 @@ public class FlowControlTest {
 
   @ParameterizedTest
   @MethodSource("intentClassesProvider")
+  public void shouldBlockProcessingResultsBasedOnSourceIntent(final Intent intent) {
+    // given
+    final var writeContext = WriteContext.processingResult(intent);
+
+    // when
+    final var permits = acquireMultiplePermits(writeContext, intent, ValueType.JOB, 10);
+
+    // then
+    assertThat(permits).first().satisfies(first -> EitherAssert.assertThat(first).isRight());
+    assertThat(permits.subList(1, permits.size()))
+        .allSatisfy(
+            permit -> {
+              if (WhiteListedCommands.isWhitelisted(intent)) {
+                EitherAssert.assertThat(permit).isRight();
+              } else {
+                EitherAssert.assertThat(permit)
+                    .isLeft()
+                    .left()
+                    .satisfies(r -> assertThat(r).isEqualTo(Rejection.WriteRateLimitExhausted));
+              }
+            });
+  }
+
+  @ParameterizedTest
+  @MethodSource("intentClassesProvider")
   public void shouldNeverBlockInternalCommands(final Intent intent) {
     // given
     final var writeContext = WriteContext.internal();

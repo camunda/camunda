@@ -614,7 +614,9 @@ public final class ProcessingStateMachine {
               () -> {
                 final var writeResult =
                     logStreamWriter.tryWrite(
-                        WriteContext.processingResult(), pendingWrites, sourceRecordPosition);
+                        WriteContext.processingResult(typedCommand.getIntent()),
+                        pendingWrites,
+                        sourceRecordPosition);
                 if (writeResult.isRight()) {
                   writtenPosition = writeResult.get();
                   return true;

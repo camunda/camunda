@@ -29,6 +29,6 @@ public class WhiteListedCommands {
           CommandDistributionIntent.ACKNOWLEDGE);
 
   public static boolean isWhitelisted(final Intent intent) {
-    return WHITE_LISTED_COMMANDS.contains(intent);
+    return intent != null && WHITE_LISTED_COMMANDS.contains(intent);
   }
 }
