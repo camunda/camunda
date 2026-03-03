@@ -67,6 +67,15 @@ public interface LogStreamBuilder {
   LogStreamBuilder withWriteRateLimit(RateLimit writeRateLimit);
 
   /**
+   * Sets the capacity of the in-flight entry ring buffer used by flow control. The actual capacity
+   * is rounded up to the next power of two. If not set (or set to 0), a default is used.
+   *
+   * @param capacity the minimum ring buffer capacity (must be positive)
+   * @return this builder
+   */
+  LogStreamBuilder withInFlightCapacity(int capacity);
+
+  /**
    * Sets the meter registry to collect metrics on.
    *
    * @param meterRegistry the new meter registry to collect metrics on
