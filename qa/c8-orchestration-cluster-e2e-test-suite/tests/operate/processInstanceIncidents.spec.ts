@@ -388,9 +388,9 @@ test.describe('Process Instance Incident', () => {
       await expect(operateProcessInstancePage.incidentsBanner).toBeVisible();
       await operateProcessInstancePage.clickIncidentsBanner();
 
-      await expect(operateProcessInstancePage.incidentsViewHeader).toBeVisible({
-        timeout: 10000,
-      });
+      await expect(
+        operateProcessInstancePage.incidentsViewHeader,
+      ).toBeVisible();
 
       const incidentCount = await operateProcessInstancePage.getIncidentCount();
       expect(incidentCount).toBeGreaterThan(0);
@@ -406,9 +406,7 @@ test.describe('Process Instance Incident', () => {
         'Task_IOMapping',
       );
 
-      await expect(operateProcessInstancePage.metadataPopover).toBeVisible({
-        timeout: 10000,
-      });
+      await expect(operateProcessInstancePage.metadataPopover).toBeVisible();
 
       await expect(operateProcessInstancePage.incidentSection).toBeVisible();
       await expect(
