@@ -17,9 +17,18 @@ package io.camunda.process.test.api;
 
 /** The mode of the process test runtime. */
 public enum CamundaProcessTestRuntimeMode {
-  /** The runtime is managed internally by Camunda Process Test. */
+  /**
+   * The runtime is managed internally by Camunda Process Test. Each test class uses its own runtime
+   * instance with its own configuration.
+   */
   MANAGED,
 
   /** The runtime is managed remotely outside Camunda Process Test. */
-  REMOTE
+  REMOTE,
+
+  /**
+   * The runtime is managed internally by Camunda Process Test, but all test classes share the same
+   * runtime instance with the same configuration.
+   */
+  SHARED
 }

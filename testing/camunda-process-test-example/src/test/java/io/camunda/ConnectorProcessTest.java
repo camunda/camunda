@@ -35,6 +35,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(
     properties = {
+      "camunda.process-test.runtime-mode=managed",
       "camunda.process-test.connectors-enabled=true",
       "camunda.process-test.connectors-secrets.WEATHER_URL=https://api.open-meteo.com/v1/forecast"
     })

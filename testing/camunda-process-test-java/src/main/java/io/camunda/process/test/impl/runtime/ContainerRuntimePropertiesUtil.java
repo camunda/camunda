@@ -231,6 +231,7 @@ public final class ContainerRuntimePropertiesUtil {
   private CamundaClientBuilder createCamundaClientBuilder() {
     switch (runtimeMode) {
       case MANAGED:
+      case SHARED:
         return CamundaClient.newClientBuilder();
       case REMOTE:
         return remoteRuntimeProperties.createCamundaClientBuilder();

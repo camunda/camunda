@@ -1,3 +1,9 @@
+camunda:
+  process-test:
+    # Default: use a shared runtime for fast test execution
+    # Override to per test class to use a different configuration
+    runtime-mode: shared
+
 logging:
   level:
     root: info

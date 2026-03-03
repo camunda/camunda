@@ -45,6 +45,7 @@ import org.wiremock.spring.EnableWireMock;
 @SpringBootTest(
     properties = {
       "camunda.client.worker.defaults.enabled=false", // disable job workers
+      "camunda.process-test.runtime-mode=managed",
       "camunda.process-test.connectors-enabled=true",
       "camunda.process-test.connectors-secrets.INVOICE_REJECTION_URL=http://host.testcontainers.internal:${wiremock.server.port}"
     })
