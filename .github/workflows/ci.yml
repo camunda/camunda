@@ -199,6 +199,22 @@ jobs:
     runs-on: gcp-core-16-default
     timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
+    strategy:
+      fail-fast: false
+      # The matrix is necessary to run separate analyses
+      matrix:
+        project:
+        - name: c8run
+          path: ./c8run
+        - name: optimize
+          path: ./optimize
+          maven-config: |
+            -DskipQaBuild=true
+        - name: single-app
+          path: ./
+          maven-config: |
+            -Dquickly=true
+            -DskipQaBuild=true
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-build
@@ -207,7 +223,16 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - uses: ./.github/actions/adjust-pom-for-license-analysis
+        # These steps have been taken from check-licenses.yml workflow
+      - name: Adjust pom.xml files for FOSSA
+        if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
+        uses: ./.github/actions/adjust-pom-for-license-analysis
+      - name: Update Maven configs
+        if: matrix.project.maven-config != ''
+        env:
+          MAVEN_CONFIG: ${{ matrix.project.maven-config }}
+        run: |
+          echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
       - name: Check for dependency cycles
         # Command here is the same used by fossa analyze
         # and found by enabling the `-debug` flag
