@@ -43,6 +43,7 @@ public record ProcessInstanceFilter(
     List<Operation<Integer>> incidentErrorHashCodeOperations,
     Integer partitionId,
     Set<String> tags,
+    List<Operation<String>> businessIdOperations,
     List<ProcessInstanceFilter> orFilters)
     implements FilterBase {
 
@@ -71,6 +72,7 @@ public record ProcessInstanceFilter(
         .incidentErrorHashCodeOperations(incidentErrorHashCodeOperations)
         .partitionId(partitionId)
         .tags(tags)
+        .businessIdOperations(businessIdOperations)
         .orFilters(orFilters);
   }
 
@@ -99,6 +101,7 @@ public record ProcessInstanceFilter(
     private List<Operation<Integer>> incidentErrorHashCodeOperations;
     private Integer partitionId;
     private Set<String> tags;
+    private List<Operation<String>> businessIdOperations;
     private List<ProcessInstanceFilter> orFilters;
 
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
@@ -391,6 +394,21 @@ public record ProcessInstanceFilter(
       return this;
     }
 
+    public Builder businessIdOperations(final List<Operation<String>> operations) {
+      businessIdOperations = addValuesToList(businessIdOperations, operations);
+      return this;
+    }
+
+    public Builder businessIds(final String value, final String... values) {
+      return businessIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder businessIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return businessIdOperations(collectValues(operation, operations));
+    }
+
     public Builder addOrOperation(final ProcessInstanceFilter orOperation) {
       if (orFilters == null) {
         orFilters = new ArrayList<>();
@@ -431,6 +449,7 @@ public record ProcessInstanceFilter(
           Objects.requireNonNullElse(incidentErrorHashCodeOperations, Collections.emptyList()),
           partitionId,
           Objects.requireNonNullElse(tags, Collections.emptySet()),
+          Objects.requireNonNullElse(businessIdOperations, Collections.emptyList()),
           orFilters);
     }
   }
