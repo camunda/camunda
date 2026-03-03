@@ -73,6 +73,7 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
         flowControlCfg.getRequest() != null
             ? flowControlCfg.getRequest()
             : context.getBrokerCfg().getBackpressure();
+    final var ringBufferSizeMultiplier = 100;
     return logStreamBuilderSupplier
         .get()
         .withLogStorage(context.getLogStorage())
@@ -83,7 +84,7 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
         .withRequestLimit(requestLimitCfg.buildLimit())
         .withWriteRateLimit(
             flowControlCfg.getWrite() != null ? flowControlCfg.getWrite().buildLimit() : null)
-        .withInFlightCapacity(requestLimitCfg.maxConcurrency())
+        .withInFlightCapacity(requestLimitCfg.maxConcurrency() * ringBufferSizeMultiplier)
         .withMeterRegistry(context.getPartitionTransitionMeterRegistry())
         .build();
   }
