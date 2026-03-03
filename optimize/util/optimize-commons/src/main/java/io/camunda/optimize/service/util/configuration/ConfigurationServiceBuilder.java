@@ -143,6 +143,10 @@ public class ConfigurationServiceBuilder {
         LOG.debug("spring.config.import is: {}", springConfigImport);
         for (String file : StringUtils.commaDelimitedListToStringArray(springConfigImport)) {
           file = file.trim();
+          if (!StringUtils.hasText(file)) {
+            LOG.debug("Skipping blank config import entry");
+            continue;
+          }
           LOG.debug("Considering config import file: {}", file);
           if (file.startsWith("optional:")) {
             file = file.substring("optional:".length());
@@ -158,6 +162,10 @@ public class ConfigurationServiceBuilder {
             // the import relative to it
             for (String path : StringUtils.commaDelimitedListToStringArray(springConfigLocation)) {
               path = path.trim();
+              if (!StringUtils.hasText(path)) {
+                LOG.debug("Skipping blank config path entry");
+                continue;
+              }
               // remove trailing slashes to avoid double slashes when
               final var normalizedPath = path.replaceAll("/+$", "");
               final String resolvedFile = normalizedPath + "/" + file;
