@@ -383,6 +383,14 @@ components:
         - size
         - contentType
         - customProperties
+      properties:
+        # Override the nullability of customProperties to prevent issues with code generation
+        # (arrays are always guaranteed to be present in responses)
+        customProperties:
+          type: object
+          description: Custom properties of the document.
+          additionalProperties: true
+          nullable: false
 
     DocumentLinkRequest:
       type: object
