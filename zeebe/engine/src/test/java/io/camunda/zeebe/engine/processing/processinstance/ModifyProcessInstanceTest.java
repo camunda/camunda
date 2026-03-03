@@ -2338,6 +2338,136 @@ public class ModifyProcessInstanceTest {
   }
 
   @Test
+  public void shouldMoveAllMultiInstanceElementsOutOfNestedSubprocessByIds() {
+    // given a parent sub-process containing a multi-instance inner sub-process with a user task
+    // "A", followed by user task "B" inside the parent, and user task "C" outside the parent.
+    // The move goes from "A" to "C", two nesting layers up.
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess("parentSubProcess")
+                .embeddedSubProcess()
+                .startEvent()
+                .subProcess("innerSubProcess")
+                .multiInstance(
+                    mi ->
+                        mi.parallel()
+                            .zeebeInputCollectionExpression("=for i in 1..5 return i")
+                            .multiInstanceDone())
+                .embeddedSubProcess()
+                .startEvent()
+                .userTask("A")
+                .zeebeUserTask()
+                .endEvent()
+                .subProcessDone()
+                .userTask("B")
+                .zeebeUserTask()
+                .endEvent()
+                .subProcessDone()
+                .userTask("C")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElements("A", "C")
+        .modify();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then the multi-instance body and parent sub-process are terminated and a single "C" is
+    // activated at the process level
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntents(
+                    ProcessInstanceIntent.ELEMENT_TERMINATED,
+                    ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated()
+                .withElementIdIn("parentSubProcess", "innerSubProcess", "A", "C"))
+        .extracting(
+            r ->
+                tuple(
+                    r.getValue().getBpmnElementType(), r.getValue().getElementId(), r.getIntent()))
+        .containsExactly(
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "parentSubProcess",
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                "innerSubProcess",
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "innerSubProcess",
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "innerSubProcess",
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "innerSubProcess",
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "innerSubProcess",
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "innerSubProcess",
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "innerSubProcess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "innerSubProcess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "innerSubProcess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "innerSubProcess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "innerSubProcess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.MULTI_INSTANCE_BODY,
+                "innerSubProcess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(
+                BpmnElementType.SUB_PROCESS,
+                "parentSubProcess",
+                ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
   public void shouldMoveAllMultiInstanceParentElementsByIds() {
     // given a multi-instance with 5 elements
     ENGINE
