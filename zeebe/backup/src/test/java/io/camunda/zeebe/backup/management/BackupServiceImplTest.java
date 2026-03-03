@@ -48,7 +48,6 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
-import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.util.Either;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -56,7 +55,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
@@ -153,7 +151,7 @@ class BackupServiceImplTest {
   void shouldFailBackupWhenNoValidSnapshotFound() {
     // given
     final ControllableInProgressBackup inProgressBackup =
-        new ControllableInProgressBackup().failOnFindValidSnapshot();
+        new ControllableInProgressBackup().failOnReserveSnapshot();
 
     // when
     final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
@@ -831,8 +829,6 @@ class BackupServiceImplTest {
 
     private final BackupIdentifier id;
     private final BackupDescriptor checkpointDescriptor;
-    private ActorFuture<Set<PersistedSnapshot>> findValidSnapshotFuture =
-        TestActorFuture.completedFuture(null);
     private ActorFuture<Void> reserveSnapshotFuture = TestActorFuture.completedFuture(null);
     private ActorFuture<Void> findSnapshotFilesFuture = TestActorFuture.completedFuture(null);
     private ActorFuture<Void> findSegmentFilesFuture = TestActorFuture.completedFuture(null);
@@ -857,11 +853,6 @@ class BackupServiceImplTest {
     @Override
     public BackupIdentifier id() {
       return id;
-    }
-
-    @Override
-    public ActorFuture<Set<PersistedSnapshot>> findValidSnapshot() {
-      return findValidSnapshotFuture;
     }
 
     @Override
@@ -910,11 +901,6 @@ class BackupServiceImplTest {
 
     ControllableInProgressBackup failOnReserveSnapshot() {
       reserveSnapshotFuture = failedFuture();
-      return this;
-    }
-
-    ControllableInProgressBackup failOnFindValidSnapshot() {
-      findValidSnapshotFuture = failedFuture();
       return this;
     }
   }

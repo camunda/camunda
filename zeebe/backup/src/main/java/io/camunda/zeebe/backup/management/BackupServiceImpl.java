@@ -152,8 +152,7 @@ final class BackupServiceImpl {
             .setMessage("No existing backup found, taking a new backup")
             .log();
         inProgressBackup
-            .findValidSnapshot()
-            .andThen(ok -> inProgressBackup.reserveSnapshot(), concurrencyControl)
+            .reserveSnapshot()
             .andThen(inProgressBackup::findSegmentFiles, concurrencyControl)
             .andThen(ok -> inProgressBackup.findSnapshotFiles(), concurrencyControl)
             .onComplete(
