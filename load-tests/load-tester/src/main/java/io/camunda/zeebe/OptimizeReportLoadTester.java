@@ -59,7 +59,7 @@ public class OptimizeReportLoadTester {
     this.clientSecret = clientSecret;
     httpClient =
         HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(30))
+            .connectTimeout(Duration.ofSeconds(120))
             .followRedirects(HttpClient.Redirect.NEVER)
             .build();
   }
@@ -491,6 +491,7 @@ public class OptimizeReportLoadTester {
     ensureValidToken();
 
     final String url = String.format("%s/api/dashboard/management", optimizeBaseUrl);
+    LOG.info("Evaluating management dashboard at URL: {}", url);
 
     final long startTime = System.currentTimeMillis();
 
@@ -501,16 +502,42 @@ public class OptimizeReportLoadTester {
             .header("Content-Type", "application/json")
             .header("X-Optimize-Client-Timezone", "UTC")
             .header("X-Optimize-Client-Locale", "en")
+            .timeout(Duration.ofSeconds(120))
             .GET()
             .build();
 
-    final HttpResponse<String> response =
-        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    try {
+      LOG.debug("Sending management dashboard request to {}", url);
+      final HttpResponse<String> response =
+          httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-    final long responseTime = System.currentTimeMillis() - startTime;
+      final long responseTime = System.currentTimeMillis() - startTime;
+      LOG.info(
+          "Management dashboard response received - Status: {}, Time: {}ms",
+          response.statusCode(),
+          responseTime);
 
-    return new DashboardEvaluationResult(
-        "management", response.statusCode(), responseTime, response.body());
+      if (response.statusCode() != 200) {
+        LOG.warn(
+            "Management dashboard returned non-200 status: {}, Body: {}",
+            response.statusCode(),
+            response.body());
+      }
+
+      return new DashboardEvaluationResult(
+          "management", response.statusCode(), responseTime, response.body());
+    } catch (final java.net.ConnectException e) {
+      final long responseTime = System.currentTimeMillis() - startTime;
+      LOG.error(
+          "Connection failed to management dashboard at {} after {}ms. "
+              + "Verify that Optimize is running and accessible at the configured URL. "
+              + "Cause: {}",
+          url,
+          responseTime,
+          e.getMessage(),
+          e);
+      throw e;
+    }
   }
 
   /**

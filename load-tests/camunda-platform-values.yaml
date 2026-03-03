@@ -177,8 +177,6 @@ orchestration:
     retention:
       ## @param core.history.retention.enabled if true, the ILM Policy is created and applied to the index templates.
       enabled: true
-      ## @param core.history.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
-      minimumAge: 70m
   # @param core.env can be used to set extra environment variables in each broker container
   env:
     # Enable JSON logging for google cloud stackdriver
