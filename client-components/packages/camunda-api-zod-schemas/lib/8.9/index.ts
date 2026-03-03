@@ -675,7 +675,6 @@ export {
 	queryMappingRulesRequestBodySchema,
 	queryMappingRulesResponseBodySchema,
 	mappingRuleSchema,
-	mappingRuleResultSchema,
 	type CreateMappingRuleRequestBody,
 	type CreateMappingRuleResponseBody,
 	type UpdateMappingRuleRequestBody,
@@ -684,7 +683,6 @@ export {
 	type QueryMappingRulesRequestBody,
 	type QueryMappingRulesResponseBody,
 	type MappingRule,
-	type MappingRuleResult,
 } from './mapping-rule';
 export {
 	createProcessInstanceRequestBodySchema,
