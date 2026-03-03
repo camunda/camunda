@@ -17,8 +17,9 @@ extraheader entry — one in `.git/config` and the original in the external file
 causing git to send two `Authorization` headers, which GitHub rejects with
 HTTP 400 `"Duplicate header: Authorization"`.
 
-This action properly clears both locations and writes the renewed token to the
-original credential file used by checkout@v6.
+This action safely updates the original credential file used by
+`actions/checkout@v6` so that git continues to use a single `Authorization`
+header with the renewed token.
 
 **References:**
 - [checkoutv6 issue about the token expiration](https://github.com/actions/create-github-app-token/issues/121#issuecomment-2027574184)
@@ -27,20 +28,20 @@ original credential file used by checkout@v6.
 
 ## Inputs
 
-| Name | Required | Description |
-|------|----------|-------------|
-| `vault-url` | Yes | Vault server URL |
-| `vault-role-id` | Yes | Vault AppRole role ID |
-| `vault-secret-id` | Yes | Vault AppRole secret ID |
-| `github-app-id-vault-key` | Yes | Vault key for the GitHub App ID |
-| `github-app-id-vault-path` | Yes | Vault path for the GitHub App ID |
-| `github-app-private-key-vault-key` | Yes | Vault key for the GitHub App private key |
-| `github-app-private-key-vault-path` | Yes | Vault path for the GitHub App private key |
+|                Name                 | Required |                Description                |
+|-------------------------------------|----------|-------------------------------------------|
+| `vault-url`                         | Yes      | Vault server URL                          |
+| `vault-role-id`                     | Yes      | Vault AppRole role ID                     |
+| `vault-secret-id`                   | Yes      | Vault AppRole secret ID                   |
+| `github-app-id-vault-key`           | Yes      | Vault key for the GitHub App ID           |
+| `github-app-id-vault-path`          | Yes      | Vault path for the GitHub App ID          |
+| `github-app-private-key-vault-key`  | Yes      | Vault key for the GitHub App private key  |
+| `github-app-private-key-vault-path` | Yes      | Vault path for the GitHub App private key |
 
 ## Outputs
 
-| Name | Description |
-|------|-------------|
+|  Name   |         Description          |
+|---------|------------------------------|
 | `token` | The renewed GitHub App token |
 
 ## Example Usage
@@ -63,3 +64,4 @@ original credential file used by checkout@v6.
   if: ${{ !inputs.dryRun }}
   run: git push origin "${RELEASE_BRANCH}"
 ```
+
