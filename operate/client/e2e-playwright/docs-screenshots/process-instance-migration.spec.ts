@@ -188,8 +188,8 @@ test.describe('process instance migration', () => {
     await migrationView.selectTargetSourceElement('Check payment');
 
     const elements = page
-      .getByTestId('diagram')
-      .getByText('Check payment', {exact: true});
+      .getByTestId('diagram-canvas')
+      .locator('[data-element-id="checkPayment"]');
 
     await commonPage.addDownArrow(elements.first());
     await commonPage.addDownArrow(elements.nth(1));
@@ -359,13 +359,17 @@ test.describe('process instance migration', () => {
     await migrationView.selectTargetProcess('Ad Hoc Subprocess Target');
     await migrationView.selectTargetVersion('2');
 
-    // Verify ad hoc subprocess element is shown
+    // Verify ad hoc subprocess element is shown in both diagrams
     await expect(
-      page.getByText('Ad Hoc Subprocess', {exact: true}),
-    ).toHaveCount(4);
+      page
+        .getByTestId('diagram-canvas')
+        .locator('[data-element-id="AD_HOC_SUBPROCESS"]'),
+    ).toHaveCount(2);
 
-    // Verify user task element is shown
-    await expect(page.getByText('A', {exact: true})).toHaveCount(2);
+    // Verify user task element is shown in the source diagram
+    await expect(
+      page.getByTestId('diagram-canvas').locator('[data-element-id="A"]'),
+    ).toHaveCount(1);
 
     // Map the ad hoc subprocess
     await migrationView.mapElement({
