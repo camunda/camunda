@@ -52,16 +52,19 @@ export async function createDemoOperations(
     .poll(
       async () => {
         const response = await request.post(
-          `${credentials.baseUrl}/api/batch-operations`,
+          `${credentials.baseUrl}/v2/batch-operations/search`,
           {
             ...requestHeaders,
             data: {
-              pageSize: count,
+              filter: {
+                operationType: 'RESOLVE_INCIDENT',
+              },
             },
           },
         );
-        const operations = await response.json();
-        return operations.length;
+        expect(response.status()).toBe(200);
+        const body = await response.json();
+        return body.items.length;
       },
       {timeout: 30000},
     )
