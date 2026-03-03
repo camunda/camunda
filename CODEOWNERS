@@ -46,7 +46,6 @@
 /.github/workflows/create-urgent-hotfix-img.yml          @camunda/monorepo-devops-team
 /.github/workflows/auto-merge-back-to-stable.yml         @camunda/monorepo-devops-team
 
-
 ###################
 ## Core Features ##
 ###################
