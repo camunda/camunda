@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+<<<<<<< HEAD
 import js from '@eslint/js';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
@@ -18,7 +19,17 @@ import prettierConfig from 'eslint-config-prettier';
 import prettierPlugin from 'eslint-plugin-prettier';
 import globals from 'globals';
 import vitestPlugin from '@vitest/eslint-plugin';
+=======
+>>>>>>> 676a7707 (feat: introduce config-linting shared package)
 import {defineConfig, globalIgnores} from 'eslint/config';
+import {
+  baseConfig,
+  typescriptConfig,
+  reactConfig,
+  testingConfig,
+  tanstackQueryConfig,
+  licenseConfig,
+} from '@camunda/lint-config/eslint';
 
 const files = {
   browser: ['src/**/*.{js,jsx,ts,tsx}'],
@@ -48,18 +59,21 @@ const files = {
 };
 
 const config = defineConfig([
-  js.configs.recommended,
-  prettierConfig,
+  ...baseConfig,
 
-  {
-    plugins: {
-      prettier: prettierPlugin,
-    },
-    rules: {
-      'prettier/prettier': 'error',
-    },
-  },
+  ...typescriptConfig({
+    browserFiles: files.browser,
+    testFiles: files.test,
+    nodeFiles: files.node,
+    tsconfigRootDir: import.meta.dirname,
+    tsProjects: [
+      './tsconfig.app.json',
+      './tsconfig.vitest.json',
+      './tsconfig.vitest.browser.json',
+    ],
+  }),
 
+<<<<<<< HEAD
   {
     files: files.node,
     languageOptions: {
@@ -198,6 +212,12 @@ const config = defineConfig([
       curly: 'error',
     },
   },
+=======
+  ...reactConfig({browserFiles: files.browser, testFiles: files.test}),
+  ...testingConfig({testFiles: files.test}),
+  ...tanstackQueryConfig({browserFiles: files.browser}),
+  ...licenseConfig({licenseHeaderPath: './resources/license-header.js'}),
+>>>>>>> 676a7707 (feat: introduce config-linting shared package)
 
   globalIgnores([
     'dist/*',
