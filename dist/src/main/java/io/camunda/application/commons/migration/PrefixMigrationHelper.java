@@ -292,28 +292,25 @@ public final class PrefixMigrationHelper {
   static List<List<String>> partitionIntoBatches(final List<String> indices, final int maxLength) {
     final var batches = new ArrayList<List<String>>();
     var currentBatch = new ArrayList<String>();
-    var currentLength = 0;
 
+    var currentLength = -1;
     for (final var index : indices) {
       if (index.length() > maxLength) {
         LOG.error(
-            "Index name [{}] exceeds the maximum allowed URL length of {} bytes and cannot be deleted. Skipping.",
+            "Index name [{}] exceeds the maximum allowed URL length of {} bytes. Skipping.",
             index,
             maxLength);
         continue;
       }
-      // +1 accounts for the comma separator between index names in the URL
-      final var addedLength = currentBatch.isEmpty() ? index.length() : index.length() + 1;
-      if (currentLength + addedLength > maxLength && !currentBatch.isEmpty()) {
+
+      if (currentLength + 1 + index.length() > maxLength) {
         batches.add(currentBatch);
         currentBatch = new ArrayList<>();
-        // Add index to new batch (no comma for first index)
-        currentBatch.add(index);
-        currentLength = index.length();
-      } else {
-        currentBatch.add(index);
-        currentLength += addedLength;
+        currentLength = -1;
       }
+
+      currentBatch.add(index);
+      currentLength += 1 + index.length();
     }
     if (!currentBatch.isEmpty()) {
       batches.add(currentBatch);
