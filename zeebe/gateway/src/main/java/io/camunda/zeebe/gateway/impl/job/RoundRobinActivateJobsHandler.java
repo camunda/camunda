@@ -127,7 +127,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
 
             brokerClient
                 .sendRequest(brokerRequest)
-                .whenComplete(handleBrokerResponse(request, requestState, delegate));
+                .whenCompleteAsync(handleBrokerResponse(request, requestState, delegate), actor);
 
           } else {
             // enough jobs activated or no more partitions left to check
@@ -223,13 +223,14 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
     final var request = toFailJobRequest(job, message);
     brokerClient
         .sendRequestWithRetry(request)
-        .whenComplete(
+        .whenCompleteAsync(
             (response, error) -> {
               if (error != null) {
                 Loggers.GATEWAY_LOGGER.info(
                     "Failed to reactivate job {} due to {}", job.key(), error.getMessage());
               }
-            });
+            },
+            actor);
   }
 
   private BrokerFailJobRequest toFailJobRequest(final ActivatedJob job, final String errorMessage) {

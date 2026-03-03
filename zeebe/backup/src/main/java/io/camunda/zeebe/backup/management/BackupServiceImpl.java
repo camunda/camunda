@@ -111,7 +111,7 @@ final class BackupServiceImpl {
                 availableBackups, inProgressBackup, concurrencyControl, backupSaved);
           }
         },
-        concurrencyControl::run);
+        concurrencyControl);
 
     backupSaved.onComplete((ignore, error) -> closeInProgressBackup(inProgressBackup));
     backupSaved.onSuccess(ignore -> confirmBackup(inProgressBackup));
@@ -193,7 +193,7 @@ final class BackupServiceImpl {
                 future.completeExceptionally("Failed to save backup", error);
               }
             },
-            concurrencyControl::run);
+            concurrencyControl);
     return future;
   }
 
@@ -291,7 +291,7 @@ final class BackupServiceImpl {
                         future.complete(backupStatuses.stream().max(BackupStatusCode.BY_STATUS));
                       }
                     },
-                    executor::run));
+                    executor));
     return future;
   }
 
@@ -306,16 +306,19 @@ final class BackupServiceImpl {
                           Optional.empty(),
                           Optional.of(partitionId),
                           CheckpointPattern.of(lastCheckpointId)))
-                  .thenAccept(backups -> backups.forEach(this::failInProgressBackup))
-                  .exceptionally(
+                  .thenAcceptAsync(
+                      backups -> backups.forEach(b -> failInProgressBackup(b, executor)), executor)
+                  .exceptionallyAsync(
                       failure -> {
                         LOG.warn("Failed to list backups that should be marked as failed", failure);
                         return null;
-                      }));
+                      },
+                      executor));
     }
   }
 
-  private void failInProgressBackup(final BackupStatus backupStatus) {
+  private void failInProgressBackup(
+      final BackupStatus backupStatus, final ConcurrencyControl executor) {
     if (backupStatus.statusCode() != BackupStatusCode.IN_PROGRESS) {
       return;
     }
@@ -326,12 +329,14 @@ final class BackupServiceImpl {
 
     backupStore
         .markFailed(backupStatus.id(), "Backup is cancelled due to leader change.")
-        .thenAccept(ignore -> LOG.trace("Marked backup {} as failed.", backupStatus.id()))
-        .exceptionally(
+        .thenAcceptAsync(
+            ignore -> LOG.trace("Marked backup {} as failed.", backupStatus.id()), executor)
+        .exceptionallyAsync(
             failed -> {
               LOG.warn("Failed to mark backup {} as failed", backupStatus.id(), failed);
               return null;
-            });
+            },
+            executor);
   }
 
   ActorFuture<Void> writeBackupDeletionCommand(
@@ -364,7 +369,7 @@ final class BackupServiceImpl {
 
     backupStore
         .list(pattern)
-        .thenCompose(
+        .thenComposeAsync(
             backups ->
                 CompletableFuture.allOf(
                     backups.stream()
@@ -372,17 +377,20 @@ final class BackupServiceImpl {
                             backup ->
                                 backupStore
                                     .markDeleted(backup.id())
-                                    .thenCompose(ignored -> backupStore.delete(backup.id())))
-                        .toArray(CompletableFuture[]::new)))
-        .exceptionally(
+                                    .thenComposeAsync(
+                                        ignored -> backupStore.delete(backup.id()), executor))
+                        .toArray(CompletableFuture[]::new)),
+            executor)
+        .exceptionallyAsync(
             error -> {
               LOG.warn(
                   "Failed to delete backup for checkpoint {} from backup store",
                   checkpointId,
                   error);
               return null;
-            })
-        .whenCompleteAsync(result, executor::run);
+            },
+            executor)
+        .whenCompleteAsync(result, executor);
     return result;
   }
 
@@ -395,12 +403,13 @@ final class BackupServiceImpl {
                 .list(
                     new BackupIdentifierWildcardImpl(
                         Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(pattern)))
-                .thenAccept(availableBackupsFuture::complete)
-                .exceptionally(
+                .thenAcceptAsync(availableBackupsFuture::complete, executor)
+                .exceptionallyAsync(
                     error -> {
                       availableBackupsFuture.completeExceptionally(error);
                       return null;
-                    }));
+                    },
+                    executor));
     return availableBackupsFuture;
   }
 
@@ -451,12 +460,14 @@ final class BackupServiceImpl {
           // status
           backupStore
               .markFailed(backupId, failureReason)
-              .thenAccept(ignore -> LOG.trace("Successfully created failed backup {}", backupId))
-              .exceptionally(
+              .thenAcceptAsync(
+                  ignore -> LOG.trace("Successfully created failed backup {}", backupId), executor)
+              .exceptionallyAsync(
                   error -> {
                     LOG.debug("Failed to create failed backup {}", backupId, error);
                     return null;
-                  });
+                  },
+                  executor);
         });
   }
 
@@ -479,7 +490,7 @@ final class BackupServiceImpl {
                         buildRangeStatuses(future, ranges);
                       }
                     },
-                    executor::run);
+                    executor);
           } catch (final Exception e) {
             LOG.atError().setCause(e).log("Failed to sync backup metadata");
             future.completeExceptionally(e);
