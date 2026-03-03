@@ -92,16 +92,7 @@ final class TemplateReaderTest {
                 Property.builder().long_(LongNumberProperty.builder().build()).build()),
             Map.entry(
                 "batchOperationReference",
-                Property.builder().long_(LongNumberProperty.builder().build()).build()),
-            Map.entry(
-                "agent",
-                Property.builder()
-                    .object(
-                        o ->
-                            o.properties(
-                                "elementId",
-                                Property.builder().keyword(k -> k.index(false)).build()))
-                    .build()));
+                Property.builder().long_(LongNumberProperty.builder().build()).build()));
 
     assertThat(request.template().mappings())
         .as("component template should have mappings with properties")

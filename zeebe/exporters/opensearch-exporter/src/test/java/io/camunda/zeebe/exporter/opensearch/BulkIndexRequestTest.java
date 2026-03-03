@@ -89,6 +89,7 @@ final class BulkIndexRequestTest {
     // Opensearch exporter. We need to do the same in the test to get the correct memory usage.
     recordAsMap.put("sequence", recordSequence.sequence());
     recordAsMap.remove("authorizations");
+    recordAsMap.remove("agent");
     return MAPPER.writeValueAsBytes(recordAsMap).length;
   }
 
@@ -208,6 +209,7 @@ final class BulkIndexRequestTest {
       assertThat(doc.get("position")).isEqualTo(record.getPosition());
       assertThat(doc.get("sequence")).isEqualTo(2251799813685249L);
       assertThat(doc.get("authorizations")).isNull();
+      assertThat(doc.get("agent")).isNull();
     }
 
     @Test
@@ -247,7 +249,7 @@ final class BulkIndexRequestTest {
     }
 
     @Test
-    void shouldIndexRecordWithoutAuthorizations() throws IOException {
+    void shouldIndexRecordWithoutAuthorizationsAndAgent() throws IOException {
       // given
       final var records =
           recordFactory
@@ -266,6 +268,9 @@ final class BulkIndexRequestTest {
       final var doc = getDocumentAsMap(request.bulkOperations().getFirst());
       assertThat(doc.get("authorizations"))
           .describedAs("Expect that the records are NOT serialized with authorizations")
+          .isNull();
+      assertThat(doc.get("agent"))
+          .describedAs("Expect that the records are NOT serialized with agent")
           .isNull();
     }
 
