@@ -7,9 +7,9 @@
  */
 package io.camunda.search.aggregation.result;
 
-import io.camunda.search.entities.JobWorkerStatisticsEntity;
+import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import java.util.List;
 
-public record JobWorkerStatisticsAggregationResult(
-    List<JobWorkerStatisticsEntity> items, String endCursor)
-    implements CursorForwardPaginatedAggregationResult<JobWorkerStatisticsEntity> {}
+public record JobTimeSeriesStatisticsAggregationResult(
+    List<JobTimeSeriesStatisticsEntity> items, String endCursor)
+    implements CursorForwardPaginatedAggregationResult<JobTimeSeriesStatisticsEntity> {}

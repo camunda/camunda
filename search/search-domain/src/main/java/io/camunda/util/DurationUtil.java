@@ -11,6 +11,11 @@ import java.time.Duration;
 
 public final class DurationUtil {
 
+  private static final long MILLIS_PER_DAY = Duration.ofDays(1).toMillis();
+  private static final long MILLIS_PER_HOUR = Duration.ofHours(1).toMillis();
+  private static final long MILLIS_PER_MINUTE = Duration.ofMinutes(1).toMillis();
+  private static final long MILLIS_PER_SECOND = Duration.ofSeconds(1).toMillis();
+
   private DurationUtil() {}
 
   /** Returns the larger of two durations. */
@@ -21,5 +26,30 @@ public final class DurationUtil {
   /** Returns the smaller of two durations. */
   public static Duration min(final Duration a, final Duration b) {
     return a.compareTo(b) <= 0 ? a : b;
+  }
+
+  public static String toEsOsInterval(final Duration duration) {
+    if (duration.isNegative() || duration.isZero()) {
+      throw new IllegalArgumentException("Duration must be greater than zero: " + duration);
+    }
+
+    final long millis = duration.toMillis();
+    if (isWholeMultiple(millis, MILLIS_PER_DAY)) {
+      return (millis / MILLIS_PER_DAY) + "d";
+    }
+    if (isWholeMultiple(millis, MILLIS_PER_HOUR)) {
+      return (millis / MILLIS_PER_HOUR) + "h";
+    }
+    if (isWholeMultiple(millis, MILLIS_PER_MINUTE)) {
+      return (millis / MILLIS_PER_MINUTE) + "m";
+    }
+    if (isWholeMultiple(millis, MILLIS_PER_SECOND)) {
+      return (millis / MILLIS_PER_SECOND) + "s";
+    }
+    return millis + "ms";
+  }
+
+  private static boolean isWholeMultiple(final long value, final long unit) {
+    return value > 0 && value % unit == 0;
   }
 }
