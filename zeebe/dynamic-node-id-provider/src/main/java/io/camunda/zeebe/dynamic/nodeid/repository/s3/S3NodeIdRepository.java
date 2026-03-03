@@ -94,7 +94,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
     final var totalLeaseCount = getTotalLeaseCount();
     if (newCount > availableLeaseCount) {
       // scale up => first make existing unusable leases acquirable, then add new leases if needed
-      for (int nodeId = getAvailableLeaseCount();
+      for (int nodeId = availableLeaseCount;
           nodeId < totalLeaseCount && nodeId < newCount;
           nodeId++) {
         makeLeaseAcquirable(nodeId);
@@ -229,11 +229,15 @@ public class S3NodeIdRepository implements NodeIdRepository {
         getNodeIdLeaseKeys().stream()
             .filter(
                 key -> {
-                  final var nodeId = Integer.parseInt(key.replace(".json", ""));
+                  final var nodeId = parseNodeIdFromKey(key);
                   final var storedLease = getLeaseIncludingUnusable(nodeId);
                   return storedLease.isAcquirable();
                 })
             .count();
+  }
+
+  private static int parseNodeIdFromKey(final String key) {
+    return Integer.parseInt(key.replace(".json", ""));
   }
 
   private void markLeaseAsUnusable(final int nodeId) {
