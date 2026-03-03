@@ -294,6 +294,7 @@ jobs:
       camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'main' }}
       camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.9' }}
       namespace-prefix: monorepo
+      values-digest: true
       test-enabled: true
       e2e-enabled: true
       deployment-ttl: ${{ inputs.deployment-ttl || '' }}
