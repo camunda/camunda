@@ -51,7 +51,6 @@
 /.github/workflows/zeebe-release-stable-dry-run.yml      @camunda/monorepo-devops-team
 /.github/workflows/auto-merge-back-to-stable.yml         @camunda/monorepo-devops-team
 
-
 ###################
 ## Core Features ##
 ###################
