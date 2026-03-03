@@ -287,6 +287,37 @@
     </include>
   </sql>
 
+  <!--
+    Vendor-specific SQL fragment that floors a timestamp column to the nearest bucket boundary.
+    Parameters injected from the enclosing query object:
+      ${timeBucketColumn}   - the column name (e.g. START_TIME), substituted at parse time
+      #{resolutionSeconds}  - the bucket size in seconds, bound at execution time
+    Default dialect: H2 (used in unit tests)
+  -->
+  <sql id="timeBucket">
+    TIMESTAMPADD('SECOND', FLOOR(DATEDIFF('SECOND', TIMESTAMP '1970-01-01 00:00:00', ${timeBucketColumn}) / #{resolutionSeconds}) * #{resolutionSeconds}, TIMESTAMP '1970-01-01 00:00:00')
+  </sql>
+
+  <sql id="timeBucket" databaseId="postgresql">
+    TO_TIMESTAMP(FLOOR(EXTRACT(EPOCH FROM ${timeBucketColumn}) / #{resolutionSeconds}) * #{resolutionSeconds})
+  </sql>
+
+  <sql id="timeBucket" databaseId="mysql">
+    FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(${timeBucketColumn}) / #{resolutionSeconds}) * #{resolutionSeconds})
+  </sql>
+
+  <sql id="timeBucket" databaseId="mariadb">
+    FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(${timeBucketColumn}) / #{resolutionSeconds}) * #{resolutionSeconds})
+  </sql>
+
+  <sql id="timeBucket" databaseId="mssql">
+    TODATETIMEOFFSET(DATEADD(SECOND, (DATEDIFF_BIG(SECOND, '1970-01-01', ${timeBucketColumn}) / #{resolutionSeconds}) * #{resolutionSeconds}, '1970-01-01'), 0)
+  </sql>
+
+  <sql id="timeBucket" databaseId="oracle">
+    TIMESTAMP '1970-01-01 00:00:00 UTC' + NUMTODSINTERVAL(FLOOR((EXTRACT(DAY FROM (SYS_EXTRACT_UTC(${timeBucketColumn}) - TIMESTAMP '1970-01-01 00:00:00')) * 86400 + EXTRACT(HOUR FROM (SYS_EXTRACT_UTC(${timeBucketColumn}) - TIMESTAMP '1970-01-01 00:00:00')) * 3600 + EXTRACT(MINUTE FROM (SYS_EXTRACT_UTC(${timeBucketColumn}) - TIMESTAMP '1970-01-01 00:00:00')) * 60 + EXTRACT(SECOND FROM (SYS_EXTRACT_UTC(${timeBucketColumn}) - TIMESTAMP '1970-01-01 00:00:00'))) / #{resolutionSeconds}) * #{resolutionSeconds}, 'SECOND')
+  </sql>
+
   <resultMap id="flowNodeStatisticsResultMap"
     type="io.camunda.search.entities.ProcessFlowNodeStatisticsEntity">
     <constructor>
