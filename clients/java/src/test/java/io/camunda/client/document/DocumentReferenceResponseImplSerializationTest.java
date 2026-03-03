@@ -22,7 +22,7 @@ import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.command.StreamUtil;
 import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
-import io.camunda.client.protocol.rest.DocumentMetadata;
+import io.camunda.client.protocol.rest.DocumentMetadataResponse;
 import io.camunda.client.protocol.rest.DocumentReference;
 import io.camunda.client.protocol.rest.DocumentReference.CamundaDocumentTypeEnum;
 import java.io.IOException;
@@ -54,7 +54,7 @@ public class DocumentReferenceResponseImplSerializationTest {
             .contentHash("content-hash")
             .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)
             .metadata(
-                new DocumentMetadata()
+                new DocumentMetadataResponse()
                     .contentType("content-type")
                     .expiresAt("2025-06-28T07:32:28.93912+02:00")
                     .fileName("file-name"));
