@@ -96,8 +96,9 @@ public class MessageSubscriptionFromProcessMessageSubscriptionHandler
       entity.setProcessDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null));
       entity.setExtensionProperties(
           cached
-              .map(CachedProcessEntity::extensionPropertiesMap)
+              .map(CachedProcessEntity::flowNodesMap)
               .map(m -> m.get(recordValue.getElementId()))
+              .map(fn -> fn.extensionProperties())
               .orElse(null));
     }
 

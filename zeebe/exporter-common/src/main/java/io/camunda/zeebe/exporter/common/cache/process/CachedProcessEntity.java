@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.exporter.common.cache.process;
 
+import io.camunda.zeebe.util.modelreader.FlowNodeMetadata;
 import java.util.List;
 import java.util.Map;
 
@@ -15,5 +16,4 @@ public record CachedProcessEntity(
     int version,
     String versionTag,
     List<String> callElementIds,
-    Map<String, String> flowNodesMap,
-    Map<String, Map<String, String>> extensionPropertiesMap) {}
+    Map<String, FlowNodeMetadata> flowNodesMap) {}

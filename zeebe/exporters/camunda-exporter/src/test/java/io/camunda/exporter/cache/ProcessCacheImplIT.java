@@ -30,11 +30,11 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
+import io.camunda.zeebe.util.modelreader.FlowNodeMetadata;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -104,14 +104,14 @@ class ProcessCacheImplIT {
     final var process = processCacheArgument.processCache().get(3L);
 
     // then
-    final var expectedFlowNodesMap = new LinkedHashMap<String, String>();
-    expectedFlowNodesMap.put("Banana", "Banana");
-    expectedFlowNodesMap.put("Cherry", "Cherry");
-    expectedFlowNodesMap.put("apple", "apple");
-    expectedFlowNodesMap.put(startEventId, null);
+    final var expectedFlowNodesMap = new LinkedHashMap<String, FlowNodeMetadata>();
+    expectedFlowNodesMap.put("Banana", new FlowNodeMetadata("Banana", null));
+    expectedFlowNodesMap.put("Cherry", new FlowNodeMetadata("Cherry", null));
+    expectedFlowNodesMap.put("apple", new FlowNodeMetadata("apple", null));
+    expectedFlowNodesMap.put(startEventId, new FlowNodeMetadata(null, null));
     final var expectedCachedProcessEntity =
         new CachedProcessEntity(
-            "test", 1, "v1", List.of("Banana", "Cherry", "apple"), expectedFlowNodesMap, Map.of());
+            "test", 1, "v1", List.of("Banana", "Cherry", "apple"), expectedFlowNodesMap);
     assertThat(process).isPresent().get().isEqualTo(expectedCachedProcessEntity);
   }
 

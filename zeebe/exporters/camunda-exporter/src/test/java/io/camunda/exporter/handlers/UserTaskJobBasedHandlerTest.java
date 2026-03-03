@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.util.modelreader.FlowNodeMetadata;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -328,7 +329,11 @@ public class UserTaskJobBasedHandlerTest {
     processCache.put(
         processDefinitionKey,
         new CachedProcessEntity(
-            "my-process", 1, "v1", List.of(), Map.of(elementId, "my-flow-node"), Map.of()));
+            "my-process",
+            1,
+            "v1",
+            List.of(),
+            Map.of(elementId, new FlowNodeMetadata("my-flow-node", null))));
 
     // when
     final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(recordKey));

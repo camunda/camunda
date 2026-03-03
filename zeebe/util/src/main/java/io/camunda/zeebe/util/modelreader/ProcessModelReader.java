@@ -18,7 +18,6 @@ import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperties;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperty;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
@@ -27,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,28 +88,28 @@ public final class ProcessModelReader {
   }
 
   /**
-   * Extracts a map of flow node IDs to their zeebe:properties extension properties.
+   * Extracts a map of flow node IDs to their {@link FlowNodeMetadata}, which combines the flow
+   * node's display name with any {@code zeebe:properties} extension properties.
    *
-   * @return map of elementId → Map(propertyName → propertyValue); only elements that have
-   *     zeebe:properties defined are included.
+   * @return map of elementId → {@link FlowNodeMetadata}; all flow nodes are included (with {@code
+   *     null} extensionProperties when none are defined).
    */
-  public Map<String, Map<String, String>> extractExtensionPropertiesMap() {
+  public Map<String, FlowNodeMetadata> extractFlowNodesWithMetadata() {
     final List<FlowNode> flowNodes = new ArrayList<>();
     process.getChildElementsByType(FlowNode.class).forEach(fn -> extractFlowNodes(flowNodes, fn));
-    final Map<String, Map<String, String>> result = new HashMap<>();
+    final Map<String, FlowNodeMetadata> result = new HashMap<>();
     for (final FlowNode flowNode : flowNodes) {
-      getExtensionElementQuery(flowNode, ZeebeProperties.class)
-          .flatMap(Query::findSingleResult)
-          .ifPresent(
-              props -> {
-                final Map<String, String> propsMap =
-                    props.getProperties().stream()
-                        .collect(
-                            Collectors.toMap(ZeebeProperty::getName, ZeebeProperty::getValue));
-                if (!propsMap.isEmpty()) {
-                  result.put(flowNode.getId(), propsMap);
-                }
-              });
+      final Map<String, String> propsMap =
+          getExtensionElementQuery(flowNode, ZeebeProperties.class)
+              .flatMap(Query::findSingleResult)
+              .map(
+                  props -> {
+                    final Map<String, String> m = new HashMap<>();
+                    props.getProperties().forEach(p -> m.put(p.getName(), p.getValue()));
+                    return m.isEmpty() ? null : m;
+                  })
+              .orElse(null);
+      result.put(flowNode.getId(), new FlowNodeMetadata(flowNode.getName(), propsMap));
     }
     return result;
   }

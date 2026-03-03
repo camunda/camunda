@@ -29,8 +29,7 @@ public class MessageStartEventSubscriptionExportHandler
 
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(
-          MessageStartEventSubscriptionIntent.CREATED,
-          MessageStartEventSubscriptionIntent.DELETED);
+          MessageStartEventSubscriptionIntent.CREATED, MessageStartEventSubscriptionIntent.DELETED);
 
   private final MessageSubscriptionWriter messageSubscriptionWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
@@ -68,8 +67,9 @@ public class MessageStartEventSubscriptionExportHandler
     final var cachedProcess = processCache.get(processDefinitionKey);
     final var extensionProperties =
         cachedProcess
-            .map(CachedProcessEntity::extensionPropertiesMap)
+            .map(CachedProcessEntity::flowNodesMap)
             .map(m -> m.get(value.getStartEventId()))
+            .map(fn -> fn.extensionProperties())
             .orElse(null);
     return new MessageSubscriptionDbModel.Builder()
         .messageSubscriptionKey(record.getKey())

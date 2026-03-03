@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -86,9 +85,9 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
     // update local cache so that the process info is available immediately to the process instance
     // record handler
-    final var extensionPropertiesMap =
+    final var flowNodesMap =
         ProcessModelReader.of(process.getResource(), process.getBpmnProcessId())
-            .map(ProcessModelReader::extractExtensionPropertiesMap)
+            .map(ProcessModelReader::extractFlowNodesWithMetadata)
             .orElse(Map.of());
     final var cachedProcessEntity =
         new CachedProcessEntity(
@@ -96,8 +95,7 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
             entity.getVersion(),
             entity.getVersionTag(),
             entity.getCallActivityIds(),
-            getFlowNodesMap(entity.getFlowNodes()),
-            extensionPropertiesMap);
+            flowNodesMap);
     processCache.put(process.getProcessDefinitionKey(), cachedProcessEntity);
   }
 
@@ -133,14 +131,5 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
                         entity.setIsFormEmbedded(!ExporterUtil.isEmpty(formLink.formKey()));
                       });
             });
-  }
-
-  private static Map<String, String> getFlowNodesMap(final List<ProcessFlowNodeEntity> flowNodes) {
-    final Map<String, String> flowNodesMap = new HashMap<>();
-    for (final ProcessFlowNodeEntity flowNode : flowNodes) {
-      flowNodesMap.put(flowNode.getId(), flowNode.getName());
-    }
-
-    return flowNodesMap;
   }
 }

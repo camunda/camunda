@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.util.modelreader.FlowNodeMetadata;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -315,13 +316,20 @@ public class IncidentHandlerTest {
     processCache.put(
         processDefinitionKey1,
         new CachedProcessEntity(
-            null, 1, null, List.of("0", "1", "2", callActivityId1), Map.of("FI1", "FN1"),
-            Map.of()));
+            null,
+            1,
+            null,
+            List.of("0", "1", "2", callActivityId1),
+            Map.of("FI1", new FlowNodeMetadata("FN1", null))));
 
     processCache.put(
         processDefinitionKey2,
         new CachedProcessEntity(
-            null, 1, null, List.of("0", callActivityId2), Map.of("FI1", "FN1"), Map.of()));
+            null,
+            1,
+            null,
+            List.of("0", callActivityId2),
+            Map.of("FI1", new FlowNodeMetadata("FN1", null))));
 
     // when
     final IncidentEntity incidentEntity = new IncidentEntity();

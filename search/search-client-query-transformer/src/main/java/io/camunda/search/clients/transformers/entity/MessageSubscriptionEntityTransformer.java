@@ -33,7 +33,8 @@ public class MessageSubscriptionEntityTransformer
         .messageSubscriptionType(toMessageSubscriptionType(value.getMessageSubscriptionType()))
         .dateTime(value.getDateTime())
         .messageName(value.getMetadata() != null ? value.getMetadata().getMessageName() : null)
-        .correlationKey(value.getMetadata() != null ? value.getMetadata().getCorrelationKey() : null)
+        .correlationKey(
+            value.getMetadata() != null ? value.getMetadata().getCorrelationKey() : null)
         .tenantId(value.getTenantId())
         .extensionProperties(value.getExtensionProperties())
         .build();

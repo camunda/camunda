@@ -71,8 +71,9 @@ public class MessageSubscriptionExportHandler
     final var cachedProcess = processCache.get(processDefinitionKey);
     final var extensionProperties =
         cachedProcess
-            .map(CachedProcessEntity::extensionPropertiesMap)
+            .map(CachedProcessEntity::flowNodesMap)
             .map(m -> m.get(value.getElementId()))
+            .map(fn -> fn.extensionProperties())
             .orElse(null);
     return new MessageSubscriptionDbModel.Builder()
         .messageSubscriptionKey(record.getKey())

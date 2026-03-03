@@ -5,11 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.exporter.common.cache.process;
+package io.camunda.zeebe.util.modelreader;
 
-import io.camunda.zeebe.util.modelreader.FlowNodeMetadata;
-import java.util.List;
 import java.util.Map;
 
-public record ProcessDiagramData(
-    List<String> callActivityIds, Map<String, FlowNodeMetadata> flowNodesMap) {}
+/**
+ * Holds metadata for a BPMN flow node extracted from the process model, including its display name
+ * and any {@code zeebe:properties} extension properties.
+ */
+public record FlowNodeMetadata(String name, Map<String, String> extensionProperties) {}

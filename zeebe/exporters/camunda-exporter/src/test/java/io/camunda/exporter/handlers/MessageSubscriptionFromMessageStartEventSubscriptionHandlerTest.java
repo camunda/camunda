@@ -166,7 +166,8 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
     final long processDefinitionKey = 555L;
     final String processName = "My Process";
     final int processVersion = 2;
-    final var cachedProcess = new CachedProcessEntity(processName, processVersion, null, null, null, null);
+    final var cachedProcess =
+        new CachedProcessEntity(processName, processVersion, null, null, null);
     when(processCache.get(processDefinitionKey)).thenReturn(Optional.of(cachedProcess));
 
     final var recordValue =

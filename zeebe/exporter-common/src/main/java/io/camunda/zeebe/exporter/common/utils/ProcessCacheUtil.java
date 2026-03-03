@@ -13,7 +13,7 @@ import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.cache.process.ProcessDiagramData;
 import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
-import io.camunda.zeebe.model.bpmn.instance.FlowNode;
+import io.camunda.zeebe.util.modelreader.FlowNodeMetadata;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -105,20 +105,19 @@ public final class ProcessCacheUtil {
    * @param bpmnProcessId
    * @return ProcessDiagramData
    */
-  public static ProcessDiagramData extractProcessDiagramData(String bpmnXml, String bpmnProcessId) {
+  public static ProcessDiagramData extractProcessDiagramData(
+      final String bpmnXml, final String bpmnProcessId) {
 
     final ProcessModelReader reader =
         ProcessModelReader.of(bpmnXml.getBytes(StandardCharsets.UTF_8), bpmnProcessId).orElse(null);
 
     if (reader != null) {
       final List<String> callActivityIds = sortedCallActivityIds(reader.extractCallActivities());
-      final Map<String, String> flowNodesMap = getFlowNodesMap(reader.extractFlowNodes());
-      final Map<String, Map<String, String>> extensionPropertiesMap =
-          reader.extractExtensionPropertiesMap();
-      return new ProcessDiagramData(callActivityIds, flowNodesMap, extensionPropertiesMap);
+      final Map<String, FlowNodeMetadata> flowNodesMap = reader.extractFlowNodesWithMetadata();
+      return new ProcessDiagramData(callActivityIds, flowNodesMap);
     }
 
-    return new ProcessDiagramData(List.of(), Map.of(), Map.of());
+    return new ProcessDiagramData(List.of(), Map.of());
   }
 
   public static List<String> sortedCallActivityIds(final Collection<CallActivity> callActivities) {
@@ -145,11 +144,7 @@ public final class ProcessCacheUtil {
     return processCache
         .get(processDefinitionKey)
         .map(CachedProcessEntity::flowNodesMap)
-        .map(map -> map.get(flowNodeId));
-  }
-
-  public static Map<String, String> getFlowNodesMap(Collection<FlowNode> flowNodes) {
-    return flowNodes.stream()
-        .collect(HashMap::new, (map, fn) -> map.put(fn.getId(), fn.getName()), HashMap::putAll);
+        .map(map -> map.get(flowNodeId))
+        .map(FlowNodeMetadata::name);
   }
 }

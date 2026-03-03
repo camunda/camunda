@@ -158,6 +158,11 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+    <if test="filter.extensionProperties != null and !filter.extensionProperties.isEmpty()">
+      <foreach collection="filter.extensionProperties.entrySet()" item="entry">
+        AND EXTENSION_PROPERTIES LIKE CONCAT('%"', #{entry.key}, '":"', #{entry.value}, '"%')
+      </foreach>
+    </if>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel">

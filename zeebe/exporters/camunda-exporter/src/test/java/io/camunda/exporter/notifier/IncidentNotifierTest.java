@@ -102,7 +102,7 @@ class IncidentNotifierTest {
         .thenReturn(
             Optional.of(
                 new CachedProcessEntity(
-                    processName, processVersion, processVersionTag, null, null, null)));
+                    processName, processVersion, processVersionTag, null, null)));
   }
 
   @Test

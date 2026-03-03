@@ -15,6 +15,7 @@ import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public record MessageSubscriptionFilter(
@@ -31,7 +32,8 @@ public record MessageSubscriptionFilter(
     List<Operation<OffsetDateTime>> dateTimeOperations,
     List<Operation<String>> messageNameOperations,
     List<Operation<String>> correlationKeyOperations,
-    List<Operation<String>> tenantIdOperations)
+    List<Operation<String>> tenantIdOperations,
+    Map<String, String> extensionProperties)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<MessageSubscriptionFilter> {
@@ -50,6 +52,7 @@ public record MessageSubscriptionFilter(
     private List<Operation<String>> messageNameOperations;
     private List<Operation<String>> correlationKeyOperations;
     private List<Operation<String>> tenantIdOperations;
+    private Map<String, String> extensionProperties;
 
     public Builder messageSubscriptionKeys(final Long value, final Long... values) {
       return messageSubscriptionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
@@ -107,7 +110,8 @@ public record MessageSubscriptionFilter(
     }
 
     public Builder processDefinitionNameOperations(final List<Operation<String>> operations) {
-      processDefinitionNameOperations = addValuesToList(processDefinitionNameOperations, operations);
+      processDefinitionNameOperations =
+          addValuesToList(processDefinitionNameOperations, operations);
       return this;
     }
 
@@ -264,6 +268,11 @@ public record MessageSubscriptionFilter(
       return correlationKeyOperations(collectValues(operation, operations));
     }
 
+    public Builder extensionProperties(final Map<String, String> extensionProperties) {
+      this.extensionProperties = extensionProperties;
+      return this;
+    }
+
     @Override
     public MessageSubscriptionFilter build() {
       return new MessageSubscriptionFilter(
@@ -280,7 +289,8 @@ public record MessageSubscriptionFilter(
           Objects.requireNonNullElse(dateTimeOperations, Collections.emptyList()),
           Objects.requireNonNullElse(messageNameOperations, Collections.emptyList()),
           Objects.requireNonNullElse(correlationKeyOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
+          extensionProperties);
     }
   }
 }

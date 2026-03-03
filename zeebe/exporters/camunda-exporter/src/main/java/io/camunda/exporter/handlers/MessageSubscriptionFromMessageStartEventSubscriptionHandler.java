@@ -29,8 +29,7 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionHandler
 
   public static final Set<Intent> STATES =
       Set.of(
-          MessageStartEventSubscriptionIntent.CREATED,
-          MessageStartEventSubscriptionIntent.DELETED);
+          MessageStartEventSubscriptionIntent.CREATED, MessageStartEventSubscriptionIntent.DELETED);
 
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
@@ -51,8 +50,7 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionHandler
   }
 
   @Override
-  public List<String> generateIds(
-      final Record<MessageStartEventSubscriptionRecordValue> record) {
+  public List<String> generateIds(final Record<MessageStartEventSubscriptionRecordValue> record) {
     return List.of(String.valueOf(record.getKey()));
   }
 
@@ -73,8 +71,9 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionHandler
       entity.setProcessDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null));
       entity.setExtensionProperties(
           cached
-              .map(CachedProcessEntity::extensionPropertiesMap)
+              .map(CachedProcessEntity::flowNodesMap)
               .map(m -> m.get(recordValue.getStartEventId()))
+              .map(fn -> fn.extensionProperties())
               .orElse(null));
     }
 
@@ -91,10 +90,6 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionHandler
 
   @Override
   public void flush(final MessageSubscriptionEntity entity, final BatchRequest batchRequest) {
-    persistEvent(
-        entity,
-        MessageSubscriptionTemplate.POSITION_MESSAGE,
-        0L,
-        batchRequest);
+    persistEvent(entity, MessageSubscriptionTemplate.POSITION_MESSAGE, 0L, batchRequest);
   }
 }

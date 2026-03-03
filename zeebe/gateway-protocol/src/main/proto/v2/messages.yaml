@@ -425,6 +425,15 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
           description: The unique external tenant ID.
+        extensionProperties:
+          type: object
+          description: |
+            Filter by zeebe:properties extension properties defined on the message event element
+            in the BPMN XML. Each key-value pair is ANDed; only subscriptions whose
+            extensionProperties contain all specified key-value pairs are returned.
+          nullable: true
+          additionalProperties:
+            type: string
 
     CorrelatedMessageSubscriptionSearchQueryResult:
       required:

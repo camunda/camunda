@@ -994,6 +994,7 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
+      ofNullable(filter.getExtensionProperties()).ifPresent(builder::extensionProperties);
     }
     return builder.build();
   }

@@ -13,10 +13,12 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.DATE_TIME;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.EVENT_SOURCE_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.EXTENSION_PROPERTIES;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.FLOW_NODE_ID;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.FLOW_NODE_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.KEY;
@@ -30,7 +32,9 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class MessageSubscriptionFilterTransformer
     extends IndexFilterTransformer<MessageSubscriptionFilter> {
@@ -47,22 +51,36 @@ public class MessageSubscriptionFilterTransformer
                 EVENT_SOURCE_TYPE,
                 List.of("PROCESS_MESSAGE_SUBSCRIPTION", "MESSAGE_START_EVENT_SUBSCRIPTION")));
 
-    return and(
-        eventSourceTypeFilter,
-        longOperations(KEY, filter.messageSubscriptionKeyOperations()),
-        stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()),
-        longOperations(PROCESS_KEY, filter.processDefinitionKeyOperations()),
-        stringOperations(PROCESS_DEFINITION_NAME, filter.processDefinitionNameOperations()),
-        intOperations(PROCESS_DEFINITION_VERSION, filter.processDefinitionVersionOperations()),
-        longOperations("processInstanceKey", filter.processInstanceKeyOperations()),
-        stringOperations(FLOW_NODE_ID, filter.flowNodeIdOperations()),
-        longOperations(FLOW_NODE_INSTANCE_KEY, filter.flowNodeInstanceKeyOperations()),
-        stringOperations(MESSAGE_SUBSCRIPTION_STATE, filter.messageSubscriptionStateOperations()),
-        stringOperations(MESSAGE_SUBSCRIPTION_TYPE, filter.messageSubscriptionTypeOperations()),
-        dateTimeOperations(DATE_TIME, filter.dateTimeOperations()),
-        stringOperations("metadata.messageName", filter.messageNameOperations()),
-        stringOperations("metadata.correlationKey", filter.correlationKeyOperations()),
-        stringOperations(TENANT_ID, filter.tenantIdOperations()));
+    final var queries = new ArrayList<SearchQuery>();
+    queries.addAll(eventSourceTypeFilter);
+    queries.addAll(longOperations(KEY, filter.messageSubscriptionKeyOperations()));
+    queries.addAll(stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()));
+    queries.addAll(longOperations(PROCESS_KEY, filter.processDefinitionKeyOperations()));
+    queries.addAll(
+        stringOperations(PROCESS_DEFINITION_NAME, filter.processDefinitionNameOperations()));
+    queries.addAll(
+        intOperations(PROCESS_DEFINITION_VERSION, filter.processDefinitionVersionOperations()));
+    queries.addAll(longOperations("processInstanceKey", filter.processInstanceKeyOperations()));
+    queries.addAll(stringOperations(FLOW_NODE_ID, filter.flowNodeIdOperations()));
+    queries.addAll(longOperations(FLOW_NODE_INSTANCE_KEY, filter.flowNodeInstanceKeyOperations()));
+    queries.addAll(
+        stringOperations(MESSAGE_SUBSCRIPTION_STATE, filter.messageSubscriptionStateOperations()));
+    queries.addAll(
+        stringOperations(MESSAGE_SUBSCRIPTION_TYPE, filter.messageSubscriptionTypeOperations()));
+    queries.addAll(dateTimeOperations(DATE_TIME, filter.dateTimeOperations()));
+    queries.addAll(stringOperations("metadata.messageName", filter.messageNameOperations()));
+    queries.addAll(stringOperations("metadata.correlationKey", filter.correlationKeyOperations()));
+    queries.addAll(stringOperations(TENANT_ID, filter.tenantIdOperations()));
+
+    // extensionProperties filtering: each key-value pair generates a term query on
+    // extensionProperties.<key>
+    if (filter.extensionProperties() != null) {
+      for (final Map.Entry<String, String> entry : filter.extensionProperties().entrySet()) {
+        queries.add(term(EXTENSION_PROPERTIES + "." + entry.getKey(), entry.getValue()));
+      }
+    }
+
+    return and(queries);
   }
 
   @Override

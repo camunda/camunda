@@ -42,8 +42,7 @@ public class RdbmsProcessCacheLoader implements CacheLoader<Long, CachedProcessE
           processDefinitionEntity.version(),
           processDefinitionEntity.versionTag(),
           processDiagramData.callActivityIds(),
-          processDiagramData.flowNodesMap(),
-          processDiagramData.extensionPropertiesMap());
+          processDiagramData.flowNodesMap());
     }
     LOG.debug("Process '{}' not found in RDBMS", key);
     return null;
@@ -65,8 +64,7 @@ public class RdbmsProcessCacheLoader implements CacheLoader<Long, CachedProcessE
                       pde.version(),
                       pde.versionTag(),
                       processDiagramData.callActivityIds(),
-                      processDiagramData.flowNodesMap(),
-                      processDiagramData.extensionPropertiesMap());
+                      processDiagramData.flowNodesMap());
                 }));
   }
 }
