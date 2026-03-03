@@ -525,6 +525,16 @@
       "addLabels": [
         "automerge"
       ]
+    },
+    {
+      "description": "Skip maven-surefire-plugin updates, as 3.5.4 has an issue with inner class tests reports https://github.com/apache/maven-surefire/issues/3203, causing the retry of the wrong tests. 3.5.3 version has a bug preventing ArchUnit tests from running.",
+      "matchManagers": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "org.apache.maven.plugins:maven-surefire-plugin"
+      ],
+      "enabled": false
     }
   ],
   "dockerfile": {
