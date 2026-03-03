@@ -180,6 +180,43 @@ final class AuthInfoTest {
 
       assertThat(empty).isEqualTo(regular);
     }
+
+    @Test
+    void shouldWriteCorrectlyUnderConcurrentAccess() throws Exception {
+      // given — expected bytes from a single-threaded write
+      final var empty = EmptyAuthInfo.getInstance();
+      final var expected = new UnsafeBuffer(new byte[empty.getLength()]);
+      empty.write(expected, 0);
+
+      final int threads = 8;
+      final int iterations = 1_000;
+      final var errors = new java.util.concurrent.atomic.AtomicInteger(0);
+      final var latch = new java.util.concurrent.CountDownLatch(threads);
+
+      // when — write concurrently from multiple threads
+      for (int t = 0; t < threads; t++) {
+        new Thread(
+                () -> {
+                  try {
+                    for (int i = 0; i < iterations; i++) {
+                      final var buf = new UnsafeBuffer(new byte[empty.getLength()]);
+                      empty.write(buf, 0);
+                      if (!buf.equals(expected)) {
+                        errors.incrementAndGet();
+                      }
+                    }
+                  } finally {
+                    latch.countDown();
+                  }
+                })
+            .start();
+      }
+
+      latch.await();
+
+      // then — no corrupted writes
+      assertThat(errors.get()).isZero();
+    }
   }
 
   @Nested

@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -44,12 +45,65 @@ final class RecordMetadataTest {
     assertThat(metadata.getRecordVersion()).isEqualTo(RecordMetadata.DEFAULT_RECORD_VERSION);
   }
 
+  @Test
+  void shouldEncodeDecodeMetadataWithJwtAuthorization() {
+    // given
+    final RecordMetadata metadata = new RecordMetadata();
+    final var authInfo =
+        AuthInfo.withJwt("test-token", Map.of("user", "admin", "role", "operator"));
+    metadata.authorization(authInfo);
+
+    // when
+    encodeDecode(metadata);
+
+    // then
+    final var decoded = metadata.getAuthorization();
+    assertThat(decoded.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.JWT);
+    assertThat(decoded.getAuthData()).isEqualTo("test-token");
+    assertThat(decoded.getClaims()).isEqualTo(Map.of("user", "admin", "role", "operator"));
+  }
+
+  @Test
+  void shouldEncodeDecodeMetadataWithPreAuthorizedAuthorization() {
+    // given
+    final RecordMetadata metadata = new RecordMetadata();
+    final var authInfo = AuthInfo.preAuthorized(Map.of("key", "value"));
+    metadata.authorization(authInfo);
+
+    // when
+    encodeDecode(metadata);
+
+    // then
+    final var decoded = metadata.getAuthorization();
+    assertThat(decoded.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
+    assertThat(decoded.toDecodedMap()).isEqualTo(Map.of("key", "value"));
+  }
+
+  @Test
+  void shouldEncodeDecodeMetadataWithEmptyAuthorization() {
+    // given — no authorization set (null internally, uses EmptyAuthInfo for serialization)
+    final RecordMetadata metadata = new RecordMetadata();
+
+    // when
+    encodeDecode(metadata);
+
+    // then — getAuthorization() returns EmptyAuthInfo sentinel
+    final var decoded = metadata.getAuthorization();
+    assertThat(decoded).isNotNull();
+    assertThat(decoded.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.UNKNOWN);
+    assertThat(decoded.hasAnyClaims()).isFalse();
+  }
+
   private void encodeDecode(final RecordMetadata metadata) {
     // encode
     final UnsafeBuffer buffer = new UnsafeBuffer(new byte[metadata.getLength()]);
     metadata.write(buffer, 0);
 
     // decode
+    final var decoded = new RecordMetadata();
+    decoded.wrap(buffer, 0, buffer.capacity());
+
+    // copy values back for assertion (reuse the same reference pattern as original test)
     metadata.reset();
     metadata.wrap(buffer, 0, buffer.capacity());
   }

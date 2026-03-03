@@ -9,6 +9,8 @@ package io.camunda.zeebe.protocol.impl.encoding;
 
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * An immutable, singleton-safe empty {@link AuthInfo}. This subclass guards against accidental
@@ -26,10 +28,13 @@ public final class EmptyAuthInfo extends AuthInfo {
 
   private EmptyAuthInfo() {
     super();
-    // length must be set before cachedBuffer, because toDirectBuffer() calls getLength()
-    // via virtual dispatch, and our override returns this field
     length = super.getLength();
-    cachedBuffer = super.toDirectBuffer();
+    // Cannot use super.toDirectBuffer() because it calls write(buffer, 0) which dispatches
+    // to our override, but cachedBuffer is still null. Use super.write() directly instead.
+    final var bytes = new byte[length];
+    final var buf = new UnsafeBuffer(bytes);
+    super.write(buf, 0);
+    cachedBuffer = buf;
   }
 
   public static AuthInfo getInstance() {
@@ -48,6 +53,17 @@ public final class EmptyAuthInfo extends AuthInfo {
 
   @Override
   public int getLength() {
+    return length;
+  }
+
+  /**
+   * Thread-safe override: copies from the pre-computed cached buffer instead of using the inherited
+   * mutable {@link io.camunda.zeebe.msgpack.MsgPackWriter} instance field, which is not safe for a
+   * shared singleton.
+   */
+  @Override
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    buffer.putBytes(offset, cachedBuffer, 0, length);
     return length;
   }
 
