@@ -10,6 +10,11 @@ on:
         type: string
         default: ""
         required: false
+      ttl:
+        description: 'Specifies after how many days the weekly load test namespace should be deleted. Useful to adjust if we recreate the weekly tests.'
+        type: number
+        default: 28
+        required: false
   schedule:
     # Runs at 1am every monday https://crontab.guru/#0_1_*_*_1
     - cron: 0 1 * * 1
@@ -52,7 +57,7 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.test-data.outputs.test }}-typical
-      ttl: 28
+      ttl: ${{ inputs.ttl || 28 }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: typical
       build-frontend: true
@@ -64,7 +69,7 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.test-data.outputs.test }}-rdbms-realistic
-      ttl: 28
+      ttl: ${{ inputs.ttl || 28 }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       secondary-storage-type: 'postgresql'
       build-frontend: true
@@ -77,7 +82,7 @@ jobs:
       - test-data
     with:
       name: ${{ needs.test-data.outputs.test }}-realistic
-      ttl: 28
+      ttl: ${{ inputs.ttl || 28 }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: realistic
       build-frontend: true
@@ -89,7 +94,7 @@ jobs:
       - test-data
     with:
       name: ${{ needs.test-data.outputs.test }}-latency
-      ttl: 28
+      ttl: ${{ inputs.ttl || 28 }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: latency
       build-frontend: true
