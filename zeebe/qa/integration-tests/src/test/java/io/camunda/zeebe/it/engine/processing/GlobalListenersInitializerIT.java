@@ -28,14 +28,15 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 @ZeebeIntegration
 final class GlobalListenersInitializerIT {
@@ -63,9 +64,9 @@ final class GlobalListenersInitializerIT {
   }
 
   @Test
-  void shouldInitializeGlobalListenersWhenConfigurationChanges() {
+  void shouldInitializeGlobalListenersWhenConfigurationChanges(final TestInfo testInfo) {
     // Given a broker with a given global listeners configuration
-    final String initialListener = UUID.randomUUID().toString();
+    final String initialListener = uniqueListenerName(testInfo);
     ZEEBE
         .unifiedConfig()
         .getCluster()
@@ -153,9 +154,9 @@ final class GlobalListenersInitializerIT {
   }
 
   @Test
-  void shouldInitializeGlobalListenersWhenConfigurationIsRemoved() {
+  void shouldInitializeGlobalListenersWhenConfigurationIsRemoved(final TestInfo testInfo) {
     // Given a broker with a given global listeners configuration
-    final String initialListener = UUID.randomUUID().toString();
+    final String initialListener = uniqueListenerName(testInfo);
     ZEEBE
         .unifiedConfig()
         .getCluster()
@@ -233,9 +234,9 @@ final class GlobalListenersInitializerIT {
   }
 
   @Test
-  void shouldNotInitializeGlobalListenersWhenConfigurationIsNotChanged() {
+  void shouldNotInitializeGlobalListenersWhenConfigurationIsNotChanged(final TestInfo testInfo) {
     // Given a broker with a given global listeners configuration
-    final String initialListener = UUID.randomUUID().toString();
+    final String initialListener = uniqueListenerName(testInfo);
     ZEEBE
         .unifiedConfig()
         .getCluster()
@@ -333,5 +334,12 @@ final class GlobalListenersInitializerIT {
                           .limit(PARTITIONS_COUNT - 1))
                   .hasSize(PARTITIONS_COUNT - 1);
             });
+  }
+
+  // to produce something like: `shouldInitializeGlobalListenersWhenConfigurationChanges-aB3xZ`
+  private static String uniqueListenerName(final TestInfo testInfo) {
+    return testInfo.getTestMethod().orElseThrow().getName()
+        + "-"
+        + RandomStringUtils.insecure().nextAlphanumeric(5);
   }
 }
