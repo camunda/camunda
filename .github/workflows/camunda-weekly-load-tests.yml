@@ -56,19 +56,19 @@ jobs:
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: typical
       build-frontend: true
-  setup-rdbms-typical-load-test:
-    name: Postgres typical load test
+  setup-rdbms-realistic-load-test:
+    name: Postgres realistic load test
     needs:
       - test-data
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
-      name: ${{ needs.test-data.outputs.test }}-rdbms-typical
+      name: ${{ needs.test-data.outputs.test }}-rdbms-realistic
       ttl: 28
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       secondary-storage-type: 'postgresql'
-      scenario: typical
       build-frontend: true
+      scenario: realistic
   setup-realistic-test:
     name: Realistic load test
     uses: ./.github/workflows/camunda-load-test.yml
@@ -97,7 +97,7 @@ jobs:
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ setup-typical-load-test, setup-rdbms-typical-load-test, setup-realistic-test, setup-latency-test ]
+    needs: [ setup-typical-load-test, setup-rdbms-realistic-load-test, setup-realistic-test, setup-latency-test ]
     if: failure()
     steps:
       - uses: actions/checkout@v6
