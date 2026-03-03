@@ -19,6 +19,7 @@ import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.IntStream;
 import org.slf4j.Logger;
@@ -31,11 +32,11 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 public class S3NodeIdRepository implements NodeIdRepository {
 
@@ -88,50 +89,34 @@ public class S3NodeIdRepository implements NodeIdRepository {
     if (newCount <= 0) {
       throw new IllegalArgumentException("newCount must be greater than 0");
     }
-    // Keep it simple for now by just creating new leases for new nodes and deleting leases for
-    // removed nodes. We can improve it later by making the leases non-acquirable. This would let
-    // graceful shutdown of tasks that are still holding those leases.
-    final var oldCount = getAvailableLeaseCount();
-    if (newCount > oldCount) {
-      // scale up => add new leases
-      IntStream.range(oldCount, newCount).forEach(this::initializeForNode);
+    // Get the total number of leases in the repository (both acquirable and unusable)
+    final var availableLeaseCount = getAvailableLeaseCount();
+    final var totalLeaseCount = getTotalLeaseCount();
+    if (newCount > availableLeaseCount) {
+      // scale up => first make existing unusable leases acquirable, then add new leases if needed
+      for (int nodeId = availableLeaseCount;
+          nodeId < totalLeaseCount && nodeId < newCount;
+          nodeId++) {
+        makeLeaseAcquirable(nodeId);
+      }
+      // Add new leases if we need more than total existing
+      IntStream.range(totalLeaseCount, newCount).forEach(this::initializeForNode);
     } else {
-      // scale down =>  delete extra leases
-      // Delete in reverse order so that retry after failure will correctly delete remaining node
-      // ids
-      for (int nodeId = oldCount - 1; nodeId >= newCount; nodeId--) {
-        final var request =
-            DeleteObjectRequest.builder().bucket(config.bucketName).key(objectKey(nodeId)).build();
-        try {
-          client.deleteObject(request);
-        } catch (final S3Exception e) {
-          if (e.statusCode() == 404) {
-            LOG.debug("Lease for nodeId {} does not exist, likely already deleted.", nodeId);
-          } else {
-            LOG.warn("Failed to delete lease object for node {} ", nodeId, e);
-            throw e;
-          }
-        }
+      // scale down => mark extra leases as not acquirable
+      // Mark in reverse order so that retry after failure will correctly mark remaining node ids
+      for (int nodeId = totalLeaseCount - 1; nodeId >= newCount; nodeId--) {
+        markLeaseAsUnusable(nodeId);
       }
     }
   }
 
   @Override
   public StoredLease getLease(final int nodeId) {
-    final var request =
-        GetObjectRequest.builder().bucket(config.bucketName).key(objectKey(nodeId)).build();
-    final var response = client.getObject(request);
-    try {
-      final var bytes = response.readAllBytes();
-      final var lease = bytes.length > 0 ? Lease.fromJsonBytes(OBJECT_MAPPER, bytes) : null;
-      final var metadata = Metadata.fromMap(response.response().metadata());
-      final var eTag = response.response().eTag();
-      final var storedLease = StoredLease.of(nodeId, lease, metadata, eTag);
-      LOG.trace("Lease for object {} is {}", nodeId, storedLease);
-      return storedLease;
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
+    final var storedLease = getLeaseIncludingUnusable(nodeId);
+    if (!storedLease.isAcquirable()) {
+      throw new IllegalStateException("Lease for nodeId " + nodeId + " is not acquirable");
     }
+    return storedLease;
   }
 
   @Override
@@ -140,6 +125,13 @@ public class S3NodeIdRepository implements NodeIdRepository {
       throw new IllegalArgumentException("lease is null");
     }
     final var nodeId = lease.nodeInstance().id();
+
+    // Verify the lease is acquirable before attempting to acquire
+    final var currentLease = getLeaseIncludingUnusable(nodeId);
+    if (!currentLease.isAcquirable()) {
+      throw new IllegalStateException("Lease for nodeId " + nodeId + " is not acquirable");
+    }
+
     final var metadata = Metadata.fromLease(lease);
     final PutObjectRequest putRequest =
         createPutObjectRequest(nodeId, Optional.of(metadata), Optional.of(previousETag)).build();
@@ -233,13 +225,106 @@ public class S3NodeIdRepository implements NodeIdRepository {
 
   @Override
   public int getAvailableLeaseCount() {
+    return (int)
+        getNodeIdLeaseKeys().stream()
+            .filter(
+                key -> {
+                  final var nodeId = parseNodeIdFromKey(key);
+                  final var storedLease = getLeaseIncludingUnusable(nodeId);
+                  return storedLease.isAcquirable();
+                })
+            .count();
+  }
+
+  private static int parseNodeIdFromKey(final String key) {
+    return Integer.parseInt(key.replace(".json", ""));
+  }
+
+  private void markLeaseAsUnusable(final int nodeId) {
+    try {
+      final var currentLease = getLeaseIncludingUnusable(nodeId);
+      if (!currentLease.isAcquirable()) {
+        LOG.debug("Lease for nodeId {} is already unusable, skipping", nodeId);
+        return;
+      }
+      final var metadata = new Metadata(Optional.empty(), currentLease.version()).forUnusable();
+      // Use null etag as we do not want to fail due to concurrent updates.
+      final PutObjectRequest putRequest =
+          createPutObjectRequest(nodeId, Optional.of(metadata), Optional.empty()).build();
+      LOG.debug("Marking lease for nodeId {} as unusable", nodeId);
+      client.putObject(putRequest, RequestBody.empty());
+      LOG.debug("Lease for nodeId {} marked as unusable", nodeId);
+    } catch (final S3Exception e) {
+      if (e.statusCode() == 404) {
+        LOG.debug("Lease for nodeId {} does not exist, likely already deleted.", nodeId);
+      } else {
+        LOG.warn("Failed to mark lease for node {} as unusable", nodeId, e);
+        throw e;
+      }
+    }
+  }
+
+  private void makeLeaseAcquirable(final int nodeId) {
+    try {
+      final var currentLease = getLeaseIncludingUnusable(nodeId);
+      if (currentLease.isAcquirable()) {
+        LOG.debug("Lease for nodeId {} is already acquirable, skipping", nodeId);
+        return;
+      }
+      final var metadata = new Metadata(Optional.empty(), currentLease.version()).forAcquirable();
+      final PutObjectRequest putRequest =
+          createPutObjectRequest(nodeId, Optional.of(metadata), Optional.of(currentLease.eTag()))
+              .build();
+      LOG.debug("Making lease for nodeId {} acquirable", nodeId);
+      client.putObject(putRequest, RequestBody.empty());
+      LOG.debug("Lease for nodeId {} is now acquirable", nodeId);
+    } catch (final S3Exception e) {
+      LOG.warn("Failed to make lease for node {} acquirable", nodeId, e);
+      throw e;
+    }
+  }
+
+  /**
+   * Get a lease regardless of whether it is acquirable. This is used internally for scale
+   * operations.
+   */
+  private StoredLease getLeaseIncludingUnusable(final int nodeId) {
+    final var request =
+        GetObjectRequest.builder().bucket(config.bucketName).key(objectKey(nodeId)).build();
+    final var response = client.getObject(request);
+    try {
+      final var bytes = response.readAllBytes();
+      final var lease = bytes.length > 0 ? Lease.fromJsonBytes(OBJECT_MAPPER, bytes) : null;
+      final var metadata = Metadata.fromMap(response.response().metadata());
+      final var eTag = response.response().eTag();
+      final var storedLease = StoredLease.of(nodeId, lease, metadata, eTag);
+      LOG.trace("Lease for object {} is {}", nodeId, storedLease);
+      return storedLease;
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
+   * Get the total number of leases in the repository, including both acquirable and unusable
+   * leases.
+   */
+  private int getTotalLeaseCount() {
+    return getNodeIdLeaseKeys().size();
+  }
+
+  /** Get all node ID lease object keys from the bucket. */
+  private java.util.List<String> getNodeIdLeaseKeys() {
     final var request = ListObjectsV2Request.builder().bucket(config.bucketName).build();
     try {
       final var response = client.listObjectsV2(request);
       if (response.hasContents() && !response.contents().isEmpty()) {
-        return (int) response.contents().stream().filter(o -> isNodeIdLease(o.key())).count();
+        return response.contents().stream()
+            .map(S3Object::key)
+            .filter(this::isNodeIdLease)
+            .collect(java.util.stream.Collectors.toList());
       }
-      return 0;
+      return Collections.emptyList();
     } catch (final S3Exception e) {
       if (e.statusCode() == 404) {
         LOG.warn("Bucket {} does not exist", config.bucketName);

@@ -266,11 +266,14 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
       if (storedLease != null) {
         final var gracefullyShutdown =
             switch (storedLease) {
-              case StoredLease.Uninitialized u -> true;
-              case StoredLease.Initialized initialized ->
+              case final StoredLease.Uninitialized u -> true;
+              case final StoredLease.Initialized initialized ->
                   initialized
                       .lease()
                       .isExpiredBeyondThreshold(clock.instant(), expiredLeaseThreshold);
+              // the following scenario won't happen because the currentLease will be null. We are
+              // adding it for completeness, but it won't have any effect on the outcome.
+              case final StoredLease.Unusable u -> true;
             };
         previousNodeGracefullyShutdown.complete(gracefullyShutdown);
       }

@@ -13,10 +13,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-public record Metadata(Optional<String> task, Version version) {
+public record Metadata(Optional<String> task, Version version, boolean acquirable) {
   // KEYS MUST BE LOWERCASE
   private static final String TASK_ID_KEY = "taskid";
   private static final String VERSION_KEY = "version";
+  private static final String ACQUIRABLE_KEY = "acquirable";
 
   public Metadata {
     Objects.requireNonNull(task, "task cannot be null");
@@ -26,16 +27,31 @@ public record Metadata(Optional<String> task, Version version) {
     Objects.requireNonNull(version, "version cannot be null");
   }
 
+  public Metadata(final Optional<String> task, final Version version) {
+    this(task, version, true);
+  }
+
   public Metadata forRelease() {
-    return new Metadata(Optional.empty(), version);
+    return new Metadata(Optional.empty(), version, true);
+  }
+
+  public Metadata forUnusable() {
+    return new Metadata(Optional.empty(), version, false);
+  }
+
+  public Metadata forAcquirable() {
+    return new Metadata(Optional.empty(), version, true);
   }
 
   public static Metadata fromLease(final Lease lease) {
-    return new Metadata(Optional.of(lease.taskId()), lease.nodeInstance().version());
+    return new Metadata(Optional.of(lease.taskId()), lease.nodeInstance().version(), true);
   }
 
   public Map<String, String> asMap() {
-    return Map.of(TASK_ID_KEY, task.orElse(""), VERSION_KEY, Long.toString(version.version()));
+    return Map.of(
+        TASK_ID_KEY, task.orElse(""),
+        VERSION_KEY, Long.toString(version.version()),
+        ACQUIRABLE_KEY, Boolean.toString(acquirable));
   }
 
   public static Metadata fromMap(final Map<String, String> map) {
@@ -47,7 +63,10 @@ public record Metadata(Optional<String> task, Version version) {
       final Optional<String> taskId =
           taskIdOpt != null && !taskIdOpt.isEmpty() ? Optional.of(taskIdOpt) : Optional.empty();
       final var version = new Version(Long.parseLong(map.get(VERSION_KEY)));
-      return new Metadata(taskId, version);
+      final var acquirableStr = map.get(ACQUIRABLE_KEY);
+      // Default to true for backwards compatibility with existing leases
+      final var acquirable = acquirableStr == null || Boolean.parseBoolean(acquirableStr);
+      return new Metadata(taskId, version, acquirable);
     } catch (final Exception e) {
       throw new IllegalArgumentException("Failed to deserialize metadata, map is " + map, e);
     }

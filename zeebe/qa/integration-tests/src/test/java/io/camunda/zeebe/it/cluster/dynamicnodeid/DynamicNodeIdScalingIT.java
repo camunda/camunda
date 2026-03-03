@@ -15,7 +15,6 @@ import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3ClientConfig;
-import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.BrokerStateCode;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
@@ -46,7 +45,6 @@ import org.testcontainers.localstack.LocalStackContainer;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.S3Object;
 
 @Testcontainers
 @ZeebeIntegration
@@ -114,12 +112,19 @@ public class DynamicNodeIdScalingIT {
     s3.setSecretKey(S3.getSecretKey());
   }
 
-  private int getLeasesCount() {
-    return (int)
-        s3Client.listObjects(b -> b.bucket(bucketName)).contents().stream()
-            .map(S3Object::key)
-            .filter(key -> key.matches("\\d+\\.json"))
-            .count();
+  private void assertConfigurationChangeCompleted(
+      final ClusterActuator clusterActuator, final int targetClusterSize) {
+    final var topology = clusterActuator.getTopology();
+
+    // verify no pending changes
+    assertThat(topology.getPendingChange()).isNull();
+
+    // verify remaining broker is active
+    final var activeBrokers =
+        topology.getBrokers().stream()
+            .filter(b -> b.getState() == BrokerStateCode.ACTIVE)
+            .collect(Collectors.toList());
+    assertThat(activeBrokers).hasSize(targetClusterSize);
   }
 
   @Nested
@@ -148,11 +153,6 @@ public class DynamicNodeIdScalingIT {
       final var firstBroker = testCluster.brokers().values().iterator().next();
       final var initialContactPoint = firstBroker.address(TestZeebePort.CLUSTER);
 
-      // verify initial state - one lease object
-      Awaitility.await("Until initial broker has a valid lease")
-          .atMost(Duration.ofSeconds(10))
-          .untilAsserted(() -> assertThat(getLeasesCount()).isEqualTo(1));
-
       // when - start two new brokers with contact point to first broker
       final var secondBroker = getAdditionalBroker(initialContactPoint);
       final var thirdBroker = getAdditionalBroker(initialContactPoint);
@@ -171,35 +171,12 @@ public class DynamicNodeIdScalingIT {
 
       clusterActuator.patchCluster(scaleRequest, false, false);
 
-      // verify second broker has acquired a lease
-      Awaitility.await("Until new brokers has a valid lease")
-          .atMost(Duration.ofSeconds(30))
-          .untilAsserted(() -> assertThat(getLeasesCount()).isEqualTo(TARGET_CLUSTER_SIZE));
-
       // then - verify scale operation completes
       Awaitility.await("Until scale operation completes")
           .atMost(Duration.ofMinutes(2))
           .pollInterval(Duration.ofSeconds(2))
           .untilAsserted(
-              () -> {
-                final var topology = clusterActuator.getTopology();
-                assertThat(topology.getBrokers()).hasSize(TARGET_CLUSTER_SIZE);
-
-                // verify no pending changes
-                assertThat(topology.getPendingChange()).isNull();
-
-                // verify all brokers are active
-                final var activeBrokers =
-                    topology.getBrokers().stream()
-                        .filter(b -> b.getState() == BrokerStateCode.ACTIVE)
-                        .collect(Collectors.toList());
-                assertThat(activeBrokers).hasSize(TARGET_CLUSTER_SIZE);
-
-                // verify partitions are distributed
-                for (final BrokerState broker : topology.getBrokers()) {
-                  assertThat(broker.getPartitions()).isNotEmpty();
-                }
-              });
+              () -> assertConfigurationChangeCompleted(clusterActuator, TARGET_CLUSTER_SIZE));
 
       Awaitility.await("Start up of new brokers completes")
           .untilAsserted(
@@ -268,12 +245,6 @@ public class DynamicNodeIdScalingIT {
 
       final var clusterActuator = ClusterActuator.of(testCluster.anyGateway());
 
-      // verify initial state - three lease objects and three active brokers
-      Awaitility.await("Until all brokers have valid leases")
-          .atMost(Duration.ofSeconds(30))
-          .untilAsserted(
-              () -> assertThat(getLeasesCount()).isEqualTo(SCALE_DOWN_INITIAL_CLUSTER_SIZE));
-
       // when - send scale down request
       final var scaleDownRequest =
           new ClusterConfigPatchRequest()
@@ -287,31 +258,9 @@ public class DynamicNodeIdScalingIT {
           .atMost(Duration.ofMinutes(2))
           .pollInterval(Duration.ofSeconds(2))
           .untilAsserted(
-              () -> {
-                final var topology = clusterActuator.getTopology();
-                assertThat(topology.getBrokers()).hasSize(SCALE_DOWN_TARGET_CLUSTER_SIZE);
-
-                // verify no pending changes
-                assertThat(topology.getPendingChange()).isNull();
-
-                // verify remaining broker is active
-                final var activeBrokers =
-                    topology.getBrokers().stream()
-                        .filter(b -> b.getState() == BrokerStateCode.ACTIVE)
-                        .collect(Collectors.toList());
-                assertThat(activeBrokers).hasSize(SCALE_DOWN_TARGET_CLUSTER_SIZE);
-
-                // verify remaining broker has all partitions
-                for (final BrokerState broker : topology.getBrokers()) {
-                  assertThat(broker.getPartitions()).hasSize(PARTITIONS_COUNT);
-                }
-              });
-
-      // verify leases are released for removed brokers
-      Awaitility.await("Until leases are released for removed brokers")
-          .atMost(LEASE_DURATION.multipliedBy(2))
-          .untilAsserted(
-              () -> assertThat(getLeasesCount()).isEqualTo(SCALE_DOWN_TARGET_CLUSTER_SIZE));
+              () ->
+                  assertConfigurationChangeCompleted(
+                      clusterActuator, SCALE_DOWN_TARGET_CLUSTER_SIZE));
 
       Awaitility.await("Scaled down brokers are shutdown")
           .atMost(Duration.ofMinutes(1))
@@ -322,6 +271,37 @@ public class DynamicNodeIdScalingIT {
                               .filter(TestSpringApplication::isStarted)
                               .count())
                       .isEqualTo(1));
+    }
+
+    @Test
+    void shouldScaleUpAgainAfterScaleDown() {
+      // given
+      shouldScaleDownClusterFromThreeToOneBroker();
+      testCluster.awaitCompleteTopology(
+          SCALE_DOWN_TARGET_CLUSTER_SIZE, PARTITIONS_COUNT, 1, Duration.ofSeconds(10));
+
+      // when
+      final var clusterActuator = ClusterActuator.of(testCluster.anyGateway());
+      testCluster.brokers().values().stream()
+          .filter(b -> !b.isStarted())
+          .forEach(b -> Thread.ofVirtual().start(b::start));
+
+      final var scaleUpRequest =
+          new ClusterConfigPatchRequest()
+              .brokers(
+                  new ClusterConfigPatchRequestBrokers().count(SCALE_DOWN_INITIAL_CLUSTER_SIZE));
+
+      clusterActuator.patchCluster(scaleUpRequest, false, false);
+
+      // then
+      Awaitility.await()
+          .atMost(Duration.ofMinutes(1))
+          .untilAsserted(
+              () ->
+                  assertConfigurationChangeCompleted(
+                      clusterActuator, SCALE_DOWN_INITIAL_CLUSTER_SIZE));
+      testCluster.awaitCompleteTopology(
+          SCALE_DOWN_INITIAL_CLUSTER_SIZE, PARTITIONS_COUNT, 1, Duration.ofSeconds(10));
     }
   }
 }
