@@ -154,6 +154,7 @@
                     <!-- Exclude classes that we override with Spring Boot 4 versions -->
                     <exclude>io/camunda/zeebe/spring/client/actuator/ZeebeClientHealthIndicator.class</exclude>
                     <exclude>io/camunda/zeebe/spring/client/configuration/ZeebeActuatorConfiguration.class</exclude>
+                    <exclude>io/camunda/zeebe/spring/client/configuration/ZeebeClientProdAutoConfiguration.class</exclude>
                     <exclude>io/camunda/zeebe/spring/client/configuration/CamundaAutoConfiguration.class</exclude>
                     <!-- Exclude META-INF services that we override -->
                     <exclude>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</exclude>
