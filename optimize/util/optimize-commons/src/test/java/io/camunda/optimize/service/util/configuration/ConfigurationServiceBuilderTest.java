@@ -18,6 +18,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.core.env.AbstractEnvironment;
 import org.springframework.core.env.PropertiesPropertySource;
+import org.springframework.util.StringUtils;
 
 class ConfigurationServiceBuilderTest {
 
@@ -35,6 +36,33 @@ class ConfigurationServiceBuilderTest {
       final FakeEnvironment environment = new FakeEnvironment();
       environment.setProperty("spring.config.import", importValue);
       environment.setProperty("spring.config.location", locationValue);
+
+      // when
+      final var configLocations = ConfigEnvironment.resolveConfigLocations(environment);
+
+      // then
+      Assertions.assertThat(configLocations).containsExactlyElementsOf(expectedLocations);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("configLocationCases")
+    void shouldResolveConfigLocationsFromEnvironmentAsList(
+        final String caseName,
+        final String importValues,
+        final String locationValues,
+        final List<String> expectedLocations) {
+      // given
+      final FakeEnvironment environment = new FakeEnvironment();
+
+      // with spring.config values loaded as lists
+      final var strings = StringUtils.commaDelimitedListToStringArray(importValues);
+      for (var i = 0; i < strings.length; i++) {
+        environment.setProperty("spring.config.import[" + i + "]", strings[i]);
+      }
+      final var locationStrings = StringUtils.commaDelimitedListToStringArray(locationValues);
+      for (var i = 0; i < locationStrings.length; i++) {
+        environment.setProperty("spring.config.location[" + i + "]", locationStrings[i]);
+      }
 
       // when
       final var configLocations = ConfigEnvironment.resolveConfigLocations(environment);
