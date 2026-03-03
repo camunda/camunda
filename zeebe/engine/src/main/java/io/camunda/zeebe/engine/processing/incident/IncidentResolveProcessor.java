@@ -263,7 +263,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     return switch (instanceState) {
       case ELEMENT_ACTIVATING -> Either.right(ProcessInstanceIntent.ACTIVATE_ELEMENT);
       case ELEMENT_COMPLETING -> Either.right(ProcessInstanceIntent.COMPLETE_ELEMENT);
-      case ELEMENT_TERMINATING -> Either.right(ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER);
+      case ELEMENT_TERMINATING -> Either.right(ProcessInstanceIntent.TERMINATE_ELEMENT);
       default -> Either.left(String.format(ELEMENT_NOT_IN_SUPPORTED_STATE_MSG, instanceState));
     };
   }

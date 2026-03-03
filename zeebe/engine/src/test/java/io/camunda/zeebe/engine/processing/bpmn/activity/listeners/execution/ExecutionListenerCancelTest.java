@@ -861,56 +861,6 @@ public class ExecutionListenerCancelTest {
   }
 
   @Test
-  public void shouldForceCancelWhenCancelElJobIsActive() {
-    // given: process with cancel EL
-    final long processInstanceKey =
-        createProcessInstance(
-            ENGINE,
-            Bpmn.createExecutableProcess(PROCESS_ID)
-                .zeebeCancelExecutionListener(CANCEL_EL_TYPE)
-                .startEvent()
-                .serviceTask("task", t -> t.zeebeJobType(SERVICE_TASK_TYPE))
-                .endEvent()
-                .done());
-
-    // wait for the service task
-    jobRecords(JobIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withType(SERVICE_TASK_TYPE)
-        .await();
-
-    // when: cancel the process instance (triggers cancel EL)
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
-
-    // wait for the cancel EL job to be created
-    jobRecords(JobIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withType(CANCEL_EL_TYPE)
-        .await();
-
-    // when: force-cancel by sending a second cancel while cancel EL is active
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
-
-    // then: cancel EL job should be canceled (force-cancel escape hatch)
-    assertThat(
-            jobRecords(JobIntent.CANCELED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withType(CANCEL_EL_TYPE)
-                .getFirst())
-        .isNotNull();
-
-    // and: process instance should be terminated
-    assertThat(
-            RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limitToProcessInstanceTerminated())
-        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
-        .containsSubsequence(
-            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
-  }
-
-  @Test
   public void shouldRejectDoubleCancelWhileTerminatingWithActiveChildrenAndNoCancelEl() {
     // given: child process with cancel-EL (keeps it in TERMINATING state)
     // and parent process with cancel-EL and a call activity

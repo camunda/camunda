@@ -235,6 +235,7 @@ public class Engine implements RecordProcessor {
     // Commands allowed to be processed on banned instances
     return intent == ProcessInstanceIntent.CANCEL
         || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
+        || intent == ProcessInstanceIntent.CONTINUE_TERMINATING_ELEMENT
         || intent == ProcessInstanceBatchIntent.TERMINATE;
   }
 

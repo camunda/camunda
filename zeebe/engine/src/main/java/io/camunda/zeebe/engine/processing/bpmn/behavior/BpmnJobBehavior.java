@@ -551,26 +551,6 @@ public final class BpmnJobBehavior {
     }
   }
 
-  /**
-   * Checks whether the element instance has an active cancel execution listener job. Used to detect
-   * force-cancel scenarios where a second cancel command is issued while cancel listeners are in
-   * progress.
-   */
-  public boolean hasActiveCancelListenerJob(final BpmnElementContext context) {
-    final var elementInstance = stateBehavior.getElementInstance(context);
-    final long jobKey = elementInstance.getJobKey();
-    if (jobKey <= 0) {
-      return false;
-    }
-    final State state = jobState.getState(jobKey);
-    if (!CANCELABLE_STATES.contains(state)) {
-      return false;
-    }
-    final JobRecord job = jobState.getJob(jobKey);
-    return job.getJobKind() == JobKind.EXECUTION_LISTENER
-        && job.getJobListenerEventType() == JobListenerEventType.CANCEL;
-  }
-
   private void writeJobCanceled(final long jobKey) {
     final State state = jobState.getState(jobKey);
 
