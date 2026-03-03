@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.49
+
+### 🩹 Fixes
+
+- fix permission enum mistake ([#47543](https://github.com/camunda/camunda/issues/47543))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
 ## v0.0.48
 
 ### 🩹 Fixes
