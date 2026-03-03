@@ -210,7 +210,7 @@ public final class FlowControl implements AppendListener {
     final var inFlightEntry = inFlight.get(position);
     if (inFlightEntry != null) {
       inFlightEntry.onProcessed();
-      inFlight.remove(position, inFlightEntry);
+      inFlight.remove(inFlightEntry);
     }
     lastProcessedPosition = position;
   }
