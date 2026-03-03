@@ -80,7 +80,6 @@ jobs:
         with:
           harbor: true
           maven-cache-key-modifier: optimize
-          maven-version: 3.8.6
           time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}

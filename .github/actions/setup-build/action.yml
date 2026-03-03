@@ -61,11 +61,6 @@ inputs:
       It will be merged with Camunda Nexus settings (if enabled), with precedence."
     required: false
     default: '[]'
-  maven-version:
-    description: |
-      Maven version to be used by the wrapper.
-      If not set, default version in .mvn/wrapper/maven-wrapper.properties will be used.
-    required: false
   time-zone:
     description: |
       Time zone to set for the build environment. Use TZ identifiers, e.g., 'Europe/Berlin'.
@@ -165,12 +160,6 @@ runs:
   - name: Register Maven problem matcher
     shell: bash
     run: echo "::add-matcher::.github/maven-matcher.json"
-  - name: Setup Maven
-    if: inputs.maven-version != ''
-    uses: ./.github/actions/setup-maven-dist
-    with:
-      maven-version: ${{ inputs.maven-version }}
-      set-mvnw: true
   - name: Configure Maven cache
     uses: ./.github/actions/setup-maven-cache
     with:
