@@ -15,6 +15,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Nested;
@@ -40,9 +41,24 @@ final class RingBufferTest {
   @Test
   void removeNullsTheSlot() {
     final var buffer = new RingBuffer(4);
-    buffer.put(3, newEntry());
-    buffer.remove(3);
+    final var entry = newEntry();
+    buffer.put(3, entry);
+    buffer.remove(3, entry);
     assertThat(buffer.get(3)).isNull();
+  }
+
+  @Test
+  void removeDoesNotRemoveOverwrittenEntry() {
+    final var buffer = new RingBuffer(4);
+    final var position = 3;
+    final var positionWrapped = position + buffer.capacity();
+    final var entry = newEntry();
+    buffer.put(position, entry);
+    final var secondEntry = newEntry();
+    buffer.put(positionWrapped, secondEntry);
+    buffer.remove(position, entry);
+    assertThat(buffer.get(position)).isNull();
+    assertThat(buffer.get(positionWrapped)).isSameAs(secondEntry);
   }
 
   @Test
@@ -165,10 +181,12 @@ final class RingBufferTest {
               () -> {
                 awaitLatch(startLatch);
                 for (long pos = 1; pos <= ITERATIONS; pos++) {
-                  while (buffer.get(pos) == null) {
+                  InFlightEntry entry = null;
+                  while (entry == null) {
+                    entry = buffer.get(pos);
                     LockSupport.parkNanos(1);
                   }
-                  buffer.remove(pos);
+                  buffer.remove(pos, entry);
                   try {
                     assertThat(buffer.get(pos)).isNull();
                   } catch (final AssertionError e) {
@@ -250,7 +268,7 @@ final class RingBufferTest {
       final var buffer = new RingBuffer(smallCapacity);
       final var failures = new ConcurrentLinkedQueue<Throwable>();
       final var startLatch = new CountDownLatch(1);
-      final var writerPosition = new java.util.concurrent.atomic.AtomicLong(0);
+      final var writerPosition = new AtomicLong(0);
 
       final var writer =
           new Thread(
@@ -262,8 +280,8 @@ final class RingBufferTest {
                 }
               });
 
-      final var hits = new java.util.concurrent.atomic.AtomicLong(0);
-      final var misses = new java.util.concurrent.atomic.AtomicLong(0);
+      final var hits = new AtomicLong(0);
+      final var misses = new AtomicLong(0);
 
       final var reader =
           new Thread(
