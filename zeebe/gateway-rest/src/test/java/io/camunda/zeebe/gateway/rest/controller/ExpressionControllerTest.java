@@ -99,7 +99,7 @@ public class ExpressionControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldEvaluateExpressionWithContext() {
+  void shouldEvaluateExpressionWithVariables() {
     // given
     final var expressionRecord = mock(ExpressionRecord.class);
     when(expressionRecord.getExpression()).thenReturn("=x + y");
@@ -114,7 +114,7 @@ public class ExpressionControllerTest extends RestControllerTest {
         {
             "expression": "=x + y",
             "tenantId": "tenant1",
-            "context": {
+            "variables": {
                 "x": 4,
                 "y": 6
             }
@@ -144,7 +144,7 @@ public class ExpressionControllerTest extends RestControllerTest {
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.expression()).isEqualTo("=x + y");
     assertThat(capturedRequest.tenantId()).isEqualTo("tenant1");
-    assertThat(capturedRequest.context()).isEqualTo(Map.of("x", 4, "y", 6));
+    assertThat(capturedRequest.variables()).isEqualTo(Map.of("x", 4, "y", 6));
   }
 
   @Test

@@ -16,6 +16,8 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.EvaluateExpressionResponse;
+import java.io.InputStream;
+import java.util.Map;
 
 /** Command to evaluate an expression. */
 public interface EvaluateExpressionCommandStep1 {
@@ -30,5 +32,58 @@ public interface EvaluateExpressionCommandStep1 {
 
   interface EvaluateExpressionCommandStep2
       extends CommandWithTenantStep<EvaluateExpressionCommandStep2>,
-          FinalCommandStep<EvaluateExpressionResponse> {}
+          FinalCommandStep<EvaluateExpressionResponse>,
+          CommandWithVariables<EvaluateExpressionCommandStep2> {
+
+    /**
+     * Set the variables for the expression evaluation.
+     *
+     * @param variables the variables JSON document as String
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @Override
+    EvaluateExpressionCommandStep2 variables(String variables);
+
+    /**
+     * Set the variables for the expression evaluation.
+     *
+     * @param variables the variables document as object to be serialized to JSON
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @Override
+    EvaluateExpressionCommandStep2 variables(Object variables);
+
+    /**
+     * Set the variables for the expression evaluation.
+     *
+     * @param variables the variables JSON document as stream
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @Override
+    EvaluateExpressionCommandStep2 variables(InputStream variables);
+
+    /**
+     * Set the variables for the expression evaluation.
+     *
+     * @param variables the variables document as map
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @Override
+    EvaluateExpressionCommandStep2 variables(Map<String, Object> variables);
+
+    /**
+     * Set a single variable for the expression evaluation.
+     *
+     * @param key the key of the variable as string
+     * @param value the value of the variable as object
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    @Override
+    EvaluateExpressionCommandStep2 variable(String key, Object value);
+  }
 }
