@@ -54,7 +54,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.AuthenticationException;
@@ -108,13 +108,12 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
   }
 
   @Bean
-  public AuthenticationCookieFilter authenticationCookieFilter(final HttpSecurity http)
-      throws Exception {
+  public AuthenticationCookieFilter authenticationCookieFilter() {
+    // Use ProviderManager directly to avoid triggering AlreadyBuiltException — manually calling
+    // build() on the shared AuthenticationManagerBuilder conflicts with Spring Security's own
+    // internal build lifecycle.
     return new AuthenticationCookieFilter(
-        sessionService,
-        http.getSharedObject(AuthenticationManagerBuilder.class)
-            .authenticationProvider(preAuthenticatedAuthenticationProvider)
-            .build());
+        sessionService, new ProviderManager(List.of(preAuthenticatedAuthenticationProvider)));
   }
 
   @Bean
@@ -211,7 +210,7 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
                               redirectionEndpointConfig.baseUri(OAUTH_REDIRECT_ENDPOINT))
                       .successHandler(getAuthenticationSuccessHandler()))
           .addFilterBefore(
-              authenticationCookieFilter(http), OAuth2AuthorizationRequestRedirectFilter.class)
+              authenticationCookieFilter(), OAuth2AuthorizationRequestRedirectFilter.class)
           .exceptionHandling(
               exceptionHandling ->
                   exceptionHandling
