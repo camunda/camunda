@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library.ts';
-import {EmbeddedFormWarningNotification} from './index.tsx';
+import {render, screen} from 'modules/testing-library';
+import {EmbeddedFormWarningNotification} from './index';
 
 describe('EmbeddedFormWarningNotification', () => {
   it('should render warning notification with correct content', () => {
