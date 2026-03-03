@@ -22,9 +22,10 @@ import java.util.Map;
 
 public class DocumentMetadataImpl implements DocumentMetadata {
 
-  private final io.camunda.client.protocol.rest.DocumentMetadata response;
+  private final io.camunda.client.protocol.rest.DocumentMetadataResponse response;
 
-  public DocumentMetadataImpl(final io.camunda.client.protocol.rest.DocumentMetadata response) {
+  public DocumentMetadataImpl(
+      final io.camunda.client.protocol.rest.DocumentMetadataResponse response) {
     this.response = response;
   }
 

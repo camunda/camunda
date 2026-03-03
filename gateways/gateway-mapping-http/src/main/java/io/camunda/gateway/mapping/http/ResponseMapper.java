@@ -36,7 +36,7 @@ import io.camunda.gateway.protocol.model.DeploymentResourceResult;
 import io.camunda.gateway.protocol.model.DeploymentResult;
 import io.camunda.gateway.protocol.model.DocumentCreationBatchResponse;
 import io.camunda.gateway.protocol.model.DocumentCreationFailureDetail;
-import io.camunda.gateway.protocol.model.DocumentMetadata;
+import io.camunda.gateway.protocol.model.DocumentMetadataResponse;
 import io.camunda.gateway.protocol.model.DocumentReference;
 import io.camunda.gateway.protocol.model.DocumentReference.CamundaDocumentTypeEnum;
 import io.camunda.gateway.protocol.model.EvaluateConditionalResult;
@@ -313,7 +313,7 @@ public final class ResponseMapper {
   public static DocumentReference toDocumentReference(final DocumentReferenceResponse response) {
     final var internalMetadata = response.metadata();
     final var externalMetadata =
-        new DocumentMetadata()
+        new DocumentMetadataResponse()
             .expiresAt(
                 Optional.ofNullable(internalMetadata.expiresAt())
                     .map(Object::toString)
