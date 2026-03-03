@@ -186,6 +186,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNoBusinessIdConflictForTargetProcess(
         processInstance,
         targetProcessDefinitionKey,
+        BufferUtil.bufferAsString(targetProcessDefinition.getBpmnProcessId()),
         elementInstanceState,
         businessIdUniquenessEnabled,
         bannedInstanceState::isProcessInstanceBanned);
