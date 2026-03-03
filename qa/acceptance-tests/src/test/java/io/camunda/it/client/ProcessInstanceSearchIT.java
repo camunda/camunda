@@ -13,6 +13,7 @@ import static io.camunda.client.api.search.enums.ProcessInstanceState.TERMINATED
 import static io.camunda.it.util.TestHelper.assertSorted;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.startProcessInstanceWithBusinessId;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitUntilJobWorkerHasFailedJob;
@@ -92,8 +93,12 @@ public class ProcessInstanceSearchIT {
     processInstanceWithIncidentKey = processInstanceWithIncident.getProcessInstanceKey();
     PROCESS_INSTANCES.add(processInstanceWithIncident);
     PROCESS_INSTANCES.add(startProcessInstance(camundaClient, "parent_process_v1"));
+    PROCESS_INSTANCES.add(
+        startProcessInstanceWithBusinessId(camundaClient, "manual_process", "order-001"));
+    PROCESS_INSTANCES.add(
+        startProcessInstanceWithBusinessId(camundaClient, "manual_process", "order-002"));
 
-    waitForProcessInstancesToStart(camundaClient, 8);
+    waitForProcessInstancesToStart(camundaClient, 10);
     waitUntilProcessInstanceHasIncidents(camundaClient, 2);
   }
 
@@ -695,7 +700,7 @@ public class ProcessInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items().size()).isEqualTo(5);
     assertThat(result.items()).extracting("state").doesNotContain(ProcessInstanceState.ACTIVE);
   }
 
@@ -714,11 +719,15 @@ public class ProcessInstanceSearchIT {
                       .join();
 
               // then
-              assertThat(result.items().size()).isEqualTo(3);
+              assertThat(result.items().size()).isEqualTo(5);
               assertThat(
                       result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
                   .containsExactlyInAnyOrder(
-                      "parent_process_v1", "child_process_v1", "manual_process");
+                      "parent_process_v1",
+                      "child_process_v1",
+                      "manual_process",
+                      "manual_process",
+                      "manual_process");
             });
   }
 
@@ -782,7 +791,7 @@ public class ProcessInstanceSearchIT {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(8);
+    assertThat(result.items().size()).isEqualTo(expectedBpmnProcessIds.size());
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyElementsOf(expectedBpmnProcessIds);
   }
@@ -1049,7 +1058,7 @@ public class ProcessInstanceSearchIT {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(6);
+    assertThat(resultAfter.items().size()).isEqualTo(8);
     final var keyAfter = resultAfter.items().getFirst().getProcessInstanceKey();
     // apply searchBefore
     final var resultBefore =
@@ -1457,5 +1466,132 @@ public class ProcessInstanceSearchIT {
             .join();
 
     assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByBusinessIdEqual() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.businessId("order-001"))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getBusinessId()).isEqualTo("order-001");
+    assertThat(result.items().getFirst().getProcessDefinitionId()).isEqualTo("manual_process");
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByBusinessIdLike() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.businessId(b -> b.like("order-*")))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(2);
+    assertThat(result.items())
+        .extracting("businessId")
+        .containsExactlyInAnyOrder("order-001", "order-002");
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByBusinessIdIn() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.businessId(b -> b.in("order-001", "order-002", "non-existent")))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(2);
+    assertThat(result.items())
+        .extracting("businessId")
+        .containsExactlyInAnyOrder("order-001", "order-002");
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByBusinessIdNeq() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.businessId(b -> b.neq("order-001").exists(true)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getBusinessId()).isEqualTo("order-002");
+  }
+
+  @Test
+  void shouldReturnNoResultsForNonExistentBusinessId() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.businessId("does-not-exist"))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldSortProcessInstancesByBusinessId() {
+    // when
+    final var resultAsc =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.businessId(b -> b.like("order-*")))
+            .sort(s -> s.businessId().asc())
+            .send()
+            .join();
+    final var resultDesc =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.businessId(b -> b.like("order-*")))
+            .sort(s -> s.businessId().desc())
+            .send()
+            .join();
+
+    // then
+    assertThat(resultAsc.items()).hasSize(2);
+    assertThat(resultDesc.items()).hasSize(2);
+    assertThat(resultAsc.items().getFirst().getBusinessId()).isEqualTo("order-001");
+    assertThat(resultAsc.items().getLast().getBusinessId()).isEqualTo("order-002");
+    assertThat(resultDesc.items().getFirst().getBusinessId()).isEqualTo("order-002");
+    assertThat(resultDesc.items().getLast().getBusinessId()).isEqualTo("order-001");
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByBusinessIdWithOrConditions() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.orFilters(
+                        List.of(
+                            f1 -> f1.businessId("order-001"), f2 -> f2.businessId("order-002"))))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(2);
+    assertThat(result.items())
+        .extracting("businessId")
+        .containsExactlyInAnyOrder("order-001", "order-002");
   }
 }

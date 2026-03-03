@@ -282,6 +282,16 @@ public final class TestHelper {
         .execute();
   }
 
+  public static ProcessInstanceEvent startProcessInstanceWithBusinessId(
+      final CamundaClient camundaClient, final String bpmnProcessId, final String businessId) {
+    return camundaClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .latestVersion()
+        .businessId(businessId)
+        .execute();
+  }
+
   public static ProcessInstanceEvent startProcessInstance(
       final CamundaClient camundaClient, final String bpmnProcessId, final String payload) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
