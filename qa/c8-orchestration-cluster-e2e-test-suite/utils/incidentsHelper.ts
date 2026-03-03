@@ -66,23 +66,23 @@ export async function waitForProcessInstances(
   await expect
     .poll(
       async () => {
-        const response = await request.post('/api/process-instances', {
-          ...requestHeaders,
-          data: {
-            query: {
-              active: true,
-              running: true,
-              incidents: true,
-              completed: true,
-              finished: true,
-              canceled: true,
-              ids: instanceIds,
+        let total = 0;
+
+        for (const id of instanceIds) {
+          const response = await request.post('/v2/process-instances/search', {
+            ...requestHeaders,
+            data: {
+              filter: {
+                processInstanceKey: id, // single ID per request
+              },
             },
-            pageSize: 50,
-          },
-        });
-        const instances = await response.json();
-        return instances.totalCount;
+          });
+
+          const result = await response.json();
+          total += result.page?.totalItems ?? 0;
+        }
+
+        return total;
       },
       {timeout},
     )
