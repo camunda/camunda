@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 final class InProgressBackupImpl implements InProgressBackup {
 
   private static final Logger LOG = LoggerFactory.getLogger(InProgressBackupImpl.class);
+  private static final int MAX_RESERVATION_ATTEMPTS = 3;
 
   private final PersistedSnapshotStore snapshotStore;
   private final BackupIdentifier backupId;
@@ -93,8 +94,7 @@ final class InProgressBackupImpl implements InProgressBackup {
     return backupId;
   }
 
-  @Override
-  public ActorFuture<Set<PersistedSnapshot>> findValidSnapshot() {
+  private ActorFuture<Set<PersistedSnapshot>> findValidSnapshot() {
     final ActorFuture<Set<PersistedSnapshot>> result = concurrencyControl.createFuture();
     snapshotStore
         .getAvailableSnapshots()
@@ -139,20 +139,33 @@ final class InProgressBackupImpl implements InProgressBackup {
   @Override
   public ActorFuture<Void> reserveSnapshot() {
     final ActorFuture<Void> future = concurrencyControl.createFuture();
-    if (hasSnapshot) {
-      // Try reserve snapshot in the order - latest snapshot first
-      final var snapshotIterator =
-          availableValidSnapshots.stream()
-              .sorted(Comparator.comparingLong(PersistedSnapshot::getCompactionBound).reversed())
-              .iterator();
-
-      tryReserveAnySnapshot(snapshotIterator, future);
-    } else {
-      // No snapshot to reserve
-      future.complete(null);
-    }
-
+    findAndReserveSnapshot(future, MAX_RESERVATION_ATTEMPTS);
     return future;
+  }
+
+  private void findAndReserveSnapshot(final ActorFuture<Void> future, final int remainingAttempts) {
+    findValidSnapshot()
+        .onComplete(
+            (snapshots, findError) -> {
+              if (findError != null) {
+                future.completeExceptionally(findError);
+              } else if (!hasSnapshot) {
+                // No snapshot to reserve
+                future.complete(null);
+              } else {
+                tryReserveWithRetry(future, remainingAttempts);
+              }
+            });
+  }
+
+  private void tryReserveWithRetry(final ActorFuture<Void> future, final int remainingAttempts) {
+    // Try reserve snapshot in the order - latest snapshot first
+    final var snapshotIterator =
+        availableValidSnapshots.stream()
+            .sorted(Comparator.comparingLong(PersistedSnapshot::getCompactionBound).reversed())
+            .iterator();
+
+    tryReserveAnySnapshot(snapshotIterator, future, remainingAttempts);
   }
 
   @Override
@@ -375,7 +388,9 @@ final class InProgressBackupImpl implements InProgressBackup {
   }
 
   private void tryReserveAnySnapshot(
-      final Iterator<PersistedSnapshot> snapshotIterator, final ActorFuture<Void> future) {
+      final Iterator<PersistedSnapshot> snapshotIterator,
+      final ActorFuture<Void> future,
+      final int remainingAttempts) {
     final var snapshot = snapshotIterator.next();
 
     LOG.atTrace()
@@ -394,7 +409,15 @@ final class InProgressBackupImpl implements InProgressBackup {
                   .setCause(error)
                   .setMessage("Failed to reserve snapshot, trying next available snapshot")
                   .log();
-              tryReserveAnySnapshot(snapshotIterator, future);
+              tryReserveAnySnapshot(snapshotIterator, future, remainingAttempts);
+            } else if (remainingAttempts > 1) {
+              LOG.atDebug()
+                  .addKeyValue("backup", backupId)
+                  .addKeyValue("remainingAttempts", remainingAttempts - 1)
+                  .setCause(error)
+                  .setMessage("Failed to reserve any available snapshot, re-discovering snapshots")
+                  .log();
+              findAndReserveSnapshot(future, remainingAttempts - 1);
             } else {
               LOG.atError()
                   .addKeyValue("backup", backupId)

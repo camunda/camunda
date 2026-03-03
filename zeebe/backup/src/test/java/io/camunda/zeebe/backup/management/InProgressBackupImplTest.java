@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -80,22 +81,7 @@ class InProgressBackupImplTest {
     setAvailableSnapshots(Set.of());
 
     // when
-    final var future = inProgressBackup.findValidSnapshot();
-
-    // then
-    assertThat(future).succeedsWithin(Duration.ofMillis(100));
-  }
-
-  @Test
-  void shouldCompleteFutureWhenValidSnapshotFound() {
-    // given
-    final var validSnapshot = snapshotWith(1L, 5L);
-    final var invalidSnapshot = snapshotWith(8L, 20L);
-    final Set<PersistedSnapshot> snapshots = Set.of(validSnapshot, invalidSnapshot);
-    setAvailableSnapshots(snapshots);
-
-    // when
-    final var future = inProgressBackup.findValidSnapshot();
+    final var future = inProgressBackup.reserveSnapshot();
 
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(100));
@@ -108,9 +94,8 @@ class InProgressBackupImplTest {
     when(invalidSnapshot.getId()).thenReturn("snapshot-1");
     setAvailableSnapshots(Set.of(invalidSnapshot));
 
-    // when - then
     // when
-    final var future = inProgressBackup.findValidSnapshot();
+    final var future = inProgressBackup.reserveSnapshot();
 
     // then
     assertThat(future)
@@ -130,7 +115,7 @@ class InProgressBackupImplTest {
     setAvailableSnapshots(Set.of(invalidSnapshot));
 
     // when
-    final var future = inProgressBackup.findValidSnapshot();
+    final var future = inProgressBackup.reserveSnapshot();
 
     // then
     assertThat(future)
@@ -154,20 +139,6 @@ class InProgressBackupImplTest {
     // then
     assertThat(backup.descriptor().snapshotId()).hasValue(validSnapshot.getId());
     verify(validSnapshot).reserve();
-  }
-
-  @Test
-  void shouldNotFailReservationWhenNoSnapshotExists() {
-    // given
-    setAvailableSnapshots(Set.of());
-
-    inProgressBackup.findValidSnapshot().join();
-
-    // when
-    final var future = inProgressBackup.reserveSnapshot();
-
-    // then
-    assertThat(future).succeedsWithin(Duration.ofMillis(100));
   }
 
   @Test
@@ -197,7 +168,7 @@ class InProgressBackupImplTest {
     final Set<PersistedSnapshot> snapshots = Set.of(validSnapshot);
     setAvailableSnapshots(snapshots);
 
-    inProgressBackup.findValidSnapshot().join();
+    // when
     final var future = inProgressBackup.reserveSnapshot();
 
     // then
@@ -230,6 +201,32 @@ class InProgressBackupImplTest {
   }
 
   @Test
+  void shouldRetryReservationByRediscoveringSnapshots(
+      @Mock final SnapshotReservation snapshotReservation) {
+    // given - a snapshot that was deleted between find and reserve (e.g. after leader change)
+    final var deletedSnapshot = snapshotWith(1L, 5L);
+    failOnReserve(deletedSnapshot);
+
+    // a new snapshot becomes available on retry
+    final var newSnapshot = snapshotWith(2L, 6L);
+    onReserve(newSnapshot, snapshotReservation);
+
+    // first discovery returns the soon-to-be-deleted snapshot,
+    // second discovery (after retry) returns the new one
+    when(snapshotStore.getAvailableSnapshots())
+        .thenReturn(TestActorFuture.completedFuture(Set.of(deletedSnapshot)))
+        .thenReturn(TestActorFuture.completedFuture(Set.of(newSnapshot)));
+
+    // when
+    final var future = inProgressBackup.reserveSnapshot();
+
+    // then - succeeds after re-discovering snapshots
+    assertThat(future).succeedsWithin(Duration.ofMillis(100));
+    verify(newSnapshot).reserve();
+    verify(snapshotStore, times(2)).getAvailableSnapshots();
+  }
+
+  @Test
   void shouldReleaseReservationWhenClosed(@Mock final SnapshotReservation snapshotReservation) {
     // given
     final var validSnapshot = snapshotWith(1L, 5L);
@@ -237,7 +234,6 @@ class InProgressBackupImplTest {
     final Set<PersistedSnapshot> snapshots = Set.of(validSnapshot);
     setAvailableSnapshots(snapshots);
 
-    inProgressBackup.findValidSnapshot().join();
     inProgressBackup.reserveSnapshot().join();
 
     // when
@@ -305,7 +301,8 @@ class InProgressBackupImplTest {
   }
 
   @Test
-  void shouldIgnoreSnapshotWithExporterPositionTooFarAhead() {
+  void shouldIgnoreSnapshotWithExporterPositionTooFarAhead(
+      @Mock final SnapshotReservation snapshotReservation) {
     // given
     final var checkpointPosition = inProgressBackup.backupDescriptor().checkpointPosition();
     final var validExporterPosition = checkpointPosition - 1L;
@@ -313,13 +310,14 @@ class InProgressBackupImplTest {
 
     final var validSnapshot = snapshotWith(1L, 1L, validExporterPosition);
     final var invalidSnapshot = snapshotWith(1L, 1L, invalidExporterPosition);
+    onReserve(validSnapshot, snapshotReservation);
     setAvailableSnapshots(Set.of(validSnapshot, invalidSnapshot));
 
     // when
-    final var validSnapshots = inProgressBackup.findValidSnapshot().join();
+    inProgressBackup.reserveSnapshot().join();
 
-    // then
-    assertThat(validSnapshots).singleElement().isEqualTo(validSnapshot);
+    // then - only the valid snapshot should be reserved
+    verify(validSnapshot).reserve();
   }
 
   @Test
@@ -337,7 +335,7 @@ class InProgressBackupImplTest {
     setAvailableSnapshots(Set.of(s1, s2, s3));
 
     // then - error message explains all invalid snapshots
-    assertThat(inProgressBackup.findValidSnapshot())
+    assertThat(inProgressBackup.reserveSnapshot())
         .failsWithin(Duration.ofMillis(200))
         .withThrowableOfType(ExecutionException.class)
         .withRootCauseInstanceOf(SnapshotNotFoundException.class)
@@ -363,7 +361,6 @@ class InProgressBackupImplTest {
   }
 
   private Backup collectBackupContents() {
-    inProgressBackup.findValidSnapshot().join();
     inProgressBackup.reserveSnapshot().join();
     inProgressBackup.findSegmentFiles().join();
     inProgressBackup.findSnapshotFiles().join();
