@@ -435,10 +435,24 @@ final class OpensearchAuditLogArchiverRepositoryIT {
   }
 
   private OpenSearchTransport createTransport() {
+    final var isAWSRun = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "");
     try {
-      return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(SEARCH_DB.osUrl()))
-          .setMapper(new JacksonJsonpMapper())
-          .build();
+      if (isAWSRun.isEmpty()) {
+        return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(SEARCH_DB.osUrl()))
+            .setMapper(new JacksonJsonpMapper())
+            .build();
+      }
+
+      final var uri = URI.create(isAWSRun);
+      final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+      final var region = new DefaultAwsRegionProviderChain().getRegion();
+      return new AwsSdk2Transport(
+          httpClient,
+          uri.getHost(),
+          region,
+          AwsSdk2TransportOptions.builder()
+              .setMapper(new JacksonJsonpMapper(new ObjectMapper()))
+              .build());
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
