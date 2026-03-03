@@ -243,7 +243,7 @@ components:
 
     DecisionDefinitionSearchQueryResult:
       type: object
-      required: 
+      required:
         - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -257,38 +257,48 @@ components:
 
     DecisionDefinitionResult:
       type: object
+      required:
+        - decisionDefinitionId
+        - decisionDefinitionKey
+        - decisionRequirementsId
+        - decisionRequirementsKey
+        - decisionRequirementsName
+        - decisionRequirementsVersion
+        - name
+        - tenantId
+        - version
       properties:
         decisionDefinitionId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
           description: The DMN ID of the decision definition.
-        name:
-          type: string
-          description: The DMN name of the decision definition.
-        version:
-          type: integer
-          description: The assigned version of the decision definition.
-        decisionRequirementsId:
-          type: string
-          description: the DMN ID of the decision requirements graph that the decision definition is part of.
-        tenantId:
-          allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
-          description: The tenant ID of the decision definition.
         decisionDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
           description: The assigned key, which acts as a unique identifier for this decision definition.
+        decisionRequirementsId:
+          description: the DMN ID of the decision requirements graph that the decision definition is part of.
+          type: string
         decisionRequirementsKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
           description: The assigned key of the decision requirements graph that the decision definition is part of.
         decisionRequirementsName:
-          type: string
           description: The DMN name of the decision requirements that the decision definition is part of.
+          type: string
         decisionRequirementsVersion:
-          type: integer
           description: The assigned version of the decision requirements that the decision definition is part of.
+          type: integer
+        name:
+          description: The DMN name of the decision definition.
+          type: string
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant ID of the decision definition.
+        version:
+          description: The assigned version of the decision definition.
+          type: integer
 
     DecisionEvaluationInstruction:
       x-polymorphic-schema: true
@@ -344,71 +354,72 @@ components:
       type: object
       required:
         - decisionDefinitionId
+        - decisionDefinitionKey
         - decisionDefinitionName
         - decisionDefinitionVersion
+        - decisionEvaluationKey
+        - decisionInstanceKey
         - decisionRequirementsId
-        - output
+        - decisionRequirementsKey
+        - evaluatedDecisions
         - failedDecisionDefinitionId
         - failureMessage
-        - decisionDefinitionKey
+        - output
         - tenantId
-        - decisionRequirementsKey
-        - decisionEvaluationKey
-        - evaluatedDecisions
       properties:
         decisionDefinitionId:
-          description: The ID of the decision which was evaluated.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
+          description: The ID of the decision which was evaluated.
+        decisionDefinitionKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
+          description: The unique key identifying the decision which was evaluated.
         decisionDefinitionName:
           description: The name of the decision which was evaluated.
           type: string
         decisionDefinitionVersion:
           description: The version of the decision which was evaluated.
-          type: integer
           format: int32
+          type: integer
+        decisionEvaluationKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationKey'
+          description: The unique key identifying this decision evaluation.
+        decisionInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionInstanceKey'
+          deprecated: true
+          description: Deprecated, please refer to `decisionEvaluationKey`.
         decisionRequirementsId:
           description: The ID of the decision requirements graph that the decision which was evaluated is part of.
+          type: string
+        decisionRequirementsKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
+          description: The unique key identifying the decision requirements graph that the decision which was evaluated is part of.
+        evaluatedDecisions:
+          description: Decisions that were evaluated within the requested decision evaluation.
+          items:
+            $ref: '#/components/schemas/EvaluatedDecisionResult'
+          type: array
+        failedDecisionDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
+          description: The ID of the decision which failed during evaluation.
+          nullable: true
+        failureMessage:
+          description: Message describing why the decision which was evaluated failed.
+          nullable: true
           type: string
         output:
           description: |
             JSON document that will instantiate the result of the decision which was evaluated.
           type: string
-        failedDecisionDefinitionId:
-          description: The ID of the decision which failed during evaluation.
-          nullable: true
-          allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
-        failureMessage:
-          description: Message describing why the decision which was evaluated failed.
-          nullable: true
-          type: string
         tenantId:
-          description: The tenant ID of the evaluated decision.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
-        decisionDefinitionKey:
-          allOf:
-            - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
-          description: The unique key identifying the decision which was evaluated.
-        decisionRequirementsKey:
-          allOf:
-            - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
-          description: The unique key identifying the decision requirements graph that the decision which was evaluated is part of.
-        decisionInstanceKey:
-          allOf:
-            - $ref: 'keys.yaml#/components/schemas/DecisionInstanceKey'
-          description: Deprecated, please refer to `decisionEvaluationKey`.
-          deprecated: true
-        decisionEvaluationKey:
-          description: The unique key identifying this decision evaluation.
-          allOf:
-            - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationKey'
-        evaluatedDecisions:
-          description: Decisions that were evaluated within the requested decision evaluation.
-          type: array
-          items:
-            $ref: '#/components/schemas/EvaluatedDecisionResult'
+          description: The tenant ID of the evaluated decision.
 
     EvaluatedDecisionResult:
       required:
