@@ -21,8 +21,8 @@ import co.elastic.clients.elasticsearch.core.IndexResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.store.elasticsearch.dao.GenericDAO;
 import io.camunda.operate.store.elasticsearch.dao.response.InsertResponse;
-import io.camunda.webapps.schema.descriptors.index.MetricIndex;
-import io.camunda.webapps.schema.entities.MetricEntity;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,17 +36,17 @@ public class GenericDAOTest {
 
   @Mock private ElasticsearchClient esClient;
   @Mock private ObjectMapper objectMapper;
-  @Mock private MetricIndex index;
-  @Mock private MetricEntity entity;
+  @Mock private ProcessIndex index;
+  @Mock private ProcessEntity entity;
 
-  @Captor private ArgumentCaptor<IndexRequest<MetricEntity>> indexRequestCaptor;
+  @Captor private ArgumentCaptor<IndexRequest<ProcessEntity>> indexRequestCaptor;
 
   @Test
   public void instantiateWithoutObjectMapperThrowsException() {
     assertThatExceptionOfType(IllegalStateException.class)
         .isThrownBy(
             () ->
-                new GenericDAO.Builder<MetricEntity, MetricIndex>()
+                new GenericDAO.Builder<ProcessEntity, ProcessIndex>()
                     .esClient(esClient)
                     .index(index)
                     .build());
@@ -57,7 +57,7 @@ public class GenericDAOTest {
     assertThatExceptionOfType(IllegalStateException.class)
         .isThrownBy(
             () ->
-                new GenericDAO.Builder<MetricEntity, MetricIndex>()
+                new GenericDAO.Builder<ProcessEntity, ProcessIndex>()
                     .objectMapper(objectMapper)
                     .index(index)
                     .build());
@@ -68,7 +68,7 @@ public class GenericDAOTest {
     assertThatExceptionOfType(IllegalStateException.class)
         .isThrownBy(
             () ->
-                new GenericDAO.Builder<MetricEntity, MetricIndex>()
+                new GenericDAO.Builder<ProcessEntity, ProcessIndex>()
                     .objectMapper(objectMapper)
                     .esClient(esClient)
                     .build());
@@ -78,7 +78,7 @@ public class GenericDAOTest {
   @SuppressWarnings("unchecked")
   public void insertShouldReturnExpectedResponse() throws IOException {
     // Given
-    final GenericDAO<MetricEntity, MetricIndex> dao = instantiateDao();
+    final GenericDAO<ProcessEntity, ProcessIndex> dao = instantiateDao();
     final String indexName = "indexName";
     final String entityId = "test-id";
     when(index.getFullQualifiedName()).thenReturn(indexName);
@@ -95,7 +95,7 @@ public class GenericDAOTest {
     assertThat(response.hasError()).isFalse();
 
     verify(esClient).index(indexRequestCaptor.capture());
-    final IndexRequest<MetricEntity> capturedRequest = indexRequestCaptor.getValue();
+    final IndexRequest<ProcessEntity> capturedRequest = indexRequestCaptor.getValue();
     assertThat(capturedRequest.index()).isEqualTo(indexName);
     assertThat(capturedRequest.id()).isEqualTo(entityId);
     assertThat(capturedRequest.document()).isEqualTo(entity);
@@ -105,7 +105,7 @@ public class GenericDAOTest {
   @SuppressWarnings("unchecked")
   public void insertShouldReturnFailureWhenNotCreated() throws IOException {
     // Given
-    final GenericDAO<MetricEntity, MetricIndex> dao = instantiateDao();
+    final GenericDAO<ProcessEntity, ProcessIndex> dao = instantiateDao();
     final String indexName = "indexName";
     when(index.getFullQualifiedName()).thenReturn(indexName);
     when(entity.getId()).thenReturn("test-id");
@@ -121,8 +121,8 @@ public class GenericDAOTest {
     assertThat(response.hasError()).isTrue();
   }
 
-  private GenericDAO<MetricEntity, MetricIndex> instantiateDao() {
-    return new GenericDAO.Builder<MetricEntity, MetricIndex>()
+  private GenericDAO<ProcessEntity, ProcessIndex> instantiateDao() {
+    return new GenericDAO.Builder<ProcessEntity, ProcessIndex>()
         .esClient(esClient)
         .index(index)
         .objectMapper(objectMapper)
