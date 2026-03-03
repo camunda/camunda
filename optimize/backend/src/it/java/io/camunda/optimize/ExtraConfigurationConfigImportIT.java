@@ -169,4 +169,71 @@ public class ExtraConfigurationConfigImportIT extends AbstractCCSMIT {
     final var configService = embeddedOptimizeExtension.getConfigurationService();
     assertThat(configService.getConfiguredZeebe().getPartitionCount()).isEqualTo(3);
   }
+
+  /** Regression test for <a href="https://github.com/camunda/camunda/issues/47473">#47473</a> */
+  @Test
+  void shouldLoadEnvYamlImportedAsList() throws Exception {
+    // given: a setup mimicking Kubernetes ConfigMap with application-ccsm.yaml importing files
+    // where the import is specified as a list
+    Files.writeString(
+        configDir.resolve("application-ccsm.yaml"),
+        """
+        spring:
+          config:
+            import:
+              - optional:file:%s/boat.yaml
+              - optional:file:%s/about.yaml
+              - optional:file:%s/env.yaml
+        """
+            .formatted(
+                configDir.toAbsolutePath(),
+                configDir.toAbsolutePath(),
+                configDir.toAbsolutePath()));
+
+    Files.writeString(
+        configDir.resolve("about.yaml"),
+        """
+        logging:
+          level:
+            ROOT: DEBUG
+            io.camunda.modeler: DEBUG
+        """);
+
+    Files.writeString(
+        configDir.resolve("boat.yaml"),
+        """
+        logging:
+          level:
+            ROOT: INFO
+            io.camunda.modeler: INFO
+        """);
+
+    Files.writeString(
+        configDir.resolve("env.yaml"),
+        """
+        zeebe:
+          enabled: true
+          partitionCount: 3
+          name: "zeebe-record"
+        """);
+
+    Files.writeString(
+        configDir.resolve("environment-config.yaml"),
+        """
+        spring:
+          servlet:
+            multipart:
+              max-file-size: "10MB"
+              max-request-size: "10MB"
+          profiles:
+            active: "ccsm"
+        """);
+
+    // when: optimize is restarted
+    startAndUseNewOptimizeInstance();
+
+    // then: Optimize-specific config from env.yaml is accessible via ConfigurationService
+    final var configService = embeddedOptimizeExtension.getConfigurationService();
+    assertThat(configService.getConfiguredZeebe().getPartitionCount()).isEqualTo(3);
+  }
 }
