@@ -126,7 +126,12 @@ class ConfigurationServiceBuilderTest {
               "path-should-be-ignored/",
               List.of(
                   "/absolute/path/config-from-import.yaml",
-                  "/another-absolute/path/another-config.yaml")));
+                  "/another-absolute/path/another-config.yaml")),
+          Arguments.arguments(
+              "multiple paths with spaces in spring.config.location should be resolved correctly",
+              "config-from-import.yaml",
+              "my-path/ , another-path/ ",
+              List.of("my-path/config-from-import.yaml", "another-path/config-from-import.yaml")));
     }
 
     private static class FakeEnvironment extends AbstractEnvironment {
