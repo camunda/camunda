@@ -9,6 +9,7 @@ package io.camunda.it.rdbms.db.jobmetrics;
 
 import static io.camunda.it.rdbms.db.fixtures.JobMetricsBatchFixtures.NOW;
 import static io.camunda.it.rdbms.db.fixtures.JobMetricsBatchFixtures.PARTITION_ID;
+import static io.camunda.it.rdbms.db.fixtures.JobMetricsBatchFixtures.assertTimeSeriesStats;
 import static java.time.ZoneOffset.UTC;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,12 +28,15 @@ import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
+import io.camunda.search.query.JobTimeSeriesStatisticsQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
 import io.camunda.search.query.JobWorkerStatisticsQuery;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
+import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -335,7 +339,12 @@ public class JobMetricsBatchIT {
     // when - query for a different time range
     final var actual =
         jobMetricsBatchReader.getGlobalJobStatistics(
-            GlobalJobStatisticsQuery.of(q -> q.filter(f -> f.from(NOW).to(NOW.plusMinutes(10)))),
+            GlobalJobStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(metric.endTime().plusSeconds(10))
+                                .to(metric.endTime().plusMinutes(10)))),
             ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
 
     // then
@@ -1120,8 +1129,8 @@ public class JobMetricsBatchIT {
                 q ->
                     q.filter(
                         f ->
-                            f.from(NOW.plusMinutes(1))
-                                .to(NOW.plusMinutes(10))
+                            f.from(metric.endTime().plusMinutes(1))
+                                .to(metric.endTime().plusMinutes(10))
                                 .jobType(JOB_TYPE_A))),
             ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
 
@@ -1238,5 +1247,389 @@ public class JobMetricsBatchIT {
     assertThat(actual.items()).hasSize(1);
     assertThat(actual.items().getFirst().worker()).isEqualTo(WORKER_1);
     JobMetricsBatchFixtures.assertWorkerStats(actual.items().getFirst(), metrics);
+  }
+
+  // -----------------------------------------------------------------------
+  // Time-series statistics
+  // -----------------------------------------------------------------------
+
+  @TestTemplate
+  public void shouldReturnSingleTimeBucketForSingleMetric() {
+    // given — one row with a resolution larger than the window so everything lands in one bucket
+    final var metric =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT1).jobType(JOB_TYPE_A).worker(WORKER_1).incompleteBatch(false));
+    JobMetricsBatchFixtures.createAndSaveMetric(rdbmsWriters, metric);
+
+    // when — 1-hour resolution: all data lands in one bucket
+    final var actual =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(metric.startTime().minusHours(1))
+                                .to(metric.endTime().plusHours(1))
+                                .jobType(JOB_TYPE_A)
+                                .resolution(Duration.ofHours(1)))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then
+    assertThat(actual.items()).hasSize(1);
+    JobMetricsBatchFixtures.assertTimeSeriesStats(actual.items().getFirst(), metric);
+  }
+
+  @TestTemplate
+  public void shouldAggregateTwoBatchesIntoSameBucket() {
+    // given — two rows with the same start-hour, same jobType → both collapse into one bucket
+    final var base = NOW.truncatedTo(ChronoUnit.HOURS);
+    final var metric1 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base)
+                    .endTime(base.plusMinutes(10))
+                    .incompleteBatch(false));
+    final var metric2 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_2)
+                    .startTime(base.plusMinutes(30))
+                    .endTime(base.plusMinutes(45))
+                    .incompleteBatch(false));
+
+    final List<JobMetricsBatchDbModel> metrics = List.of(metric1, metric2);
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, metrics);
+
+    // when — 1-hour resolution
+    final var actual =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(base.minusMinutes(1))
+                                .to(base.plusHours(1))
+                                .jobType(JOB_TYPE_A)
+                                .resolution(Duration.ofHours(1)))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then — aggregated into a single bucket
+    assertThat(actual.items()).hasSize(1);
+    JobMetricsBatchFixtures.assertTimeSeriesStats(actual.items().getFirst(), metrics);
+  }
+
+  @TestTemplate
+  public void shouldReturnTwoBucketsWhenMetricsSpanTwoHours() {
+    // given — two rows in different hours
+    final var base = NOW.truncatedTo(ChronoUnit.HOURS);
+    final var metric1 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base)
+                    .endTime(base.plusMinutes(30))
+                    .incompleteBatch(false));
+    final var metric2 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base.plusHours(1))
+                    .endTime(base.plusHours(1).plusMinutes(30))
+                    .incompleteBatch(false));
+
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, List.of(metric1, metric2));
+
+    // when — 1-hour resolution → 2 distinct buckets
+    final var actual =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(base.minusMinutes(1))
+                                .to(base.plusHours(2))
+                                .jobType(JOB_TYPE_A)
+                                .resolution(Duration.ofHours(1)))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then — 2 buckets, ordered ascending by time
+    assertThat(actual.items()).hasSize(2);
+    assertThat(actual.items().get(0).time()).isBefore(actual.items().get(1).time());
+    JobMetricsBatchFixtures.assertTimeSeriesStats(actual.items().get(0), metric1);
+    JobMetricsBatchFixtures.assertTimeSeriesStats(actual.items().get(1), metric2);
+  }
+
+  @TestTemplate
+  public void shouldAggregateTwoBatchesIntoFirstBucketAndKeepThirdBucketSeparate() {
+    // given — metric1 and metric2 start within the same minute → same bucket
+    //         metric3 starts in a different minute → separate bucket
+    final var base = NOW.truncatedTo(ChronoUnit.MINUTES);
+
+    final var metric1 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base)
+                    .endTime(base.plusSeconds(30))
+                    .incompleteBatch(false));
+    final var metric2 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_2)
+                    .startTime(base.plusSeconds(25))
+                    .endTime(base.plusSeconds(59))
+                    .incompleteBatch(false));
+    // metric3 starts 1 minute later → falls into the next bucket
+    final var metric3 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base.plusMinutes(1))
+                    .endTime(base.plusMinutes(1).plusSeconds(30))
+                    .incompleteBatch(false));
+
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, List.of(metric1, metric2, metric3));
+
+    // when — 1-minute resolution
+    final var actual =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(base.minusSeconds(1))
+                                .to(base.plusMinutes(2))
+                                .jobType(JOB_TYPE_A)
+                                .resolution(Duration.ofMinutes(1)))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then — exactly 2 buckets ordered ascending by time
+    assertThat(actual.items()).hasSize(2);
+    assertThat(actual.items().get(0).time()).isBefore(actual.items().get(1).time());
+
+    // first bucket aggregates metric1 + metric2
+    JobMetricsBatchFixtures.assertTimeSeriesStats(actual.items().get(0), List.of(metric1, metric2));
+
+    // second bucket contains only metric3
+    JobMetricsBatchFixtures.assertTimeSeriesStats(actual.items().get(1), metric3);
+  }
+
+  @TestTemplate
+  public void shouldRespectJobTypeFilterForTimeSeries() {
+    // given — two different job types in the same time range
+    final var metric1 =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT1).jobType(JOB_TYPE_A).worker(WORKER_1).incompleteBatch(false));
+    final var metric2 =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT1).jobType(JOB_TYPE_B).worker(WORKER_1).incompleteBatch(false));
+    final List<JobMetricsBatchDbModel> allMetrics = List.of(metric1, metric2);
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, allMetrics);
+
+    // when — filter by JOB_TYPE_A only
+    final var actual =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(getMinStartTime(allMetrics).minusMinutes(1))
+                                .to(getMaxEndTime(allMetrics).plusMinutes(1))
+                                .jobType(JOB_TYPE_A)
+                                .resolution(Duration.ofHours(1)))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then — only JOB_TYPE_A data
+    assertThat(actual.items()).hasSize(1);
+    assertTimeSeriesStats(actual.items().get(0), metric1);
+  }
+
+  @TestTemplate
+  public void shouldReturnEmptyTimeSeriesWhenNoDataInRange() {
+    // given — data outside the query window
+    final var metric =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT1).jobType(JOB_TYPE_A).worker(WORKER_1).incompleteBatch(false));
+    JobMetricsBatchFixtures.createAndSaveMetric(rdbmsWriters, metric);
+
+    // when — query window does not overlap the metric
+    final var windowStart = metric.endTime().plusDays(1);
+    final var actual =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(windowStart)
+                                .to(windowStart.plusDays(1))
+                                .jobType(JOB_TYPE_A)
+                                .resolution(Duration.ofHours(1)))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then
+    assertThat(actual.items()).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldReturnFirstPageOfTimeSeries() {
+    // given — 3 batches each in a distinct minute bucket
+    final var base = NOW.truncatedTo(ChronoUnit.MINUTES);
+    final var metric1 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base)
+                    .endTime(base.plusSeconds(30))
+                    .incompleteBatch(false));
+    final var metric2 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base.plusMinutes(1))
+                    .endTime(base.plusMinutes(1).plusSeconds(30))
+                    .incompleteBatch(false));
+    final var metric3 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base.plusMinutes(2))
+                    .endTime(base.plusMinutes(2).plusSeconds(30))
+                    .incompleteBatch(false));
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, List.of(metric1, metric2, metric3));
+
+    // when — request only the first 2 buckets
+    final var firstPage =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                            f ->
+                                f.from(base.minusSeconds(1))
+                                    .to(base.plusMinutes(3))
+                                    .jobType(JOB_TYPE_A)
+                                    .resolution(Duration.ofMinutes(1)))
+                        .page(p -> p.size(2))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then — only the first 2 buckets returned, ordered ascending
+    assertThat(firstPage.items()).hasSize(2);
+    assertThat(firstPage.endCursor()).isNotNull();
+    assertTimeSeriesStats(firstPage.items().get(0), metric1);
+    assertTimeSeriesStats(firstPage.items().get(1), metric2);
+  }
+
+  @TestTemplate
+  public void shouldReturnSecondPageOfTimeSeriesUsingCursor() {
+    // given — 3 batches each in a distinct minute bucket
+    final var base = NOW.truncatedTo(ChronoUnit.MINUTES);
+    final var metric1 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base)
+                    .endTime(base.plusSeconds(30))
+                    .incompleteBatch(false));
+    final var metric2 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base.plusMinutes(1))
+                    .endTime(base.plusMinutes(1).plusSeconds(30))
+                    .incompleteBatch(false));
+    final var metric3 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base.plusMinutes(2))
+                    .endTime(base.plusMinutes(2).plusSeconds(30))
+                    .incompleteBatch(false));
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, List.of(metric1, metric2, metric3));
+
+    final var filter =
+        JobTimeSeriesStatisticsQuery.of(
+            q ->
+                q.filter(
+                        f ->
+                            f.from(base.minusSeconds(1))
+                                .to(base.plusMinutes(3))
+                                .jobType(JOB_TYPE_A)
+                                .resolution(Duration.ofMinutes(1)))
+                    .page(p -> p.size(2)));
+
+    // get the first page to obtain the cursor
+    final var firstPage =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            filter, ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // when — fetch the second page using the end cursor
+    final var secondPage =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                            f ->
+                                f.from(base.minusSeconds(1))
+                                    .to(base.plusMinutes(3))
+                                    .jobType(JOB_TYPE_A)
+                                    .resolution(Duration.ofMinutes(1)))
+                        .page(p -> p.size(2).after(firstPage.endCursor()))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then — only the third bucket is returned
+    assertThat(secondPage.items()).hasSize(1);
+    assertTimeSeriesStats(secondPage.items().getFirst(), metric3);
+  }
+
+  @TestTemplate
+  public void shouldReturnEmptyTimeSeriesWhenTenantNotAuthorized() {
+    // given
+    final var metric =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT1).jobType(JOB_TYPE_A).worker(WORKER_1).incompleteBatch(false));
+    JobMetricsBatchFixtures.createAndSaveMetric(rdbmsWriters, metric);
+
+    // when — authorized for TENANT2 only
+    final var actual =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(metric.startTime().minusMinutes(1))
+                                .to(metric.endTime().plusMinutes(1))
+                                .jobType(JOB_TYPE_A)
+                                .resolution(Duration.ofHours(1)))),
+            ResourceAccessChecks.of(
+                AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(TENANT2))));
+
+    // then
+    assertThat(actual.items()).isEmpty();
   }
 }
