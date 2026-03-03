@@ -12,6 +12,7 @@ import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.JobEntity.JobKind;
 import io.camunda.search.entities.JobEntity.JobState;
 import io.camunda.search.entities.JobEntity.ListenerEventType;
+import java.util.Objects;
 
 public class JobEntityMapper {
 
@@ -19,7 +20,7 @@ public class JobEntityMapper {
     return new JobEntity.Builder()
         .jobKey(jobDbModel.jobKey())
         .type(jobDbModel.type())
-        .worker(jobDbModel.worker())
+        .worker(Objects.requireNonNullElse(jobDbModel.worker(), ""))
         .state(JobState.valueOf(jobDbModel.state().name()))
         .kind(JobKind.valueOf(jobDbModel.kind().name()))
         .listenerEventType(ListenerEventType.valueOf(jobDbModel.listenerEventType().name()))

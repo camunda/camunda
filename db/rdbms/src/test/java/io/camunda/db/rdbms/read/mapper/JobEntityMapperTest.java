@@ -103,7 +103,7 @@ public class JobEntityMapperTest {
     // Then
     assertThat(entity.jobKey()).isNotNull();
     assertThat(entity.type()).isNull();
-    assertThat(entity.worker()).isNull();
+    assertThat(entity.worker()).isEqualTo(""); // worker must be empty string
     assertThat(entity.state()).isNotNull();
     assertThat(entity.kind()).isNotNull();
     assertThat(entity.listenerEventType()).isNotNull();
