@@ -173,6 +173,13 @@ final class VersionCompatibilityMatrix {
             .max()
             .orElse(-1); // -1 is a sentinel: no previous released minor found
 
+    // Build upgrade paths to CURRENT by:
+    // 1. keeping all patch releases from the previous minor (e.g. 8.8.0, 8.8.1, 8.8.2 when
+    //    previousMinor == 8), so each of those becomes a starting point for an upgrade to CURRENT.
+    // 2. also keeping any already-released patches of the current minor (e.g. 8.10.0 when
+    //    current is 8.10.1-SNAPSHOT), covering intra-minor patch upgrades.
+    // Then filter to only version pairs that are actually compatible, and map each to an
+    // Arguments(fromVersion, "CURRENT") entry for the parameterized test.
     return allPreviousVersions.stream()
         .filter(version -> version.minor() == previousMinor || version.minor() == current.minor())
         .filter(version -> isCompatible(version, current))
