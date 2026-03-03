@@ -31,11 +31,9 @@ public class ConditionalTransformer implements ModelElementTransformer<Condition
 
     transformConditionExpression(element, expressionLanguage, executableElement);
 
-    // Auto-populate variableNames from the FEEL expression so that the subscription is only
-    // triggered when a variable actually referenced by the condition changes.
     if (executableElement.getConditionExpression() != null) {
       executableElement.setVariableNames(
-          executableElement.getConditionExpression().getVariableNames());
+          executableElement.getConditionExpression().getVariableNames().stream().toList());
     }
 
     final var conditionalFilter = element.getSingleExtensionElement(ZeebeConditionalFilter.class);
