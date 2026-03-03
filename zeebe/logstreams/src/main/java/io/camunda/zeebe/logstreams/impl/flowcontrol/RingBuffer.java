@@ -8,6 +8,7 @@
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import org.agrona.BitUtil;
 
 /**
  * A fixed-capacity ring buffer for {@link InFlightEntry} instances, indexed by position. Uses
@@ -44,19 +45,9 @@ final class RingBuffer {
       throw new IllegalArgumentException("capacity must be non-negative, got: " + minCapacity);
     }
     final int requested = minCapacity == 0 ? DEFAULT_CAPACITY : minCapacity;
-    final var actualCapacity = nextPowerOfTwo(requested);
+    final var actualCapacity = BitUtil.findNextPositivePowerOfTwo(requested);
     mask = actualCapacity - 1;
     buffer = new AtomicReferenceArray<>(actualCapacity);
-  }
-
-  private static int nextPowerOfTwo(final int minCapacity) {
-    final var capacity = minCapacity == 1 ? 1 : Integer.highestOneBit(minCapacity - 1) << 1;
-    if (capacity <= 0) {
-      throw new IllegalArgumentException(
-          "Expected next power of two of minCapacity to not overflow, but got %d from a minCapacity=%d"
-              .formatted(capacity, minCapacity));
-    }
-    return capacity;
   }
 
   /**
