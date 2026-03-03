@@ -409,7 +409,6 @@ components:
           type: object
           description: Custom properties of the document.
           additionalProperties: true
-          nullable: true
 
     DocumentLinkRequest:
       type: object
