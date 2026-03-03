@@ -112,7 +112,7 @@ public final class FlowControl implements AppendListener {
       final RateLimit writeRateLimit,
       final int inFlightCapacity) {
     this.metrics = metrics;
-    this.inFlight = new RingBuffer(inFlightCapacity);
+    inFlight = new RingBuffer(inFlightCapacity);
     setRequestLimit(requestLimit);
     setWriteRateLimit(writeRateLimit);
   }
@@ -210,7 +210,7 @@ public final class FlowControl implements AppendListener {
     final var inFlightEntry = inFlight.get(position);
     if (inFlightEntry != null) {
       inFlightEntry.onProcessed();
-      inFlight.remove(position);
+      inFlight.remove(position, inFlightEntry);
     }
     lastProcessedPosition = position;
   }
