@@ -397,6 +397,7 @@ components:
           type: string
           format: date-time
           description: The date and time when the document expires.
+          nullable: true
         size:
           type: integer
           format: int64
@@ -405,14 +406,17 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
           description: The ID of the process definition that created the document.
+          nullable: true
         processInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The key of the process instance that created the document.
+          nullable: true
         customProperties:
           type: object
           description: Custom properties of the document.
           additionalProperties: true
+          nullable: true
 
     DocumentLinkRequest:
       type: object
