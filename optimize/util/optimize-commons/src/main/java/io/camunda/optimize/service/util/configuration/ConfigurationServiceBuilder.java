@@ -142,6 +142,7 @@ public class ConfigurationServiceBuilder {
             "Resolving config locations from spring.config.import and spring.config.location");
         LOG.debug("spring.config.import is: {}", springConfigImport);
         for (String file : StringUtils.commaDelimitedListToStringArray(springConfigImport)) {
+          file = file.trim();
           LOG.debug("Considering config import file: {}", file);
           if (file.startsWith("optional:")) {
             file = file.substring("optional:".length());
@@ -155,8 +156,8 @@ public class ConfigurationServiceBuilder {
           } else {
             // if spring.config.location is set, then for each location, we need to add a file from
             // the import relative to it
-            for (final String path :
-                StringUtils.commaDelimitedListToStringArray(springConfigLocation)) {
+            for (String path : StringUtils.commaDelimitedListToStringArray(springConfigLocation)) {
+              path = path.trim();
               // remove trailing slashes to avoid double slashes when
               final var normalizedPath = path.replaceAll("/+$", "");
               final String resolvedFile = normalizedPath + "/" + file;
