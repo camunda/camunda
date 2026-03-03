@@ -140,49 +140,8 @@ public class UserTaskProcessInstanceMigrationIT {
             .build());
 
     // then
-    await()
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .untilAsserted(
-            () -> {
-              assertThat(
-                      client
-                          .newUserTaskSearchRequest()
-                          .filter(
-                              f ->
-                                  f.processDefinitionKey(pd2)
-                                      .bpmnProcessId(TO_PROCESS_ID)
-                                      .processInstanceKey(processInstanceKey)
-                                      .assignee(expectedTask.assignee)
-                                      .state(UserTaskState.CREATED))
-                          // right task
-                          .send()
-                          .join()
-                          .items())
-                  .hasSize(1);
-            });
-    final UserTask migratedTask =
-        client
-            .newUserTaskSearchRequest()
-            .filter(
-                f ->
-                    f.processDefinitionKey(pd2)
-                        .bpmnProcessId(TO_PROCESS_ID)
-                        .processInstanceKey(processInstanceKey))
-            .send()
-            .join()
-            .singleItem();
-
-    assertThat(migratedTask.getAssignee()).isEqualTo(expectedTask.assignee);
-    assertThat(migratedTask.getCandidateGroups()).isEqualTo(expectedTask.candidateGroups);
-    assertThat(migratedTask.getCandidateUsers()).isEqualTo(expectedTask.candidateUsers);
-    assertThat(migratedTask.getDueDate()).isEqualTo(expectedTask.dueDate);
-    assertThat(migratedTask.getFollowUpDate()).isEqualTo(expectedTask.followupDate);
-    assertThat(migratedTask.getPriority()).isEqualTo(expectedTask.priority);
-    assertThat(migratedTask.getFormKey()).isEqualTo(expectedTask.formKey);
-    assertThat(migratedTask.getExternalFormReference())
-        .isEqualTo(expectedTask.externalFormReference);
-    assertThat(migratedTask.getCustomHeaders()).isEqualTo(expectedTask.headers);
-
+    final var migratedTask =
+        waitForMigrationSuccessAndAssertMetadata(pd2, processInstanceKey, expectedTask);
     verifyFormOperationsWork(migratedTask.getUserTaskKey());
   }
 
@@ -295,6 +254,111 @@ public class UserTaskProcessInstanceMigrationIT {
         .hasMessageContaining(
             "Expected to migrate a job for user task 'task1' on process instance with key '%d', but could not find job with key '0'. Please resolve any incidents on the user task before migrating the process instance."
                 .formatted(processInstanceKey));
+  }
+
+  @Test
+  void shouldBeAbleToMigrateNewCamundaUserTaskToNewVersion() {
+    final Consumer<UserTaskBuilder> fromExternalForm =
+        t -> t.zeebeFormKey("localhost:8080//original-example.form");
+    final Consumer<UserTaskBuilder> toExternalForm =
+        t -> t.zeebeUserTask().zeebeExternalFormReference("localhost:8080//example.form");
+    final Consumer<UserTaskBuilder> toNewExternalForm =
+        t -> t.zeebeUserTask().zeebeExternalFormReference("localhost:8080//new-example.form");
+    final String toProcessIdNew = TO_PROCESS_ID + "_new";
+
+    // given
+    final BpmnModelInstance jwProcess =
+        Bpmn.createExecutableProcess(FROM_PROCESS_ID)
+            .startEvent()
+            .userTask(TASK_ID, fromExternalForm)
+            .endEvent()
+            .done();
+    final BpmnModelInstance cutProcess =
+        Bpmn.createExecutableProcess(TO_PROCESS_ID)
+            .startEvent()
+            .userTask(TASK_ID, toExternalForm)
+            .endEvent()
+            .done();
+    final BpmnModelInstance cutProcessNew =
+        Bpmn.createExecutableProcess(toProcessIdNew)
+            .startEvent()
+            .userTask(TASK_ID, toNewExternalForm)
+            .endEvent()
+            .done();
+
+    final var deploymentEvent =
+        client
+            .newDeployResourceCommand()
+            .addProcessModel(jwProcess, FROM_PROCESS_ID + ".bpmn")
+            .addProcessModel(cutProcess, TO_PROCESS_ID + ".bpmn")
+            .addProcessModel(cutProcessNew, toProcessIdNew + ".bpmn")
+            .send()
+            .join();
+    final var pd2 =
+        deploymentEvent.getProcesses().stream()
+            .filter(p -> p.getBpmnProcessId().equals(TO_PROCESS_ID))
+            .findFirst()
+            .get()
+            .getProcessDefinitionKey();
+    final var pd3 =
+        deploymentEvent.getProcesses().stream()
+            .filter(p -> p.getBpmnProcessId().equals(toProcessIdNew))
+            .findFirst()
+            .get()
+            .getProcessDefinitionKey();
+    final var processInstanceKey =
+        startProcessInstance(client, FROM_PROCESS_ID, Map.of()).getProcessInstanceKey();
+    // wait for task to be exported - use V1 because V2 does not return job worker user tasks
+    waitForTaskExported(processInstanceKey);
+
+    // when
+    migrateProcessInstance(
+        client,
+        processInstanceKey,
+        MigrationPlan.newBuilder()
+            .withTargetProcessDefinitionKey(pd2)
+            .addMappingInstruction(TASK_ID, TASK_ID)
+            .build());
+
+    // then
+    waitForMigrationSuccessAndAssertMetadata(
+        pd2,
+        processInstanceKey,
+        new ExpectedUserTask(
+            null,
+            50,
+            "localhost:8080//original-example.form",
+            null,
+            List.of(),
+            List.of(),
+            null,
+            null,
+            Map.of()));
+
+    // and then, when migrating a second time
+    migrateProcessInstance(
+        client,
+        processInstanceKey,
+        MigrationPlan.newBuilder()
+            .withTargetProcessDefinitionKey(pd3)
+            .addMappingInstruction(TASK_ID, TASK_ID)
+            .build());
+
+    // then
+    waitForMigrationSuccessAndAssertMetadata(
+        toProcessIdNew,
+        pd3,
+        processInstanceKey,
+        new ExpectedUserTask(
+            null,
+            50,
+            "localhost:8080//original-example.form",
+            null,
+            List.of(),
+            List.of(),
+            null,
+            null,
+            Map.of()));
   }
 
   static Stream<Arguments> migrationTestCases() {
@@ -493,6 +557,72 @@ public class UserTaskProcessInstanceMigrationIT {
     // verify completing works
     client.newCompleteUserTaskCommand(userTaskKey).send().join();
     waitForUserTask(client, t -> t.userTaskKey(userTaskKey).state(UserTaskState.COMPLETED));
+  }
+
+  private UserTask waitForMigrationSuccessAndAssertMetadata(
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final ExpectedUserTask expectedTask) {
+    return waitForMigrationSuccessAndAssertMetadata(
+        TO_PROCESS_ID, processDefinitionKey, processInstanceKey, expectedTask);
+  }
+
+  private UserTask waitForMigrationSuccessAndAssertMetadata(
+      final String toProcessId,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final ExpectedUserTask expectedTask) {
+    await()
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      client
+                          .newUserTaskSearchRequest()
+                          .filter(
+                              f ->
+                                  f.processDefinitionKey(processDefinitionKey)
+                                      .bpmnProcessId(toProcessId)
+                                      .processInstanceKey(processInstanceKey)
+                                      .assignee(expectedTask.assignee)
+                                      .state(UserTaskState.CREATED))
+                          // right task
+                          .send()
+                          .join()
+                          .items())
+                  .hasSize(1);
+            });
+    final UserTask migratedTask =
+        client
+            .newUserTaskSearchRequest()
+            .filter(
+                f ->
+                    f.processDefinitionKey(processDefinitionKey)
+                        .bpmnProcessId(toProcessId)
+                        .processInstanceKey(processInstanceKey))
+            .send()
+            .join()
+            .singleItem();
+
+    assertThat(migratedTask.getAssignee()).isEqualTo(expectedTask.assignee);
+    assertThat(migratedTask.getCandidateGroups()).isEqualTo(expectedTask.candidateGroups);
+    assertThat(migratedTask.getCandidateUsers()).isEqualTo(expectedTask.candidateUsers);
+    if (expectedTask.dueDate == null) {
+      assertThat(migratedTask.getDueDate()).isNull();
+    } else {
+      assertThat(migratedTask.getDueDate()).isEqualTo(expectedTask.dueDate);
+    }
+    if (expectedTask.followupDate == null) {
+      assertThat(migratedTask.getFollowUpDate()).isNull();
+    } else {
+      assertThat(migratedTask.getFollowUpDate()).isEqualTo(expectedTask.followupDate);
+    }
+    assertThat(migratedTask.getPriority()).isEqualTo(expectedTask.priority);
+    assertThat(migratedTask.getFormKey()).isEqualTo(expectedTask.formKey);
+    assertThat(migratedTask.getExternalFormReference())
+        .isEqualTo(expectedTask.externalFormReference);
+    assertThat(migratedTask.getCustomHeaders()).isEqualTo(expectedTask.headers);
+    return migratedTask;
   }
 
   record ExpectedUserTask(
