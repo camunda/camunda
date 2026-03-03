@@ -16,8 +16,10 @@
 package io.camunda.process.test.utils;
 
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
+import io.camunda.client.api.search.enums.MessageSubscriptionType;
 import io.camunda.client.api.search.response.MessageSubscription;
 import java.time.OffsetDateTime;
+import java.util.Map;
 
 public class MessageSubscriptionBuilder implements MessageSubscription {
 
@@ -25,6 +27,9 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
   private String processDefinitionId;
   private Long processDefinitionKey;
   private Long processInstanceKey;
+  private String processDefinitionName;
+  private Integer processDefinitionVersion;
+  private MessageSubscriptionType messageSubscriptionType;
   private Long rootProcessInstanceKey;
   private String elementId;
   private Long elementInstanceKey;
@@ -33,6 +38,7 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
   private String correlationKey;
   private String tenantId;
   private MessageSubscriptionState messageSubscriptionState;
+  private Map<String, String> extensionProperties;
 
   @Override
   public Long getMessageSubscriptionKey() {
@@ -47,6 +53,16 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
   @Override
   public Long getProcessDefinitionKey() {
     return processDefinitionKey;
+  }
+
+  @Override
+  public String getProcessDefinitionName() {
+    return processDefinitionName;
+  }
+
+  @Override
+  public Integer getProcessDefinitionVersion() {
+    return processDefinitionVersion;
   }
 
   @Override
@@ -75,6 +91,11 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
   }
 
   @Override
+  public MessageSubscriptionType getMessageSubscriptionType() {
+    return messageSubscriptionType;
+  }
+
+  @Override
   public OffsetDateTime getLastUpdatedDate() {
     return lastUpdatedDate;
   }
@@ -94,6 +115,17 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
     return tenantId;
   }
 
+  @Override
+  public Map<String, String> getExtensionProperties() {
+    return extensionProperties;
+  }
+
+  public MessageSubscriptionBuilder setExtensionProperties(
+      final Map<String, String> extensionProperties) {
+    this.extensionProperties = extensionProperties;
+    return this;
+  }
+
   public MessageSubscriptionBuilder setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
@@ -111,6 +143,12 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
 
   public MessageSubscriptionBuilder setLastUpdatedDate(final OffsetDateTime lastUpdatedDate) {
     this.lastUpdatedDate = lastUpdatedDate;
+    return this;
+  }
+
+  public MessageSubscriptionBuilder setMessageSubscriptionType(
+      final MessageSubscriptionType messageSubscriptionType) {
+    this.messageSubscriptionType = messageSubscriptionType;
     return this;
   }
 
@@ -137,6 +175,17 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
 
   public MessageSubscriptionBuilder setProcessInstanceKey(final Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
+    return this;
+  }
+
+  public MessageSubscriptionBuilder setProcessDefinitionVersion(
+      final Integer processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
+    return this;
+  }
+
+  public MessageSubscriptionBuilder setProcessDefinitionName(final String processDefinitionName) {
+    this.processDefinitionName = processDefinitionName;
     return this;
   }
 
