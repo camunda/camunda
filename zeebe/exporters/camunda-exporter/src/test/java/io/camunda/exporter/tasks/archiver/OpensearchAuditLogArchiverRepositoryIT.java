@@ -8,7 +8,6 @@
 package io.camunda.exporter.tasks.archiver;
 
 import static io.camunda.search.test.utils.SearchDBExtension.ARCHIVER_IDX_PREFIX;
-import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,6 +54,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
 final class OpensearchAuditLogArchiverRepositoryIT {
@@ -436,9 +436,20 @@ final class OpensearchAuditLogArchiverRepositoryIT {
 
   private OpenSearchTransport createTransport() {
     try {
-      return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(SEARCH_DB.osUrl()))
-          .setMapper(new JacksonJsonpMapper())
-          .build();
+      if (!SEARCH_DB.isAws()) {
+        return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(SEARCH_DB.osUrl()))
+            .setMapper(new JacksonJsonpMapper(MAPPER))
+            .build();
+      }
+
+      final URI uri = URI.create(SEARCH_DB.osUrl());
+      final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+      final Region region = new DefaultAwsRegionProviderChain().getRegion();
+      return new AwsSdk2Transport(
+          httpClient,
+          uri.getHost(),
+          region,
+          AwsSdk2TransportOptions.builder().setMapper(new JacksonJsonpMapper(MAPPER)).build());
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
@@ -498,23 +509,7 @@ final class OpensearchAuditLogArchiverRepositoryIT {
   }
 
   private OpenSearchClient createOpenSearchClient() {
-    final var isAWSRun = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "");
-    if (isAWSRun.isEmpty()) {
-      return new OpenSearchClient(transport);
-    } else {
-      final URI uri = URI.create(isAWSRun);
-      final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
-      final var region = new DefaultAwsRegionProviderChain().getRegion();
-      return new OpenSearchClient(
-          new AwsSdk2Transport(
-              httpClient,
-              uri.getHost(),
-              region,
-              AwsSdk2TransportOptions.builder()
-                  .setMapper(
-                      new org.opensearch.client.json.jackson.JacksonJsonpMapper(new ObjectMapper()))
-                  .build()));
-    }
+    return new OpenSearchClient(transport);
   }
 
   private void deleteTestIndices() {
