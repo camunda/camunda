@@ -825,6 +825,43 @@ class BackupServiceImplTest {
     return meta;
   }
 
+  @Test
+  void shouldWriteStateResetCommandToLog() {
+    // when
+    backupService.writeStateResetCommand(concurrencyControl).join();
+
+    // then
+    verify(logStreamWriter)
+        .tryWrite(
+            eq(WriteContext.internal()),
+            assertArg(
+                (final LogAppendEntry entry) -> {
+                  assertThat(entry.recordMetadata().getRecordType()).isEqualTo(RecordType.COMMAND);
+                  assertThat(entry.recordMetadata().getIntent())
+                      .isEqualTo(CheckpointIntent.RESET_STATE);
+                  assertThat(entry.recordValue()).isInstanceOf(CheckpointRecord.class);
+                }));
+    // state reset only writes to the log — backup store is not touched directly
+    verify(backupStore, never()).delete(any());
+  }
+
+  @Test
+  void shouldFailStateResetWhenLogWriteFails() {
+    // given
+    when(logStreamWriter.tryWrite(any(), any(LogAppendEntry.class)))
+        .thenReturn(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
+
+    // when
+    final var result = backupService.writeStateResetCommand(concurrencyControl);
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Failed to write RESET_STATE command");
+    verify(backupStore, never()).delete(any());
+  }
+
   class ControllableInProgressBackup implements InProgressBackup {
 
     private final BackupIdentifier id;

@@ -986,4 +986,114 @@ final class CheckpointRecordsProcessorTest {
     // then — no exception, backup manager still called for fail in-progress
     verify(backupManager).failInProgressBackup(anyLong());
   }
+
+  @Test
+  void shouldResetStateOnResetStateCommand() {
+    // given — populate all state components
+    state.setLatestCheckpointInfo(5L, 50L, 5000L, CheckpointType.MANUAL_BACKUP);
+    state.setLatestBackupInfo(3L, 30L, 3000L, CheckpointType.SCHEDULED_BACKUP, 20L);
+    checkpointMetadataState.addBackupCheckpoint(
+        1L, 100L, 1000L, CheckpointType.SCHEDULED_BACKUP, 50L);
+    checkpointMetadataState.addBackupCheckpoint(
+        3L, 300L, 3000L, CheckpointType.MANUAL_BACKUP, 200L);
+    backupRangeState.startNewRange(1L);
+    backupRangeState.updateRangeEnd(1L, 3L);
+
+    final var value = new CheckpointRecord();
+    final var record =
+        new MockTypedCheckpointRecord(
+            60, 0, CheckpointIntent.RESET_STATE, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then — state is cleared
+    assertThat(state.getLatestCheckpointId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestBackupId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(checkpointMetadataState.getCheckpoint(1L)).isNull();
+    assertThat(checkpointMetadataState.getCheckpoint(3L)).isNull();
+    assertThat(backupRangeState.getAllRanges()).isEmpty();
+
+    // then — STATE_RESET follow-up event is written
+    assertThat(result.records())
+        .singleElement()
+        .returns(CheckpointIntent.STATE_RESET, Event::intent)
+        .returns(RecordType.EVENT, Event::type);
+  }
+
+  @Test
+  void shouldScheduleSyncPostCommitTaskOnResetState() {
+    // given — a processor with a backup manager
+    when(backupManager.syncMetadata(any(), any()))
+        .thenReturn(CompletableActorFuture.completed(null));
+
+    final var value = new CheckpointRecord();
+    final var record =
+        new MockTypedCheckpointRecord(
+            60, 0, CheckpointIntent.RESET_STATE, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then — a post-commit task is registered
+    assertThat(result.postCommitTasks()).hasSize(1);
+
+    // when — the post-commit task is executed
+    final var success = result.executePostCommitTasks();
+
+    // then — task succeeds and sync metadata is called
+    assertThat(success).isTrue();
+    verify(backupManager).syncMetadata(any(), any());
+  }
+
+  @Test
+  void shouldReplayStateResetEvent() {
+    // given — populate state before replay
+    state.setLatestCheckpointInfo(10L, 100L, 10000L, CheckpointType.MANUAL_BACKUP);
+    state.setLatestBackupInfo(8L, 80L, 8000L, CheckpointType.SCHEDULED_BACKUP, 70L);
+    checkpointMetadataState.addBackupCheckpoint(
+        8L, 80L, 8000L, CheckpointType.SCHEDULED_BACKUP, 70L);
+    backupRangeState.startNewRange(8L);
+
+    final var value = new CheckpointRecord();
+    final var record =
+        new MockTypedCheckpointRecord(
+            110, 100, CheckpointIntent.STATE_RESET, RecordType.EVENT, value);
+
+    // when
+    processor.replay(record);
+
+    // then — all state is cleared
+    assertThat(state.getLatestCheckpointId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestBackupId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(checkpointMetadataState.getCheckpoint(8L)).isNull();
+    assertThat(backupRangeState.getAllRanges()).isEmpty();
+  }
+
+  @Test
+  void shouldResetAlreadyEmptyState() {
+    // given — state is already empty
+
+    final var value = new CheckpointRecord();
+    final var record =
+        new MockTypedCheckpointRecord(
+            60, 0, CheckpointIntent.RESET_STATE, RecordType.COMMAND, value);
+
+    // when — should not throw
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then — STATE_RESET event is still written
+    assertThat(result.records())
+        .singleElement()
+        .returns(CheckpointIntent.STATE_RESET, Event::intent)
+        .returns(RecordType.EVENT, Event::type);
+
+    // state remains empty
+    assertThat(state.getLatestCheckpointId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestBackupId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+  }
 }

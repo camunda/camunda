@@ -824,7 +824,7 @@ final class BackupEndpointTest {
       doThrow(failure).when(api).deleteBackup(1);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.delete(1);
+      final WebEndpointResponse<?> response = endpoint.delete(new String[] {"1"});
 
       // then
       assertThat(response.getBody())
@@ -845,7 +845,7 @@ final class BackupEndpointTest {
       doReturn(CompletableFuture.failedFuture(error)).when(api).deleteBackup(anyLong());
 
       // when
-      final var response = endpoint.delete(1);
+      final var response = endpoint.delete(new String[] {"1"});
 
       // then
       assertThat(response.getStatus()).isEqualTo(expectedCode);
@@ -868,10 +868,68 @@ final class BackupEndpointTest {
       doReturn(CompletableFuture.completedFuture(null)).when(api).deleteBackup(1);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.delete(1);
+      final WebEndpointResponse<?> response = endpoint.delete(new String[] {"1"});
 
       // then
       assertThat(response.getStatus()).isEqualTo(204);
+    }
+  }
+
+  @Nested
+  final class DeleteStateTest {
+
+    @Test
+    void shouldDeleteState() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      final var endpoint = new BackupEndpoint(api, config);
+      doReturn(CompletableFuture.completedFuture(null)).when(api).deleteRuntimeState();
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.delete(new String[] {"state"});
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(204);
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(Failures.class)
+    void shouldReturnCorrectErrorCode(final Throwable error, final int expectedCode) {
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      final var endpoint = new BackupEndpoint(api, config);
+      doReturn(CompletableFuture.failedFuture(error)).when(api).deleteRuntimeState();
+
+      // when
+      final var response = endpoint.delete(new String[] {"state"});
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(expectedCode);
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .extracting(Error::getMessage)
+          .asString()
+          .contains("failure");
+    }
+
+    @Test
+    void shouldReturnErrorOnException() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      final var endpoint = new BackupEndpoint(api, config);
+      final var failure = new RuntimeException("failure");
+      doThrow(failure).when(api).deleteRuntimeState();
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.delete(new String[] {"state"});
+
+      // then
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .isEqualTo(new Error().message("failure"));
     }
   }
 

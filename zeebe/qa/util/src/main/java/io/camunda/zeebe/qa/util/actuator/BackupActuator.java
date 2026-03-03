@@ -129,6 +129,10 @@ public interface BackupActuator {
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   void delete(@Param final long id);
 
+  @RequestLine("DELETE /state")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  void deleteState();
+
   @RequestLine("GET /state")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   CheckpointState state();

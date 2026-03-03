@@ -233,6 +233,11 @@ public final class BackupService extends Actor implements BackupManager {
     return internalBackupManager.syncMetadata(checkpoints, ranges, actor);
   }
 
+  @Override
+  public ActorFuture<Void> requestStateReset() {
+    return internalBackupManager.writeStateResetCommand(actor);
+  }
+
   private BackupIdentifierImpl getBackupId(final long checkpointId) {
     return new BackupIdentifierImpl(nodeId, partitionId, checkpointId);
   }
