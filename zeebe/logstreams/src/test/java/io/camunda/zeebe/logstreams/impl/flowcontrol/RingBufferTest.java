@@ -43,7 +43,7 @@ final class RingBufferTest {
     final var buffer = new RingBuffer(4);
     final var entry = newEntry();
     buffer.put(3, entry);
-    buffer.remove(3, entry);
+    buffer.remove(entry);
     assertThat(buffer.get(3)).isNull();
   }
 
@@ -56,7 +56,7 @@ final class RingBufferTest {
     buffer.put(position, entry);
     final var secondEntry = newEntry();
     buffer.put(positionWrapped, secondEntry);
-    buffer.remove(position, entry);
+    buffer.remove(entry);
     assertThat(buffer.get(position)).isNull();
     assertThat(buffer.get(positionWrapped)).isSameAs(secondEntry);
   }
@@ -186,7 +186,7 @@ final class RingBufferTest {
                     entry = buffer.get(pos);
                     LockSupport.parkNanos(1);
                   }
-                  buffer.remove(pos, entry);
+                  buffer.remove(entry);
                   try {
                     assertThat(buffer.get(pos)).isNull();
                   } catch (final AssertionError e) {
