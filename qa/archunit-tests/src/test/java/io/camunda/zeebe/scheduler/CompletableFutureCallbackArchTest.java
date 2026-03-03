@@ -22,6 +22,8 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
 /**
  * Ensures that actor-scoped code does not use synchronous callback methods on {@link
@@ -34,11 +36,14 @@ import java.util.concurrent.CompletionStage;
  * callback accesses actor-owned state (RocksDB column families, shared data structures, etc.), the
  * result is a race condition that can cause data corruption or a JVM crash (SIGSEGV).
  *
- * <p>The fix is to always use the async variant with the actor executor:
+ * <p>The fix is to always use the async variant with an explicit actor executor:
  *
  * <pre>{@code
  * // UNSAFE: callback runs on the completing thread (e.g. Netty I/O thread)
  * backupStore.save(backup).whenComplete((result, error) -> { ... });
+ *
+ * // ALSO UNSAFE: callback runs on the default ForkJoinPool, not the actor thread
+ * backupStore.save(backup).whenCompleteAsync((result, error) -> { ... });
  *
  * // SAFE: callback is dispatched to the actor thread
  * backupStore.save(backup).whenCompleteAsync((result, error) -> { ... }, executor);
@@ -58,10 +63,11 @@ public class CompletableFutureCallbackArchTest {
   static final ArchRule ACTOR_CODE_SHOULD_USE_ASYNC_COMPLETABLE_FUTURE_CALLBACKS =
       classes()
           .that(useActorConcurrencyControl())
-          .should(notCallSyncCompletableFutureCallbacks())
+          .should(notCallUnsafeCompletableFutureCallbacks())
           .because(
               "synchronous callback methods on CompletableFuture execute on the completing "
-                  + "thread (e.g. a Netty I/O thread), not the actor thread. Use the async "
+                  + "thread (e.g. a Netty I/O thread), not the actor thread, and *Async variants "
+                  + "without an explicit Executor use the default ForkJoinPool. Use the async "
                   + "variant with the actor executor instead, e.g. "
                   + ".whenCompleteAsync(callback, concurrencyControl)");
 
@@ -86,6 +92,13 @@ public class CompletableFutureCallbackArchTest {
           "thenAcceptBoth",
           "thenCombine");
 
+  /**
+   * Async callback methods that, when called <em>without</em> an explicit {@link Executor}, use the
+   * default {@link java.util.concurrent.ForkJoinPool} — which is also unsafe for actor-scoped code.
+   */
+  private static final Set<String> ASYNC_CALLBACK_METHODS =
+      SYNC_CALLBACK_METHODS.stream().map(name -> name + "Async").collect(Collectors.toSet());
+
   private static DescribedPredicate<JavaClass> useActorConcurrencyControl() {
     return new DescribedPredicate<>("use actor concurrency control") {
       @Override
@@ -108,25 +121,39 @@ public class CompletableFutureCallbackArchTest {
     };
   }
 
-  private static ArchCondition<JavaClass> notCallSyncCompletableFutureCallbacks() {
+  private static ArchCondition<JavaClass> notCallUnsafeCompletableFutureCallbacks() {
     return new ArchCondition<>(
-        "not call synchronous callback methods on CompletableFuture or CompletionStage") {
+        "not call synchronous callback methods on CompletableFuture or CompletionStage, "
+            + "and not call *Async variants without an explicit Executor") {
       @Override
       public void check(final JavaClass item, final ConditionEvents events) {
         item.getMethodCallsFromSelf().stream()
-            .filter(CompletableFutureCallbackArchTest::isSyncCallbackOnCompletableFuture)
-            .forEach(
+            .filter(
                 call ->
-                    events.add(
-                        SimpleConditionEvent.violated(
-                            item,
-                            String.format(
-                                "%s calls %s.%s() at %s — use %sAsync() with the actor executor instead",
-                                item.getName(),
-                                call.getTargetOwner().getSimpleName(),
-                                call.getName(),
-                                call.getSourceCodeLocation(),
-                                call.getName()))));
+                    isSyncCallbackOnCompletableFuture(call) || isAsyncCallbackWithoutExecutor(call))
+            .forEach(
+                call -> {
+                  final String message;
+                  if (isSyncCallbackOnCompletableFuture(call)) {
+                    message =
+                        String.format(
+                            "%s calls %s.%s() at %s — use %sAsync() with the actor executor instead",
+                            item.getName(),
+                            call.getTargetOwner().getSimpleName(),
+                            call.getName(),
+                            call.getSourceCodeLocation(),
+                            call.getName());
+                  } else {
+                    message =
+                        String.format(
+                            "%s calls %s.%s() without an Executor at %s — pass the actor executor as the second argument",
+                            item.getName(),
+                            call.getTargetOwner().getSimpleName(),
+                            call.getName(),
+                            call.getSourceCodeLocation());
+                  }
+                  events.add(SimpleConditionEvent.violated(item, message));
+                });
       }
     };
   }
@@ -135,6 +162,22 @@ public class CompletableFutureCallbackArchTest {
     if (!SYNC_CALLBACK_METHODS.contains(call.getName())) {
       return false;
     }
+    return isOnCompletableFutureOrCompletionStage(call);
+  }
+
+  private static boolean isAsyncCallbackWithoutExecutor(final JavaMethodCall call) {
+    if (!ASYNC_CALLBACK_METHODS.contains(call.getName())) {
+      return false;
+    }
+    if (!isOnCompletableFutureOrCompletionStage(call)) {
+      return false;
+    }
+    // The call is unsafe if none of the parameters is an Executor
+    return call.getTarget().getRawParameterTypes().stream()
+        .noneMatch(param -> param.isAssignableTo(Executor.class));
+  }
+
+  private static boolean isOnCompletableFutureOrCompletionStage(final JavaMethodCall call) {
     final var targetOwner = call.getTargetOwner();
     return targetOwner.isAssignableTo(CompletableFuture.class)
         || targetOwner.isAssignableTo(CompletionStage.class);
