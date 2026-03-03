@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-library-parent</artifactId>
-    <version>8.10.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
     <relativePath>../../library-parent/pom.xml</relativePath>
   </parent>
 
@@ -38,6 +38,14 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-spring-boot-starter</artifactId>
+      <exclusions>
+        <!-- spring-boot-health is a Spring Boot 4.x-only module; in 3.5.x the health
+             classes live inside spring-boot-actuator. Exclude to prevent 4.x leaking. -->
+        <exclusion>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-health</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
