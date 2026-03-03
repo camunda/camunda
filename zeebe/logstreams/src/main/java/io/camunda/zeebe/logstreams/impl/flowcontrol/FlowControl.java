@@ -24,8 +24,6 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
-import java.util.NavigableMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * Maintains a view of in-flight entries as they are being appended, written, committed and finally
@@ -55,21 +53,24 @@ import java.util.concurrent.ConcurrentSkipListMap;
  *       stream processor actor.
  * </ol>
  *
- * The entry is registered in the {@link #inFlight} map via {@link #registerEntry(long,
+ * The entry is registered in the {@link #inFlight} ring buffer via {@link #registerEntry(long,
  * InFlightEntry)} inside the sequencer lock, before {@code logStorage.append} is called. This
- * guarantees that the entry is present in the map when {@link #onWrite(long, long)} and {@link
+ * guarantees that the entry is present in the buffer when {@link #onWrite(long, long)} and {@link
  * #onCommit(long, long)} callbacks fire.
  *
  * <p>{@link #onWrite(long, long)} and {@link #onCommit(long, long)} and {@link #onProcessed(long)}
  * can be called in any order.
  *
- * <p>The {@link #inFlight} map is a {@link ConcurrentSkipListMap}. It is modified by {@link
- * #registerEntry(long, InFlightEntry)} (under the sequencer lock) and read from other methods.
- * Because readers ({@code onWrite}, {@code onCommit}, {@code onProcessed}) run on different
- * threads, the concurrent map provides the necessary visibility guarantees.
+ * <p>The {@link #inFlight} ring buffer is a fixed-capacity {@link RingBuffer} indexed by position.
+ * It is modified by {@link #registerEntry(long, InFlightEntry)} (under the sequencer lock) and read
+ * from other methods. The ring buffer uses an {@link
+ * java.util.concurrent.atomic.AtomicReferenceArray} internally, providing volatile read/write
+ * semantics per slot. This ensures that entries written by the sequencer thread are visible to the
+ * raft thread ({@code onWrite}, {@code onCommit}) and the stream processor thread ({@code
+ * onProcessed}) without requiring external synchronization.
  *
- * <p>A volatile field {@link #lastProcessedPosition} is only modified in {@link #onProcessed(long)}
- * and used in {@link #onAppended(InFlightEntry)} to clean up old entries.
+ * <p>When a new entry is registered and the slot is already occupied (the previous entry was never
+ * processed), the displaced entry's {@link InFlightEntry#cleanup()} is called to release resources.
  *
  * <p>The RateMeasurement#observe method only returns true when a new observation value is
  * available. This way we prevent updating the metrics too often with repeated values. We use the
@@ -91,18 +92,26 @@ public final class FlowControl implements AppendListener {
           ActorClock::currentTimeMillis, Duration.ofMinutes(5), Duration.ofSeconds(10));
   private RateLimitThrottle writeRateThrottle;
   private volatile long lastWrittenPosition = -1;
-  private volatile long lastProcessedPosition = -1;
   private volatile long lastExportedPosition;
 
-  private final NavigableMap<Long, InFlightEntry> inFlight = new ConcurrentSkipListMap<>();
+  private final RingBuffer inFlight;
 
   public FlowControl(final LogStreamMetrics metrics) {
-    this(metrics, StabilizingAIMDLimit.newBuilder().build(), RateLimit.disabled());
+    this(metrics, StabilizingAIMDLimit.newBuilder().build(), RateLimit.disabled(), 0);
   }
 
   public FlowControl(
       final LogStreamMetrics metrics, final Limit requestLimit, final RateLimit writeRateLimit) {
+    this(metrics, requestLimit, writeRateLimit, 0);
+  }
+
+  public FlowControl(
+      final LogStreamMetrics metrics,
+      final Limit requestLimit,
+      final RateLimit writeRateLimit,
+      final int inFlightCapacity) {
     this.metrics = metrics;
+    inFlight = new RingBuffer(inFlightCapacity);
     setRequestLimit(requestLimit);
     setWriteRateLimit(writeRateLimit);
   }
@@ -169,9 +178,6 @@ public final class FlowControl implements AppendListener {
   public void onAppended(final InFlightEntry entry) {
     entry.onAppend();
     metrics.increaseInflightAppends();
-    final var clearable = inFlight.headMap(lastProcessedPosition, true);
-    clearable.forEach((position, inFlightEntry) -> inFlightEntry.cleanup());
-    clearable.clear();
   }
 
   @Override
@@ -203,8 +209,8 @@ public final class FlowControl implements AppendListener {
     final var inFlightEntry = inFlight.get(position);
     if (inFlightEntry != null) {
       inFlightEntry.onProcessed();
+      inFlight.remove(inFlightEntry);
     }
-    lastProcessedPosition = position;
   }
 
   public void onExported(final long position) {
