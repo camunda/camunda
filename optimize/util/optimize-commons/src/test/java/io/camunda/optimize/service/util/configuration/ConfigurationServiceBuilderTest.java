@@ -131,6 +131,16 @@ class ConfigurationServiceBuilderTest {
               "multiple paths with spaces in spring.config.location should be resolved correctly",
               "config-from-import.yaml",
               "my-path/ , another-path/ ",
+              List.of("my-path/config-from-import.yaml", "another-path/config-from-import.yaml")),
+          Arguments.arguments(
+              "empty file in import should be ignored",
+              "config-from-import.yaml, ,another-config.yaml",
+              "my-path/",
+              List.of("my-path/config-from-import.yaml", "my-path/another-config.yaml")),
+          Arguments.arguments(
+              "empty path in location should be ignored",
+              "config-from-import.yaml",
+              "my-path/, ,another-path/",
               List.of("my-path/config-from-import.yaml", "another-path/config-from-import.yaml")));
     }
 
