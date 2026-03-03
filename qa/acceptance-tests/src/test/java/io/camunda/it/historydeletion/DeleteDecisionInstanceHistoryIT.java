@@ -27,10 +27,8 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class DeleteDecisionInstanceHistoryIT {
 
   @MultiDbTestApplication

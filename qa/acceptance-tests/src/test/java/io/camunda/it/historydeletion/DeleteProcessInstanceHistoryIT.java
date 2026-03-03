@@ -34,10 +34,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class DeleteProcessInstanceHistoryIT {
 
   public static final String MESSAGE_NAME = "testMessage";

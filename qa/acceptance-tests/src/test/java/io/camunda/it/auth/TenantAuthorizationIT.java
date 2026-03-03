@@ -44,10 +44,8 @@ import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class TenantAuthorizationIT {
 
   public static final ObjectMapper OBJECT_MAPPER =

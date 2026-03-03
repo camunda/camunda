@@ -268,11 +268,11 @@ public class CamundaMultiDBExtension
   }
 
   private DatabaseType getDatabaseType(final ExtensionContext extensionContext) {
-    //    if (databaseType == null) {
-    //      databaseType = currentMultiDbDatabaseType(extensionContext);
-    //    }
+    if (databaseType == null) {
+      databaseType = currentMultiDbDatabaseType(extensionContext);
+    }
 
-    return DatabaseType.AWS_OS;
+    return databaseType;
   }
 
   private DatabaseType currentMultiDbDatabaseType(final ExtensionContext context) {
@@ -408,8 +408,7 @@ public class CamundaMultiDBExtension
               System.getProperty(TEST_INTEGRATION_AURORA_AWS_PASSWORD),
               "software.amazon.jdbc.Driver");
       case AWS_OS -> {
-        final var awsOSUrl = "http://localhost:8000";
-        //        final var awsOSUrl = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL);
+        final var awsOSUrl = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL);
         multiDbConfigurator.configureAWSOpenSearchSupport(
             awsOSUrl, testPrefix, isHistoryRelatedTest);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, false).all();

@@ -20,12 +20,10 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class AuditLogAuthenticationIT {
 
   @MultiDbTestApplication

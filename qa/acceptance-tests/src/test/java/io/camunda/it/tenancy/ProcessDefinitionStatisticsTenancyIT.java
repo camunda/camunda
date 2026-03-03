@@ -31,14 +31,12 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 /**
  * Multi-tenant tests for process definition message subscription statistics. Verifies that users
  * only see statistics for tenants they have access to.
  */
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class ProcessDefinitionStatisticsTenancyIT {
 
   @MultiDbTestApplication

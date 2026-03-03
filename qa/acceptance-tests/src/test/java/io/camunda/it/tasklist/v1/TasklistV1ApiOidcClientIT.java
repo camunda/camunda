@@ -39,7 +39,6 @@ import org.springframework.http.HttpStatus;
 
 @MultiDbTest(setupKeycloak = true)
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class TasklistV1ApiOidcClientIT {
 
   @MultiDbTestApplication

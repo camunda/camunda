@@ -37,10 +37,8 @@ import java.util.UUID;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class DeleteProcessInstanceHistoryAuthorizationIT {
 
   public static final String PROCESS_ID = "testProcess";

@@ -44,7 +44,6 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class ApplicationAuthorizationIT {
 
   private static final String PATH_OPERATE = "operate";

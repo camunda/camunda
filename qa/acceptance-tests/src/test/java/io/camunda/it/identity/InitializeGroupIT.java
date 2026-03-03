@@ -24,10 +24,8 @@ import io.camunda.security.configuration.ConfiguredGroup;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class InitializeGroupIT {
 
   private static final String ADMIN = "admin";

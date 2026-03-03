@@ -25,13 +25,11 @@ import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class BasicAuthLogoutIT {
 
   private static final String TENANTS_SEARCH_ENDPOINT = "/v2/tenants/search";

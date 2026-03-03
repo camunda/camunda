@@ -60,7 +60,6 @@ import org.springframework.http.HttpStatus;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class OperateV1ApiPermissionsIT {
 
   @MultiDbTestApplication

@@ -31,7 +31,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-// @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class AuditLogAgentIT {
 
   @MultiDbTestApplication

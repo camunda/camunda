@@ -38,10 +38,8 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class AuditLogAuthorizationsIT {
   protected static final boolean USE_REST_API = true;
 

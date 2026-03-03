@@ -14,11 +14,9 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 // regression test for https://github.com/camunda/camunda/issues/35549
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class UniqueEntityIdentifiersIT {
 
   private static CamundaClient client;

@@ -34,7 +34,6 @@ import org.springframework.http.MediaType;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class CsrfTokenIT {
 
   @MultiDbTestApplication

@@ -31,10 +31,8 @@ import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class UserAuthorizationIT {
 
   @MultiDbTestApplication

@@ -36,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @HistoryMultiDbTest
-// @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class ProcessInstanceHistoryCleanupIT {
 
   // To generate audit logs we need to have authenticated access

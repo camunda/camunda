@@ -35,13 +35,11 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Named;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest(setupKeycloak = true)
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class InheritedOIDCAuthorizationIT {
 
   @MultiDbTestApplication

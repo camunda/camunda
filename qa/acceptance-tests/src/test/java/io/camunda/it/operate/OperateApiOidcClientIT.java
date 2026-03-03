@@ -38,7 +38,6 @@ import org.springframework.http.HttpStatus;
 /** Covers cases in which a client authenticates against the Operate V1 API. */
 @MultiDbTest(setupKeycloak = true)
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class OperateApiOidcClientIT {
 
   @MultiDbTestApplication

@@ -32,10 +32,8 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class InitializeAuthorizationIT {
 
   private static final String ADMIN = "admin";

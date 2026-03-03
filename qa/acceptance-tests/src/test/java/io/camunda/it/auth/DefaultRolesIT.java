@@ -26,10 +26,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 final class DefaultRolesIT {
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =

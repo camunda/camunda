@@ -40,13 +40,11 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class UsageMetricAuthorizationIT {
 
   public static final OffsetDateTime NOW_PLUS_1D = OffsetDateTime.now().plusDays(1);

@@ -36,10 +36,8 @@ import java.util.concurrent.Future;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class MappingRuleAuthorizationIT {
 
   @MultiDbTestApplication

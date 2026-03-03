@@ -35,7 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 @MultiDbTest
-// @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class BatchOperationCancelProcessInstanceIT {
 
   private static CamundaClient camundaClient;

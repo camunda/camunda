@@ -50,7 +50,6 @@ import org.junit.jupiter.api.io.TempDir;
  */
 @MultiDbTest(setupKeycloak = true)
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class OverlappingUsernameAndClientIdClaimTest {
 
   static final String PRINCIPAL_NAME = "principal";
