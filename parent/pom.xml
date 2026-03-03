@@ -154,7 +154,7 @@
     <version.json-path>3.0.0</version.json-path>
     <version.swagger-annotations>2.2.43</version.swagger-annotations>
     <version.swagger-parser>2.1.38</version.swagger-parser>
-    <version.checker-qual>3.53.1</version.checker-qual>
+    <version.checker-qual>3.54.0</version.checker-qual>
     <version.java-jwt>4.5.1</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.10</version.postgresql>
