@@ -105,7 +105,28 @@ class ConfigurationServiceBuilderTest {
               "optional prefix with file protocol and relative path should be resolved relatively",
               "optional:file:config-from-import.yaml",
               "my-path/",
-              List.of("my-path/config-from-import.yaml")));
+              List.of("my-path/config-from-import.yaml")),
+          Arguments.arguments(
+              "multiple absolute paths in import should be added as is",
+              "/absolute/path/config-from-import.yaml,/another-absolute/path/another-config.yaml",
+              "path-should-be-ignored/",
+              List.of(
+                  "/absolute/path/config-from-import.yaml",
+                  "/another-absolute/path/another-config.yaml")),
+          Arguments.arguments(
+              "multiple absolute paths with optional:file: prefix should be added as is",
+              "optional:file:/absolute/path/config-from-import.yaml,optional:file:/another-absolute/path/another-config.yaml",
+              "path-should-be-ignored/",
+              List.of(
+                  "/absolute/path/config-from-import.yaml",
+                  "/another-absolute/path/another-config.yaml")),
+          Arguments.arguments(
+              "multiple absolute paths with spaces and optional:file: prefix should be added as is",
+              "optional:file:/absolute/path/config-from-import.yaml , optional:file:/another-absolute/path/another-config.yaml",
+              "path-should-be-ignored/",
+              List.of(
+                  "/absolute/path/config-from-import.yaml",
+                  "/another-absolute/path/another-config.yaml")));
     }
 
     private static class FakeEnvironment extends AbstractEnvironment {
