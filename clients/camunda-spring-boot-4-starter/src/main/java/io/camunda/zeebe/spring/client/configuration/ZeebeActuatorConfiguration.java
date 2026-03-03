@@ -23,6 +23,7 @@ import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -43,6 +44,7 @@ import org.springframework.context.annotation.Lazy;
 public class ZeebeActuatorConfiguration {
   @Bean
   @ConditionalOnMissingBean
+  @ConditionalOnBean(MeterRegistry.class)
   public MetricsRecorder micrometerMetricsRecorder(@Lazy final MeterRegistry meterRegistry) {
     return new MicrometerMetricsRecorder(meterRegistry);
   }
