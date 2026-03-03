@@ -79,6 +79,7 @@ runs:
 
         # 2. Write the renewed token to the credential file
         ENCODED=$(echo -n "x-access-token:${RENEWED_TOKEN}" | base64 -w0)
+        ENCODED=$(echo -n "x-access-token:${RENEWED_TOKEN}" | base64 -w0)
         if [ -n "$CRED_FILE" ] && [ -f "$CRED_FILE" ]; then
           echo "Writing renewed token to: $CRED_FILE"
           git config --file "$CRED_FILE" http.https://github.com/.extraheader "AUTHORIZATION: basic ${ENCODED}"
