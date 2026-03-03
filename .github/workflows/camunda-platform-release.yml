@@ -1336,7 +1336,7 @@ jobs:
           correlationKey: ${{ inputs.releaseVersion }}
           variables: |
             {
-              "is_release_successful": "false",
+              "is_camunda_release_successful": "false",
               "workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }            
       - name: Send failure Slack notification
