@@ -90,6 +90,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
   private final Counter auditLogsArchived;
 
   private final Timer archiverSearchTimer;
+  private final Timer archiverDocBatchSearchTimer;
   private final Timer archiverDeleteTimer;
   private final Counter archiverDeletedDocs;
   private final Counter archiverReindexedDocs;
@@ -192,6 +193,13 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .description(
                 "Duration of how long it takes to run the search request to resolve completed entities, that need to be archived.")
             .tags("type", "search")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
+    archiverDocBatchSearchTimer =
+        Timer.builder(meterName("archiver.request.duration"))
+            .description(
+                "Duration of how long it takes to run the search request to resolve the IDs of documents, that need to be archived.")
+            .tags("type", "doc-batch-search")
             .publishPercentileHistogram()
             .register(meterRegistry);
     archiverDeleteTimer =
@@ -298,6 +306,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   public void measureArchiverSearch(final Timer.Sample sample) {
     sample.stop(archiverSearchTimer);
+  }
+
+  public void measureDocBatchArchiverSearch(final Timer.Sample sample) {
+    sample.stop(archiverDocBatchSearchTimer);
   }
 
   public void recordBulkSize(final int bulkSize) {
