@@ -150,7 +150,7 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getName() {
-      return "zeebe.banned.instances.total";
+      return "zeebe.banned.instances.count";
     }
 
     @Override
