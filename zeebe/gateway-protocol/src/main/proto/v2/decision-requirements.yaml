@@ -186,6 +186,13 @@ components:
     DecisionRequirementsResult:
       type: object
       additionalProperties: false
+      required:
+        - decisionRequirementsName
+        - version
+        - decisionRequirementsId
+        - resourceName
+        - tenantId
+        - decisionRequirementsKey
       properties:
         decisionRequirementsName:
           type: string

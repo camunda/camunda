@@ -126,6 +126,9 @@ components:
 
     ProcessInstanceReference:
       type: object
+      required:
+        - processDefinitionKey
+        - processInstanceKey
       properties:
         processDefinitionKey:
           allOf:

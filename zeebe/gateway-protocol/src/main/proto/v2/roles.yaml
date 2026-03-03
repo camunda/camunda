@@ -696,6 +696,10 @@ components:
 
     RoleCreateResult:
       type: object
+      required:
+        - roleId
+        - name
+        - description
       properties:
         roleId:
           description: The ID of the created role.
@@ -721,6 +725,10 @@ components:
 
     RoleUpdateResult:
       type: object
+      required:
+        - name
+        - description
+        - roleId
       properties:
         name:
           type: string
@@ -735,6 +743,10 @@ components:
     RoleResult:
       description: Role search response item.
       type: object
+      required:
+        - name
+        - roleId
+        - description
       properties:
         name:
           type: string
@@ -804,6 +816,8 @@ components:
 
     RoleUserResult:
       type: object
+      required:
+        - username
       properties:
         username:
           $ref: 'identifiers.yaml#/components/schemas/Username'
@@ -847,6 +861,8 @@ components:
 
     RoleClientResult:
       type: object
+      required:
+        - clientId
       properties:
         clientId:
           description: The ID of the client.
@@ -891,6 +907,8 @@ components:
 
     RoleGroupResult:
       type: object
+      required:
+        - groupId
       properties:
         groupId:
           description: The id of the group.

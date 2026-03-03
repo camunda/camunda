@@ -304,6 +304,11 @@ components:
       required:
         - permissionTypes
         - resourcePropertyName
+        - ownerId
+        - ownerType
+        - resourceType
+        - resourceId
+        - authorizationKey
       type: object
       properties:
         ownerId:
@@ -349,6 +354,8 @@ components:
 
     AuthorizationCreateResult:
       type: object
+      required:
+        - authorizationKey
       properties:
         authorizationKey:
           allOf:

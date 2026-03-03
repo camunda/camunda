@@ -203,6 +203,10 @@ components:
       type: object
       x-semantic-provider:
         - username
+      required:
+        - username
+        - name
+        - email
       properties:
         username:
           $ref: 'identifiers.yaml#/components/schemas/Username'
@@ -228,6 +232,10 @@ components:
 
     UserUpdateResult:
       type: object
+      required:
+        - username
+        - name
+        - email
       properties:
         username:
           $ref: 'identifiers.yaml#/components/schemas/Username'
@@ -240,6 +248,10 @@ components:
 
     UserResult:
       type: object
+      required:
+        - username
+        - name
+        - email
       properties:
         username:
           $ref: 'identifiers.yaml#/components/schemas/Username'

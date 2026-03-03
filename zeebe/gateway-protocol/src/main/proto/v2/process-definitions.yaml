@@ -384,6 +384,15 @@ components:
 
     ProcessDefinitionResult:
       type: object
+      required:
+        - name
+        - resourceName
+        - version
+        - versionTag
+        - processDefinitionId
+        - tenantId
+        - processDefinitionKey
+        - hasStartForm
       properties:
         name:
           description: Name of this process definition.
@@ -441,6 +450,12 @@ components:
     ProcessElementStatisticsResult:
       description: Process element statistics response.
       type: object
+      required:
+        - elementId
+        - active
+        - canceled
+        - incidents
+        - completed
       properties:
         elementId:
           allOf:
@@ -490,6 +505,12 @@ components:
 
     ProcessDefinitionMessageSubscriptionStatisticsResult:
       type: object
+      required:
+        - processDefinitionId
+        - tenantId
+        - processDefinitionKey
+        - processInstancesWithActiveSubscriptions
+        - activeSubscriptions
       properties:
         processDefinitionId:
           description: The process definition ID associated with this message subscription.
@@ -541,6 +562,13 @@ components:
     ProcessDefinitionInstanceStatisticsResult:
       description: Process definition instance statistics response.
       type: object
+      required:
+        - processDefinitionId
+        - tenantId
+        - latestProcessDefinitionName
+        - hasMultipleVersions
+        - activeInstancesWithoutIncidentCount
+        - activeInstancesWithIncidentCount
       properties:
         processDefinitionId:
           $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'

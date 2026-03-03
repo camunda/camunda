@@ -85,6 +85,7 @@ components:
     UsageMetricsResponse:
       required: 
         - tenants
+        - activeTenants
       type: object
       allOf:
         - $ref: '#/components/schemas/UsageMetricsResponseItem'
@@ -105,6 +106,10 @@ components:
 
     UsageMetricsResponseItem:
       type: object
+      required:
+        - processInstances
+        - decisionInstances
+        - assignees
       properties:
         processInstances:
           description: The amount of created root process instances.

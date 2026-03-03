@@ -620,6 +620,10 @@ components:
 
     GroupCreateResult:
       type: object
+      required:
+        - groupId
+        - name
+        - description
       properties:
         groupId:
           description: The ID of the created group.
@@ -645,6 +649,10 @@ components:
 
     GroupUpdateResult:
       type: object
+      required:
+        - groupId
+        - name
+        - description
       properties:
         groupId:
           type: string
@@ -659,6 +667,10 @@ components:
     GroupResult:
       description: Group search response item.
       type: object
+      required:
+        - name
+        - groupId
+        - description
       properties:
         name:
           type: string
@@ -730,6 +742,8 @@ components:
 
     GroupUserResult:
       type: object
+      required:
+        - username
       properties:
         username:
           $ref: 'identifiers.yaml#/components/schemas/Username'
@@ -773,6 +787,8 @@ components:
 
     GroupClientResult:
       type: object
+      required:
+        - clientId
       properties:
         clientId:
           description: The ID of the client.

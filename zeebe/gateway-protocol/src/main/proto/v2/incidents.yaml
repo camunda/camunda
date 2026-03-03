@@ -404,6 +404,16 @@ components:
         - rootProcessInstanceKey
         - jobKey
         - tenantId
+        - processDefinitionId
+        - errorType
+        - errorMessage
+        - elementId
+        - creationTime
+        - state
+        - incidentKey
+        - processDefinitionKey
+        - processInstanceKey
+        - elementInstanceKey
       properties:
         processDefinitionId:
           allOf:
@@ -500,6 +510,10 @@ components:
 
     IncidentProcessInstanceStatisticsByErrorResult:
       type: object
+      required:
+        - errorHashCode
+        - errorMessage
+        - activeInstancesWithErrorCount
       properties:
         errorHashCode:
           type: integer
@@ -564,6 +578,13 @@ components:
 
     IncidentProcessInstanceStatisticsByDefinitionResult:
       type: object
+      required:
+        - processDefinitionId
+        - processDefinitionKey
+        - processDefinitionName
+        - processDefinitionVersion
+        - tenantId
+        - activeInstancesWithErrorCount
       properties:
         processDefinitionId:
           $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'

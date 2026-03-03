@@ -257,6 +257,16 @@ components:
 
     DecisionDefinitionResult:
       type: object
+      required:
+        - decisionDefinitionId
+        - name
+        - version
+        - decisionRequirementsId
+        - tenantId
+        - decisionDefinitionKey
+        - decisionRequirementsKey
+        - decisionRequirementsName
+        - decisionRequirementsVersion
       properties:
         decisionDefinitionId:
           allOf:
@@ -355,6 +365,7 @@ components:
         - decisionRequirementsKey
         - decisionEvaluationKey
         - evaluatedDecisions
+        - decisionInstanceKey
       properties:
         decisionDefinitionId:
           description: The ID of the decision which was evaluated.
@@ -415,6 +426,13 @@ components:
         - decisionDefinitionType
         - evaluatedInputs
         - matchedRules
+        - decisionDefinitionId
+        - decisionDefinitionName
+        - decisionDefinitionVersion
+        - output
+        - tenantId
+        - decisionDefinitionKey
+        - decisionEvaluationInstanceKey
       x-semantic-provider:
         - decisionEvaluationInstanceKey
       type: object

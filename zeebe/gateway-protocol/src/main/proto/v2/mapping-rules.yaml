@@ -220,6 +220,11 @@ components:
 
     MappingRuleCreateUpdateResult:
       type: object
+      required:
+        - claimName
+        - claimValue
+        - name
+        - mappingRuleId
       properties:
         claimName:
           type: string
@@ -259,6 +264,11 @@ components:
 
     MappingRuleResult:
       type: object
+      required:
+        - claimName
+        - claimValue
+        - name
+        - mappingRuleId
       properties:
         claimName:
           type: string

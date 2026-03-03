@@ -223,6 +223,9 @@ components:
     BatchOperationCreatedResult:
       description: The created batch operation.
       type: object
+      required:
+        - batchOperationKey
+        - batchOperationType
       properties:
         batchOperationKey:
           allOf:
@@ -309,6 +312,16 @@ components:
     BatchOperationResponse:
       required:
         - errors
+        - batchOperationKey
+        - state
+        - batchOperationType
+        - startDate
+        - endDate
+        - actorType
+        - actorId
+        - operationsTotalCount
+        - operationsFailedCount
+        - operationsCompletedCount
       type: object
       properties:
         batchOperationKey:
@@ -358,6 +371,10 @@ components:
 
     BatchOperationError:
       type: object
+      required:
+        - partitionId
+        - type
+        - message
       properties:
         partitionId:
           description: The partition ID where the error occurred.
@@ -450,6 +467,13 @@ components:
       type: object
       required:
         - rootProcessInstanceKey
+        - operationType
+        - batchOperationKey
+        - itemKey
+        - processInstanceKey
+        - state
+        - processedDate
+        - errorMessage
       properties:
         operationType:
           $ref: '#/components/schemas/BatchOperationTypeEnum'

@@ -167,6 +167,10 @@ components:
         The message key of the correlated message, as well as the first process instance key it
         correlated with.
       type: object
+      required:
+        - tenantId
+        - messageKey
+        - processInstanceKey
       properties:
         tenantId:
           description: The tenant ID of the correlated message
@@ -217,6 +221,9 @@ components:
     MessagePublicationResult:
       description: The message key of the published message.
       type: object
+      required:
+        - tenantId
+        - messageKey
       properties:
         tenantId:
           description: The tenant ID of the message.
@@ -244,6 +251,17 @@ components:
       type: object
       required:
         - rootProcessInstanceKey
+        - messageSubscriptionKey
+        - processDefinitionId
+        - processDefinitionKey
+        - processInstanceKey
+        - elementId
+        - elementInstanceKey
+        - messageSubscriptionState
+        - lastUpdatedDate
+        - messageName
+        - correlationKey
+        - tenantId
       properties:
         messageSubscriptionKey:
           allOf:
@@ -460,6 +478,8 @@ components:
         - subscriptionKey
         - tenantId
         - rootProcessInstanceKey
+        - elementInstanceKey
+        - processDefinitionKey
 
     CorrelatedMessageSubscriptionSearchQuery:
       type: object

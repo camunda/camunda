@@ -289,6 +289,20 @@ components:
         - rootProcessInstanceKey
         - evaluationFailure
         - tenantId
+        - decisionEvaluationInstanceKey
+        - state
+        - evaluationDate
+        - decisionDefinitionId
+        - decisionDefinitionName
+        - decisionDefinitionVersion
+        - decisionDefinitionType
+        - result
+        - decisionEvaluationKey
+        - processDefinitionKey
+        - processInstanceKey
+        - decisionDefinitionKey
+        - elementInstanceKey
+        - rootDecisionDefinitionKey
       properties:
         decisionEvaluationInstanceKey:
           $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKey'
@@ -379,6 +393,10 @@ components:
     EvaluatedDecisionInputItem:
       type: object
       description: A decision input that was evaluated within this decision evaluation.
+      required:
+        - inputId
+        - inputName
+        - inputValue
       properties:
         inputId:
           type: string
@@ -394,6 +412,9 @@ components:
       required:
         - ruleId
         - ruleIndex
+        - outputId
+        - outputName
+        - outputValue
       type: object
       description: The evaluated decision outputs.
       properties:
@@ -419,6 +440,8 @@ components:
     MatchedDecisionRuleItem:
       required:
         - evaluatedOutputs
+        - ruleId
+        - ruleIndex
       type: object
       description: A decision rule that matched within this decision evaluation.
       properties:

@@ -511,6 +511,19 @@ components:
         - externalFormReference
         - followUpDate
         - formKey
+        - name
+        - state
+        - elementId
+        - processDefinitionId
+        - creationDate
+        - tenantId
+        - processDefinitionVersion
+        - priority
+        - userTaskKey
+        - elementInstanceKey
+        - processName
+        - processDefinitionKey
+        - processInstanceKey
       properties:
         name:
           type: string

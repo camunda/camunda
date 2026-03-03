@@ -188,6 +188,9 @@ components:
       type: object
       allOf:
         - $ref: '#/components/schemas/VariableResultBase'
+      required:
+        - value
+        - isTruncated
       properties:
         value:
           description: Value of this variable. Can be truncated.
@@ -201,6 +204,8 @@ components:
       type: object
       allOf:
         - $ref: '#/components/schemas/VariableResultBase'
+      required:
+        - value
       properties:
         value:
           description: Full value of this variable.

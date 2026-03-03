@@ -349,6 +349,7 @@ components:
         - listenerEventType
         - rootProcessInstanceKey
         - tags
+        - userTask
       properties:
         type:
           description: The type of the job (should match what was requested).
@@ -437,6 +438,13 @@ components:
         - candidateGroups
         - candidateUsers
         - changedAttributes
+        - action
+        - assignee
+        - dueDate
+        - followUpDate
+        - formKey
+        - priority
+        - userTaskKey
       type: object
       description: Contains properties of a user task.
       properties:
@@ -662,6 +670,14 @@ components:
         - type
         - worker
         - rootProcessInstanceKey
+        - deadline
+        - deniedReason
+        - endTime
+        - errorCode
+        - errorMessage
+        - isDenied
+        - creationTime
+        - lastUpdateTime
       properties:
         customHeaders:
           description: A set of custom headers defined during modelling.

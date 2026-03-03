@@ -759,6 +759,10 @@ components:
       type: object
       x-semantic-provider:
         - tenantId
+      required:
+        - tenantId
+        - name
+        - description
       properties:
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
@@ -786,6 +790,10 @@ components:
 
     TenantUpdateResult:
       type: object
+      required:
+        - tenantId
+        - name
+        - description
       properties:
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
@@ -799,6 +807,10 @@ components:
     TenantResult:
       description: Tenant search response item.
       type: object
+      required:
+        - name
+        - tenantId
+        - description
       properties:
         name:
           type: string
@@ -870,6 +882,8 @@ components:
     # Tenant-related association results
     TenantUserResult:
       type: object
+      required:
+        - username
       properties:
         username:
           $ref: 'identifiers.yaml#/components/schemas/Username'
@@ -914,6 +928,8 @@ components:
 
     TenantClientResult:
       type: object
+      required:
+        - clientId
       properties:
         clientId:
           description: The ID of the client.
@@ -959,6 +975,8 @@ components:
 
     TenantGroupResult:
       type: object
+      required:
+        - groupId
       properties:
         groupId:
           description: The groupId of the group.

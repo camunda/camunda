@@ -206,6 +206,11 @@ components:
     # Common
     GlobalListenerBase:
       type: object
+      required:
+        - type
+        - retries
+        - afterNonGlobal
+        - priority
       properties:
         type:
           description: The name of the job type, used as a reference to specify which job workers request the respective listener job.
@@ -224,6 +229,8 @@ components:
       type: object
       allOf:
         - $ref: '#/components/schemas/GlobalListenerBase'
+      required:
+        - eventTypes
       properties:
         eventTypes:
           $ref: '#/components/schemas/GlobalTaskListenerEventTypes'

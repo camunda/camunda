@@ -370,6 +370,8 @@ components:
       type: object
       allOf:
         - $ref: '#/components/schemas/ClusterVariableResultBase'
+      required:
+        - value
       properties:
         value:
           description: Full value of this cluster variable.
@@ -379,6 +381,9 @@ components:
       type: object
       allOf:
         - $ref: '#/components/schemas/ClusterVariableResultBase'
+      required:
+        - value
+        - isTruncated
       properties:
         value:
           description: Value of this cluster variable. Can be truncated.
@@ -392,6 +397,7 @@ components:
       required:
         - name
         - scope
+        - tenantId
       properties:
         name:
           type: string
