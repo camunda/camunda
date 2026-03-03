@@ -307,6 +307,19 @@ jobs:
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
           github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
           github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+      # The GitHub App token generated at the start of this job expires after 1 hour.
+      # Maven prepare + perform can take longer than that, so we generate a fresh token
+      # before pushing. See: https://github.com/camunda/camunda/issues/47369
+      - name: Renew GitHub token for push
+        uses: ./.github/actions/renew-github-token
+        with:
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
       - name: Push Changes to Release branch
         run: git push ${{ inputs.dryRun && '--dry-run' || '' }} origin "${RELEASE_BRANCH}"
       - name: Cleanup Maven Central GPG Key
