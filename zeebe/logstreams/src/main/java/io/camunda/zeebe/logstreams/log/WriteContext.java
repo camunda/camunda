@@ -14,8 +14,8 @@ public sealed interface WriteContext {
     return new UserCommand(intent);
   }
 
-  static WriteContext processingResult() {
-    return ProcessingResult.INSTANCE;
+  static WriteContext processingResult(final Intent intent) {
+    return new ProcessingResult(intent);
   }
 
   static WriteContext interPartition() {
@@ -32,9 +32,7 @@ public sealed interface WriteContext {
 
   record UserCommand(Intent intent) implements WriteContext {}
 
-  final class ProcessingResult implements WriteContext {
-    private static final ProcessingResult INSTANCE = new ProcessingResult();
-  }
+  record ProcessingResult(Intent intent) implements WriteContext {}
 
   final class InterPartition implements WriteContext {
     private static final InterPartition INSTANCE = new InterPartition();

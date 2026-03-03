@@ -17,6 +17,7 @@ import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.log.WriteContext.Internal;
+import io.camunda.zeebe.logstreams.log.WriteContext.ProcessingResult;
 import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -143,6 +144,9 @@ public final class FlowControl implements AppendListener {
         if (requestListener == null) {
           return Either.left(Rejection.RequestLimitExhausted);
         }
+      }
+      case ProcessingResult(final var intent) -> {
+        alwaysAllowed = WhiteListedCommands.isWhitelisted(intent);
       }
       default -> {}
     }
