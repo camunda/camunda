@@ -7,20 +7,11 @@
  */
 
 import {z} from 'zod';
-import {
-	API_VERSION,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	queryResponsePageSchema,
-	type Endpoint,
-} from './common';
+import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from './common';
 import {type Group} from './group';
+import {roleSchema} from './group-role';
 import {queryRolesRequestBodySchema, type Role} from './role';
-import {queryMappingRulesRequestBodySchema, type MappingRule} from './mapping-rule';
-
-const pageOnlyQueryResponseBodySchema = z.object({
-	page: queryResponsePageSchema,
-});
+import {mappingRuleSchema, queryMappingRulesRequestBodySchema, type MappingRule} from './mapping-rule';
 
 const tenantSchema = z.object({
 	tenantId: z.string(),
@@ -106,13 +97,13 @@ type QueryGroupsByTenantResponseBody = z.infer<typeof queryGroupsByTenantRespons
 const queryRolesByTenantRequestBodySchema = queryRolesRequestBodySchema;
 type QueryRolesByTenantRequestBody = z.infer<typeof queryRolesByTenantRequestBodySchema>;
 
-const queryRolesByTenantResponseBodySchema = pageOnlyQueryResponseBodySchema;
+const queryRolesByTenantResponseBodySchema = getQueryResponseBodySchema(roleSchema);
 type QueryRolesByTenantResponseBody = z.infer<typeof queryRolesByTenantResponseBodySchema>;
 
 const queryMappingRulesByTenantRequestBodySchema = queryMappingRulesRequestBodySchema;
 type QueryMappingRulesByTenantRequestBody = z.infer<typeof queryMappingRulesByTenantRequestBodySchema>;
 
-const queryMappingRulesByTenantResponseBodySchema = pageOnlyQueryResponseBodySchema;
+const queryMappingRulesByTenantResponseBodySchema = getQueryResponseBodySchema(mappingRuleSchema);
 type QueryMappingRulesByTenantResponseBody = z.infer<typeof queryMappingRulesByTenantResponseBodySchema>;
 
 const createTenant: Endpoint = {

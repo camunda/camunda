@@ -7,20 +7,10 @@
  */
 
 import {z} from 'zod';
-import {
-	API_VERSION,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	queryResponsePageSchema,
-	type Endpoint,
-} from './common';
+import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from './common';
 import {roleSchema, type Group, type Role} from './group-role';
 import {mappingRuleSchema, type MappingRule} from './mapping-rule';
 import {userSchema} from './user';
-
-const pageOnlyQueryResponseBodySchema = z.object({
-	page: queryResponsePageSchema,
-});
 
 const createRoleRequestBodySchema = roleSchema;
 type CreateRoleRequestBody = z.infer<typeof createRoleRequestBodySchema>;
@@ -98,7 +88,7 @@ const queryMappingRulesByRoleRequestBodySchema = getQueryRequestBodySchema({
 });
 type QueryMappingRulesByRoleRequestBody = z.infer<typeof queryMappingRulesByRoleRequestBodySchema>;
 
-const queryMappingRulesByRoleResponseBodySchema = pageOnlyQueryResponseBodySchema;
+const queryMappingRulesByRoleResponseBodySchema = getQueryResponseBodySchema(mappingRuleSchema);
 type QueryMappingRulesByRoleResponseBody = z.infer<typeof queryMappingRulesByRoleResponseBodySchema>;
 
 const createRole: Endpoint = {

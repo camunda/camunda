@@ -7,20 +7,10 @@
  */
 
 import {z} from 'zod';
-import {
-	API_VERSION,
-	getQueryResponseBodySchema,
-	getQueryRequestBodySchema,
-	queryResponsePageSchema,
-	type Endpoint,
-} from './common';
+import {API_VERSION, getQueryResponseBodySchema, getQueryRequestBodySchema, type Endpoint} from './common';
 import {mappingRuleSchema, type MappingRule} from './mapping-rule';
 import {userSchema} from './user';
-import {groupSchema, type Group} from './group-role';
-
-const pageOnlyQueryResponseBodySchema = z.object({
-	page: queryResponsePageSchema,
-});
+import {groupSchema, type Group, roleSchema} from './group-role';
 
 const createGroupRequestBodySchema = groupSchema;
 type CreateGroupRequestBody = z.infer<typeof createGroupRequestBodySchema>;
@@ -146,7 +136,7 @@ const queryRolesByGroupRequestBodySchema = getQueryRequestBodySchema({
 });
 type QueryRolesByGroupRequestBody = z.infer<typeof queryRolesByGroupRequestBodySchema>;
 
-const queryRolesByGroupResponseBodySchema = pageOnlyQueryResponseBodySchema;
+const queryRolesByGroupResponseBodySchema = getQueryResponseBodySchema(roleSchema.pick({roleId: true, name: true}));
 type QueryRolesByGroupResponseBody = z.infer<typeof queryRolesByGroupResponseBodySchema>;
 
 const queryRolesByGroup: Endpoint<Pick<Group, 'groupId'>> = {
@@ -170,7 +160,7 @@ const queryMappingRulesByGroupRequestBodySchema = getQueryRequestBodySchema({
 });
 type QueryMappingRulesByGroupRequestBody = z.infer<typeof queryMappingRulesByGroupRequestBodySchema>;
 
-const queryMappingRulesByGroupResponseBodySchema = pageOnlyQueryResponseBodySchema;
+const queryMappingRulesByGroupResponseBodySchema = getQueryResponseBodySchema(mappingRuleSchema);
 type QueryMappingRulesByGroupResponseBody = z.infer<typeof queryMappingRulesByGroupResponseBodySchema>;
 
 const queryMappingRulesByGroup: Endpoint<Pick<Group, 'groupId'>> = {
