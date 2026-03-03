@@ -44,9 +44,19 @@ final class RingBuffer {
       throw new IllegalArgumentException("capacity must be non-negative, got: " + minCapacity);
     }
     final int requested = minCapacity == 0 ? DEFAULT_CAPACITY : minCapacity;
-    final int actualCapacity = requested == 1 ? 1 : Integer.highestOneBit(requested - 1) << 1;
+    final var actualCapacity = nextPowerOfTwo(requested);
     mask = actualCapacity - 1;
     buffer = new AtomicReferenceArray<>(actualCapacity);
+  }
+
+  private static int nextPowerOfTwo(final int minCapacity) {
+    final var capacity = minCapacity == 1 ? 1 : Integer.highestOneBit(minCapacity - 1) << 1;
+    if (capacity <= 0) {
+      throw new IllegalArgumentException(
+          "Expected next power of two of minCapacity to not overflow, but got %d from a minCapacity=%d"
+              .formatted(capacity, minCapacity));
+    }
+    return capacity;
   }
 
   /**
