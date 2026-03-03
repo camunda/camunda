@@ -7,20 +7,10 @@
  */
 
 import {z} from 'zod';
-import {
-	API_VERSION,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	queryResponsePageSchema,
-	type Endpoint,
-} from './common';
+import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from './common';
 import {roleSchema, type Group, type Role} from './group-role';
 import {mappingRuleSchema, type MappingRule} from './mapping-rule';
 import {userSchema} from './user';
-
-const pageOnlyQueryResponseBodySchema = z.object({
-	page: queryResponsePageSchema,
-});
 
 const createRoleRequestBodySchema = roleSchema;
 type CreateRoleRequestBody = z.infer<typeof createRoleRequestBodySchema>;
@@ -98,7 +88,7 @@ const queryMappingRulesByRoleRequestBodySchema = getQueryRequestBodySchema({
 });
 type QueryMappingRulesByRoleRequestBody = z.infer<typeof queryMappingRulesByRoleRequestBodySchema>;
 
-const queryMappingRulesByRoleResponseBodySchema = pageOnlyQueryResponseBodySchema;
+const queryMappingRulesByRoleResponseBodySchema = getQueryResponseBodySchema(mappingRuleSchema);
 type QueryMappingRulesByRoleResponseBody = z.infer<typeof queryMappingRulesByRoleResponseBodySchema>;
 
 const createRole: Endpoint = {
@@ -223,21 +213,21 @@ const queryGroupsByRole: Endpoint<Pick<Role, 'roleId'>> = {
 	},
 };
 
-const assignMappingToRole: Endpoint<Pick<Role, 'roleId'> & Pick<MappingRule, 'mappingId'>> = {
+const assignMappingToRole: Endpoint<Pick<Role, 'roleId'> & Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'PUT',
 	getUrl(params) {
-		const {roleId, mappingId} = params;
+		const {roleId, mappingRuleId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/mapping-rules/${mappingId}`;
+		return `/${API_VERSION}/roles/${roleId}/mapping-rules/${mappingRuleId}`;
 	},
 };
 
-const unassignMappingFromRole: Endpoint<Pick<Role, 'roleId'> & Pick<MappingRule, 'mappingId'>> = {
+const unassignMappingFromRole: Endpoint<Pick<Role, 'roleId'> & Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'DELETE',
 	getUrl(params) {
-		const {roleId, mappingId} = params;
+		const {roleId, mappingRuleId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/mapping-rules/${mappingId}`;
+		return `/${API_VERSION}/roles/${roleId}/mapping-rules/${mappingRuleId}`;
 	},
 };
 

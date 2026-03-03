@@ -10,7 +10,7 @@ import {z} from 'zod';
 import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from '../common';
 
 const mappingRuleSchema = z.object({
-	mappingId: z.string(),
+	mappingRuleId: z.string(),
 	claimName: z.string(),
 	claimValue: z.string(),
 	name: z.string(),
@@ -34,10 +34,10 @@ const updateMappingRuleResponseBodySchema = mappingRuleSchema;
 type UpdateMappingRuleResponseBody = z.infer<typeof updateMappingRuleResponseBodySchema>;
 
 const queryMappingRulesRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['mappingId', 'claimName', 'claimValue', 'name'] as const,
+	sortFields: ['mappingRuleId', 'claimName', 'claimValue', 'name'] as const,
 	filter: mappingRuleSchema
 		.pick({
-			mappingId: true,
+			mappingRuleId: true,
 			claimName: true,
 			claimValue: true,
 			name: true,
@@ -56,30 +56,30 @@ const createMappingRule: Endpoint = {
 	},
 };
 
-const updateMappingRule: Endpoint<Pick<MappingRule, 'mappingId'>> = {
+const updateMappingRule: Endpoint<Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'PUT',
 	getUrl(params) {
-		const {mappingId} = params;
+		const {mappingRuleId} = params;
 
-		return `/${API_VERSION}/mapping-rules/${mappingId}`;
+		return `/${API_VERSION}/mapping-rules/${mappingRuleId}`;
 	},
 };
 
-const deleteMappingRule: Endpoint<Pick<MappingRule, 'mappingId'>> = {
+const deleteMappingRule: Endpoint<Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'DELETE',
 	getUrl(params) {
-		const {mappingId} = params;
+		const {mappingRuleId} = params;
 
-		return `/${API_VERSION}/mapping-rules/${mappingId}`;
+		return `/${API_VERSION}/mapping-rules/${mappingRuleId}`;
 	},
 };
 
-const getMappingRule: Endpoint<Pick<MappingRule, 'mappingId'>> = {
+const getMappingRule: Endpoint<Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'GET',
 	getUrl(params) {
-		const {mappingId} = params;
+		const {mappingRuleId} = params;
 
-		return `/${API_VERSION}/mapping-rules/${mappingId}`;
+		return `/${API_VERSION}/mapping-rules/${mappingRuleId}`;
 	},
 };
 

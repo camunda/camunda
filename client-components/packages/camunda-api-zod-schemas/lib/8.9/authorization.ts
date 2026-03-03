@@ -73,6 +73,8 @@ const resourceTypeSchema = z.enum([
 	'TENANT',
 	'USER',
 	'USER_TASK',
+	'CLAIM_USER_TASK',
+	'COMPLETE_USER_TASK',
 ]);
 type ResourceType = z.infer<typeof resourceTypeSchema>;
 
