@@ -378,21 +378,41 @@ components:
     DocumentMetadataResponse:
       description: Information about the document that is returned in responses.
       type: object
-      allOf:
-        - $ref: '#/components/schemas/DocumentMetadata'
       required:
         - fileName
+        - expiresAt
         - size
         - contentType
         - customProperties
+        - processDefinitionId
+        - processInstanceKey
       properties:
-        # Override the nullability of customProperties to prevent issues with code generation
-        # (arrays are always guaranteed to be present in responses)
+        contentType:
+          type: string
+          description: The content type of the document.
+        fileName:
+          type: string
+          description: The name of the file.
+        expiresAt:
+          type: string
+          format: date-time
+          description: The date and time when the document expires.
+        size:
+          type: integer
+          format: int64
+          description: The size of the document in bytes.
+        processDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+          description: The ID of the process definition that created the document.
+        processInstanceKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+          description: The key of the process instance that created the document.
         customProperties:
           type: object
           description: Custom properties of the document.
           additionalProperties: true
-          nullable: false
 
     DocumentLinkRequest:
       type: object
