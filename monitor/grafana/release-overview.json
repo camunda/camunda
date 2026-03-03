@@ -1626,7 +1626,7 @@
           "editorMode": "code",
           "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"release-8.*\", pod=~\"zeebe.*|camunda.*\"}[$__rate_interval]))",
           "interval": "",
-          "legendFormat": "{{namsepace}}",
+          "legendFormat": "{{namespace}}",
           "range": true,
           "refId": "A"
         }
