@@ -81,6 +81,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
 @SuppressWarnings("resource")
@@ -102,7 +103,6 @@ final class OpenSearchArchiverRepositoryIT {
   private final String zeebeIndex = zeebeIndexPrefix + "-" + UUID.randomUUID();
   private TestExporterResourceProvider resourceProvider;
   private String indexPrefix;
-  private final ObjectMapper objectMapper = TestObjectMapper.objectMapper();
 
   @AfterEach
   void afterEach() {
@@ -1018,7 +1018,7 @@ final class OpenSearchArchiverRepositoryIT {
     // ensure all templates are created
     startupSchema();
     // create indices for all templates with a date in the index name
-    final var searchClientAdapter = new SearchClientAdapter(testClient, objectMapper);
+    final var searchClientAdapter = new SearchClientAdapter(testClient, MAPPER);
     final String date = "2026-01-10";
     for (final var indexTemplate : resourceProvider.getIndexTemplateDescriptors()) {
       searchClientAdapter.createIndex(indexTemplate.getIndexPattern().replace("*", date), 0);
@@ -1079,8 +1079,7 @@ final class OpenSearchArchiverRepositoryIT {
                                 .build())
                         .get();
 
-                final var json =
-                    objectMapper.readTree(response.getBody().orElseThrow().bodyAsString());
+                final var json = MAPPER.readTree(response.getBody().orElseThrow().bodyAsString());
                 // Check runtime index (should not have ISM policy)
                 assertThat(
                         json.get(template.getFullQualifiedName())
@@ -1143,7 +1142,7 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private void startupSchema() {
-    final var searchEngineClient = new OpensearchEngineClient(testClient, objectMapper);
+    final var searchEngineClient = new OpensearchEngineClient(testClient, MAPPER);
     final var connectConfig = new ConnectConfiguration();
     connectConfig.setIndexPrefix(indexPrefix);
     connectConfig.setUrl(SEARCH_DB.esUrl());
@@ -1162,7 +1161,7 @@ final class OpenSearchArchiverRepositoryIT {
             resourceProvider.getIndexDescriptors(),
             resourceProvider.getIndexTemplateDescriptors(),
             searchEngineConfiguration,
-            objectMapper)
+            MAPPER)
         .startup();
   }
 
@@ -1397,50 +1396,31 @@ final class OpenSearchArchiverRepositoryIT {
 
   private OpenSearchTransport createTransport() {
     try {
-      return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(SEARCH_DB.osUrl()))
-          .setMapper(new JacksonJsonpMapper())
-          .build();
+      if (!SEARCH_DB.isAws()) {
+        return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(SEARCH_DB.osUrl()))
+            .setMapper(new JacksonJsonpMapper(MAPPER))
+            .build();
+      }
+
+      final URI uri = URI.create(SEARCH_DB.osUrl());
+      final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+      final Region region = new DefaultAwsRegionProviderChain().getRegion();
+      return new AwsSdk2Transport(
+          httpClient,
+          uri.getHost(),
+          region,
+          AwsSdk2TransportOptions.builder().setMapper(new JacksonJsonpMapper(MAPPER)).build());
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }
 
   private OpenSearchClient createOpenSearchClient() {
-    final var isAWSRun = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "");
-    if (isAWSRun.isEmpty()) {
-      return new OpenSearchClient(transport);
-    } else {
-      final URI uri = URI.create(isAWSRun);
-      final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
-      final var region = new DefaultAwsRegionProviderChain().getRegion();
-      return new OpenSearchClient(
-          new AwsSdk2Transport(
-              httpClient,
-              uri.getHost(),
-              region,
-              AwsSdk2TransportOptions.builder()
-                  .setMapper(new JacksonJsonpMapper(new ObjectMapper()))
-                  .build()));
-    }
+    return new OpenSearchClient(transport);
   }
 
   private OpenSearchAsyncClient createOpenSearchAsyncClient() {
-    final var isAWSRun = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "");
-    if (isAWSRun.isEmpty()) {
-      return new OpenSearchAsyncClient(transport);
-    } else {
-      final URI uri = URI.create(isAWSRun);
-      final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
-      final var region = new DefaultAwsRegionProviderChain().getRegion();
-      return new OpenSearchAsyncClient(
-          new AwsSdk2Transport(
-              httpClient,
-              uri.getHost(),
-              region,
-              AwsSdk2TransportOptions.builder()
-                  .setMapper(new JacksonJsonpMapper(new ObjectMapper()))
-                  .build()));
-    }
+    return new OpenSearchAsyncClient(transport);
   }
 
   private void deleteTestIndices() {
