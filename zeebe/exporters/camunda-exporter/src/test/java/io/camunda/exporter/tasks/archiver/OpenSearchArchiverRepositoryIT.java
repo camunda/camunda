@@ -1397,9 +1397,23 @@ final class OpenSearchArchiverRepositoryIT {
 
   private OpenSearchTransport createTransport() {
     try {
-      return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(SEARCH_DB.osUrl()))
-          .setMapper(new JacksonJsonpMapper())
-          .build();
+      final var awsUrl = System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "");
+      if (awsUrl.isEmpty()) {
+        return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(SEARCH_DB.osUrl()))
+            .setMapper(new JacksonJsonpMapper())
+            .build();
+      }
+
+      final URI uri = URI.create(awsUrl);
+      final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+      final var region = new DefaultAwsRegionProviderChain().getRegion();
+      return new AwsSdk2Transport(
+          httpClient,
+          uri.getHost(),
+          region,
+          AwsSdk2TransportOptions.builder()
+              .setMapper(new JacksonJsonpMapper(new ObjectMapper()))
+              .build());
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
