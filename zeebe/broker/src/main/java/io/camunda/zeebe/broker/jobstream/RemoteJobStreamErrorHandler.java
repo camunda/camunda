@@ -85,7 +85,7 @@ final class RemoteJobStreamErrorHandler implements RemoteStreamErrorHandler<Acti
       final LogStreamWriter writer,
       final TaskResult result) {
     final var writeResult =
-        writer.tryWrite(WriteContext.processingResult(), result.getRecordBatch().entries());
+        writer.tryWrite(WriteContext.internal(), result.getRecordBatch().entries());
     if (writeResult.isLeft()) {
       FAILED_WRITER_LOGGER.warn(
           """
