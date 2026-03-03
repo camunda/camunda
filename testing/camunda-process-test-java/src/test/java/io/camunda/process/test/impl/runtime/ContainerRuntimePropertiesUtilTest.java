@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class ContainerRuntimePropertiesUtilTest {
 
@@ -392,6 +393,22 @@ public class ContainerRuntimePropertiesUtilTest {
     final List<Integer> expected = Arrays.asList(8080, 8081, 8088);
 
     assertThat(propertiesUtil.getCamundaExposedPorts()).containsAll(expected);
+  }
+
+  @ParameterizedTest
+  @EnumSource(CamundaProcessTestRuntimeMode.class)
+  void shouldReadRuntimeMode(final CamundaProcessTestRuntimeMode runtimeMode) {
+    final Properties properties = new Properties();
+    properties.put(
+        ContainerRuntimePropertiesUtil.PROPERTY_NAME_RUNTIME_MODE,
+        runtimeMode.name().toLowerCase());
+
+    // when
+    final ContainerRuntimePropertiesUtil propertiesUtil =
+        new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
+
+    // then
+    assertThat(propertiesUtil.getRuntimeMode()).isEqualTo(runtimeMode);
   }
 
   @Nested
