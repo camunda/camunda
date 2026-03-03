@@ -3005,4 +3005,80 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
   }
+
+  @Test
+  void shouldRejectCreateProcessInstanceByIdWithBusinessIdExceedingMaxLength() {
+    // given — businessId exceeds 256 characters
+    final var tooLongBusinessId = "a".repeat(257);
+    final var request =
+        """
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "businessId": "%s"
+            }"""
+            .formatted(tooLongBusinessId);
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The provided businessId exceeds the limit of 256 characters.",
+                "instance":"/v2/process-instances"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectCreateProcessInstanceByKeyWithBusinessIdExceedingMaxLength() {
+    // given — businessId exceeds 256 characters
+    final var tooLongBusinessId = "a".repeat(257);
+    final var request =
+        """
+            {
+                "processDefinitionKey": "123",
+                "businessId": "%s"
+            }"""
+            .formatted(tooLongBusinessId);
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The provided businessId exceeds the limit of 256 characters.",
+                "instance":"/v2/process-instances"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
 }
