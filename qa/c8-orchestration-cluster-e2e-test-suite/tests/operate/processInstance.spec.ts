@@ -222,7 +222,7 @@ test.describe('Process Instance', () => {
     operateProcessInstancePage,
     operateDiagramPage,
   }) => {
-    const {diagram} = operateProcessInstancePage;
+    const {diagramHelper} = operateProcessInstancePage;
 
     await test.step('Navigate to collapsed sub process instance', async () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
@@ -240,7 +240,7 @@ test.describe('Process Instance', () => {
       await operateProcessInstancePage.clickTreeItem(/submit application/i);
 
       await expect(
-        diagram.getByText('submit application', {exact: false}),
+        diagramHelper.getFlowNode('submit application'),
       ).toBeVisible();
     });
 
@@ -248,7 +248,7 @@ test.describe('Process Instance', () => {
       await page.keyboard.press('ArrowRight');
       await operateProcessInstancePage.clickTreeItem(/fill form/i);
       await expect(
-        diagram.getByText('fill form', {exact: false}),
+        diagramHelper.getFlowNode('fill form'),
       ).toBeVisible();
       await operateProcessInstancePage.clickTreeItem(/fill form/i);
 
@@ -267,19 +267,21 @@ test.describe('Process Instance', () => {
     });
 
     await test.step('Click on collapsed sub process', async () => {
-      await diagram.getByText('collapsedSubProcess').click();
+      await operateProcessInstancePage.diagram
+        .getByText('collapsedSubProcess')
+        .click();
 
       await expect(
-        diagram.getByText('submit application', {exact: false}),
+        diagramHelper.getFlowNode('submit application'),
       ).toBeVisible();
-      await expect(diagram.getByText('fill form', {exact: false})).toBeHidden();
+      await expect(diagramHelper.getFlowNode('fill form')).toBeHidden();
     });
 
     await test.step('Navigate back to start event', async () => {
       await operateProcessInstancePage.clickTreeItem('startEvent', true);
 
       await expect(
-        diagram.getByText('submit application', {exact: false}),
+        diagramHelper.getFlowNode('submit application'),
       ).toBeVisible();
     });
 
@@ -287,7 +289,7 @@ test.describe('Process Instance', () => {
       await operateProcessInstancePage.drilldownButton.click();
 
       await expect(
-        diagram.getByText('fill form', {exact: false}),
+        diagramHelper.getFlowNode('fill form'),
       ).toBeVisible();
     });
   });

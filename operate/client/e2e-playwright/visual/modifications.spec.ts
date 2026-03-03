@@ -85,7 +85,7 @@ test.describe('modifications', () => {
         name: /continue/i,
       })
       .click();
-    await page.getByTestId('diagram').getByText('Signal user task').click();
+    await processInstancePage.diagram.getFlowNodeById('Activity_0dex012').click();
     await page
       .getByRole('button', {name: 'Add single element instance'})
       .click();

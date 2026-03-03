@@ -6,7 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useRef, useEffect, useLayoutEffect, useState} from 'react';
+import React, {
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useCallback,
+} from 'react';
 import {
   BpmnJS,
   type OnElementSelection,
@@ -63,9 +69,12 @@ const Diagram: React.FC<Props> = observer(
     hasOuterBorderOnSelection = true,
   }) => {
     const diagramCanvasRef = useRef<HTMLDivElement | null>(null);
+    const diagramRef = useRef<HTMLDivElement | null>(null);
     const [isDiagramRendered, setIsDiagramRendered] = useState(false);
     const viewerRef = useRef<BpmnJS | null>(null);
     const [isViewboxChanging, setIsViewboxChanging] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isMinimapOpen, setIsMinimapOpen] = useState(false);
 
     function getViewer() {
       if (viewerRef.current === null) {
@@ -91,6 +100,7 @@ const Diagram: React.FC<Props> = observer(
             hasOuterBorderOnSelection,
           });
           setIsDiagramRendered(true);
+          setIsMinimapOpen(false);
         }
       }
       renderDiagram();
@@ -105,6 +115,15 @@ const Diagram: React.FC<Props> = observer(
       nonSelectableNodeTooltipText,
       hasOuterBorderOnSelection,
     ]);
+
+    useEffect(() => {
+      if (isDiagramRendered && diagramCanvasRef.current) {
+        const minimap = diagramCanvasRef.current.querySelector('.djs-minimap');
+        if (minimap) {
+          minimap.setAttribute('aria-hidden', 'true');
+        }
+      }
+    }, [isDiagramRendered]);
 
     useEffect(() => {
       if (onElementSelection !== undefined) {
@@ -125,9 +144,81 @@ const Diagram: React.FC<Props> = observer(
       };
     }, [viewer]);
 
+    const handleFullscreen = useCallback(() => {
+      const el = diagramRef.current;
+      if (el === null) {
+        return;
+      }
+
+      if (!document.fullscreenElement) {
+        if (el.requestFullscreen) {
+          el.requestFullscreen();
+        } else {
+          (
+            el as HTMLElement & {webkitRequestFullscreen?: () => void}
+          ).webkitRequestFullscreen?.();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else {
+          (
+            document as Document & {webkitExitFullscreen?: () => void}
+          ).webkitExitFullscreen?.();
+        }
+      }
+    }, []);
+
+    const handleMinimapToggle = useCallback(() => {
+      viewer.toggleMinimap();
+      setIsMinimapOpen(viewer.isMinimapOpen());
+    }, [viewer]);
+
+    useEffect(() => {
+      const handleFullscreenChange = () => {
+        const fullscreenElement =
+          document.fullscreenElement ??
+          (document as Document & {webkitFullscreenElement?: Element})
+            .webkitFullscreenElement ??
+          null;
+
+        const isCurrentlyFullscreen =
+          fullscreenElement !== null &&
+          fullscreenElement === diagramRef.current;
+
+        setIsFullscreen(isCurrentlyFullscreen);
+
+        requestAnimationFrame(() => {
+          viewerRef.current?.notifyResize();
+          viewerRef.current?.zoomReset();
+        });
+      };
+
+      document.addEventListener('fullscreenchange', handleFullscreenChange);
+      document.addEventListener(
+        'webkitfullscreenchange',
+        handleFullscreenChange,
+      );
+
+      return () => {
+        document.removeEventListener(
+          'fullscreenchange',
+          handleFullscreenChange,
+        );
+        document.removeEventListener(
+          'webkitfullscreenchange',
+          handleFullscreenChange,
+        );
+      };
+    }, []);
+
     return (
-      <StyledDiagram data-testid="diagram">
-        <DiagramCanvas ref={diagramCanvasRef} />
+      <StyledDiagram
+        data-testid="diagram"
+        ref={diagramRef}
+        $isFullscreen={isFullscreen}
+      >
+        <DiagramCanvas ref={diagramCanvasRef} data-testid="diagram-canvas" />
         {isDiagramRendered && (
           <>
             {IS_NEW_PROCESS_INSTANCE_PAGE ? (
@@ -135,6 +226,10 @@ const Diagram: React.FC<Props> = observer(
                 handleZoomIn={viewer.zoomIn}
                 handleZoomOut={viewer.zoomOut}
                 handleZoomReset={viewer.zoomReset}
+                handleFullscreen={handleFullscreen}
+                isFullscreen={isFullscreen}
+                handleMinimapToggle={handleMinimapToggle}
+                isMinimapOpen={isMinimapOpen}
                 processDefinitionKey={processDefinitionKey}
               />
             ) : (

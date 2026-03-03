@@ -63,7 +63,10 @@ test.describe('process instance modification', () => {
       path: 'e2e-playwright/docs-screenshots/process-instance-modification/modification-mode.png',
     });
 
-    await page.getByTestId('diagram').getByText('Message task').nth(0).click();
+    await page
+      .getByTestId('diagram-canvas')
+      .locator('[data-element-id="messageTask"]')
+      .click();
 
     await expect(
       page.getByRole('button', {
@@ -96,7 +99,10 @@ test.describe('process instance modification', () => {
 
     await commonPage.deleteArrows();
 
-    await page.getByText('Last task').click();
+    await page
+      .getByTestId('diagram-canvas')
+      .locator('[data-element-id="lastTask"]')
+      .click();
 
     await expect(
       page.getByRole('button', {name: /Add single element instance/i}),
@@ -152,7 +158,10 @@ test.describe('process instance modification', () => {
 
     await page.getByRole('button', {name: 'Continue'}).click();
 
-    await page.getByTestId('diagram').getByText('Message task').nth(0).click();
+    await page
+      .getByTestId('diagram-canvas')
+      .locator('[data-element-id="messageTask"]')
+      .click();
 
     await expect(
       page.getByRole('button', {
@@ -174,7 +183,9 @@ test.describe('process instance modification', () => {
 
     await moveTokenButton.click();
 
-    const lastTaskElement = page.getByTestId('diagram').getByText('Last task');
+    const lastTaskElement = await page
+      .getByTestId('diagram-canvas')
+      .locator('[data-element-id="lastTask"]');
 
     await commonPage.addDownArrow(lastTaskElement);
 
