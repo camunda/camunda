@@ -299,7 +299,7 @@ components:
           description: The hash of the document.
           nullable: true
         metadata:
-          $ref: '#/components/schemas/DocumentMetadata'
+          $ref: '#/components/schemas/DocumentMetadataResponse'
 
     DocumentCreationFailureDetail:
       type: object
@@ -337,37 +337,52 @@ components:
                 $ref: '#/components/schemas/DocumentReference'
 
     DocumentMetadata:
-      required:
-        - customProperties
       description: Information about the document.
       type: object
       properties:
         contentType:
           type: string
           description: The content type of the document.
+          nullable: true
         fileName:
           type: string
           description: The name of the file.
+          nullable: true
         expiresAt:
           type: string
           format: date-time
           description: The date and time when the document expires.
+          nullable: true
         size:
           type: integer
           format: int64
           description: The size of the document in bytes.
+          nullable: true
         processDefinitionId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
           description: The ID of the process definition that created the document.
+          nullable: true
         processInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The key of the process instance that created the document.
+          nullable: true
         customProperties:
           type: object
           description: Custom properties of the document.
           additionalProperties: true
+          nullable: true
+
+    DocumentMetadataResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/DocumentMetadata'
+      required:
+        - fileName
+        - size
+        - contentType
+        - customProperties
 
     DocumentLinkRequest:
       type: object
