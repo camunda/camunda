@@ -9,6 +9,8 @@ package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.GlobalJobStatisticsDbQuery;
 import io.camunda.db.rdbms.read.domain.GlobalJobStatisticsDbResult;
+import io.camunda.db.rdbms.read.domain.JobTimeSeriesStatisticsDbQuery;
+import io.camunda.db.rdbms.read.domain.JobTimeSeriesStatisticsDbResult;
 import io.camunda.db.rdbms.read.domain.JobTypeStatisticsDbQuery;
 import io.camunda.db.rdbms.read.domain.JobTypeStatisticsDbResult;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
@@ -23,5 +25,13 @@ public interface JobMetricsBatchMapper {
 
   List<JobTypeStatisticsDbResult> jobTypeStatistics(JobTypeStatisticsDbQuery query);
 
+<<<<<<< HEAD
+=======
+  List<JobWorkerStatisticsDbResult> jobWorkerStatistics(JobWorkerStatisticsDbQuery query);
+
+  List<JobTimeSeriesStatisticsDbResult> jobTimeSeriesStatistics(
+      JobTimeSeriesStatisticsDbQuery query);
+
+>>>>>>> 4e1f4384 (feat: add JobTimeSeriesStatistics RDBMS implementation)
   int cleanupMetrics(CleanupHistoryDto dto);
 }

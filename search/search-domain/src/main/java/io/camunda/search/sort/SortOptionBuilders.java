@@ -281,6 +281,29 @@ public final class SortOptionBuilders {
     return fn.apply(jobTypeStatistics()).build();
   }
 
+<<<<<<< HEAD
+=======
+  public static JobWorkerStatisticsSort.Builder jobWorkerStatistics() {
+    return new JobWorkerStatisticsSort.Builder();
+  }
+
+  public static JobWorkerStatisticsSort jobWorkerStatistics(
+      final Function<JobWorkerStatisticsSort.Builder, ObjectBuilder<JobWorkerStatisticsSort>> fn) {
+    return fn.apply(jobWorkerStatistics()).build();
+  }
+
+  public static JobTimeSeriesStatisticsSort.Builder jobTimeSeriesStatistics() {
+    return new JobTimeSeriesStatisticsSort.Builder();
+  }
+
+  public static JobTimeSeriesStatisticsSort jobTimeSeriesStatistics(
+      final Function<
+              JobTimeSeriesStatisticsSort.Builder, ObjectBuilder<JobTimeSeriesStatisticsSort>>
+          fn) {
+    return fn.apply(jobTimeSeriesStatistics()).build();
+  }
+
+>>>>>>> 4e1f4384 (feat: add JobTimeSeriesStatistics RDBMS implementation)
   public static CorrelatedMessageSubscriptionSort.Builder correlatedMessageSubscription() {
     return new CorrelatedMessageSubscriptionSort.Builder();
   }

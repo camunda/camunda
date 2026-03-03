@@ -14,9 +14,11 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.read.domain.GlobalJobStatisticsDbResult;
+import io.camunda.db.rdbms.read.domain.JobTimeSeriesStatisticsDbResult;
 import io.camunda.db.rdbms.read.domain.JobTypeStatisticsDbResult;
 import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
+import io.camunda.search.query.JobTimeSeriesStatisticsQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
@@ -387,4 +389,453 @@ class JobMetricsBatchDbReaderTest {
     // then
     assertThat(result.items().getFirst().jobType()).isEqualTo(longJobTypeName);
   }
+<<<<<<< HEAD
+=======
+
+  // ===========================================================================
+  // Job Worker Statistics Tests
+  // ===========================================================================
+
+  @Test
+  void shouldReturnEmptyJobWorkerStatisticsWhenTenantCheckEnabledButNoTenants() {
+    // given
+    final var query =
+        JobWorkerStatisticsQuery.of(
+            b ->
+                b.filter(
+                    f ->
+                        f.from(OffsetDateTime.now())
+                            .to(OffsetDateTime.now())
+                            .jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(List.of()));
+
+    // when
+    final var result = jobMetricsBatchDbReader.getJobWorkerStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.total()).isZero();
+    assertThat(result.items()).isEmpty();
+    verifyNoInteractions(jobMetricsBatchMapper);
+  }
+
+  @Test
+  void shouldReturnJobWorkerStatisticsFromMapper() {
+    // given
+    final var lastCreatedAt1 = OffsetDateTime.now().minusHours(1);
+    final var lastCompletedAt1 = OffsetDateTime.now().minusHours(2);
+    final var lastFailedAt1 = OffsetDateTime.now().minusHours(3);
+    final var lastCreatedAt2 = OffsetDateTime.now().minusHours(4);
+    final var lastCompletedAt2 = OffsetDateTime.now().minusHours(5);
+    final var lastFailedAt2 = OffsetDateTime.now().minusHours(6);
+
+    final var dbResult1 =
+        new JobWorkerStatisticsDbResult(
+            "worker-1", 100L, lastCreatedAt1, 80L, lastCompletedAt1, 5L, lastFailedAt1);
+    final var dbResult2 =
+        new JobWorkerStatisticsDbResult(
+            "worker-2", 50L, lastCreatedAt2, 40L, lastCompletedAt2, 2L, lastFailedAt2);
+
+    when(jobMetricsBatchMapper.jobWorkerStatistics(any()))
+        .thenReturn(List.of(dbResult1, dbResult2));
+
+    final var query =
+        JobWorkerStatisticsQuery.of(
+            b ->
+                b.filter(
+                    f ->
+                        f.from(OffsetDateTime.now())
+                            .to(OffsetDateTime.now())
+                            .jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when
+    final var result = jobMetricsBatchDbReader.getJobWorkerStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.total()).isEqualTo(2L);
+    assertThat(result.items()).hasSize(2);
+
+    final var item1 = result.items().get(0);
+    assertThat(item1.worker()).isEqualTo("worker-1");
+    assertThat(item1.created().count()).isEqualTo(100L);
+    assertThat(item1.created().lastUpdatedAt()).isEqualTo(lastCreatedAt1);
+    assertThat(item1.completed().count()).isEqualTo(80L);
+    assertThat(item1.completed().lastUpdatedAt()).isEqualTo(lastCompletedAt1);
+    assertThat(item1.failed().count()).isEqualTo(5L);
+    assertThat(item1.failed().lastUpdatedAt()).isEqualTo(lastFailedAt1);
+
+    final var item2 = result.items().get(1);
+    assertThat(item2.worker()).isEqualTo("worker-2");
+    assertThat(item2.created().count()).isEqualTo(50L);
+    assertThat(item2.created().lastUpdatedAt()).isEqualTo(lastCreatedAt2);
+    assertThat(item2.completed().count()).isEqualTo(40L);
+    assertThat(item2.completed().lastUpdatedAt()).isEqualTo(lastCompletedAt2);
+    assertThat(item2.failed().count()).isEqualTo(2L);
+    assertThat(item2.failed().lastUpdatedAt()).isEqualTo(lastFailedAt2);
+  }
+
+  @Test
+  void shouldReturnEmptyJobWorkerStatisticsWhenCountIsZero() {
+    // given - mapper returns null (no data for this query)
+    final var query =
+        JobWorkerStatisticsQuery.of(
+            b ->
+                b.filter(
+                    f ->
+                        f.from(OffsetDateTime.now())
+                            .to(OffsetDateTime.now())
+                            .jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when
+    final var result = jobMetricsBatchDbReader.getJobWorkerStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.total()).isZero();
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldHandleNullCountsInJobWorkerStatisticsDbResult() {
+    // given
+    final var dbResult =
+        new JobWorkerStatisticsDbResult("worker-1", null, null, null, null, null, null);
+
+    when(jobMetricsBatchMapper.jobWorkerStatistics(any())).thenReturn(List.of(dbResult));
+
+    final var query =
+        JobWorkerStatisticsQuery.of(
+            b ->
+                b.filter(
+                    f ->
+                        f.from(OffsetDateTime.now())
+                            .to(OffsetDateTime.now())
+                            .jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when
+    final var result = jobMetricsBatchDbReader.getJobWorkerStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.total()).isEqualTo(1L);
+    assertThat(result.items()).hasSize(1);
+
+    final var item = result.items().getFirst();
+    assertThat(item.worker()).isEqualTo("worker-1");
+    assertThat(item.created().count()).isZero();
+    assertThat(item.created().lastUpdatedAt()).isNull();
+    assertThat(item.completed().count()).isZero();
+    assertThat(item.completed().lastUpdatedAt()).isNull();
+    assertThat(item.failed().count()).isZero();
+    assertThat(item.failed().lastUpdatedAt()).isNull();
+  }
+
+  @Test
+  void shouldReturnJobWorkerStatisticsWithMultipleWorkers() {
+    // given
+    final var now = OffsetDateTime.now();
+    final var dbResult1 = new JobWorkerStatisticsDbResult("worker-a", 100L, now, 90L, now, 5L, now);
+    final var dbResult2 = new JobWorkerStatisticsDbResult("worker-b", 50L, now, 45L, now, 2L, now);
+    final var dbResult3 = new JobWorkerStatisticsDbResult("worker-c", 25L, now, 20L, now, 1L, now);
+
+    when(jobMetricsBatchMapper.jobWorkerStatistics(any()))
+        .thenReturn(List.of(dbResult1, dbResult2, dbResult3));
+
+    final var query =
+        JobWorkerStatisticsQuery.of(
+            b -> b.filter(f -> f.from(now.minusDays(1)).to(now).jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when
+    final var result = jobMetricsBatchDbReader.getJobWorkerStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.total()).isEqualTo(3L);
+    assertThat(result.items()).hasSize(3);
+    assertThat(result.items())
+        .extracting("worker")
+        .containsExactly("worker-a", "worker-b", "worker-c");
+  }
+
+  @Test
+  void shouldReturnJobWorkerStatisticsWithZeroFailedCount() {
+    // given
+    final var now = OffsetDateTime.now();
+    final var dbResult =
+        new JobWorkerStatisticsDbResult("reliable-worker", 10L, now, 10L, now, 0L, now);
+
+    when(jobMetricsBatchMapper.jobWorkerStatistics(any())).thenReturn(List.of(dbResult));
+
+    final var query =
+        JobWorkerStatisticsQuery.of(
+            b -> b.filter(f -> f.from(now.minusDays(1)).to(now).jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when
+    final var result = jobMetricsBatchDbReader.getJobWorkerStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.items().getFirst().worker()).isEqualTo("reliable-worker");
+    assertThat(result.items().getFirst().failed().count()).isZero();
+    assertThat(result.items().getFirst().completed().count()).isEqualTo(10L);
+  }
+
+  @Test
+  void shouldReturnJobWorkerStatisticsWithHighVolumeMetrics() {
+    // given
+    final var now = OffsetDateTime.now();
+    final var dbResult =
+        new JobWorkerStatisticsDbResult(
+            "high-volume-worker", 1_000_000L, now, 950_000L, now, 50_000L, now);
+
+    when(jobMetricsBatchMapper.jobWorkerStatistics(any())).thenReturn(List.of(dbResult));
+
+    final var query =
+        JobWorkerStatisticsQuery.of(
+            b -> b.filter(f -> f.from(now.minusDays(7)).to(now).jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when
+    final var result = jobMetricsBatchDbReader.getJobWorkerStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.items().getFirst().worker()).isEqualTo("high-volume-worker");
+    assertThat(result.items().getFirst().created().count()).isEqualTo(1_000_000L);
+    assertThat(result.items().getFirst().completed().count()).isEqualTo(950_000L);
+    assertThat(result.items().getFirst().failed().count()).isEqualTo(50_000L);
+  }
+
+  @Test
+  void shouldReturnJobWorkerStatisticsWithMixedTimestamps() {
+    // given
+    final var oldTimestamp = OffsetDateTime.now().minusDays(30);
+    final var recentTimestamp = OffsetDateTime.now().minusHours(1);
+
+    final var dbResult =
+        new JobWorkerStatisticsDbResult(
+            "worker-1", 100L, oldTimestamp, 80L, recentTimestamp, 5L, oldTimestamp);
+
+    when(jobMetricsBatchMapper.jobWorkerStatistics(any())).thenReturn(List.of(dbResult));
+
+    final var query =
+        JobWorkerStatisticsQuery.of(
+            b -> b.filter(f -> f.from(oldTimestamp).to(OffsetDateTime.now()).jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when
+    final var result = jobMetricsBatchDbReader.getJobWorkerStatistics(query, resourceAccessChecks);
+
+    // then
+    final var item = result.items().getFirst();
+    assertThat(item.created().lastUpdatedAt()).isEqualTo(oldTimestamp);
+    assertThat(item.completed().lastUpdatedAt()).isEqualTo(recentTimestamp);
+    assertThat(item.failed().lastUpdatedAt()).isEqualTo(oldTimestamp);
+  }
+
+  @Test
+  void shouldReturnEmptyJobWorkerStatisticsListWhenMapperReturnsEmptyList() {
+    // given
+    when(jobMetricsBatchMapper.jobWorkerStatistics(any())).thenReturn(List.of());
+
+    final var query =
+        JobWorkerStatisticsQuery.of(
+            b ->
+                b.filter(
+                    f ->
+                        f.from(OffsetDateTime.now())
+                            .to(OffsetDateTime.now())
+                            .jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when
+    final var result = jobMetricsBatchDbReader.getJobWorkerStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.total()).isZero();
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnJobForLongWorkerNames() {
+    // given
+    final var now = OffsetDateTime.now();
+    final var longWorkerName =
+        "io.camunda.example.very.long.package.name.with.multiple.segments.MyVeryLongWorkerName";
+    final var dbResult =
+        new JobWorkerStatisticsDbResult(longWorkerName, 10L, now, 9L, now, 1L, now);
+
+    when(jobMetricsBatchMapper.jobWorkerStatistics(any())).thenReturn(List.of(dbResult));
+
+    final var query =
+        JobWorkerStatisticsQuery.of(
+            b -> b.filter(f -> f.from(now.minusDays(1)).to(now).jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when
+    final var result = jobMetricsBatchDbReader.getJobWorkerStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.items().getFirst().worker()).isEqualTo(longWorkerName);
+  }
+
+  // -----------------------------------------------------------------------
+  // getJobTimeSeriesStatistics
+  // -----------------------------------------------------------------------
+
+  @Test
+  void shouldReturnEmptyTimeSeriesWhenTenantCheckEnabledButNoTenants() {
+    // given
+    final var now = OffsetDateTime.now();
+    final var query =
+        JobTimeSeriesStatisticsQuery.of(
+            b -> b.filter(f -> f.from(now.minusDays(1)).to(now).jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(List.of()));
+
+    // when
+    final var result =
+        jobMetricsBatchDbReader.getJobTimeSeriesStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.total()).isZero();
+    assertThat(result.items()).isEmpty();
+    verifyNoInteractions(jobMetricsBatchMapper);
+  }
+
+  @Test
+  void shouldReturnTimeSeriesFromMapper() {
+    // given
+    final var bucket1 = OffsetDateTime.parse("2024-07-28T00:00:00Z");
+    final var bucket2 = OffsetDateTime.parse("2024-07-28T01:00:00Z");
+    final var lastUpdatedAt = OffsetDateTime.now();
+
+    final var dbResult1 =
+        new JobTimeSeriesStatisticsDbResult(
+            bucket1, 10L, lastUpdatedAt, 8L, lastUpdatedAt, 2L, lastUpdatedAt);
+    final var dbResult2 =
+        new JobTimeSeriesStatisticsDbResult(
+            bucket2, 5L, lastUpdatedAt, 4L, lastUpdatedAt, 1L, lastUpdatedAt);
+
+    when(jobMetricsBatchMapper.jobTimeSeriesStatistics(any()))
+        .thenReturn(List.of(dbResult1, dbResult2));
+
+    final var now = OffsetDateTime.now();
+    final var query =
+        JobTimeSeriesStatisticsQuery.of(
+            b -> b.filter(f -> f.from(now.minusDays(1)).to(now).jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when
+    final var result =
+        jobMetricsBatchDbReader.getJobTimeSeriesStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.total()).isEqualTo(2L);
+    assertThat(result.items()).hasSize(2);
+
+    final var item1 = result.items().get(0);
+    assertThat(item1.time()).isEqualTo(bucket1);
+    assertThat(item1.created().count()).isEqualTo(10L);
+    assertThat(item1.completed().count()).isEqualTo(8L);
+    assertThat(item1.failed().count()).isEqualTo(2L);
+
+    final var item2 = result.items().get(1);
+    assertThat(item2.time()).isEqualTo(bucket2);
+    assertThat(item2.created().count()).isEqualTo(5L);
+    assertThat(item2.completed().count()).isEqualTo(4L);
+    assertThat(item2.failed().count()).isEqualTo(1L);
+  }
+
+  @Test
+  void shouldReturnTimeSeriesWithNullCountsDefaultingToZero() {
+    // given
+    final var bucket = OffsetDateTime.parse("2024-07-28T00:00:00Z");
+    final var dbResult =
+        new JobTimeSeriesStatisticsDbResult(bucket, null, null, null, null, null, null);
+    when(jobMetricsBatchMapper.jobTimeSeriesStatistics(any())).thenReturn(List.of(dbResult));
+
+    final var now = OffsetDateTime.now();
+    final var query =
+        JobTimeSeriesStatisticsQuery.of(
+            b -> b.filter(f -> f.from(now.minusDays(1)).to(now).jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when
+    final var result =
+        jobMetricsBatchDbReader.getJobTimeSeriesStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    final var item = result.items().getFirst();
+    assertThat(item.time()).isEqualTo(bucket);
+    assertThat(item.created().count()).isZero();
+    assertThat(item.created().lastUpdatedAt()).isNull();
+    assertThat(item.completed().count()).isZero();
+    assertThat(item.failed().count()).isZero();
+  }
+
+  @Test
+  void shouldReturnEmptyTimeSeriesWhenMapperReturnsEmptyList() {
+    // given
+    when(jobMetricsBatchMapper.jobTimeSeriesStatistics(any())).thenReturn(List.of());
+
+    final var now = OffsetDateTime.now();
+    final var query =
+        JobTimeSeriesStatisticsQuery.of(
+            b -> b.filter(f -> f.from(now.minusDays(1)).to(now).jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when
+    final var result =
+        jobMetricsBatchDbReader.getJobTimeSeriesStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.total()).isZero();
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnTimeSeriesWithTimestampsPreserved() {
+    // given
+    final var bucket = OffsetDateTime.parse("2024-07-28T12:00:00Z");
+    final var lastCreated = OffsetDateTime.parse("2024-07-28T12:30:00Z");
+    final var lastCompleted = OffsetDateTime.parse("2024-07-28T12:45:00Z");
+    final var lastFailed = OffsetDateTime.parse("2024-07-28T12:59:00Z");
+
+    final var dbResult =
+        new JobTimeSeriesStatisticsDbResult(
+            bucket, 100L, lastCreated, 90L, lastCompleted, 3L, lastFailed);
+    when(jobMetricsBatchMapper.jobTimeSeriesStatistics(any())).thenReturn(List.of(dbResult));
+
+    final var now = OffsetDateTime.now();
+    final var query =
+        JobTimeSeriesStatisticsQuery.of(
+            b -> b.filter(f -> f.from(now.minusDays(1)).to(now).jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when
+    final var result =
+        jobMetricsBatchDbReader.getJobTimeSeriesStatistics(query, resourceAccessChecks);
+
+    // then
+    final var item = result.items().getFirst();
+    assertThat(item.created().lastUpdatedAt()).isEqualTo(lastCreated);
+    assertThat(item.completed().lastUpdatedAt()).isEqualTo(lastCompleted);
+    assertThat(item.failed().lastUpdatedAt()).isEqualTo(lastFailed);
+  }
+>>>>>>> 4e1f4384 (feat: add JobTimeSeriesStatistics RDBMS implementation)
 }
