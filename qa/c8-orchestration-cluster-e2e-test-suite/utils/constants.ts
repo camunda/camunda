@@ -17,6 +17,20 @@ export const generateUniqueId = () => {
   return Math.random().toString(36).substring(2, 10);
 };
 
+export function generateRandomStringAsync(length: number): Promise<string> {
+  return new Promise<string>((resolve) => {
+    setTimeout(() => {
+      const alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * alphabet.length);
+        result += alphabet.charAt(randomIndex);
+      }
+      resolve(result);
+    }, 100);
+  });
+}
+
 // Create unique user with optional custom ID
 export const createUniqueUser = (customId?: string) => {
   const id = customId || generateUniqueId();
