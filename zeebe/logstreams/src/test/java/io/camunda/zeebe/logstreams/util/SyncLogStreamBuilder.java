@@ -53,12 +53,6 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   }
 
   @Override
-  public SyncLogStreamBuilder withLogName(final String logName) {
-    delegate.withLogName(logName);
-    return this;
-  }
-
-  @Override
   public SyncLogStreamBuilder withClock(final InstantSource clock) {
     delegate.withClock(clock);
     return this;
@@ -77,6 +71,12 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   }
 
   @Override
+  public SyncLogStreamBuilder withInFlightCapacity(final int capacity) {
+    delegate.withInFlightCapacity(capacity);
+    return this;
+  }
+
+  @Override
   public SyncLogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
     delegate.withMeterRegistry(meterRegistry);
     return this;
@@ -85,5 +85,11 @@ public final class SyncLogStreamBuilder implements LogStreamBuilder {
   @Override
   public SyncLogStream build() {
     return new SyncLogStream(delegate.build());
+  }
+
+  @Override
+  public SyncLogStreamBuilder withLogName(final String logName) {
+    delegate.withLogName(logName);
+    return this;
   }
 }

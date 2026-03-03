@@ -95,19 +95,18 @@ public final class FlowControl implements AppendListener {
   private volatile long lastProcessedPosition = -1;
   private volatile long lastExportedPosition;
 
-  private static final int DEFAULT_IN_FLIGHT_CAPACITY = 1024 * 1024; // 1M slots, ~8MB array
   private final RingBuffer inFlight;
 
   public FlowControl(final LogStreamMetrics metrics) {
-    this(metrics, StabilizingAIMDLimit.newBuilder().build(), RateLimit.disabled());
+    this(metrics, StabilizingAIMDLimit.newBuilder().build(), RateLimit.disabled(), 0);
   }
 
   public FlowControl(
       final LogStreamMetrics metrics, final Limit requestLimit, final RateLimit writeRateLimit) {
-    this(metrics, requestLimit, writeRateLimit, DEFAULT_IN_FLIGHT_CAPACITY);
+    this(metrics, requestLimit, writeRateLimit, 0);
   }
 
-  FlowControl(
+  public FlowControl(
       final LogStreamMetrics metrics,
       final Limit requestLimit,
       final RateLimit writeRateLimit,
