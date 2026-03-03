@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -182,6 +183,7 @@ public class OpensearchClientIT {
 
     // when
     SEARCH_DB.client().createIndexStateManagementPolicy();
+    waitForIndexStateManagementPolicy();
 
     // then
     final var maybePolicy = SEARCH_DB.client().maybeGetIndexStateManagementPolicy();
@@ -209,6 +211,7 @@ public class OpensearchClientIT {
     final var camundaExporterIndexName = config.index.prefix + "-operate-variable-2024-01-01";
 
     SEARCH_DB.client().createIndexStateManagementPolicy();
+    waitForIndexStateManagementPolicy();
 
     final var osClient = SEARCH_DB.testClient().getOsClient();
     osClient.indices().create(b -> b.index(ownedIndexName));
@@ -240,6 +243,7 @@ public class OpensearchClientIT {
             + "_2024-01-01";
 
     SEARCH_DB.client().createIndexStateManagementPolicy();
+    waitForIndexStateManagementPolicy();
 
     final var osClient = SEARCH_DB.testClient().getOsClient();
     osClient.indices().create(b -> b.index(ownedIndexName));
@@ -277,6 +281,13 @@ public class OpensearchClientIT {
 
     assertThat(actualComponentTemplate.settings().get("index"))
         .isEqualTo(putComponentTemplateRequest.template().settings().index());
+  }
+
+  private void waitForIndexStateManagementPolicy() {
+    Awaitility.await()
+        .pollInterval(Duration.ofSeconds(1))
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(() -> assertThat(SEARCH_DB.client().maybeGetIndexStateManagementPolicy()).isPresent());
   }
 
   private void assertIndexTemplate(
