@@ -25,6 +25,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private InstantSource clock;
   private Limit requestLimit;
   private RateLimit writeRateLimit;
+  private int inFlightCapacity;
   private MeterRegistry meterRegistry;
 
   @Override
@@ -70,6 +71,12 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
   }
 
   @Override
+  public LogStreamBuilder withInFlightCapacity(final int inFlightCapacity) {
+    this.inFlightCapacity = inFlightCapacity;
+    return this;
+  }
+
+  @Override
   public LogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
     this.meterRegistry = meterRegistry;
     return this;
@@ -87,6 +94,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
         clock,
         requestLimit,
         writeRateLimit,
+        inFlightCapacity,
         meterRegistry);
   }
 
