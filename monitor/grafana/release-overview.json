@@ -666,7 +666,7 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"release-8.*\", state=\"archived\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"(c8-)?release-8.*\", state=\"archived\"}[$__rate_interval])) by (namespace)",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A",
