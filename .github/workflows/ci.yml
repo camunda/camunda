@@ -204,8 +204,10 @@ jobs:
       # The matrix is necessary to run separate analyses
       matrix:
         project:
-        - name: c8run
-          path: ./c8run
+        # Not necessary - this is a completely different module
+        # written in Go
+        # - name: c8run
+        #   path: ./c8run
         - name: optimize
           path: ./optimize
           maven-config: |
@@ -225,7 +227,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
         # These steps have been taken from check-licenses.yml workflow
       - name: Adjust pom.xml files for FOSSA
-        if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
+        # if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
         uses: ./.github/actions/adjust-pom-for-license-analysis
       - name: Update Maven configs
         if: matrix.project.maven-config != ''
@@ -236,8 +238,11 @@ jobs:
       - name: Check for dependency cycles
         # Command here is the same used by fossa analyze
         # and found by enabling the `-debug` flag
+        env:
+          POM_PATH: ${{ matrix.project.path}}/pom.xml
         run: |
           ./mvnw com.github.ferstl:depgraph-maven-plugin:4.0.1:aggregate \
+            -f "$POM_PATH"
             -DgraphFormat=text \
             -DmergeScopes \
             -DreduceEdges=false \
