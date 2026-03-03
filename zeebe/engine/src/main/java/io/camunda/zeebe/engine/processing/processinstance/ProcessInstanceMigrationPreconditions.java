@@ -310,6 +310,7 @@ public final class ProcessInstanceMigrationPreconditions {
    *
    * @param processInstance the process instance being migrated
    * @param targetProcessDefinitionKey the key of the target process definition
+   * @param targetProcessDefinitionId the BPMN process id of the target process definition
    * @param elementInstanceState the element instance state to query for active instances
    * @param businessIdUniquenessEnabled whether business id uniqueness checking is enabled
    * @param ignoreWhen a predicate to ignore certain process instances (e.g. banned ones)
@@ -317,6 +318,7 @@ public final class ProcessInstanceMigrationPreconditions {
   public static void requireNoBusinessIdConflictForTargetProcess(
       final ElementInstance processInstance,
       final long targetProcessDefinitionKey,
+      final String targetProcessDefinitionId,
       final ElementInstanceState elementInstanceState,
       final boolean businessIdUniquenessEnabled,
       final Predicate<Long> ignoreWhen) {
@@ -332,7 +334,7 @@ public final class ProcessInstanceMigrationPreconditions {
 
     final String tenantId = processInstanceRecord.getTenantId();
     if (elementInstanceState.hasActiveProcessInstanceWithBusinessId(
-        businessId, targetProcessDefinitionKey, tenantId, ignoreWhen)) {
+        businessId, targetProcessDefinitionId, tenantId, ignoreWhen)) {
       final String reason =
           String.format(
               ERROR_BUSINESS_ID_ALREADY_EXISTS_FOR_TARGET,
