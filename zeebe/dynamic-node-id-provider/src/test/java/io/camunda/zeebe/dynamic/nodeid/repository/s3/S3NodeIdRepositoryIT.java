@@ -173,7 +173,7 @@ class S3NodeIdRepositoryIT {
     }
 
     @Test
-    void shouldRemoveNodesWhenScalingDown() {
+    void shouldMarkLeaseUnusableWhenScalingDown() {
       // given
       repository = fixed(Clock.systemUTC().millis());
       repository.initialize(4);
@@ -189,13 +189,13 @@ class S3NodeIdRepositoryIT {
 
       assertThatException()
           .isThrownBy(() -> repository.getLease(3))
-          .isInstanceOf(NoSuchKeyException.class)
-          .withMessageContaining("The specified key does not exist");
+          .isInstanceOf(IllegalStateException.class)
+          .withMessageContaining("not acquirable");
 
       assertThatException()
           .isThrownBy(() -> repository.getLease(2))
-          .isInstanceOf(NoSuchKeyException.class)
-          .withMessageContaining("The specified key does not exist");
+          .isInstanceOf(IllegalStateException.class)
+          .withMessageContaining("not acquirable");
     }
 
     @Test
@@ -230,7 +230,7 @@ class S3NodeIdRepositoryIT {
     }
 
     @Test
-    void shouldRemoveActiveLeasesWhenScalingDown() {
+    void shouldMarkActiveLeasesAsUnusableWhenScalingDown() {
       // given
       repository = fixed(Clock.systemUTC().millis());
       repository.initialize(4);
@@ -245,8 +245,109 @@ class S3NodeIdRepositoryIT {
       // then
       assertThatException()
           .isThrownBy(() -> repository.getLease(2))
-          .isInstanceOf(NoSuchKeyException.class)
-          .withMessageContaining("The specified key does not exist");
+          .isInstanceOf(IllegalStateException.class)
+          .withMessageContaining("not acquirable");
+    }
+
+    @Test
+    void shouldMakeUnusableLeasesAcquirableWhenScalingUp() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(4);
+      repository.scale(2);
+
+      // verify leases 2 and 3 are not acquirable
+      assertThatException()
+          .isThrownBy(() -> repository.getLease(2))
+          .isInstanceOf(IllegalStateException.class);
+      assertThatException()
+          .isThrownBy(() -> repository.getLease(3))
+          .isInstanceOf(IllegalStateException.class);
+
+      // when
+      repository.scale(4);
+
+      // then - all leases should be acquirable again
+      for (int i = 0; i < 4; i++) {
+        final var lease = repository.getLease(i);
+        assertThat(lease.isAcquirable()).isTrue();
+      }
+    }
+
+    @Test
+    void shouldPreserveVersionWhenScalingDownAndBackUp() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(3);
+
+      // Acquire lease 2 to increment its version
+      final var lease2 = repository.getLease(2);
+      final var toAcquire = lease2.acquireInitialLease(taskId, clock, EXPIRY_DURATION).get();
+      final var acquired = repository.acquire(toAcquire, lease2.eTag());
+      assertThat(acquired.node().version()).isEqualTo(Version.of(1));
+
+      // Release the lease
+      repository.release(acquired);
+      final var released = repository.getLease(2);
+      assertThat(released.version()).isEqualTo(Version.of(1));
+
+      // Scale down to 2 nodes
+      repository.scale(2);
+
+      // when - scale back up
+      repository.scale(3);
+
+      // then - version should be preserved
+      final var leaseAfterScaleUp = repository.getLease(2);
+      assertThat(leaseAfterScaleUp.version()).isEqualTo(Version.of(1));
+    }
+
+    @Test
+    void shouldReturnOnlyAcquirableLeasesInGetAvailableLeaseCount() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(4);
+      assertThat(repository.getAvailableLeaseCount()).isEqualTo(4);
+
+      // when - scale down
+      repository.scale(2);
+
+      // then - only 2 leases should be available
+      assertThat(repository.getAvailableLeaseCount()).isEqualTo(2);
+
+      // when - scale back up
+      repository.scale(4);
+
+      // then - all 4 leases should be available
+      assertThat(repository.getAvailableLeaseCount()).isEqualTo(4);
+    }
+
+    @Test
+    void shouldFailAcquireOnUnusableLease() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(3);
+
+      // Get lease 2 before scaling down to get its eTag
+      final var lease2 = repository.getLease(2);
+      final var eTag = lease2.eTag();
+
+      // Scale down to make lease 2 unusable
+      repository.scale(2);
+
+      // Create a lease to acquire
+      final var leaseToAcquire =
+          new Lease(
+              taskId,
+              clock.millis() + EXPIRY_DURATION.toMillis(),
+              new NodeInstance(2, Version.of(1)),
+              VersionMappings.of(new NodeInstance(2, Version.of(1))));
+
+      // when/then - should fail to acquire
+      assertThatException()
+          .isThrownBy(() -> repository.acquire(leaseToAcquire, eTag))
+          .isInstanceOf(IllegalStateException.class)
+          .withMessageContaining("not acquirable");
     }
   }
 

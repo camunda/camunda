@@ -99,6 +99,8 @@ public interface NodeIdRepository extends AutoCloseable {
    *   <li>{@link Initialized} when it's held by another node. Note that Initialized does not
    *       guarantee validity, since a node can expire. This can happen if the lease is failed to be
    *       renewed in time, either due to the node crashing or failing in some way.
+   *   <li>{@link Unusable} when the lease has been marked as not acquirable, for example during
+   *       scale down operations.
    * </ul>
    */
   sealed interface StoredLease {
@@ -114,6 +116,15 @@ public interface NodeIdRepository extends AutoCloseable {
       return switch (this) {
         case final Uninitialized u -> false;
         case final Initialized i -> true;
+        case final Unusable u -> false;
+      };
+    }
+
+    default boolean isAcquirable() {
+      return switch (this) {
+        case final Uninitialized u -> true;
+        case final Initialized i -> true;
+        case final Unusable u -> false;
       };
     }
 
@@ -121,6 +132,7 @@ public interface NodeIdRepository extends AutoCloseable {
       return switch (this) {
         case final Uninitialized u -> false;
         case final Initialized i -> i.lease().isStillValid(now);
+        case final Unusable u -> false;
       };
     }
 
@@ -132,7 +144,7 @@ public interface NodeIdRepository extends AutoCloseable {
      */
     default Optional<Lease> acquireInitialLease(
         final String taskId, final InstantSource clock, final Duration leaseDuration) {
-      if (isStillValid(clock.millis())) {
+      if (!isAcquirable() || isStillValid(clock.millis())) {
         return Optional.empty();
       } else {
         return Optional.of(
@@ -144,6 +156,9 @@ public interface NodeIdRepository extends AutoCloseable {
         final int nodeId, final Lease lease, final Metadata metadata, final String eTag) {
       if (eTag == null || eTag.isEmpty()) {
         throw new IllegalArgumentException("eTag cannot be null or empty:" + eTag);
+      }
+      if (metadata != null && !metadata.acquirable()) {
+        return new StoredLease.Unusable(new NodeInstance(nodeId, metadata.version()), eTag);
       }
       if (lease == null) {
         final var version =
@@ -195,6 +210,16 @@ public interface NodeIdRepository extends AutoCloseable {
       @Override
       public NodeInstance node() {
         return lease.nodeInstance();
+      }
+    }
+
+    record Unusable(NodeInstance node, String eTag) implements StoredLease {
+      public Unusable {
+        Objects.requireNonNull(node, "node cannot be null");
+        Objects.requireNonNull(eTag, "eTag cannot be null");
+        if (eTag.isEmpty()) {
+          throw new IllegalArgumentException("eTag cannot be empty");
+        }
       }
     }
   }
