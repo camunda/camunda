@@ -10,6 +10,9 @@ global:
       username: camunda
       password: camunda
       postgresPassword: camunda
+  # needed to allow the pass-through-cache for postgres images
+  security:
+    allowInsecureImages: true
 
 ########################################################################################
 ################################################### Orchestration cluster configuration
