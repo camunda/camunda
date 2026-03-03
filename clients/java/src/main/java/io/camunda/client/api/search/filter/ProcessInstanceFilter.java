@@ -186,6 +186,14 @@ public interface ProcessInstanceFilter extends ProcessInstanceFilterBase {
   @Override
   ProcessInstanceFilter incidentErrorHashCode(final Consumer<IntegerProperty> fn);
 
+  /** Filter by businessId */
+  @Override
+  ProcessInstanceFilter businessId(final String businessId);
+
+  /** Filter by businessId using {@link StringProperty} consumer */
+  @Override
+  ProcessInstanceFilter businessId(final Consumer<StringProperty> fn);
+
   /** Filter by or conjunction using {@link ProcessInstanceFilterBase} consumer */
   ProcessInstanceFilterBase orFilters(List<Consumer<ProcessInstanceFilterBase>> filters);
 }
