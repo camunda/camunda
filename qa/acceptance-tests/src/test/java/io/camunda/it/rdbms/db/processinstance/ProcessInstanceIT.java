@@ -65,7 +65,8 @@ public class ProcessInstanceIT {
                     .startDate(NOW)
                     .parentProcessInstanceKey(-1L)
                     .parentElementInstanceKey(-1L)
-                    .version(1)));
+                    .version(1)
+                    .businessId("test-business-id")));
 
     final var instance = processInstanceReader.findOne(processInstanceKey).orElse(null);
 
@@ -81,6 +82,7 @@ public class ProcessInstanceIT {
     assertThat(instance.parentFlowNodeInstanceKey()).isEqualTo(-1L);
     assertThat(instance.processDefinitionVersion()).isEqualTo(1);
     assertThat(instance.hasIncident()).isFalse();
+    assertThat(instance.businessId()).isEqualTo("test-business-id");
   }
 
   @TestTemplate
@@ -303,7 +305,8 @@ public class ProcessInstanceIT {
                     .parentProcessInstanceKey(-1L)
                     .parentElementInstanceKey(-1L)
                     .version(1)
-                    .partitionId(123456)));
+                    .partitionId(123456)
+                    .businessId("test-business-id-full-filter")));
 
     final var searchResult =
         processInstanceReader.search(
@@ -317,7 +320,8 @@ public class ProcessInstanceIT {
                                     .states(ProcessInstanceState.ACTIVE.name())
                                     .parentProcessInstanceKeys(-1L)
                                     .parentFlowNodeInstanceKeys(-1L)
-                                    .partitionId(123456))
+                                    .partitionId(123456)
+                                    .businessIds("test-business-id-full-filter"))
                         .sort(s -> s)
                         .page(p -> p.from(0).size(5))));
 

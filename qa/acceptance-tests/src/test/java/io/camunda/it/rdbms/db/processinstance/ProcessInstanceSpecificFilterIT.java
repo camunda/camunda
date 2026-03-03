@@ -91,7 +91,8 @@ public class ProcessInstanceSpecificFilterIT {
                     .endDate(NOW)
                     .parentProcessInstanceKey(-1L)
                     .parentElementInstanceKey(-1L)
-                    .version(1)));
+                    .version(1)
+                    .businessId("test-business-id-42")));
     final var searchResult =
         processInstanceReader.search(
             ProcessInstanceQuery.of(
@@ -147,6 +148,11 @@ public class ProcessInstanceSpecificFilterIT {
             List.of(42L)),
         Arguments.of(
             new ProcessInstanceFilter.Builder().processDefinitionVersionTags("Version 1").build(),
+            1,
+            1,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder().businessIds("test-business-id-42").build(),
             1,
             1,
             List.of(42L)),
