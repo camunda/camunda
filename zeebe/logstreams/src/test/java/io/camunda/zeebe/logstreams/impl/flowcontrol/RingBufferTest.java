@@ -89,8 +89,7 @@ final class RingBufferTest {
 
   @Test
   void constructorRejectsNegative() {
-    assertThatThrownBy(() -> new RingBuffer(-1))
-        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> new RingBuffer(-1)).isInstanceOf(IllegalArgumentException.class);
   }
 
   @Nested

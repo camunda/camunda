@@ -32,9 +32,9 @@ final class RingBuffer {
   private final int mask;
 
   /**
-   * Creates a new ring buffer with at least the given capacity. The actual capacity is rounded up to
-   * the next power of two. If {@code minCapacity} is 0, a default of {@value #DEFAULT_CAPACITY} is
-   * used.
+   * Creates a new ring buffer with at least the given capacity. The actual capacity is rounded up
+   * to the next power of two. If {@code minCapacity} is 0, a default of {@value #DEFAULT_CAPACITY}
+   * is used.
    *
    * @param minCapacity must be non-negative
    * @throws IllegalArgumentException if minCapacity is negative
