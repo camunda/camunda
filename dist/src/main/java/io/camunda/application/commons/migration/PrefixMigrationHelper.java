@@ -113,6 +113,13 @@ public final class PrefixMigrationHelper {
               TasklistProcessIndex.class,
               TasklistVariableIndex.class);
 
+  /**
+   * Conservative limit for the combined length of comma-separated index names in a single DELETE
+   * request URL, to avoid exceeding http.max_initial_line_length (default: 4096 bytes). The
+   * overhead for the HTTP request line (e.g. "DELETE / HTTP/1.1") is subtracted.
+   */
+  private static final int MAX_INDEX_NAMES_URL_LENGTH = 3500;
+
   private static final Logger LOG = LoggerFactory.getLogger(PrefixMigrationHelper.class);
 
   private PrefixMigrationHelper() {}
@@ -267,14 +274,48 @@ public final class PrefixMigrationHelper {
           .forEach(deleteOperations::add);
     }
 
-    return () ->
-        deleteOperations.isEmpty()
-            ? CompletableFuture.completedFuture(null)
-            : CompletableFuture.supplyAsync(
-                () ->
-                    prefixMigrationClient
-                        .deleteIndex(deleteOperations.toArray(String[]::new))
-                        .join());
+    return () -> {
+      if (deleteOperations.isEmpty()) {
+        return CompletableFuture.completedFuture(null);
+      }
+      final var batches = partitionIntoBatches(deleteOperations, MAX_INDEX_NAMES_URL_LENGTH);
+      CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
+      for (final var batch : batches) {
+        final var batchArray = batch.toArray(String[]::new);
+        future = future.thenCompose(ignored -> prefixMigrationClient.deleteIndex(batchArray));
+      }
+      return future;
+    };
+  }
+
+  @VisibleForTesting
+  static List<List<String>> partitionIntoBatches(final List<String> indices, final int maxLength) {
+    final var batches = new ArrayList<List<String>>();
+    var currentBatch = new ArrayList<String>();
+
+    var currentLength = -1;
+    for (final var index : indices) {
+      if (index.length() > maxLength) {
+        LOG.error(
+            "Index name [{}] exceeds the maximum allowed URL length of {} bytes. Skipping.",
+            index,
+            maxLength);
+        continue;
+      }
+
+      if (currentLength + 1 + index.length() > maxLength) {
+        batches.add(currentBatch);
+        currentBatch = new ArrayList<>();
+        currentLength = -1;
+      }
+
+      currentBatch.add(index);
+      currentLength += 1 + index.length();
+    }
+    if (!currentBatch.isEmpty()) {
+      batches.add(currentBatch);
+    }
+    return batches;
   }
 
   private static Supplier<CompletableFuture[]> deleteIndexTemplates(
