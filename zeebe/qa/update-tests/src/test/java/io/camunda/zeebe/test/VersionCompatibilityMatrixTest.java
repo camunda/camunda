@@ -124,9 +124,7 @@ class VersionCompatibilityMatrixTest {
     // Should include all patches of the highest released minor (8.8.x), not be empty
     assertThat(paths)
         .containsExactlyInAnyOrder(
-            List.of("8.8.0", "CURRENT"),
-            List.of("8.8.1", "CURRENT"),
-            List.of("8.8.2", "CURRENT"));
+            List.of("8.8.0", "CURRENT"), List.of("8.8.1", "CURRENT"), List.of("8.8.2", "CURRENT"));
   }
 
   @Test
