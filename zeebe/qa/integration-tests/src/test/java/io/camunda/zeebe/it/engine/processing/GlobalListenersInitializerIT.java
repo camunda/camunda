@@ -19,7 +19,6 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
-import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -31,11 +30,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 @ZeebeIntegration
 final class GlobalListenersInitializerIT {
@@ -63,17 +64,26 @@ final class GlobalListenersInitializerIT {
   }
 
   @Test
-  void shouldInitializeGlobalListenersWhenConfigurationChanges() {
+  void shouldInitializeGlobalListenersWhenConfigurationChanges(final TestInfo testInfo) {
     // Given a broker with a given global listeners configuration
-    ZEEBE.unifiedConfig().getCluster().setGlobalListeners(createGlobalListenersCfg("global1"));
+    final String initialListener = uniqueListenerName(testInfo);
+    ZEEBE
+        .unifiedConfig()
+        .getCluster()
+        .setGlobalListeners(createGlobalListenersCfg(initialListener));
     restartBroker();
 
     // Wait for configuration to be distributed to all partitions and keep track of the last
     // position for each partition, this way we can filter records for the assertions to only
     // include records actually generated after the restart.
-    waitForConfigurationDistributionComplete();
+    waitForConfigurationDistributionComplete(initialListener);
     final var lastPositionByPartition =
         RecordingExporter.globalListenerBatchRecords(GlobalListenerBatchIntent.CONFIGURED)
+            .filter(
+                r ->
+                    r.getValue().getListeners().stream()
+                        .map(GlobalListenerRecordValue::getId)
+                        .anyMatch(initialListener::equals))
             .limit(PARTITIONS_COUNT)
             .collect(Collectors.toMap(Record::getPartitionId, Record::getPosition));
 
@@ -81,7 +91,7 @@ final class GlobalListenersInitializerIT {
     ZEEBE
         .unifiedConfig()
         .getCluster()
-        .setGlobalListeners(createGlobalListenersCfg("global1", "global2"));
+        .setGlobalListeners(createGlobalListenersCfg(initialListener, "newListener"));
     restartBroker();
 
     // Then multiple listener mutation events and one configuration event are created for each
@@ -103,25 +113,28 @@ final class GlobalListenersInitializerIT {
             .collect(Collectors.groupingBy(Record::getPartitionId));
     // Check that events are distributed to all partitions
     Assertions.assertThat(listenerRecordsByPartition.keySet())
+        .as("Expected events to be generated in all partitions")
         .containsExactlyInAnyOrderElementsOf(PARTITION_IDS);
     // Check that for each partition, we have the expected events with the expected types
     for (final var records : listenerRecordsByPartition.values()) {
       assertThat(records)
+          .as(
+              "Expected 3 events for each partition: an UPDATE for the old listener, a CREATE for the new listener and a CONFIGURED")
           .hasSize(3)
           .anyMatch(
               record ->
                   record.getIntent() == GlobalListenerIntent.UPDATED
                       && ((GlobalListenerRecordValue) record.getValue())
                           .getId()
-                          .equals("GlobalListener_global1"),
-              "Expected an UPDATE event for GlobalListener_global1")
+                          .equals(initialListener),
+              "Expected an UPDATE event for the old listener")
           .anyMatch(
               record ->
                   record.getIntent() == GlobalListenerIntent.CREATED
                       && ((GlobalListenerRecordValue) record.getValue())
                           .getId()
-                          .equals("GlobalListener_global2"),
-              "Expected a CREATE event for GlobalListener_global2")
+                          .equals("newListener"),
+              "Expected a CREATE event for the new listener")
           .anyMatch(
               record -> record.getIntent() == GlobalListenerBatchIntent.CONFIGURED,
               "Expected a CONFIGURED event");
@@ -135,21 +148,32 @@ final class GlobalListenersInitializerIT {
             .map(GlobalListenerBatchRecord.class::cast)
             .map(GlobalListenerBatchRecord::getGlobalListenerBatchKey)
             .collect(Collectors.toSet());
-    Assertions.assertThat(configurationKeys).hasSize(1);
+    Assertions.assertThat(configurationKeys)
+        .as("Expected the same configuration key to be used in all partitions")
+        .hasSize(1);
   }
 
   @Test
-  void shouldInitializeGlobalListenersWhenConfigurationIsRemoved() {
+  void shouldInitializeGlobalListenersWhenConfigurationIsRemoved(final TestInfo testInfo) {
     // Given a broker with a given global listeners configuration
-    ZEEBE.unifiedConfig().getCluster().setGlobalListeners(createGlobalListenersCfg("global"));
+    final String initialListener = uniqueListenerName(testInfo);
+    ZEEBE
+        .unifiedConfig()
+        .getCluster()
+        .setGlobalListeners(createGlobalListenersCfg(initialListener));
     restartBroker();
 
     // Wait for configuration to be distributed to all partitions and keep track of the last
     // position for each partition, this way we can filter records for the assertions to only
     // include records actually generated after the restart.
-    waitForConfigurationDistributionComplete();
+    waitForConfigurationDistributionComplete(initialListener);
     final var lastPositionByPartition =
         RecordingExporter.globalListenerBatchRecords(GlobalListenerBatchIntent.CONFIGURED)
+            .filter(
+                r ->
+                    r.getValue().getListeners().stream()
+                        .map(GlobalListenerRecordValue::getId)
+                        .anyMatch(initialListener::equals))
             .limit(PARTITIONS_COUNT)
             .collect(Collectors.toMap(Record::getPartitionId, Record::getPosition));
 
@@ -176,18 +200,21 @@ final class GlobalListenersInitializerIT {
             .collect(Collectors.groupingBy(Record::getPartitionId));
     // Check that events are distributed to all partitions
     Assertions.assertThat(listenerRecordsByPartition.keySet())
+        .as("Expected events to be generated in all partitions")
         .containsExactlyInAnyOrderElementsOf(PARTITION_IDS);
     // Check that for each partition, we have the expected events with the expected types
     for (final var records : listenerRecordsByPartition.values()) {
       assertThat(records)
+          .as(
+              "Expected 2 events for each partition: a DELETE for the old listener and a CONFIGURED")
           .hasSize(2)
           .anyMatch(
               record ->
                   record.getIntent() == GlobalListenerIntent.DELETED
                       && ((GlobalListenerRecordValue) record.getValue())
                           .getId()
-                          .equals("GlobalListener_global"),
-              "Expected a DELETE event for GlobalListener_global")
+                          .equals(initialListener),
+              "Expected a DELETE event for the old listener")
           .anyMatch(
               record -> record.getIntent() == GlobalListenerBatchIntent.CONFIGURED,
               "Expected a CONFIGURED event");
@@ -201,26 +228,40 @@ final class GlobalListenersInitializerIT {
             .map(GlobalListenerBatchRecord.class::cast)
             .map(GlobalListenerBatchRecord::getGlobalListenerBatchKey)
             .collect(Collectors.toSet());
-    Assertions.assertThat(configurationKeys).hasSize(1);
+    Assertions.assertThat(configurationKeys)
+        .as("Expected the same configuration key to be used in all partitions")
+        .hasSize(1);
   }
 
   @Test
-  void shouldNotInitializeGlobalListenersWhenConfigurationIsNotChanged() {
+  void shouldNotInitializeGlobalListenersWhenConfigurationIsNotChanged(final TestInfo testInfo) {
     // Given a broker with a given global listeners configuration
-    ZEEBE.unifiedConfig().getCluster().setGlobalListeners(createGlobalListenersCfg("global1"));
+    final String initialListener = uniqueListenerName(testInfo);
+    ZEEBE
+        .unifiedConfig()
+        .getCluster()
+        .setGlobalListeners(createGlobalListenersCfg(initialListener));
     restartBroker();
 
     // Wait for configuration to be distributed to all partitions and keep track of the last
     // position for each partition, this way we can filter records for the assertions to only
     // include records actually generated after the restart.
-    waitForConfigurationDistributionComplete();
+    waitForConfigurationDistributionComplete(initialListener);
     final var lastPositionByPartition =
         RecordingExporter.globalListenerBatchRecords(GlobalListenerBatchIntent.CONFIGURED)
+            .filter(
+                r ->
+                    r.getValue().getListeners().stream()
+                        .map(GlobalListenerRecordValue::getId)
+                        .anyMatch(initialListener::equals))
             .limit(PARTITIONS_COUNT)
             .collect(Collectors.toMap(Record::getPartitionId, Record::getPosition));
 
     // When the configuration is not changed and the broker is restarted
-    ZEEBE.unifiedConfig().getCluster().setGlobalListeners(createGlobalListenersCfg("global1"));
+    ZEEBE
+        .unifiedConfig()
+        .getCluster()
+        .setGlobalListeners(createGlobalListenersCfg(initialListener));
     restartBroker();
 
     // Note: we send a clock reset command so we have a record we can limit our RecordingExporter on
@@ -234,18 +275,19 @@ final class GlobalListenersInitializerIT {
                 .limit(r -> r.getIntent().equals(ClockIntent.RESET))
                 .globalListenerBatchRecords()
                 .withIntent(GlobalListenerBatchIntent.CONFIGURED))
+        .as("Expected no CONFIGURED event to be generated when the configuration is not changed")
         .hasSize(0);
   }
 
-  private GlobalListenersCfg createGlobalListenersCfg(final String... types) {
+  private GlobalListenersCfg createGlobalListenersCfg(final String... listenerIds) {
     final GlobalListenersCfg globalListenersCfg = new GlobalListenersCfg();
     globalListenersCfg.setUserTask(
-        Arrays.stream(types)
+        Arrays.stream(listenerIds)
             .map(
-                type -> {
+                id -> {
                   final GlobalListenerCfg listenerCfg = new GlobalListenerCfg();
-                  listenerCfg.setId("GlobalListener_" + type);
-                  listenerCfg.setType(type);
+                  listenerCfg.setId(id);
+                  listenerCfg.setType(id);
                   listenerCfg.setEventTypes(List.of("all"));
                   return listenerCfg;
                 })
@@ -261,17 +303,24 @@ final class GlobalListenersInitializerIT {
     ZEEBE.awaitCompleteTopology(1, PARTITIONS_COUNT, 1, Duration.ofSeconds(30));
   }
 
-  private void waitForConfigurationDistributionComplete() {
+  private void waitForConfigurationDistributionComplete(final String expectedListenerId) {
     Awaitility.await()
         .untilAsserted(
             () -> {
               // Wait for configuration to be applied on all partitions
-              assertThat(
-                      RecordingExporter.globalListenerBatchRecords(
-                              GlobalListenerBatchIntent.CONFIGURED)
-                          .limit(PARTITIONS_COUNT)
-                          .map(Record::getPartitionId))
+              final var configuredEvents =
+                  RecordingExporter.globalListenerBatchRecords(GlobalListenerBatchIntent.CONFIGURED)
+                      .filter(
+                          r ->
+                              r.getValue().getListeners().stream()
+                                  .map(GlobalListenerRecordValue::getId)
+                                  .anyMatch(expectedListenerId::equals))
+                      .limit(PARTITIONS_COUNT)
+                      .toList();
+              assertThat(configuredEvents.stream().map(Record::getPartitionId).toList())
                   .containsExactlyInAnyOrderElementsOf(PARTITION_IDS);
+
+              final var distributionKey = configuredEvents.getFirst().getKey();
               // Wait for main partition to complete the distribution on all partitions
               // Waiting only for the events to be exported in each partition is not enough because
               // the main partitions could not have received the acknowledgment of the command
@@ -281,10 +330,16 @@ final class GlobalListenersInitializerIT {
                       RecordingExporter.commandDistributionRecords(
                               CommandDistributionIntent.FINISHED)
                           .withDistributionIntent(GlobalListenerBatchIntent.CONFIGURE)
-                          .limit(PARTITIONS_COUNT - 1)
-                          .map(Record::getValue)
-                          .map(CommandDistributionRecordValue::getPartitionId))
+                          .withRecordKey(distributionKey)
+                          .limit(PARTITIONS_COUNT - 1))
                   .hasSize(PARTITIONS_COUNT - 1);
             });
+  }
+
+  // to produce something like: `shouldInitializeGlobalListenersWhenConfigurationChanges-aB3xZ`
+  private static String uniqueListenerName(final TestInfo testInfo) {
+    return testInfo.getTestMethod().orElseThrow().getName()
+        + "-"
+        + RandomStringUtils.insecure().nextAlphanumeric(5);
   }
 }
