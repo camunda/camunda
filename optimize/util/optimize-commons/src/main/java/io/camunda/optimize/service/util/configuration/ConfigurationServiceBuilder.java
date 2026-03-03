@@ -9,6 +9,7 @@ package io.camunda.optimize.service.util.configuration;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
@@ -134,15 +135,15 @@ public class ConfigurationServiceBuilder {
     static List<String> resolveConfigLocations(final Environment environment) {
       final List<String> locations = new ArrayList<>();
 
-      final String springConfigImport = environment.getProperty("spring.config.import");
-      final String springConfigLocation = environment.getProperty("spring.config.location");
+      final List<String> springConfigImport = getListProperty(environment, "spring.config.import");
+      final List<String> springConfigLocation =
+          getListProperty(environment, "spring.config.location");
 
       if (springConfigImport != null) {
         LOG.debug(
             "Resolving config locations from spring.config.import and spring.config.location");
         LOG.debug("spring.config.import is: {}", springConfigImport);
-        for (String file : StringUtils.commaDelimitedListToStringArray(springConfigImport)) {
-          file = file.trim();
+        for (String file : springConfigImport) {
           if (!StringUtils.hasText(file)) {
             LOG.debug("Skipping blank config import entry");
             continue;
@@ -160,8 +161,7 @@ public class ConfigurationServiceBuilder {
           } else {
             // if spring.config.location is set, then for each location, we need to add a file from
             // the import relative to it
-            for (String path : StringUtils.commaDelimitedListToStringArray(springConfigLocation)) {
-              path = path.trim();
+            for (final String path : springConfigLocation) {
               if (!StringUtils.hasText(path)) {
                 LOG.debug("Skipping blank config path entry");
                 continue;
@@ -176,6 +176,39 @@ public class ConfigurationServiceBuilder {
         }
       }
       return locations;
+    }
+
+    /**
+     * Workaround for spring-framework bug: Environment.getProperty() method cannot process list
+     * items #35179.
+     *
+     * @see <a href="https://github.com/spring-projects/spring-framework/issues/35179">issue</a>
+     * @see <a
+     *     href="https://github.com/spring-projects/spring-framework/issues/35179#issuecomment-3989747033">workaround</a>
+     */
+    private static List<String> getListProperty(
+        final Environment environment, final String propertyName) {
+      final String directMatch = environment.getProperty(propertyName);
+      if (directMatch != null) {
+        // direct matches may still be comma delimited
+        final var asArray = StringUtils.commaDelimitedListToStringArray(directMatch);
+        // comma delimitation may require whitespace trimming
+        return Arrays.stream(asArray).map(String::trim).toList();
+      }
+      final List<String> collectedValues = new ArrayList<>();
+      for (int index = 0; index < Integer.MAX_VALUE; index++) {
+        final String indexedKey = propertyName + "[" + index + "]";
+        if (!environment.containsProperty(indexedKey)) {
+          break;
+        }
+        final String rawIndexedValue = environment.getProperty(indexedKey);
+        if (rawIndexedValue == null) {
+          continue;
+        }
+        // indexed values may still require whitespace trimming
+        collectedValues.add(rawIndexedValue.trim());
+      }
+      return collectedValues.isEmpty() ? null : collectedValues;
     }
   }
 }
