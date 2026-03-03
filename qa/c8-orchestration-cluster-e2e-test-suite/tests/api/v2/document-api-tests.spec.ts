@@ -35,7 +35,7 @@ import {
 } from '../../../utils/constants';
 import {Serializable} from 'playwright-core/types/structs';
 
-test.describe('Document API Tests', () => {
+test.describe.parallel('Document API Tests', () => {
   const state: Record<string, unknown> = {};
   const nonexistentId = 'nonExistingDocumentId';
   const responseKeys: string[] = [
