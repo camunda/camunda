@@ -6,6 +6,7 @@
 
 - fix mappingRuleId naming ([#47500](https://github.com/camunda/camunda/issues/47500))
 - add query items to role, group and tenant queries ([#47500](https://github.com/camunda/camunda/issues/47500))
+- add missing resource types ([#47500](https://github.com/camunda/camunda/issues/47500))
 
 ### ❤️ Contributors
 
