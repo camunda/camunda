@@ -83,9 +83,12 @@ final class RingBuffer {
     return entry != null && entry.position == position ? entry : null;
   }
 
-  /** Removes the entry at the given position by nulling the slot. */
-  void remove(final long position, final InFlightEntry entry) {
-    buffer.compareAndExchange((int) (position & mask), entry, null);
+  /**
+   * Removes the entry at the given position by nulling the slot if the entry in the buffer matches
+   * {@param entry}
+   */
+  void remove(final InFlightEntry entry) {
+    buffer.compareAndExchange((int) (entry.position & mask), entry, null);
   }
 
   /** Returns the capacity of this ring buffer. */
