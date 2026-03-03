@@ -89,14 +89,18 @@ public final class InFlightEntry {
     final var requestListener = this.requestListener;
     if (requestListener != null) {
       requestListener.onIgnore();
+      metrics.decreaseInflightRequests();
+      this.requestListener = null;
     }
     final var writeTimer = this.writeTimer;
     if (writeTimer != null) {
       writeTimer.close();
+      this.writeTimer = null;
     }
     final var commitTimer = this.commitTimer;
     if (commitTimer != null) {
       commitTimer.close();
+      this.commitTimer = null;
     }
   }
 }
