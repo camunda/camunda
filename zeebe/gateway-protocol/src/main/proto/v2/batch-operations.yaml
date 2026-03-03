@@ -221,6 +221,9 @@ paths:
 components:
   schemas:
     BatchOperationCreatedResult:
+      required:
+        - batchOperationKey
+        - batchOperationType
       description: The created batch operation.
       type: object
       properties:
@@ -308,6 +311,14 @@ components:
 
     BatchOperationResponse:
       required:
+        - batchOperationKey
+        - batchOperationType
+        - state
+        - operationsCompletedCount
+        - operationsFailedCount
+        - operationsTotalCount
+        - actorType
+        - actorId
         - errors
       type: object
       properties:
@@ -334,10 +345,17 @@ components:
           format: date-time
           nullable: true
         actorType:
-          $ref: 'audit-logs.yaml#/components/schemas/AuditLogActorTypeEnum'
+          description: |
+            The type of the actor who performed the operation.
+            This is `null` if the batch operation was created before 8.9,
+            or if the actor information is not available.
+          nullable: true
+          allOf:
+            - $ref: 'audit-logs.yaml#/components/schemas/AuditLogActorTypeEnum'
         actorId:
           type: string
           description: The ID of the actor who performed the operation. Available for batch operations created since 8.9.
+          nullable: true
         operationsTotalCount:
           type: integer
           description: The total number of items contained in this batch operation.
