@@ -572,6 +572,48 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     assertThat(properties.getTenantFilter()).isEqualTo(TenantFilter.PROVIDED);
   }
 
+  @Test
+  void shouldFindJobWorkerByName() {
+    final CamundaClientProperties properties = properties();
+    final CamundaClientJobWorkerProperties overrides = new CamundaClientJobWorkerProperties();
+    overrides.setStreamEnabled(true);
+    properties.getWorker().getOverride().put("NAME", overrides);
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setName(new FromAnnotation<>("NAME"));
+    assertThat(jobWorkerValue.getStreamEnabled().value()).isNull();
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+    customizer.customize(jobWorkerValue);
+    assertThat(jobWorkerValue.getStreamEnabled().value()).isTrue();
+  }
+
+  @Test
+  void shouldPreferTypeOverrideOverNameOverride() {
+    final CamundaClientProperties properties = properties();
+
+    final CamundaClientJobWorkerProperties typeOverride = new CamundaClientJobWorkerProperties();
+    typeOverride.setStreamEnabled(true);
+
+    final CamundaClientJobWorkerProperties nameOverride = new CamundaClientJobWorkerProperties();
+    nameOverride.setStreamEnabled(false);
+
+    properties.getWorker().getOverride().put("MY_TYPE", typeOverride);
+    properties.getWorker().getOverride().put("MY_NAME", nameOverride);
+
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setType(new FromAnnotation<>("MY_TYPE"));
+    jobWorkerValue.setName(new FromAnnotation<>("MY_NAME"));
+
+    assertThat(jobWorkerValue.getStreamEnabled().value()).isNull();
+
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+    customizer.customize(jobWorkerValue);
+
+    // job type override should take precedence over name override
+    assertThat(jobWorkerValue.getStreamEnabled().value()).isTrue();
+  }
+
   private record Input<T>(
       String displayName,
       BiConsumer<CamundaClientJobWorkerProperties, T> setter,
