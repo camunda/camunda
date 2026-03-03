@@ -51,7 +51,7 @@ class TenantValidatorTest {
     assertThat(violations)
         .containsExactly(
             ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
-                longName, ValidationConstants.MAX_FIELD_LENGTH));
+                "name", ValidationConstants.MAX_FIELD_LENGTH));
   }
 
   @Test
@@ -78,7 +78,7 @@ class TenantValidatorTest {
     assertThat(violations)
         .containsExactly(
             ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
-                longName, ValidationConstants.MAX_FIELD_LENGTH));
+                "name", ValidationConstants.MAX_FIELD_LENGTH));
   }
 
   @Test

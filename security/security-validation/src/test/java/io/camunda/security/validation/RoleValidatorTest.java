@@ -109,7 +109,7 @@ class RoleValidatorTest {
     assertThat(violations)
         .contains(
             ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
-                longName, ValidationConstants.MAX_FIELD_LENGTH));
+                "name", ValidationConstants.MAX_FIELD_LENGTH));
   }
 
   @Test

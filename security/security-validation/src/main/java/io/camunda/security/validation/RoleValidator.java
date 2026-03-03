@@ -54,7 +54,8 @@ public final class RoleValidator {
     }
     if (name != null && name.length() > ValidationConstants.MAX_FIELD_LENGTH) {
       violations.add(
-          ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(name, ValidationConstants.MAX_FIELD_LENGTH));
+          ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
+              "name", ValidationConstants.MAX_FIELD_LENGTH));
     }
   }
 
