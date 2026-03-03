@@ -18,6 +18,7 @@ import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperties;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperty;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,16 +96,18 @@ public final class ProcessModelReader {
    *     zeebe:properties defined are included.
    */
   public Map<String, Map<String, String>> extractExtensionPropertiesMap() {
-    final Map<String, Map<String, String>> result = new HashMap<>();
     final List<FlowNode> flowNodes = new ArrayList<>();
     process.getChildElementsByType(FlowNode.class).forEach(fn -> extractFlowNodes(flowNodes, fn));
+    final Map<String, Map<String, String>> result = new HashMap<>();
     for (final FlowNode flowNode : flowNodes) {
       getExtensionElementQuery(flowNode, ZeebeProperties.class)
           .flatMap(Query::findSingleResult)
           .ifPresent(
               props -> {
-                final Map<String, String> propsMap = new HashMap<>();
-                props.getProperties().forEach(p -> propsMap.put(p.getName(), p.getValue()));
+                final Map<String, String> propsMap =
+                    props.getProperties().stream()
+                        .collect(
+                            Collectors.toMap(ZeebeProperty::getName, ZeebeProperty::getValue));
                 if (!propsMap.isEmpty()) {
                   result.put(flowNode.getId(), propsMap);
                 }

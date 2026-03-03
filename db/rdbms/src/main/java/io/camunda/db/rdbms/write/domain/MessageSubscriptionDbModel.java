@@ -31,6 +31,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
   private String correlationKey;
   private String tenantId;
   private int partitionId;
+  private String extensionProperties;
 
   public MessageSubscriptionDbModel(final Long messageSubscriptionKey) {
     this.messageSubscriptionKey = messageSubscriptionKey;
@@ -52,7 +53,8 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
       final String messageName,
       final String correlationKey,
       final String tenantId,
-      final int partitionId) {
+      final int partitionId,
+      final String extensionProperties) {
     this.messageSubscriptionKey = messageSubscriptionKey;
     this.processDefinitionId = processDefinitionId;
     this.processDefinitionKey = processDefinitionKey;
@@ -69,6 +71,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     this.correlationKey = correlationKey;
     this.tenantId = tenantId;
     this.partitionId = partitionId;
+    this.extensionProperties = extensionProperties;
   }
 
   public Long messageSubscriptionKey() {
@@ -200,6 +203,14 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     return this;
   }
 
+  public String extensionProperties() {
+    return extensionProperties;
+  }
+
+  public void extensionProperties(final String extensionProperties) {
+    this.extensionProperties = extensionProperties;
+  }
+
   @Override
   public MessageSubscriptionDbModel copy(
       final Function<
@@ -225,7 +236,8 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
         .messageName(messageName)
         .correlationKey(correlationKey)
         .tenantId(tenantId)
-        .partitionId(partitionId);
+        .partitionId(partitionId)
+        .extensionProperties(extensionProperties);
   }
 
   public static class Builder implements ObjectBuilder<MessageSubscriptionDbModel> {
@@ -245,6 +257,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     private String correlationKey;
     private String tenantId;
     private int partitionId;
+    private String extensionProperties;
 
     public Builder messageSubscriptionKey(final Long messageSubscriptionKey) {
       this.messageSubscriptionKey = messageSubscriptionKey;
@@ -327,6 +340,11 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
       return this;
     }
 
+    public Builder extensionProperties(final String extensionProperties) {
+      this.extensionProperties = extensionProperties;
+      return this;
+    }
+
     @Override
     public MessageSubscriptionDbModel build() {
       return new MessageSubscriptionDbModel(
@@ -345,7 +363,8 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
           messageName,
           correlationKey,
           tenantId,
-          partitionId);
+          partitionId,
+          extensionProperties);
     }
   }
 }

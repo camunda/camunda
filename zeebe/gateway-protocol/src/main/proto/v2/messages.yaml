@@ -311,6 +311,14 @@ components:
         correlationKey:
           type: string
           description: The correlation key of the message subscription.
+        extensionProperties:
+          type: object
+          description: |
+            The zeebe:properties extension properties defined on the message event element in the
+            BPMN XML. Only available for data imported after v. 8.10.0.
+          nullable: true
+          additionalProperties:
+            type: string
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
 

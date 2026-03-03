@@ -22,6 +22,7 @@ import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.MessageSubscriptionResult;
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.Objects;
 
 public class MessageSubscriptionImpl implements MessageSubscription {
@@ -41,6 +42,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   private final String messageName;
   private final String correlationKey;
   private final String tenantId;
+  private final Map<String, String> extensionProperties;
 
   public MessageSubscriptionImpl(final MessageSubscriptionResult item) {
     messageSubscriptionKey = ParseUtil.parseLongOrNull(item.getMessageSubscriptionKey());
@@ -60,6 +62,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
     messageName = item.getMessageName();
     correlationKey = item.getCorrelationKey();
     tenantId = item.getTenantId();
+    extensionProperties = item.getExtensionProperties();
   }
 
   @Override
@@ -138,6 +141,11 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   }
 
   @Override
+  public Map<String, String> getExtensionProperties() {
+    return extensionProperties;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(
         messageSubscriptionKey,
@@ -154,7 +162,8 @@ public class MessageSubscriptionImpl implements MessageSubscription {
         lastUpdatedDate,
         messageName,
         correlationKey,
-        tenantId);
+        tenantId,
+        extensionProperties);
   }
 
   @Override
@@ -180,6 +189,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
         && Objects.equals(lastUpdatedDate, subscription.lastUpdatedDate)
         && Objects.equals(messageName, subscription.messageName)
         && Objects.equals(correlationKey, subscription.correlationKey)
-        && Objects.equals(tenantId, subscription.tenantId);
+        && Objects.equals(tenantId, subscription.tenantId)
+        && Objects.equals(extensionProperties, subscription.extensionProperties);
   }
 }

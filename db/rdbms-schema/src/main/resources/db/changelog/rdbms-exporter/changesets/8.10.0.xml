@@ -23,4 +23,10 @@
     </createIndex>
   </changeSet>
 
+  <changeSet id="add_message_subscription_extension_properties" author="camunda">
+    <addColumn tableName="${prefix}MESSAGE_SUBSCRIPTION">
+      <column name="EXTENSION_PROPERTIES" type="CLOB"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

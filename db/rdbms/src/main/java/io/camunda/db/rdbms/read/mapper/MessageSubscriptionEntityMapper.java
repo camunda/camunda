@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.read.mapper;
 
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
+import io.camunda.db.rdbms.write.util.CustomHeaderSerializer;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 
 public class MessageSubscriptionEntityMapper {
@@ -30,6 +31,8 @@ public class MessageSubscriptionEntityMapper {
         .messageName(messageSubscriptionDbModel.messageName())
         .correlationKey(messageSubscriptionDbModel.correlationKey())
         .tenantId(messageSubscriptionDbModel.tenantId())
+        .extensionProperties(
+            CustomHeaderSerializer.deserialize(messageSubscriptionDbModel.extensionProperties()))
         .build();
   }
 }

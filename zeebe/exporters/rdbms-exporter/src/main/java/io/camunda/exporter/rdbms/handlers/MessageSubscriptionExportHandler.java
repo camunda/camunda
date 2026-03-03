@@ -11,6 +11,7 @@ import static io.camunda.exporter.rdbms.utils.DateUtil.toOffsetDateTime;
 
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
+import io.camunda.db.rdbms.write.util.CustomHeaderSerializer;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
@@ -68,6 +69,11 @@ public class MessageSubscriptionExportHandler
     final ProcessMessageSubscriptionRecordValue value = record.getValue();
     final var processDefinitionKey = value.getProcessDefinitionKey();
     final var cachedProcess = processCache.get(processDefinitionKey);
+    final var extensionProperties =
+        cachedProcess
+            .map(CachedProcessEntity::extensionPropertiesMap)
+            .map(m -> m.get(value.getElementId()))
+            .orElse(null);
     return new MessageSubscriptionDbModel.Builder()
         .messageSubscriptionKey(record.getKey())
         .processDefinitionId(value.getBpmnProcessId())
@@ -85,6 +91,7 @@ public class MessageSubscriptionExportHandler
         .correlationKey(value.getCorrelationKey())
         .tenantId(value.getTenantId())
         .partitionId(record.getPartitionId())
+        .extensionProperties(CustomHeaderSerializer.serialize(extensionProperties))
         .build();
   }
 }

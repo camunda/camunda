@@ -179,6 +179,7 @@
     <result column="CORRELATION_KEY" property="correlationKey" javaType="java.lang.String" />
     <result column="TENANT_ID" property="tenantId" javaType="java.lang.String" />
     <result column="PARTITION_ID" property="partitionId" javaType="java.lang.Integer" />
+    <result column="EXTENSION_PROPERTIES" property="extensionProperties" javaType="java.lang.String" />
   </resultMap>
 
 
@@ -199,7 +200,8 @@
                                                MESSAGE_NAME,
                                                CORRELATION_KEY,
                                                TENANT_ID,
-                                               PARTITION_ID
+                                               PARTITION_ID,
+                                               EXTENSION_PROPERTIES
     )
     VALUES (
             #{messageSubscriptionKey},
@@ -217,7 +219,8 @@
             #{messageName},
             #{correlationKey},
             #{tenantId},
-            #{partitionId}
+            #{partitionId},
+            #{extensionProperties}
     )
   </insert>
 
@@ -234,7 +237,8 @@
         DATE_TIME = #{dateTime, jdbcType=TIMESTAMP},
         MESSAGE_NAME = #{messageName},
         CORRELATION_KEY = #{correlationKey},
-        TENANT_ID = #{tenantId}
+        TENANT_ID = #{tenantId},
+        EXTENSION_PROPERTIES = #{extensionProperties}
     WHERE MESSAGE_SUBSCRIPTION_KEY = #{messageSubscriptionKey}
   </update>
 

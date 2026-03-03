@@ -18,6 +18,7 @@ package io.camunda.client.api.search.response;
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.api.search.enums.MessageSubscriptionType;
 import java.time.OffsetDateTime;
+import java.util.Map;
 
 public interface MessageSubscription {
 
@@ -59,4 +60,12 @@ public interface MessageSubscription {
   String getCorrelationKey();
 
   String getTenantId();
+
+  /**
+   * Returns the zeebe:properties extension properties defined on the message event element in the
+   * BPMN XML. Only available for data imported after v. 8.10.0.
+   *
+   * @return the extension properties, or {@code null} if not available
+   */
+  Map<String, String> getExtensionProperties();
 }

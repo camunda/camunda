@@ -1063,6 +1063,7 @@ public final class SearchQueryResponseMapper {
         .lastUpdatedDate(formatDate(messageSubscription.dateTime()))
         .messageName(messageSubscription.messageName())
         .correlationKey(messageSubscription.correlationKey())
+        .extensionProperties(messageSubscription.extensionProperties())
         .tenantId(messageSubscription.tenantId());
   }
 

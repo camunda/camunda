@@ -364,6 +364,7 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     expectedUpdateFields.put("processDefinitionName", null);
     expectedUpdateFields.put("processDefinitionVersion", null);
     expectedUpdateFields.put("messageSubscriptionType", null);
+    expectedUpdateFields.put("extensionProperties", null);
 
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
