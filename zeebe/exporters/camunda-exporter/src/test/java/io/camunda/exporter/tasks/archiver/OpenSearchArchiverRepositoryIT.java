@@ -49,7 +49,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -1450,10 +1449,31 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private Duration getAwsSocketTimeout() {
-    return Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT_SECONDS))
-        .map(Long::parseLong)
-        .map(Duration::ofSeconds)
-        .orElse(DEFAULT_AWS_OS_SOCKET_TIMEOUT);
+    final var configuredTimeout =
+        System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT_SECONDS);
+    if (configuredTimeout == null) {
+      return DEFAULT_AWS_OS_SOCKET_TIMEOUT;
+    }
+    try {
+      final var timeoutSeconds = Long.parseLong(configuredTimeout);
+      if (timeoutSeconds <= 0) {
+        LOGGER.warn(
+            "Invalid non-positive value for {}='{}'. Falling back to default timeout {}.",
+            TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT_SECONDS,
+            configuredTimeout,
+            DEFAULT_AWS_OS_SOCKET_TIMEOUT);
+        return DEFAULT_AWS_OS_SOCKET_TIMEOUT;
+      }
+      return Duration.ofSeconds(timeoutSeconds);
+    } catch (final NumberFormatException e) {
+      LOGGER.warn(
+          "Invalid value for {}='{}'. Falling back to default timeout {}.",
+          TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT_SECONDS,
+          configuredTimeout,
+          DEFAULT_AWS_OS_SOCKET_TIMEOUT,
+          e);
+      return DEFAULT_AWS_OS_SOCKET_TIMEOUT;
+    }
   }
 
   private void deleteTestIndices() {
