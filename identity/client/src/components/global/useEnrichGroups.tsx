@@ -8,11 +8,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { isCamundaGroupsEnabled } from "src/configuration";
-import { SearchResponse } from "src/utility/api";
 import { useApiCall, usePaginatedApiCall } from "src/utility/api";
-import { MemberGroup } from "src/utility/api/groups";
 import { ApiDefinition } from "src/utility/api/request";
 import { searchGroups, Group } from "src/utility/api/groups";
+import type {
+  QueryGroupsResponseBody,
+  QueryGroupsByRoleResponseBody,
+} from "@camunda/camunda-api-zod-schemas/8.9";
 
 type UseEnrichedGroupsResult = {
   groups: Group[];
@@ -23,7 +25,10 @@ type UseEnrichedGroupsResult = {
 };
 
 export function useEnrichedGroups<P>(
-  apiDefinition: ApiDefinition<SearchResponse<MemberGroup>, P>,
+  apiDefinition: ApiDefinition<
+    QueryGroupsResponseBody | QueryGroupsByRoleResponseBody,
+    P
+  >,
   params: P,
 ): UseEnrichedGroupsResult {
   const [callSearchMembers, paginationProps] =
