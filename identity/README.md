@@ -8,13 +8,15 @@ such as users, roles, permissions, and OAuth clients.
 
 ## Running locally
 
-- All commands should be run from the root folder of the monorepo unless stated otherwise.
+All commands should be run from the root folder of the monorepo unless stated otherwise.
 
 1. Build project:
 
 ```
 mvn clean install -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild -T1C
 ```
+
+#### With Elasticsearch
 
 2. Run elasticsearch by using one of the already configured docker-compose file in our codebase.
 
@@ -27,23 +29,30 @@ docker compose -f operate/docker-compose.yml up -d elasticsearch
 3. Run the application with initial setup variables:
 
 ```
-SPRING_PROFILES_ACTIVE=consolidated-auth,broker,identity \
-CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false \
-CAMUNDA_SECURITY_AUTHENTICATION_METHOD=BASIC \
-ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE=elasticsearch \
-ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:9200 \
-ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CREATESCHEMA=true \
-ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false \
-ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_RETENTION_ENABLED=false \
-ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter \
+SPRING_PROFILES_ACTIVE=consolidated-auth,broker,identity,elasticsearch \
 ./dist/target/camunda-zeebe/bin/camunda
 ```
 
-4. Run the frontend in another terminal tab by navigating to the `identity/client` folder and running:
+#### With RDBMS (H2)
+
+2. No container needed as H2 is embedded.
+
+3. Run the application with initial setup variables:
+
+```
+SPRING_PROFILES_ACTIVE=consolidated-auth,broker,identity,rdbmsH2 \
+./dist/target/camunda-zeebe/bin/camunda
+```
+
+### Running the frontend
+
+1. Run the frontend in another terminal tab by navigating to the `identity/client` folder and running:
 
 ```shell
 npm run dev
 ```
+
+2. Navigate to `http://localhost:5173/admin` in your browser. (Port could be different depending on your configuration, see the terminal when starting it.)
 
 ### Variations
 
@@ -66,6 +75,6 @@ CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true \
 If you would like to enable operate and tasklist, you can add their profile to the `SPRING_PROFILES_ACTIVE` variable like this:
 
 ```
-SPRING_PROFILES_ACTIVE=operate,tasklist,consolidated-auth,broker,identity
+SPRING_PROFILES_ACTIVE=operate,tasklist,consolidated-auth,broker,identity,elasticsearch/rdbmsH2
 ```
 
