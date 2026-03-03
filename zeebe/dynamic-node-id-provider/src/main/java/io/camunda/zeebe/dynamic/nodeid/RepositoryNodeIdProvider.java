@@ -300,6 +300,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
             .map(m -> Map.entry(Integer.parseInt(m.id().id()), Version.of(m.nodeVersion())))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     knownVersionMappings = new VersionMappings(nodeInstances);
+    LOG.trace("Updating known version mappings to {}", knownVersionMappings);
   }
 
   private boolean isBroker(final MemberId memberId) {
