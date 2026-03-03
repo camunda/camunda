@@ -49,6 +49,8 @@ const permissionTypeSchema = z.enum([
 	'DELETE_TASK_LISTENER',
 	'EVALUATE',
 	'MODIFY_PROCESS_INSTANCE',
+	'CLAIM_USER_TASK',
+	'COMPLETE_USER_TASK',
 ]);
 type PermissionType = z.infer<typeof permissionTypeSchema>;
 
@@ -73,8 +75,6 @@ const resourceTypeSchema = z.enum([
 	'TENANT',
 	'USER',
 	'USER_TASK',
-	'CLAIM_USER_TASK',
-	'COMPLETE_USER_TASK',
 ]);
 type ResourceType = z.infer<typeof resourceTypeSchema>;
 
