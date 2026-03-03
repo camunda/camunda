@@ -63,10 +63,10 @@ public abstract class BackupEndpointStandaloneTest {
   @Test
   public void shouldCallDeleteWhenIsStandalone() {
     // when
-    backupEndpointStandalone.delete(11L);
+    backupEndpointStandalone.delete(new String[] {"11"});
 
     // then
-    verify(backupEndpoint).delete(11L);
+    verify(backupEndpoint).delete(new String[] {"11"});
   }
 
   @Test

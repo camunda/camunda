@@ -114,6 +114,12 @@ public final class DbCheckpointState implements CheckpointState {
     checkpointColumnFamily.deleteIfExists(checkpointInfoKey);
   }
 
+  @Override
+  public void clearLatestCheckpointInfo() {
+    checkpointInfoKey.wrapString(LATEST_CHECKPOINT_KEY);
+    checkpointColumnFamily.deleteIfExists(checkpointInfoKey);
+  }
+
   private long getCheckpointId(final String key) {
     checkpointInfoKey.wrapString(key);
     final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);

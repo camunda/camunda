@@ -101,6 +101,11 @@ public final class BackupRequestHandler implements BackupApi {
         .thenApply(this::aggregateRangesResponses);
   }
 
+  @Override
+  public CompletionStage<Void> deleteRuntimeState() {
+    return broadcastRequest(this::createResetStateRequest).thenApply(ignored -> null);
+  }
+
   /**
    * Trigger a checkpoint of the given type across all partitions
    *
@@ -394,6 +399,12 @@ public final class BackupRequestHandler implements BackupApi {
 
   private BrokerMetadataSyncRequest createMetadataSyncRequest(final int partitionId) {
     final var request = new BrokerMetadataSyncRequest();
+    request.setPartitionId(partitionId);
+    return request;
+  }
+
+  private BrokerResetBackupStateRequest createResetStateRequest(final int partitionId) {
+    final var request = new BrokerResetBackupStateRequest();
     request.setPartitionId(partitionId);
     return request;
   }
