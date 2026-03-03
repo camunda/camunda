@@ -92,7 +92,6 @@ public final class FlowControl implements AppendListener {
           ActorClock::currentTimeMillis, Duration.ofMinutes(5), Duration.ofSeconds(10));
   private RateLimitThrottle writeRateThrottle;
   private volatile long lastWrittenPosition = -1;
-  private volatile long lastProcessedPosition = -1;
   private volatile long lastExportedPosition;
 
   private final RingBuffer inFlight;
@@ -212,7 +211,6 @@ public final class FlowControl implements AppendListener {
       inFlightEntry.onProcessed();
       inFlight.remove(inFlightEntry);
     }
-    lastProcessedPosition = position;
   }
 
   public void onExported(final long position) {
