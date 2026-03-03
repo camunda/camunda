@@ -21,13 +21,11 @@ import io.camunda.zeebe.spring.client.actuator.ZeebeClientHealthIndicator;
 import io.camunda.zeebe.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
 import io.micrometer.core.instrument.MeterRegistry;
-import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 
@@ -37,11 +35,26 @@ import org.springframework.context.annotation.Lazy;
  */
 @AutoConfigureBefore(MetricsDefaultConfiguration.class)
 @ConditionalOnCamundaClientEnabled
+<<<<<<< HEAD:clients/camunda-spring-boot-4-starter/src/main/java/io/camunda/zeebe/spring/client/configuration/ZeebeActuatorConfiguration.java
 @ConditionalOnClass({
   EndpointAutoConfiguration.class,
   MeterRegistry.class
 }) // only if actuator is on classpath
 public class ZeebeActuatorConfiguration {
+=======
+@ConditionalOnClass(
+    name = {
+      "org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration",
+      "io.micrometer.core.instrument.MeterRegistry"
+    }) // only if actuator is on classpath
+public class CamundaActuatorConfiguration {
+
+  @Bean
+  public JobWorkerController jobWorkerController(final JobWorkerManager jobWorkerManager) {
+    return new JobWorkerController(jobWorkerManager);
+  }
+
+>>>>>>> d91a829d (fix: use string-based @ConditionalOnClass for optional dependencies to fix Java 24+ compatibility):clients/camunda-spring-boot-starter/src/main/java/io/camunda/client/spring/configuration/CamundaActuatorConfiguration.java
   @Bean
   @ConditionalOnMissingBean
   @ConditionalOnBean(MeterRegistry.class)
@@ -54,9 +67,16 @@ public class ZeebeActuatorConfiguration {
       prefix = "management.health.zeebe",
       name = "enabled",
       matchIfMissing = true)
+<<<<<<< HEAD:clients/camunda-spring-boot-4-starter/src/main/java/io/camunda/zeebe/spring/client/configuration/ZeebeActuatorConfiguration.java
   @ConditionalOnClass(HealthIndicator.class)
   @ConditionalOnMissingBean(name = "zeebeClientHealthIndicator")
   public ZeebeClientHealthIndicator zeebeClientHealthIndicator(final ZeebeClient client) {
     return new ZeebeClientHealthIndicator(client);
+=======
+  @ConditionalOnClass(name = "org.springframework.boot.health.contributor.HealthIndicator")
+  @ConditionalOnMissingBean(name = "camundaClientHealthIndicator")
+  public CamundaClientHealthIndicator camundaClientHealthIndicator(final HealthCheck healthCheck) {
+    return new CamundaClientHealthIndicator(healthCheck);
+>>>>>>> d91a829d (fix: use string-based @ConditionalOnClass for optional dependencies to fix Java 24+ compatibility):clients/camunda-spring-boot-starter/src/main/java/io/camunda/client/spring/configuration/CamundaActuatorConfiguration.java
   }
 }
