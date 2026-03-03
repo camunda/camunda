@@ -15,6 +15,8 @@
  */
 package io.camunda.client.impl.search.response;
 
+import static java.util.Optional.ofNullable;
+
 import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.Incident;
@@ -49,7 +51,9 @@ public class IncidentImpl implements Incident {
     elementId = item.getElementId();
     elementInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
     creationTime = ParseUtil.parseOffsetDateTimeOrNull(item.getCreationTime());
-    state = EnumUtil.convert(item.getState(), IncidentState.class);
+    state =
+        ofNullable(EnumUtil.convert(item.getState(), IncidentState.class))
+            .orElse(IncidentState.UNKNOWN_ENUM_VALUE);
     jobKey = ParseUtil.parseLongOrNull(item.getJobKey());
     tenantId = item.getTenantId();
   }

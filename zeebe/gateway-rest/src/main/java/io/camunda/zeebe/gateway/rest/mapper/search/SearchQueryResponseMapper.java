@@ -865,7 +865,10 @@ public final class SearchQueryResponseMapper {
         .elementId(t.flowNodeId())
         .elementInstanceKey(KeyUtil.keyToString(t.flowNodeInstanceKey()))
         .creationTime(formatDate(t.creationTime()))
-        .state(IncidentResult.StateEnum.fromValue(t.state().name()))
+        .state(
+            t.state() != null
+                ? IncidentStateEnum.fromValue(t.state().name())
+                : IncidentStateEnum.UNKNOWN)
         .jobKey(KeyUtil.keyToString(t.jobKey()))
         .tenantId(t.tenantId());
   }
