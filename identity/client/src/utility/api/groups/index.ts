@@ -23,8 +23,6 @@ import type {
 import { ApiDefinition, apiDelete, apiGet, apiPost, apiPut } from "../request";
 import { ROLES_ENDPOINT } from "src/utility/api/roles";
 
-export type { Group };
-
 export type GroupKeys = keyof Group;
 
 export const GROUPS_ENDPOINT = "/groups";
@@ -63,9 +61,6 @@ export const deleteGroup: ApiDefinition<undefined, Pick<Group, "groupId">> = ({
 
 // ----------------- Roles within a Group -----------------
 
-export type GetGroupRolesParams = {
-  groupId: string;
-};
 export const searchRolesByGroupId: ApiDefinition<
   QueryRolesByGroupResponseBody,
   QueryRolesByGroupRequestBody & Pick<Group, "groupId">

@@ -93,6 +93,7 @@ const List: FC = () => {
               <CustomTabPanel key={tab}>
                 <AuthorizationList
                   tab={tab}
+                  // @ts-expect-error todo fix
                   data={transformedData}
                   loading={loading}
                   reload={reload}

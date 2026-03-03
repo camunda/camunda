@@ -8,16 +8,14 @@
 
 import { FC } from "react";
 import { useApiCall } from "src/utility/api";
-import {
-  deleteMappingRule,
-  type MappingRule,
-} from "src/utility/api/mapping-rules";
+import { deleteMappingRule } from "src/utility/api/mapping-rules";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
   UseEntityModalProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
+import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const DeleteMappingRulesModal: FC<UseEntityModalProps<MappingRule>> = ({
   open,

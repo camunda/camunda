@@ -8,7 +8,7 @@
 
 import type {
   Group,
-  MappingRuleResult,
+  MappingRule,
   QueryClientsByRoleRequestBody,
   QueryClientsByRoleResponseBody,
   QueryGroupsByRoleRequestBody,
@@ -18,7 +18,7 @@ import type {
   QueryRolesRequestBody,
   QueryRolesResponseBody,
   Role,
-  TenantClient as Client,
+  TenantClient,
 } from "@camunda/camunda-api-zod-schemas/8.9";
 import {
   ApiDefinition,
@@ -27,8 +27,6 @@ import {
   apiPost,
   apiPut,
 } from "src/utility/api/request";
-
-export type { Role };
 
 export const ROLES_ENDPOINT = "/roles";
 
@@ -60,14 +58,14 @@ export const getMappingRulesByRoleId: ApiDefinition<
 
 export const assignRoleMappingRule: ApiDefinition<
   undefined,
-  Pick<Role, "roleId"> & Pick<MappingRuleResult, "mappingRuleId">
+  Pick<Role, "roleId"> & Pick<MappingRule, "mappingRuleId">
 > = ({ roleId, mappingRuleId }) => {
   return apiPut(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${mappingRuleId}`);
 };
 
 export const unassignRoleMappingRule: ApiDefinition<
   undefined,
-  Pick<Role, "roleId"> & Pick<MappingRuleResult, "mappingRuleId">
+  Pick<Role, "roleId"> & Pick<MappingRule, "mappingRuleId">
 > = ({ roleId, mappingRuleId }) =>
   apiDelete(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${mappingRuleId}`);
 
@@ -94,8 +92,6 @@ export const unassignRoleGroup: ApiDefinition<
 
 // ----------------- Clients within a Role -----------------
 
-export type { Client };
-
 export const getClientsByRoleId: ApiDefinition<
   QueryClientsByRoleResponseBody,
   QueryClientsByRoleRequestBody & Pick<Role, "roleId">
@@ -106,13 +102,13 @@ export const getClientsByRoleId: ApiDefinition<
 
 export const assignRoleClient: ApiDefinition<
   undefined,
-  Pick<Role, "roleId"> & Pick<Client, "clientId">
+  Pick<Role, "roleId"> & Pick<TenantClient, "clientId">
 > = ({ roleId, clientId }) => {
   return apiPut(`${ROLES_ENDPOINT}/${roleId}/clients/${clientId}`);
 };
 
 export const unassignRoleClient: ApiDefinition<
   undefined,
-  Pick<Role, "roleId"> & Pick<Client, "clientId">
+  Pick<Role, "roleId"> & Pick<TenantClient, "clientId">
 > = ({ roleId, clientId }) =>
   apiDelete(`${ROLES_ENDPOINT}/${roleId}/clients/${clientId}`);

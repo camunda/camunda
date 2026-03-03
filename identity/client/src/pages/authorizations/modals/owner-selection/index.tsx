@@ -7,7 +7,6 @@
  */
 
 import { FC } from "react";
-import { Authorization } from "src/utility/api/authorizations";
 import { searchUser } from "src/utility/api/users";
 import { searchGroups } from "src/utility/api/groups";
 import { searchMappingRule } from "src/utility/api/mapping-rules";
@@ -19,6 +18,7 @@ import { isCamundaGroupsEnabled, isOIDC } from "src/configuration";
 import { Caption } from "src/pages/authorizations/modals/components.tsx";
 import { DocumentationLink } from "src/components/documentation";
 import { getIdPattern } from "src/utility/validate";
+import type { Authorization } from "@camunda/camunda-api-zod-schemas/8.9";
 
 type SelectionProps = {
   type: Authorization["ownerType"];
