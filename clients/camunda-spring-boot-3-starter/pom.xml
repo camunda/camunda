@@ -81,6 +81,11 @@
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
       <scope>test</scope>
     </dependency>
@@ -202,6 +207,14 @@
           <ignoredNonTestScopedDependencies>
             <dependency>*</dependency>
           </ignoredNonTestScopedDependencies>
+          <!--
+            spring-web is declared as a test dep to make Jackson2ObjectMapperBuilder available
+            for Jackson auto-configuration tests; it is not directly referenced in test source
+            but is required at runtime for JacksonAutoConfiguration to activate.
+          -->
+          <ignoredUnusedDeclaredDependencies>
+            <dependency>org.springframework:spring-web</dependency>
+          </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
 
@@ -304,9 +317,6 @@
             <!-- Low risk on those, given they are not tightly coupled to spring classes -->
             <exclude>**/configurationMetadata/AlignmentTest.java</exclude>
             <exclude>**/configurationMetadata/FormattingTest.java</exclude>
-            <!-- Exclude tests that use Jackson 3.x (tools.jackson.*) which is not available in Spring Boot 3.x -->
-            <exclude>**/CamundaObjectMapperTest.java</exclude>
-            <exclude>**/JsonMapperConfigurationTest.java</exclude>
           </excludes>
         </configuration>
       </plugin>
