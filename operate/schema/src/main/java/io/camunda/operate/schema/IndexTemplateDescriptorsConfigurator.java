@@ -11,7 +11,6 @@ import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
-import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -48,14 +47,6 @@ public class IndexTemplateDescriptorsConfigurator {
   public DecisionRequirementsIndex getDecisionRequirementsIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new DecisionRequirementsIndex(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb());
-  }
-
-  @Bean
-  public MetricIndex getMetricIndex(
-      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new MetricIndex(
         operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
         databaseInfo.isElasticsearchDb());
   }

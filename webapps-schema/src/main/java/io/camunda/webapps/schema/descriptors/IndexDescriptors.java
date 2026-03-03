@@ -18,11 +18,9 @@ import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
-import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
@@ -72,7 +70,6 @@ public class IndexDescriptors {
                 new JobTemplate(indexPrefix, isElasticsearch),
                 new ListViewTemplate(indexPrefix, isElasticsearch),
                 new MappingRuleIndex(indexPrefix, isElasticsearch),
-                new MetricIndex(indexPrefix, isElasticsearch),
                 new OperationTemplate(indexPrefix, isElasticsearch),
                 new PersistentWebSessionIndexDescriptor(indexPrefix, isElasticsearch),
                 new PostImporterQueueTemplate(indexPrefix, isElasticsearch),
@@ -82,7 +79,6 @@ public class IndexDescriptors {
                 new SequenceFlowTemplate(indexPrefix, isElasticsearch),
                 new SnapshotTaskVariableTemplate(indexPrefix, isElasticsearch),
                 new TaskTemplate(indexPrefix, isElasticsearch),
-                new TasklistMetricIndex(indexPrefix, isElasticsearch),
                 new TenantIndex(indexPrefix, isElasticsearch),
                 new UserIndex(indexPrefix, isElasticsearch),
                 new VariableTemplate(indexPrefix, isElasticsearch),
