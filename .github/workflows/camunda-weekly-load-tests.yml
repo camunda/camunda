@@ -26,6 +26,7 @@ jobs:
     outputs:
       test: ${{ steps.data.outputs.test }}
       operate: ${{ steps.data.outputs.operate }}
+      ttl: ${{ steps.data.outputs.ttl }}
     steps:
       - uses: actions/checkout@v6
       - name: Collect test data
@@ -48,6 +49,8 @@ jobs:
             echo "test=$var" >> "$GITHUB_OUTPUT"
           fi
           echo "full-ref=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          # inputs.ttl is empty when the workflow runs on a schedule, so fall back to the default
+          echo "ttl=${{ inputs.ttl || 28 }}" >> "$GITHUB_OUTPUT"
 
   setup-typical-load-test:
     name: Typical load test
@@ -57,7 +60,7 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.test-data.outputs.test }}-typical
-      ttl: ${{ inputs.ttl || 28 }}
+      ttl: ${{ fromJSON(needs.test-data.outputs.ttl) }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: typical
       build-frontend: true
@@ -69,7 +72,7 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.test-data.outputs.test }}-rdbms-realistic
-      ttl: ${{ inputs.ttl || 28 }}
+      ttl: ${{ fromJSON(needs.test-data.outputs.ttl) }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       secondary-storage-type: 'postgresql'
       build-frontend: true
@@ -82,7 +85,7 @@ jobs:
       - test-data
     with:
       name: ${{ needs.test-data.outputs.test }}-realistic
-      ttl: ${{ inputs.ttl || 28 }}
+      ttl: ${{ fromJSON(needs.test-data.outputs.ttl) }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: realistic
       build-frontend: true
@@ -94,7 +97,7 @@ jobs:
       - test-data
     with:
       name: ${{ needs.test-data.outputs.test }}-latency
-      ttl: ${{ inputs.ttl || 28 }}
+      ttl: ${{ fromJSON(needs.test-data.outputs.ttl) }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: latency
       build-frontend: true
