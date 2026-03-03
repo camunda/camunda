@@ -31,7 +31,7 @@ import {
 } from '../../../utils/beans/requestBeans';
 import {
   defaultAssertionOptions,
-  generateUniqueId,
+  generateRandomStringAsync,
 } from '../../../utils/constants';
 import {Serializable} from 'playwright-core/types/structs';
 
@@ -46,7 +46,7 @@ test.describe.parallel('Document API Tests', () => {
 
   test.beforeAll(async ({request}) => {
     async function createDocumentAndStoreIds(nth: number) {
-      const name = generateUniqueId();
+      const name = await generateRandomStringAsync(5);
       const payload = CREATE_ON_FLY_DOCUMENT_REQUEST_BODY_WITH_METADATA(name);
       const res = await request.post(buildUrl('/documents'), {
         headers: defaultHeaders(),
@@ -118,10 +118,8 @@ test.describe.parallel('Document API Tests', () => {
   });
 
   test('Create Document Invalid processDefinitionId 400', async ({request}) => {
-    const fileName = generateUniqueId();
     const invalidProcessDefinitionId = '123xInvalidProcessDefinitionId'; // starts with a number, not a valid BPMN ID; regression guard for #46405 / #46407
     const payload = CREATE_ON_FLY_DOCUMENT_REQUEST_BODY_WITH_METADATA(
-      fileName,
       invalidProcessDefinitionId,
     );
 
@@ -161,7 +159,7 @@ test.describe.parallel('Document API Tests', () => {
 
   test('Create Document With Query Parameters', async ({request}) => {
     const payload = CREATE_TXT_DOCUMENT_REQUEST();
-    const uniqueId = generateUniqueId();
+    const uniqueId = await generateRandomStringAsync(10);
     const storeId = 'in-memory';
     const expectedPostBody = CREATE_TXT_DOC_RESPONSE_BODY('helloworld', 12);
 
@@ -189,9 +187,9 @@ test.describe.parallel('Document API Tests', () => {
   });
 
   test('Create Document With Metadata', async ({request}) => {
-    const name = generateUniqueId();
+    const name = await generateRandomStringAsync(10);
     const payload = CREATE_ON_FLY_DOCUMENT_REQUEST_BODY_WITH_METADATA(name);
-    const expectedPostBody = CREATE_TXT_DOC_RESPONSE_WITH_METADATA(name, 21);
+    const expectedPostBody = CREATE_TXT_DOC_RESPONSE_WITH_METADATA(name, 23);
 
     const res = await request.post(buildUrl('/documents'), {
       headers: defaultHeaders(),
@@ -223,7 +221,7 @@ test.describe.parallel('Document API Tests', () => {
         ),
         {headers: defaultHeaders()},
       );
-      
+
       await assertStatusCode(res, 200);
       const text = await res.text();
       expect(text).toBe(`Hello World ${state['name1']}!`);
@@ -311,13 +309,16 @@ test.describe.parallel('Document API Tests', () => {
           }),
           {headers: jsonHeaders()},
         );
-        await assertNotFoundRequest(res, `Document with id '${state.documentId2}' not found`);
+        await assertNotFoundRequest(
+          res,
+          `Document with id '${state.documentId2}' not found`,
+        );
       }).toPass(defaultAssertionOptions);
     });
   });
 
   test('Create Multiple Documents', async ({request}) => {
-    const name = generateUniqueId();
+    const name = await generateRandomStringAsync(10);
     const payload = CREATE_ON_FLY_MULTIPLE_DOCUMENTS_REQUEST_BODY(name, 2);
     const expectedFile1 = CREATE_TXT_DOC_RESPONSE_BODY(`${name}1`, 22);
     const expectedFile2 = CREATE_TXT_DOC_RESPONSE_BODY(`${name}2`, 22);
@@ -363,7 +364,7 @@ test.describe.parallel('Document API Tests', () => {
   });
 
   test('Create Multiple Documents Unauthorized 401', async ({request}) => {
-    const name = generateUniqueId();
+    const name = await generateRandomStringAsync(10);
     const payload = CREATE_ON_FLY_MULTIPLE_DOCUMENTS_REQUEST_BODY(name, 2);
 
     const res = await request.post(buildUrl('/documents/batch'), {
@@ -375,7 +376,7 @@ test.describe.parallel('Document API Tests', () => {
   });
 
   test('Create Multiple Documents Invalid Header 415', async ({request}) => {
-    const name = generateUniqueId();
+    const name = await generateRandomStringAsync(10);
     const payload = CREATE_ON_FLY_MULTIPLE_DOCUMENTS_REQUEST_BODY(name, 2);
 
     const res = await request.post(buildUrl('/documents/batch'), {
