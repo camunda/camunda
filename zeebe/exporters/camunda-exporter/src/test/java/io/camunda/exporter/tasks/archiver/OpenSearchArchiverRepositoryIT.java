@@ -1581,7 +1581,7 @@ final class OpenSearchArchiverRepositoryIT {
     connectConfig.setUrl(SEARCH_DB.esUrl());
     connectConfig.setType(DatabaseType.OPENSEARCH.toString());
     final var schemaManagerConfig = new SchemaManagerConfiguration();
-    schemaManagerConfig.getRetry().setMaxRetries(1);
+    schemaManagerConfig.getRetry().setMaxRetries(3);
     final var searchEngineConfiguration =
         SearchEngineConfiguration.of(
             builder ->
