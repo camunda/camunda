@@ -42,7 +42,6 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -74,8 +73,11 @@ import org.mockito.Mockito;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
+import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Request;
@@ -1686,11 +1688,18 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private <T extends TDocument> void index(final String index, final T document) {
-    try {
-      testClient.index(b -> b.index(index).document(document).id(document.id()));
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
+    Awaitility.await()
+        .ignoreException(OpenSearchException.class)
+        .timeout(SEARCH_DB.dataAvailabilityTimeout())
+        .until(
+            () -> {
+              final IndexResponse result =
+                  testClient.index(b -> b.index(index).document(document).id(document.id()));
+              return result != null
+                  && (result.result() == Result.Created
+                      || result.result() == Result.Updated
+                      || result.result() == Result.NoOp);
+            });
   }
 
   private void createLifeCyclePolicies() {

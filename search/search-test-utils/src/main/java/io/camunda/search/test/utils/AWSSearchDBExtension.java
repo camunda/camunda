@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
+import java.time.Duration;
 import java.util.UUID;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -36,10 +37,13 @@ public class AWSSearchDBExtension extends SearchDBExtension {
   private static OpenSearchClient osClient;
 
   private final String osUrl;
+  private final Duration dataAvailabilityTimeout;
   private ObjectMapper objectMapper;
 
-  public AWSSearchDBExtension(final String openSearchAwsInstanceUrl) {
+  public AWSSearchDBExtension(
+      final String openSearchAwsInstanceUrl, final Duration dataAvailabilityTimeout) {
     osUrl = openSearchAwsInstanceUrl;
+    this.dataAvailabilityTimeout = dataAvailabilityTimeout;
   }
 
   @Override
@@ -87,6 +91,12 @@ public class AWSSearchDBExtension extends SearchDBExtension {
   @Override
   public boolean isAws() {
     return true;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Duration dataAvailabilityTimeout() {
+    return dataAvailabilityTimeout;
   }
 
   @Override
