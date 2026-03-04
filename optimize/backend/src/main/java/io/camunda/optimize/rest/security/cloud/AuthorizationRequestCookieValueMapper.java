@@ -94,11 +94,6 @@ public class AuthorizationRequestCookieValueMapper {
       final String state = getText(node, "state");
       final String authorizationRequestUri = getText(node, "authorizationRequestUri");
 
-      if (state == null || state.isEmpty()) {
-        throw new IOException(
-            "OAuth2 authorization request cookie is missing required 'state' field");
-      }
-
       final OAuth2AuthorizationRequest.Builder builder =
           OAuth2AuthorizationRequest.authorizationCode()
               .authorizationUri(authorizationUri)
