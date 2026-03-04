@@ -1436,7 +1436,7 @@ final class ElasticsearchArchiverRepositoryIT {
     connectConfig.setType(DatabaseType.ELASTICSEARCH.toString());
     connectConfig.setUrl(SEARCH_DB.esUrl());
     final var schemaManagerConfig = new SchemaManagerConfiguration();
-    schemaManagerConfig.getRetry().setMaxRetries(1);
+    schemaManagerConfig.getRetry().setMaxRetries(3);
     final SearchEngineConfiguration searchEngineConfiguration =
         SearchEngineConfiguration.of(
             builder ->
