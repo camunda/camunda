@@ -25,6 +25,7 @@ import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionMetadataEntity;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
+import io.camunda.webapps.schema.util.ExtensionPropertyKeyUtil;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.util.modelreader.FlowNodeMetadata;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -328,6 +330,40 @@ final class MessageSubscriptionFromProcessMessageSubscriptionHandlerTest {
     // then
     assertThat(entity.getProcessDefinitionName()).isEqualTo(processName);
     assertThat(entity.getProcessDefinitionVersion()).isEqualTo(processVersion);
+  }
+
+  @Test
+  void shouldEncodeExtensionPropertyKeysWithDotsFromCache() {
+    // given
+    final var cachedProcess =
+        new CachedProcessEntity(
+            "My Process",
+            1,
+            null,
+            null,
+            Map.of(
+                "receive_task_1",
+                new FlowNodeMetadata("Receive task", Map.of("io.camunda.test:foo", "bar"))));
+    when(processCache.get(555L)).thenReturn(Optional.of(cachedProcess));
+
+    final var recordValue =
+        ImmutableProcessMessageSubscriptionRecordValue.builder()
+            .withProcessDefinitionKey(555L)
+            .withElementId("receive_task_1")
+            .build();
+    final Record<ProcessMessageSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+            r -> r.withIntent(ProcessMessageSubscriptionIntent.CREATED).withValue(recordValue));
+    final var entity = new MessageSubscriptionEntity();
+
+    // when
+    underTest.generateIds(record);
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getExtensionProperties())
+        .containsEntry(ExtensionPropertyKeyUtil.encode("io.camunda.test:foo"), "bar");
   }
 
   @Test

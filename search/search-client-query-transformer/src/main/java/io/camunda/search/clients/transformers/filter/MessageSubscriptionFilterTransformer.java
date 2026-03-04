@@ -32,6 +32,7 @@ import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.util.ExtensionPropertyKeyUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -78,7 +79,9 @@ public class MessageSubscriptionFilterTransformer
       for (final Map.Entry<String, List<Operation<String>>> entry :
           filter.extensionProperties().entrySet()) {
         queries.addAll(
-            stringOperations(EXTENSION_PROPERTIES + "." + entry.getKey(), entry.getValue()));
+            stringOperations(
+                EXTENSION_PROPERTIES + "." + ExtensionPropertyKeyUtil.encode(entry.getKey()),
+                entry.getValue()));
       }
     }
 

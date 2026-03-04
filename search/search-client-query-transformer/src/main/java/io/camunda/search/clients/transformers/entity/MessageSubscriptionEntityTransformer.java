@@ -11,6 +11,7 @@ import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
+import io.camunda.webapps.schema.util.ExtensionPropertyKeyUtil;
 
 public class MessageSubscriptionEntityTransformer
     implements ServiceTransformer<
@@ -36,7 +37,7 @@ public class MessageSubscriptionEntityTransformer
         .correlationKey(
             value.getMetadata() != null ? value.getMetadata().getCorrelationKey() : null)
         .tenantId(value.getTenantId())
-        .extensionProperties(value.getExtensionProperties())
+        .extensionProperties(ExtensionPropertyKeyUtil.decodeMap(value.getExtensionProperties()))
         .build();
   }
 

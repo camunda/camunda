@@ -14,6 +14,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionMetadataEntity;
+import io.camunda.webapps.schema.util.ExtensionPropertyKeyUtil;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -70,11 +71,12 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionHandler
       entity.setProcessDefinitionName(cached.map(CachedProcessEntity::name).orElse(null));
       entity.setProcessDefinitionVersion(cached.map(CachedProcessEntity::version).orElse(null));
       entity.setExtensionProperties(
-          cached
-              .map(CachedProcessEntity::flowNodesMap)
-              .map(m -> m.get(recordValue.getStartEventId()))
-              .map(fn -> fn.extensionProperties())
-              .orElse(null));
+          ExtensionPropertyKeyUtil.encodeMap(
+              cached
+                  .map(CachedProcessEntity::flowNodesMap)
+                  .map(m -> m.get(recordValue.getStartEventId()))
+                  .map(fn -> fn.extensionProperties())
+                  .orElse(null)));
     }
 
     entity

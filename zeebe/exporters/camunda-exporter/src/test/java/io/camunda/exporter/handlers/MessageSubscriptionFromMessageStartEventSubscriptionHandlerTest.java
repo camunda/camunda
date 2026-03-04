@@ -19,6 +19,7 @@ import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplat
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionState;
+import io.camunda.webapps.schema.util.ExtensionPropertyKeyUtil;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -28,6 +29,8 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionInte
 import io.camunda.zeebe.protocol.record.value.ImmutableMessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.util.modelreader.FlowNodeMetadata;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -186,6 +189,40 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
     // then
     assertThat(entity.getProcessDefinitionName()).isEqualTo(processName);
     assertThat(entity.getProcessDefinitionVersion()).isEqualTo(processVersion);
+  }
+
+  @Test
+  void shouldEncodeExtensionPropertyKeysWithDotsFromCache() {
+    // given
+    final long processDefinitionKey = 555L;
+    final var cachedProcess =
+        new CachedProcessEntity(
+            "My Process",
+            2,
+            null,
+            null,
+            Map.of(
+                "start_event_1",
+                new FlowNodeMetadata("Start event", Map.of("io.camunda.test:foo", "bar"))));
+    when(processCache.get(processDefinitionKey)).thenReturn(Optional.of(cachedProcess));
+
+    final var recordValue =
+        ImmutableMessageStartEventSubscriptionRecordValue.builder()
+            .withProcessDefinitionKey(processDefinitionKey)
+            .withStartEventId("start_event_1")
+            .build();
+    final Record<MessageStartEventSubscriptionRecordValue> record =
+        factory.generateRecord(
+            ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+            r -> r.withIntent(MessageStartEventSubscriptionIntent.CREATED).withValue(recordValue));
+    final var entity = new MessageSubscriptionEntity();
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getExtensionProperties())
+        .containsEntry(ExtensionPropertyKeyUtil.encode("io.camunda.test:foo"), "bar");
   }
 
   @Test

@@ -24,6 +24,7 @@ import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
+import io.camunda.webapps.schema.util.ExtensionPropertyKeyUtil;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -352,6 +353,39 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
                         assertThat(wildcardQuery.field())
                             .isEqualTo("extensionProperties.route:type");
                         assertThat(wildcardQuery.value()).isEqualTo("*:bet*");
+                      });
+            });
+  }
+
+  @Test
+  public void shouldApplyAdvancedExtensionPropertiesValueFilterWithDotAndColonInKey() {
+    // given
+    final var filter =
+        FilterBuilders.messageSubscription(
+            b ->
+                b.extensionPropertyOperations(
+                    Map.of("io.camunda.test:foo", List.of(Operation.eq("bar")))));
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    assertThat(searchQuery.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            query -> {
+              assertThat(query.must().size()).isEqualTo(2);
+              assertThat(query.must().getFirst().queryOption())
+                  .isInstanceOf(SearchTermsQuery.class);
+              assertThat(query.must().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      termQuery -> {
+                        assertThat(termQuery.field())
+                            .isEqualTo(
+                                "extensionProperties."
+                                    + ExtensionPropertyKeyUtil.encode("io.camunda.test:foo"));
+                        assertThat(termQuery.value().value()).isEqualTo("bar");
                       });
             });
   }
