@@ -25,11 +25,11 @@ import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableLong;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ReadOptions;
@@ -557,7 +557,7 @@ class TransactionalColumnFamily<
   private long countEachInPrefix(final DbKey prefix) {
     final var seekTarget = Objects.requireNonNull(prefix);
 
-    final var count = new AtomicLong(0);
+    final var count = new MutableLong(0);
 
     /*
      * NOTE: it doesn't seem possible in Java RocksDB to set a flexible prefix extractor on
@@ -582,7 +582,7 @@ class TransactionalColumnFamily<
                 break;
               }
 
-              count.getAndIncrement();
+              count.increment();
             }
           }
         });
