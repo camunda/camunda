@@ -443,7 +443,8 @@ final class OpensearchAuditLogArchiverRepositoryIT {
       }
 
       final URI uri = URI.create(SEARCH_DB.osUrl());
-      final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+      final SdkHttpClient httpClient =
+          ApacheHttpClient.builder().socketTimeout(getAwsSocketTimeout()).build();
       final Region region = new DefaultAwsRegionProviderChain().getRegion();
       return new AwsSdk2Transport(
           httpClient,
@@ -453,6 +454,11 @@ final class OpensearchAuditLogArchiverRepositoryIT {
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private Duration getAwsSocketTimeout() {
+    // AWS can be slow to respond, especially in CI, so we set a longer timeout than the default
+    return Duration.ofSeconds(120);
   }
 
   private void createAuditLogCleanupIndex() throws IOException {

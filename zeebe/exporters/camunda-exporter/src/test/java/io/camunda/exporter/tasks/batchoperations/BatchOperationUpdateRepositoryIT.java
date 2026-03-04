@@ -37,6 +37,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 import org.apache.http.HttpHost;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.awaitility.Awaitility;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,6 +66,7 @@ abstract class BatchOperationUpdateRepositoryIT {
     config.getConnect().setUrl(databaseUrl);
     config.getConnect().setType(isElastic ? "elasticsearch" : "opensearch");
     config.getConnect().setAwsEnabled(searchDB.isAws());
+    config.getConnect().setSocketTimeout(60_000);
 
     clientAdapter = ClientAdapter.of(config.getConnect());
     engineClient = clientAdapter.getSearchEngineClient();
@@ -120,7 +122,14 @@ abstract class BatchOperationUpdateRepositoryIT {
         throws PersistenceException {
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.add(batchOperationTemplate.getFullQualifiedName(), batchOperationEntity);
-      batchRequest.executeWithRefresh();
+      Awaitility.await()
+          .ignoreException(PersistenceException.class)
+          .timeout(searchDB.dataAvailabilityTimeout())
+          .until(
+              () -> {
+                batchRequest.executeWithRefresh();
+                return true;
+              });
     }
 
     @Override
