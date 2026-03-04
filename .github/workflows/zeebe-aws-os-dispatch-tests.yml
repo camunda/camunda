@@ -140,19 +140,28 @@ jobs:
         shell: bash
         # leaves headroom in the 60-minute job timeout so diagnostics and artifact upload can still run
         timeout-minutes: 55
-        run: >
-          ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
-          -D forkCount=${{ matrix.maven-test-fork-count }}
-          -D maven.javadoc.skip=true
-          -D skipUTs -D skipChecks
-          -D flaky.test.reportDir=failsafe-reports
-          -D test.integration.opensearch.aws.url="${{ env.OS_URL }}"
-          -D test.integration.camunda.database.type=AWS_OS
-          -D test.integration.opensearch.aws.timeout.seconds=180
-          -P parallel-tests,extract-flaky-tests,${{ matrix.maven-test-profiles }}
-          -pl ${{ matrix.maven-modules }}
-          verify
-          | tee "${BUILD_OUTPUT_FILE_PATH}"
+        run: |
+          {
+            while true; do
+              echo "[INFO] Maven Test Build still running for group=${{ matrix.group }} at $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+              sleep 60
+            done
+          } &
+          heartbeat_pid=$!
+          trap 'kill "${heartbeat_pid}" || true' EXIT
+
+          ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates \
+            -D forkCount=${{ matrix.maven-test-fork-count }} \
+            -D maven.javadoc.skip=true \
+            -D skipUTs -D skipChecks \
+            -D flaky.test.reportDir=failsafe-reports \
+            -D test.integration.opensearch.aws.url="${{ env.OS_URL }}" \
+            -D test.integration.camunda.database.type=AWS_OS \
+            -D test.integration.opensearch.aws.timeout.seconds=180 \
+            -P parallel-tests,extract-flaky-tests,${{ matrix.maven-test-profiles }} \
+            -pl ${{ matrix.maven-modules }} \
+            verify \
+            | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Collect Maven fork diagnostics
         if: ${{ failure() || cancelled() }}
         continue-on-error: true
