@@ -59,9 +59,23 @@ test.describe('Process Instance Batch Modification', () => {
     });
 
     await test.step('Verify correct number of instances displayed', async () => {
-      await expect(
-        page.getByText(`${NUM_PROCESS_INSTANCES} results`),
-      ).toBeVisible();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            page.getByText(`${NUM_PROCESS_INSTANCES} results`),
+          ).toBeVisible({timeout: 5000});
+        },
+        onFailure: async () => {
+          await gotoProcessesPage(page, {
+            searchParams: {
+              active: 'true',
+              process: 'orderProcessBatchMod',
+              version: '1',
+              flowNodeId: 'checkPayment',
+            },
+          });
+        },
+      });
     });
 
     await test.step('Select 4 process instances for move modification', async () => {
