@@ -90,6 +90,66 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
   }
 
   @Test
+  public void shouldRejectCreateProcessInstanceWithBusinessIdInUseByOtherVersion() {
+    final String processId = helper.getBpmnProcessId();
+    final String businessId = "biz-123";
+
+    // given - deploy version 1 and create an instance with a business id
+    final var processDefinitionKey =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                    .endEvent()
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst()
+            .getProcessDefinitionKey();
+    ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(businessId).create();
+
+    // and - deploy version 2 of the same process
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .userTask("another_task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when - try to create an instance with the same business id for version 2
+    ENGINE
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withVersion(2)
+        .withBusinessId(businessId)
+        .withTags("secondInstance")
+        .expectRejection()
+        .create();
+
+    // then - should be rejected because version 1 already has an active instance with this
+    // business id, and uniqueness is enforced across all versions of the same process definition
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .onlyCommandRejections()
+                .withTags("secondInstance")
+                .withBpmnProcessId(processId)
+                .getFirst())
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            """
+            Expected to create instance of process with business id '%s', \
+            but an instance with this business id already exists for process definition key '%s'"""
+                .formatted(businessId, processDefinitionKey));
+  }
+
+  @Test
   public void shouldCreateProcessInstanceWithBusinessIdInUseForOtherTenant() {
     final String processId = helper.getBpmnProcessId();
     final String businessId = "biz-123";
