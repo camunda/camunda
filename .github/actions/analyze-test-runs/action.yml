@@ -77,9 +77,9 @@ runs:
       running=$(mktemp)
       finished=$(mktemp)
       unfinished=$(mktemp)
-      grep -oP "\[INFO\] Running \K(.*)$" "$BUILD_OUTPUT_FILE_PATH" > "$running"
-      grep -oP 'Tests run.*?-- in \K(.*)$' "$BUILD_OUTPUT_FILE_PATH" > "$finished"
-      sort $running $finished | uniq -u > "$unfinished"
+      grep -oP "\[INFO\] Running \K(.*)$" "$BUILD_OUTPUT_FILE_PATH" > "$running" || true
+      grep -oP 'Tests run.*?-- in \K(.*)$' "$BUILD_OUTPUT_FILE_PATH" > "$finished" || true
+      sort "$running" "$finished" | uniq -u > "$unfinished"
       if [ -s "$unfinished" ]; then
         echo "### ⚠️ Unfinished test runs" >> $GITHUB_STEP_SUMMARY
         cat $unfinished >> $GITHUB_STEP_SUMMARY
