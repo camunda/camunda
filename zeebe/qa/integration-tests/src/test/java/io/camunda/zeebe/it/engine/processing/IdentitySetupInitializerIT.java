@@ -178,11 +178,17 @@ final class IdentitySetupInitializerIT {
             UUID.randomUUID().toString(),
             UUID.randomUUID().toString(),
             UUID.randomUUID().toString());
+    final var mappingRules3 =
+        new ConfiguredMappingRule(
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString());
     createBroker(
         true,
         1,
         cfg -> {
-          cfg.getInitialization().setMappingRules(List.of(mappingRules1, mappingRules2));
+          cfg.getInitialization()
+              .setMappingRules(List.of(mappingRules1, mappingRules2, mappingRules3));
           cfg.getInitialization()
               .getDefaultRoles()
               .put(
@@ -191,7 +197,9 @@ final class IdentitySetupInitializerIT {
                       "mappingRules",
                       List.of(mappingRules1.getMappingRuleId()),
                       "mappingrules",
-                      List.of(mappingRules2.getMappingRuleId())));
+                      List.of(mappingRules2.getMappingRuleId()),
+                      "mapping-rules",
+                      List.of(mappingRules3.getMappingRuleId())));
         });
 
     // then identity should be initialized
@@ -214,10 +222,19 @@ final class IdentitySetupInitializerIT {
         .hasClaimName(mappingRules2.getClaimName())
         .hasClaimValue(mappingRules2.getClaimValue());
 
+    final var thirdMappingRule = record.getMappingRules().get(2);
+    Assertions.assertThat(thirdMappingRule)
+        .isNotNull()
+        .hasMappingRuleId(mappingRules3.getMappingRuleId())
+        .hasClaimName(mappingRules3.getClaimName())
+        .hasClaimValue(mappingRules3.getClaimValue());
+
     final var members = record.getRoleMembers().stream().map(RoleRecordValue::getEntityId).toList();
     assertThat(members)
         .containsExactlyInAnyOrder(
-            mappingRules1.getMappingRuleId(), mappingRules2.getMappingRuleId());
+            mappingRules1.getMappingRuleId(),
+            mappingRules2.getMappingRuleId(),
+            mappingRules3.getMappingRuleId());
   }
 
   private void createBroker(
