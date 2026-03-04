@@ -106,7 +106,7 @@ public final class DbDeploymentState implements MutableDeploymentState {
     final var hasPending = new MutableBoolean();
     pendingDeploymentColumnFamily.whileEqualPrefix(
         this.deploymentKey,
-        (dbLongDbIntDbCompositeKey, dbNil) -> {
+        ignored -> {
           hasPending.set(true);
           return false;
         });
@@ -153,8 +153,8 @@ public final class DbDeploymentState implements MutableDeploymentState {
 
     final MutableReference<DirectBuffer> lastDeployment = new MutableReference<>();
     final MutableLong lastDeploymentKey = new MutableLong(0);
-    pendingDeploymentColumnFamily.forEach(
-        (compositeKey, nil) -> {
+    pendingDeploymentColumnFamily.forEachKey(
+        (compositeKey) -> {
           final var deploymentKey = compositeKey.first().getValue();
           final var partitionId = compositeKey.second().getValue();
 
