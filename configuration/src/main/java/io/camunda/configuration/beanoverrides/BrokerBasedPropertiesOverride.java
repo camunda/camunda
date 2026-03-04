@@ -1002,8 +1002,7 @@ public class BrokerBasedPropertiesOverride {
     override.getExperimental().getFeatures().setEnableActorMetrics(metrics.isActor());
     override.setExecutionMetricsExporterEnabled(metrics.isEnableExporterExecutionMetrics());
 
-    final var jobMetrics =
-        unifiedConfiguration.getCamunda().getMonitoring().getMetrics().getJobMetrics();
+    final var jobMetrics = metrics.getJobMetrics();
     final var jobMetricsCfg = override.getExperimental().getEngine().getJobMetrics();
     jobMetricsCfg.setExportInterval(jobMetrics.getExportInterval());
     jobMetricsCfg.setMaxWorkerNameLength(jobMetrics.getMaxWorkerNameLength());
