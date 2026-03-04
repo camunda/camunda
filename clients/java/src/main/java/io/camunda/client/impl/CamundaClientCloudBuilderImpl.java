@@ -319,8 +319,7 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
-  public CamundaClientBuilder useClientSideLoadBalancing(
-      final boolean useClientSideLoadBalancing) {
+  public CamundaClientBuilder useClientSideLoadBalancing(final boolean useClientSideLoadBalancing) {
     innerBuilder.useClientSideLoadBalancing(useClientSideLoadBalancing);
     return this;
   }

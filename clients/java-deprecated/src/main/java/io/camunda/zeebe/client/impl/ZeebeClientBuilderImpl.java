@@ -561,8 +561,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   @Override
-  public ZeebeClientBuilder useClientSideLoadBalancing(
-      final boolean useClientSideLoadBalancing) {
+  public ZeebeClientBuilder useClientSideLoadBalancing(final boolean useClientSideLoadBalancing) {
     this.useClientSideLoadBalancing = useClientSideLoadBalancing;
     return this;
   }
@@ -653,8 +652,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     BuilderUtils.appendProperty(sb, "ownsJobWorkerExecutor", ownsJobWorkerExecutor);
     BuilderUtils.appendProperty(sb, "streamEnabled", streamEnabled);
     BuilderUtils.appendProperty(sb, "preferRestOverGrpc", preferRestOverGrpc);
-    BuilderUtils.appendProperty(
-        sb, "useClientSideLoadBalancing", useClientSideLoadBalancing);
+    BuilderUtils.appendProperty(sb, "useClientSideLoadBalancing", useClientSideLoadBalancing);
 
     return sb.toString();
   }

@@ -299,8 +299,7 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
-  public ZeebeClientBuilder useClientSideLoadBalancing(
-      final boolean useClientSideLoadBalancing) {
+  public ZeebeClientBuilder useClientSideLoadBalancing(final boolean useClientSideLoadBalancing) {
     innerBuilder.useClientSideLoadBalancing(useClientSideLoadBalancing);
     return this;
   }

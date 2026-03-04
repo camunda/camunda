@@ -482,8 +482,7 @@ public final class CamundaClientImpl implements CamundaClient {
     final NettyChannelBuilder channelBuilder;
     if (config.useClientSideLoadBalancing()) {
       channelBuilder =
-          NettyChannelBuilder.forTarget(
-              "dns:///" + address.getHost() + ":" + address.getPort());
+          NettyChannelBuilder.forTarget("dns:///" + address.getHost() + ":" + address.getPort());
       channelBuilder.defaultLoadBalancingPolicy("round_robin");
     } else {
       channelBuilder = NettyChannelBuilder.forAddress(address.getHost(), address.getPort());

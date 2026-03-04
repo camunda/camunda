@@ -674,8 +674,7 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
-  public CamundaClientBuilder useClientSideLoadBalancing(
-      final boolean useClientSideLoadBalancing) {
+  public CamundaClientBuilder useClientSideLoadBalancing(final boolean useClientSideLoadBalancing) {
     this.useClientSideLoadBalancing = useClientSideLoadBalancing;
     return this;
   }
@@ -787,8 +786,7 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.appendProperty(sb, "ownsJobHandlingExecutor", ownsJobHandlingExecutor);
     BuilderUtils.appendProperty(sb, "streamEnabled", streamEnabled);
     BuilderUtils.appendProperty(sb, "preferRestOverGrpc", preferRestOverGrpc);
-    BuilderUtils.appendProperty(
-        sb, "useClientSideLoadBalancing", useClientSideLoadBalancing);
+    BuilderUtils.appendProperty(sb, "useClientSideLoadBalancing", useClientSideLoadBalancing);
 
     return sb.toString();
   }
