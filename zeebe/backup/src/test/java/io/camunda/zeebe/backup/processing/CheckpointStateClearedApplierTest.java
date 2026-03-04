@@ -27,14 +27,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-final class CheckpointStateResetApplierTest {
+final class CheckpointStateClearedApplierTest {
 
   @TempDir Path database;
   @AutoClose private ZeebeDb<ZbColumnFamilies> zeebedb;
   private DbCheckpointState checkpointState;
   private DbCheckpointMetadataState checkpointMetadataState;
   private DbBackupRangeState backupRangeState;
-  private CheckpointStateResetApplier applier;
+  private CheckpointStateClearedApplier applier;
 
   @BeforeEach
   void before() {
@@ -50,7 +50,8 @@ final class CheckpointStateResetApplierTest {
     checkpointMetadataState = new DbCheckpointMetadataState(zeebedb, context);
     backupRangeState = new DbBackupRangeState(zeebedb, context);
     applier =
-        new CheckpointStateResetApplier(checkpointState, checkpointMetadataState, backupRangeState);
+        new CheckpointStateClearedApplier(
+            checkpointState, checkpointMetadataState, backupRangeState);
   }
 
   @Test

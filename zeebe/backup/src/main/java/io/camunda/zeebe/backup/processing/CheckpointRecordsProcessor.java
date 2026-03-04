@@ -43,11 +43,11 @@ public final class CheckpointRecordsProcessor
   private CheckpointCreateProcessor checkpointCreateProcessor;
   private CheckpointConfirmBackupProcessor checkpointConfirmBackupProcessor;
   private CheckpointDeleteBackupProcessor checkpointDeleteBackupProcessor;
-  private CheckpointResetStateProcessor checkpointResetStateProcessor;
+  private CheckpointClearStateProcessor checkpointClearStateProcessor;
   private CheckpointCreatedEventApplier checkpointCreatedEventApplier;
   private CheckpointBackupConfirmedApplier checkpointBackupConfirmedApplier;
   private CheckpointBackupDeletedApplier checkpointBackupDeletedApplier;
-  private CheckpointStateResetApplier checkpointStateResetApplier;
+  private CheckpointStateClearedApplier checkpointStateClearedApplier;
 
   //  Can be accessed concurrently by other threads to add new listeners. Hence we have to use a
   // thread safe collection
@@ -119,8 +119,8 @@ public final class CheckpointRecordsProcessor
         new CheckpointDeleteBackupProcessor(
             checkpointMetadataState, backupRangeState, checkpointState, backupManager);
 
-    checkpointResetStateProcessor =
-        new CheckpointResetStateProcessor(
+    checkpointClearStateProcessor =
+        new CheckpointClearStateProcessor(
             checkpointState, checkpointMetadataState, backupRangeState, backupManager);
 
     checkpointCreatedEventApplier =
@@ -132,8 +132,9 @@ public final class CheckpointRecordsProcessor
     checkpointBackupDeletedApplier =
         new CheckpointBackupDeletedApplier(
             checkpointMetadataState, backupRangeState, checkpointState);
-    checkpointStateResetApplier =
-        new CheckpointStateResetApplier(checkpointState, checkpointMetadataState, backupRangeState);
+    checkpointStateClearedApplier =
+        new CheckpointStateClearedApplier(
+            checkpointState, checkpointMetadataState, backupRangeState);
 
     final long checkpointId = checkpointState.getLatestCheckpointId();
     final var checkpointType = checkpointState.getLatestCheckpointType();
@@ -173,7 +174,7 @@ public final class CheckpointRecordsProcessor
               (CheckpointRecord) record.getValue(), record.getTimestamp());
       case DELETED_BACKUP ->
           checkpointBackupDeletedApplier.apply((CheckpointRecord) record.getValue());
-      case STATE_RESET -> checkpointStateResetApplier.apply();
+      case STATE_CLEARED -> checkpointStateClearedApplier.apply();
       case IGNORED -> {}
       default ->
           throw new IllegalStateException(
@@ -200,8 +201,8 @@ public final class CheckpointRecordsProcessor
           checkpointConfirmBackupProcessor.process(record, resultBuilder);
       case CheckpointIntent.DELETE_BACKUP ->
           checkpointDeleteBackupProcessor.process(record, resultBuilder);
-      case CheckpointIntent.RESET_STATE ->
-          checkpointResetStateProcessor.process(record, resultBuilder);
+      case CheckpointIntent.CLEAR_STATE ->
+          checkpointClearStateProcessor.process(record, resultBuilder);
       default ->
           throw new IllegalArgumentException(
               "Unknown checkpoint intent %s".formatted(record.getIntent()));

@@ -84,11 +84,11 @@ public interface BackupManager {
       SequencedCollection<Checkpoint> checkpoints, SequencedCollection<BackupRange> ranges);
 
   /**
-   * Resets the backup runtime state for this partition by writing a RESET_STATE command to the log.
+   * Clears the backup runtime state for this partition by writing a CLEAR_STATE command to the log.
    * This clears all checkpoint info, backup info, checkpoint metadata, and backup ranges. Used when
    * switching backup stores.
    *
-   * @return future which will be completed after the RESET_STATE command is written to the log
+   * @return future which will be completed after the CLEAR_STATE command is written to the log
    */
-  ActorFuture<Void> requestStateReset();
+  ActorFuture<Void> requestStateClear();
 }

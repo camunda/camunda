@@ -360,24 +360,24 @@ final class BackupServiceImpl {
     return deleteCompleted;
   }
 
-  ActorFuture<Void> writeStateResetCommand(final ConcurrencyControl executor) {
-    final ActorFuture<Void> resetCompleted = executor.createFuture();
-    final var resetWritten =
+  ActorFuture<Void> writeClearStateCommand(final ConcurrencyControl executor) {
+    final ActorFuture<Void> clearCompleted = executor.createFuture();
+    final var clearWritten =
         logStreamWriter.tryWrite(
             WriteContext.internal(),
             LogAppendEntry.of(
                 new RecordMetadata()
                     .recordType(RecordType.COMMAND)
                     .valueType(ValueType.CHECKPOINT)
-                    .intent(CheckpointIntent.RESET_STATE),
+                    .intent(CheckpointIntent.CLEAR_STATE),
                 new CheckpointRecord()));
-    switch (resetWritten) {
+    switch (clearWritten) {
       case Either.Left(final var error) ->
-          resetCompleted.completeExceptionally(
-              new RuntimeException("Failed to write RESET_STATE command: " + error));
-      case final Either.Right<WriteFailure, Long> ignoredPosition -> resetCompleted.complete(null);
+          clearCompleted.completeExceptionally(
+              new RuntimeException("Failed to write CLEAR_STATE command: " + error));
+      case final Either.Right<WriteFailure, Long> ignoredPosition -> clearCompleted.complete(null);
     }
-    return resetCompleted;
+    return clearCompleted;
   }
 
   ActorFuture<Void> deleteBackupIfExists(

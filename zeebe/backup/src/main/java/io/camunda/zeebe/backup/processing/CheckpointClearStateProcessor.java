@@ -23,20 +23,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Processes RESET_STATE commands. Applies state mutations (clears all backup runtime state:
- * checkpoint info, backup info, checkpoint metadata, and backup ranges), appends a STATE_RESET
+ * Processes CLEAR_STATE commands. Applies state mutations (clears all backup runtime state:
+ * checkpoint info, backup info, checkpoint metadata, and backup ranges), appends a STATE_CLEARED
  * follow-up event, and schedules a post-commit task to sync metadata.
  */
-public final class CheckpointResetStateProcessor {
+public final class CheckpointClearStateProcessor {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CheckpointResetStateProcessor.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CheckpointClearStateProcessor.class);
 
-  private final CheckpointStateResetApplier stateResetApplier;
+  private final CheckpointStateClearedApplier stateClearedApplier;
   private final DbCheckpointMetadataState checkpointMetadataState;
   private final DbBackupRangeState backupRangeState;
   private final BackupManager backupManager;
 
-  public CheckpointResetStateProcessor(
+  public CheckpointClearStateProcessor(
       final CheckpointState checkpointState,
       final DbCheckpointMetadataState checkpointMetadataState,
       final DbBackupRangeState backupRangeState,
@@ -44,27 +44,28 @@ public final class CheckpointResetStateProcessor {
     this.checkpointMetadataState = checkpointMetadataState;
     this.backupRangeState = backupRangeState;
     this.backupManager = backupManager;
-    stateResetApplier =
-        new CheckpointStateResetApplier(checkpointState, checkpointMetadataState, backupRangeState);
+    stateClearedApplier =
+        new CheckpointStateClearedApplier(
+            checkpointState, checkpointMetadataState, backupRangeState);
   }
 
   public ProcessingResult process(
       final TypedRecord<CheckpointRecord> record, final ProcessingResultBuilder resultBuilder) {
     final var checkpointRecord = record.getValue();
 
-    LOG.info("Processing RESET_STATE command");
+    LOG.info("Processing CLEAR_STATE command");
 
     // Apply state mutations (clear all backup runtime state)
-    stateResetApplier.apply();
+    stateClearedApplier.apply();
 
-    // Append STATE_RESET follow-up event
+    // Append STATE_CLEARED follow-up event
     resultBuilder.appendRecord(
         record.getKey(),
         checkpointRecord,
         new RecordMetadata()
             .recordType(RecordType.EVENT)
             .valueType(ValueType.CHECKPOINT)
-            .intent(CheckpointIntent.STATE_RESET));
+            .intent(CheckpointIntent.STATE_CLEARED));
 
     // Schedule post-commit task to sync metadata (will write empty metadata to backup store)
     final var checkpoints = checkpointMetadataState.getAllCheckpoints();

@@ -234,8 +234,8 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
-  public ActorFuture<Void> requestStateReset() {
-    return internalBackupManager.writeStateResetCommand(actor);
+  public ActorFuture<Void> requestStateClear() {
+    return internalBackupManager.writeClearStateCommand(actor);
   }
 
   private BackupIdentifierImpl getBackupId(final long checkpointId) {
