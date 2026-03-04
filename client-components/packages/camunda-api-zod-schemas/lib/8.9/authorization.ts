@@ -85,7 +85,7 @@ const authorizationSchema = z.object({
 	ownerId: z.string(),
 	ownerType: ownerTypeSchema,
 	resourceType: resourceTypeSchema,
-	resourceId: z.string(),
+	resourceId: z.string().nullable(),
 	resourcePropertyName: z.string().nullable(),
 	permissionTypes: z.array(permissionTypeSchema),
 	authorizationKey: z.string(),
