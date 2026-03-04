@@ -7,6 +7,7 @@
  */
 
 import {test as base} from '@playwright/test';
+import type {APIRequestContext} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {Common} from './pages/Common';
 import {Login} from './pages/Login';
@@ -17,6 +18,8 @@ import {ProcessInstance} from './pages/ProcessInstance';
 import {Decisions} from './pages/Decisions';
 import {MigrationView} from './pages/Processes/MigrationView';
 import {DecisionInstance} from './pages/DecisionInstance';
+import {OperationsLog} from './pages/OperationsLog';
+import {getCsrfToken, readSessionStorage, sessionFile} from './utils/session';
 
 const authFile = 'playwright/.auth/user.json';
 
@@ -30,10 +33,43 @@ const test = base.extend<
     commonPage: Common;
     migrationView: MigrationView;
     loginPage: Login;
+    operationsLogPage: OperationsLog;
+    request: APIRequestContext;
   },
   {workerStorageState: string}
 >({
-  storageState: ({workerStorageState}, use) => use(workerStorageState),
+  request: async ({playwright}, use) => {
+    const csrfToken = getCsrfToken();
+
+    const context = await playwright.request.newContext({
+      extraHTTPHeaders: csrfToken ? {'X-CSRF-TOKEN': csrfToken} : {},
+    });
+
+    await use(context);
+    await context.dispose();
+  },
+  context: async ({browser, workerStorageState}, use) => {
+    const context = await browser.newContext({
+      storageState: workerStorageState,
+    });
+
+    if (fs.existsSync(sessionFile)) {
+      const sessionStorage = readSessionStorage();
+
+      await context.addInitScript((session) => {
+        try {
+          for (const [key, value] of Object.entries(session)) {
+            window.sessionStorage.setItem(key, value);
+          }
+        } catch (_) {
+          // sessionStorage is not accessible on all documents (e.g. about:blank)
+        }
+      }, sessionStorage);
+    }
+
+    await use(context);
+    await context.close();
+  },
 
   workerStorageState: [
     async (
@@ -58,13 +94,19 @@ const test = base.extend<
       await page.getByRole('button', {name: 'Login'}).click();
 
       await page.waitForURL(`${baseURL}`);
-
       await page.context().storageState({path: authFile});
+
+      const sessionStorage = await page.evaluate((): string =>
+        JSON.stringify(sessionStorage),
+      );
+      fs.writeFileSync(sessionFile, sessionStorage, 'utf-8');
+
       await page.close();
       await use(authFile);
     },
     {scope: 'worker'},
   ],
+
   processesPage: async ({page}, use) => {
     await use(new Processes(page));
   },
@@ -88,6 +130,9 @@ const test = base.extend<
   },
   loginPage: async ({page}, use) => {
     await use(new Login(page));
+  },
+  operationsLogPage: async ({page}, use) => {
+    await use(new OperationsLog(page));
   },
 });
 
