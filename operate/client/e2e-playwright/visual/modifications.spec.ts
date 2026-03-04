@@ -34,19 +34,17 @@ test.describe('modifications', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: runningInstance.detail,
-        processInstanceDetailV2: runningInstance.detailV2,
         callHierarchy: runningInstance.callHierarchy,
         elementInstances: runningInstance.elementInstances,
         statistics: runningInstance.statistics,
         sequenceFlows: runningInstance.sequenceFlows,
-        sequenceFlowsV2: runningInstance.sequenceFlowsV2,
         variables: runningInstance.variables,
         xml: runningInstance.xml,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: runningInstance.detail.id,
+      key: runningInstance.detail.processInstanceKey,
     });
 
     await page
@@ -63,20 +61,17 @@ test.describe('modifications', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: runningInstance.detail,
-        processInstanceDetailV2: runningInstance.detailV2,
         callHierarchy: runningInstance.callHierarchy,
         elementInstances: runningInstance.elementInstances,
         statistics: runningInstance.statistics,
         sequenceFlows: runningInstance.sequenceFlows,
-        sequenceFlowsV2: runningInstance.sequenceFlowsV2,
         variables: runningInstance.variables,
         xml: runningInstance.xml,
-        metaData: runningInstance.metaData,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: runningInstance.detail.id,
+      key: runningInstance.detail.processInstanceKey,
     });
 
     await page
@@ -108,21 +103,17 @@ test.describe('modifications', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: instanceWithIncident.detail,
-        processInstanceDetailV2: instanceWithIncident.detailV2,
         callHierarchy: instanceWithIncident.callHierarchy,
         elementInstances: instanceWithIncident.elementInstances,
         statistics: instanceWithIncident.statistics,
         sequenceFlows: instanceWithIncident.sequenceFlows,
-        sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
-        incidentsV2: instanceWithIncident.incidentsV2,
-        metaData: instanceWithIncident.metaData,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: instanceWithIncident.detail.id,
+      key: instanceWithIncident.detail.processInstanceKey,
     });
 
     await page
@@ -140,17 +131,13 @@ test.describe('modifications', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: instanceWithIncident.detail,
-        processInstanceDetailV2: instanceWithIncident.detailV2,
         callHierarchy: instanceWithIncident.callHierarchy,
         elementInstances: instanceWithIncident.elementInstances,
         statistics: instanceWithIncident.statistics,
         sequenceFlows: instanceWithIncident.sequenceFlows,
-        sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
         variables: instanceWithIncident.variables,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
-        incidentsV2: instanceWithIncident.incidentsV2,
-        metaData: instanceWithIncident.metaData,
       }),
     );
 
@@ -187,22 +174,18 @@ test.describe('modifications', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: instanceWithIncident.detail,
-        processInstanceDetailV2: instanceWithIncident.detailV2,
         callHierarchy: instanceWithIncident.callHierarchy,
         elementInstances: instanceWithIncident.elementInstances,
         statistics: instanceWithIncident.statistics,
         sequenceFlows: instanceWithIncident.sequenceFlows,
-        sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
         variables: instanceWithIncident.variables,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
-        incidentsV2: instanceWithIncident.incidentsV2,
-        metaData: instanceWithIncident.metaData,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: instanceWithIncident.detail.id,
+      key: instanceWithIncident.detail.processInstanceKey,
     });
 
     await page

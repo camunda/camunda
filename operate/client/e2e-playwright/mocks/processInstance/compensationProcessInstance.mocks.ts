@@ -11,23 +11,6 @@ import type {InstanceMock} from '.';
 
 const compensationProcessInstance: InstanceMock = {
   detail: {
-    id: '2551799813954282',
-    processId: '2251799813694848',
-    processName: 'Compensation Process',
-    processVersion: 1,
-    startDate: '2023-10-02T06:10:47.979+0000',
-    endDate: '2023-10-02T06:15:48.042+0000',
-    state: 'COMPLETED',
-    bpmnProcessId: 'CompensationProcess',
-    hasActiveOperation: false,
-    operations: [],
-    parentInstanceId: null,
-    rootInstanceId: null,
-    callHierarchy: [],
-    sortValues: [''],
-    tenantId: '<default>',
-  },
-  detailV2: {
     processInstanceKey: '2551799813954282',
     processDefinitionKey: '2251799813694848',
     processDefinitionName: 'Compensation Process',
@@ -244,14 +227,7 @@ const compensationProcessInstance: InstanceMock = {
     ],
   },
   xml: openFile('./e2e-playwright/mocks/resources/CompensationProcess.bpmn'),
-  sequenceFlows: [
-    {processInstanceId: '9007199254744341', activityId: 'Flow_1'},
-    {processInstanceId: '9007199254744341', activityId: 'Flow_2'},
-    {processInstanceId: '9007199254744341', activityId: 'Flow_4'},
-    {processInstanceId: '9007199254744341', activityId: 'Flow_6'},
-    {processInstanceId: '9007199254744341', activityId: 'Flow_8'},
-  ],
-  sequenceFlowsV2: {
+  sequenceFlows: {
     items: [
       {
         processInstanceKey: '9007199254744341',

@@ -53,7 +53,7 @@ test.beforeEach(async ({processInstancePage}) => {
     multiInstanceProcessInstance: {processInstanceKey},
   } = initialData;
 
-  await processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
+  await processInstancePage.gotoProcessInstancePage({key: processInstanceKey});
 });
 
 test.describe('Multi Instance Flow Node Selection', () => {
