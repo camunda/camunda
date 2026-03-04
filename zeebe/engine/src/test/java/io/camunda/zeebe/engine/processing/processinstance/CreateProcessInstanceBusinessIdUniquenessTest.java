@@ -746,4 +746,78 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
             but an active instance with this business id already exists for the target process definition"""
                 .formatted(processInstanceKey, businessId, targetProcessDefinitionKey));
   }
+
+  @Test
+  public void shouldRejectCreateProcessInstanceWithBusinessIdOfOldVersionAfterVersionMigration() {
+    final String processId = helper.getBpmnProcessId();
+    final String businessId = "biz-123";
+
+    // given - deploy version 1 and create a process instance with a business id
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(businessId).create();
+
+    // and - deploy version 2 of the same process
+    final long targetProcessDefinitionKey =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                    .userTask("another_task", AbstractUserTaskBuilder::zeebeUserTask)
+                    .endEvent()
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst()
+            .getProcessDefinitionKey();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("task")
+        .await();
+
+    // when - migrate the process instance to version 2
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("task", "task")
+        .migrate();
+
+    // then - creating an instance of version 1 with the same business id should be rejected because
+    // uniqueness is checked across all versions of a process definition.
+    ENGINE
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withVersion(1)
+        .withBusinessId(businessId)
+        .withTags("rejectedInstance")
+        .expectRejection()
+        .create();
+
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .onlyCommandRejections()
+                .withTags("rejectedInstance")
+                .withBpmnProcessId(processId)
+                .getFirst())
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            """
+            Expected to create instance of process with business id '%s', \
+            but an instance with this business id already exists for process definition key '%s'"""
+                .formatted(businessId, targetProcessDefinitionKey));
+  }
 }
