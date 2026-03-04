@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
-import static io.camunda.zeebe.exporter.opensearch.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
+import static io.camunda.zeebe.exporter.opensearch.SearchDBExtension.PROP_TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -152,7 +152,7 @@ public class OpensearchClientIT {
 
   @Test
   @DisabledIfSystemProperty(
-      named = TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      named = PROP_TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "AWS OS IT runners currently support only STS-based authentication")
   void shouldAuthenticateWithBasicAuth() {
@@ -286,8 +286,9 @@ public class OpensearchClientIT {
   private void waitForIndexStateManagementPolicy() {
     Awaitility.await()
         .pollInterval(Duration.ofSeconds(1))
-        .atMost(Duration.ofSeconds(30))
-        .untilAsserted(() -> assertThat(SEARCH_DB.client().maybeGetIndexStateManagementPolicy()).isPresent());
+        .atMost(SEARCH_DB.dataAvailabilityTimeout())
+        .untilAsserted(
+            () -> assertThat(SEARCH_DB.client().maybeGetIndexStateManagementPolicy()).isPresent());
   }
 
   private void assertIndexTemplate(

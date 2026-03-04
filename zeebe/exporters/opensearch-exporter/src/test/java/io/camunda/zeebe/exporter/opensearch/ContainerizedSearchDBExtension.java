@@ -10,6 +10,7 @@ package io.camunda.zeebe.exporter.opensearch;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.util.UUID;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -116,6 +117,12 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
   @Override
   public OpensearchClient client() {
     return client;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public Duration dataAvailabilityTimeout() {
+    return Duration.ofSeconds(30);
   }
 
   /** {@inheritDoc} */
