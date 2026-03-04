@@ -49,12 +49,6 @@ export type NewAuthorization = Omit<
   resourcePropertyName: ResourcePropertyName | null;
 };
 
-export type searchAuthorizationsParams = {
-  filter: {
-    resourceType: ResourceType;
-  };
-};
-
 export const searchAuthorization: ApiDefinition<
   QueryAuthorizationsResponseBody,
   QueryAuthorizationsRequestBody

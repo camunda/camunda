@@ -7,10 +7,8 @@
  */
 
 import { FC } from "react";
-import {
-  createClusterVariable,
-  type ClusterVariableScope,
-} from "src/utility/api/cluster-variables";
+import type { ClusterVariableScope } from "@camunda/camunda-api-zod-schemas/8.9";
+import { createClusterVariable } from "src/utility/api/cluster-variables";
 import { RadioButton, RadioButtonGroup, Stack } from "@carbon/react";
 import { Controller, useForm } from "react-hook-form";
 import { useNotifications } from "src/components/notifications";
