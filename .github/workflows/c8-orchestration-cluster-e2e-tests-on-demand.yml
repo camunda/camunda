@@ -41,16 +41,33 @@ jobs:
         run: |
           branch="${{ github.event.inputs.branch }}"
           echo "Detecting base branch for input branch: $branch"
+
           git fetch origin stable/8.6 stable/8.7 stable/8.8 stable/8.9 main "$branch"
-          base="main"
+
+          best="main"
+          best_dist=999999
+
           for candidate in stable/8.6 stable/8.7 stable/8.8 stable/8.9 main; do
-            if git merge-base --is-ancestor origin/$candidate origin/$branch; then
-              base="$candidate"
-              break
+            mb="$(git merge-base "origin/$candidate" "origin/$branch" || true)"
+            if [ -z "$mb" ]; then
+              continue
+            fi
+
+            # candidate must be an ancestor (same condition you had)
+            if git merge-base --is-ancestor "origin/$candidate" "origin/$branch"; then
+              # distance from merge-base to branch HEAD (smaller = closer base)
+              dist="$(git rev-list --count "$mb..origin/$branch")"
+              echo "  candidate=$candidate merge-base=$mb distance=$dist"
+
+              if [ "$dist" -lt "$best_dist" ]; then
+               best="$candidate"
+                best_dist="$dist"
+              fi
             fi
           done
-          echo "Detected base branch: $base"
-          echo "base=$base" >> "$GITHUB_OUTPUT"
+
+          echo "Detected base branch: $best"
+          echo "base=$best" >> "$GITHUB_OUTPUT"
 
   c8-orchestration-cluster-api-tests:
     name: C8 Orchestration Cluster API Tests
