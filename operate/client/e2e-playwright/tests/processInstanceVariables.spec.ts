@@ -51,7 +51,7 @@ test.describe('Process Instance Variables', () => {
     test.slow();
 
     const processInstanceKey = initialData.instance.processInstanceKey;
-    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({key: processInstanceKey});
 
     expect(processInstancePage.addVariableButton).toBeEnabled();
 
@@ -90,7 +90,7 @@ test.describe('Process Instance Variables', () => {
     test.slow();
 
     const processInstanceKey = initialData.instance.processInstanceKey;
-    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({key: processInstanceKey});
 
     await expect(processInstancePage.addVariableButton).toBeEnabled();
 
@@ -137,7 +137,7 @@ test.describe('Process Instance Variables', () => {
     const processInstanceKey =
       initialData.instanceWithManyVariables.processInstanceKey;
 
-    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({key: processInstanceKey});
 
     await expect(processInstancePage.variablesList).toBeVisible();
 

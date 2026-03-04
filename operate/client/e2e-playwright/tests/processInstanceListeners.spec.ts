@@ -40,7 +40,7 @@ test.describe('Process Instance Listeners', () => {
   }) => {
     const processInstanceKey =
       initialData.processWithListenerInstance.processInstanceKey;
-    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({key: processInstanceKey});
 
     await expect(processInstancePage.listenersTabButton).toBeVisible();
 
@@ -58,7 +58,7 @@ test.describe('Process Instance Listeners', () => {
   test('Listeners data displayed', async ({page, processInstancePage}) => {
     const processInstanceKey =
       initialData.processWithListenerInstance.processInstanceKey;
-    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({key: processInstanceKey});
 
     await processInstancePage.instanceHistory
       .getByText(/service task b/i)
@@ -74,7 +74,7 @@ test.describe('Process Instance Listeners', () => {
   }) => {
     const processInstanceKey =
       initialData.processWithListenerInstance.processInstanceKey;
-    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({key: processInstanceKey});
 
     // select flow node in diagram, check amount of listeners and add a token to it
     await processInstancePage.diagram.clickFlowNode('Service Task B');
@@ -124,7 +124,7 @@ test.describe('Process Instance Listeners', () => {
   }) => {
     const processInstanceKey =
       initialData.userTaskProcessInstance.processInstanceKey;
-    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({key: processInstanceKey});
 
     const userTaskKeyRegex = new RegExp('\\d{16}');
     let userTaskKey = '';
@@ -203,7 +203,7 @@ test.describe('Process Instance Listeners', () => {
     const processInstanceKey =
       initialData.processWithListenerOnRootInstance.processInstanceKey;
     await processInstancePage.gotoProcessInstancePage({
-      id: processInstanceKey,
+      key: processInstanceKey,
     });
 
     await processInstancePage.modifyInstanceButton.click();

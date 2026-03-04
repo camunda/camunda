@@ -17,25 +17,20 @@ import {
   type QueryProcessDefinitionsResponseBody,
   type QueryProcessInstancesResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.9';
-import type {BatchOperationDto, OperationEntity} from '@/types';
 
 function mockResponses({
   batchOperations,
-  batchOperation,
   processDefinitions,
   statistics,
   processInstances,
   processXml,
-  deleteProcess,
   batchOperationItems,
 }: {
   batchOperations?: QueryBatchOperationsResponseBody;
-  batchOperation?: OperationEntity;
   processDefinitions?: QueryProcessDefinitionsResponseBody['items'];
   statistics?: GetProcessDefinitionStatisticsResponseBody;
   processInstances?: QueryProcessInstancesResponseBody;
   processXml?: string;
-  deleteProcess?: BatchOperationDto;
   batchOperationItems?: QueryBatchOperationItemsResponseBody;
 }) {
   return (route: Route) => {
@@ -128,18 +123,6 @@ function mockResponses({
       });
     }
 
-    if (
-      route.request().url().includes('/api/process-instances/batch-operation')
-    ) {
-      return route.fulfill({
-        status: batchOperation === undefined ? 400 : 200,
-        body: JSON.stringify(batchOperation),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
     if (route.request().url().includes('/v2/process-definitions/search')) {
       if (!processDefinitions) {
         return route.fulfill({
@@ -222,19 +205,6 @@ function mockResponses({
       return route.fulfill({
         status: processXml === undefined ? 400 : 200,
         body: JSON.stringify(processXml),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (
-      route.request().url().includes('/api/processes') &&
-      route.request().method() === 'DELETE'
-    ) {
-      return route.fulfill({
-        status: deleteProcess === undefined ? 400 : 200,
-        body: JSON.stringify(deleteProcess),
         headers: {
           'content-type': 'application/json',
         },
@@ -2262,19 +2232,6 @@ const mockMigrationOperation: BatchOperation = {
   errors: [],
 };
 
-const mockDeleteProcess = {
-  id: 'b5aa7d44-3a4b-4dfb-9694-e3cf582a80a8',
-  username: 'demo',
-  processInstanceKey: 'b5aa7d44-3a4b-4dfb-9694-e3cf582a80a8',
-  name: 'Order Process - Version 1',
-  type: 'DELETE_PROCESS_DEFINITION',
-  startDate: '2023-10-13T08:49:44.008+0200',
-  endDate: null,
-  instancesCount: 0,
-  operationsTotalCount: 1,
-  operationsFinishedCount: 0,
-} as const;
-
 const mockBatchOperationItemsWithError: QueryBatchOperationItemsResponseBody = {
   items: [
     {
@@ -2315,7 +2272,6 @@ export {
   mockProcessXml,
   mockResponses,
   mockNewDeleteOperation,
-  mockDeleteProcess,
   mockOrderProcessDefinitions,
   mockOrderProcessInstances,
   mockFinishedOrderProcessInstances,

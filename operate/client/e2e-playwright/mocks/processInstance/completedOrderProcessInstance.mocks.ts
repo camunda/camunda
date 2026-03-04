@@ -13,13 +13,6 @@ const completedOrderProcessInstance: InstanceMock = {
   ...completedInstance,
   detail: {
     ...completedInstance.detail,
-    id: '225179981395430',
-    processName: 'Order process',
-    bpmnProcessId: 'orderProcess',
-    processVersion: 1,
-  },
-  detailV2: {
-    ...completedInstance.detailV2,
     processInstanceKey: '225179981395430',
     processDefinitionName: 'Order process',
     processDefinitionVersion: 1,
@@ -50,25 +43,7 @@ const completedOrderProcessInstance: InstanceMock = {
       rootProcessInstanceKey: null,
     },
   ],
-  sequenceFlows: [
-    {
-      processInstanceId: '225179981395430',
-      activityId: 'SequenceFlow_0j6tsnn',
-    },
-    {
-      processInstanceId: '225179981395430',
-      activityId: 'SequenceFlow_1s6g17c',
-    },
-    {
-      processInstanceId: '225179981395430',
-      activityId: 'SequenceFlow_1dq2rqw',
-    },
-    {
-      processInstanceId: '225179981395430',
-      activityId: 'SequenceFlow_19klrd3',
-    },
-  ],
-  sequenceFlowsV2: {
+  sequenceFlows: {
     items: [
       {
         processInstanceKey: '225179981395430',
