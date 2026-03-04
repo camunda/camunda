@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
@@ -120,6 +121,11 @@ final class ProcessInstanceElementMigratedV3Applier
       return;
     }
     if (value.hasParentProcessInstance()) {
+      return;
+    }
+    if (Objects.equals(previousProcessDefinitionId, value.getBpmnProcessId())) {
+      // no need to update the business id index if the process definition id didn't change
+      // note that the business id, the tenant id, and the instance key never change on migration
       return;
     }
     elementInstanceState.deleteProcessInstanceKeyMappingByBusinessId(
