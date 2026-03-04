@@ -160,7 +160,7 @@ test.describe('process instance modification', () => {
       }),
     ).toBeVisible();
 
-    const moveTokenButton = await page.getByRole('button', {
+    const moveTokenButton = page.getByRole('button', {
       name: /move selected instance/i,
     });
 
@@ -174,11 +174,9 @@ test.describe('process instance modification', () => {
 
     await moveTokenButton.click();
 
-    const lastTaskFlowNode = await page
-      .getByTestId('diagram')
-      .getByText('Last task');
+    const lastTaskElement = page.getByTestId('diagram').getByText('Last task');
 
-    await commonPage.addDownArrow(lastTaskFlowNode);
+    await commonPage.addDownArrow(lastTaskElement);
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/process-instance-modification/move-token-select-target.png',
@@ -186,7 +184,7 @@ test.describe('process instance modification', () => {
 
     await commonPage.deleteArrows();
 
-    await lastTaskFlowNode.click();
+    await lastTaskElement.click();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/process-instance-modification/move-token-result.png',
@@ -328,11 +326,11 @@ test.describe('process instance modification', () => {
     // text content inside the modal was not visible in the screenshot without randomly waiting a while
     await page.waitForTimeout(1000);
 
-    const deleteFlowNodeModificationButton = await page.getByRole('button', {
+    const deleteElementModificationButton = page.getByRole('button', {
       name: /delete element modification/i,
     });
 
-    await commonPage.addDownArrow(deleteFlowNodeModificationButton, '(1)');
+    await commonPage.addDownArrow(deleteElementModificationButton, '(1)');
 
     const expandCurrentRowButton = await page
       .getByRole('button', {

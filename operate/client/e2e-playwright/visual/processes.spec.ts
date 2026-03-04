@@ -168,7 +168,7 @@ test.describe('processes page', () => {
       },
     });
 
-    await filtersPanel.selectFlowNode('Event Subprocess task');
+    await filtersPanel.selectElement('Event Subprocess task');
 
     await expect(page).toHaveScreenshot();
   });

@@ -154,19 +154,19 @@ test.describe('process instance migration', () => {
 
     await commonPage.deleteArrows();
 
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Check payment',
-      targetFlowNodeName: 'Check payment',
+    await migrationView.mapElement({
+      sourceElementName: 'Check payment',
+      targetElementName: 'Check payment',
     });
 
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Ship Articles',
-      targetFlowNodeName: 'Ship Articles',
+    await migrationView.mapElement({
+      sourceElementName: 'Ship Articles',
+      targetElementName: 'Ship Articles',
     });
 
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Request for payment',
-      targetFlowNodeName: 'Request for payment',
+    await migrationView.mapElement({
+      sourceElementName: 'Request for payment',
+      targetElementName: 'Request for payment',
     });
 
     await commonPage.addRightArrow(
@@ -185,14 +185,14 @@ test.describe('process instance migration', () => {
 
     await commonPage.deleteArrows();
 
-    await migrationView.selectTargetSourceFlowNode('Check payment');
+    await migrationView.selectTargetSourceElement('Check payment');
 
-    const flowNodes = page
+    const elements = page
       .getByTestId('diagram')
       .getByText('Check payment', {exact: true});
 
-    await commonPage.addDownArrow(flowNodes.first());
-    await commonPage.addDownArrow(flowNodes.nth(1));
+    await commonPage.addDownArrow(elements.first());
+    await commonPage.addDownArrow(elements.nth(1));
 
     await page.screenshot({
       path: path.join(baseDirectory, 'highlight-mapping.png'),
@@ -368,15 +368,15 @@ test.describe('process instance migration', () => {
     await expect(page.getByText('A', {exact: true})).toHaveCount(2);
 
     // Map the ad hoc subprocess
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Ad Hoc Subprocess',
-      targetFlowNodeName: 'Ad Hoc Subprocess',
+    await migrationView.mapElement({
+      sourceElementName: 'Ad Hoc Subprocess',
+      targetElementName: 'Ad Hoc Subprocess',
     });
 
     // Map user task
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'A',
-      targetFlowNodeName: 'D',
+    await migrationView.mapElement({
+      sourceElementName: 'A',
+      targetElementName: 'D',
     });
 
     await migrationView.nextButton.click();
