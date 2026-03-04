@@ -184,19 +184,26 @@ components:
             $ref: '#/components/schemas/DecisionRequirementsResult'
 
     DecisionRequirementsResult:
+      required:
+        - decisionRequirementsId
+        - decisionRequirementsKey
+        - decisionRequirementsName
+        - resourceName
+        - tenantId
+        - version
       type: object
       additionalProperties: false
       properties:
-        decisionRequirementsName:
-          type: string
-          description: The DMN name of the decision requirements.
-        version:
-          type: integer
-          format: int32
-          description: The assigned version of the decision requirements.
         decisionRequirementsId:
           type: string
           description: The DMN ID of the decision requirements.
+        decisionRequirementsKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
+          description: The assigned key, which acts as a unique identifier for this decision requirements.
+        decisionRequirementsName:
+          type: string
+          description: The DMN name of the decision requirements.
         resourceName:
           type: string
           description: The name of the resource from which this decision requirements was parsed.
@@ -204,7 +211,7 @@ components:
           description: The tenant ID of the decision requirements.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
-        decisionRequirementsKey:
-          allOf:
-            - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKey'
-          description: The assigned key, which acts as a unique identifier for this decision requirements.
+        version:
+          type: integer
+          format: int32
+          description: The assigned version of the decision requirements.
