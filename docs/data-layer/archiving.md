@@ -2,10 +2,11 @@
 
 ## Concept
 
-Archiving is the process of moving historical data from active ("hot") indices into separate
-archive ("cold") indices once that data is no longer needed for day-to-day operations. This keeps
+Archiving is the process of moving historical data from active ("main") indices into separate
+archive ("dated") indices once that data is no longer needed for day-to-day operations. This keeps
 primary indices lean, improves query performance, and enables independent lifecycle management
-(e.g., different retention policies or ILM rules) for historical records.
+(e.g., different retention policies or ILM/ISM rules) for historical records. It is only active in
+ES/OS deployments, with the RDBMS implementation not requiring the equivalent functionality.
 
 Archiving runs as a background activity inside the **Camunda Exporter** (see
 [`zeebe/exporters/camunda-exporter`](/zeebe/exporters/camunda-exporter)). It is implemented as a
@@ -29,17 +30,20 @@ explicitly via a purpose-built cleanup strategy when the business logic allows i
 ## Archiver Jobs
 
 An _archiver job_ is an implementation of
-[`ArchiverJob`](/zeebe/exporters/camunda-exporter/src/main/java/io/camunda/exporter/tasks/archiver/ArchiverJob.java),
+[
+`ArchiverJob`](/zeebe/exporters/camunda-exporter/src/main/java/io/camunda/exporter/tasks/archiver/ArchiverJob.java),
 which in turn implements the
-[`BackgroundTask`](/zeebe/exporters/camunda-exporter/src/main/java/io/camunda/exporter/tasks/BackgroundTask.java)
+[
+`BackgroundTask`](/zeebe/exporters/camunda-exporter/src/main/java/io/camunda/exporter/tasks/BackgroundTask.java)
 interface and is registered with the
-[`BackgroundTaskManager`](/zeebe/exporters/camunda-exporter/src/main/java/io/camunda/exporter/tasks/BackgroundTaskManager.java)
+[
+`BackgroundTaskManager`](/zeebe/exporters/camunda-exporter/src/main/java/io/camunda/exporter/tasks/BackgroundTaskManager.java)
 inside the exporter context. The job is scheduled and rescheduled automatically; the
 implementation only needs to describe _what_ to archive and _how_ to identify that batch.
 
 ### Core Abstractions
 
-|  Class / Interface   |                                                                      Role                                                                       |
+| Class / Interface    | Role                                                                                                                                            |
 |----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
 | `BackgroundTask`     | Interface for exporter background tasks; exposes `CompletionStage<Integer> execute()` and optional `getCaption()` / `close()` default methods.  |
 | `ArchiverJob<B>`     | Abstract base class providing the archive loop: fetch batch → move documents → record metrics.                                                  |
@@ -50,7 +54,7 @@ implementation only needs to describe _what_ to archive and _how_ to identify th
 
 The following archiver jobs ship out of the box:
 
-|                          Job                          |        Primary index        |                                         Trigger / eligibility                                          |
+| Job                                                   | Primary index               | Trigger / eligibility                                                                                  |
 |-------------------------------------------------------|-----------------------------|--------------------------------------------------------------------------------------------------------|
 | `ProcessInstanceArchiverJob`                          | `operate-list-view`         | Process instances with a `completed` timestamp (also archives all `ProcessInstanceDependant` indices). |
 | `BatchOperationArchiverJob`                           | `operate-batch-operation`   | Finished batch operations (also archives `BatchOperationDependant` indices).                           |
@@ -64,7 +68,8 @@ The following archiver jobs ship out of the box:
 The `ProcessInstanceArchiverJob` is the most comprehensive job. It uses the `operate-list-view`
 index to identify process instances that have completed. Once a batch of eligible process
 instances is found, the job concurrently archives every index that implements
-[`ProcessInstanceDependant`](/webapps-schema/src/main/java/io/camunda/webapps/schema/descriptors/ProcessInstanceDependant.java):
+[
+`ProcessInstanceDependant`](/webapps-schema/src/main/java/io/camunda/webapps/schema/descriptors/ProcessInstanceDependant.java):
 flow node instances, variable updates, sequence flows, correlated message subscriptions, and
 others. The archiving of those dependant indices is driven entirely by the process instance keys
 found in the batch.
@@ -83,10 +88,12 @@ operation) you can register it as a dependant and let the existing job handle it
 **Steps:**
 
 1. Make the index template descriptor implement the appropriate dependant marker interface:
-   - [`ProcessInstanceDependant`](/webapps-schema/src/main/java/io/camunda/webapps/schema/descriptors/ProcessInstanceDependant.java)
-     for entities tied to a process instance.
-   - [`BatchOperationDependant`](/webapps-schema/src/main/java/io/camunda/webapps/schema/descriptors/BatchOperationDependant.java)
-     for entities tied to a batch operation.
+  - [
+    `ProcessInstanceDependant`](/webapps-schema/src/main/java/io/camunda/webapps/schema/descriptors/ProcessInstanceDependant.java)
+    for entities tied to a process instance.
+  - [
+    `BatchOperationDependant`](/webapps-schema/src/main/java/io/camunda/webapps/schema/descriptors/BatchOperationDependant.java)
+    for entities tied to a batch operation.
 2. The concrete template descriptor must implement the dependant-specific field accessor (e.g.
    `getProcessInstanceDependantField()`) so the job knows which field to match against.
 3. Register the new template descriptor with the index descriptor / resource provider
@@ -124,7 +131,8 @@ definition-scoped subscriptions) you need a dedicated archiver job.
    OpenSearch implementations) if a new storage query is needed.
 
 4. **Register the job** in
-   [`BackgroundTaskManagerFactory`](/zeebe/exporters/camunda-exporter/src/main/java/io/camunda/exporter/tasks/BackgroundTaskManagerFactory.java)
+   [
+   `BackgroundTaskManagerFactory`](/zeebe/exporters/camunda-exporter/src/main/java/io/camunda/exporter/tasks/BackgroundTaskManagerFactory.java)
    so the `BackgroundTaskManager` schedules it alongside the other tasks.
 
 5. **Add metrics** (optional but recommended): wire in counter callbacks using the existing
