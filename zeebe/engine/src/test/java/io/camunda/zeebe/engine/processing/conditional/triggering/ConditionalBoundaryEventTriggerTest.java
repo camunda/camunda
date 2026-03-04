@@ -642,7 +642,6 @@ public final class ConditionalBoundaryEventTriggerTest {
             .serviceTask(TASK_ID, t -> t.zeebeJobType("task"))
             .boundaryEvent("boundary")
             .cancelActivity(false)
-            // variableNames are extracted from the FEEL condition: ["x"]
             .condition(c -> c.condition("=x > 10"))
             .endEvent("afterBoundary")
             .moveToActivity(TASK_ID)
