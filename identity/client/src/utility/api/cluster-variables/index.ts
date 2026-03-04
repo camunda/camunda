@@ -23,8 +23,6 @@ import {
 
 export const CLUSTER_VARIABLES_ENDPOINT = "/cluster-variables";
 
-export type { ClusterVariableScope };
-
 function buildEndpoint(
   scopeType: ClusterVariableScope,
   tenantId?: string | null,
