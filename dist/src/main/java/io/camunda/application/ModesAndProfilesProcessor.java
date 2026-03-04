@@ -88,6 +88,11 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
   }
 
   private void setupActiveProfiles(final Set<String> profiles) {
+    final Set<String> profilesToSet = new HashSet<>(profiles);
+    if (isInsecure()) {
+      profilesToSet.add(Profile.INSECURE.getId());
+    }
+
     // tell Spring directly
     environment.setActiveProfiles(profiles.toArray(new String[0]));
 

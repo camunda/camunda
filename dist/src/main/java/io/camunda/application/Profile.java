@@ -32,6 +32,7 @@ public enum Profile {
 
   // authentication profiles
   CONSOLIDATED_AUTH("consolidated-auth"),
+  INSECURE("insecure"),
 
   // indicating legacy standalone application
   STANDALONE("standalone");
