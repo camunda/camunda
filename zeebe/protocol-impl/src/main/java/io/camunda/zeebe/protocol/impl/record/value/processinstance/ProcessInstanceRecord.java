@@ -169,6 +169,98 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
+<<<<<<< HEAD
+=======
+  @Override
+  public List<List<Long>> getElementInstancePath() {
+    final var elementInstancePath = new ArrayList<List<Long>>(elementInstancePathProp.size());
+    elementInstancePathProp.forEach(
+        pe -> {
+          final var pathEntry = new ArrayList<Long>(pe.size());
+          pe.forEach(e -> pathEntry.add(e.getValue()));
+          elementInstancePath.add(pathEntry);
+        });
+    return elementInstancePath;
+  }
+
+  public ProcessInstanceRecord setElementInstancePath(final List<List<Long>> elementInstancePath) {
+    elementInstancePathProp.reset();
+    elementInstancePath.forEach(
+        pathEntry -> {
+          final var entry = elementInstancePathProp.add();
+          pathEntry.forEach(element -> entry.add().setValue(element));
+        });
+    return this;
+  }
+
+  @Override
+  public List<Long> getProcessDefinitionPath() {
+    final var processDefinitionPath = new ArrayList<Long>();
+    processDefinitionPathProp.forEach(e -> processDefinitionPath.add(e.getValue()));
+    return processDefinitionPath;
+  }
+
+  public ProcessInstanceRecord setProcessDefinitionPath(final List<Long> processDefinitionPath) {
+    processDefinitionPathProp.reset();
+    processDefinitionPath.forEach(e -> processDefinitionPathProp.add().setValue(e));
+    return this;
+  }
+
+  @Override
+  public List<Integer> getCallingElementPath() {
+    final var callingElementPath = new ArrayList<Integer>();
+    callingElementPathProp.forEach(e -> callingElementPath.add(e.getValue()));
+    return callingElementPath;
+  }
+
+  public ProcessInstanceRecord setCallingElementPath(final List<Integer> callingElementPath) {
+    callingElementPathProp.reset();
+    callingElementPath.forEach(e -> callingElementPathProp.add().setValue(e));
+    return this;
+  }
+
+  @Override
+  public Set<String> getTags() {
+    return StreamSupport.stream(tagsProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toSet());
+  }
+
+  public ProcessInstanceRecord setTags(final Set<String> tags) {
+    tagsProp.reset();
+    if (tags != null) {
+      tags.forEach(tag -> tagsProp.add().wrap(BufferUtil.wrapString(tag)));
+    }
+    return this;
+  }
+
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  public ProcessInstanceRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return bufferAsString(businessIdProp.getValue());
+  }
+
+  public ProcessInstanceRecord setBusinessId(final String businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  public ProcessInstanceRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+>>>>>>> 7f25d10d (perf: size hint for the required element instance path array)
   public ProcessInstanceRecord setParentProcessInstanceKey(final long parentProcessInstanceKey) {
     parentProcessInstanceKeyProp.setValue(parentProcessInstanceKey);
     return this;
