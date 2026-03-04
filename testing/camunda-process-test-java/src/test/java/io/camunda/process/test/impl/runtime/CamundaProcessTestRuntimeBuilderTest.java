@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
+import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,6 +80,7 @@ public class CamundaProcessTestRuntimeBuilderTest {
   @Test
   void shouldLoadContainerProvidersViaServiceLoaderByDefault() {
     // given: the DummyContainerProvider is registered in the service loader file
+    runtimeBuilder.withRuntimeMode(CamundaProcessTestRuntimeMode.MANAGED);
 
     // when
     runtimeBuilder.build();
@@ -121,5 +123,22 @@ public class CamundaProcessTestRuntimeBuilderTest {
         .hasSize(2)
         .contains(containerProvider)
         .hasAtLeastOneElementOfType(DummyContainerProvider.class);
+  }
+
+  @Test
+  void shouldLoadContainerProvidersViaServiceLoaderForSharedRuntime() {
+    // given: the DummyContainerProvider is registered in the service loader file
+    runtimeBuilder.withRuntimeMode(CamundaProcessTestRuntimeMode.SHARED);
+
+    // when
+    runtimeBuilder.build();
+
+    // then
+    assertThat(runtimeBuilder.isContainerProvidersServiceLoaderEnabled()).isTrue();
+
+    assertThat(runtimeBuilder.getContainerProviders())
+        .hasSize(1)
+        .first()
+        .isInstanceOf(DummyContainerProvider.class);
   }
 }

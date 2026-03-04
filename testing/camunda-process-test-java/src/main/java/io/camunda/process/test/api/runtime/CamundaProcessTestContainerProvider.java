@@ -18,9 +18,9 @@ package io.camunda.process.test.api.runtime;
 import org.testcontainers.containers.GenericContainer;
 
 /**
- * Provides a container for the managed Camunda process test runtime based on Testcontainers. The
- * container is added to the runtime and included in the runtime's lifecycle. The runtime starts the
- * container before executing any tests and stops it after all tests have been executed.
+ * Provides a container for the managed/shared Camunda process test runtime based on Testcontainers.
+ * The container is added to the runtime and included in the runtime's lifecycle. The runtime starts
+ * the container before executing any tests and stops it after all tests have been executed.
  */
 public interface CamundaProcessTestContainerProvider {
 
