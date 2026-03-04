@@ -30,17 +30,17 @@ public class EventDescription {
   public void status(final String status) {
     try {
       if (lock.tryLock(WRITE_ACQUIRE_LOCK_TIMEOUT, TimeUnit.MILLISECONDS)) {
-        // this cannot fail, try/finally is not needed
-        this.status = status;
-        position = 0;
-        intent = null;
-        valueType = null;
+        try {
+          this.status = status;
+          position = 0;
+          intent = null;
+          valueType = null;
+        } finally {
+          lock.unlock();
+        }
       }
     } catch (final InterruptedException e) {
-      // ignore it, it's just for reporting
       Thread.currentThread().interrupt();
-    } finally {
-      lock.unlock();
     }
   }
 
@@ -48,16 +48,17 @@ public class EventDescription {
       final String status, final long position, final Intent intent, final ValueType valueType) {
     try {
       if (lock.tryLock(WRITE_ACQUIRE_LOCK_TIMEOUT, TimeUnit.MILLISECONDS)) {
-        this.status = status;
-        this.position = position;
-        this.intent = intent;
-        this.valueType = valueType;
+        try {
+          this.status = status;
+          this.position = position;
+          this.intent = intent;
+          this.valueType = valueType;
+        } finally {
+          lock.unlock();
+        }
       }
     } catch (final InterruptedException e) {
-      // ignore it, it's just for reporting
       Thread.currentThread().interrupt();
-    } finally {
-      lock.unlock();
     }
   }
 
@@ -65,21 +66,22 @@ public class EventDescription {
   public String toString() {
     try {
       if (lock.tryLock(READ_ACQUIRE_LOCK_TIMEOUT, TimeUnit.MILLISECONDS)) {
-        if (position == 0) {
-          return status;
-        } else {
-          return String.format(
-              "%s @ position=%d, intent=%s, valueType=%s", status, position, intent, valueType);
+        try {
+          if (position == 0) {
+            return status;
+          } else {
+            return String.format(
+                "%s @ position=%d, intent=%s, valueType=%s", status, position, intent, valueType);
+          }
+        } finally {
+          lock.unlock();
         }
       } else {
         return FAILED_TO_ACQUIRE_LOCK;
       }
     } catch (final InterruptedException e) {
-      // ignore it, it's just for reporting
       Thread.currentThread().interrupt();
       return FAILED_TO_ACQUIRE_LOCK;
-    } finally {
-      lock.unlock();
     }
   }
 }
