@@ -280,7 +280,7 @@
         MESSAGE_NAME = #{messageName},
         CORRELATION_KEY = #{correlationKey},
         TENANT_ID = #{tenantId},
-        EXTENSION_PROPERTIES = #{extensionProperties}
+        EXTENSION_PROPERTIES = COALESCE(#{extensionProperties}, EXTENSION_PROPERTIES)
     WHERE MESSAGE_SUBSCRIPTION_KEY = #{messageSubscriptionKey}
   </update>
 
