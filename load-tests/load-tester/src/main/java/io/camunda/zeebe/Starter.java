@@ -156,6 +156,7 @@ public class Starter extends App {
                       .newProcessInstanceSearchRequest()
                       .filter((f) -> f.processInstanceKey(key -> key.in(listOfStartedInstances)))
                       .sort(ProcessInstanceSort::startDate)
+                      .page(p -> p.limit(Math.max(1, Math.min(600, listOfStartedInstances.size()))))
                       .send();
 
               return send.thenApply(
