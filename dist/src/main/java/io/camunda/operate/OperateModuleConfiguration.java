@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Profile;
  */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(
-    basePackages = "io.camunda.operate",
+    basePackages = {"io.camunda.operate", "io.camunda.authentication"},
     excludeFilters = {
       @ComponentScan.Filter(
           type = FilterType.REGEX,
