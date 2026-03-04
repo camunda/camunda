@@ -16,9 +16,11 @@ import com.nimbusds.jose.proc.SecurityContext;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Factory for creating {@link JWSKeySelector} instances based on a configured set of allowed {@link
@@ -61,7 +63,7 @@ public class JWSKeySelectorFactory {
    * @throws IllegalArgumentException if the URI is malformed
    */
   public JWSKeySelector<SecurityContext> createJWSKeySelector(final String jwkSetUri) {
-    if (jwkSetUri == null || jwkSetUri.isBlank()) {
+    if (!StringUtils.hasText(jwkSetUri)) {
       throw new IllegalArgumentException(ERROR_MISSING_JWK_SET_URI);
     }
 
@@ -83,19 +85,19 @@ public class JWSKeySelectorFactory {
    */
   public JWSKeySelector<SecurityContext> createJWSKeySelector(
       final String jwkSetUri, final List<String> additionalJwkSetUris) {
-    if (additionalJwkSetUris == null || additionalJwkSetUris.isEmpty()) {
+    if (CollectionUtils.isEmpty(additionalJwkSetUris)) {
       return createJWSKeySelector(jwkSetUri);
     }
 
-    if (jwkSetUri == null || jwkSetUri.isBlank()) {
+    if (!StringUtils.hasText(jwkSetUri)) {
       throw new IllegalArgumentException(ERROR_MISSING_JWK_SET_URI);
     }
 
-    final var sources = new ArrayList<JWKSource<SecurityContext>>();
-    sources.add(createJWKSource(toURL(jwkSetUri)));
-    for (final String uri : additionalJwkSetUris) {
-      sources.add(createJWKSource(toURL(uri)));
-    }
+    final var sources =
+        Stream.concat(
+                Stream.of(jwkSetUri), additionalJwkSetUris.stream().filter(StringUtils::hasText))
+            .map(uri -> createJWKSource(toURL(uri)))
+            .toList();
 
     final var compositeSource = new CompositeJWKSource<>(sources);
     return new JWSVerificationKeySelector<>(getJWSAlgorithms(), compositeSource);
