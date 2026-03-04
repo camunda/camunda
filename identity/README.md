@@ -8,6 +8,10 @@ such as users, roles, permissions, and OAuth clients.
 
 ## Running locally
 
+**NOTE:** Currently, this is NOT working with OIDC!
+For this you have to start the frontend within the orchestration cluster.
+See [Running within the Orchestration Cluster](#running-within-the-orchestration-cluster)
+
 All commands should be run from the root folder of the monorepo unless stated otherwise.
 
 1. Build project:
@@ -75,6 +79,13 @@ CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true \
 If you would like to enable operate and tasklist, you can add their profile to the `SPRING_PROFILES_ACTIVE` variable like this:
 
 ```
-SPRING_PROFILES_ACTIVE=operate,tasklist,consolidated-auth,broker,identity,elasticsearch/rdbmsH2
+SPRING_PROFILES_ACTIVE=operate,tasklist,consolidated-auth,broker,identity,elasticsearch/rdbmsH2  \
+./dist/target/camunda-zeebe/bin/camunda
 ```
 
+## Running within the Orchestration Cluster
+
+```
+SPRING_PROFILES_ACTIVE=broker,identity,consolidated-auth \
+./dist/target/camunda-zeebe/bin/camunda
+```
