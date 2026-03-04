@@ -106,8 +106,16 @@ public class BatchOperationCreatedHandler
     // The state is set correctly on initial document creation via the entity.
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(BatchOperationTemplate.TYPE, entity.getType());
-    updateFields.put(BatchOperationTemplate.ACTOR_TYPE, entity.getActorType());
-    updateFields.put(BatchOperationTemplate.ACTOR_ID, entity.getActorId());
+
+    final var actorType = entity.getActorType();
+    if (actorType != null) {
+      updateFields.put(BatchOperationTemplate.ACTOR_TYPE, actorType);
+    }
+
+    final var actorId = entity.getActorId();
+    if (actorId != null) {
+      updateFields.put(BatchOperationTemplate.ACTOR_ID, actorId);
+    }
     batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
   }
 
