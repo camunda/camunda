@@ -12,6 +12,8 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 
@@ -22,6 +24,9 @@ import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequ
  */
 public class HttpCookieOAuth2AuthorizationRequestRepository
     implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(HttpCookieOAuth2AuthorizationRequestRepository.class);
 
   private static final String REQUEST_COOKIE_NAME = "oauth2_auth_request";
   private static final int REQUEST_COOKIE_MAX_AGE = 180;
@@ -38,10 +43,18 @@ public class HttpCookieOAuth2AuthorizationRequestRepository
 
   @Override
   public OAuth2AuthorizationRequest loadAuthorizationRequest(final HttpServletRequest request) {
-    return getAuthorizationRequestCookie(request)
-        .map(Cookie::getValue)
-        .map(authorizationRequestCookieValueMapper::deserialize)
-        .orElse(null);
+    try {
+      return getAuthorizationRequestCookie(request)
+          .map(Cookie::getValue)
+          .map(authorizationRequestCookieValueMapper::deserialize)
+          .orElse(null);
+    } catch (final Exception e) {
+      LOG.warn(
+          "Failed to deserialize OAuth2 authorization request cookie, "
+              + "will restart authorization flow",
+          e);
+      return null;
+    }
   }
 
   @Override
