@@ -138,6 +138,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build
         shell: bash
+        timeout-minutes: 55
         run: >
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
@@ -151,6 +152,32 @@ jobs:
           -pl ${{ matrix.maven-modules }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Collect Maven fork diagnostics
+        if: ${{ failure() || cancelled() }}
+        continue-on-error: true
+        run: |
+          diagnostics_file="maven-fork-diagnostics-${{ matrix.group }}.log"
+          {
+            echo "timestamp: $(date --iso-8601=seconds)"
+            echo "group: ${{ matrix.group }}"
+            echo "job: ${{ matrix.name }}"
+            echo
+            echo "== Latest surefire/failsafe report files =="
+            find . -type f \( -path "*/target/failsafe-reports/*" -o -path "*/target/surefire-reports/*" \) -printf "%TY-%Tm-%TdT%TH:%TM:%TS %p\n" | sort | tail -n 60 || true
+            echo
+            echo "== Report files missing 'Tests run:' summary =="
+            find . -type f \( -path "*/target/failsafe-reports/*.txt" -o -path "*/target/surefire-reports/*.txt" \) -print0 \
+              | while IFS= read -r -d '' report_file; do
+                  grep -q "Tests run:" "${report_file}" || echo "${report_file}"
+                done
+            echo
+            echo "== Fork/jvm dump files =="
+            find . -type f \( -name "*.dumpstream" -o -name "*jvmRun*.dump*" \) -print || true
+            echo
+            echo "== Failure markers in surefire/failsafe txt reports =="
+            find . -type f \( -path "*/target/failsafe-reports/*.txt" -o -path "*/target/surefire-reports/*.txt" \) -print0 \
+              | xargs -0 grep -HnE "<<< FAILURE!|<<< ERROR!|The forked VM terminated without properly saying goodbye|Crashed tests:" || true
+          } | tee "${diagnostics_file}"
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
