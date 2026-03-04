@@ -5,6 +5,12 @@ components:
       x-semantic-provider:
         - formId
         - formKey
+      required:
+        - tenantId
+        - formId
+        - schema
+        - version
+        - formKey
       properties:
         tenantId:
           description: The tenant ID of the form.
