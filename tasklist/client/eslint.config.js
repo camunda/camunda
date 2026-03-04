@@ -36,7 +36,7 @@ export default [
     testFiles: files.test,
     nodeFiles: files.node,
     tsconfigRootDir: import.meta.dirname,
-    tsProjects: './tsconfig.json', // singolo tsconfig, a differenza di operate
+    tsProjects: './tsconfig.json',
   }),
 
   ...reactConfig({browserFiles: files.browser, testFiles: files.test}),
@@ -44,7 +44,6 @@ export default [
   ...tanstackQueryConfig({browserFiles: files.browser}),
   ...licenseConfig({licenseHeaderPath: './resources/license-header.js'}),
 
-  // tasklist non aggiunge `curly: 'error'` — solo no-duplicate-imports è nel baseConfig
   {
     ignores: [
       'dist/*',
@@ -59,7 +58,7 @@ export default [
       '.eslintcache',
       '.env',
       '.prettierignore',
-      'resources/license-header.js', // tasklist ignora esplicitamente il file header
+      'resources/license-header.js',
     ],
   },
 ];
