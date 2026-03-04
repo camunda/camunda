@@ -37,10 +37,11 @@ import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {useClearSelectionOnModificationUndo} from 'modules/hooks/elementSelection';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useNavigate, Outlet} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
+import {BottomPanelTabs} from './BottomPanelTabs';
 
 const ProcessInstance: React.FC = observer(() => {
   const {data: processInstance, error} = useProcessInstance();
@@ -170,7 +171,7 @@ const ProcessInstance: React.FC = observer(() => {
               <BottomPanel $shouldExpandPanel={isListenerTabSelected}>
                 <ElementInstanceLog />
                 {IS_NEW_PROCESS_INSTANCE_PAGE ? (
-                  <Outlet />
+                  <BottomPanelTabs />
                 ) : (
                   <VariablePanel
                     setListenerTabVisibility={setListenerTabVisibility}
