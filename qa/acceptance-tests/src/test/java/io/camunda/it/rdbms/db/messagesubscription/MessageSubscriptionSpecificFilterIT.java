@@ -136,6 +136,10 @@ public class MessageSubscriptionSpecificFilterIT {
         new MessageSubscriptionFilter.Builder().tenantIdOperations(Operation.eq(TENANT_ID)).build(),
         new MessageSubscriptionFilter.Builder()
             .extensionProperties(Map.of(EXTENSION_PROPERTY_KEY, EXTENSION_PROPERTY_VALUE))
+            .build(),
+        new MessageSubscriptionFilter.Builder()
+            .extensionPropertyOperations(
+                Map.of(EXTENSION_PROPERTY_KEY, List.of(Operation.like("*pha"))))
             .build());
   }
 }

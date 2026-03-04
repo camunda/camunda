@@ -104,8 +104,24 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
     assertThat(request.getFilter().getCorrelationKey().get$Eq()).isEqualTo("correlation-key");
     assertThat(request.getFilter().getTenantId()).isNotNull();
     assertThat(request.getFilter().getTenantId().get$Eq()).isEqualTo("tenant-id");
-    assertThat(request.getFilter().getExtensionProperties())
-        .containsEntry("propertyKey", "propertyValue");
+    assertThat(request.getFilter().getExtensionProperties().get("propertyKey").get$Eq())
+        .isEqualTo("propertyValue");
+  }
+
+  @Test
+  void shouldSearchWithAdvancedExtensionPropertyFilter() {
+    // When
+    client
+        .newMessageSubscriptionSearchRequest()
+        .filter(f -> f.extensionProperty("propertyKey", p -> p.like("property*")))
+        .send()
+        .join();
+
+    // Then
+    final MessageSubscriptionSearchQuery request =
+        gatewayService.getLastRequest(MessageSubscriptionSearchQuery.class);
+    assertThat(request.getFilter().getExtensionProperties().get("propertyKey").get$Like())
+        .isEqualTo("property*");
   }
 
   @Test

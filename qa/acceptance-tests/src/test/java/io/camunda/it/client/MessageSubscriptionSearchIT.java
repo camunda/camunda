@@ -149,6 +149,21 @@ public class MessageSubscriptionSearchIT {
   }
 
   @Test
+  void shouldFilterByExtensionPropertiesWithAdvancedValueFilter() {
+    // When
+    final var searchResponse =
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .filter(f -> f.extensionProperty("route", p -> p.like("alp*")))
+            .send()
+            .join();
+
+    // Then
+    assertThat(searchResponse.items()).hasSize(1);
+    assertThat(searchResponse.items().getFirst().getElementId()).isEqualTo("receive_task_1");
+  }
+
+  @Test
   void shouldSortByKeyDescending() {
     // Given / When
     final var searchResponse =

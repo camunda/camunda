@@ -160,7 +160,43 @@
     </if>
     <if test="filter.extensionProperties != null and !filter.extensionProperties.isEmpty()">
       <foreach collection="filter.extensionProperties.entrySet()" item="entry">
-        AND EXTENSION_PROPERTIES LIKE CONCAT('%"', #{entry.key}, '":"', #{entry.value}, '"%')
+        <if test="entry.value != null and !entry.value.isEmpty()">
+          <foreach collection="entry.value" item="operation">
+            <choose>
+              <when test="operation.operator.value == 'eq'">
+                AND EXTENSION_PROPERTIES LIKE CONCAT('%"', #{entry.key}, '":"', #{operation.value}, '"%')
+              </when>
+              <when test="operation.operator.value == 'neq'">
+                AND EXTENSION_PROPERTIES NOT LIKE CONCAT('%"', #{entry.key}, '":"', #{operation.value}, '"%')
+              </when>
+              <when test="operation.operator.value == 'exists' and operation.value == true">
+                AND EXTENSION_PROPERTIES LIKE CONCAT('%"', #{entry.key}, '":%')
+              </when>
+              <when test="operation.operator.value == 'exists' and operation.value == false">
+                AND EXTENSION_PROPERTIES NOT LIKE CONCAT('%"', #{entry.key}, '":%')
+              </when>
+              <when test="operation.operator.value == 'like'">
+                <bind name="extensionPropertiesLikePattern"
+                  value="operation.value.replace('*', '%').replace('?', '_')" />
+                AND EXTENSION_PROPERTIES LIKE CONCAT('%"', #{entry.key}, '":"',
+                #{extensionPropertiesLikePattern}
+                , '"%')
+              </when>
+              <when test="operation.operator.value == 'in' and operation.value != null and !operation.value.isEmpty()">
+                AND (
+                <foreach collection="operation.value" item="value" separator=" OR ">
+                  EXTENSION_PROPERTIES LIKE CONCAT('%"', #{entry.key}, '":"', #{value}, '"%')
+                </foreach>
+                )
+              </when>
+              <when test="operation.operator.value == 'notIn' and operation.value != null and !operation.value.isEmpty()">
+                <foreach collection="operation.value" item="value">
+                  AND EXTENSION_PROPERTIES NOT LIKE CONCAT('%"', #{entry.key}, '":"', #{value}, '"%')
+                </foreach>
+              </when>
+            </choose>
+          </foreach>
+        </if>
       </foreach>
     </if>
   </sql>

@@ -76,7 +76,9 @@ import jakarta.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
@@ -994,9 +996,30 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
-      ofNullable(filter.getExtensionProperties()).ifPresent(builder::extensionProperties);
+      ofNullable(filter.getExtensionProperties())
+          .map(SearchQueryFilterMapper::mapToExtensionPropertyOperations)
+          .ifPresent(builder::extensionPropertyOperations);
     }
     return builder.build();
+  }
+
+  private static Map<String, List<Operation<String>>> mapToExtensionPropertyOperations(
+      final Map<String, ?> extensionProperties) {
+    return extensionProperties.entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                entry -> mapToExtensionPropertyValueOperations(entry.getValue())));
+  }
+
+  private static List<Operation<String>> mapToExtensionPropertyValueOperations(final Object value) {
+    if (value == null) {
+      return List.of();
+    }
+    if (value instanceof final String stringValue) {
+      return List.of(Operation.eq(stringValue));
+    }
+    return mapToOperations(String.class).apply(value);
   }
 
   static CorrelatedMessageSubscriptionFilter toCorrelatedMessageSubscriptionFilter(

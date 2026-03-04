@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public record MessageSubscriptionFilter(
     List<Operation<Long>> messageSubscriptionKeyOperations,
@@ -33,7 +34,7 @@ public record MessageSubscriptionFilter(
     List<Operation<String>> messageNameOperations,
     List<Operation<String>> correlationKeyOperations,
     List<Operation<String>> tenantIdOperations,
-    Map<String, String> extensionProperties)
+    Map<String, List<Operation<String>>> extensionProperties)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<MessageSubscriptionFilter> {
@@ -52,7 +53,7 @@ public record MessageSubscriptionFilter(
     private List<Operation<String>> messageNameOperations;
     private List<Operation<String>> correlationKeyOperations;
     private List<Operation<String>> tenantIdOperations;
-    private Map<String, String> extensionProperties;
+    private Map<String, List<Operation<String>>> extensionProperties;
 
     public Builder messageSubscriptionKeys(final Long value, final Long... values) {
       return messageSubscriptionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
@@ -269,6 +270,20 @@ public record MessageSubscriptionFilter(
     }
 
     public Builder extensionProperties(final Map<String, String> extensionProperties) {
+      if (extensionProperties == null) {
+        this.extensionProperties = null;
+      } else {
+        this.extensionProperties =
+            extensionProperties.entrySet().stream()
+                .collect(
+                    Collectors.toMap(
+                        Map.Entry::getKey, entry -> List.of(Operation.eq(entry.getValue()))));
+      }
+      return this;
+    }
+
+    public Builder extensionPropertyOperations(
+        final Map<String, List<Operation<String>>> extensionProperties) {
       this.extensionProperties = extensionProperties;
       return this;
     }

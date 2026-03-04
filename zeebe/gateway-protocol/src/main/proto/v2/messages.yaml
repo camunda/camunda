@@ -429,11 +429,12 @@ components:
           type: object
           description: |
             Filter by zeebe:properties extension properties defined on the message event element
-            in the BPMN XML. Each key-value pair is ANDed; only subscriptions whose
-            extensionProperties contain all specified key-value pairs are returned.
+            in the BPMN XML. Each key is matched exactly and each value supports advanced
+            string filtering (`$eq`, `$neq`, `$in`, `$notIn`, `$like`, `$exists`).
+            All key filters are ANDed.
           nullable: true
           additionalProperties:
-            type: string
+            $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
 
     CorrelatedMessageSubscriptionSearchQueryResult:
       required:

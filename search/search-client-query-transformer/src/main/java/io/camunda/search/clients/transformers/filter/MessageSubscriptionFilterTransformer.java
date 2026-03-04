@@ -13,7 +13,6 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.DATE_TIME;
@@ -30,6 +29,7 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.MessageSubscriptionFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
@@ -72,11 +72,13 @@ public class MessageSubscriptionFilterTransformer
     queries.addAll(stringOperations("metadata.correlationKey", filter.correlationKeyOperations()));
     queries.addAll(stringOperations(TENANT_ID, filter.tenantIdOperations()));
 
-    // extensionProperties filtering: each key-value pair generates a term query on
-    // extensionProperties.<key>
+    // extensionProperties filtering: each key supports advanced string operators
+    // on extensionProperties.<key>
     if (filter.extensionProperties() != null) {
-      for (final Map.Entry<String, String> entry : filter.extensionProperties().entrySet()) {
-        queries.add(term(EXTENSION_PROPERTIES + "." + entry.getKey(), entry.getValue()));
+      for (final Map.Entry<String, List<Operation<String>>> entry :
+          filter.extensionProperties().entrySet()) {
+        queries.addAll(
+            stringOperations(EXTENSION_PROPERTIES + "." + entry.getKey(), entry.getValue()));
       }
     }
 

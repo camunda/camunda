@@ -259,4 +259,13 @@ public interface MessageSubscriptionFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   MessageSubscriptionFilter extensionProperties(Map<String, String> extensionProperties);
+
+  /**
+   * Filter by an extension property value using advanced string filtering.
+   *
+   * @param key extension property key
+   * @param fn advanced string filter for the extension property value
+   * @return the updated filter
+   */
+  MessageSubscriptionFilter extensionProperty(String key, Consumer<StringProperty> fn);
 }

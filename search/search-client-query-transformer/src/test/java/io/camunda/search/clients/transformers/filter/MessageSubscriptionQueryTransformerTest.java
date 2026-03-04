@@ -13,9 +13,11 @@ import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
+import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.MessageSubscriptionFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
@@ -25,6 +27,7 @@ import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplat
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
@@ -59,11 +62,13 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
               assertThat(query.must().size()).isEqualTo(2);
               assertThat(query.must().getFirst().queryOption())
                   .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      termQuery -> {
-                        assertThat(termQuery.field()).isEqualTo("eventSourceType");
-                        assertThat(termQuery.value().stringValue())
-                            .isEqualTo("PROCESS_MESSAGE_SUBSCRIPTION");
+                      SearchTermsQuery.class,
+                      termsQuery -> {
+                        assertThat(termsQuery.field()).isEqualTo("eventSourceType");
+                        assertThat(
+                                termsQuery.values().stream().map(TypedValue::stringValue).toList())
+                            .containsExactlyInAnyOrder(
+                                "PROCESS_MESSAGE_SUBSCRIPTION", "MESSAGE_START_EVENT_SUBSCRIPTION");
                       });
               assertThat(query.must().get(1).queryOption())
                   .isInstanceOfSatisfying(
@@ -159,11 +164,13 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
               assertThat(query.must().size()).isEqualTo(2);
               assertThat(query.must().getFirst().queryOption())
                   .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      termQuery -> {
-                        assertThat(termQuery.field()).isEqualTo("eventSourceType");
-                        assertThat(termQuery.value().stringValue())
-                            .isEqualTo("PROCESS_MESSAGE_SUBSCRIPTION");
+                      SearchTermsQuery.class,
+                      termsQuery -> {
+                        assertThat(termsQuery.field()).isEqualTo("eventSourceType");
+                        assertThat(
+                                termsQuery.values().stream().map(TypedValue::stringValue).toList())
+                            .containsExactlyInAnyOrder(
+                                "PROCESS_MESSAGE_SUBSCRIPTION", "MESSAGE_START_EVENT_SUBSCRIPTION");
                       });
               assertThat(query.must().get(1).queryOption())
                   .isInstanceOfSatisfying(
@@ -212,10 +219,12 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
     assertThat(queryVariant)
         .isNotNull()
         .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            termQuery -> {
-              assertThat(termQuery.field()).isEqualTo("eventSourceType");
-              assertThat(termQuery.value().stringValue()).isEqualTo("PROCESS_MESSAGE_SUBSCRIPTION");
+            SearchTermsQuery.class,
+            termsQuery -> {
+              assertThat(termsQuery.field()).isEqualTo("eventSourceType");
+              assertThat(termsQuery.values().stream().map(TypedValue::stringValue).toList())
+                  .containsExactlyInAnyOrder(
+                      "PROCESS_MESSAGE_SUBSCRIPTION", "MESSAGE_START_EVENT_SUBSCRIPTION");
             });
   }
 
@@ -240,11 +249,13 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
               assertThat(query.must().size()).isEqualTo(2);
               assertThat(query.must().getFirst().queryOption())
                   .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      termQuery -> {
-                        assertThat(termQuery.field()).isEqualTo("eventSourceType");
-                        assertThat(termQuery.value().stringValue())
-                            .isEqualTo("PROCESS_MESSAGE_SUBSCRIPTION");
+                      SearchTermsQuery.class,
+                      termsQuery -> {
+                        assertThat(termsQuery.field()).isEqualTo("eventSourceType");
+                        assertThat(
+                                termsQuery.values().stream().map(TypedValue::stringValue).toList())
+                            .containsExactlyInAnyOrder(
+                                "PROCESS_MESSAGE_SUBSCRIPTION", "MESSAGE_START_EVENT_SUBSCRIPTION");
                       });
               assertThat(query.must().get(1).queryOption())
                   .isInstanceOfSatisfying(
@@ -276,10 +287,40 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
     assertThat(queryVariant)
         .isNotNull()
         .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            termQuery -> {
-              assertThat(termQuery.field()).isEqualTo("eventSourceType");
-              assertThat(termQuery.value().stringValue()).isEqualTo("PROCESS_MESSAGE_SUBSCRIPTION");
+            SearchTermsQuery.class,
+            termsQuery -> {
+              assertThat(termsQuery.field()).isEqualTo("eventSourceType");
+              assertThat(termsQuery.values().stream().map(TypedValue::stringValue).toList())
+                  .containsExactlyInAnyOrder(
+                      "PROCESS_MESSAGE_SUBSCRIPTION", "MESSAGE_START_EVENT_SUBSCRIPTION");
+            });
+  }
+
+  @Test
+  public void shouldApplyAdvancedExtensionPropertiesValueFilter() {
+    // given
+    final var filter =
+        FilterBuilders.messageSubscription(
+            b -> b.extensionPropertyOperations(Map.of("route", List.of(Operation.like("*pha")))));
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    assertThat(searchQuery.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            query -> {
+              assertThat(query.must().size()).isEqualTo(2);
+              assertThat(query.must().getFirst().queryOption())
+                  .isInstanceOf(SearchTermsQuery.class);
+              assertThat(query.must().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchWildcardQuery.class,
+                      wildcardQuery -> {
+                        assertThat(wildcardQuery.field()).isEqualTo("extensionProperties.route");
+                        assertThat(wildcardQuery.value()).isEqualTo("*pha");
+                      });
             });
   }
 

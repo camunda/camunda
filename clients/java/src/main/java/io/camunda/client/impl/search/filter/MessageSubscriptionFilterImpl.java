@@ -32,6 +32,7 @@ import io.camunda.client.impl.search.filter.builder.MessageSubscriptionTypePrope
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -234,6 +235,32 @@ public class MessageSubscriptionFilterImpl
   @Override
   public MessageSubscriptionFilter extensionProperties(
       final Map<String, String> extensionProperties) {
+    if (extensionProperties == null) {
+      filter.setExtensionProperties(null);
+      return this;
+    }
+    final Map<String, io.camunda.client.protocol.rest.StringFilterProperty> mappedProperties =
+        new HashMap<>();
+    extensionProperties.forEach(
+        (key, value) -> {
+          final StringProperty property = new StringPropertyImpl();
+          property.eq(value);
+          mappedProperties.put(key, provideSearchRequestProperty(property));
+        });
+    filter.setExtensionProperties(mappedProperties);
+    return this;
+  }
+
+  @Override
+  public MessageSubscriptionFilter extensionProperty(
+      final String key, final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    final Map<String, io.camunda.client.protocol.rest.StringFilterProperty> extensionProperties =
+        filter.getExtensionProperties() != null
+            ? new HashMap<>(filter.getExtensionProperties())
+            : new HashMap<>();
+    extensionProperties.put(key, provideSearchRequestProperty(property));
     filter.setExtensionProperties(extensionProperties);
     return this;
   }
