@@ -147,14 +147,20 @@ final class JWSKeySelectorFactoryTest {
   }
 
   @Test
-  void shouldThrowWhenAdditionalUriIsBlank() {
-    // given
+  void shouldSkipBlankAdditionalUriAndResolveFromPrimary() throws Exception {
+    // given — blank additional URI should be silently filtered out
     final var primaryPath = "/primary-blank/.well-known/jwks.json";
     mockJwksEndpoint(primaryPath, primaryKey);
 
-    // when // then
-    assertThatThrownBy(() -> factory.createJWSKeySelector(baseUrl() + primaryPath, List.of("")))
-        .isInstanceOf(IllegalArgumentException.class);
+    final var selector = factory.createJWSKeySelector(baseUrl() + primaryPath, List.of(""));
+
+    final var jwt = createSignedJwt(primaryKey, "primary-kid");
+
+    // when
+    final var keys = selector.selectJWSKeys(jwt.getHeader(), (SecurityContext) null);
+
+    // then — key is resolved from primary, blank URI was skipped
+    assertThat(keys).isNotEmpty();
   }
 
   @Test
