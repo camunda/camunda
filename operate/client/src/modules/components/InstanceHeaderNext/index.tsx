@@ -6,8 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {Button} from '@carbon/react';
 import {Container, Table, Th, Td} from './styled';
 import {StateIcon} from 'modules/components/StateIcon';
+import {ArrowLeft} from '@carbon/react/icons';
+import {useNavigate} from 'react-router-dom';
 
 type Column = {
   title?: string;
@@ -20,24 +23,43 @@ type Props = {
   state: React.ComponentProps<typeof StateIcon>['state'];
   headerColumns: string[];
   bodyColumns: Column[];
+  leadingContent?: React.ReactNode;
   additionalContent?: React.ReactNode;
   hideBottomBorder?: boolean;
+  showBackButton?: boolean;
 };
 
 const InstanceHeader: React.FC<Props> = ({
   state,
   headerColumns,
   bodyColumns,
+  leadingContent,
   additionalContent,
   hideBottomBorder = false,
+  showBackButton = false,
 }) => {
+  const navigate = useNavigate();
+
   return (
     <Container
       data-testid="instance-header"
       $hideBottomBorder={hideBottomBorder}
     >
+      {showBackButton && (
+        <Button
+          kind="ghost"
+          size="sm"
+          renderIcon={ArrowLeft}
+          hasIconOnly
+          iconDescription="Back"
+          tooltipPosition="bottom"
+          aria-label="Back"
+          onClick={() => navigate(-1)}
+        />
+      )}
       <StateIcon state={state} size={24} data-testid={`${state}-icon`} />
 
+      {leadingContent}
       <Table>
         <thead>
           <tr>
