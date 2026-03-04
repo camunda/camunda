@@ -131,14 +131,14 @@ export default {
 
 Each factory is a function that returns an array of ESLint flat config objects. They accept options so that project-specific values (file globs, tsconfig paths) are resolved in the consumer.
 
-| Import | Required peer dependency | Options |
-|---|---|---|
-| `baseConfig` | _(none beyond `eslint`)_ | — |
-| `typescriptConfig` | `@typescript-eslint/eslint-plugin`, `@typescript-eslint/parser`, `globals` | `browserFiles`, `testFiles`, `nodeFiles`, `tsconfigRootDir`, `tsProjects` |
-| `reactConfig` | `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh` | `browserFiles`, `testFiles` |
-| `testingConfig` | `@vitest/eslint-plugin`, `eslint-plugin-testing-library` | `testFiles` |
-| `tanstackQueryConfig` | `@tanstack/eslint-plugin-query` | `browserFiles` |
-| `licenseConfig` | `eslint-plugin-license-header` | `licenseHeaderPath` |
+| Import | Required peer dependency                                                   | Options                                                                     |
+|---|----------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| `baseConfig` | `eslint-config-prettier`, `eslint-plugin-prettier`, `prettier`             | —                                                                           |
+| `typescriptConfig` | `@typescript-eslint/eslint-plugin`, `@typescript-eslint/parser`, `globals` | `browserFiles`, `testFiles`, `nodeFiles`, `tsconfigRootDir`, `tsProjects`, `eslint-plugin-import` |
+| `reactConfig` | `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`                 | `browserFiles`, `testFiles`                                                 |
+| `testingConfig` | `@vitest/eslint-plugin`, `eslint-plugin-testing-library`                   | `testFiles`                                                                 |
+| `tanstackQueryConfig` | `@tanstack/eslint-plugin-query`                                            | `browserFiles`                                                              |
+| `licenseConfig` | `eslint-plugin-license-header`                                             | `licenseHeaderPath`                                                         |
 
 > **Note:** `baseConfig` is a plain array (not a function) and can be spread directly.
 
