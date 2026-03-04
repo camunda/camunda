@@ -39,25 +39,25 @@ implementation only needs to describe _what_ to archive and _how_ to identify th
 
 ### Core Abstractions
 
-| Class / Interface | Role |
-|---|---|
-| `BackgroundTask` | Interface for exporter background tasks; exposes `CompletionStage<Integer> execute()` and optional `getCaption()` / `close()` default methods. |
-| `ArchiverJob<B>` | Abstract base class providing the archive loop: fetch batch → move documents → record metrics. |
-| `ArchiveBatch` | Represents a single batch of document IDs to be moved, along with the finish date used to name the destination index. |
+|  Class / Interface   |                                                                      Role                                                                       |
+|----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `BackgroundTask`     | Interface for exporter background tasks; exposes `CompletionStage<Integer> execute()` and optional `getCaption()` / `close()` default methods.  |
+| `ArchiverJob<B>`     | Abstract base class providing the archive loop: fetch batch → move documents → record metrics.                                                  |
+| `ArchiveBatch`       | Represents a single batch of document IDs to be moved, along with the finish date used to name the destination index.                           |
 | `ArchiverRepository` | Thin storage-layer abstraction over Elasticsearch/OpenSearch: `moveDocuments`, `reindexDocuments`, `deleteDocuments`, `setIndexLifeCycle`, etc. |
 
 ### Existing Archiver Jobs
 
 The following archiver jobs ship out of the box:
 
-| Job | Primary index | Trigger / eligibility |
-|---|---|---|
-| `ProcessInstanceArchiverJob` | `operate-list-view` | Process instances with a `completed` timestamp (also archives all `ProcessInstanceDependant` indices). |
-| `BatchOperationArchiverJob` | `operate-batch-operation` | Finished batch operations (also archives `BatchOperationDependant` indices). |
-| `StandaloneDecisionArchiverJob` | `operate-decision-instance` | Standalone (not PI-linked) decision evaluations. |
-| `AuditLogArchiverJob` | audit log index | Audit log entries past the retention window. |
-| `UsageMetricArchiverJob` / `UsageMetricTUArchiverJob` | usage-metric indices | Metric documents past their retention window. |
-| `JobBatchMetricsArchiverJob` | job-batch-metric index | Job batch metric documents. |
+|                          Job                          |        Primary index        |                                         Trigger / eligibility                                          |
+|-------------------------------------------------------|-----------------------------|--------------------------------------------------------------------------------------------------------|
+| `ProcessInstanceArchiverJob`                          | `operate-list-view`         | Process instances with a `completed` timestamp (also archives all `ProcessInstanceDependant` indices). |
+| `BatchOperationArchiverJob`                           | `operate-batch-operation`   | Finished batch operations (also archives `BatchOperationDependant` indices).                           |
+| `StandaloneDecisionArchiverJob`                       | `operate-decision-instance` | Standalone (not PI-linked) decision evaluations.                                                       |
+| `AuditLogArchiverJob`                                 | audit log index             | Audit log entries past the retention window.                                                           |
+| `UsageMetricArchiverJob` / `UsageMetricTUArchiverJob` | usage-metric indices        | Metric documents past their retention window.                                                          |
+| `JobBatchMetricsArchiverJob`                          | job-batch-metric index      | Job batch metric documents.                                                                            |
 
 ### Process-Instance–Linked Documents
 
@@ -165,3 +165,4 @@ discussion below is drawn from the design thread for message start event subscri
 - **Start subscriptions** should be deleted when the process definition is deleted. The
   definition-deletion path (now available in the V2 REST API) should be extended to cascade the
   deletion to start-event subscriptions.
+
