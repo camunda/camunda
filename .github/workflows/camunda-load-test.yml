@@ -44,12 +44,11 @@ on:
         required: false
         type: choice
         options:
-          - custom
           - latency
           - realistic
           - typical
           - max
-        default: custom
+        default: max
       load-test-load:
         description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100. This is ignored when scenario is not "custom".'
         required: false
@@ -251,9 +250,9 @@ jobs:
         run: |
           scenario="${{ inputs.scenario }}"
 
-          # Default to custom scenario if not provided
+          # Default to max scenario if not provided
           if [[ -z "$scenario" ]]; then
-            scenario="custom"
+            scenario="max"
           fi
 
           case "$scenario" in
@@ -279,11 +278,6 @@ jobs:
               # so this override works regardless of which secondary storage type is selected.
               # Path is relative to the helm working dir: load-tests/setup/$NAMESPACE/
               echo "platform-additional-config=--set-file 'orchestration.extraConfiguration[1].content=./camunda-platform-override-values.yaml'" >> "$GITHUB_OUTPUT"
-              ;;
-            custom)
-              # Use the provided load-test-load inputs
-              echo "load-test-load=${{ inputs.load-test-load }}" >> "$GITHUB_OUTPUT"
-              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             *)
               echo "Error: Unknown scenario '$scenario'"
@@ -477,10 +471,10 @@ jobs:
                             --set global.image.pullSecrets[0].name=harbor-registry \
                             --set global.extraEnvVars[0].name=CONFIG_FORCE_app_performReadBenchmarks \
                             --set global.extraEnvVars[0].value=${{inputs.perform-read-benchmarks}}"
-          # Append load-test-load configuration if not empty
-          if [[ -n "${{ needs.calculate-scenario-config.outputs.load-test-load }}" ]]; then
-            load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
-          fi
+
+          # Append scenario load-test-load configuration and custom inputs
+          load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
+          load_test_config="$load_test_config ${{ inputs.load-test-load }}"
 
           # Resolve image registry/repository based on whether official images are used
           image_registry="${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}"
