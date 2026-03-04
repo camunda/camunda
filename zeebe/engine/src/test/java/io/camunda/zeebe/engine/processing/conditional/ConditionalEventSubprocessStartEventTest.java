@@ -51,11 +51,7 @@ public final class ConditionalEventSubprocessStartEventTest {
                     .moveToProcess(processId)
                     .eventSubProcess()
                     .startEvent(catchEventId)
-                    .condition(
-                        c ->
-                            c.condition("=x > y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                     .endEvent()
                     .subProcessDone()
                     .done())
@@ -169,7 +165,7 @@ public final class ConditionalEventSubprocessStartEventTest {
                 .withBpmnProcessId(processId)
                 .withCatchEventId(catchEventId)
                 .withCondition("=x + y > 10")
-                .withVariableNames(List.of())
+                .withVariableNames(List.of("x", "y"))
                 .withVariableEvents(List.of())
                 .isInterrupting(true)
                 .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
@@ -240,7 +236,7 @@ public final class ConditionalEventSubprocessStartEventTest {
                 .withBpmnProcessId(processId)
                 .withCatchEventId(catchEventId)
                 .withCondition("=x > y")
-                .withVariableNames(List.of())
+                .withVariableNames(List.of("x", "y"))
                 .withVariableEvents(List.of())
                 .isInterrupting(true)
                 .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
@@ -271,11 +267,7 @@ public final class ConditionalEventSubprocessStartEventTest {
                     .eventSubProcess()
                     .startEvent(catchEventId)
                     .interrupting(false)
-                    .condition(
-                        c ->
-                            c.condition("=x > y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                     .endEvent()
                     .subProcessDone()
                     .done())
@@ -361,11 +353,7 @@ public final class ConditionalEventSubprocessStartEventTest {
                     .moveToProcess(processId)
                     .eventSubProcess()
                     .startEvent(catchEventId)
-                    .condition(
-                        c ->
-                            c.condition("=x > y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                     .endEvent()
                     .subProcessDone()
                     .done())
@@ -443,22 +431,14 @@ public final class ConditionalEventSubprocessStartEventTest {
                     .eventSubProcess()
                     .startEvent(catchEventId1)
                     .interrupting(false)
-                    .condition(
-                        c ->
-                            c.condition("=x > y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                     .endEvent(catchEventEndId1)
                     .subProcessDone()
                     .moveToProcess(processId)
                     .eventSubProcess()
                     .startEvent(catchEventId2)
                     .interrupting(false)
-                    .condition(
-                        c ->
-                            c.condition("=x != y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x != y").zeebeVariableEvents("create, update"))
                     .endEvent(catchEventEndId2)
                     .subProcessDone()
                     .done())
@@ -546,11 +526,7 @@ public final class ConditionalEventSubprocessStartEventTest {
                 .moveToProcess(processId)
                 .eventSubProcess()
                 .startEvent(catchEventId)
-                .condition(
-                    c ->
-                        c.condition("=x > y")
-                            .zeebeVariableNames("x, y")
-                            .zeebeVariableEvents("create, update"))
+                .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                 .endEvent()
                 .subProcessDone()
                 .done())
@@ -614,11 +590,7 @@ public final class ConditionalEventSubprocessStartEventTest {
                 .moveToProcess(processId)
                 .eventSubProcess()
                 .startEvent(catchEventId)
-                .condition(
-                    c ->
-                        c.condition("=x > y")
-                            .zeebeVariableNames("x, y")
-                            .zeebeVariableEvents("create, update"))
+                .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                 .endEvent()
                 .subProcessDone()
                 .done())
@@ -679,11 +651,7 @@ public final class ConditionalEventSubprocessStartEventTest {
                 .moveToProcess(processId)
                 .eventSubProcess()
                 .startEvent("catchEvent")
-                .condition(
-                    c ->
-                        c.condition("=x > y")
-                            .zeebeVariableNames("x, y")
-                            .zeebeVariableEvents("create, update"))
+                .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                 .endEvent()
                 .subProcessDone()
                 .done())
@@ -727,11 +695,7 @@ public final class ConditionalEventSubprocessStartEventTest {
                 .moveToProcess(processId)
                 .eventSubProcess()
                 .startEvent("catchEvent")
-                .condition(
-                    c ->
-                        c.condition("=x > y")
-                            .zeebeVariableNames("x, y")
-                            .zeebeVariableEvents("create, update"))
+                .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                 .endEvent()
                 .subProcessDone()
                 .done())
@@ -771,11 +735,7 @@ public final class ConditionalEventSubprocessStartEventTest {
                 .moveToProcess(processId)
                 .eventSubProcess()
                 .startEvent("catchEvent")
-                .condition(
-                    c ->
-                        c.condition("=x")
-                            .zeebeVariableNames("x")
-                            .zeebeVariableEvents("create, update"))
+                .condition(c -> c.condition("=x").zeebeVariableEvents("create, update"))
                 .endEvent()
                 .subProcessDone()
                 .done())
@@ -860,11 +820,7 @@ public final class ConditionalEventSubprocessStartEventTest {
                     .moveToProcess(processId)
                     .eventSubProcess()
                     .startEvent(catchEventId)
-                    .condition(
-                        c ->
-                            c.condition("=x > y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                     .endEvent()
                     .subProcessDone()
                     .done())

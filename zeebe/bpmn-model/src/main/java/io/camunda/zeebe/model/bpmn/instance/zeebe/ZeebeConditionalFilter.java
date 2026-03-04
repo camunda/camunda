@@ -19,10 +19,6 @@ import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 
 public interface ZeebeConditionalFilter extends BpmnModelElementInstance {
 
-  String getVariableNames();
-
-  void setVariableNames(String variableNames);
-
   String getVariableEvents();
 
   void setVariableEvents(String variableEvents);

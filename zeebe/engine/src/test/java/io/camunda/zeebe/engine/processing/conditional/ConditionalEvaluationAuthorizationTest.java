@@ -70,7 +70,7 @@ public class ConditionalEvaluationAuthorizationTest {
             "process.bpmn",
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                .condition(c -> c.condition("=x > y"))
                 .endEvent()
                 .done())
         .deploy(DEFAULT_USER.getUsername());
@@ -191,7 +191,7 @@ public class ConditionalEvaluationAuthorizationTest {
             "custom-tenant-process.bpmn",
             Bpmn.createExecutableProcess(customProcessId)
                 .startEvent()
-                .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                .condition(c -> c.condition("=x > y"))
                 .endEvent()
                 .done())
         .withTenantId(customTenant)
@@ -272,7 +272,7 @@ public class ConditionalEvaluationAuthorizationTest {
             "second-process.bpmn",
             Bpmn.createExecutableProcess(secondProcessId)
                 .startEvent()
-                .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                .condition(c -> c.condition("=x > y"))
                 .endEvent()
                 .done())
         .deploy(DEFAULT_USER.getUsername());
@@ -320,7 +320,7 @@ public class ConditionalEvaluationAuthorizationTest {
             "tenant-process.bpmn",
             Bpmn.createExecutableProcess("tenant-process")
                 .startEvent()
-                .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                .condition(c -> c.condition("=x > y"))
                 .endEvent()
                 .done())
         .withTenantId(tenant)

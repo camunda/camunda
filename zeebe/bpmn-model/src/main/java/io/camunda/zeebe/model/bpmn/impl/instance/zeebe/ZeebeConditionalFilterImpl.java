@@ -27,21 +27,10 @@ import org.camunda.bpm.model.xml.type.attribute.Attribute;
 public class ZeebeConditionalFilterImpl extends BpmnModelElementInstanceImpl
     implements ZeebeConditionalFilter {
 
-  protected static Attribute<String> variableNamesAttribute;
   protected static Attribute<String> variableEventsAttribute;
 
   public ZeebeConditionalFilterImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
-  }
-
-  @Override
-  public String getVariableNames() {
-    return variableNamesAttribute.getValue(this);
-  }
-
-  @Override
-  public void setVariableNames(final String variableNames) {
-    variableNamesAttribute.setValue(this, variableNames);
   }
 
   @Override
@@ -60,12 +49,6 @@ public class ZeebeConditionalFilterImpl extends BpmnModelElementInstanceImpl
             .defineType(ZeebeConditionalFilter.class, ZeebeConstants.ELEMENT_CONDITIONAL_FILTER)
             .namespaceUri(BpmnModelConstants.ZEEBE_NS)
             .instanceProvider(ZeebeConditionalFilterImpl::new);
-
-    variableNamesAttribute =
-        typeBuilder
-            .stringAttribute(ZeebeConstants.ATTRIBUTE_VARIABLE_NAMES)
-            .namespace(BpmnModelConstants.ZEEBE_NS)
-            .build();
 
     variableEventsAttribute =
         typeBuilder

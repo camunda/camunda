@@ -31,9 +31,13 @@ public class ConditionalTransformer implements ModelElementTransformer<Condition
 
     transformConditionExpression(element, expressionLanguage, executableElement);
 
+    if (executableElement.getConditionExpression() != null) {
+      executableElement.setVariableNames(
+          executableElement.getConditionExpression().getVariableNames().stream().toList());
+    }
+
     final var conditionalFilter = element.getSingleExtensionElement(ZeebeConditionalFilter.class);
     if (conditionalFilter != null) {
-      transformVariableNames(conditionalFilter, executableElement);
       transformVariableEvents(conditionalFilter, executableElement);
     }
 
@@ -48,17 +52,6 @@ public class ConditionalTransformer implements ModelElementTransformer<Condition
       final var events = variableEvents.split(",");
       executableElement.setVariableEvents(
           Arrays.stream(events).map(String::trim).filter(s -> !s.isEmpty()).toList());
-    }
-  }
-
-  private static void transformVariableNames(
-      final ZeebeConditionalFilter conditionalFilter,
-      final ExecutableConditional executableElement) {
-    final var variableNames = conditionalFilter.getVariableNames();
-    if (variableNames != null && !variableNames.isBlank()) {
-      final var names = variableNames.split(",");
-      executableElement.setVariableNames(
-          Arrays.stream(names).map(String::trim).filter(s -> !s.isEmpty()).toList());
     }
   }
 
