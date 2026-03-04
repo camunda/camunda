@@ -82,10 +82,10 @@ const SourceDiagram: React.FC = observer(() => {
             selectableFlowNodes={[
               ...migrationSourceData.selectableFlowNodes,
               ...migrationSourceData.selectableSequenceFlows,
-            ].map((flowNode) => flowNode.id)}
+            ].map((element) => element.id)}
             selectedFlowNodeIds={selectedSourceElementIds}
-            onFlowNodeSelection={(flowNodeId) => {
-              processInstanceMigrationStore.selectSourceElement(flowNodeId);
+            onFlowNodeSelection={(elementId) => {
+              processInstanceMigrationStore.selectSourceElement(elementId);
             }}
             overlaysData={
               processInstanceMigrationStore.isSummaryStep ? overlayData : []

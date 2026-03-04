@@ -79,7 +79,7 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
                 id: currentId,
                 name: currentName,
                 value: currentValue,
-                selectedFlowNodeName: selectedElementName,
+                selectedElementName,
               });
             }}
           />

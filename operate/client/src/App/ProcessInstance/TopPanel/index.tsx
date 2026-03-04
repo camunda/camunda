@@ -97,9 +97,9 @@ const TopPanel: React.FC = observer(() => {
   } = modificationsStore.state;
   const [isInTransition, setIsInTransition] = useState(false);
   const {data: statistics} = useElementStatistics();
-  const {data: selectableFlowNodes} = useSelectableElements();
-  const {data: executedFlowNodes} = useExecutedElements();
-  const {data: totalRunningInstancesByFlowNode} =
+  const {data: selectableElements} = useSelectableElements();
+  const {data: executedElements} = useExecutedElements();
+  const {data: totalRunningInstancesByElement} =
     useTotalRunningInstancesByElement();
   const {data: businessObjects} = useBusinessObjects();
   const {data: totalMoveOperationRunningInstances} =
@@ -143,7 +143,7 @@ const TopPanel: React.FC = observer(() => {
     };
   }, [processInstanceId]);
 
-  const flowNodeStateOverlays = useMemo(() => {
+  const elementStateOverlays = useMemo(() => {
     const elementIdsWithIncidents = statistics
       ?.filter(({elementState}) => elementState === 'incidents')
       ?.map((element) => element.id);
@@ -190,7 +190,7 @@ const TopPanel: React.FC = observer(() => {
       .filter(isCompensationAssociation)
       .filter(({targetRef}) => {
         // check if the target element for the association was executed
-        return executedFlowNodes?.find(({elementId, completed}) => {
+        return executedElements?.find(({elementId, completed}) => {
           return targetRef?.id === elementId && completed > 0;
         });
       })
@@ -200,17 +200,13 @@ const TopPanel: React.FC = observer(() => {
       ...(processedSequenceFlowsFromHook || []),
       ...compensationAssociationIds,
     ];
-  }, [
-    processedSequenceFlowsFromHook,
-    processDefinitionData,
-    executedFlowNodes,
-  ]);
+  }, [processedSequenceFlowsFromHook, processDefinitionData, executedElements]);
 
   const highlightedSequenceFlowIds = useMemo(() => {
-    return executedFlowNodes?.map(({elementId}) => elementId);
-  }, [executedFlowNodes]);
+    return executedElements?.map(({elementId}) => elementId);
+  }, [executedElements]);
 
-  const modificationBadgesPerFlowNode = computed(() =>
+  const modificationBadgesPerElement = computed(() =>
     Object.entries(modificationsByElement).reduce<
       {
         elementId: string;
@@ -327,7 +323,7 @@ const TopPanel: React.FC = observer(() => {
                 selectableFlowNodes={
                   isModificationModeEnabled
                     ? modifiableElements
-                    : selectableFlowNodes
+                    : selectableElements
                 }
                 selectedFlowNodeIds={selectedElementIds}
                 onRootChange={(rootElementId, getSelectionRootId) => {
@@ -339,13 +335,13 @@ const TopPanel: React.FC = observer(() => {
                     clearSelection();
                   }
                 }}
-                onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
+                onFlowNodeSelection={(elementId, isMultiInstance) => {
                   if (modificationsStore.state.status === 'moving-token') {
                     const ancestorScopeType = getAncestorScopeType(
                       businessObjects,
                       sourceElementIdForMoveOperation ?? '',
-                      flowNodeId ?? '',
-                      totalRunningInstancesByFlowNode,
+                      elementId ?? '',
+                      totalRunningInstancesByElement,
                     );
 
                     clearSelection();
@@ -354,14 +350,14 @@ const TopPanel: React.FC = observer(() => {
                       visibleAffectedTokenCount,
                       businessObjects,
                       processInstance?.processDefinitionId,
-                      flowNodeId,
+                      elementId,
                       ancestorScopeType,
                     );
                   } else {
                     if (modificationsStore.state.status !== 'adding-token') {
-                      if (flowNodeId !== undefined) {
+                      if (elementId !== undefined) {
                         selectElement({
-                          elementId: flowNodeId,
+                          elementId: elementId,
                           isMultiInstanceBody: isMultiInstance,
                         });
                       } else {
@@ -373,10 +369,10 @@ const TopPanel: React.FC = observer(() => {
                 overlaysData={
                   isModificationModeEnabled
                     ? [
-                        ...(flowNodeStateOverlays ?? []),
-                        ...modificationBadgesPerFlowNode.get(),
+                        ...(elementStateOverlays ?? []),
+                        ...modificationBadgesPerElement.get(),
                       ]
-                    : flowNodeStateOverlays
+                    : elementStateOverlays
                 }
                 selectedFlowNodeOverlay={
                   isModificationModeEnabled ? (

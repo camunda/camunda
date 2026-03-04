@@ -27,8 +27,8 @@ const INITIAL_ADD_MODIFICATION: ElementModification = {
   payload: {
     affectedTokenCount: 1,
     element: {
-      id: 'flow_node_0',
-      name: 'flow node 0',
+      id: 'element_0',
+      name: 'element 0',
     },
     operation: 'ADD_TOKEN',
     parentScopeIds: {},
@@ -89,7 +89,7 @@ const TestSelectionControls: React.FC = () => {
         type="button"
         onClick={() =>
           selectElementInstance({
-            elementId: 'different_flow_node',
+            elementId: 'different_element',
             elementInstanceKey: 'different_instance_id',
           })
         }
@@ -196,7 +196,7 @@ describe('Undo variable modifications from different scope', () => {
 
     mockFetchElementInstance('different_instance_id').withSuccess({
       elementInstanceKey: 'different_instance_id',
-      elementId: 'different_flow_node',
+      elementId: 'different_element',
       elementName: 'Different Flow Node',
       type: 'SERVICE_TASK',
       state: 'ACTIVE',
@@ -320,7 +320,7 @@ describe('Undo variable modifications from different scope', () => {
 
     mockFetchElementInstance('different_instance_id').withSuccess({
       elementInstanceKey: 'different_instance_id',
-      elementId: 'different_flow_node',
+      elementId: 'different_element',
       elementName: 'Different Flow Node',
       type: 'SERVICE_TASK',
       state: 'ACTIVE',

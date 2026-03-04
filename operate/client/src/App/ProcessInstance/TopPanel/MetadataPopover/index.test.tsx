@@ -8,10 +8,10 @@
 
 import {screen} from 'modules/testing-library';
 import {
-  CALL_ACTIVITY_FLOW_NODE_ID,
+  CALL_ACTIVITY_ELEMENT_ID,
   PROCESS_INSTANCE_ID,
-  FLOW_NODE_ID,
-  USER_TASK_FLOW_NODE_ID,
+  ELEMENT_ID,
+  USER_TASK_ELEMENT_ID,
   jobMetadata,
   calledDecisionInstanceMetadata,
 } from 'modules/mocks/metadata';
@@ -120,21 +120,21 @@ describe('MetadataPopover', () => {
     mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
-          elementId: FLOW_NODE_ID,
+          elementId: ELEMENT_ID,
           active: 1,
           completed: 0,
           canceled: 0,
           incidents: 0,
         },
         {
-          elementId: CALL_ACTIVITY_FLOW_NODE_ID,
+          elementId: CALL_ACTIVITY_ELEMENT_ID,
           active: 1,
           completed: 0,
           canceled: 0,
           incidents: 0,
         },
         {
-          elementId: USER_TASK_FLOW_NODE_ID,
+          elementId: USER_TASK_ELEMENT_ID,
           active: 1,
           completed: 0,
           canceled: 0,
@@ -164,7 +164,7 @@ describe('MetadataPopover', () => {
 
   it('should not show unrelated data', async () => {
     renderPopover({
-      elementId: FLOW_NODE_ID,
+      elementId: ELEMENT_ID,
       elementInstanceKey: '2251799813699889',
     });
 
@@ -205,7 +205,7 @@ describe('MetadataPopover', () => {
     );
 
     renderPopover({
-      elementId: FLOW_NODE_ID,
+      elementId: ELEMENT_ID,
       elementInstanceKey: '2251799813699889',
     });
 
@@ -242,7 +242,7 @@ describe('MetadataPopover', () => {
     mockSearchJobs().withSuccess(searchResult([jobMetadata]));
 
     const {user} = renderPopover({
-      elementId: CALL_ACTIVITY_FLOW_NODE_ID,
+      elementId: CALL_ACTIVITY_ELEMENT_ID,
       elementInstanceKey: '2251799813699889',
     });
 
@@ -310,7 +310,7 @@ describe('MetadataPopover', () => {
     mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
-          elementId: FLOW_NODE_ID,
+          elementId: ELEMENT_ID,
           active: 7,
           completed: 0,
           canceled: 0,
@@ -325,7 +325,7 @@ describe('MetadataPopover', () => {
           processDefinitionId: 'invoice',
           errorType: 'CALLED_ELEMENT_ERROR',
           errorMessage: 'Multi-instance incident 1',
-          elementId: FLOW_NODE_ID,
+          elementId: ELEMENT_ID,
           creationTime: '2022-02-03T16:44:06.981+0000',
           state: 'PENDING',
           tenantId: '<default>',
@@ -340,7 +340,7 @@ describe('MetadataPopover', () => {
           processDefinitionId: 'invoice',
           errorType: 'JOB_NO_RETRIES',
           errorMessage: 'Multi-instance incident 2',
-          elementId: FLOW_NODE_ID,
+          elementId: ELEMENT_ID,
           creationTime: '2022-02-03T16:45:06.981+0000',
           state: 'PENDING',
           tenantId: '<default>',
@@ -355,7 +355,7 @@ describe('MetadataPopover', () => {
           processDefinitionId: 'invoice',
           errorType: 'IO_MAPPING_ERROR',
           errorMessage: 'Multi-instance incident 3',
-          elementId: FLOW_NODE_ID,
+          elementId: ELEMENT_ID,
           creationTime: '2022-02-03T16:46:06.981+0000',
           state: 'PENDING',
           tenantId: '<default>',
@@ -370,7 +370,7 @@ describe('MetadataPopover', () => {
     );
 
     renderPopover({
-      elementId: FLOW_NODE_ID,
+      elementId: ELEMENT_ID,
     });
 
     await waitFor(() => {
@@ -395,7 +395,7 @@ describe('MetadataPopover', () => {
 
   it('should not render called instances for multi instance call activities', async () => {
     renderPopover({
-      elementId: CALL_ACTIVITY_FLOW_NODE_ID,
+      elementId: CALL_ACTIVITY_ELEMENT_ID,
     });
 
     expect(
@@ -419,7 +419,7 @@ describe('MetadataPopover', () => {
       type: 'USER_TASK',
     });
     renderPopover({
-      elementId: USER_TASK_FLOW_NODE_ID,
+      elementId: USER_TASK_ELEMENT_ID,
       elementInstanceKey: '2251799813699889',
     });
 
@@ -432,7 +432,7 @@ describe('MetadataPopover', () => {
     mockSearchJobs().withSuccess(searchResult([jobMetadata]));
 
     renderPopover({
-      elementId: USER_TASK_FLOW_NODE_ID,
+      elementId: USER_TASK_ELEMENT_ID,
       elementInstanceKey: '2251799813699889',
     });
 
@@ -446,7 +446,7 @@ describe('MetadataPopover', () => {
     );
 
     renderPopover({
-      elementId: FLOW_NODE_ID,
+      elementId: ELEMENT_ID,
       elementInstanceKey: '2251799813699889',
     });
 
@@ -460,7 +460,7 @@ describe('MetadataPopover', () => {
     mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
-          elementId: FLOW_NODE_ID,
+          elementId: ELEMENT_ID,
           active: 1,
           completed: 0,
           canceled: 0,
@@ -473,7 +473,7 @@ describe('MetadataPopover', () => {
     );
 
     renderPopover({
-      elementId: FLOW_NODE_ID,
+      elementId: ELEMENT_ID,
     });
 
     expect(
@@ -486,7 +486,7 @@ describe('MetadataPopover', () => {
     mockSearchElementInstances().withNetworkError();
 
     renderPopover({
-      elementId: FLOW_NODE_ID,
+      elementId: ELEMENT_ID,
     });
 
     expect(
@@ -498,7 +498,7 @@ describe('MetadataPopover', () => {
     mockFetchElementInstance('invalid-key').withNetworkError();
 
     renderPopover({
-      elementId: FLOW_NODE_ID,
+      elementId: ELEMENT_ID,
       elementInstanceKey: 'invalid-key',
     });
 
@@ -546,7 +546,7 @@ describe('MetadataPopover', () => {
     });
 
     renderPopover({
-      elementId: FLOW_NODE_ID,
+      elementId: ELEMENT_ID,
       elementInstanceKey: '2251799813699889',
     });
 
@@ -570,7 +570,7 @@ describe('MetadataPopover', () => {
     mockSearchDecisionInstances().withSuccess(searchResult([]));
 
     renderPopover({
-      elementId: FLOW_NODE_ID,
+      elementId: ELEMENT_ID,
       elementInstanceKey: '2251799813699889',
     });
 
@@ -594,7 +594,7 @@ describe('MetadataPopover', () => {
     mockSearchDecisionInstances().withNetworkError();
 
     renderPopover({
-      elementId: FLOW_NODE_ID,
+      elementId: ELEMENT_ID,
       elementInstanceKey: '2251799813699889',
     });
 
@@ -614,7 +614,7 @@ describe('MetadataPopover', () => {
     mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
-          elementId: FLOW_NODE_ID,
+          elementId: ELEMENT_ID,
           active: 3,
           completed: 0,
           canceled: 0,
@@ -624,7 +624,7 @@ describe('MetadataPopover', () => {
     });
 
     renderPopover({
-      elementId: FLOW_NODE_ID,
+      elementId: ELEMENT_ID,
       isMultiInstanceBody: 'true',
     });
 

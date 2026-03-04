@@ -42,12 +42,12 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
       processDefinitionKey: process?.processDefinitionKey,
     });
 
-    const sourceFlowNodeName = getElementName({
+    const sourceElementName = getElementName({
       businessObjects: processDefinitionData?.diagramModel.elementsById,
       elementId: sourceElementId,
     });
 
-    const targetFlowNodeName = getElementName({
+    const targetElementName = getElementName({
       businessObjects: processDefinitionData?.diagramModel.elementsById,
       elementId: selectedTargetElementId ?? undefined,
     });
@@ -86,7 +86,7 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
       {
         id: 'batchMove',
         operation: 'Batch move',
-        element: `${sourceFlowNodeName} --> ${targetFlowNodeName}`,
+        element: `${sourceElementName} --> ${targetElementName}`,
         affectedInstances: instancesCount,
       },
     ];
