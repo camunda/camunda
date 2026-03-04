@@ -174,6 +174,7 @@ test.describe('process page', () => {
     await expect(page.getByText('EUR 231')).toBeVisible();
     await expect(page.getByText('EUR 264')).toBeVisible();
     await expect(page.getByText('Total: EUR 544.5')).toBeVisible();
+    await sleep(200);
     await tasklistProcessesPageV1.clickStartProcessSubButton();
 
     await tasklistHeaderV1.clickTasksTab();
