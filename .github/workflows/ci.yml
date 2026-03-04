@@ -242,7 +242,7 @@ jobs:
           POM_PATH: ${{ matrix.project.path}}/pom.xml
         run: |
           ./mvnw com.github.ferstl:depgraph-maven-plugin:4.0.1:aggregate \
-            -f "$POM_PATH"
+            -f "$POM_PATH" \
             -DgraphFormat=text \
             -DmergeScopes \
             -DreduceEdges=false \
