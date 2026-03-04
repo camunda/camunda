@@ -124,7 +124,7 @@ public final class DbMessageSubscriptionState
 
     messageNameAndCorrelationKeyColumnFamily.whileEqualPrefix(
         tenantAwareNameAndCorrelationKey,
-        (compositeKey, nil) -> {
+        compositeKey -> {
           return visitMessageSubscription(elementKeyAndMessageName, visitor);
         });
   }

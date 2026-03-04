@@ -227,7 +227,7 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void cleanupTimeoutsWithoutJobs() {
     deadlinesColumnFamily.whileTrue(
-        (key, value) -> {
+        key -> {
           final var jobKey = key.second().inner();
           final var deadline = key.first().getValue();
           final var job = jobsColumnFamily.get(jobKey);
@@ -241,7 +241,7 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void cleanupBackoffsWithoutJobs() {
     backoffColumnFamily.whileTrue(
-        (key, value) -> {
+        key -> {
           final var jobKey = key.second().inner();
           final var backoff = key.first().getValue();
           final var job = jobsColumnFamily.get(jobKey);
@@ -279,8 +279,8 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void restoreBackoff() {
     final var jobsWithBackoff = new LongHashSet();
-    backoffColumnFamily.forEach(
-        (key, value) -> {
+    backoffColumnFamily.forEachKey(
+        (key) -> {
           final var jobRecord = jobsColumnFamily.get(jobKey);
           if (jobRecord == null
               || jobRecord.getRecord().getRetries() <= 0
@@ -359,7 +359,7 @@ public final class DbJobState implements JobState, MutableJobState {
     final var lastVisitedIndex = new AtomicReference<DeadlineIndex>();
     deadlinesColumnFamily.whileTrue(
         startAtKey,
-        (key, value) -> {
+        key -> {
           final var deadline = key.first().getValue();
           final var isDue = deadline < executionTimestamp;
           if (!isDue) {
@@ -410,7 +410,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
     activatableColumnFamily.whileEqualPrefix(
         jobTypeKey,
-        ((tenantAwareCompositeKey, zbNil) -> {
+        tenantAwareCompositeKey -> {
           final DbLong jobKey = tenantAwareCompositeKey.wrappedKey().second().inner();
           final String tenantId = tenantAwareCompositeKey.tenantKey().toString();
 
@@ -419,7 +419,7 @@ public final class DbJobState implements JobState, MutableJobState {
           }
           // we want to continue with the iteration
           return true;
-        }));
+        });
   }
 
   @Override
@@ -449,7 +449,7 @@ public final class DbJobState implements JobState, MutableJobState {
   public long findBackedOffJobs(final long timestamp, final BiPredicate<Long, JobRecord> callback) {
     nextBackOffDueDate = -1L;
     backoffColumnFamily.whileTrue(
-        (key, value) -> {
+        key -> {
           final long deadline = key.first().getValue();
           boolean consumed = false;
           if (deadline <= timestamp) {
