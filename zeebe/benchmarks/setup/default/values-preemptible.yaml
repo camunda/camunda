@@ -2,7 +2,7 @@
 zeebe:
   # Require n2-standard-4 to ensure the broker is the only application running on its node
   nodeSelector:
-    cloud.google.com/gke-nodepool: n2-standard-4
+    component: benchmark-n2-standard-4
 
   tolerations:
   - key: nodepool
