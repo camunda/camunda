@@ -30,22 +30,18 @@ test.describe('process instance modification', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
-        processInstanceDetailV2: eventBasedGatewayProcessInstance.detailV2,
         callHierarchy: eventBasedGatewayProcessInstance.callHierarchy,
         elementInstances: eventBasedGatewayProcessInstance.elementInstances,
         statistics: eventBasedGatewayProcessInstance.statistics,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
-        sequenceFlowsV2: eventBasedGatewayProcessInstance.sequenceFlowsV2,
         variables: [],
         incidents: eventBasedGatewayProcessInstance.incidents,
-        incidentsV2: eventBasedGatewayProcessInstance.incidentsV2,
         xml: eventBasedGatewayProcessInstance.xml,
-        metaData: eventBasedGatewayProcessInstance.metaData,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: '2251799813888430',
+      key: '2251799813888430',
     });
 
     const modifyInstanceButton = await page.getByRole('button', {
@@ -134,22 +130,18 @@ test.describe('process instance modification', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
-        processInstanceDetailV2: eventBasedGatewayProcessInstance.detailV2,
         callHierarchy: eventBasedGatewayProcessInstance.callHierarchy,
         elementInstances: eventBasedGatewayProcessInstance.elementInstances,
         statistics: eventBasedGatewayProcessInstance.statistics,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
-        sequenceFlowsV2: eventBasedGatewayProcessInstance.sequenceFlowsV2,
         variables: [],
         incidents: eventBasedGatewayProcessInstance.incidents,
-        incidentsV2: eventBasedGatewayProcessInstance.incidentsV2,
         xml: eventBasedGatewayProcessInstance.xml,
-        metaData: eventBasedGatewayProcessInstance.metaData,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: '2251799813888430',
+      key: '2251799813888430',
     });
 
     await page
@@ -254,12 +246,10 @@ test.describe('process instance modification', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
-        processInstanceDetailV2: eventBasedGatewayProcessInstance.detailV2,
         callHierarchy: eventBasedGatewayProcessInstance.callHierarchy,
         elementInstances: eventBasedGatewayProcessInstance.elementInstances,
         statistics: eventBasedGatewayProcessInstance.statistics,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
-        sequenceFlowsV2: eventBasedGatewayProcessInstance.sequenceFlowsV2,
         variables: [
           {
             variableKey: '2251799813888430-test',
@@ -273,9 +263,7 @@ test.describe('process instance modification', () => {
           },
         ],
         incidents: eventBasedGatewayProcessInstance.incidents,
-        incidentsV2: eventBasedGatewayProcessInstance.incidentsV2,
         xml: eventBasedGatewayProcessInstance.xml,
-        metaData: eventBasedGatewayProcessInstance.metaData,
       }),
     );
 
@@ -400,22 +388,18 @@ test.describe('process instance modification', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
-        processInstanceDetailV2: eventBasedGatewayProcessInstance.detailV2,
         callHierarchy: eventBasedGatewayProcessInstance.callHierarchy,
         elementInstances: eventBasedGatewayProcessInstance.elementInstances,
         statistics: eventBasedGatewayProcessInstance.statistics,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
-        sequenceFlowsV2: eventBasedGatewayProcessInstance.sequenceFlowsV2,
         variables: [],
         incidents: eventBasedGatewayProcessInstance.incidents,
-        incidentsV2: eventBasedGatewayProcessInstance.incidentsV2,
         xml: eventBasedGatewayProcessInstance.xml,
-        metaData: eventBasedGatewayProcessInstance.metaData,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: '2251799813888430',
+      key: '2251799813888430',
     });
 
     await page

@@ -10,23 +10,6 @@ import type {InstanceMock} from '.';
 
 const eventBasedGatewayProcessInstance: InstanceMock = {
   detail: {
-    id: '2251799813888430',
-    processId: '2251799813687567',
-    processName: 'Event based gateway with timer start',
-    processVersion: 2,
-    startDate: '2023-09-29T12:36:31.762+0000',
-    endDate: null,
-    state: 'INCIDENT',
-    bpmnProcessId: 'eventBasedGatewayProcess',
-    hasActiveOperation: false,
-    operations: [],
-    parentInstanceId: null,
-    rootInstanceId: null,
-    callHierarchy: [],
-    tenantId: '<default>',
-    sortValues: [''],
-  },
-  detailV2: {
     processInstanceKey: '2251799813888430',
     processDefinitionKey: '2251799813687567',
     processDefinitionName: 'Event based gateway with timer start',
@@ -413,17 +396,7 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
       rootProcessInstanceKey: null,
     },
   ],
-  sequenceFlows: [
-    {
-      processInstanceId: '2251799813888430',
-      activityId: 'SequenceFlow_027co6p',
-    },
-    {
-      processInstanceId: '2251799813888430',
-      activityId: 'SequenceFlow_0lplwad',
-    },
-  ],
-  sequenceFlowsV2: {
+  sequenceFlows: {
     items: [
       {
         processInstanceKey: '2251799813888430',
@@ -476,44 +449,6 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
     ],
   },
   incidents: {
-    count: 1,
-    incidents: [
-      {
-        id: '2251799813901252',
-        errorType: {
-          id: 'EXTRACT_VALUE_ERROR',
-          name: 'Extract value error',
-        },
-        errorMessage:
-          "failed to evaluate expression 'clientId': no variable found for name 'clientId'",
-        flowNodeId: 'messageTask',
-        flowNodeInstanceId: '2251799813901251',
-        jobId: null,
-        creationTime: '2023-09-29T12:37:31.772+0000',
-        hasActiveOperation: false,
-        lastOperation: null,
-        rootCauseInstance: {
-          instanceId: '2251799813888430',
-          processDefinitionId: '2251799813687567',
-          processDefinitionName: 'Event based gateway with timer start',
-        },
-      },
-    ],
-    errorTypes: [
-      {
-        id: 'EXTRACT_VALUE_ERROR',
-        name: 'Extract value error',
-        count: 1,
-      },
-    ],
-    flowNodes: [
-      {
-        id: 'messageTask',
-        count: 1,
-      },
-    ],
-  },
-  incidentsV2: {
     page: {
       totalItems: 1,
       startCursor: null,
@@ -538,52 +473,6 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
         jobKey: '0',
       },
     ],
-  },
-  metaData: {
-    flowNodeInstanceId: '2251799813899087',
-    flowNodeId: null,
-    flowNodeType: null,
-    instanceCount: null,
-    instanceMetadata: {
-      flowNodeId: 'messageTask',
-      flowNodeInstanceId: '2251799813899087',
-      flowNodeType: 'SERVICE_TASK',
-      startDate: '2023-09-29T12:37:21.753+0000',
-      endDate: null,
-      calledProcessInstanceId: null,
-      calledProcessDefinitionName: null,
-      calledDecisionInstanceId: null,
-      calledDecisionDefinitionName: null,
-      eventId: '2251799813886105_2251799813899087',
-      jobType: null,
-      jobRetries: null,
-      jobWorker: null,
-      jobDeadline: null,
-      jobCustomHeaders: null,
-      jobId: '',
-    },
-    incidentCount: 1,
-    incident: {
-      id: '2251799813899088',
-      errorType: {
-        id: 'EXTRACT_VALUE_ERROR',
-        name: 'Extract value error',
-      },
-      errorMessage:
-        "failed to evaluate expression 'clientId': no variable found for name 'clientId'",
-      flowNodeId: 'messageTask',
-      flowNodeInstanceId: '2251799813899087',
-      jobId: null,
-      creationTime: '2023-09-29T12:37:21.753+0000',
-      hasActiveOperation: false,
-      lastOperation: null,
-      rootCauseInstance: {
-        instanceId: '2251799813886105',
-        processDefinitionId: '2251799813687567',
-        processDefinitionName: 'Event based gateway with timer start',
-      },
-      rootCauseDecision: null,
-    },
   },
 };
 

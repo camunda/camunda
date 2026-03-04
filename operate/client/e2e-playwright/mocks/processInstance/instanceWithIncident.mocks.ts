@@ -10,41 +10,6 @@ import type {InstanceMock} from '.';
 
 const instanceWithIncident: InstanceMock = {
   detail: {
-    id: '6755399441062827',
-    processId: '2251799813687188',
-    processName: 'Order process',
-    processVersion: 2,
-    startDate: '2023-08-14T05:47:07.376+0000',
-    endDate: null,
-    state: 'INCIDENT',
-    bpmnProcessId: 'orderProcess',
-    hasActiveOperation: false,
-    operations: [
-      {
-        id: '87ced7c0-cc22-40c5-bbe3-eafafc111520',
-        batchOperationId: 'bf547ac3-9a35-45b9-ab06-b80b43785154',
-        type: 'ADD_VARIABLE',
-        state: 'COMPLETED',
-        errorMessage: null,
-        completedDate: null,
-      },
-    ],
-    parentInstanceId: '6755399441062817',
-    rootInstanceId: '6755399441062811',
-    callHierarchy: [
-      {
-        instanceId: '6755399441062811',
-        processDefinitionName: 'Call Activity Process',
-      },
-      {
-        instanceId: '6755399441062817',
-        processDefinitionName: 'called-process',
-      },
-    ],
-    sortValues: [],
-    tenantId: '',
-  },
-  detailV2: {
     processInstanceKey: '6755399441062827',
     processDefinitionKey: '2251799813687188',
     processDefinitionName: 'Order process',
@@ -361,13 +326,7 @@ const instanceWithIncident: InstanceMock = {
       rootProcessInstanceKey: null,
     },
   ],
-  sequenceFlows: [
-    {
-      processInstanceId: '6755399441062827',
-      activityId: 'SequenceFlow_0j6tsnn',
-    },
-  ],
-  sequenceFlowsV2: {
+  sequenceFlows: {
     items: [
       {
         processInstanceKey: '6755399441062827',
@@ -398,44 +357,6 @@ const instanceWithIncident: InstanceMock = {
     ],
   },
   incidents: {
-    count: 1,
-    incidents: [
-      {
-        id: '6755399441062843',
-        errorType: {
-          id: 'IO_MAPPING_ERROR',
-          name: 'I/O mapping error',
-        },
-        errorMessage:
-          "failed to evaluate expression '{orderId:orderNo,amountToPay:total}': no variable found for name 'total'",
-        flowNodeId: 'Task_1b1r7ow',
-        flowNodeInstanceId: '6755399441062840',
-        jobId: null,
-        creationTime: '2023-08-14T05:47:07.376+0000',
-        hasActiveOperation: false,
-        lastOperation: null,
-        rootCauseInstance: {
-          instanceId: '6755399441062827',
-          processDefinitionId: '2251799813687188',
-          processDefinitionName: 'Order process',
-        },
-      },
-    ],
-    errorTypes: [
-      {
-        id: 'IO_MAPPING_ERROR',
-        name: 'I/O mapping error',
-        count: 1,
-      },
-    ],
-    flowNodes: [
-      {
-        id: 'Task_1b1r7ow',
-        count: 1,
-      },
-    ],
-  },
-  incidentsV2: {
     page: {
       totalItems: 1,
       startCursor: null,
@@ -460,52 +381,6 @@ const instanceWithIncident: InstanceMock = {
         jobKey: null,
       },
     ],
-  },
-  metaData: {
-    flowNodeInstanceId: '6755399441062840',
-    flowNodeId: null,
-    flowNodeType: null,
-    instanceCount: null,
-    instanceMetadata: {
-      flowNodeId: 'Task_1b1r7ow',
-      flowNodeInstanceId: '6755399441062840',
-      flowNodeType: 'SERVICE_TASK',
-      startDate: '2023-08-14T05:47:07.376+0000',
-      endDate: null,
-      calledProcessInstanceId: null,
-      calledProcessDefinitionName: null,
-      calledDecisionInstanceId: null,
-      calledDecisionDefinitionName: null,
-      eventId: '6755399441062827_6755399441062840',
-      jobId: null,
-      jobType: null,
-      jobRetries: null,
-      jobWorker: null,
-      jobDeadline: null,
-      jobCustomHeaders: null,
-    },
-    incidentCount: 1,
-    incident: {
-      id: '6755399441062843',
-      errorType: {
-        id: 'IO_MAPPING_ERROR',
-        name: 'I/O mapping error',
-      },
-      errorMessage:
-        "failed to evaluate expression '{orderId:orderNo,amountToPay:total}': no variable found for name 'total'",
-      flowNodeId: 'Task_1b1r7ow',
-      flowNodeInstanceId: '6755399441062840',
-      jobId: null,
-      creationTime: '2023-08-14T05:47:07.376+0000',
-      hasActiveOperation: false,
-      lastOperation: null,
-      rootCauseInstance: {
-        instanceId: '6755399441062827',
-        processDefinitionId: '2251799813687188',
-        processDefinitionName: 'Order process',
-      },
-      rootCauseDecision: null,
-    },
   },
 };
 
