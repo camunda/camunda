@@ -40,7 +40,7 @@ on:
         required: false
         default: false
       scenario:
-        description: 'Choose the variant of workload to use for the load test. When not set to "custom", this will override the load-test-load input.'
+        description: 'Choose the variant of workload to use for the load test. When not set, it will default to max'
         required: false
         type: choice
         options:
