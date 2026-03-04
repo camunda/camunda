@@ -7,7 +7,6 @@
  */
 
 import {mockDeleteResource} from 'modules/mocks/api/v2/resource/deleteResource';
-import {operationsStore} from 'modules/stores/operations';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {
   fireEvent,
@@ -35,7 +34,6 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {
       panelStatesStore.reset();
-      operationsStore.reset();
     };
   }, []);
 
