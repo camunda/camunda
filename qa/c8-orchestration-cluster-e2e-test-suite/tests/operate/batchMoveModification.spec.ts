@@ -46,6 +46,8 @@ test.describe('Process Instance Batch Modification', () => {
     operateProcessesPage,
     operateDiagramPage,
     operateProcessModificationModePage,
+    operateOperationPanelPage,
+    operateFiltersPanelPage,
   }) => {
     await test.step('Navigate to processes page with filters', async () => {
       await gotoProcessesPage(page, {
@@ -125,8 +127,9 @@ test.describe('Process Instance Batch Modification', () => {
     });
 
     await test.step('Filter and verify modified instances', async () => {
+      await operateOperationPanelPage.collapseOperationsPanel();
       await operateDiagramPage.clickFlowNode('shipArticles');
-
+      await operateFiltersPanelPage.clickCanceledInstancesCheckbox();
       await waitForAssertion({
         assertion: async () => {
           await expect(
@@ -142,10 +145,15 @@ test.describe('Process Instance Batch Modification', () => {
     });
 
     await test.step('Wait for modification to complete and verify flow nodes', async () => {
-      await operateDiagramPage.clickFlowNode('shipArticles');
       await expect(
         operateDiagramPage.diagram.getByTestId(
           'state-overlay-shipArticles-active',
+        ),
+      ).toHaveText(NUM_SELECTED_PROCESS_INSTANCES.toString());
+
+      await expect(
+        operateDiagramPage.diagram.getByTestId(
+          'state-overlay-checkPayment-canceled',
         ),
       ).toHaveText(NUM_SELECTED_PROCESS_INSTANCES.toString());
     });
