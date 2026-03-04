@@ -136,7 +136,7 @@ const queryRolesByGroupRequestBodySchema = getQueryRequestBodySchema({
 });
 type QueryRolesByGroupRequestBody = z.infer<typeof queryRolesByGroupRequestBodySchema>;
 
-const queryRolesByGroupResponseBodySchema = getQueryResponseBodySchema(roleSchema.pick({roleId: true, name: true}));
+const queryRolesByGroupResponseBodySchema = getQueryResponseBodySchema(roleSchema);
 type QueryRolesByGroupResponseBody = z.infer<typeof queryRolesByGroupResponseBodySchema>;
 
 const queryRolesByGroup: Endpoint<Pick<Group, 'groupId'>> = {

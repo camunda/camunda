@@ -22,7 +22,7 @@ type Group = z.infer<typeof groupSchema>;
 const roleSchema = z.object({
 	roleId: z.string(),
 	name: z.string(),
-	description: z.string(),
+	description: z.string().nullable(),
 });
 type Role = z.infer<typeof roleSchema>;
 
