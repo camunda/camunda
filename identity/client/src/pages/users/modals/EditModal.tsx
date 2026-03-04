@@ -13,8 +13,9 @@ import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import Divider from "src/components/form/Divider";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
-import { updateUser, User } from "src/utility/api/users";
+import { updateUser } from "src/utility/api/users";
 import { isValidEmail } from "src/utility/validate";
+import type { User } from "@camunda/camunda-api-zod-schemas/8.9";
 
 type FormData = Pick<User, "name" | "email"> & {
   password: string;

@@ -13,10 +13,11 @@ import {
   DeleteModal as Modal,
   UseEntityModalProps,
 } from "src/components/modal";
-import { deleteRole, DeleteRoleParams } from "src/utility/api/roles";
+import { deleteRole } from "src/utility/api/roles";
 import { useNotifications } from "src/components/notifications";
+import type { Role } from "@camunda/camunda-api-zod-schemas/8.9";
 
-const DeleteModal: FC<UseEntityModalProps<DeleteRoleParams>> = ({
+const DeleteModal: FC<UseEntityModalProps<Role>> = ({
   open,
   onClose,
   onSuccess,

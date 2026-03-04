@@ -14,13 +14,14 @@ import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
-import { updateMappingRule, MappingRule } from "src/utility/api/mapping-rules";
+import { updateMappingRule } from "src/utility/api/mapping-rules";
 import {
   CustomStack,
   EqualSignContainer,
   MappingRuleContainer,
 } from "./components";
 import { useNotifications } from "src/components/notifications";
+import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
   open,

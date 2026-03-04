@@ -12,11 +12,12 @@ import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApi, useApiCall } from "src/utility/api";
-import { searchGroups, Group } from "src/utility/api/groups";
+import { searchGroups } from "src/utility/api/groups";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
-import { assignTenantGroup, Tenant } from "src/utility/api/tenants";
+import { assignTenantGroup } from "src/utility/api/tenants";
+import type { Group, Tenant } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const SelectedGroups = styled.div`
   margin-top: 0;

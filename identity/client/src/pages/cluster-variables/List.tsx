@@ -12,10 +12,7 @@ import EntityList from "src/components/entityList";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import { usePaginatedApi } from "src/utility/api";
-import {
-  ScopeType,
-  searchClusterVariables,
-} from "src/utility/api/cluster-variables";
+import { searchClusterVariables } from "src/utility/api/cluster-variables";
 import PageEmptyState from "src/components/layout/PageEmptyState";
 import { AddModal } from "./modals/add-modal";
 import DeleteModal from "./modals/DeleteModal";
@@ -86,7 +83,7 @@ export default function List() {
               ...clusterVar,
               value: clusterVar.value,
               scopeValue:
-                clusterVar.scope === ScopeType.GLOBAL
+                clusterVar.scope === "GLOBAL"
                   ? t("clusterVariableScopeTypeGlobal")
                   : `${t("clusterVariableScopeTypeTenant")}: ${clusterVar.tenantId}`,
             };

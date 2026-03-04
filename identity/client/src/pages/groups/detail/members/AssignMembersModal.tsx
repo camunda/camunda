@@ -12,13 +12,13 @@ import { UseEntityModalCustomProps } from "src/components/modal";
 import { assignGroupMember } from "src/utility/api/membership";
 import useTranslate from "src/utility/localization";
 import { useApi, useApiCall } from "src/utility/api";
-import { searchUser, User } from "src/utility/api/users";
+import { searchUser } from "src/utility/api/users";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
-import { Group } from "src/utility/api/groups";
 import { useNotifications } from "src/components/notifications";
+import type { Group, User } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const SelectedUsers = styled.div`
   margin-top: 0;
