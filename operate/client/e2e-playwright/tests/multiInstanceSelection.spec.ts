@@ -90,7 +90,7 @@ test.describe('Multi Instance Flow Node Selection', () => {
       diagram: {popover},
     } = processInstancePage;
 
-    await processInstancePage.diagram.clickFlowNode('Task B');
+    await processInstancePage.diagram.clickElement('Task B');
 
     // Check instance history
     await expect(

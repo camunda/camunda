@@ -50,23 +50,23 @@ export class Diagram {
     await this.page.mouse.up();
   }
 
-  clickFlowNode(flowNodeName: string) {
-    return this.getFlowNode(flowNodeName).click();
+  clickElement(elementName: string) {
+    return this.getElement(elementName).click();
   }
 
   clickSubProcess(subProcessName: string) {
     // Click on the top left corner of the sub process.
     // This avoids clicking on child elements inside the sub process.
-    return this.getFlowNode(subProcessName).click({
+    return this.getElement(subProcessName).click({
       position: {x: 5, y: 5},
       force: true,
     });
   }
 
-  getFlowNode(flowNodeName: string) {
+  getElement(elementName: string) {
     return this.diagram
       .locator('.djs-element')
-      .filter({hasText: new RegExp(`^${flowNodeName}$`, 'i')});
+      .filter({hasText: new RegExp(`^${elementName}$`, 'i')});
   }
 
   clickGateway(gatewayName: string) {

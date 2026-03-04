@@ -132,26 +132,26 @@ test.describe('Process Instances Filters', () => {
 
     // change version and see flow node filter has been reset
     await filtersPanel.selectVersion('1');
-    await expect(filtersPanel.flowNodeFilter).toHaveValue('');
+    await expect(filtersPanel.elementFilter).toHaveValue('');
 
-    await filtersPanel.selectFlowNode('StartEvent_1');
+    await filtersPanel.selectElement('StartEvent_1');
     await expect(
       page.getByText('There are no Instances matching this filter set'),
     ).toBeVisible();
 
     // select another flow node from the diagram
-    await processesPage.diagram.clickFlowNode('always fails');
+    await processesPage.diagram.clickElement('always fails');
 
-    await expect(filtersPanel.flowNodeFilter).toHaveValue('Always fails');
+    await expect(filtersPanel.elementFilter).toHaveValue('Always fails');
 
     // select same flow node again and see filter is removed
-    await processesPage.diagram.clickFlowNode('always fails');
+    await processesPage.diagram.clickElement('always fails');
 
     await expect(
       page.getByText('There are no Instances matching this filter set'),
     ).not.toBeVisible();
 
-    await expect(filtersPanel.flowNodeFilter).toHaveValue('');
+    await expect(filtersPanel.elementFilter).toHaveValue('');
   });
 
   test('variable filters', async ({

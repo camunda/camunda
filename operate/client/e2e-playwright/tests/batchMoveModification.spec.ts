@@ -87,7 +87,7 @@ test.describe('Process Instance Batch Modification', () => {
     await processesPage.moveModificationModal.confirmButton.click();
 
     // Select target flow node
-    await processesPage.diagram.clickFlowNode('Ship Articles');
+    await processesPage.diagram.clickElement('Ship Articles');
 
     const notificationText = `Modification scheduled: Move ${NUM_SELECTED_PROCESS_INSTANCES} instances from “Check payment” to “Ship Articles”. Press “Review Modification” button to confirm.`;
     await expect(page.getByText(notificationText)).toBeVisible();
@@ -97,7 +97,7 @@ test.describe('Process Instance Batch Modification', () => {
     await expect(page.getByText(notificationText)).not.toBeVisible();
 
     // Select target flow node
-    await processesPage.diagram.clickFlowNode('Ship Articles');
+    await processesPage.diagram.clickElement('Ship Articles');
 
     await expect(page.getByText(notificationText)).toBeVisible();
 
@@ -211,7 +211,7 @@ test.describe('Process Instance Batch Modification', () => {
     await processesPage.moveModificationModal.confirmButton.click();
 
     // Select target flow node
-    await processesPage.diagram.clickFlowNode('Ship Articles');
+    await processesPage.diagram.clickElement('Ship Articles');
 
     // Try to navigate to Dashboard page
     await page.getByRole('link', {name: 'Dashboard'}).click();

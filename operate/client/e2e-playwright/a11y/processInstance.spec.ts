@@ -60,7 +60,7 @@ test.describe('process detail', () => {
 
     validateResults(results);
 
-    await processInstancePage.diagram.clickFlowNode('signal user task');
+    await processInstancePage.diagram.clickElement('signal user task');
 
     const resultsWithMetadataPopover = await makeAxeBuilder()
       .disableRules(['aria-required-parent', 'list'])
@@ -124,7 +124,7 @@ test.describe('process detail', () => {
     validateResults(resultsWithAddVariableState);
 
     // meta data popover visible
-    await processInstancePage.diagram.clickFlowNode('check payment');
+    await processInstancePage.diagram.clickElement('check payment');
 
     const resultsWithMetadataPopover = await makeAxeBuilder()
       .disableRules(['aria-required-parent', 'list'])
