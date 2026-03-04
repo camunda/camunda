@@ -284,7 +284,7 @@ test.describe('Process Instance', () => {
       .click();
 
     await expect(popover.getByText(/flow node instance key/i)).toBeVisible();
-    await expect(diagram.getFlowNode('submit application')).toBeVisible();
+    await expect(diagram.getElement('submit application')).toBeVisible();
 
     await page.keyboard.press('ArrowRight');
     await instanceHistory
@@ -293,7 +293,7 @@ test.describe('Process Instance', () => {
       })
       .click();
 
-    await expect(diagram.getFlowNode('fill form')).toBeVisible();
+    await expect(diagram.getElement('fill form')).toBeVisible();
     await expect(popover.getByText(/retries left/i)).toBeVisible();
 
     await diagram.diagram.getByText('collapsedSubProcess').click();
@@ -301,8 +301,8 @@ test.describe('Process Instance', () => {
     await expect(
       popover.getByText(/flow node instance key/i),
     ).not.toBeVisible();
-    await expect(diagram.getFlowNode('submit application')).toBeVisible();
-    await expect(diagram.getFlowNode('fill form')).not.toBeVisible();
+    await expect(diagram.getElement('submit application')).toBeVisible();
+    await expect(diagram.getElement('fill form')).not.toBeVisible();
 
     await instanceHistory
       .locator(
@@ -314,7 +314,7 @@ test.describe('Process Instance', () => {
       .click();
 
     await expect(popover.getByText(/flow node instance key/i)).toBeVisible();
-    await expect(diagram.getFlowNode('submit application')).toBeVisible();
+    await expect(diagram.getElement('submit application')).toBeVisible();
 
     const drilldownButton = await page.$('.bjs-drilldown');
     await drilldownButton?.click();
@@ -322,7 +322,7 @@ test.describe('Process Instance', () => {
     await expect(
       popover.getByText(/flow node instance key/i),
     ).not.toBeVisible();
-    await expect(diagram.getFlowNode('fill form')).toBeVisible();
+    await expect(diagram.getElement('fill form')).toBeVisible();
   });
 
   test('Should render execution count badges', async ({

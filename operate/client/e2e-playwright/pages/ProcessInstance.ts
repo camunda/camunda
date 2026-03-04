@@ -43,7 +43,7 @@ export class ProcessInstance {
     this.incidentsBanner = page.getByTestId('incidents-banner');
     this.diagram = new Diagram(page);
     this.variablePanelEmptyText = page.getByText(
-      /to view the variables, select a single flow node instance in the instance history./i,
+      /to view the variables, select a single element instance in the instance history./i,
     );
     this.addVariableButton = page.getByRole('button', {name: 'Add variable'});
     this.saveVariableButton = page.getByRole('button', {name: 'Save variable'});

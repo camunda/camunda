@@ -31,7 +31,7 @@ export class FiltersPanel {
   readonly processVersionFilter: Locator;
   readonly processInstanceKeysFilter: Locator;
   readonly parentProcessInstanceKey: Locator;
-  readonly flowNodeFilter: Locator;
+  readonly elementFilter: Locator;
   readonly operationIdFilter: Locator;
   readonly resetFiltersButton: Locator;
   readonly errorMessageFilter: Locator;
@@ -76,7 +76,7 @@ export class FiltersPanel {
       name: /parent process instance key/i,
     });
 
-    this.flowNodeFilter = this.panel.getByRole('combobox', {
+    this.elementFilter = this.panel.getByRole('combobox', {
       name: /element/i,
     });
 
@@ -145,8 +145,8 @@ export class FiltersPanel {
     await this.panel.getByRole('option', {name: option, exact: true}).click();
   }
 
-  async selectFlowNode(option: string) {
-    await this.flowNodeFilter.click();
+  async selectElement(option: string) {
+    await this.elementFilter.click();
     await this.panel.getByRole('option', {name: option}).click();
   }
 

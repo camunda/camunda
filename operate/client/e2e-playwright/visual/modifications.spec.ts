@@ -95,7 +95,7 @@ test.describe('modifications', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test('diagram badges and flow node instance history panel', async ({
+  test('diagram badges and element instance history panel', async ({
     page,
     processInstancePage,
   }) => {
@@ -147,7 +147,7 @@ test.describe('modifications', () => {
       })
       .click();
 
-    await processInstancePage.diagram.clickFlowNode('check payment');
+    await processInstancePage.diagram.clickElement('check payment');
 
     await expect(page.getByTestId('dropdown-spinner')).not.toBeVisible();
 
@@ -155,8 +155,8 @@ test.describe('modifications', () => {
       .getByTitle(/move selected instance in this element to another target/i)
       .click();
 
-    await processInstancePage.diagram.clickFlowNode('check order items');
-    await processInstancePage.diagram.clickFlowNode('check payment');
+    await processInstancePage.diagram.clickElement('check order items');
+    await processInstancePage.diagram.clickElement('check payment');
     await page
       .getByRole('button', {
         name: /Add single element instance/i,
@@ -200,7 +200,7 @@ test.describe('modifications', () => {
       })
       .click();
 
-    await processInstancePage.diagram.clickFlowNode('check payment');
+    await processInstancePage.diagram.clickElement('check payment');
 
     await expect(page.getByTestId('dropdown-spinner')).not.toBeVisible();
 
@@ -208,7 +208,7 @@ test.describe('modifications', () => {
       .getByTitle(/move selected instance in this element to another target/i)
       .click();
 
-    await processInstancePage.diagram.clickFlowNode('check order items');
+    await processInstancePage.diagram.clickElement('check order items');
 
     const firstVariableValueInput = page
       .getByRole('textbox', {
