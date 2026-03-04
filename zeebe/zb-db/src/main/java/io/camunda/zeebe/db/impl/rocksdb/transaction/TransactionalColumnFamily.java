@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.ContainsForeignKeys;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
+import io.camunda.zeebe.db.KeyVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.db.impl.rocksdb.DbNullKey;
@@ -252,6 +253,60 @@ class TransactionalColumnFamily<
       final KeyType startAtKey, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     ensureInOpenTransaction(
         transaction -> forEachInPrefixReverse(startAtKey, new DbNullKey(), visitor));
+  }
+
+  // ---- Key-only iteration methods ----
+
+  @Override
+  public void forEachKey(final Consumer<KeyType> consumer) {
+    ensureInOpenTransaction(
+        transaction ->
+            forEachKeyInPrefix(
+                new DbNullKey(),
+                k -> {
+                  consumer.accept(k);
+                  return true;
+                }));
+  }
+
+  @Override
+  public void whileTrue(final KeyVisitor<KeyType> visitor) {
+    ensureInOpenTransaction(transaction -> forEachKeyInPrefix(new DbNullKey(), visitor));
+  }
+
+  @Override
+  public void whileTrue(final KeyType startAtKey, final KeyVisitor<KeyType> visitor) {
+    ensureInOpenTransaction(
+        transaction -> forEachKeyInPrefix(startAtKey, new DbNullKey(), visitor));
+  }
+
+  @Override
+  public void whileEqualPrefix(final DbKey keyPrefix, final Consumer<KeyType> visitor) {
+    ensureInOpenTransaction(
+        transaction ->
+            forEachKeyInPrefix(
+                keyPrefix,
+                k -> {
+                  visitor.accept(k);
+                  return true;
+                }));
+  }
+
+  @Override
+  public void whileEqualPrefix(final DbKey keyPrefix, final KeyVisitor<KeyType> visitor) {
+    ensureInOpenTransaction(transaction -> forEachKeyInPrefix(keyPrefix, visitor));
+  }
+
+  @Override
+  public void whileEqualPrefix(
+      final DbKey keyPrefix, final KeyType startAtKey, final KeyVisitor<KeyType> visitor) {
+    ensureInOpenTransaction(transaction -> forEachKeyInPrefix(startAtKey, keyPrefix, visitor));
+  }
+
+  @Override
+  public void whileTrueReverse(final KeyType startAtKey, final KeyVisitor<KeyType> visitor) {
+    ensureInOpenTransaction(
+        transaction -> forEachKeyInPrefixReverse(startAtKey, new DbNullKey(), visitor));
   }
 
   @Override
@@ -534,6 +589,109 @@ class TransactionalColumnFamily<
         });
 
     return count.get();
+  }
+
+  /**
+   * Key-only counterpart of {@link #forEachInPrefix(DbKey, KeyValuePairVisitor)}. Iterates over
+   * keys within the given prefix without reading values from the database.
+   *
+   * @param prefix of all keys that are iterated over.
+   * @param visitor called for all keys that match the given prefix. The visitor can indicate
+   *     whether iteration should continue or not, see {@link KeyVisitor}.
+   */
+  private void forEachKeyInPrefix(final DbKey prefix, final KeyVisitor<KeyType> visitor) {
+    forEachKeyInPrefix(prefix, prefix, visitor);
+  }
+
+  /**
+   * Key-only counterpart of {@link #forEachInPrefix(DbKey, DbKey, KeyValuePairVisitor)}. Iterates
+   * over keys within the given prefix without reading values from the database.
+   *
+   * @param startAt seek to this key before starting iteration. If null, seek to {@code prefix}
+   *     instead.
+   * @param prefix of all keys that are iterated over.
+   * @param visitor called for all keys that match the given prefix. The visitor can indicate
+   *     whether iteration should continue or not, see {@link KeyVisitor}.
+   */
+  private void forEachKeyInPrefix(
+      final DbKey startAt, final DbKey prefix, final KeyVisitor<KeyType> visitor) {
+    try (final var timer = metrics.measureIterateLatency()) {
+      final var seekTarget = Objects.requireNonNullElse(startAt, prefix);
+      Objects.requireNonNull(prefix);
+      Objects.requireNonNull(visitor);
+
+      columnFamilyContext.withPrefixKey(
+          prefix,
+          (prefixKey, prefixLength) -> {
+            try (final RocksIterator iterator =
+                newIterator(context, transactionDb.getPrefixReadOptions())) {
+
+              boolean shouldVisitNext = true;
+
+              for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
+                  iterator.isValid() && shouldVisitNext;
+                  iterator.next()) {
+                final byte[] keyBytes = iterator.key();
+                if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
+                  break;
+                }
+
+                shouldVisitNext = visitKeyOnly(keyInstance, visitor, keyBytes);
+              }
+            }
+          });
+    }
+  }
+
+  /**
+   * Key-only counterpart of {@link #forEachInPrefixReverse(DbKey, DbKey, KeyValuePairVisitor)}.
+   * Iterates backward over keys within the given prefix without reading values from the database.
+   *
+   * @param startAt seek to this key before starting reverse iteration.
+   * @param prefix of all keys that are iterated over.
+   * @param visitor called for all keys that match the given prefix. The visitor can indicate
+   *     whether iteration should continue or not, see {@link KeyVisitor}.
+   */
+  private void forEachKeyInPrefixReverse(
+      final DbKey startAt, final DbKey prefix, final KeyVisitor<KeyType> visitor) {
+    try (final var timer = metrics.measureIterateLatency()) {
+      Objects.requireNonNull(startAt);
+      Objects.requireNonNull(prefix);
+      Objects.requireNonNull(visitor);
+
+      columnFamilyContext.withPrefixKey(
+          prefix,
+          (prefixKey, prefixLength) -> {
+            try (final RocksIterator iterator =
+                newIterator(context, transactionDb.getPrefixReadOptions())) {
+
+              final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
+
+              boolean shouldVisitNext = true;
+
+              for (iterator.seekForPrev(seekTarget);
+                  iterator.isValid() && shouldVisitNext;
+                  iterator.prev()) {
+                final byte[] keyBytes = iterator.key();
+                if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
+                  break;
+                }
+
+                shouldVisitNext = visitKeyOnly(keyInstance, visitor, keyBytes);
+              }
+            }
+          });
+    }
+  }
+
+  private boolean visitKeyOnly(
+      final KeyType keyInstance, final KeyVisitor<KeyType> visitor, final byte[] keyBytes) {
+    columnFamilyContext.wrapKeyView(keyBytes);
+
+    final DirectBuffer keyViewBuffer = columnFamilyContext.getKeyView();
+    keyInstance.wrap(keyViewBuffer, 0, keyViewBuffer.capacity());
+
+    return visitor.visit(keyInstance);
   }
 
   private boolean visit(

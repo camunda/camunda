@@ -101,4 +101,50 @@ public class RawTransactionalColumnFamilyTest {
     // then
     assertThat(i.get()).isEqualTo(numEntries);
   }
+
+  @ParameterizedTest
+  @EnumSource(ZbColumnFamilies.class)
+  public void shouldIterateOverAllKeys(final ZbColumnFamilies cf) {
+    // given
+    final int numEntries = 100;
+    final var rawCF = columnFamilies.get(cf);
+    final var expected = new HashMap<Integer, byte[]>();
+    context.runInTransaction(
+        () -> {
+          for (int i = 0; i < numEntries; i++) {
+            final var bytes =
+                ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(i).array();
+            expected.put(i, bytes);
+            rawCF.put(
+                (ZeebeTransaction) context.getCurrentTransaction(),
+                bytes,
+                0,
+                bytes.length,
+                bytes,
+                0,
+                bytes.length);
+          }
+        });
+    // when — iterate using key-only visitor (no value is read)
+    final var i = new MutableReference<>(0);
+    rawCF.forEachKey(
+        context,
+        (rawKey, keyOffset, keyLen) -> {
+          final var cfContext = new ColumnFamilyContext(cf.getValue());
+          assertThat(keyOffset).isZero();
+
+          cfContext.wrapKeyView(rawKey);
+          final var key = new byte[cfContext.getKeyView().capacity()];
+          cfContext.getKeyView().getBytes(0, key);
+
+          // then — keys match what was inserted
+          assertThat(key).isEqualTo(expected.get(i.get()));
+
+          i.set(i.get() + 1);
+          return true;
+        });
+
+    // then
+    assertThat(i.get()).isEqualTo(numEntries);
+  }
 }
