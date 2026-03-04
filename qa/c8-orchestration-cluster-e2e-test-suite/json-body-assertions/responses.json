@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "97eddb8e91fcb83317bcd56ba252156de08e641c",
-    "generatedAt": "2026-03-03T10:12:17.756Z",
+    "commit": "7c620d8fa0860ad4ede95f19c51422b29e37c1c0",
+    "generatedAt": "2026-03-04T12:09:32.437Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "bccc59e0433930d48553b50ee54a8f09a97df50b3f430549e4082b5cecebcd49"
+    "specSha256": "085990d845643bb2efa49c584764d02f1f015eeb4c1a5e230e2a377a659db082"
   },
   "responses": [
     {
@@ -26,6 +26,12 @@
                 {
                   "name": "actorType",
                   "type": "string",
+                  "enumValues": [
+                    "ANONYMOUS",
+                    "CLIENT",
+                    "UNKNOWN",
+                    "USER"
+                  ],
                   "nullable": true
                 },
                 {
@@ -262,6 +268,12 @@
           {
             "name": "actorType",
             "type": "string",
+            "enumValues": [
+              "ANONYMOUS",
+              "CLIENT",
+              "UNKNOWN",
+              "USER"
+            ],
             "nullable": true
           },
           {
@@ -835,45 +847,14 @@
             "children": {
               "required": [
                 {
-                  "name": "errors",
-                  "type": "array<object>",
-                  "children": {
-                    "required": [],
-                    "optional": [
-                      {
-                        "name": "message",
-                        "type": "string"
-                      },
-                      {
-                        "name": "partitionId",
-                        "type": "number"
-                      },
-                      {
-                        "name": "type",
-                        "type": "string",
-                        "enumValues": [
-                          "QUERY_FAILED",
-                          "RESULT_BUFFER_SIZE_EXCEEDED"
-                        ]
-                      }
-                    ]
-                  }
-                }
-              ],
-              "optional": [
-                {
                   "name": "actorId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "actorType",
                   "type": "string",
-                  "enumValues": [
-                    "ANONYMOUS",
-                    "CLIENT",
-                    "UNKNOWN",
-                    "USER"
-                  ]
+                  "nullable": true
                 },
                 {
                   "name": "batchOperationKey",
@@ -899,9 +880,29 @@
                   "wrapper": true
                 },
                 {
-                  "name": "endDate",
-                  "type": "string",
-                  "nullable": true
+                  "name": "errors",
+                  "type": "array<object>",
+                  "children": {
+                    "required": [],
+                    "optional": [
+                      {
+                        "name": "message",
+                        "type": "string"
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number"
+                      },
+                      {
+                        "name": "type",
+                        "type": "string",
+                        "enumValues": [
+                          "QUERY_FAILED",
+                          "RESULT_BUFFER_SIZE_EXCEEDED"
+                        ]
+                      }
+                    ]
+                  }
                 },
                 {
                   "name": "operationsCompletedCount",
@@ -916,11 +917,6 @@
                   "type": "number"
                 },
                 {
-                  "name": "startDate",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
                   "name": "state",
                   "type": "string",
                   "enumValues": [
@@ -932,6 +928,18 @@
                     "PARTIALLY_COMPLETED",
                     "SUSPENDED"
                   ]
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endDate",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "startDate",
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
@@ -974,45 +982,14 @@
       "schema": {
         "required": [
           {
-            "name": "errors",
-            "type": "array<object>",
-            "children": {
-              "required": [],
-              "optional": [
-                {
-                  "name": "message",
-                  "type": "string"
-                },
-                {
-                  "name": "partitionId",
-                  "type": "number"
-                },
-                {
-                  "name": "type",
-                  "type": "string",
-                  "enumValues": [
-                    "QUERY_FAILED",
-                    "RESULT_BUFFER_SIZE_EXCEEDED"
-                  ]
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "actorId",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "actorType",
             "type": "string",
-            "enumValues": [
-              "ANONYMOUS",
-              "CLIENT",
-              "UNKNOWN",
-              "USER"
-            ]
+            "nullable": true
           },
           {
             "name": "batchOperationKey",
@@ -1038,9 +1015,29 @@
             "wrapper": true
           },
           {
-            "name": "endDate",
-            "type": "string",
-            "nullable": true
+            "name": "errors",
+            "type": "array<object>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "message",
+                  "type": "string"
+                },
+                {
+                  "name": "partitionId",
+                  "type": "number"
+                },
+                {
+                  "name": "type",
+                  "type": "string",
+                  "enumValues": [
+                    "QUERY_FAILED",
+                    "RESULT_BUFFER_SIZE_EXCEEDED"
+                  ]
+                }
+              ]
+            }
           },
           {
             "name": "operationsCompletedCount",
@@ -1055,11 +1052,6 @@
             "type": "number"
           },
           {
-            "name": "startDate",
-            "type": "string",
-            "nullable": true
-          },
-          {
             "name": "state",
             "type": "string",
             "enumValues": [
@@ -1071,6 +1063,18 @@
               "PARTIALLY_COMPLETED",
               "SUSPENDED"
             ]
+          }
+        ],
+        "optional": [
+          {
+            "name": "endDate",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "startDate",
+            "type": "string",
+            "nullable": true
           }
         ]
       }
@@ -2073,8 +2077,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "batchOperationKey",
             "type": "string"
@@ -2095,7 +2098,8 @@
               "UPDATE_VARIABLE"
             ]
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -2402,8 +2406,7 @@
       "method": "POST",
       "status": "201",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "camunda.document.type",
             "type": "string",
@@ -2413,7 +2416,8 @@
           },
           {
             "name": "contentHash",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "documentId",
@@ -2421,23 +2425,21 @@
           },
           {
             "name": "metadata",
-            "type": "metadata",
-            "rawRefName": "metadata",
+            "type": "object",
             "children": {
               "required": [
-                {
-                  "name": "customProperties",
-                  "type": "object"
-                }
-              ],
-              "optional": [
                 {
                   "name": "contentType",
                   "type": "string"
                 },
                 {
+                  "name": "customProperties",
+                  "type": "object"
+                },
+                {
                   "name": "expiresAt",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "fileName",
@@ -2445,24 +2447,28 @@
                 },
                 {
                   "name": "processDefinitionId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processInstanceKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "size",
                   "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
             "name": "storeId",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -2475,8 +2481,7 @@
             "name": "createdDocuments",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "camunda.document.type",
                   "type": "string",
@@ -2486,7 +2491,8 @@
                 },
                 {
                   "name": "contentHash",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "documentId",
@@ -2494,23 +2500,21 @@
                 },
                 {
                   "name": "metadata",
-                  "type": "metadata",
-                  "rawRefName": "metadata",
+                  "type": "object",
                   "children": {
                     "required": [
-                      {
-                        "name": "customProperties",
-                        "type": "object"
-                      }
-                    ],
-                    "optional": [
                       {
                         "name": "contentType",
                         "type": "string"
                       },
                       {
+                        "name": "customProperties",
+                        "type": "object"
+                      },
+                      {
                         "name": "expiresAt",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "fileName",
@@ -2518,24 +2522,28 @@
                       },
                       {
                         "name": "processDefinitionId",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "processInstanceKey",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "size",
                         "type": "number"
                       }
-                    ]
+                    ],
+                    "optional": []
                   }
                 },
                 {
                   "name": "storeId",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -2577,8 +2585,7 @@
             "name": "createdDocuments",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "camunda.document.type",
                   "type": "string",
@@ -2588,7 +2595,8 @@
                 },
                 {
                   "name": "contentHash",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "documentId",
@@ -2596,23 +2604,21 @@
                 },
                 {
                   "name": "metadata",
-                  "type": "metadata",
-                  "rawRefName": "metadata",
+                  "type": "object",
                   "children": {
                     "required": [
-                      {
-                        "name": "customProperties",
-                        "type": "object"
-                      }
-                    ],
-                    "optional": [
                       {
                         "name": "contentType",
                         "type": "string"
                       },
                       {
+                        "name": "customProperties",
+                        "type": "object"
+                      },
+                      {
                         "name": "expiresAt",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "fileName",
@@ -2620,24 +2626,28 @@
                       },
                       {
                         "name": "processDefinitionId",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "processInstanceKey",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "size",
                         "type": "number"
                       }
-                    ]
+                    ],
+                    "optional": []
                   }
                 },
                 {
                   "name": "storeId",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -2674,8 +2684,7 @@
       "method": "POST",
       "status": "201",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "expiresAt",
             "type": "string"
@@ -2684,7 +2693,8 @@
             "name": "url",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -4802,8 +4812,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "messageKey",
             "type": "string"
@@ -4816,7 +4825,8 @@
             "name": "tenantId",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -4824,8 +4834,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "messageKey",
             "type": "string"
@@ -4834,7 +4843,8 @@
             "name": "tenantId",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5297,8 +5307,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "batchOperationKey",
             "type": "string"
@@ -5319,7 +5328,8 @@
               "UPDATE_VARIABLE"
             ]
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5327,8 +5337,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "batchOperationKey",
             "type": "string"
@@ -5349,7 +5358,8 @@
               "UPDATE_VARIABLE"
             ]
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5357,8 +5367,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "batchOperationKey",
             "type": "string"
@@ -5379,7 +5388,8 @@
               "UPDATE_VARIABLE"
             ]
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5387,8 +5397,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "batchOperationKey",
             "type": "string"
@@ -5409,7 +5418,8 @@
               "UPDATE_VARIABLE"
             ]
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5417,8 +5427,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "batchOperationKey",
             "type": "string"
@@ -5439,7 +5448,8 @@
               "UPDATE_VARIABLE"
             ]
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5672,8 +5682,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "batchOperationKey",
             "type": "string"
@@ -5694,7 +5703,8 @@
               "UPDATE_VARIABLE"
             ]
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5964,8 +5974,7 @@
             "type": "schema",
             "nullable": true,
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "batchOperationKey",
                   "type": "string"
@@ -5986,7 +5995,8 @@
                     "UPDATE_VARIABLE"
                   ]
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ]
@@ -7357,6 +7367,12 @@
                 {
                   "name": "actorType",
                   "type": "string",
+                  "enumValues": [
+                    "ANONYMOUS",
+                    "CLIENT",
+                    "UNKNOWN",
+                    "USER"
+                  ],
                   "nullable": true
                 },
                 {
