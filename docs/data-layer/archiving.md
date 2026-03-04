@@ -41,7 +41,7 @@ implementation only needs to describe _what_ to archive and _how_ to identify th
 
 | Class / Interface | Role |
 |---|---|
-| `BackgroundTask` | Minimal interface (`execute()`) for any background task run by the exporter. |
+| `BackgroundTask` | Interface for exporter background tasks; exposes `CompletionStage<Integer> execute()` and optional `getCaption()` / `close()` default methods. |
 | `ArchiverJob<B>` | Abstract base class providing the archive loop: fetch batch → move documents → record metrics. |
 | `ArchiveBatch` | Represents a single batch of document IDs to be moved, along with the finish date used to name the destination index. |
 | `ArchiverRepository` | Thin storage-layer abstraction over Elasticsearch/OpenSearch: `moveDocuments`, `reindexDocuments`, `deleteDocuments`, `setIndexLifeCycle`, etc. |
@@ -89,9 +89,10 @@ operation) you can register it as a dependant and let the existing job handle it
      for entities tied to a batch operation.
 2. The concrete template descriptor must implement the dependant-specific field accessor (e.g.
    `getProcessInstanceDependantField()`) so the job knows which field to match against.
-3. Register the descriptor in the appropriate dependant list injected into
-   `ProcessInstanceArchiverJob` or `BatchOperationArchiverJob` (wired in
-   `BackgroundTaskManagerFactory`).
+3. Register the new template descriptor with the index descriptor / resource provider
+   configuration (for example via `ExporterResourceProvider` / `IndexDescriptors`) so it is
+   exposed through `ExporterResourceProvider#getIndexTemplateDescriptors()` and automatically
+   picked up by `BackgroundTaskManagerFactory` without additional wiring.
 
 ### Option 2 – Create a New Archiver Job
 
