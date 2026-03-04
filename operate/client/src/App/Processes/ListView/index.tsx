@@ -38,10 +38,7 @@ const ListView: React.FC = observer(() => {
 
   const filters = getProcessInstanceFilters(location.search);
   const {process, tenant, version} = filters;
-  const {
-    state: {status: processesStatus},
-    isInitialLoadComplete,
-  } = processesStore;
+  const {isInitialLoadComplete} = processesStore;
   const filtersJSON = JSON.stringify(filters);
 
   useEffect(() => {
@@ -86,7 +83,7 @@ const ListView: React.FC = observer(() => {
     const disposer = reaction(
       () => variableFilterStore.state.variable,
       () => {
-        if (processesStatus === 'fetched') {
+        if (processesStore.state.status === 'fetched') {
           tracking.track({
             eventName: 'process-instances-filtered',
             filterName: 'variable',
@@ -98,26 +95,33 @@ const ListView: React.FC = observer(() => {
     );
 
     return disposer;
-  }, [processesStatus]);
+  }, []);
 
   useEffect(() => {
-    if (processesStatus === 'fetched') {
-      if (
-        process !== undefined &&
-        processesStore.getProcess({
-          bpmnProcessId: process,
-          tenantId: tenant,
-        }) === undefined
-      ) {
-        navigate(deleteSearchParams(location, ['process', 'version']));
-        notificationsStore.displayNotification({
-          kind: 'error',
-          title: 'Process could not be found',
-          isDismissable: true,
-        });
-      }
-    }
-  }, [process, tenant, navigate, processesStatus, location]);
+    const disposer = reaction(
+      () => processesStore.state.status,
+      () => {
+        if (processesStore.state.status === 'fetched') {
+          if (
+            process !== undefined &&
+            processesStore.getProcess({
+              bpmnProcessId: process,
+              tenantId: tenant,
+            }) === undefined
+          ) {
+            navigate(deleteSearchParams(location, ['process', 'version']));
+            notificationsStore.displayNotification({
+              kind: 'error',
+              title: 'Process could not be found',
+              isDismissable: true,
+            });
+          }
+        }
+      },
+    );
+
+    return disposer;
+  }, [process, tenant, location, navigate]);
 
   const processDefinitionKey = processesStore.getProcessId({
     process,
