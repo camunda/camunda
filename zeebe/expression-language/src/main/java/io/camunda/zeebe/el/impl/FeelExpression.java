@@ -42,7 +42,7 @@ public final class FeelExpression implements Expression {
    * supported. The subscription is placed on the root variable {@code x}, meaning any change to any
    * nested property under {@code x} will trigger re-evaluation.
    *
-   * @return an ordered list of distinct top-level variable names referenced by the expression
+   * @return a set of distinct top-level variable names referenced by the expression
    */
   @Override
   public Set<String> getVariableNames() {
