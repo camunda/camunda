@@ -49,20 +49,15 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
     final String businessId = "biz-123";
 
     // given
-    final var processDefinitionKey =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(processId)
-                    .startEvent()
-                    .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
-                    .endEvent()
-                    .done())
-            .deploy()
-            .getValue()
-            .getProcessesMetadata()
-            .getFirst()
-            .getProcessDefinitionKey();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .deploy();
     ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(businessId).create();
 
     // when
@@ -85,8 +80,8 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
         .hasRejectionReason(
             """
             Expected to create instance of process with business id '%s', \
-            but an instance with this business id already exists for process definition key '%s'"""
-                .formatted(businessId, processDefinitionKey));
+            but an instance with this business id already exists for process definition '%s'"""
+                .formatted(businessId, processId));
   }
 
   @Test
@@ -95,20 +90,15 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
     final String businessId = "biz-123";
 
     // given - deploy version 1 and create an instance with a business id
-    final var processDefinitionKey =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(processId)
-                    .startEvent()
-                    .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
-                    .endEvent()
-                    .done())
-            .deploy()
-            .getValue()
-            .getProcessesMetadata()
-            .getFirst()
-            .getProcessDefinitionKey();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .deploy();
     ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(businessId).create();
 
     // and - deploy version 2 of the same process
@@ -145,8 +135,8 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
         .hasRejectionReason(
             """
             Expected to create instance of process with business id '%s', \
-            but an instance with this business id already exists for process definition key '%s'"""
-                .formatted(businessId, processDefinitionKey));
+            but an instance with this business id already exists for process definition '%s'"""
+                .formatted(businessId, processId));
   }
 
   @Test
@@ -678,8 +668,8 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
         .hasRejectionReason(
             """
             Expected to create instance of process with business id '%s', \
-            but an instance with this business id already exists for process definition key '%s'"""
-                .formatted(businessId, targetProcessDefinitionKey));
+            but an instance with this business id already exists for process definition '%s'"""
+                .formatted(businessId, targetProcessId));
   }
 
   @Test
@@ -817,7 +807,7 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
         .hasRejectionReason(
             """
             Expected to create instance of process with business id '%s', \
-            but an instance with this business id already exists for process definition key '%s'"""
-                .formatted(businessId, targetProcessDefinitionKey));
+            but an instance with this business id already exists for process definition '%s'"""
+                .formatted(businessId, processId));
   }
 }
