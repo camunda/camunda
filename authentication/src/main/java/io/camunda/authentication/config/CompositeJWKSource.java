@@ -50,7 +50,7 @@ public class CompositeJWKSource<C extends SecurityContext> implements JWKSource<
           return keys;
         }
       } catch (final KeySourceException e) {
-        LOG.warn("JWK source failed, trying next source", e);
+        LOG.warn("JWK source [{}] failed, trying next source", source, e);
         lastException = e;
       }
     }

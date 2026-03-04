@@ -139,6 +139,7 @@ public class OidcAccessTokenDecoderFactory {
   public JwtDecoder createAccessTokenDecoder(
       final ClientRegistration clientRegistration, final List<String> additionalJwkSetUris) {
     LOG.debug("Creating JwtDecoder for OIDC Provider {}", clientRegistration.getRegistrationId());
+    LOG.debug("Additional JWK Set URIs: {}", additionalJwkSetUris);
     final var jwtProcessor = createJwtProcessor(clientRegistration, additionalJwkSetUris);
     final var jwtValidator = createJwtValidator(clientRegistration);
     return createNimbusJwtDecoder(jwtProcessor, jwtValidator);
