@@ -37,7 +37,14 @@ public final class CheckpointStateClearedApplier {
 
   /** Applies the state clear by clearing all backup runtime state. */
   public void apply() {
-    LOG.info("Clearing all backup runtime state");
+    LOG.info(
+        "Clearing all backup runtime state. "
+            + "Current state: latestCheckpointId={}, latestCheckpointPosition={}, "
+            + "latestBackupId={}, latestBackupPosition={}",
+        checkpointState.getLatestCheckpointId(),
+        checkpointState.getLatestCheckpointPosition(),
+        checkpointState.getLatestBackupId(),
+        checkpointState.getLatestBackupPosition());
 
     // Clear latest checkpoint and backup info from the DEFAULT column family
     checkpointState.clearLatestCheckpointInfo();
