@@ -122,7 +122,7 @@ test.describe('process page', () => {
         ).toBeVisible();
       },
       onFailure: async () => {
-        page.reload();
+        await page.reload();
       },
     });
 
