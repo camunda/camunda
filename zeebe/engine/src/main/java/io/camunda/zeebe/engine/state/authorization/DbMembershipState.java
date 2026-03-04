@@ -79,7 +79,7 @@ public final class DbMembershipState implements MutableMembershipState {
 
     relationsByEntity.whileEqualPrefix(
         new EntityKeyAndRelationType(entityType, entityId, relationType),
-        (key, value) -> {
+        key -> {
           relationIds.add(key.relation().id());
         });
 
@@ -107,7 +107,7 @@ public final class DbMembershipState implements MutableMembershipState {
       final BiFunction<EntityType, String, Boolean> visitor) {
     entitiesByRelation.whileEqualPrefix(
         new RelationKey(relationType, relationId),
-        (key, value) -> {
+        key -> {
           return visitor.apply(key.entity().type(), key.entity().id());
         });
   }
