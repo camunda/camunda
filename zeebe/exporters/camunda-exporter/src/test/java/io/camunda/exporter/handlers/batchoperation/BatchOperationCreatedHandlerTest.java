@@ -206,7 +206,7 @@ class BatchOperationCreatedHandlerTest {
   }
 
   @Test
-  void shouldAddEntityOnFlush() throws PersistenceException {
+  void shouldUpsertEntityOnFlush() throws PersistenceException {
     // given
     final var entity = new BatchOperationEntity().setId("123");
     final var mockRequest = mock(BatchRequest.class);
@@ -214,7 +214,7 @@ class BatchOperationCreatedHandlerTest {
     // when
     underTest.flush(entity, mockRequest);
 
-    // then
-    verify(mockRequest, times(1)).add(indexName, entity);
+    // then - should use upsert instead of add to prevent cross-partition document overwrites
+    verify(mockRequest, times(1)).upsert(eq(indexName), eq("123"), eq(entity), any(Map.class));
   }
 }
