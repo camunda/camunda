@@ -79,11 +79,15 @@ public class BatchOperationChunkCreatedHandler
   @Override
   public void flush(final BatchOperationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    // also set the endDate to null to ensure that the batch operation is processed again by the
-    // BatchOperationUpdateTask
-    batchRequest.updateWithScript(
+    // Use upsertWithScript to be resilient against cross-partition ordering: if the batch operation
+    // document has not been created yet (e.g., a slow partition's CREATED event export), the upsert
+    // creates a minimal document from the entity. When the document already exists, the script
+    // atomically increments the total count and resets endDate to null so that the
+    // BatchOperationUpdateTask will re-process this batch operation to update all counts.
+    batchRequest.upsertWithScript(
         indexName,
         entity.getId(),
+        entity,
         """
             ctx._source.operationsTotalCount = ctx._source.operationsTotalCount + params.operationsTotalCount;
             ctx._source.endDate = null;

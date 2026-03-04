@@ -116,7 +116,7 @@ class BatchOperationChunkCreatedHandlerTest {
   }
 
   @Test
-  void shouldUpdateEntityOnFlush() throws PersistenceException {
+  void shouldUpsertWithScriptEntityOnFlush() throws PersistenceException {
     // given
     final var entity =
         new BatchOperationEntity().setId("123").setOperationsTotalCount(123).setEndDate(null);
@@ -131,8 +131,12 @@ class BatchOperationChunkCreatedHandlerTest {
     // then
     final var scriptCaptor = ArgumentCaptor.forClass(String.class);
     verify(mockRequest, times(1))
-        .updateWithScript(
-            eq(indexName), eq(entity.getId()), scriptCaptor.capture(), eq(updateFields));
+        .upsertWithScript(
+            eq(indexName),
+            eq(entity.getId()),
+            eq(entity),
+            scriptCaptor.capture(),
+            eq(updateFields));
 
     final var script = scriptCaptor.getValue();
 
