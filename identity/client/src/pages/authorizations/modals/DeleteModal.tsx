@@ -69,7 +69,6 @@ const DeleteAuthorizationModal: FC<UseEntityModalProps<Authorization>> = ({
           {resourceData.resourceType === "USER_TASK" ? (
             <ListItem>
               <strong>{t("resourcePropertyName")}</strong>:{" "}
-              {/* @ts-expect-error todo fix */}
               {resourceData.resourcePropertyName}
             </ListItem>
           ) : (
