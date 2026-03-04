@@ -51,7 +51,6 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
 
   const propertyNameHeader: DataTableHeader<Authorization> = {
     header: t("resourcePropertyName"),
-    // @ts-expect-error todo fix
     key: "resourcePropertyName",
     isSortable: true,
   };

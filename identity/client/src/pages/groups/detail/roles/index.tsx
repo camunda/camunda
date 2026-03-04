@@ -38,7 +38,6 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
   const isRolesListEmpty = !roles || roles.items?.length === 0;
 
   const [assignRoles, assignRolesModal] = useEntityModal(
-    // @ts-expect-error todo fix
     AssignRolesModal,
     reload,
     {
@@ -81,7 +80,6 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
   return (
     <>
       <EntityList
-        // @ts-expect-error todo fix
         data={roles?.items}
         headers={[
           { header: t("roleId"), key: "roleId", isSortable: true },
