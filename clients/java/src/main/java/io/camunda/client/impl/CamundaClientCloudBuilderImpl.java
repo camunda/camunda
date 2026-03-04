@@ -319,6 +319,12 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder useClientSideLoadBalancing(final boolean useClientSideLoadBalancing) {
+    innerBuilder.useClientSideLoadBalancing(useClientSideLoadBalancing);
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder maxHttpConnections(final int maxConnections) {
     innerBuilder.maxHttpConnections(maxConnections);
     return this;

@@ -134,12 +134,17 @@ public class HttpClientFactory {
             .setSslContext(createSslContext())
             .setHostnameVerifier(hostnameVerifier)
             .build();
-    final PoolingAsyncClientConnectionManager connectionManager =
+    final PoolingAsyncClientConnectionManagerBuilder connectionManagerBuilder =
         PoolingAsyncClientConnectionManagerBuilder.create()
             .setTlsStrategy(tlsStrategy)
             .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.LAX)
-            .setMaxConnPerRoute(config.getMaxHttpConnections())
-            .build();
+            .setMaxConnPerRoute(config.getMaxHttpConnections());
+
+    if (config.useClientSideLoadBalancing()) {
+      connectionManagerBuilder.setDnsResolver(new RandomizedDnsResolver());
+    }
+
+    final PoolingAsyncClientConnectionManager connectionManager = connectionManagerBuilder.build();
 
     final HttpAsyncClientBuilder builder =
         HttpAsyncClients.custom()

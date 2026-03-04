@@ -483,8 +483,16 @@ public final class CamundaClientImpl implements CamundaClient {
     final URI address;
     address = config.getGrpcAddress();
 
-    final NettyChannelBuilder channelBuilder =
-        NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
+    final NettyChannelBuilder channelBuilder;
+    if (config.useClientSideLoadBalancing()) {
+      final String host = address.getHost();
+      final String authority = host.contains(":") ? "[" + host + "]" : host;
+      channelBuilder =
+          NettyChannelBuilder.forTarget("dns:///" + authority + ":" + address.getPort());
+      channelBuilder.defaultLoadBalancingPolicy("round_robin");
+    } else {
+      channelBuilder = NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
+    }
 
     configureConnectionSecurity(config, channelBuilder);
     channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);
