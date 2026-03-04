@@ -341,6 +341,7 @@ public class OpensearchConnector {
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final OpensearchProperties osConfig,
       final HttpRequestInterceptor... requestInterceptors) {
+    httpAsyncClientBuilder.disableContentCompression();
     setupAuthentication(httpAsyncClientBuilder, osConfig);
 
     LOGGER.trace("Attempt to load interceptor plugins");

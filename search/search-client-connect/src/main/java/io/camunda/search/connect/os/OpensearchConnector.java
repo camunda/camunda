@@ -185,6 +185,7 @@ public final class OpensearchConnector {
       final HttpAsyncClientBuilder httpAsyncClientBuilder,
       final ConnectConfiguration osConfig,
       final HttpRequestInterceptor... interceptors) {
+    httpAsyncClientBuilder.disableContentCompression();
     setupAuthentication(httpAsyncClientBuilder, osConfig);
 
     for (final HttpRequestInterceptor interceptor : interceptors) {
