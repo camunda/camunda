@@ -18,6 +18,7 @@ import prettierConfig from 'eslint-config-prettier';
 import prettierPlugin from 'eslint-plugin-prettier';
 import globals from 'globals';
 import vitestPlugin from '@vitest/eslint-plugin';
+import importPlugin from 'eslint-plugin-import';
 import {defineConfig, globalIgnores} from 'eslint/config';
 
 const files = {
@@ -131,6 +132,32 @@ const config = defineConfig([
     },
     rules: {
       ...tanstackPlugin.configs.recommended.rules,
+    },
+  },
+
+  {
+    files: [...files.browser, ...files.test],
+    plugins: {
+      import: importPlugin,
+    },
+    rules: {
+      'import/extensions': [
+        'error',
+        'ignorePackages',
+        {
+          js: 'always',
+          jsx: 'always',
+          ts: 'never',
+          tsx: 'never',
+        },
+      ],
+    },
+    settings: {
+      'import/resolver': {
+        node: {
+          extensions: ['.js', '.jsx', '.ts', '.tsx'],
+        },
+      },
     },
   },
 
