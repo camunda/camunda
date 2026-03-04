@@ -268,7 +268,9 @@ public final class MultiInstanceBodyProcessor
       if (inputCollectionSize < completedOrTerminatedChildren) {
         final var incidentMessage =
             String.format(
-                "Expected input collection to contain at least %d elements to match the number of completed/terminated child instances, but found %d elements. The input collection must not be modified during multi-instance execution.",
+                "Expected input collection to contain at least %d elements to match the number of completed/terminated child instances, but found %d elements. "
+                    + "The input collection was modified during multi-instance execution, causing the process instance to become stuck. "
+                    + "To resolve this issue, use process instance modification to move the token from the multi-instance body element to the element that comes after it.",
                 completedOrTerminatedChildren, inputCollectionSize);
         final var failure = new Failure(incidentMessage, ErrorType.EXTRACT_VALUE_ERROR);
         incidentBehavior.createIncident(failure, flowScopeContext);
