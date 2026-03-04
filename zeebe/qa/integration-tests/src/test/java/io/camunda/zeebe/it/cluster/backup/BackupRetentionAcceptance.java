@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -63,7 +64,13 @@ public interface BackupRetentionAcceptance extends ClockSupport {
     final var actuator = BackupActuator.of(getTestCluster().availableGateway());
 
     // The checkpoint scheduler fires immediately on startup, creating an automatic backup.
-    // We must wait for it without advancing the clock to ensure a deterministic backup count.
+    // The first attempt may fail if no valid snapshot exists yet (snapshot positions >=
+    // checkpoint position). If so, advance the clock once to trigger the scheduler's next
+    // iteration, which will produce a successful backup. The failed backup does not persist
+    // to the store, so it does not affect subsequent assertions.
+    if (!tryAwaitBackup(0)) {
+      progressClock(getTestCluster(), BACKUP_INTERVAL.toMillis() + BACKUP_TOLERANCE_MILLIS);
+    }
     final var firstBackup = awaitBackup(0);
 
     progressClock(getTestCluster(), BACKUP_INTERVAL.toMillis() + BACKUP_TOLERANCE_MILLIS);
@@ -106,9 +113,17 @@ public interface BackupRetentionAcceptance extends ClockSupport {
    * a clock advance is needed to trigger the next scheduled backup.
    */
   default long awaitBackup(final long previousBackup) {
+    return awaitBackup(previousBackup, Duration.ofSeconds(30));
+  }
+
+  /**
+   * Waits up to {@code timeout} for a backup with a checkpoint ID greater than {@code
+   * previousBackup} to be created on all partitions.
+   */
+  default long awaitBackup(final long previousBackup, final Duration timeout) {
     final var actuator = BackupActuator.of(getTestCluster().availableGateway());
     Awaitility.await("Backup is created")
-        .atMost(Duration.ofSeconds(30))
+        .atMost(timeout)
         .pollInterval(Duration.ofSeconds(1))
         .until(
             () -> {
@@ -125,6 +140,20 @@ public interface BackupRetentionAcceptance extends ClockSupport {
         .findFirst()
         .map(PartitionBackupState::getCheckpointId)
         .orElseThrow();
+  }
+
+  /**
+   * Attempts to wait for a backup with a checkpoint ID greater than {@code previousBackup} within a
+   * short timeout. Returns {@code true} if the backup was found, {@code false} if the timeout
+   * elapsed.
+   */
+  default boolean tryAwaitBackup(final long previousBackup) {
+    try {
+      awaitBackup(previousBackup, Duration.ofSeconds(10));
+      return true;
+    } catch (final ConditionTimeoutException e) {
+      return false;
+    }
   }
 
   default void assertManifestNotFoundFromStore(final Long backupId) {
