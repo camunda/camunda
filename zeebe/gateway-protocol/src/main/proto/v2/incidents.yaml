@@ -401,14 +401,25 @@ components:
     IncidentResult:
       type: object
       required:
+        - incidentKey
+        - processDefinitionKey
+        - processInstanceKey
+        - elementInstanceKey
+        - creationTime
+        - state
+        - errorType
+        - errorMessage
+        - elementId
+        - processDefinitionId
         - rootProcessInstanceKey
         - jobKey
         - tenantId
       properties:
         processDefinitionId:
+          nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
-          description: The process definition ID associated to this incident.
+          description: The process definition ID associated to this incident. May be null.
         errorType:
           description: The type of the incident error.
           allOf:
@@ -417,9 +428,10 @@ components:
           type: string
           description: Error message which describes the error in more detail.
         elementId:
+          nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
-          description: The element ID associated to this incident.
+          description: The element ID associated to this incident. May be null.
         creationTime:
           description: The creation time of the incident.
           type: string
@@ -437,13 +449,15 @@ components:
             - $ref: 'keys.yaml#/components/schemas/IncidentKey'
           description: The assigned key, which acts as a unique identifier for this incident.
         processDefinitionKey:
+          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
-          description: The process definition key associated to this incident.
+          description: The process definition key associated to this incident. May be null.
         processInstanceKey:
+          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
-          description: The process instance key associated to this incident.
+          description: The process instance key associated to this incident. May be null.
         rootProcessInstanceKey:
           description: |
             The key of the root process instance. The root process instance is the top-level
@@ -453,9 +467,10 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         elementInstanceKey:
+          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
-          description: The element instance key associated to this incident.
+          description: The element instance key associated to this incident. May be null.
         jobKey:
           description: The job key, if exists, associated with this incident.
           nullable: true
