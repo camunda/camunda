@@ -197,4 +197,9 @@ public interface CamundaClientConfiguration {
    * @see CamundaClientBuilder#maxHttpConnections(int)
    */
   int getMaxHttpConnections();
+
+  /**
+   * @see CamundaClientBuilder#useClientSideLoadBalancing(boolean)
+   */
+  boolean useClientSideLoadBalancing();
 }

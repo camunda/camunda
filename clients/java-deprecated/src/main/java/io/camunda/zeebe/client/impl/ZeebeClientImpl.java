@@ -216,8 +216,15 @@ public final class ZeebeClientImpl implements ZeebeClient {
     final URI address;
     address = config.getGrpcAddress();
 
-    final NettyChannelBuilder channelBuilder =
-        NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
+    final NettyChannelBuilder channelBuilder;
+    if (config.useClientSideLoadBalancing()) {
+      channelBuilder =
+          NettyChannelBuilder.forTarget(
+              "dns:///" + address.getHost() + ":" + address.getPort());
+      channelBuilder.defaultLoadBalancingPolicy("round_robin");
+    } else {
+      channelBuilder = NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
+    }
 
     configureConnectionSecurity(config, channelBuilder);
     channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);

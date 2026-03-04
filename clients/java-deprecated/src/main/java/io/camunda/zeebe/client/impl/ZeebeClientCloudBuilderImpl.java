@@ -299,6 +299,13 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
+  public ZeebeClientBuilder useClientSideLoadBalancing(
+      final boolean useClientSideLoadBalancing) {
+    innerBuilder.useClientSideLoadBalancing(useClientSideLoadBalancing);
+    return this;
+  }
+
+  @Override
   public ZeebeClient build() {
     innerBuilder.grpcAddress(determineGrpcAddress());
     innerBuilder.restAddress(determineRestAddress());

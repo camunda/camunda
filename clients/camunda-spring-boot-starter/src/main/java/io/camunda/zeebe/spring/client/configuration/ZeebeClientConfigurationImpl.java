@@ -182,6 +182,11 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
   }
 
   @Override
+  public boolean useClientSideLoadBalancing() {
+    return camundaClientConfiguration.useClientSideLoadBalancing();
+  }
+
+  @Override
   public String toString() {
     return "ZeebeClientConfigurationImpl{"
         + "camundaClientConfiguration="

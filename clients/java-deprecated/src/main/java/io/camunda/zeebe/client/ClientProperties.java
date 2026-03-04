@@ -168,5 +168,11 @@ public final class ClientProperties {
    */
   public static final String USE_DEFAULT_RETRY_POLICY = "zeebe.client.useDefaultRetryPolicy";
 
+  /**
+   * @see ZeebeClientBuilder#useClientSideLoadBalancing(boolean)
+   */
+  public static final String USE_CLIENT_SIDE_LOAD_BALANCING =
+      "zeebe.client.useClientSideLoadBalancing";
+
   private ClientProperties() {}
 }

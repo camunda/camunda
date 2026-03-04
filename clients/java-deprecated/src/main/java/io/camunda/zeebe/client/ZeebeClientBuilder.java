@@ -252,6 +252,18 @@ public interface ZeebeClientBuilder {
   ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
 
   /**
+   * If enabled, the client will use DNS-based name resolution and round-robin load balancing for
+   * gRPC connections. This allows the client to distribute requests across multiple gateway
+   * instances resolved by DNS without requiring an external load balancer.
+   *
+   * <p>Default is {@code false}.
+   *
+   * @param useClientSideLoadBalancing if true, enables DNS resolution and round-robin load
+   *     balancing
+   */
+  ZeebeClientBuilder useClientSideLoadBalancing(final boolean useClientSideLoadBalancing);
+
+  /**
    * @return a new {@link ZeebeClient} with the provided configuration options.
    */
   ZeebeClient build();

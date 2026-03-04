@@ -162,5 +162,11 @@ public final class ClientProperties {
    */
   public static final String USE_DEFAULT_RETRY_POLICY = "camunda.client.useDefaultRetryPolicy";
 
+  /**
+   * @see CamundaClientBuilder#useClientSideLoadBalancing(boolean)
+   */
+  public static final String USE_CLIENT_SIDE_LOAD_BALANCING =
+      "camunda.client.useClientSideLoadBalancing";
+
   private ClientProperties() {}
 }

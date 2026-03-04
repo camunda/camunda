@@ -50,6 +50,7 @@ import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OVERR
 import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.PREFER_REST_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.REST_ADDRESS_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.USE_CLIENT_SIDE_LOAD_BALANCING_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_KB;
@@ -118,6 +119,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private ScheduledExecutorService jobWorkerExecutor;
   private boolean ownsJobWorkerExecutor;
   private boolean useDefaultRetryPolicy;
+  private boolean useClientSideLoadBalancing;
 
   @Override
   public String getGatewayAddress() {
@@ -260,6 +262,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   @Override
+  public boolean useClientSideLoadBalancing() {
+    return useClientSideLoadBalancing;
+  }
+
+  @Override
   public ZeebeClientBuilder withProperties(final Properties properties) {
     BuilderUtils.applyIfNotNull(
         properties,
@@ -364,6 +371,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
         properties,
         USE_DEFAULT_RETRY_POLICY,
         value -> useDefaultRetryPolicy(Boolean.parseBoolean(value)));
+
+    BuilderUtils.applyIfNotNull(
+        properties,
+        io.camunda.zeebe.client.ClientProperties.USE_CLIENT_SIDE_LOAD_BALANCING,
+        value -> useClientSideLoadBalancing(Boolean.parseBoolean(value)));
 
     return this;
   }
@@ -549,6 +561,13 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   @Override
+  public ZeebeClientBuilder useClientSideLoadBalancing(
+      final boolean useClientSideLoadBalancing) {
+    this.useClientSideLoadBalancing = useClientSideLoadBalancing;
+    return this;
+  }
+
+  @Override
   public ZeebeClient build() {
     if (applyEnvironmentVariableOverrides) {
       applyOverrides();
@@ -605,6 +624,10 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
     BuilderUtils.applyIfNotNull(
         USE_DEFAULT_RETRY_POLICY_VAR, value -> useDefaultRetryPolicy(Boolean.parseBoolean(value)));
+
+    BuilderUtils.applyIfNotNull(
+        USE_CLIENT_SIDE_LOAD_BALANCING_VAR,
+        value -> useClientSideLoadBalancing(Boolean.parseBoolean(value)));
   }
 
   @Override
@@ -630,6 +653,8 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     BuilderUtils.appendProperty(sb, "ownsJobWorkerExecutor", ownsJobWorkerExecutor);
     BuilderUtils.appendProperty(sb, "streamEnabled", streamEnabled);
     BuilderUtils.appendProperty(sb, "preferRestOverGrpc", preferRestOverGrpc);
+    BuilderUtils.appendProperty(
+        sb, "useClientSideLoadBalancing", useClientSideLoadBalancing);
 
     return sb.toString();
   }

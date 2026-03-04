@@ -32,6 +32,8 @@ public final class CamundaClientEnvironmentVariables {
       "CAMUNDA_DEFAULT_JOB_WORKER_TENANT_FILTER_MODE";
   public static final String USE_DEFAULT_RETRY_POLICY_VAR =
       "CAMUNDA_CLIENT_USE_DEFAULT_RETRY_POLICY";
+  public static final String USE_CLIENT_SIDE_LOAD_BALANCING_VAR =
+      "CAMUNDA_CLIENT_USE_CLIENT_SIDE_LOAD_BALANCING";
 
   /** OAuth Environment Variables */
   public static final String OAUTH_ENV_CLIENT_ID = "CAMUNDA_CLIENT_ID";

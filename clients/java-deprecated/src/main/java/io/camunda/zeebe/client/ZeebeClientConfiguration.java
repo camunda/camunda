@@ -174,4 +174,9 @@ public interface ZeebeClientConfiguration {
    * @see ZeebeClientBuilder#preferRestOverGrpc(boolean)
    */
   boolean preferRestOverGrpc();
+
+  /**
+   * @see ZeebeClientBuilder#useClientSideLoadBalancing(boolean)
+   */
+  boolean useClientSideLoadBalancing();
 }
