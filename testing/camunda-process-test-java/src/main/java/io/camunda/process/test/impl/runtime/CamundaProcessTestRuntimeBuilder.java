@@ -291,7 +291,8 @@ public class CamundaProcessTestRuntimeBuilder {
   // ============ Build =================
 
   private void loadContainerProvidersFromServiceLoader() {
-    if (containerProvidersServiceLoaderEnabled) {
+    if (containerProvidersServiceLoaderEnabled
+        && runtimeMode != CamundaProcessTestRuntimeMode.REMOTE) {
       ServiceLoader.load(CamundaProcessTestContainerProvider.class)
           .forEach(
               containerProvider -> {
@@ -305,9 +306,10 @@ public class CamundaProcessTestRuntimeBuilder {
   }
 
   public CamundaProcessTestRuntime build() {
+    loadContainerProvidersFromServiceLoader();
+
     switch (runtimeMode) {
       case MANAGED:
-        loadContainerProvidersFromServiceLoader();
         return new CamundaProcessTestContainerRuntime(this, containerFactory);
       case REMOTE:
         return new CamundaProcessTestRemoteRuntime(this);
