@@ -86,7 +86,6 @@ public class UserTaskJobBasedHandlerTest {
         ImmutableJobRecordValue.builder()
             .from(factory.generateObject(JobRecordValue.class))
             .withType(Protocol.USER_TASK_JOB_TYPE)
-            .withJobToUserTaskMigration(false)
             .build();
 
     SUPPORTED_INTENTS.forEach(
@@ -96,26 +95,6 @@ public class UserTaskJobBasedHandlerTest {
                   ValueType.JOB, r -> r.withIntent(intent).withValue(jobRecordValue));
           // when - then
           assertThat(underTest.handlesRecord(jobRecord)).isTrue();
-        });
-  }
-
-  @Test
-  void shouldNotHandleUserTaskMigrationRecord() {
-    // given
-    final JobRecordValue jobRecordValue =
-        ImmutableJobRecordValue.builder()
-            .from(factory.generateObject(JobRecordValue.class))
-            .withType(Protocol.USER_TASK_JOB_TYPE)
-            .withJobToUserTaskMigration(true)
-            .build();
-
-    SUPPORTED_INTENTS.forEach(
-        intent -> {
-          final Record<JobRecordValue> jobRecord =
-              factory.generateRecord(
-                  ValueType.JOB, r -> r.withIntent(intent).withValue(jobRecordValue));
-          // when - then
-          assertThat(underTest.handlesRecord(jobRecord)).isFalse();
         });
   }
 
