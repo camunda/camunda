@@ -197,7 +197,7 @@ describe('Undo variable modifications from different scope', () => {
     mockFetchElementInstance('different_instance_id').withSuccess({
       elementInstanceKey: 'different_instance_id',
       elementId: 'different_element',
-      elementName: 'Different Flow Node',
+      elementName: 'Different Element',
       type: 'SERVICE_TASK',
       state: 'ACTIVE',
       startDate: '2018-06-21',
@@ -321,7 +321,7 @@ describe('Undo variable modifications from different scope', () => {
     mockFetchElementInstance('different_instance_id').withSuccess({
       elementInstanceKey: 'different_instance_id',
       elementId: 'different_element',
-      elementName: 'Different Flow Node',
+      elementName: 'Different Element',
       type: 'SERVICE_TASK',
       state: 'ACTIVE',
       startDate: '2018-06-21',

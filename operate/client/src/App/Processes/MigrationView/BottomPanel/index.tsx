@@ -86,7 +86,7 @@ const BottomPanel: React.FC = observer(() => {
   });
 
   /**
-   * Elements (flow nodes and sequence flows) which are contained in both source diagram and target diagram.
+   * Elements (elements and sequence flows) which are contained in both source diagram and target diagram.
    *
    * An element is auto-mappable when
    * - the element id is contained in source and target diagram
@@ -185,7 +185,7 @@ const BottomPanel: React.FC = observer(() => {
       {!hasSelectableSourceElements && !hasSelectableSourceSequenceFlows ? (
         <ErrorMessageContainer>
           <ErrorMessage
-            message="There are no mappable flow nodes or sequence flows."
+            message="There are no mappable elements or sequence flows."
             additionalInfo="Exit migration to select a different process"
           />
         </ErrorMessageContainer>

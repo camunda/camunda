@@ -413,7 +413,7 @@ describe('VariablePanel', () => {
     mockFetchElementInstance('2').withSuccess({
       elementInstanceKey: '2',
       elementId: 'TEST_ELEMENT',
-      elementName: 'Test Flow Node',
+      elementName: 'Test Element',
       type: 'SERVICE_TASK',
       state: 'ACTIVE',
       startDate: '2018-06-21',

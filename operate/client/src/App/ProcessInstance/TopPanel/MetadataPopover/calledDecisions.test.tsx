@@ -149,7 +149,7 @@ describe('MetadataPopover', () => {
     vi.useRealTimers();
   });
 
-  it('should render meta data for completed flow node', async () => {
+  it('should render meta data for completed element', async () => {
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
     mockFetchProcessInstanceV2().withSuccess(
       createProcessInstance({
