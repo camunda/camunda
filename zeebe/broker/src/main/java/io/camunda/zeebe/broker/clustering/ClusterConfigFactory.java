@@ -48,7 +48,10 @@ public final class ClusterConfigFactory {
     final var advertisedAddress =
         Address.from(network.getAdvertisedHost(), network.getAdvertisedPort());
 
-    return new MemberConfig().setAddress(advertisedAddress).setId(String.valueOf(nodeId));
+    return new MemberConfig()
+        .setAddress(advertisedAddress)
+        .setId(String.valueOf(nodeId))
+        .setNodeVersion(nodeVersion);
   }
 
   private SwimMembershipProtocolConfig membershipConfig(final MembershipCfg config) {

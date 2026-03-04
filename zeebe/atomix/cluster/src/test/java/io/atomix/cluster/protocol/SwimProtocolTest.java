@@ -320,6 +320,51 @@ public class SwimProtocolTest extends ConcurrentTestCase {
   }
 
   @Test
+  public void shouldRemoveOldMemberNodeIdVersionWhenNoPropertyChanged()
+      throws InterruptedException {
+    // given
+    reset(true);
+    startProtocol(member1, member1.id().toString());
+    startProtocol(member2, member2.id().toString());
+
+    awaitMembers(member2, member1, member2);
+    awaitMembers(member1, member1, member2);
+
+    clearEvents(member1, member2);
+
+    // when - starting a member with new node version but all other properties unchanged
+    final var currentVersion = versions.get(member2.id().id());
+    // version can be null
+    final var nextVersion = currentVersion != null ? currentVersion + 1 : 0;
+    final var member2NewVersion =
+        member(
+            member2.id().id(),
+            nextVersion, // only update the node id version
+            member2.address().host(),
+            member2.address().port(),
+            version1 // use the same software version
+            );
+    startProtocol(member2NewVersion, "member2-" + member2.id().id());
+
+    // then
+    Awaitility.await("Member 2 old node version removed")
+        .atMost(Duration.ofSeconds(2))
+        .untilAsserted(() -> checkEvent(member1, MEMBER_REMOVED, member2));
+    checkEvent(member1, MEMBER_ADDED, member2NewVersion);
+
+    // verify that all members have only the new version of member2
+    for (final var entry : protocols.entrySet()) {
+      final var id = entry.getKey();
+      if (!id.equals(member2NewVersion.id())) {
+        final var memberView = ((SwimMember) entry.getValue().getMember(member2NewVersion.id()));
+        assertThat(memberView.nodeVersion())
+            .describedAs("Member %s has new version of member 2", id)
+            .isEqualTo(nextVersion);
+      }
+    }
+  }
+
+  @Test
   public void oldVersionShouldLeaveWhenNewVersionIsDetected() throws InterruptedException {
     // given
     reset(true);
