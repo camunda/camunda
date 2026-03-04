@@ -150,6 +150,7 @@ public class HttpClientFactory {
             .setCharCodingConfig(
                 CharCodingConfig.custom().setCharset(StandardCharsets.UTF_8).build())
             .evictIdleConnections(TimeValue.ofSeconds(30))
+            .disableContentCompression()
             .useSystemProperties(); // allow users to customize via system properties
 
     final List<AsyncExecChainHandler> chainHandlers = config.getChainHandlers();
