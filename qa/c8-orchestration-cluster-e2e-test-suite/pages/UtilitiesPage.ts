@@ -12,6 +12,45 @@ import {TaskDetailsPage} from '@pages/TaskDetailsPage';
 import {sleep} from '../utils/sleep';
 import {waitForAssertion} from '../utils/waitForAssertion';
 
+export async function hideModificationHelperModal(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'sharedState',
+      JSON.stringify({hideModificationHelperModal: true}),
+    );
+  });
+}
+
+export async function gotoProcessesPage(
+  page: Page,
+  options?: {
+    searchParams?: {
+      active?: string;
+      ids?: string;
+      process?: string;
+      version?: string;
+      flowNodeId?: string;
+    };
+  },
+): Promise<void> {
+  const baseUrl = `${process.env.CORE_APPLICATION_OPERATE_URL}/operate/processes`;
+  const searchParams = new URLSearchParams();
+
+  if (options?.searchParams) {
+    Object.entries(options.searchParams).forEach(([key, value]) => {
+      if (value) {
+        searchParams.append(key, value);
+      }
+    });
+  }
+
+  const url = searchParams.toString()
+    ? `${baseUrl}?${searchParams.toString()}`
+    : baseUrl;
+
+  await page.goto(url);
+}
+
 export async function navigateToApp(
   page: Page,
   appName: string,

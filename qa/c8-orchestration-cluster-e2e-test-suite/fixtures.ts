@@ -15,9 +15,11 @@ import {TaskListLoginPage} from '@pages/TaskListLoginPage';
 import {OperateProcessesPage} from '@pages/OperateProcessesPage';
 import {OperateProcessInstancePage} from '@pages/OperateProcessInstancePage';
 import {OperateProcessMigrationModePage} from '@pages/OperateProcessMigrationModePage';
+import {OperateProcessModificationModePage} from '@pages/OperateProcessModificationModePage';
 import {OperateFiltersPanelPage} from '@pages/OperateFiltersPanelPage';
 import {OperateDiagramPage} from '@pages/OperateDiagramPage';
 import {OperateOperationPanelPage} from '@pages/OperateOperationPanelPage';
+import {OperateDashboardPage} from '@pages/OperateDashboardPage';
 import {TaskDetailsPage} from '@pages/TaskDetailsPage';
 import {TasklistHeader} from '@pages/TasklistHeader';
 import {TasklistProcessesPage} from '@pages/TasklistProcessesPage';
@@ -35,7 +37,9 @@ type PlaywrightFixtures = {
   operateProcessesPage: OperateProcessesPage;
   operateProcessInstancePage: OperateProcessInstancePage;
   operateProcessMigrationModePage: OperateProcessMigrationModePage;
+  operateProcessModificationModePage: OperateProcessModificationModePage;
   operateFiltersPanelPage: OperateFiltersPanelPage;
+  operateDashboardPage: OperateDashboardPage;
   operateDiagramPage: OperateDiagramPage;
   operateOperationPanelPage: OperateOperationPanelPage;
   taskDetailsPage: TaskDetailsPage;
@@ -79,6 +83,9 @@ const test = base.extend<PlaywrightFixtures>({
   operateProcessMigrationModePage: async ({page}, use) => {
     await use(new OperateProcessMigrationModePage(page));
   },
+  operateProcessModificationModePage: async ({page}, use) => {
+    await use(new OperateProcessModificationModePage(page));
+  },
   operateFiltersPanelPage: async ({page}, use) => {
     await use(new OperateFiltersPanelPage(page));
   },
@@ -117,6 +124,9 @@ const test = base.extend<PlaywrightFixtures>({
   },
   loginPage: async ({page}, use) => {
     await use(new LoginPage(page));
+  },
+  operateDashboardPage: async ({page}, use) => {
+    await use(new OperateDashboardPage(page));
   },
 });
 
