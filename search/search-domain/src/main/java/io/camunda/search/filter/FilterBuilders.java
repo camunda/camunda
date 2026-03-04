@@ -378,6 +378,16 @@ public final class FilterBuilders {
     return fn.apply(jobTimeSeriesStatistics()).build();
   }
 
+  public static JobErrorStatisticsFilter.Builder jobErrorStatistics() {
+    return new JobErrorStatisticsFilter.Builder();
+  }
+
+  public static JobErrorStatisticsFilter jobErrorStatistics(
+      final Function<JobErrorStatisticsFilter.Builder, ObjectBuilder<JobErrorStatisticsFilter>>
+          fn) {
+    return fn.apply(jobErrorStatistics()).build();
+  }
+
   public static GlobalListenerFilter.Builder globalListener() {
     return new GlobalListenerFilter.Builder();
   }
