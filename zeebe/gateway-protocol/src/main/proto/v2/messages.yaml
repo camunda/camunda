@@ -589,20 +589,26 @@ components:
       description: Advanced MessageSubscriptionTypeEnum filter
       properties:
         $eq:
+          description: Matches when the message subscription type is equal to the provided value.
           $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
         $neq:
+          description: Matches when the message subscription type is not equal to the provided value.
           $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
         $exists:
+          description: Matches records where the message subscription type is present or absent.
           type: boolean
         $in:
+          description: Matches when the message subscription type equals any of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
         $nin:
+          description: Matches when the message subscription type equals none of the provided values.
           type: array
           items:
             $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
         $like:
+          description: Matches values by wildcard pattern using '*' and '?'.
           type: string
 
     CorrelatedMessageSubscriptionFilter:

@@ -53,8 +53,8 @@ public class MessageSubscriptionSpecificFilterIT {
   private static final String FLOW_NODE_ID = CommonFixtures.nextStringId();
   private static final String PROCESS_DEFINITION_ID = CommonFixtures.nextStringId();
   private static final Long PROCESS_INSTANCE_KEY = CommonFixtures.nextKey();
-  private static final String EXTENSION_PROPERTY_KEY = "route";
-  private static final String EXTENSION_PROPERTY_VALUE = "alpha";
+  private static final String EXTENSION_PROPERTY_KEY = "route:type";
+  private static final String EXTENSION_PROPERTY_VALUE = "alpha:beta";
 
   @Autowired private RdbmsService rdbmsService;
 
@@ -139,7 +139,7 @@ public class MessageSubscriptionSpecificFilterIT {
             .build(),
         new MessageSubscriptionFilter.Builder()
             .extensionPropertyOperations(
-                Map.of(EXTENSION_PROPERTY_KEY, List.of(Operation.like("*pha"))))
+                Map.of(EXTENSION_PROPERTY_KEY, List.of(Operation.like("*:bet*"))))
             .build());
   }
 }

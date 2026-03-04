@@ -237,6 +237,10 @@ public class MessageSubscriptionIT {
   private static void compareMessageSubscriptions(
       final MessageSubscriptionEntity instance, final MessageSubscriptionDbModel role) {
     assertThat(instance).isNotNull();
-    assertThat(instance).usingRecursiveComparison().isEqualTo(role);
+    assertThat(instance)
+        .usingRecursiveComparison()
+        .ignoringFields("extensionProperties")
+        .isEqualTo(role);
+    assertThat(instance.extensionProperties()).isNotNull();
   }
 }

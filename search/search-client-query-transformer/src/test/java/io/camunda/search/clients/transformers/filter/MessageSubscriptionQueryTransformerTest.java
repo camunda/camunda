@@ -326,6 +326,37 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
   }
 
   @Test
+  public void shouldApplyAdvancedExtensionPropertiesValueFilterWithColonInKeyAndValue() {
+    // given
+    final var filter =
+        FilterBuilders.messageSubscription(
+            b ->
+                b.extensionPropertyOperations(
+                    Map.of("route:type", List.of(Operation.like("*:bet*")))));
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    assertThat(searchQuery.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            query -> {
+              assertThat(query.must().size()).isEqualTo(2);
+              assertThat(query.must().getFirst().queryOption())
+                  .isInstanceOf(SearchTermsQuery.class);
+              assertThat(query.must().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchWildcardQuery.class,
+                      wildcardQuery -> {
+                        assertThat(wildcardQuery.field())
+                            .isEqualTo("extensionProperties.route:type");
+                        assertThat(wildcardQuery.value()).isEqualTo("*:bet*");
+                      });
+            });
+  }
+
+  @Test
   public void shouldApplyFilterAndChecks() {
     // given
     final var authorization =

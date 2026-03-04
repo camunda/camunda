@@ -38,6 +38,10 @@ public class MessageSubscriptionEntityMapperTest {
     final var entity = MessageSubscriptionEntityMapper.toEntity(model);
 
     // Then
-    assertThat(entity).usingRecursiveComparison().isEqualTo(model);
+    assertThat(entity)
+        .usingRecursiveComparison()
+        .ignoringFields("extensionProperties")
+        .isEqualTo(model);
+    assertThat(entity.extensionProperties()).isEmpty();
   }
 }
