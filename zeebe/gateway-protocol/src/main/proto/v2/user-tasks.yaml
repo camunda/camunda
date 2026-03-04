@@ -530,14 +530,12 @@ components:
           type: string
           description: The name for this user task.
         state:
-          nullable: true
           $ref: '#/components/schemas/UserTaskStateEnum'
         assignee:
           nullable: true
           description: The assignee of the user task.
           type: string
         elementId:
-          nullable: true
           description: The element ID of the user task.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
@@ -552,12 +550,10 @@ components:
           items:
             type: string
         processDefinitionId:
-          nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
           description: The ID of the process definition.
         creationDate:
-          nullable: true
           type: string
           description: The creation date of a user task.
           format: date-time
@@ -577,14 +573,12 @@ components:
           type: string
           format: date-time
         tenantId:
-          nullable: true
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         externalFormReference:
           description: The external form reference.
           nullable: true
           type: string
         processDefinitionVersion:
-          nullable: true
           type: integer
           description: The version of the process definition.
           format: int32
@@ -594,19 +588,16 @@ components:
           additionalProperties:
             type: string
         priority:
-          nullable: true
           type: integer
           description: The priority of a user task. The higher the value the higher the priority.
           minimum: 0
           maximum: 100
           default: 50
         userTaskKey:
-          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/UserTaskKey'
           description: The key of the user task.
         elementInstanceKey:
-          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
           description: The key of the element instance.
@@ -617,12 +608,10 @@ components:
             This is `null` if the process has no name defined.
           nullable: true
         processDefinitionKey:
-          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
           description: The key of the process definition.
         processInstanceKey:
-          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The key of the process instance.
