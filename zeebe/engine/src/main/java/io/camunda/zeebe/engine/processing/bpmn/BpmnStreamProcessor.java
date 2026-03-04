@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -184,7 +185,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         final var terminatingContext = stateTransitionBehavior.transitionToTerminating(context);
         final var transitionOutcome = processor.onTerminate(element, terminatingContext);
         if (transitionOutcome == TransitionOutcome.CONTINUE) {
-          processor.finalizeTermination(element, terminatingContext);
+          afterTerminating(element, processor, terminatingContext)
+              .ifLeft(failure -> incidentBehavior.createIncident(failure, terminatingContext));
         }
         break;
       case COMPLETE_EXECUTION_LISTENER:
@@ -197,13 +199,17 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
           case ELEMENT_COMPLETING ->
               onEndExecutionListenerComplete((ExecutableFlowNode) element, processor, context)
                   .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
+          case ELEMENT_TERMINATING ->
+              onCancelExecutionListenerComplete((ExecutableFlowNode) element, processor, context)
+                  .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
           default ->
               throw new BpmnProcessingException(
                   context, String.format("Unexpected element state: '%s'", elementState));
         }
         break;
       case CONTINUE_TERMINATING_ELEMENT:
-        processor.finalizeTermination(element, context);
+        onContinueTerminating(element, processor, context)
+            .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
         break;
       default:
         throw new BpmnProcessingException(
@@ -234,6 +240,38 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         context,
         ExecutableFlowNode::getEndExecutionListeners,
         processor::finalizeCompletion);
+  }
+
+  private Either<Failure, ?> onContinueTerminating(
+      final ExecutableFlowElement element,
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final BpmnElementContext context) {
+    return afterTerminating(element, processor, context);
+  }
+
+  private Either<Failure, ?> afterTerminating(
+      final ExecutableFlowElement element,
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final BpmnElementContext context) {
+
+    if (!(element instanceof ExecutableProcess)) {
+      // other elements, do not have cancel execution listeners
+      return finalizeTermination(processor, element, context);
+    }
+
+    return processElementWithListeners(
+        element,
+        context,
+        ExecutableFlowNode::getCancelExecutionListeners,
+        (e, c) -> finalizeTermination(processor, e, c));
+  }
+
+  private Either<Failure, ?> finalizeTermination(
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final ExecutableFlowElement element,
+      final BpmnElementContext context) {
+    processor.finalizeTermination(element, context);
+    return BpmnElementProcessor.SUCCESS;
   }
 
   private Either<Failure, ?> processElementWithListeners(
@@ -287,6 +325,18 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         context,
         ExecutableFlowNode::getEndExecutionListeners,
         processor::finalizeCompletion);
+  }
+
+  public Either<Failure, ?> onCancelExecutionListenerComplete(
+      final ExecutableFlowNode element,
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final BpmnElementContext context) {
+    mergeVariablesOfExecutionListener(context, false);
+    return onExecutionListenerComplete(
+        element,
+        context,
+        ExecutableFlowNode::getCancelExecutionListeners,
+        (e, c) -> finalizeTermination(processor, e, c));
   }
 
   private Either<Failure, ?> onExecutionListenerComplete(

@@ -81,5 +81,17 @@ public enum JobListenerEventType {
    * executing custom logic before the task is fully canceled. The user task cancellation can't be
    * denied by a listener of this type.
    */
-  CANCELING
+  CANCELING,
+
+  // ---------------------------------------------------------------------------
+  // Execution Listener event types (cancel)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Represents the `cancel` event for an execution listener. This event type is used to indicate
+   * that the listener should be triggered when the process element reaches {@code
+   * ELEMENT_TERMINATING} state (e.g. explicit process instance cancellation). The element
+   * termination can't be denied by a listener of this type.
+   */
+  CANCEL
 }

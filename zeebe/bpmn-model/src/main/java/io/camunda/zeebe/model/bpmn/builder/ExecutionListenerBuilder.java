@@ -41,6 +41,10 @@ public class ExecutionListenerBuilder {
     return eventType(ZeebeExecutionListenerEventType.end);
   }
 
+  public ExecutionListenerBuilder cancel() {
+    return eventType(ZeebeExecutionListenerEventType.cancel);
+  }
+
   public ExecutionListenerBuilder type(final String type) {
     element.setType(type);
     return this;

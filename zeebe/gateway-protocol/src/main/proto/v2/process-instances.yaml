@@ -279,7 +279,11 @@ paths:
         - Process instance
       operationId: cancelProcessInstance
       summary: Cancel process instance
-      description: Cancels a running process instance. As a cancellation includes more than just the removal of the process instance resource, the cancellation resource must be posted.
+      description: >-
+        Cancels a running process instance. As a cancellation includes more than
+        just the removal of the process instance resource, the cancellation
+        resource must be posted. If the process definition has cancel execution
+        listeners, termination is blocked until all cancel listener jobs complete.
       parameters:
         - name: processInstanceKey
           in: path

@@ -148,6 +148,16 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder>
   }
 
   @Override
+  public ProcessBuilder zeebeCancelExecutionListener(final String type, final String retries) {
+    return zeebeExecutionListenersBuilder.zeebeCancelExecutionListener(type, retries);
+  }
+
+  @Override
+  public ProcessBuilder zeebeCancelExecutionListener(final String type) {
+    return zeebeExecutionListenersBuilder.zeebeCancelExecutionListener(type);
+  }
+
+  @Override
   public ProcessBuilder zeebeExecutionListener(
       final Consumer<ExecutionListenerBuilder> executionListenerBuilderConsumer) {
     return zeebeExecutionListenersBuilder.zeebeExecutionListener(executionListenerBuilderConsumer);

@@ -17,6 +17,7 @@ package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import java.util.Arrays;
 import java.util.Collection;
@@ -83,6 +84,21 @@ public class ExecutionListenersValidator implements ModelElementValidator<ZeebeE
               parentElementTypeName, ELEMENTS_THAT_SUPPORT_EXECUTION_LISTENERS);
       validationResultCollector.addError(0, errorMessage);
       return;
+    }
+
+    // Validate that 'cancel' event type is only used on process-level elements
+    if (!BpmnModelConstants.BPMN_ELEMENT_PROCESS.equals(parentElementTypeName)) {
+      final boolean hasCancelListener =
+          executionListeners.stream()
+              .anyMatch(
+                  listener -> ZeebeExecutionListenerEventType.cancel == listener.getEventType());
+      if (hasCancelListener) {
+        validationResultCollector.addError(
+            0,
+            "The 'cancel' execution listener event type is not supported for the '"
+                + parentElementTypeName
+                + "' element. The 'cancel' event type is only supported on the 'process' element.");
+      }
     }
 
     final Function<ZeebeExecutionListener, String> eventTypeAndTypeClassifier =

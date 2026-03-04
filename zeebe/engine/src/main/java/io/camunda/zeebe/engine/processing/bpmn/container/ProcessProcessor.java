@@ -108,17 +108,19 @@ public final class ProcessProcessor
     compensationSubscriptionBehaviour.deleteSubscriptionsOfProcessInstance(context);
 
     final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);
+    return noActiveChildInstances ? TransitionOutcome.CONTINUE : TransitionOutcome.AWAIT;
+  }
 
-    if (noActiveChildInstances) {
-      transitionTo(
-          element,
-          context,
-          terminating ->
-              Either.right(
-                  stateTransitionBehavior.transitionToTerminated(
-                      terminating, element.getEventType(), getAsyncRequest(context))));
-    }
-    return TransitionOutcome.CONTINUE;
+  @Override
+  public void finalizeTermination(
+      final ExecutableFlowElementContainer element, final BpmnElementContext terminationContext) {
+    transitionTo(
+        element,
+        terminationContext,
+        context ->
+            Either.right(
+                stateTransitionBehavior.transitionToTerminated(
+                    context, element.getEventType(), getAsyncRequest(context))));
   }
 
   private AsyncRequest getAsyncRequest(final BpmnElementContext context) {
@@ -197,17 +199,9 @@ public final class ProcessProcessor
                         eventTrigger,
                         flowScopeContext));
       }
-    } else if (stateBehavior.canBeTerminated(childContext)) {
-      if (flowScopeInstance.isTerminating()) {
-        // the process instance was canceled, or interrupted by a parent process instance
-        transitionTo(
-            element,
-            flowScopeContext,
-            context ->
-                Either.right(
-                    stateTransitionBehavior.transitionToTerminated(
-                        context, element.getEventType(), getAsyncRequest(context))));
-      }
+    } else if (stateBehavior.canBeTerminated(childContext) && flowScopeInstance.isTerminating()) {
+      // the process instance was canceled, or interrupted by a parent process instance
+      stateTransitionBehavior.continueWithTerminating(flowScopeContext);
     }
   }
 

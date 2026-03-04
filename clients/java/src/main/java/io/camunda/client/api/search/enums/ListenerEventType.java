@@ -17,6 +17,7 @@ package io.camunda.client.api.search.enums;
 
 public enum ListenerEventType {
   ASSIGNING,
+  CANCEL,
   CANCELING,
   COMPLETING,
   CREATING,

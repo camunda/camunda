@@ -36,6 +36,7 @@ const listenerEventTypeSchema = z.enum([
 	'UNSPECIFIED',
 	'START',
 	'END',
+	'CANCEL',
 	'CREATING',
 	'ASSIGNING',
 	'UPDATING',
