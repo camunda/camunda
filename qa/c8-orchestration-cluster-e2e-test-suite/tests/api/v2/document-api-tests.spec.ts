@@ -320,8 +320,8 @@ test.describe.parallel('Document API Tests', () => {
   test('Create Multiple Documents', async ({request}) => {
     const name = await generateRandomStringAsync(10);
     const payload = CREATE_ON_FLY_MULTIPLE_DOCUMENTS_REQUEST_BODY(name, 2);
-    const expectedFile1 = CREATE_TXT_DOC_RESPONSE_BODY(`${name}1`, 22);
-    const expectedFile2 = CREATE_TXT_DOC_RESPONSE_BODY(`${name}2`, 22);
+    const expectedFile1 = CREATE_TXT_DOC_RESPONSE_BODY(`${name}1`, 24);
+    const expectedFile2 = CREATE_TXT_DOC_RESPONSE_BODY(`${name}2`, 24);
     let json: Serializable = {};
 
     await test.step('Create Multiple Documents 201', async () => {
