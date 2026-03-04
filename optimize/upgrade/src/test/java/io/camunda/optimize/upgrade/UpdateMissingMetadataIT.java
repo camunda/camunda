@@ -15,9 +15,11 @@ import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import io.camunda.optimize.service.db.es.schema.index.MetadataIndexES;
 import io.camunda.optimize.service.db.os.schema.OpenSearchMetadataService;
 import io.camunda.optimize.service.db.schema.index.MetadataIndex;
+import io.camunda.optimize.service.metadata.Version;
 import io.camunda.optimize.upgrade.main.UpgradeProcedure;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
-import io.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
+import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import io.camunda.optimize.upgrade.util.VersionUtil;
 import io.github.netmikey.logunit.api.LogCapturer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -36,8 +38,7 @@ public class UpdateMissingMetadataIT extends AbstractUpgradeIT {
   public void updateIsSkippedIfNoMetadataIndexExists() {
     // given
     cleanAllDataFromDatabase();
-    final UpgradePlan upgradePlan =
-        new CurrentVersionNoOperationUpgradePlanFactory().createUpgradePlan();
+    final UpgradePlan upgradePlan = createPreviousVersionMajorMinorUpgradePlan();
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
@@ -54,8 +55,7 @@ public class UpdateMissingMetadataIT extends AbstractUpgradeIT {
   public void updateIsSkippedIfNoMetadataDocExists() {
     // given
     deleteAllDocsInIndex(new MetadataIndexES());
-    final UpgradePlan upgradePlan =
-        new CurrentVersionNoOperationUpgradePlanFactory().createUpgradePlan();
+    final UpgradePlan upgradePlan = createPreviousVersionMajorMinorUpgradePlan();
 
     // when
     upgradeProcedure.performUpgrade(upgradePlan);
@@ -72,8 +72,7 @@ public class UpdateMissingMetadataIT extends AbstractUpgradeIT {
   @Test
   public void updateFailsIfMetadataDocReadFails() {
     // given
-    final UpgradePlan upgradePlan =
-        new CurrentVersionNoOperationUpgradePlanFactory().createUpgradePlan();
+    final UpgradePlan upgradePlan = createPreviousVersionMajorMinorUpgradePlan();
     dbMockServer
         .when(request().withPath("/.*-" + METADATA_INDEX_NAME + ".*/_doc/" + MetadataIndex.ID))
         .respond(
@@ -85,5 +84,12 @@ public class UpdateMissingMetadataIT extends AbstractUpgradeIT {
         .hasMessageContaining("Failed retrieving the Optimize metadata document from database!");
 
     logCapturer.assertContains("Failed retrieving the Optimize metadata document from database!");
+  }
+
+  private static UpgradePlan createPreviousVersionMajorMinorUpgradePlan() {
+    return UpgradePlanBuilder.createUpgradePlan()
+        .fromVersion(VersionUtil.previousMinorVersion(Version.VERSION).orElseThrow())
+        .toVersion(Version.getMajorAndMinor(Version.VERSION) + ".0")
+        .build();
   }
 }

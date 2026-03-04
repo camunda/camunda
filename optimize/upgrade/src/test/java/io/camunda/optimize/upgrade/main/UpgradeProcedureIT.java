@@ -20,7 +20,6 @@ import io.camunda.optimize.upgrade.es.TaskResponse;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
-import io.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
 import io.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import io.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import io.camunda.optimize.upgrade.util.VersionUtil;
@@ -41,7 +40,10 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
       LogCapturer.create().captureForType(UpgradeProcedure.class);
 
   private final UpgradePlan previousVersionMajorMinorUpgradePlan =
-      new CurrentVersionNoOperationUpgradePlanFactory().createUpgradePlan();
+      UpgradePlanBuilder.createUpgradePlan()
+          .fromVersion(PREVIOUS_VERSION_MAJOR_MINOR)
+          .toVersion(Version.getMajorAndMinor(Version.VERSION) + ".0")
+          .build();
 
   @Test
   public void upgradeBreaksOnUnsupportedExistingSchemaVersion() {
