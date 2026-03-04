@@ -165,7 +165,8 @@ jobs:
             echo "job: ${{ matrix.name }}"
             echo
             echo "== Latest surefire/failsafe report files =="
-            python -c 'from pathlib import Path; report_files = [path for pattern in ("**/target/failsafe-reports/*", "**/target/surefire-reports/*") for path in Path(".").glob(pattern) if path.is_file()]; [print(f"{path.stat().st_mtime:.3f} {path}") for path in sorted(set(report_files), key=lambda file_path: file_path.stat().st_mtime)[-60:]]'
+            find . -type f \( -path "*/target/failsafe-reports/*" -o -path "*/target/surefire-reports/*" \) \
+              -printf "%T@ %p\n" | sort -n | tail -n 60
             echo
             echo "== Report files missing 'Tests run:' summary =="
             find . -type f \( -path "*/target/failsafe-reports/*.txt" -o -path "*/target/surefire-reports/*.txt" \) -print0 \
