@@ -6,8 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { checkLicense, License } from "src/utility/api/headers";
+import { checkLicense } from "src/utility/api/headers";
 import { useApi } from "src/utility/api";
+import type { License } from "@camunda/camunda-api-zod-schemas/8.9";
 
 export function useLicense(): License | null {
   const { data } = useApi(checkLicense);

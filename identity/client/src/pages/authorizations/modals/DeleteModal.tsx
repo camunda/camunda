@@ -15,12 +15,9 @@ import {
   DeleteModal as Modal,
   UseEntityModalProps,
 } from "src/components/modal";
-import {
-  Authorization,
-  deleteAuthorization,
-  ResourceType,
-} from "src/utility/api/authorizations";
+import { deleteAuthorization } from "src/utility/api/authorizations";
 import { useNotifications } from "src/components/notifications";
+import type { Authorization } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const DeleteAuthorizationModal: FC<UseEntityModalProps<Authorization>> = ({
   open,
@@ -69,7 +66,7 @@ const DeleteAuthorizationModal: FC<UseEntityModalProps<Authorization>> = ({
           <ListItem>
             <strong>{t("ownerType")}</strong>: {ownerType}
           </ListItem>
-          {resourceData.resourceType === ResourceType.USER_TASK ? (
+          {resourceData.resourceType === "USER_TASK" ? (
             <ListItem>
               <strong>{t("resourcePropertyName")}</strong>:{" "}
               {resourceData.resourcePropertyName}

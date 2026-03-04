@@ -11,12 +11,13 @@ import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApi, useApiCall } from "src/utility/api";
-import { searchRoles, Role } from "src/utility/api/roles";
+import { searchRoles } from "src/utility/api/roles";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
-import { assignTenantRole, Tenant } from "src/utility/api/tenants";
+import { assignTenantRole } from "src/utility/api/tenants";
+import type { Role, Tenant } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const SelectedRoles = styled.div`
   margin-top: 0;
@@ -24,7 +25,7 @@ const SelectedRoles = styled.div`
 
 const AssignRolesModal: FC<
   UseEntityModalCustomProps<
-    { id: Tenant["tenantKey"] },
+    { id: Tenant["tenantId"] },
     { assignedRoles: Role[] }
   >
 > = ({ entity: tenant, assignedRoles, onSuccess, open, onClose }) => {

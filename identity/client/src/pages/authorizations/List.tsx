@@ -12,7 +12,8 @@ import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";
 import Page, { PageHeader } from "src/components/layout/Page";
 import {
-  ResourceType,
+  ALL_RESOURCE_TYPES,
+  RESOURCE_TYPES_WITHOUT_TENANT,
   searchAuthorization,
 } from "src/utility/api/authorizations";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
@@ -24,20 +25,17 @@ import {
 } from "./components";
 import AuthorizationList from "./AuthorizationsList";
 import { isTenantsApiEnabled } from "src/configuration";
+import type { ResourceType } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const List: FC = () => {
   const { t } = useTranslate("authorizations");
+  const authorizationTabs = isTenantsApiEnabled
+    ? ALL_RESOURCE_TYPES
+    : RESOURCE_TYPES_WITHOUT_TENANT;
 
-  const allResourceTypes = Object.values(ResourceType);
-  let authorizationTabs = allResourceTypes;
-
-  if (!isTenantsApiEnabled) {
-    authorizationTabs = authorizationTabs.filter(
-      (type) => type !== ResourceType.TENANT,
-    );
-  }
-
-  const [activeTab, setActiveTab] = useState<string>(authorizationTabs[0]);
+  const [activeTab, setActiveTab] = useState<ResourceType>(
+    authorizationTabs[0],
+  );
 
   const {
     data,

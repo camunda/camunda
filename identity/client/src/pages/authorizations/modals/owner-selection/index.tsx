@@ -7,7 +7,6 @@
  */
 
 import { FC } from "react";
-import { OwnerType } from "src/utility/api/authorizations";
 import { searchUser } from "src/utility/api/users";
 import { searchGroups } from "src/utility/api/groups";
 import { searchMappingRule } from "src/utility/api/mapping-rules";
@@ -19,9 +18,10 @@ import { isCamundaGroupsEnabled, isOIDC } from "src/configuration";
 import { Caption } from "src/pages/authorizations/modals/components.tsx";
 import { DocumentationLink } from "src/components/documentation";
 import { getIdPattern } from "src/utility/validate";
+import type { Authorization } from "@camunda/camunda-api-zod-schemas/8.9";
 
 type SelectionProps = {
-  type: OwnerType;
+  type: Authorization["ownerType"];
   ownerId: string;
   onChange: (newOwner: string) => void;
   onBlur: () => void;
@@ -40,7 +40,7 @@ const Selection: FC<SelectionProps> = ({
   const { t, Translate } = useTranslate("authorizations");
 
   switch (type) {
-    case OwnerType.USER:
+    case "USER":
       if (isOIDC) {
         return (
           <TextField
@@ -87,7 +87,7 @@ const Selection: FC<SelectionProps> = ({
           isEmpty={isEmpty}
         />
       );
-    case OwnerType.GROUP:
+    case "GROUP":
       if (isCamundaGroupsEnabled) {
         return (
           <OwnerSelection
@@ -120,7 +120,7 @@ const Selection: FC<SelectionProps> = ({
           }
         />
       );
-    case OwnerType.MAPPING_RULE:
+    case "MAPPING_RULE":
       return (
         <OwnerSelection
           id="mappingRuleSelection"
@@ -134,7 +134,7 @@ const Selection: FC<SelectionProps> = ({
           isEmpty={isEmpty}
         />
       );
-    case OwnerType.ROLE:
+    case "ROLE":
       return (
         <OwnerSelection
           id="roleSelection"
@@ -146,7 +146,7 @@ const Selection: FC<SelectionProps> = ({
           isEmpty={isEmpty}
         />
       );
-    case OwnerType.CLIENT:
+    case "CLIENT":
       return (
         <TextField
           value={ownerId}
@@ -166,6 +166,7 @@ const Selection: FC<SelectionProps> = ({
           }
         />
       );
+    case "UNSPECIFIED":
     default:
       return null;
   }

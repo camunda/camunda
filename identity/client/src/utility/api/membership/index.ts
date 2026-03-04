@@ -6,82 +6,75 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {
+  Group,
+  QueryUsersByGroupResponseBody,
+  QueryUsersByTenantRequestBody,
+  QueryUsersByTenantResponseBody,
+  QueryUsersByGroupRequestBody,
+  QueryUsersByRoleRequestBody,
+  QueryUsersByRoleResponseBody,
+  Role,
+  Tenant,
+  User,
+} from "@camunda/camunda-api-zod-schemas/8.9";
 import { ApiDefinition, apiDelete, apiPost, apiPut } from "../request";
-import { User } from "src/utility/api/users";
 import { GROUPS_ENDPOINT } from "src/utility/api/groups";
-import { SearchResponse } from "src/utility/api";
 import { TENANTS_ENDPOINT } from "src/utility/api/tenants";
 import { ROLES_ENDPOINT } from "src/utility/api/roles";
 
-export type MemberUser = Pick<User, "username">;
-
-export type GetGroupMembersParams = {
-  groupId: string;
-};
 export const searchMembersByGroup: ApiDefinition<
-  SearchResponse<MemberUser>,
-  GetGroupMembersParams
+  QueryUsersByGroupResponseBody,
+  QueryUsersByGroupRequestBody & Pick<Group, "groupId">
 > = ({ groupId, ...body }) =>
   apiPost(`${GROUPS_ENDPOINT}/${groupId}/users/search`, body);
 
-export type GetTenantMembersParams = {
-  tenantId: string;
-};
 export const getMembersByTenantId: ApiDefinition<
-  SearchResponse<MemberUser>,
-  GetTenantMembersParams
+  QueryUsersByTenantResponseBody,
+  QueryUsersByTenantRequestBody & Pick<Tenant, "tenantId">
 > = ({ tenantId, ...body }) =>
   apiPost(`${TENANTS_ENDPOINT}/${tenantId}/users/search`, body);
 
-export type GetRoleMembersParams = {
-  roleId: string;
-};
 export const getMembersByRole: ApiDefinition<
-  SearchResponse<MemberUser>,
-  GetRoleMembersParams
+  QueryUsersByRoleResponseBody,
+  QueryUsersByRoleRequestBody & Pick<Role, "roleId">
 > = ({ roleId, ...body }) =>
   apiPost(`${ROLES_ENDPOINT}/${roleId}/users/search`, body);
 
-type AssignGroupMemberParams = GetGroupMembersParams & { username: string };
 export const assignGroupMember: ApiDefinition<
   undefined,
-  AssignGroupMemberParams
+  Pick<Group, "groupId"> & Pick<User, "username">
 > = ({ groupId, username }) =>
   apiPut(`${GROUPS_ENDPOINT}/${groupId}/users/${username}`);
 
-type UnassignGroupMemberParams = AssignGroupMemberParams;
 export const unassignGroupMember: ApiDefinition<
   undefined,
-  UnassignGroupMemberParams
+  Pick<Group, "groupId"> & Pick<User, "username">
 > = ({ groupId, username }) =>
   apiDelete(`${GROUPS_ENDPOINT}/${groupId}/users/${username}`);
 
-type AssignTenantMemberParams = GetTenantMembersParams & { username: string };
 export const assignTenantMember: ApiDefinition<
   undefined,
-  AssignTenantMemberParams
+  Pick<Tenant, "tenantId"> & Pick<User, "username">
 > = ({ tenantId, username }) => {
   return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/users/${username}`);
 };
 
-type UnassignTenantMemberParams = AssignTenantMemberParams;
 export const unassignTenantMember: ApiDefinition<
   undefined,
-  UnassignTenantMemberParams
+  Pick<Tenant, "tenantId"> & Pick<User, "username">
 > = ({ tenantId, username }) =>
   apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/users/${username}`);
 
-type AssignRoleMemberParams = GetRoleMembersParams & { username: string };
 export const assignRoleMember: ApiDefinition<
   undefined,
-  AssignRoleMemberParams
+  Pick<Role, "roleId"> & Pick<User, "username">
 > = ({ roleId, username }) => {
   return apiPut(`${ROLES_ENDPOINT}/${roleId}/users/${username}`);
 };
 
-type UnassignRoleMemberParams = AssignRoleMemberParams;
 export const unassignRoleMember: ApiDefinition<
   undefined,
-  UnassignRoleMemberParams
+  Pick<Role, "roleId"> & Pick<User, "username">
 > = ({ roleId, username }) =>
   apiDelete(`${ROLES_ENDPOINT}/${roleId}/users/${username}`);
