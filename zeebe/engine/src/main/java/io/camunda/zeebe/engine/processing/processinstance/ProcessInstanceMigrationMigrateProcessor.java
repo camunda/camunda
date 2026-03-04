@@ -12,6 +12,7 @@ import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCI
 import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
 import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
 
+import com.google.common.base.Predicates;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
@@ -189,7 +190,11 @@ public class ProcessInstanceMigrationMigrateProcessor
         BufferUtil.bufferAsString(targetProcessDefinition.getBpmnProcessId()),
         elementInstanceState,
         businessIdUniquenessEnabled,
-        bannedInstanceState::isProcessInstanceBanned);
+        Predicates.or(
+            // ignore the current instance as we expect it to be active during version migration
+            Predicates.equalTo(processInstanceKey),
+            // ignore banned instances as well, as we don't consider them active
+            key -> key != null && bannedInstanceState.isProcessInstanceBanned(key)));
     requireReferredElementsExist(
         sourceProcessDefinition, targetProcessDefinition, mappingInstructions, processInstanceKey);
 
