@@ -124,6 +124,8 @@ orchestration:
   # We need to explicitly set the secondary storage type to ELS
   # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
   data:
+    audit-log:
+      enabled: false
     secondaryStorage:
       type: elasticsearch
   # We set extra configuration to configure additional settings for Camunda application, that are part
