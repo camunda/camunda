@@ -134,7 +134,8 @@ public class WebSecurityConfig {
   public static final String LOGIN_URL = "/login";
   public static final String LOGOUT_URL = "/logout";
   public static final String REDIRECT_URI = "/sso-callback";
-  public static final Set<String> API_PATHS = Set.of("/api/**", "/v1/**", "/v2/**", "/mcp/**");
+  public static final Set<String> API_PATHS =
+      Set.of("/api/**", "/v1/**", "/v2/**", "/mcp/**", "/.well-known/oauth-protected-resource/**");
   public static final Set<String> UNPROTECTED_API_PATHS =
       Set.of(
           // these v2 endpoints are public
@@ -142,7 +143,9 @@ public class WebSecurityConfig {
           "/v2/setup/user",
           "/v2/status",
           // deprecated Tasklist v1 Public Endpoints
-          "/v1/external/process/**");
+          "/v1/external/process/**",
+          // OAuth2 Protected Resource Metadata endpoint (RFC 9728)
+          "/.well-known/oauth-protected-resource/**");
   public static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           // endpoint for failure forwarding
