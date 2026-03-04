@@ -7,7 +7,9 @@
  */
 package io.camunda.optimize.upgrade.plan;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.vdurmont.semver4j.Semver;
+import io.camunda.optimize.service.metadata.Version;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
 import io.camunda.optimize.upgrade.plan.factories.UpgradePlanFactory;
@@ -63,10 +65,90 @@ public class UpgradePlanRegistry {
                 }
               });
     }
+
+    // Generate patch plans up to the compiled-in version. Plans beyond the actual target
+    // version (if different) are harmlessly filtered by `getSequentialUpgradePlansToTargetVersion`.
+    generateMissingPatchUpgradePlans(Version.VERSION);
   }
 
-  public UpgradePlanRegistry(final Map<Semver, UpgradePlan> upgradePlans) {
+  @VisibleForTesting
+  UpgradePlanRegistry(final Map<Semver, UpgradePlan> upgradePlans) {
     this.upgradePlans = upgradePlans;
+  }
+
+  /**
+   * Auto-generates no-op upgrade plans for missing patch-to-patch transitions within the current
+   * minor version, while respecting explicit version jumps.
+   *
+   * <p>The algorithm walks backwards from {@code currentPatch} down to {@code 1}. At each step it
+   * looks up whether an explicit plan already targets {@code major.minor.patch}. If one is found,
+   * the loop jumps directly to {@code fromVersion.patch}, skipping the entire covered range without
+   * generating any intermediate plans. If no plan is found, a no-op plan is inserted for that
+   * single step and the counter decrements by one.
+   *
+   * <p>For example, given an explicit jump plan {@code 8.8.2 -> 8.8.10} with current version {@code
+   * 8.8.12}, the backward walk proceeds as follows:
+   *
+   * <ul>
+   *   <li>patch 12 - no plan -> auto-generate {@code 8.8.11->8.8.12}, decrement to 11
+   *   <li>patch 11 - no plan -> auto-generate {@code 8.8.10->8.8.11}, decrement to 10
+   *   <li>patch 10 - explicit plan {@code 8.8.2->8.8.10} found → jump to patch 2
+   *   <li>patch 2 - no plan -> auto-generate {@code 8.8.1->8.8.2}, decrement to 1
+   *   <li>patch 1 - no plan -> auto-generate {@code 8.8.0->8.8.1}, decrement to 0
+   *   <li>patch 0 - loop ends
+   * </ul>
+   *
+   * <p>Patches {@code 8.8.3} through {@code 8.8.9} are never visited and no plans are generated for
+   * them.
+   *
+   * <p>Plans already registered by explicit {@link UpgradePlanFactory} implementations are never
+   * overwritten - only missing gaps are filled with no-op plans.
+   *
+   * <p>This eliminates the need to manually create boilerplate per-patch factory classes that
+   * contain no real migration logic.
+   *
+   * @param currentVersion the current application version string (e.g. {@code "8.9.3"})
+   */
+  @VisibleForTesting
+  void generateMissingPatchUpgradePlans(final String currentVersion) {
+    final var version = new Semver(currentVersion);
+    final int major = version.getMajor();
+    final int minor = version.getMinor();
+    final int currentPatch = version.getPatch();
+
+    if (currentPatch == 0) {
+      return;
+    }
+
+    int patch = currentPatch;
+    while (patch > 0) {
+      final var toVersion = new Semver(major + "." + minor + "." + patch);
+      final var plan = upgradePlans.get(toVersion);
+      if (plan != null) {
+        // Explicit plan found - jump to its fromVersion patch, skipping the covered range
+        LOG.debug(
+            "Explicit plan spans {}.{}.{} -> {}.{}.{}, skipping auto-generation for this range.",
+            major,
+            minor,
+            plan.getFromVersion().getPatch(),
+            major,
+            minor,
+            patch);
+        patch = plan.getFromVersion().getPatch();
+      } else {
+        // No plan for this patch - generate a no-op step and move one patch down
+        final var from = major + "." + minor + "." + (patch - 1);
+        final var to = major + "." + minor + "." + patch;
+        final var noOpPlan =
+            UpgradePlanBuilder.createUpgradePlan().fromVersion(from).toVersion(to).build();
+        upgradePlans.put(toVersion, noOpPlan);
+        LOG.debug(
+            "Auto-generated no-op patch upgrade plan from {} to {} (no explicit factory found).",
+            from,
+            to);
+        patch--;
+      }
+    }
   }
 
   public List<UpgradePlan> getSequentialUpgradePlansToTargetVersion(final String targetVersion) {
