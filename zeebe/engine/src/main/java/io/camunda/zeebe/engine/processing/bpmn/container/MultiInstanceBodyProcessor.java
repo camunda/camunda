@@ -255,6 +255,26 @@ public final class MultiInstanceBodyProcessor
 
     if (!childInstanceCreated && stateBehavior.canBeCompleted(childContext)) {
       final int inputCollectionSize = inputCollectionOrFailure.get().size();
+      final int completedOrTerminatedChildren =
+          multiInstanceElementInstance.getNumberOfCompletedElementInstances()
+              + multiInstanceElementInstance.getNumberOfTerminatedElementInstances();
+
+      // Check if the input collection has been modified (items removed) during execution.
+      // This can only happen for "old" multi-instance bodies that were started before version
+      // 8.5.21 and don't have the input collection stored in state. For these instances, if the
+      // input collection variable is modified to have fewer elements than the number of completed
+      // children, the multi-instance body can never complete. We raise an incident to make this
+      // visible to users.
+      if (inputCollectionSize < completedOrTerminatedChildren) {
+        final var incidentMessage =
+            String.format(
+                "Expected input collection to contain at least %d elements to match the number of completed/terminated child instances, but found %d elements. The input collection must not be modified during multi-instance execution.",
+                completedOrTerminatedChildren, inputCollectionSize);
+        final var failure = new Failure(incidentMessage, ErrorType.EXTRACT_VALUE_ERROR);
+        incidentBehavior.createIncident(failure, flowScopeContext);
+        return;
+      }
+
       if (isAllChildrenHasCompletedOrTerminated(
           multiInstanceElementInstance, inputCollectionSize)) {
         stateTransitionBehavior.completeElement(flowScopeContext);
