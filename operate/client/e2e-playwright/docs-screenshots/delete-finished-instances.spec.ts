@@ -160,18 +160,16 @@ test.describe('delete finished instances', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: completedOrderProcessInstance.detail,
-        processInstanceDetailV2: completedOrderProcessInstance.detailV2,
         callHierarchy: completedOrderProcessInstance.callHierarchy,
         elementInstances: completedOrderProcessInstance.elementInstances,
         statistics: completedOrderProcessInstance.statistics,
         sequenceFlows: completedOrderProcessInstance.sequenceFlows,
-        sequenceFlowsV2: completedOrderProcessInstance.sequenceFlowsV2,
         xml: completedOrderProcessInstance.xml,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: '2551799813954282',
+      key: '2551799813954282',
     });
 
     const deleteInstanceButton = await page.getByRole('button', {
@@ -209,30 +207,10 @@ test.describe('delete finished instances', () => {
         });
       }
 
-      if (route.request().url().includes('/api/process-instances/')) {
-        return route.fulfill({
-          status: 404,
-          body: JSON.stringify(''),
-          headers: {
-            'content-type': 'application/json',
-          },
-        });
-      }
-
       if (route.request().url().includes('/v2/process-instances/')) {
         return route.fulfill({
           status: 404,
           body: JSON.stringify(''),
-          headers: {
-            'content-type': 'application/json',
-          },
-        });
-      }
-
-      if (route.request().url().includes('/api/batch-operations')) {
-        return route.fulfill({
-          status: 200,
-          body: JSON.stringify([]),
           headers: {
             'content-type': 'application/json',
           },

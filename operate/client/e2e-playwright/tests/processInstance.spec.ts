@@ -107,7 +107,7 @@ test.describe('Process Instance', () => {
     test.slow();
 
     await processInstancePage.gotoProcessInstancePage({
-      id: initialData.instanceWithIncidentToResolve.processInstanceKey,
+      key: initialData.instanceWithIncidentToResolve.processInstanceKey,
     });
 
     // click and expand incident bar
@@ -217,7 +217,7 @@ test.describe('Process Instance', () => {
       initialData.instanceWithIncidentToCancel.processInstanceKey;
 
     await processInstancePage.gotoProcessInstancePage({
-      id: initialData.instanceWithIncidentToCancel.processInstanceKey,
+      key: initialData.instanceWithIncidentToCancel.processInstanceKey,
     });
 
     await expect(
@@ -269,7 +269,7 @@ test.describe('Process Instance', () => {
     } = processInstancePage;
 
     await processInstancePage.gotoProcessInstancePage({
-      id: initialData.collapsedSubProcessInstance.processInstanceKey,
+      key: initialData.collapsedSubProcessInstance.processInstanceKey,
     });
 
     await page.getByRole('treeitem', {name: 'startEvent'}).click();
@@ -331,7 +331,7 @@ test.describe('Process Instance', () => {
     const {diagram} = processInstancePage;
 
     await processInstancePage.gotoProcessInstancePage({
-      id: initialData.executionCountProcessInstance.processInstanceKey,
+      key: initialData.executionCountProcessInstance.processInstanceKey,
     });
 
     const elementIds = [

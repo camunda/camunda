@@ -36,14 +36,13 @@ test.describe('process instance page', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: runningInstance.detail,
-        processInstanceDetailV2: runningInstance.detailV2,
         callHierarchy: runningInstance.callHierarchy,
         xml: runningInstance.xml,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: runningInstance.detail.id,
+      key: runningInstance.detail.processInstanceKey,
     });
 
     await expect(processInstancePage.variablesTableSpinner).not.toBeVisible();
@@ -61,21 +60,18 @@ test.describe('process instance page', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: runningInstance.detail,
-        processInstanceDetailV2: runningInstance.detailV2,
         callHierarchy: runningInstance.callHierarchy,
         elementInstances: runningInstance.elementInstances,
         statistics: runningInstance.statistics,
         sequenceFlows: runningInstance.sequenceFlows,
-        sequenceFlowsV2: runningInstance.sequenceFlowsV2,
         variables: runningInstance.variables,
         xml: runningInstance.xml,
         incidents: runningInstance.incidents,
-        incidentsV2: runningInstance.incidentsV2,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: runningInstance.detail.id,
+      key: runningInstance.detail.processInstanceKey,
     });
     await processInstancePage.resetZoomButton.click();
     await page.waitForTimeout(500);
@@ -89,19 +85,17 @@ test.describe('process instance page', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: runningInstance.detail,
-        processInstanceDetailV2: runningInstance.detailV2,
         callHierarchy: runningInstance.callHierarchy,
         elementInstances: runningInstance.elementInstances,
         statistics: runningInstance.statistics,
         sequenceFlows: runningInstance.sequenceFlows,
-        sequenceFlowsV2: runningInstance.sequenceFlowsV2,
         variables: runningInstance.variables,
         xml: runningInstance.xml,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: runningInstance.detail.id,
+      key: runningInstance.detail.processInstanceKey,
     });
     await processInstancePage.resetZoomButton.click();
     await page.waitForTimeout(500);
@@ -117,19 +111,17 @@ test.describe('process instance page', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: runningInstance.detail,
-        processInstanceDetailV2: runningInstance.detailV2,
         callHierarchy: runningInstance.callHierarchy,
         elementInstances: runningInstance.elementInstances,
         statistics: runningInstance.statistics,
         sequenceFlows: runningInstance.sequenceFlows,
-        sequenceFlowsV2: runningInstance.sequenceFlowsV2,
         variables: runningInstance.variables,
         xml: runningInstance.xml,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: runningInstance.detail.id,
+      key: runningInstance.detail.processInstanceKey,
     });
     await processInstancePage.resetZoomButton.click();
     await page.waitForTimeout(500);
@@ -149,21 +141,18 @@ test.describe('process instance page', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: instanceWithIncident.detail,
-        processInstanceDetailV2: instanceWithIncident.detailV2,
         callHierarchy: instanceWithIncident.callHierarchy,
         elementInstances: instanceWithIncident.elementInstances,
         statistics: instanceWithIncident.statistics,
         sequenceFlows: instanceWithIncident.sequenceFlows,
-        sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
         variables: instanceWithIncident.variables,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
-        incidentsV2: instanceWithIncident.incidentsV2,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: instanceWithIncident.detail.id,
+      key: instanceWithIncident.detail.processInstanceKey,
     });
 
     await processInstancePage.resetZoomButton.click();
@@ -184,19 +173,17 @@ test.describe('process instance page', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: completedInstance.detail,
-        processInstanceDetailV2: completedInstance.detailV2,
         callHierarchy: completedInstance.callHierarchy,
         elementInstances: completedInstance.elementInstances,
         statistics: completedInstance.statistics,
         sequenceFlows: completedInstance.sequenceFlows,
-        sequenceFlowsV2: completedInstance.sequenceFlowsV2,
         variables: completedInstance.variables,
         xml: completedInstance.xml,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: completedInstance.detail.id,
+      key: completedInstance.detail.processInstanceKey,
     });
     await processInstancePage.resetZoomButton.click();
     await page.waitForTimeout(500);
@@ -215,19 +202,17 @@ test.describe('process instance page', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: compensationProcessInstance.detail,
-        processInstanceDetailV2: compensationProcessInstance.detailV2,
         callHierarchy: compensationProcessInstance.callHierarchy,
         elementInstances: compensationProcessInstance.elementInstances,
         statistics: compensationProcessInstance.statistics,
         sequenceFlows: compensationProcessInstance.sequenceFlows,
-        sequenceFlowsV2: compensationProcessInstance.sequenceFlowsV2,
         variables: compensationProcessInstance.variables,
         xml: compensationProcessInstance.xml,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: compensationProcessInstance.detail.id,
+      key: compensationProcessInstance.detail.processInstanceKey,
     });
     await processInstancePage.resetZoomButton.click();
     await page.waitForTimeout(500);

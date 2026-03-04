@@ -7,7 +7,6 @@
  */
 
 import type {Route} from '@playwright/test';
-import type {BatchOperationDto} from '@/types';
 import {
   type QueryBatchOperationsResponseBody,
   type QueryDecisionDefinitionsResponseBody,
@@ -19,13 +18,11 @@ function mockResponses({
   decisionDefinitions,
   decisionInstances,
   decisionXml,
-  deleteDecision,
 }: {
   batchOperations?: QueryBatchOperationsResponseBody;
   decisionDefinitions?: QueryDecisionDefinitionsResponseBody;
   decisionInstances?: QueryDecisionInstancesResponseBody;
   decisionXml?: string;
-  deleteDecision?: BatchOperationDto;
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/v2/authentication/me')) {
@@ -86,19 +83,6 @@ function mockResponses({
         body: decisionXml,
         headers: {
           'content-type': 'application/text',
-        },
-      });
-    }
-
-    if (
-      route.request().url().includes('/api/decisions') &&
-      route.request().method() === 'DELETE'
-    ) {
-      return route.fulfill({
-        status: deleteDecision === undefined ? 400 : 200,
-        body: JSON.stringify(deleteDecision),
-        headers: {
-          'content-type': 'application/json',
         },
       });
     }
@@ -1383,24 +1367,11 @@ const mockDecisionXml = `<?xml version="1.0" encoding="UTF-8"?>
 </definitions>
 `;
 
-const mockDeleteDecision = {
-  id: '5a1bd516-a594-423c-be18-ea53a15d61d3',
-  name: 'Invoice Classification - Version 2',
-  type: 'DELETE_DECISION_DEFINITION',
-  startDate: '2023-10-13T11:15:28.433+0200',
-  endDate: null,
-  username: 'demo',
-  instancesCount: 0,
-  operationsTotalCount: 1,
-  operationsFinishedCount: 0,
-} as const;
-
 export {
   mockedDecisionDefinitions,
   mockBatchOperations,
   mockEmptyDecisionInstances,
   mockDecisionInstances,
   mockDecisionXml,
-  mockDeleteDecision,
   mockResponses,
 };

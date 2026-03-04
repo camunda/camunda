@@ -161,23 +161,6 @@ const orderProcessInstance: {
   incidentState: {
     xml: orderProcessXml,
     detail: {
-      id: '2251799813725328',
-      processId: '2251799813688192',
-      processName: 'order-process',
-      processVersion: 2,
-      startDate: '2023-09-29T07:16:22.701+0000',
-      endDate: null,
-      state: 'INCIDENT',
-      bpmnProcessId: 'order-process',
-      hasActiveOperation: false,
-      operations: [],
-      parentInstanceId: null,
-      rootInstanceId: null,
-      callHierarchy: [],
-      sortValues: [],
-      tenantId: '<default>',
-    },
-    detailV2: {
       processInstanceKey: '2251799813725328',
       processDefinitionKey: '2251799813688192',
       processDefinitionName: 'order-process',
@@ -301,21 +284,7 @@ const orderProcessInstance: {
         },
       ],
     },
-    sequenceFlows: [
-      {
-        processInstanceId: '2251799813725328',
-        activityId: 'Flow_09wy0mk',
-      },
-      {
-        processInstanceId: '2251799813725328',
-        activityId: 'Flow_0biglsj',
-      },
-      {
-        processInstanceId: '2251799813725328',
-        activityId: 'Flow_1wtuk91',
-      },
-    ],
-    sequenceFlowsV2: {
+    sequenceFlows: {
       items: [
         {
           processInstanceKey: '2251799813725328',
@@ -366,44 +335,6 @@ const orderProcessInstance: {
       },
     ],
     incidents: {
-      count: 1,
-      incidents: [
-        {
-          id: '2251799813725375',
-          errorType: {
-            id: 'EXTRACT_VALUE_ERROR',
-            name: 'Extract value error',
-          },
-          errorMessage:
-            "failed to evaluate expression 'orderValue >= 100': ValString(99) can not be compared to ValNumber(100)",
-          flowNodeId: 'Gateway_1qlqb7o',
-          flowNodeInstanceId: '2251799813725374',
-          jobId: null,
-          creationTime: '2023-09-29T07:16:57.379+0000',
-          hasActiveOperation: false,
-          lastOperation: null,
-          rootCauseInstance: {
-            instanceId: '2251799813725328',
-            processDefinitionId: '2251799813688192',
-            processDefinitionName: 'order-process',
-          },
-        },
-      ],
-      errorTypes: [
-        {
-          id: 'EXTRACT_VALUE_ERROR',
-          name: 'Extract value error',
-          count: 1,
-        },
-      ],
-      flowNodes: [
-        {
-          id: 'Gateway_1qlqb7o',
-          count: 1,
-        },
-      ],
-    },
-    incidentsV2: {
       page: {
         totalItems: 1,
         startCursor: null,
@@ -433,40 +364,6 @@ const orderProcessInstance: {
   incidentResolvedState: {
     xml: orderProcessXml,
     detail: {
-      id: '2251799813725328',
-      processId: '2251799813688192',
-      processName: 'order-process',
-      processVersion: 2,
-      startDate: '2023-09-29T07:16:22.701+0000',
-      endDate: null,
-      state: 'ACTIVE',
-      bpmnProcessId: 'order-process',
-      hasActiveOperation: false,
-      operations: [
-        {
-          id: '4f14121d-1f3d-47f0-8244-96e0630d4094',
-          batchOperationId: '6ca28018-6348-4b18-bc8e-1f0dd04b4471',
-          type: 'RESOLVE_INCIDENT',
-          state: 'COMPLETED',
-          errorMessage: null,
-          completedDate: null,
-        },
-        {
-          id: '67f4077a-fcc5-4fba-80e0-fdcb0312d1b5',
-          batchOperationId: '439c2f39-dac1-4d24-a14c-4e64d6fcd0f5',
-          type: 'UPDATE_VARIABLE',
-          state: 'COMPLETED',
-          errorMessage: null,
-          completedDate: null,
-        },
-      ],
-      parentInstanceId: null,
-      rootInstanceId: null,
-      callHierarchy: [],
-      sortValues: [],
-      tenantId: '<default>',
-    },
-    detailV2: {
       processInstanceKey: '2251799813725328',
       processDefinitionKey: '2251799813688192',
       processDefinitionName: 'order-process',
@@ -613,25 +510,7 @@ const orderProcessInstance: {
         },
       ],
     },
-    sequenceFlows: [
-      {
-        processInstanceId: '2251799813725328',
-        activityId: 'Flow_09wy0mk',
-      },
-      {
-        processInstanceId: '2251799813725328',
-        activityId: 'Flow_0biglsj',
-      },
-      {
-        processInstanceId: '2251799813725328',
-        activityId: 'Flow_1fosyfk',
-      },
-      {
-        processInstanceId: '2251799813725328',
-        activityId: 'Flow_1wtuk91',
-      },
-    ],
-    sequenceFlowsV2: {
+    sequenceFlows: {
       items: [
         {
           processInstanceKey: '2251799813725328',
@@ -693,40 +572,6 @@ const orderProcessInstance: {
   completedState: {
     xml: orderProcessXml,
     detail: {
-      id: '2251799813725328',
-      processId: '2251799813737336',
-      processName: 'order-process',
-      processVersion: 3,
-      startDate: '2023-09-29T10:59:36.048+0000',
-      endDate: '2023-09-29T11:01:50.073+0000',
-      state: 'COMPLETED',
-      bpmnProcessId: 'order-process',
-      hasActiveOperation: false,
-      operations: [
-        {
-          id: '8292773a-4cc5-4129-be11-eafe3e39a052',
-          batchOperationId: 'a8104a2d-642d-46f2-ad5d-d4447b85e378',
-          type: 'RESOLVE_INCIDENT',
-          state: 'COMPLETED',
-          errorMessage: null,
-          completedDate: null,
-        },
-        {
-          id: 'a3ee4353-0008-45cd-bef4-c259413bfb2f',
-          batchOperationId: 'db629a0d-f9be-40b5-acbd-c3818effab72',
-          type: 'UPDATE_VARIABLE',
-          state: 'COMPLETED',
-          errorMessage: null,
-          completedDate: null,
-        },
-      ],
-      parentInstanceId: null,
-      rootInstanceId: null,
-      callHierarchy: [],
-      sortValues: [],
-      tenantId: '<default>',
-    },
-    detailV2: {
       processInstanceKey: '2251799813725328',
       processDefinitionKey: '2251799813737336',
       processDefinitionName: 'order-process',
@@ -919,33 +764,7 @@ const orderProcessInstance: {
         },
       ],
     },
-    sequenceFlows: [
-      {
-        processInstanceId: '2251799813725328',
-        activityId: 'Flow_09wy0mk',
-      },
-      {
-        processInstanceId: '2251799813725328',
-        activityId: 'Flow_0biglsj',
-      },
-      {
-        processInstanceId: '2251799813725328',
-        activityId: 'Flow_0vv7a45',
-      },
-      {
-        processInstanceId: '2251799813725328',
-        activityId: 'Flow_0yovrqa',
-      },
-      {
-        processInstanceId: '2251799813725328',
-        activityId: 'Flow_1fosyfk',
-      },
-      {
-        processInstanceId: '2251799813725328',
-        activityId: 'Flow_1wtuk91',
-      },
-    ],
-    sequenceFlowsV2: {
+    sequenceFlows: {
       items: [
         {
           processInstanceKey: '2251799813725328',

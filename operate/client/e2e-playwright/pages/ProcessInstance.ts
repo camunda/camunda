@@ -100,13 +100,13 @@ export class ProcessInstance {
   }
 
   async gotoProcessInstancePage({
-    id,
+    key,
     options,
   }: {
-    id: string;
+    key: string;
     options?: Parameters<Page['goto']>[1];
   }) {
-    await this.page.goto(`/operate/processes/${id}`, options);
+    await this.page.goto(`/operate/processes/${key}`, options);
   }
 
   async getNthTreeNodeTestId(n: number) {
