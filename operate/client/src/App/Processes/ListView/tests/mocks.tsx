@@ -9,7 +9,6 @@
 import {MemoryRouter} from 'react-router-dom';
 import {useEffect} from 'react';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {operationsStore} from 'modules/stores/operations';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -23,7 +22,6 @@ function getWrapper(initialPath: string = Paths.processes()) {
 
       return () => {
         processInstancesSelectionStore.reset();
-        operationsStore.reset();
         batchModificationStore.reset();
       };
     }, []);
