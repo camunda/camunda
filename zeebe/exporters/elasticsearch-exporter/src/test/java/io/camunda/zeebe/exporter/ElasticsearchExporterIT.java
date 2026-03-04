@@ -340,7 +340,6 @@ final class ElasticsearchExporterIT {
               ImmutableJobRecordValue.builder()
                   .from(((ImmutableJobRecordValue) record.getValue()))
                   .withTags(List.of())
-                  .withJobToUserTaskMigration(false)
                   .resultBuilder(null)
                   .build();
           case PROCESS_INSTANCE ->
@@ -362,7 +361,6 @@ final class ElasticsearchExporterIT {
                                       ImmutableJobRecordValue.builder()
                                           .from(job)
                                           .withTags(List.of())
-                                          .withJobToUserTaskMigration(false)
                                           .resultBuilder(null)
                                           .build())
                               .toList())
