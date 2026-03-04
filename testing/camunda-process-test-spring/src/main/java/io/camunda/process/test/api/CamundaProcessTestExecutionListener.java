@@ -330,11 +330,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     final CamundaClientProperties clientProperties =
         testContext.getApplicationContext().getBean(CamundaClientProperties.class);
 
-    final Map<String, CamundaProcessTestContainerProvider> containerProvider =
+    final Map<String, CamundaProcessTestContainerProvider> containerProviders =
         testContext
             .getApplicationContext()
             .getBeansOfType(CamundaProcessTestContainerProvider.class);
-    containerProvider.values().forEach(containerRuntimeBuilder::withContainerProvider);
+    containerProviders.values().forEach(containerRuntimeBuilder::withContainerProvider);
 
     return CamundaSpringProcessTestRuntimeBuilder.buildRuntime(
         containerRuntimeBuilder, runtimeConfiguration, clientProperties);
