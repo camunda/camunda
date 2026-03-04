@@ -131,7 +131,14 @@ public final class OpensearchConnector {
   }
 
   protected HttpAsyncClientBuilder configureHttpClient(
+<<<<<<< HEAD
       final HttpAsyncClientBuilder httpAsyncClientBuilder, final ConnectConfiguration osConfig) {
+=======
+      final HttpAsyncClientBuilder httpAsyncClientBuilder,
+      final ConnectConfiguration osConfig,
+      final HttpRequestInterceptor... interceptors) {
+    httpAsyncClientBuilder.disableContentCompression();
+>>>>>>> d641f3933 (fix: disable httpclient5 auto content compression to fix OpenSearch ZipException)
     setupAuthentication(httpAsyncClientBuilder, osConfig);
     setupConnectionManager(httpAsyncClientBuilder, osConfig);
     return httpAsyncClientBuilder;

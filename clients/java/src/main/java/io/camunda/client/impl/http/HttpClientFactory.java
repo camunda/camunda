@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.zeebe.client.impl.http;
+package io.camunda.client.impl.http;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.client.CredentialsProvider;
-import io.camunda.zeebe.client.ZeebeClientConfiguration;
-import io.camunda.zeebe.client.api.command.InternalClientException;
-import io.camunda.zeebe.client.impl.NoopCredentialsProvider;
-import io.camunda.zeebe.client.impl.util.VersionUtil;
+import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.CredentialsProvider;
+import io.camunda.client.impl.NoopCredentialsProvider;
+import io.camunda.client.impl.util.AddressUtil;
+import io.camunda.client.impl.util.VersionUtil;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -74,9 +74,9 @@ public class HttpClientFactory {
   private static final ObjectMapper JSON_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-  private final ZeebeClientConfiguration config;
+  private final CamundaClientConfiguration config;
 
-  public HttpClientFactory(final ZeebeClientConfiguration config) {
+  public HttpClientFactory(final CamundaClientConfiguration config) {
     this.config = config;
   }
 
@@ -111,11 +111,10 @@ public class HttpClientFactory {
 
     try {
       final URIBuilder builder = new URIBuilder(basePath).appendPath(REST_API_PATH);
-      builder.setScheme(config.isPlaintextConnectionEnabled() ? "http" : "https");
 
       return builder.build();
     } catch (final URISyntaxException e) {
-      throw new InternalClientException("Issues with REST API URI.", e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -135,18 +134,23 @@ public class HttpClientFactory {
             .setSslContext(createSslContext())
             .setHostnameVerifier(hostnameVerifier)
             .build();
-    final PoolingAsyncClientConnectionManager connectionManager =
+    final PoolingAsyncClientConnectionManagerBuilder connectionManagerBuilder =
         PoolingAsyncClientConnectionManagerBuilder.create()
             .setTlsStrategy(tlsStrategy)
             .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.LAX)
-            .setMaxConnPerRoute(config.getMaxHttpConnections())
-            .build();
+            .setMaxConnPerRoute(config.getMaxHttpConnections());
+
+    if (config.useClientSideLoadBalancing()) {
+      connectionManagerBuilder.setDnsResolver(new RandomizedDnsResolver());
+    }
+
+    final PoolingAsyncClientConnectionManager connectionManager = connectionManagerBuilder.build();
 
     final HttpAsyncClientBuilder builder =
         HttpAsyncClients.custom()
             .setConnectionManager(connectionManager)
             .setDefaultHeaders(Collections.singletonList(acceptHeader))
-            .setUserAgent("zeebe-client-java/" + VersionUtil.getVersion())
+            .setUserAgent("camunda-client-java/" + VersionUtil.getVersion())
             .evictExpiredConnections()
             .setCharCodingConfig(
                 CharCodingConfig.custom().setCharset(StandardCharsets.UTF_8).build())
@@ -175,7 +179,8 @@ public class HttpClientFactory {
   }
 
   private SSLContext createSslContext() {
-    if (config.isPlaintextConnectionEnabled() || config.getCaCertificatePath() == null) {
+    if (AddressUtil.isPlaintextConnection(config.getRestAddress())
+        || config.getCaCertificatePath() == null) {
       return SSLContexts.createDefault();
     }
 
@@ -196,7 +201,7 @@ public class HttpClientFactory {
   /**
    * Creates a {@link KeyStore} from a provided PEM certificate file. The file is expected to
    * contain a PEM encoded certificate chain. This is done to maintain backwards compatibility with
-   * how TLS configuration is done in the Zeebe Java client.
+   * how TLS configuration is done in the Camunda Java client.
    *
    * <p>When loading the certificate chain into the key store, the certificate entry alias is set to
    * the index of the certificate in the chain. This technique is also used by Netty for the gRPC
