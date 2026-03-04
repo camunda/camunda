@@ -100,7 +100,7 @@ test.describe('modifications', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test('diagram badges and flow node instance history panel', async ({
+  test('diagram badges and element instance history panel', async ({
     page,
     processInstancePage,
   }) => {
