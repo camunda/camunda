@@ -78,8 +78,7 @@ public class AuthorizationRequestCookieValueMapperTest {
             + "\"clientId\":\"client\",\"redirectUri\":\"http://localhost/cb\","
             + "\"authorizationRequestUri\":\"https://example.com/auth?foo=bar\"}";
     final String encoded =
-        Base64.getUrlEncoder()
-            .encodeToString(jsonWithoutState.getBytes(StandardCharsets.UTF_8));
+        Base64.getUrlEncoder().encodeToString(jsonWithoutState.getBytes(StandardCharsets.UTF_8));
 
     // when/then
     assertThatThrownBy(() -> underTest.deserialize(encoded))
@@ -95,8 +94,7 @@ public class AuthorizationRequestCookieValueMapperTest {
             + "\"state\":null,"
             + "\"authorizationRequestUri\":\"https://example.com/auth?foo=bar\"}";
     final String encoded =
-        Base64.getUrlEncoder()
-            .encodeToString(jsonWithNullState.getBytes(StandardCharsets.UTF_8));
+        Base64.getUrlEncoder().encodeToString(jsonWithNullState.getBytes(StandardCharsets.UTF_8));
 
     // when/then
     assertThatThrownBy(() -> underTest.deserialize(encoded))
