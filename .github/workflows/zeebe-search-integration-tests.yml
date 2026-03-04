@@ -29,7 +29,7 @@ jobs:
       contents: read
     strategy:
       fail-fast: false
-      matrix:
+      matrix: &database-matrix
         include:
           # Elasticsearch 8 - Supported versions: 8.19.0 (min) to 8.19.11 (max)
           - database-name: "Elasticsearch 8.19.0"
@@ -83,4 +83,47 @@ jobs:
       database-image-version: ${{ matrix.database-image-version }}
       database-name: ${{ matrix.database-name }}
       it-database-type: ${{ matrix.it-database-type }}
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
+
+  search-history-tests:
+    name: "Search History Tests / ${{ matrix.database-name }}"
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: *database-matrix
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "${{ matrix.database-type }}"
+      database-container: "${{ matrix.database-container }}"
+      database-image-version: "${{ matrix.database-image-version }}"
+      database-name: "${{ matrix.database-name }}"
+      it-database-type: "${{ matrix.it-database-type }}"
+      maven-profiles: "history"
+      test-type: "history-tests"
+      test-type-label: "History"
+      runs-on: "gcp-perf-core-8-default"
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
+
+  search-identity-tests:
+    name: "Search Identity Tests / ${{ matrix.database-name }}"
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: *database-matrix
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "${{ matrix.database-type }}"
+      database-container: "${{ matrix.database-container }}"
+      database-image-version: "${{ matrix.database-image-version }}"
+      database-name: "${{ matrix.database-name }}"
+      it-database-type: "${{ matrix.it-database-type }}"
+      maven-profiles: "identity-tests"
+      test-type: "identity-tests"
+      test-type-label: "Identity"
       notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
