@@ -34,6 +34,7 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.entities.JobEntity;
+import io.camunda.search.entities.JobErrorStatisticsEntity;
 import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
@@ -80,6 +81,7 @@ import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.JobErrorStatisticsQuery;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.JobTimeSeriesStatisticsQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
@@ -411,6 +413,13 @@ public class CamundaSearchClients implements SearchClientsProxy {
       final JobTimeSeriesStatisticsQuery query) {
     return doReadWithResourceAccessController(
         access -> readers.jobMetricsBatchReader().getJobTimeSeriesStatistics(query, access));
+  }
+
+  @Override
+  public SearchQueryResult<JobErrorStatisticsEntity> getJobErrorStatistics(
+      final JobErrorStatisticsQuery query) {
+    return doReadWithResourceAccessController(
+        access -> readers.jobMetricsBatchReader().getJobErrorStatistics(query, access));
   }
 
   @Override
