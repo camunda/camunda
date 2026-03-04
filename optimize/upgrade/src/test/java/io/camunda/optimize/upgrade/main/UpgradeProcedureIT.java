@@ -54,8 +54,8 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
             String.format(
                 "Schema version saved in Metadata [%s] must be one of [%s, %s]",
                 metadataIndexVersion,
-                PreviousVersion.PREVIOUS_VERSION_MAJOR_MINOR,
-                Version.VERSION));
+                previousVersionMajorMinorUpgradePlan.getFromVersion().getValue(),
+                previousVersionMajorMinorUpgradePlan.getToVersion().getValue()));
 
     assertThat(getMetadataVersion()).isEqualTo(metadataIndexVersion);
   }
@@ -70,7 +70,8 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
         .isThrownBy(() -> upgradeProcedure.performUpgrade(previousVersionMajorMinorUpgradePlan));
 
     // then
-    assertThat(getMetadataVersion()).isEqualTo(Version.VERSION);
+    assertThat(getMetadataVersion())
+        .isEqualTo(previousVersionMajorMinorUpgradePlan.getToVersion().getValue());
   }
 
   @Test
@@ -83,7 +84,8 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
         .isThrownBy(() -> upgradeProcedure.performUpgrade(previousVersionMajorMinorUpgradePlan));
 
     // then
-    assertThat(getMetadataVersion()).isEqualTo(Version.VERSION);
+    assertThat(getMetadataVersion())
+        .isEqualTo(previousVersionMajorMinorUpgradePlan.getToVersion().getValue());
   }
 
   @Test
