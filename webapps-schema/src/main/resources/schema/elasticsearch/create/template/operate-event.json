@@ -104,8 +104,7 @@
         "type": "keyword"
       },
       "extensionProperties": {
-        "type": "object",
-        "dynamic": true
+        "type": "object"
       }
 		}
 	}
