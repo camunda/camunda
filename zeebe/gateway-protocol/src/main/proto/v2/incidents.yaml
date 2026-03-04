@@ -417,10 +417,9 @@ components:
         - tenantId
       properties:
         processDefinitionId:
-          nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
-          description: The process definition ID associated to this incident. May be null.
+          description: The process definition ID associated to this incident.
         errorType:
           description: The type of the incident error.
           allOf:
@@ -429,10 +428,9 @@ components:
           type: string
           description: Error message which describes the error in more detail.
         elementId:
-          nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
-          description: The element ID associated to this incident. May be null.
+          description: The element ID associated to this incident.
         creationTime:
           description: The creation time of the incident.
           type: string
@@ -450,15 +448,13 @@ components:
             - $ref: 'keys.yaml#/components/schemas/IncidentKey'
           description: The assigned key, which acts as a unique identifier for this incident.
         processDefinitionKey:
-          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
-          description: The process definition key associated to this incident. May be null.
+          description: The process definition key associated to this incident.
         processInstanceKey:
-          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
-          description: The process instance key associated to this incident. May be null.
+          description: The process instance key associated to this incident.
         rootProcessInstanceKey:
           description: |
             The key of the root process instance. The root process instance is the top-level
@@ -468,10 +464,9 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         elementInstanceKey:
-          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
-          description: The element instance key associated to this incident. May be null.
+          description: The element instance key associated to this incident.
         jobKey:
           description: The job key, if exists, associated with this incident.
           nullable: true
