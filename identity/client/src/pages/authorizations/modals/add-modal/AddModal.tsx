@@ -354,7 +354,6 @@ function createEmptyAuthorization(
       ownerType: "USER",
       ownerId: "",
       resourceType: "USER_TASK",
-      // @ts-expect-error todo fix
       resourceId: null,
       resourcePropertyName: "assignee",
       permissionTypes: [],
