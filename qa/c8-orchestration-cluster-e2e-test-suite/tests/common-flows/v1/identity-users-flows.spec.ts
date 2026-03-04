@@ -181,6 +181,7 @@ test.describe('Identity User Flows', () => {
 
     await test.step(`Login with the new user and verify Identity access`, async () => {
       await identityHeader.logout();
+      await sleep(200);
       await loginPage.login(testUser!.username, testUser!.password);
       await expect(page).toHaveURL(new RegExp(`admin`));
       await verifyAccess(page);
@@ -191,7 +192,7 @@ test.describe('Identity User Flows', () => {
     });
 
     await test.step(`Verify Tasklist access`, async () => {
-      await page.goto(`${process.env.CORE_APPLICATION_URL}/tasklist/login`);
+      await page.goto(`${process.env.CORE_APPLICATION_URL}/tasklist`);
       await loginPage.login(testUser!.username, testUser!.password);
       await expect(page).toHaveURL(new RegExp(`tasklist`));
       await verifyAccess(page, true, 'tasklist');
