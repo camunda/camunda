@@ -826,9 +826,9 @@ class BackupServiceImplTest {
   }
 
   @Test
-  void shouldWriteStateResetCommandToLog() {
+  void shouldWriteClearStateCommandToLog() {
     // when
-    backupService.writeStateResetCommand(concurrencyControl).join();
+    backupService.writeClearStateCommand(concurrencyControl).join();
 
     // then
     verify(logStreamWriter)
@@ -838,7 +838,7 @@ class BackupServiceImplTest {
                 (final LogAppendEntry entry) -> {
                   assertThat(entry.recordMetadata().getRecordType()).isEqualTo(RecordType.COMMAND);
                   assertThat(entry.recordMetadata().getIntent())
-                      .isEqualTo(CheckpointIntent.RESET_STATE);
+                      .isEqualTo(CheckpointIntent.CLEAR_STATE);
                   assertThat(entry.recordValue()).isInstanceOf(CheckpointRecord.class);
                 }));
     // state reset only writes to the log — backup store is not touched directly
@@ -846,19 +846,19 @@ class BackupServiceImplTest {
   }
 
   @Test
-  void shouldFailStateResetWhenLogWriteFails() {
+  void shouldFailClearStateWhenLogWriteFails() {
     // given
     when(logStreamWriter.tryWrite(any(), any(LogAppendEntry.class)))
         .thenReturn(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
 
     // when
-    final var result = backupService.writeStateResetCommand(concurrencyControl);
+    final var result = backupService.writeClearStateCommand(concurrencyControl);
 
     // then
     assertThat(result)
         .failsWithin(Duration.ofMillis(100))
         .withThrowableOfType(ExecutionException.class)
-        .withMessageContaining("Failed to write RESET_STATE command");
+        .withMessageContaining("Failed to write CLEAR_STATE command");
     verify(backupStore, never()).delete(any());
   }
 

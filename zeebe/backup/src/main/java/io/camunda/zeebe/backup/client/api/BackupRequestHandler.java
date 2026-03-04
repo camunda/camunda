@@ -103,7 +103,7 @@ public final class BackupRequestHandler implements BackupApi {
 
   @Override
   public CompletionStage<Void> deleteRuntimeState() {
-    return broadcastRequest(this::createResetStateRequest).thenApply(ignored -> null);
+    return broadcastRequest(this::createClearStateRequest).thenApply(ignored -> null);
   }
 
   /**
@@ -403,8 +403,8 @@ public final class BackupRequestHandler implements BackupApi {
     return request;
   }
 
-  private BrokerResetBackupStateRequest createResetStateRequest(final int partitionId) {
-    final var request = new BrokerResetBackupStateRequest();
+  private BrokerClearBackupStateRequest createClearStateRequest(final int partitionId) {
+    final var request = new BrokerClearBackupStateRequest();
     request.setPartitionId(partitionId);
     return request;
   }

@@ -988,7 +988,7 @@ final class CheckpointRecordsProcessorTest {
   }
 
   @Test
-  void shouldResetStateOnResetStateCommand() {
+  void shouldClearStateOnClearStateCommand() {
     // given — populate all state components
     state.setLatestCheckpointInfo(5L, 50L, 5000L, CheckpointType.MANUAL_BACKUP);
     state.setLatestBackupInfo(3L, 30L, 3000L, CheckpointType.SCHEDULED_BACKUP, 20L);
@@ -1002,7 +1002,7 @@ final class CheckpointRecordsProcessorTest {
     final var value = new CheckpointRecord();
     final var record =
         new MockTypedCheckpointRecord(
-            60, 0, CheckpointIntent.RESET_STATE, RecordType.COMMAND, value);
+            60, 0, CheckpointIntent.CLEAR_STATE, RecordType.COMMAND, value);
 
     // when
     final var result = (MockProcessingResult) processor.process(record, resultBuilder);
@@ -1016,15 +1016,15 @@ final class CheckpointRecordsProcessorTest {
     assertThat(checkpointMetadataState.getCheckpoint(3L)).isNull();
     assertThat(backupRangeState.getAllRanges()).isEmpty();
 
-    // then — STATE_RESET follow-up event is written
+    // then — STATE_CLEARED follow-up event is written
     assertThat(result.records())
         .singleElement()
-        .returns(CheckpointIntent.STATE_RESET, Event::intent)
+        .returns(CheckpointIntent.STATE_CLEARED, Event::intent)
         .returns(RecordType.EVENT, Event::type);
   }
 
   @Test
-  void shouldScheduleSyncPostCommitTaskOnResetState() {
+  void shouldScheduleSyncPostCommitTaskOnClearState() {
     // given — a processor with a backup manager
     when(backupManager.syncMetadata(any(), any()))
         .thenReturn(CompletableActorFuture.completed(null));
@@ -1032,7 +1032,7 @@ final class CheckpointRecordsProcessorTest {
     final var value = new CheckpointRecord();
     final var record =
         new MockTypedCheckpointRecord(
-            60, 0, CheckpointIntent.RESET_STATE, RecordType.COMMAND, value);
+            60, 0, CheckpointIntent.CLEAR_STATE, RecordType.COMMAND, value);
 
     // when
     final var result = (MockProcessingResult) processor.process(record, resultBuilder);
@@ -1049,7 +1049,7 @@ final class CheckpointRecordsProcessorTest {
   }
 
   @Test
-  void shouldReplayStateResetEvent() {
+  void shouldReplayStateClearedEvent() {
     // given — populate state before replay
     state.setLatestCheckpointInfo(10L, 100L, 10000L, CheckpointType.MANUAL_BACKUP);
     state.setLatestBackupInfo(8L, 80L, 8000L, CheckpointType.SCHEDULED_BACKUP, 70L);
@@ -1060,7 +1060,7 @@ final class CheckpointRecordsProcessorTest {
     final var value = new CheckpointRecord();
     final var record =
         new MockTypedCheckpointRecord(
-            110, 100, CheckpointIntent.STATE_RESET, RecordType.EVENT, value);
+            110, 100, CheckpointIntent.STATE_CLEARED, RecordType.EVENT, value);
 
     // when
     processor.replay(record);
@@ -1075,21 +1075,21 @@ final class CheckpointRecordsProcessorTest {
   }
 
   @Test
-  void shouldResetAlreadyEmptyState() {
+  void shouldClearAlreadyEmptyState() {
     // given — state is already empty
 
     final var value = new CheckpointRecord();
     final var record =
         new MockTypedCheckpointRecord(
-            60, 0, CheckpointIntent.RESET_STATE, RecordType.COMMAND, value);
+            60, 0, CheckpointIntent.CLEAR_STATE, RecordType.COMMAND, value);
 
     // when — should not throw
     final var result = (MockProcessingResult) processor.process(record, resultBuilder);
 
-    // then — STATE_RESET event is still written
+    // then — STATE_CLEARED event is still written
     assertThat(result.records())
         .singleElement()
-        .returns(CheckpointIntent.STATE_RESET, Event::intent)
+        .returns(CheckpointIntent.STATE_CLEARED, Event::intent)
         .returns(RecordType.EVENT, Event::type);
 
     // state remains empty

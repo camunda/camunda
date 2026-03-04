@@ -102,7 +102,7 @@ public class NoopBackupManager implements BackupManager {
   }
 
   @Override
-  public ActorFuture<Void> requestStateReset() {
+  public ActorFuture<Void> requestStateClear() {
     return CompletableActorFuture.completedExceptionally(
         new UnsupportedOperationException(errorMessage));
   }

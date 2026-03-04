@@ -113,7 +113,7 @@ public final class BackupApiRequestHandler
       case QUERY_STATE -> handleQueryStateRequest(responseWriter, errorWriter);
       case QUERY_RANGES -> handleQueryRangesRequest(responseWriter, errorWriter);
       case SYNC_METADATA -> handleSyncMetadataRequest(responseWriter, errorWriter);
-      case RESET_STATE -> handleResetStateRequest(responseWriter, errorWriter);
+      case CLEAR_STATE -> handleClearStateRequest(responseWriter, errorWriter);
       default ->
           CompletableActorFuture.completed(unknownRequest(errorWriter, requestReader.type()));
     };
@@ -333,12 +333,12 @@ public final class BackupApiRequestHandler
     return result;
   }
 
-  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleResetStateRequest(
+  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleClearStateRequest(
       final BackupApiResponseWriter responseWriter, final ErrorResponseWriter errorWriter) {
     final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
         new CompletableActorFuture<>();
     backupManager
-        .requestStateReset()
+        .requestStateClear()
         .onComplete(
             (ignore, error) -> {
               if (error == null) {

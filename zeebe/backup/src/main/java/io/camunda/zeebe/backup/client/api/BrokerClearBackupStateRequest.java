@@ -18,14 +18,14 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public final class BrokerResetBackupStateRequest extends BrokerRequest<BackupStatusResponse> {
+public final class BrokerClearBackupStateRequest extends BrokerRequest<BackupStatusResponse> {
 
   private final BackupRequest request = new BackupRequest();
   private final BackupStatusResponse response = new BackupStatusResponse();
 
-  public BrokerResetBackupStateRequest() {
+  public BrokerClearBackupStateRequest() {
     super(BackupStatusResponseDecoder.SCHEMA_ID, BackupStatusResponseDecoder.TEMPLATE_ID);
-    request.setType(BackupRequestType.RESET_STATE);
+    request.setType(BackupRequestType.CLEAR_STATE);
   }
 
   @Override
@@ -75,7 +75,7 @@ public final class BrokerResetBackupStateRequest extends BrokerRequest<BackupSta
 
   @Override
   public String getType() {
-    return "Backup#resetState";
+    return "Backup#clearState";
   }
 
   @Override

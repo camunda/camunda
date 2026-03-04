@@ -14,19 +14,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Applies STATE_RESET events during both processing and replay. Clears all backup runtime state:
+ * Applies STATE_CLEARED events during both processing and replay. Clears all backup runtime state:
  * latest checkpoint info, latest backup info, all checkpoint metadata entries, and all backup range
  * entries.
  */
-public final class CheckpointStateResetApplier {
+public final class CheckpointStateClearedApplier {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CheckpointStateResetApplier.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CheckpointStateClearedApplier.class);
 
   private final CheckpointState checkpointState;
   private final DbCheckpointMetadataState checkpointMetadataState;
   private final DbBackupRangeState backupRangeState;
 
-  public CheckpointStateResetApplier(
+  public CheckpointStateClearedApplier(
       final CheckpointState checkpointState,
       final DbCheckpointMetadataState checkpointMetadataState,
       final DbBackupRangeState backupRangeState) {
@@ -35,9 +35,9 @@ public final class CheckpointStateResetApplier {
     this.backupRangeState = backupRangeState;
   }
 
-  /** Applies the state reset by clearing all backup runtime state. */
+  /** Applies the state clear by clearing all backup runtime state. */
   public void apply() {
-    LOG.info("Resetting all backup runtime state");
+    LOG.info("Clearing all backup runtime state");
 
     // Clear latest checkpoint and backup info from the DEFAULT column family
     checkpointState.clearLatestCheckpointInfo();
@@ -49,6 +49,6 @@ public final class CheckpointStateResetApplier {
     // Clear all backup range entries from the BACKUP_RANGES column family
     backupRangeState.clearAll();
 
-    LOG.info("Backup runtime state has been reset");
+    LOG.info("Backup runtime state has been cleared");
   }
 }
