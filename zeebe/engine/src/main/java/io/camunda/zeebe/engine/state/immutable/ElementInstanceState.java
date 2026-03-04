@@ -171,6 +171,16 @@ public interface ElementInstanceState {
       String tenantId,
       final Predicate<Long> ignoreWhen);
 
+  /**
+   * Returns the number of active root process instances. This includes all root process instances
+   * that are currently active, regardless of their process definition. This method is useful for
+   * monitoring and metrics purposes, as it provides insight into the overall number of active root
+   * process instances in the system.
+   *
+   * @return the number of active root process instances.
+   */
+  long getActiveRootProcessInstanceCount();
+
   @FunctionalInterface
   interface TakenSequenceFlowVisitor {
     void visit(
