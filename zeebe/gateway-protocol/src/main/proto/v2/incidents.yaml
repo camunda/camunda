@@ -360,6 +360,7 @@ components:
         - MIGRATED
         - PENDING
         - RESOLVED
+        - UNKNOWN
 
     IncidentSearchQuerySortRequest:
       type: object

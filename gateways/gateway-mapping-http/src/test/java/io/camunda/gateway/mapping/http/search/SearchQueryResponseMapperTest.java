@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
+import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
@@ -219,6 +220,32 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
+  }
+
+  @Test
+  void shouldHandleNullIncidentState() {
+    // given
+    final var entity =
+        new IncidentEntity(
+            123L, // incidentKey
+            456L, // processDefinitionKey
+            "processId", // processDefinitionId
+            789L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            ErrorType.JOB_NO_RETRIES, // errorType
+            "Error message", // errorMessage
+            "flowNodeId", // flowNodeId
+            111L, // flowNodeInstanceKey
+            OffsetDateTime.now(), // creationTime
+            null, // state
+            222L, // jobKey
+            "tenant"); // tenantId
+
+    // when
+    final var response = SearchQueryResponseMapper.toIncident(entity);
+
+    // then
+    assertThat(response.getState()).isEqualTo(IncidentStateEnum.UNKNOWN);
   }
 
   @Test

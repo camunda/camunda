@@ -24,6 +24,7 @@ import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
+import io.camunda.client.impl.search.response.IncidentImpl;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -219,5 +220,31 @@ public class SearchIncidentTest extends ClientRestTest {
     assertThat(filter.getState().get$Eq()).isEqualTo(IncidentStateEnum.ACTIVE);
     assertThat(filter.getJobKey().get$Eq()).isEqualTo("5");
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
+  }
+
+  @Test
+  void shouldDefaultToUnknownEnumValueWhenStateIsNull() {
+    // given
+    final IncidentResult result =
+        new IncidentResult()
+            .incidentKey("1")
+            .processDefinitionKey("2")
+            .processDefinitionId("processId")
+            .processInstanceKey("3")
+            .rootProcessInstanceKey("4")
+            .errorType(IncidentErrorTypeEnum.JOB_NO_RETRIES)
+            .errorMessage("error")
+            .elementId("element")
+            .elementInstanceKey("5")
+            .creationTime(OffsetDateTime.now().toString())
+            .state(null)
+            .jobKey("6")
+            .tenantId("tenant");
+
+    // when
+    final IncidentImpl incident = new IncidentImpl(result);
+
+    // then
+    assertThat(incident.getState()).isEqualTo(IncidentState.UNKNOWN_ENUM_VALUE);
   }
 }
