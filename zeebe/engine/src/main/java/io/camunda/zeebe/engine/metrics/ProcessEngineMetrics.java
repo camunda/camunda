@@ -16,10 +16,12 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.util.collection.Map3D;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class ProcessEngineMetrics {
 
@@ -34,9 +36,13 @@ public final class ProcessEngineMetrics {
       Map3D.ofEnum(EngineAction.class, BpmnElementType.class, BpmnEventType.class, Counter[]::new);
   private final Map<EngineAction, Counter> executedEvents = new EnumMap<>(EngineAction.class);
   private final Map<EngineAction, Counter> evaluatedDmnElements = new EnumMap<>(EngineAction.class);
+  private final AtomicLong activeRootProcessInstances = new AtomicLong(0);
+  private boolean isActiveRootProcessInstanceGaugeRegistered = false;
 
-  public ProcessEngineMetrics(final MeterRegistry registry) {
+  public ProcessEngineMetrics(
+      final MeterRegistry registry, final long initialActiveRootProcessInstances) {
     this.registry = Objects.requireNonNull(registry, "must specify a registry");
+    activeRootProcessInstances.set(initialActiveRootProcessInstances);
   }
 
   public void processInstanceCreated(final ProcessInstanceCreationRecord instanceCreationRecord) {
@@ -58,6 +64,7 @@ public final class ProcessEngineMetrics {
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
       increaseRootProcessInstance(EngineAction.ACTIVATED);
+      increaseActiveRootProcessInstances();
     }
   }
 
@@ -69,6 +76,7 @@ public final class ProcessEngineMetrics {
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
       increaseRootProcessInstance(EngineAction.COMPLETED);
+      decreaseActiveRootProcessInstances();
     }
   }
 
@@ -80,6 +88,7 @@ public final class ProcessEngineMetrics {
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
       increaseRootProcessInstance(EngineAction.TERMINATED);
+      decreaseActiveRootProcessInstances();
     }
   }
 
@@ -96,6 +105,16 @@ public final class ProcessEngineMetrics {
     elementInstanceEvents
         .computeIfAbsent(action, elementType, eventType, this::registerElementInstanceEventCounter)
         .increment();
+  }
+
+  private void increaseActiveRootProcessInstances() {
+    registerActiveRootProcessInstanceGaugeIfNeeded();
+    activeRootProcessInstances.incrementAndGet();
+  }
+
+  private void decreaseActiveRootProcessInstances() {
+    registerActiveRootProcessInstanceGaugeIfNeeded();
+    activeRootProcessInstances.decrementAndGet();
   }
 
   private void increaseRootProcessInstance(final EngineAction action) {
@@ -160,5 +179,16 @@ public final class ProcessEngineMetrics {
         .tag(EngineKeyNames.ACTION.asString(), engineAction.toString())
         .tag(EngineKeyNames.ORGANIZATION_ID.asString(), ORGANIZATION_ID)
         .register(registry);
+  }
+
+  private void registerActiveRootProcessInstanceGaugeIfNeeded() {
+    if (!isActiveRootProcessInstanceGaugeRegistered) {
+      final var meterDoc = EngineMetricsDoc.ACTIVE_ROOT_PROCESS_INSTANCES;
+      Gauge.builder(meterDoc.getName(), activeRootProcessInstances, AtomicLong::get)
+          .description(meterDoc.getDescription())
+          .tag(EngineKeyNames.ORGANIZATION_ID.asString(), ORGANIZATION_ID)
+          .register(registry);
+      isActiveRootProcessInstanceGaugeRegistered = true;
+    }
   }
 }
