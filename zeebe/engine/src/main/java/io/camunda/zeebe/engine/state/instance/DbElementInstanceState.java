@@ -471,14 +471,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     this.flowScopeKey.wrapLong(flowScopeKey);
     this.gatewayElementId.wrapBuffer(gatewayElementId);
 
-    final var count = new MutableInteger(0);
-    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
-        flowScopeKeyAndElementId,
-        (key, number) -> {
-          count.increment();
-        });
-
-    return count.get();
+    return (int) numberOfTakenSequenceFlowsColumnFamily.countEqualPrefix(flowScopeKeyAndElementId);
   }
 
   @Override
