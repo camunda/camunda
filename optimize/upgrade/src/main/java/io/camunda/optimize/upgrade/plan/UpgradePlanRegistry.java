@@ -11,8 +11,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.vdurmont.semver4j.Semver;
 import io.camunda.optimize.service.metadata.Version;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import io.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
 import io.camunda.optimize.upgrade.plan.factories.UpgradePlanFactory;
+import io.camunda.optimize.upgrade.util.VersionUtil;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
 import java.lang.reflect.InvocationTargetException;
@@ -44,15 +44,7 @@ public class UpgradePlanRegistry {
                           upgradePlanFactoryClass.loadClass().getConstructor().newInstance();
                   final UpgradePlan upgradePlan =
                       planFactory.createUpgradePlan(upgradeExecutionDependencies);
-                  if (planFactory instanceof CurrentVersionNoOperationUpgradePlanFactory) {
-                    // The no operation upgrade plan will only get added if there is not a custom
-                    // plan yet
-                    upgradePlans.putIfAbsent(upgradePlan.getToVersion(), upgradePlan);
-                  } else {
-                    // specific upgrade plans always overwrite any preexisting entries
-                    // (e.g. if no operation default upgrade plan was added first)
-                    upgradePlans.put(upgradePlan.getToVersion(), upgradePlan);
-                  }
+                  upgradePlans.put(upgradePlan.getToVersion(), upgradePlan);
                 } catch (final InstantiationException
                     | IllegalAccessException
                     | InvocationTargetException
@@ -66,14 +58,66 @@ public class UpgradePlanRegistry {
               });
     }
 
-    // Generate patch plans up to the compiled-in version. Plans beyond the actual target
-    // version (if different) are harmlessly filtered by `getSequentialUpgradePlansToTargetVersion`.
+    // Generate the cross-minor no-op plan (e.g. 8.9 -> 8.10.0) if no explicit factory already
+    // targets X.Y.0, then fill any missing patch-to-patch gaps within the current minor.
+    // Plans beyond the actual target version are harmlessly filtered by
+    // `getSequentialUpgradePlansToTargetVersion`.
+    generateMissingCrossMinorUpgradePlan(Version.VERSION);
     generateMissingPatchUpgradePlans(Version.VERSION);
   }
 
   @VisibleForTesting
   UpgradePlanRegistry(final Map<Semver, UpgradePlan> upgradePlans) {
     this.upgradePlans = upgradePlans;
+  }
+
+  /**
+   * Auto-generates a no-op cross-minor upgrade plan from the previous minor version to {@code
+   * X.Y.0} if no explicit {@link UpgradePlanFactory} already targets that version.
+   *
+   * <p>For example, if {@code currentVersion} is {@code "8.10.3"} this method checks whether a plan
+   * targeting {@code 8.10.0} is already registered. If not, it inserts a no-op plan from {@code
+   * "8.9"} to {@code "8.10.0"}.
+   *
+   * <p>Throws {@link UpgradeRuntimeException} when the previous minor version cannot be computed
+   * (e.g. minor is {@code 0}, a major version boundary) and no explicit plan already covers {@code
+   * X.Y.0} — in that case an explicit {@link UpgradePlanFactory} implementation is required.
+   *
+   * @param currentVersion the current application version string (e.g. {@code "8.10.3"})
+   * @throws UpgradeRuntimeException if the previous minor version cannot be computed and no
+   *     explicit plan targets {@code X.Y.0}
+   */
+  @VisibleForTesting
+  void generateMissingCrossMinorUpgradePlan(final String currentVersion) {
+    final var toVersion = new Semver(Version.getMajorAndMinor(currentVersion) + ".0");
+
+    if (upgradePlans.containsKey(toVersion)) {
+      LOG.debug(
+          "Explicit cross-minor plan already targets {}; skipping auto-generation.",
+          toVersion.getValue());
+      return;
+    }
+
+    final var fromVersion =
+        VersionUtil.previousMinorVersion(currentVersion)
+            .orElseThrow(
+                () ->
+                    new UpgradeRuntimeException(
+                        String.format(
+                            "Cannot compute previous minor version from %s. "
+                                + "An explicit UpgradePlanFactory targeting %s is required.",
+                            currentVersion, toVersion.getValue())));
+
+    upgradePlans.put(
+        toVersion,
+        UpgradePlanBuilder.createUpgradePlan()
+            .fromVersion(fromVersion)
+            .toVersion(toVersion.getValue())
+            .build());
+    LOG.debug(
+        "Auto-generated no-op cross-minor upgrade plan from {} to {}.",
+        fromVersion,
+        toVersion.getValue());
   }
 
   /**
