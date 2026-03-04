@@ -50,7 +50,6 @@ import org.springframework.boot.actuate.endpoint.annotation.Selector.Match;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -161,9 +160,39 @@ public final class BackupEndpoint {
   }
 
   @DeleteOperation
-  public WebEndpointResponse<?> delete(@Selector @NonNull final long id) {
+  public WebEndpointResponse<?> delete(@Selector(match = Match.ALL_REMAINING) final String[] path) {
+    if (path.length == 1 && BackupApi.STATE.equals(path[0])) {
+      return deleteState();
+    }
+    if (path.length == 1) {
+      final long id;
+      try {
+        id = Long.parseLong(path[0]);
+      } catch (final NumberFormatException e) {
+        return new WebEndpointResponse<>(
+            new Error()
+                .message("Expected a backup ID or 'state', but got '%s'.".formatted(path[0])),
+            WebEndpointResponse.STATUS_BAD_REQUEST);
+      }
+      return deleteBackup(id);
+    }
+    return new WebEndpointResponse<>(
+        new Error().message("Unknown delete operation: " + String.join("/", path)),
+        WebEndpointResponse.STATUS_BAD_REQUEST);
+  }
+
+  private WebEndpointResponse<?> deleteBackup(final long id) {
     try {
       api.deleteBackup(id).toCompletableFuture().join();
+      return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
+    } catch (final Exception e) {
+      return mapErrorResponse(e);
+    }
+  }
+
+  private WebEndpointResponse<?> deleteState() {
+    try {
+      api.deleteRuntimeState().toCompletableFuture().join();
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
     } catch (final Exception e) {
       return mapErrorResponse(e);

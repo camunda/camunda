@@ -82,4 +82,13 @@ public interface BackupManager {
    */
   ActorFuture<Collection<BackupRangeStatus>> syncMetadata(
       SequencedCollection<Checkpoint> checkpoints, SequencedCollection<BackupRange> ranges);
+
+  /**
+   * Clears the backup runtime state for this partition by writing a CLEAR_STATE command to the log.
+   * This clears all checkpoint info, backup info, checkpoint metadata, and backup ranges. Used when
+   * switching backup stores.
+   *
+   * @return future which will be completed after the CLEAR_STATE command is written to the log
+   */
+  ActorFuture<Void> requestStateClear();
 }
