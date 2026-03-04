@@ -243,6 +243,8 @@ paths:
     $ref: 'job-metrics.yaml#/paths/~1jobs~1statistics~1by-workers'
   /jobs/statistics/time-series:
     $ref: 'job-metrics.yaml#/paths/~1jobs~1statistics~1time-series'
+  /jobs/statistics/errors:
+    $ref: 'job-metrics.yaml#/paths/~1jobs~1statistics~1errors'
 
   # License endpoints
   /license:
