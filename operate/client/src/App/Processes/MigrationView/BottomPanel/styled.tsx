@@ -7,11 +7,10 @@
  */
 
 import styled from 'styled-components';
-import {spacing03, supportSuccess, supportWarning} from '@carbon/elements';
+import {supportSuccess} from '@carbon/elements';
 import {
   CheckmarkFilled as BaseCheckmark,
   ArrowRight as BaseArrowRight,
-  WarningFilled as BaseWarningFilled,
 } from '@carbon/react/icons';
 import {DataTable as BaseDataTable} from 'modules/components/DataTable';
 import {Select as BaseSelect} from '@carbon/react';
@@ -64,16 +63,6 @@ const ErrorMessageContainer = styled.div`
   height: 100%;
 `;
 
-const WarningFilled = styled(BaseWarningFilled)`
-  fill: ${supportWarning};
-  margin-right: ${spacing03};
-
-  [data-icon-path='inner-path'] {
-    opacity: 1;
-    fill: black;
-  }
-`;
-
 const CheckmarkFilled = styled(BaseCheckmark)`
   color: ${supportSuccess};
 `;
@@ -99,5 +88,4 @@ export {
   Select,
   IconContainer,
   ToggleContainer,
-  WarningFilled,
 };
