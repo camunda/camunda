@@ -311,7 +311,7 @@ public class CamundaProcessTestContainerRuntime
 
     @Override
     public Collection<GenericContainer<?>> getContainers() {
-      return containers;
+      return Collections.unmodifiableCollection(containers);
     }
   }
 }
