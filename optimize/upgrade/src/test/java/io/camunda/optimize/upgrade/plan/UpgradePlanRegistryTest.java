@@ -60,9 +60,9 @@ public class UpgradePlanRegistryTest {
   void explicitPlanInMiddleIsPreserved() {
     // given: explicit factory for 8.8.2 -> 8.8.3
     final var targetVersion = "8.8.5";
-    final var explicitPlan = createUpgradePlan("8.8.2", "8.8.3");
+    final var explicitPlan882to883 = createUpgradePlan("8.8.2", "8.8.3");
     final var existingPlans = new HashMap<Semver, UpgradePlan>();
-    existingPlans.put(explicitPlan.getToVersion(), explicitPlan);
+    existingPlans.put(explicitPlan882to883.getToVersion(), explicitPlan882to883);
 
     final var registry = new UpgradePlanRegistry(existingPlans);
 
@@ -76,10 +76,7 @@ public class UpgradePlanRegistryTest {
         .satisfiesExactly(
             plan880to881 -> assertNoOpPlan(plan880to881, "8.8.0", "8.8.1"),
             plan881to882 -> assertNoOpPlan(plan881to882, "8.8.1", "8.8.2"),
-            explicitPlan882to883 -> {
-              assertNoOpPlan(explicitPlan882to883, "8.8.2", "8.8.3");
-              assertThat(explicitPlan882to883).isSameAs(explicitPlan);
-            },
+            plan882to883 -> assertThat(plan882to883).isSameAs(explicitPlan882to883),
             plan883to884 -> assertNoOpPlan(plan883to884, "8.8.3", "8.8.4"),
             plan884to885 -> assertNoOpPlan(plan884to885, "8.8.4", "8.8.5"));
   }
@@ -102,9 +99,9 @@ public class UpgradePlanRegistryTest {
   void crossMinorPlanInMapIsNotAffected() {
     // given: a cross-minor plan 8.7 -> 8.8.0 already in the map
     final var targetVersion = "8.8.3";
-    final var crossMinorPlan = createUpgradePlan("8.7", "8.8.0");
+    final var crossMinorPlan87to880 = createUpgradePlan("8.7", "8.8.0");
     final var existingPlans = new HashMap<Semver, UpgradePlan>();
-    existingPlans.put(crossMinorPlan.getToVersion(), crossMinorPlan);
+    existingPlans.put(crossMinorPlan87to880.getToVersion(), crossMinorPlan87to880);
 
     final var registry = new UpgradePlanRegistry(existingPlans);
 
@@ -117,10 +114,7 @@ public class UpgradePlanRegistryTest {
         .as(
             "Should preserve the existing cross-minor plan from 8.7 to 8.8.0, and generate patch plans from 8.8.0 to 8.8.3")
         .satisfiesExactly(
-            plan87to880 -> {
-              assertNoOpPlan(plan87to880, "8.7", "8.8.0");
-              assertThat(plan87to880).isSameAs(crossMinorPlan);
-            },
+            plan87to880 -> assertThat(plan87to880).isSameAs(crossMinorPlan87to880),
             plan880to881 -> assertNoOpPlan(plan880to881, "8.8.0", "8.8.1"),
             plan881to882 -> assertNoOpPlan(plan881to882, "8.8.1", "8.8.2"),
             plan882to883 -> assertNoOpPlan(plan882to883, "8.8.2", "8.8.3"));
@@ -130,9 +124,9 @@ public class UpgradePlanRegistryTest {
   void versionJumpSkipsUnreleasedPatches() {
     // given: jump from 8.8.2->8.8.10
     final var targetVersion = "8.8.12";
-    final var jumpPlan = createUpgradePlan("8.8.2", "8.8.10");
+    final var jumpPlan882to8810 = createUpgradePlan("8.8.2", "8.8.10");
     final var existingPlans = new HashMap<Semver, UpgradePlan>();
-    existingPlans.put(jumpPlan.getToVersion(), jumpPlan);
+    existingPlans.put(jumpPlan882to8810.getToVersion(), jumpPlan882to8810);
     final var registry = new UpgradePlanRegistry(existingPlans);
 
     // when
@@ -145,11 +139,7 @@ public class UpgradePlanRegistryTest {
         .satisfiesExactly(
             plan880to881 -> assertNoOpPlan(plan880to881, "8.8.0", "8.8.1"),
             plan881to882 -> assertNoOpPlan(plan881to882, "8.8.1", "8.8.2"),
-            plan882to8810 -> {
-              assertThat(plan882to8810.getFromVersion().getOriginalValue()).isEqualTo("8.8.2");
-              assertThat(plan882to8810.getToVersion().getOriginalValue()).isEqualTo("8.8.10");
-              assertThat(plan882to8810).isSameAs(jumpPlan);
-            },
+            plan882to8810 -> assertThat(plan882to8810).isSameAs(jumpPlan882to8810),
             plan8810to8811 -> assertNoOpPlan(plan8810to8811, "8.8.10", "8.8.11"),
             plan8811to8812 -> assertNoOpPlan(plan8811to8812, "8.8.11", "8.8.12"));
   }
@@ -158,9 +148,9 @@ public class UpgradePlanRegistryTest {
   void jumpToCurrentVersionGeneratesNoPlansBeyondJump() {
     // given: jump plan from 8.8.3->8.8.7
     final var targetVersion = "8.8.7";
-    final var jumpPlan = createUpgradePlan("8.8.3", targetVersion);
+    final var jumpPlan883to887 = createUpgradePlan("8.8.3", targetVersion);
     final var existingPlans = new HashMap<Semver, UpgradePlan>();
-    existingPlans.put(jumpPlan.getToVersion(), jumpPlan);
+    existingPlans.put(jumpPlan883to887.getToVersion(), jumpPlan883to887);
 
     final var registry = new UpgradePlanRegistry(existingPlans);
 
@@ -175,20 +165,16 @@ public class UpgradePlanRegistryTest {
             plan880to881 -> assertNoOpPlan(plan880to881, "8.8.0", "8.8.1"),
             plan881to882 -> assertNoOpPlan(plan881to882, "8.8.1", "8.8.2"),
             plan882to883 -> assertNoOpPlan(plan882to883, "8.8.2", "8.8.3"),
-            plan883to887 -> {
-              assertThat(plan883to887.getFromVersion().getOriginalValue()).isEqualTo("8.8.3");
-              assertThat(plan883to887.getToVersion().getOriginalValue()).isEqualTo("8.8.7");
-              assertThat(plan883to887).isSameAs(jumpPlan);
-            });
+            plan883to887 -> assertThat(plan883to887).isSameAs(jumpPlan883to887));
   }
 
   @Test
   void jumpFromPatchZeroGeneratesNoPlanBeforeJump() {
     // given: jump plan from 8.8.0->8.8.5
     final var targetVersion = "8.8.7";
-    final var jumpPlan = createUpgradePlan("8.8.0", "8.8.5");
+    final var jumpPlan880to885 = createUpgradePlan("8.8.0", "8.8.5");
     final var existingPlans = new HashMap<Semver, UpgradePlan>();
-    existingPlans.put(jumpPlan.getToVersion(), jumpPlan);
+    existingPlans.put(jumpPlan880to885.getToVersion(), jumpPlan880to885);
 
     final var registry = new UpgradePlanRegistry(existingPlans);
 
@@ -203,7 +189,7 @@ public class UpgradePlanRegistryTest {
             plan880to885 -> {
               assertThat(plan880to885.getFromVersion().getOriginalValue()).isEqualTo("8.8.0");
               assertThat(plan880to885.getToVersion().getOriginalValue()).isEqualTo("8.8.5");
-              assertThat(plan880to885).isSameAs(jumpPlan);
+              assertThat(plan880to885).isSameAs(jumpPlan880to885);
             },
             plan885to886 -> assertNoOpPlan(plan885to886, "8.8.5", "8.8.6"),
             plan886to887 -> assertNoOpPlan(plan886to887, "8.8.6", "8.8.7"));
