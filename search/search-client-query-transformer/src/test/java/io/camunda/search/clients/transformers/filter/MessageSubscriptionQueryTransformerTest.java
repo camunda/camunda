@@ -7,7 +7,7 @@
  */
 package io.camunda.search.clients.transformers.filter;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
@@ -167,8 +167,9 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
                       SearchTermsQuery.class,
                       termsQuery -> {
                         assertThat(termsQuery.field()).isEqualTo("eventSourceType");
-                        assertThat(
-                                termsQuery.values().stream().map(TypedValue::stringValue).toList())
+                        final List<String> list =
+                            termsQuery.values().stream().map(TypedValue::stringValue).toList();
+                        assertThat(list)
                             .containsExactlyInAnyOrder(
                                 "PROCESS_MESSAGE_SUBSCRIPTION", "MESSAGE_START_EVENT_SUBSCRIPTION");
                       });

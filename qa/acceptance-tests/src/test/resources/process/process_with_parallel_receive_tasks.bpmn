@@ -22,13 +22,13 @@
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_1qk65aq" sourceRef="Gateway_0gjrsdh" targetRef="Event_17qoged" />
     <bpmn:receiveTask id="receive_task_1" name="Receive task 1" messageRef="Message_0fa2uvi">
-      <bpmn:incoming>Flow_0pmud6h</bpmn:incoming>
-      <bpmn:outgoing>Flow_1gyzrz7</bpmn:outgoing>
       <bpmn:extensionElements>
         <zeebe:properties>
           <zeebe:property name="route" value="alpha" />
         </zeebe:properties>
       </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0pmud6h</bpmn:incoming>
+      <bpmn:outgoing>Flow_1gyzrz7</bpmn:outgoing>
     </bpmn:receiveTask>
     <bpmn:receiveTask id="receive_task_2" name="Receive task 2" messageRef="Message_0ulqidk">
       <bpmn:incoming>Flow_16hb8p0</bpmn:incoming>
