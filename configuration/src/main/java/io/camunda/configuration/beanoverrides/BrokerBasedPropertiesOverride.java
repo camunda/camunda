@@ -1001,6 +1001,16 @@ public class BrokerBasedPropertiesOverride {
     final Metrics metrics = unifiedConfiguration.getCamunda().getMonitoring().getMetrics();
     override.getExperimental().getFeatures().setEnableActorMetrics(metrics.isActor());
     override.setExecutionMetricsExporterEnabled(metrics.isEnableExporterExecutionMetrics());
+
+    final var jobMetrics =
+        unifiedConfiguration.getCamunda().getMonitoring().getMetrics().getJobMetrics();
+    final var jobMetricsCfg = override.getExperimental().getEngine().getJobMetrics();
+    jobMetricsCfg.setExportInterval(jobMetrics.getExportInterval());
+    jobMetricsCfg.setMaxWorkerNameLength(jobMetrics.getMaxWorkerNameLength());
+    jobMetricsCfg.setMaxJobTypeLength(jobMetrics.getMaxJobTypeLength());
+    jobMetricsCfg.setMaxTenantIdLength(jobMetrics.getMaxTenantIdLength());
+    jobMetricsCfg.setMaxUniqueKeys(jobMetrics.getMaxUniqueKeys());
+    jobMetricsCfg.setEnabled(jobMetrics.isEnabled());
   }
 
   private void setArgIfNotNull(
