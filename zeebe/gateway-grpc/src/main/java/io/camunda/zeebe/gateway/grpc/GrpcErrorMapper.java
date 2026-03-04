@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.cmd.IllegalTenantRequestException;
+import io.camunda.zeebe.gateway.cmd.InvalidBusinessIdException;
 import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.grpc.StatusRuntimeException;
@@ -83,6 +84,10 @@ public final class GrpcErrorMapper {
         logger.debug("Expected to handle gRPC request, but JSON property was invalid", rootError);
       }
       case final InvalidTenantRequestException ignored -> {
+        builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
+        logger.debug(error.getMessage(), rootError);
+      }
+      case final InvalidBusinessIdException ignored -> {
         builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
         logger.debug(error.getMessage(), rootError);
       }
