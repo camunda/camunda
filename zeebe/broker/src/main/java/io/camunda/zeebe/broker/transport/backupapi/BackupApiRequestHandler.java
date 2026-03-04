@@ -113,6 +113,7 @@ public final class BackupApiRequestHandler
       case QUERY_STATE -> handleQueryStateRequest(responseWriter, errorWriter);
       case QUERY_RANGES -> handleQueryRangesRequest(responseWriter, errorWriter);
       case SYNC_METADATA -> handleSyncMetadataRequest(responseWriter, errorWriter);
+      case CLEAR_STATE -> handleClearStateRequest(responseWriter, errorWriter);
       default ->
           CompletableActorFuture.completed(unknownRequest(errorWriter, requestReader.type()));
     };
@@ -324,6 +325,28 @@ public final class BackupApiRequestHandler
                                     fromCheckpointInfo(r.last())))
                         .toList());
                 result.complete(Either.right(responseWriter.withBackupRanges(response)));
+              } else {
+                errorWriter.errorCode(ErrorCode.INTERNAL_ERROR).errorMessage(error.getMessage());
+                result.complete(Either.left(errorWriter));
+              }
+            });
+    return result;
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleClearStateRequest(
+      final BackupApiResponseWriter responseWriter, final ErrorResponseWriter errorWriter) {
+    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
+        new CompletableActorFuture<>();
+    backupManager
+        .requestStateClear()
+        .onComplete(
+            (ignore, error) -> {
+              if (error == null) {
+                final BackupStatusResponse response =
+                    new BackupStatusResponse()
+                        .setStatus(BackupStatusCode.DOES_NOT_EXIST)
+                        .setPartitionId(partitionId);
+                result.complete(Either.right(responseWriter.withStatus(response)));
               } else {
                 errorWriter.errorCode(ErrorCode.INTERNAL_ERROR).errorMessage(error.getMessage());
                 result.complete(Either.left(errorWriter));

@@ -359,6 +359,26 @@ final class BackupServiceImpl {
     return deleteCompleted;
   }
 
+  ActorFuture<Void> writeClearStateCommand(final ConcurrencyControl executor) {
+    final ActorFuture<Void> clearCompleted = executor.createFuture();
+    final var clearWritten =
+        logStreamWriter.tryWrite(
+            WriteContext.internal(),
+            LogAppendEntry.of(
+                new RecordMetadata()
+                    .recordType(RecordType.COMMAND)
+                    .valueType(ValueType.CHECKPOINT)
+                    .intent(CheckpointIntent.CLEAR_STATE),
+                new CheckpointRecord()));
+    switch (clearWritten) {
+      case Either.Left(final var error) ->
+          clearCompleted.completeExceptionally(
+              new RuntimeException("Failed to write CLEAR_STATE command: " + error));
+      case final Either.Right<WriteFailure, Long> ignoredPosition -> clearCompleted.complete(null);
+    }
+    return clearCompleted;
+  }
+
   ActorFuture<Void> deleteBackupIfExists(
       final int partitionId, final long checkpointId, final ConcurrencyControl executor) {
     final var result = executor.<Void>createFuture();
