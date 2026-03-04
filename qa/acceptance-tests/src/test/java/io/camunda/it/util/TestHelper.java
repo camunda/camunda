@@ -34,7 +34,6 @@ import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Tenant;
-import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -459,19 +458,6 @@ public final class TestHelper {
                   client.newUserTaskSearchRequest().filter(filter).send().join().items();
               assertThat(userTasks).hasSize(expectedCount);
             });
-  }
-
-  public static UserTask waitForUserTask(
-      final CamundaClient client, final Consumer<UserTaskFilter> filter) {
-    final UserTask[] migratedTask = new UserTask[1];
-    Awaitility.await("Should find user task with filter")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .untilAsserted(
-            () -> {
-              migratedTask[0] =
-                  client.newUserTaskSearchRequest().filter(filter).send().join().singleItem();
-            });
-    return migratedTask[0];
   }
 
   public static void waitForBatchOperationWithCorrectTotalCount(
