@@ -294,7 +294,8 @@ public class SwimMembershipProtocol
         // Although this would not happen, we handle the case where the higher node version has a
         // lower incarnation number.
         || member.nodeVersion() > swimMember.nodeVersion()) {
-      // If the member's version has changed, remove the old member and add the new member.
+      // If the member's software version or nodeVersion has changed, remove the old member and add
+      // the new member.
       if (!Objects.equals(member.version(), swimMember.version())
           || member.nodeVersion() > swimMember.nodeVersion()) {
         members.remove(member.id());
