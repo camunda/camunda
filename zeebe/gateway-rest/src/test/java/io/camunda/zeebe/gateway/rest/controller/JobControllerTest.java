@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
+import io.camunda.search.entities.JobErrorStatisticsEntity;
 import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
@@ -2147,6 +2148,249 @@ public class JobControllerTest extends RestControllerTest {
     webClient
         .post()
         .uri(JOBS_BASE_URL + "/statistics/time-series")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  // -------------------------------------------------------------------------
+  // /statistics/errors tests
+  // -------------------------------------------------------------------------
+
+  @Test
+  void shouldGetJobErrorStatistics() {
+    // given
+    final var entity1 =
+        new JobErrorStatisticsEntity("UNHANDLED_ERROR_EVENT", "An unexpected error occurred.", 15);
+    final var entity2 =
+        new JobErrorStatisticsEntity("IO_ERROR", "Failed to read from remote server.", 3);
+
+    final var searchResult =
+        new SearchQueryResult.Builder<JobErrorStatisticsEntity>()
+            .total(2L, true)
+            .items(List.of(entity1, entity2))
+            .endCursor("endCursor")
+            .build();
+
+    when(jobServices.getJobErrorStatistics(any())).thenReturn(searchResult);
+
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "to": "2024-07-29T15:51:28.071Z",
+                "jobType": "fetch-customer-data"
+              }
+            }""";
+
+    final var expectedResponse =
+        """
+            {
+              "items": [
+                {
+                  "errorCode": "UNHANDLED_ERROR_EVENT",
+                  "errorMessage": "An unexpected error occurred.",
+                  "workers": 15
+                },
+                {
+                  "errorCode": "IO_ERROR",
+                  "errorMessage": "Failed to read from remote server.",
+                  "workers": 3
+                }
+              ],
+              "page": {
+                "totalItems": 2,
+                "startCursor": null,
+                "endCursor": "endCursor",
+                "hasMoreTotalItems": true
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/errors")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldGetJobErrorStatisticsWithOptionalFilters() {
+    // given
+    final var entity =
+        new JobErrorStatisticsEntity("UNHANDLED_ERROR_EVENT", "An unexpected error.", 5);
+
+    final var searchResult =
+        new SearchQueryResult.Builder<JobErrorStatisticsEntity>()
+            .total(1L)
+            .items(List.of(entity))
+            .build();
+
+    when(jobServices.getJobErrorStatistics(any())).thenReturn(searchResult);
+
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "to": "2024-07-29T15:51:28.071Z",
+                "jobType": "fetch-customer-data",
+                "errorCode": { "$like": "UNHANDLED_*" },
+                "errorMessage": { "$like": "unexpected*" }
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/errors")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .jsonPath("$.items[0].errorCode")
+        .isEqualTo("UNHANDLED_ERROR_EVENT")
+        .jsonPath("$.items[0].workers")
+        .isEqualTo(5);
+  }
+
+  @Test
+  void shouldRejectJobErrorStatisticsWithMissingBody() {
+    // given
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "Bad Request",
+              "detail": "Required request body is missing",
+              "instance": "%s"
+            }"""
+            .formatted(JOBS_BASE_URL + "/statistics/errors");
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/errors")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobErrorStatisticsWithMissingFilter() {
+    // given
+    final var request = "{}";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/errors")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobErrorStatisticsWithMissingFrom() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "to": "2024-07-29T15:51:28.071Z",
+                "jobType": "fetch-customer-data"
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/errors")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobErrorStatisticsWithMissingTo() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "jobType": "fetch-customer-data"
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/errors")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobErrorStatisticsWithMissingJobType() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "to": "2024-07-29T15:51:28.071Z"
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/errors")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
