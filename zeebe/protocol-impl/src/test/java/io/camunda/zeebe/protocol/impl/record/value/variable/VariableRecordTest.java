@@ -25,7 +25,6 @@ final class VariableRecordTest {
   private static final long SCOPE_KEY = 1L;
   private static final long PROCESS_INSTANCE_KEY = 2L;
   private static final long PROCESS_DEFINITION_KEY = 3L;
-  private static final long ROOT_PROCESS_INSTANCE_KEY = 4L;
 
   @Test
   void shouldCacheJsonValueOnRepeatedGetValueCalls() {
@@ -142,7 +141,6 @@ final class VariableRecordTest {
     record.setProcessDefinitionKey(PROCESS_DEFINITION_KEY);
     record.setBpmnProcessId(new UnsafeBuffer(BPMN_PROCESS_ID.getBytes()));
     record.setTenantId(TENANT_ID);
-    record.setRootProcessInstanceKey(ROOT_PROCESS_INSTANCE_KEY);
     return record;
   }
 }
