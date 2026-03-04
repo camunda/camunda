@@ -30,6 +30,7 @@ import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import pluralSuffix from 'modules/utils/pluralSuffix';
+import {useNavigate} from 'react-router-dom';
 
 const headerColumns = [
   'Process Instance Key',
@@ -83,6 +84,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
     hasIncident,
     processDefinitionId,
   } = processInstance;
+  const navigate = useNavigate();
   const tenantsById = useAvailableTenants();
   const tenantName = tenantsById[tenantId] ?? tenantId;
 
@@ -111,7 +113,8 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   return (
     <InstanceHeader
       state={processInstanceState}
-      showBackButton
+      backButtonLabel="Back"
+      onBackClick={() => navigate(-1)}
       leadingContent={
         <ProcessNameContainer>
           <ProcessNameLabel>

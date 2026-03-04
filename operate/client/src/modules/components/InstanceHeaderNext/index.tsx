@@ -10,7 +10,6 @@ import {Button} from '@carbon/react';
 import {Container, Table, Th, Td} from './styled';
 import {StateIcon} from 'modules/components/StateIcon';
 import {ArrowLeft} from '@carbon/react/icons';
-import {useNavigate} from 'react-router-dom';
 
 type Column = {
   title?: string;
@@ -26,7 +25,8 @@ type Props = {
   leadingContent?: React.ReactNode;
   additionalContent?: React.ReactNode;
   hideBottomBorder?: boolean;
-  showBackButton?: boolean;
+  backButtonLabel?: string;
+  onBackClick?: React.MouseEventHandler<HTMLButtonElement>;
 };
 
 const InstanceHeader: React.FC<Props> = ({
@@ -36,25 +36,25 @@ const InstanceHeader: React.FC<Props> = ({
   leadingContent,
   additionalContent,
   hideBottomBorder = false,
-  showBackButton = false,
+  backButtonLabel = 'Back',
+  onBackClick,
 }) => {
-  const navigate = useNavigate();
-
   return (
     <Container
       data-testid="instance-header"
       $hideBottomBorder={hideBottomBorder}
     >
-      {showBackButton && (
+      {onBackClick && (
         <Button
           kind="ghost"
           size="sm"
           renderIcon={ArrowLeft}
           hasIconOnly
-          iconDescription="Back"
+          iconDescription={backButtonLabel}
+          aria-label={backButtonLabel}
           tooltipPosition="bottom"
-          aria-label="Back"
-          onClick={() => navigate(-1)}
+          tooltipAlignment="start"
+          onClick={onBackClick}
         />
       )}
       <StateIcon state={state} size={24} data-testid={`${state}-icon`} />
