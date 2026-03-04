@@ -9,6 +9,7 @@
 import {Page, Locator} from '@playwright/test';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {expect} from '@playwright/test';
+import {sleep} from '../../utils/sleep';
 
 class TaskPanelPageV1 {
   readonly availableTasks: Locator;
@@ -54,21 +55,38 @@ class TaskPanelPageV1 {
       | 'Completed'
       | 'Custom',
   ) {
-    await this.expandSidePanelButton.click();
-    await this.page.getByRole('link', {name: option, exact: true}).click();
+    let retryCount = 0;
+    const maxRetries = 5;
+    while (retryCount < maxRetries) {
+      try {
+        const link = this.page.getByRole('link', {name: option, exact: true});
+        if (!(await link.isVisible())) {
+          await expect(this.expandSidePanelButton).toBeVisible();
+          await this.expandSidePanelButton.click();
+        }
+        await expect(link).toBeVisible({timeout: 10000});
+        await link.click();
 
-    const expectedSegment =
-      option === 'All open tasks'
-        ? 'all-open'
-        : option === 'Assigned to me'
-          ? 'assigned-to-me'
-          : option.toLowerCase().replace(/\s+/g, '-');
+        const expectedSegment =
+          option === 'All open tasks'
+            ? 'all-open'
+            : option === 'Assigned to me'
+              ? 'assigned-to-me'
+              : option.toLowerCase().replace(/\s+/g, '-');
 
-    await expect(this.page).toHaveURL(new RegExp(`${expectedSegment}`), {
-      timeout: 15000,
-    });
-
-    await this.collapseSidePanelButton.click();
+        await expect(this.page).toHaveURL(new RegExp(`${expectedSegment}`), {
+          timeout: 15000,
+        });
+        await this.collapseSidePanelButton.click();
+        return;
+      } catch (error) {
+        retryCount++;
+        console.log(`Attempt ${retryCount} failed. Retrying...`, error);
+      }
+    }
+    throw new Error(
+      `Failed to apply filter "${option}" after ${maxRetries} attempts.`,
+    );
   }
 
   async clickCollapseFilter(): Promise<void> {
