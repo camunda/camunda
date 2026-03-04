@@ -1,12 +1,12 @@
 # Renew GitHub Token
 
 Generates a fresh GitHub App token via HashiCorp Vault and safely replaces the
-git credential set by `actions/checkout@v6`, avoiding duplicate `Authorization`
+git credential set by `actions/checkout`, avoiding duplicate `Authorization`
 headers that cause HTTP 400 errors.
 
 ## Why this is needed
 
-`actions/checkout@v6` stores the `http.*.extraheader` credential in an external
+`actions/checkout` stores the `http.*.extraheader` credential in an external
 temp config file (`$RUNNER_TEMP/git-credentials-<uuid>.config`) and references it
 from `.git/config` via `includeIf.gitdir` directives. The GitHub App token
 expires after 1 hour. In long-running jobs (e.g. Maven release), the token may
@@ -18,12 +18,12 @@ causing git to send two `Authorization` headers, which GitHub rejects with
 HTTP 400 `"Duplicate header: Authorization"`.
 
 This action safely updates the original credential file used by
-`actions/checkout@v6` so that git continues to use a single `Authorization`
+`actions/checkout` so that git continues to use a single `Authorization`
 header with the renewed token.
 
 **References:**
-- [checkoutv6 issue about the token expiration](https://github.com/actions/create-github-app-token/issues/121#issuecomment-2027574184)
-- [checkout@v6 persist-creds change (PR #2286)](https://github.com/actions/checkout/pull/2286)
+- [checkout issue about the token expiration](https://github.com/actions/create-github-app-token/issues/121#issuecomment-2027574184)
+- [checkout persist-creds change (PR #2286)](https://github.com/actions/checkout/pull/2286)
 - [Token expiry issue (camunda/camunda#47369)](https://github.com/camunda/camunda/issues/47369)
 
 ## Inputs
