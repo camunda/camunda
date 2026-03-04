@@ -43,8 +43,6 @@ header with the renewed token.
 
 |  Name   |         Description          |
 |---------|------------------------------|
-|  Name   |         Description          |
-|---------|------------------------------|
 | `token` | The renewed GitHub App token |
 
 ## Example Usage
