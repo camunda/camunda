@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter.opensearch;
 
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.time.Duration;
 import java.util.Optional;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -30,16 +31,24 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 public abstract class SearchDBExtension
     implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, AfterAllCallback {
 
-  protected static final String TEST_INTEGRATION_OPENSEARCH_AWS_URL =
+  public static final String PROP_TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT =
+      "test.integration.opensearch.aws.timeout.seconds";
+  protected static final String PROP_TEST_INTEGRATION_OPENSEARCH_AWS_URL =
       "test.integration.opensearch.aws.url";
 
   static SearchDBExtension create() {
     final var openSearchAwsInstanceUrl =
-        Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL)).orElse("");
+        Optional.ofNullable(System.getProperty(PROP_TEST_INTEGRATION_OPENSEARCH_AWS_URL))
+            .orElse("");
+
     if (openSearchAwsInstanceUrl.isEmpty()) {
       return new ContainerizedSearchDBExtension();
     } else {
-      return new AWSSearchDBExtension(openSearchAwsInstanceUrl);
+      final Duration dataAvailabilityTimeout =
+          Optional.ofNullable(System.getProperty(PROP_TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT))
+              .map(val -> Duration.ofSeconds(Long.parseLong(val)))
+              .orElse(Duration.ofSeconds(60));
+      return new AWSSearchDBExtension(openSearchAwsInstanceUrl, dataAvailabilityTimeout);
     }
   }
 
@@ -78,4 +87,11 @@ public abstract class SearchDBExtension
    * @return configured {@link OpensearchClient}
    */
   abstract OpensearchClient client();
+
+  /**
+   * @return timeout for waiting for data availability in the search database. Mainly used in tests
+   *     with AWS OpenSearch as it may take some time until data is available for search after
+   *     indexing.
+   */
+  abstract Duration dataAvailabilityTimeout();
 }
