@@ -29,6 +29,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 public class WebappsConfigurationInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
+  public static final String CAMUNDA_WEBAPPS_ENABLED_PROPERTY = "camunda.webapps.enabled";
   private static final Set<String> WEBAPPS_PROFILES =
       Set.of(OPERATE.getId(), TASKLIST.getId(), IDENTITY.getId(), ADMIN.getId());
   private static final String DEFAULT_RESOURCES_LOCATION = "classpath:/META-INF/resources/";
@@ -45,7 +46,7 @@ public class WebappsConfigurationInitializer
     final var propertyMap = new HashMap<String, Object>();
 
     if (activeProfiles.stream().anyMatch(WEBAPPS_PROFILES::contains)) {
-      propertyMap.put("camunda.webapps.enabled", true);
+      propertyMap.put(CAMUNDA_WEBAPPS_ENABLED_PROPERTY, true);
 
       propertyMap.put("spring.web.resources.add-mappings", true);
       propertyMap.put("spring.thymeleaf.check-template-location", true);
