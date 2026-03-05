@@ -54,6 +54,7 @@ public class FormattingTest {
                           assertThat(property.has("description")).isTrue();
                           final String description = property.get("description").asText();
                           assertThat(description).endsWith(".");
+                          assertThat(description).doesNotContain("`", "**", "_");
                         })));
   }
 
@@ -74,6 +75,7 @@ public class FormattingTest {
                           assertThat(group.has("description")).isTrue();
                           final String description = group.get("description").asText();
                           assertThat(description).endsWith(".");
+                          assertThat(description).doesNotContain("`", "**", "_");
                         })));
   }
 }

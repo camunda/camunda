@@ -284,7 +284,9 @@ describe('Instances', () => {
       },
     });
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
 
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(1));
 
@@ -310,7 +312,9 @@ describe('Instances', () => {
       },
     });
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(3));
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
@@ -329,7 +333,9 @@ describe('Instances', () => {
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
     expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
 
     await waitFor(() => {
       expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes/);

@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda-orchestration-cluster-api",
-    "commit": "6b770a0fb85bcdcd5f00b194cbb414e88294084c",
-    "generatedAt": "2025-10-02T12:03:58.149Z",
+    "commit": "8fe19877bb473c834b44b52dafb33e9b5ec235bd",
+    "generatedAt": "2026-03-04T15:03:27.555Z",
     "specPath": "specification/rest-api.yaml",
-    "specSha256": "b49a73ba78ef93977ace34f643187fe0a0b2393670db2dc995334e123fcb52c7"
+    "specSha256": "7188475166fbd9cd87acad67d2fd70bbcae111618f032214ae61dfdfa1c61c17"
   },
   "responses": [
     {
@@ -115,7 +115,8 @@
         "optional": [
           {
             "name": "expiresAt",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         ]
       }
@@ -178,15 +179,18 @@
           },
           {
             "name": "displayName",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "email",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "username",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         ]
       }
@@ -308,7 +312,8 @@
                       },
                       {
                         "name": "assignee",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "candidateGroups",
@@ -324,11 +329,13 @@
                       },
                       {
                         "name": "dueDate",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "followUpDate",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "formKey",
@@ -336,11 +343,13 @@
                       },
                       {
                         "name": "priority",
-                        "type": "number"
+                        "type": "number",
+                        "nullable": true
                       },
                       {
                         "name": "userTaskKey",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       }
                     ]
                   }
@@ -359,34 +368,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "SearchQueryPageResponse",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<JobSearchResult>",
             "children": {
@@ -402,10 +383,6 @@
                 {
                   "name": "elementInstanceKey",
                   "type": "string"
-                },
-                {
-                  "name": "hasFailedWithRetriesLeft",
-                  "type": "boolean"
                 },
                 {
                   "name": "jobKey",
@@ -493,11 +470,13 @@
               "optional": [
                 {
                   "name": "deadline",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "deniedReason",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "endTime",
@@ -505,20 +484,54 @@
                 },
                 {
                   "name": "errorCode",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "errorMessage",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasFailedWithRetriesLeft",
+                  "type": "boolean"
                 },
                 {
                   "name": "isDenied",
+                  "type": "boolean",
+                  "nullable": true
+                }
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
                   "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
                 }
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -935,7 +948,12 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
+        "required": [
+          {
+            "name": "userTaskKey",
+            "type": "string"
+          }
+        ],
         "optional": [
           {
             "name": "assignee",
@@ -1037,10 +1055,6 @@
             "underlyingPrimitive": "string",
             "rawRefName": "TenantId",
             "wrapper": true
-          },
-          {
-            "name": "userTaskKey",
-            "type": "string"
           }
         ]
       }
@@ -1082,38 +1096,15 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "SearchQueryPageResponse",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<UserTaskResult>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "userTaskKey",
+                  "type": "string"
+                }
+              ],
               "optional": [
                 {
                   "name": "assignee",
@@ -1215,15 +1206,38 @@
                   "underlyingPrimitive": "string",
                   "rawRefName": "TenantId",
                   "wrapper": true
+                }
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
                 },
                 {
-                  "name": "userTaskKey",
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
                   "type": "string"
                 }
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1233,39 +1247,10 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "SearchQueryPageResponse",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<VariableResultBase>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "isTruncated",
                   "type": "boolean"
@@ -1294,10 +1279,38 @@
                   "name": "variableKey",
                   "type": "string"
                 }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1307,39 +1320,10 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "SearchQueryPageResponse",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<VariableResultBase>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "isTruncated",
                   "type": "boolean"
@@ -1368,10 +1352,38 @@
                   "name": "variableKey",
                   "type": "string"
                 }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "SearchQueryPageResponse",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string"
+                }
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1379,8 +1391,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "name",
             "type": "string"
@@ -1405,7 +1416,8 @@
             "name": "variableKey",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {

@@ -30,6 +30,7 @@
 /.github/actions/paths-filter/*                          @camunda/monorepo-devops-team
 /.github/actions/setup-build/*                           @camunda/monorepo-devops-team
 /.github/actions/setup-maven*/*                          @camunda/monorepo-devops-team
+/.github/actions/renew-github-token/*                    @camunda/monorepo-devops-team
 /.github/workflows/add-to-projects.yml                   @camunda/monorepo-devops-team
 /.github/workflows/backport.yml                          @camunda/monorepo-devops-team
 /.github/workflows/camunda-helm-integration.yml          @camunda/monorepo-devops-team
