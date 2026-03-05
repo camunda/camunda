@@ -8,7 +8,7 @@
 package io.camunda.zeebe.logstreams.impl.log;
 
 import com.netflix.concurrency.limits.Limit;
-import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetricsImpl;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
@@ -54,7 +54,7 @@ public final class LogStreamImpl implements LogStream, CommitListener {
     this.logStorage = logStorage;
     flowControl =
         new FlowControl(
-            new LogStreamMetrics(meterRegistry), requestLimit, writeRateLimit, inFlightCapacity);
+            new LogStreamMetricsImpl(meterRegistry), requestLimit, writeRateLimit, inFlightCapacity);
     sequencer =
         new Sequencer(
             logStorage,

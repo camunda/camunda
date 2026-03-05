@@ -11,7 +11,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.netflix.concurrency.limits.Limit;
 import com.netflix.concurrency.limits.Limiter;
 import com.netflix.concurrency.limits.Limiter.Listener;
-import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetricsImpl;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RequestLimiter.CommandRateLimiterBuilder;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
@@ -80,7 +80,7 @@ import java.util.List;
 @SuppressWarnings("UnstableApiUsage")
 public final class FlowControl implements AppendListener {
 
-  private final LogStreamMetrics metrics;
+  private final LogStreamMetricsImpl metrics;
   private RateLimit writeRateLimit;
   private Limit requestLimit;
   private Limiter<Intent> processingLimiter;
@@ -97,17 +97,17 @@ public final class FlowControl implements AppendListener {
 
   private final RingBuffer inFlight;
 
-  public FlowControl(final LogStreamMetrics metrics) {
+  public FlowControl(final LogStreamMetricsImpl metrics) {
     this(metrics, StabilizingAIMDLimit.newBuilder().build(), RateLimit.disabled(), 0);
   }
 
   public FlowControl(
-      final LogStreamMetrics metrics, final Limit requestLimit, final RateLimit writeRateLimit) {
+      final LogStreamMetricsImpl metrics, final Limit requestLimit, final RateLimit writeRateLimit) {
     this(metrics, requestLimit, writeRateLimit, 0);
   }
 
   public FlowControl(
-      final LogStreamMetrics metrics,
+      final LogStreamMetricsImpl metrics,
       final Limit requestLimit,
       final RateLimit writeRateLimit,
       final int inFlightCapacity) {

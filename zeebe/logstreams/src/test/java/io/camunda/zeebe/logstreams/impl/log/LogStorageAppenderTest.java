@@ -15,7 +15,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetricsImpl;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -59,7 +59,7 @@ final class LogStorageAppenderTest {
   @BeforeEach
   void beforeEach() {
     final var meterRegistry = new SimpleMeterRegistry();
-    final var logStreamMetrics = new LogStreamMetrics(meterRegistry);
+    final var logStreamMetrics = new LogStreamMetricsImpl(meterRegistry);
     scheduler.start();
     sequencer =
         new Sequencer(

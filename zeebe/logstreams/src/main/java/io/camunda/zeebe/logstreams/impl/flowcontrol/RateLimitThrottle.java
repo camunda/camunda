@@ -10,7 +10,7 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 import static java.lang.Math.clamp;
 
 import com.google.common.util.concurrent.RateLimiter;
-import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetricsImpl;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +22,7 @@ final class RateLimitThrottle {
 
   private final AtomicLong lastUpdate = new AtomicLong(-1);
 
-  private final LogStreamMetrics metrics;
+  private final LogStreamMetricsImpl metrics;
   private final RateLimit limit;
   private final RateLimiter limiter;
   private final RateMeasurement measurement;
@@ -31,7 +31,7 @@ final class RateLimitThrottle {
   private final double minRate;
 
   RateLimitThrottle(
-      final LogStreamMetrics metrics,
+      final LogStreamMetricsImpl metrics,
       final RateLimit limit,
       final RateLimiter limiter,
       final RateMeasurement measurement) {

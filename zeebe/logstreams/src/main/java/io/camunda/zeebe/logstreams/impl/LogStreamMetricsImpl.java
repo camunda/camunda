@@ -50,7 +50,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.concurrent.atomic.AtomicLong;
 
-public final class LogStreamMetrics {
+public final class LogStreamMetricsImpl {
   private final AtomicLong inflightAppends = new AtomicLong();
   private final AtomicLong inflightRequests = new AtomicLong();
   private final AtomicLong requestLimit = new AtomicLong();
@@ -72,7 +72,7 @@ public final class LogStreamMetrics {
   private final Timer commitLatency;
   private final Timer appendLatency;
 
-  public LogStreamMetrics(final MeterRegistry registry) {
+  public LogStreamMetricsImpl(final MeterRegistry registry) {
     this.registry = registry;
     deferredAppends = registerCounter(TOTAL_DEFERRED_APPEND_COUNT);
     triedAppends = registerCounter(TOTAL_APPEND_TRY_COUNT);
@@ -89,10 +89,10 @@ public final class LogStreamMetrics {
     registerGauge(EXPORTING_RATE, exportingRate);
     registerGauge(WRITE_RATE_MAX_LIMIT, writeRateMaxLimit);
 
-    Gauge.builder(WRITE_RATE_LIMIT.getName(), writeRateLimit, LogStreamMetrics::longToDouble)
+    Gauge.builder(WRITE_RATE_LIMIT.getName(), writeRateLimit, LogStreamMetricsImpl::longToDouble)
         .description(WRITE_RATE_LIMIT.getDescription())
         .register(registry);
-    Gauge.builder(PARTITION_LOAD.getName(), partitionLoad, LogStreamMetrics::longToDouble)
+    Gauge.builder(PARTITION_LOAD.getName(), partitionLoad, LogStreamMetricsImpl::longToDouble)
         .description(PARTITION_LOAD.getDescription())
         .register(registry);
   }
