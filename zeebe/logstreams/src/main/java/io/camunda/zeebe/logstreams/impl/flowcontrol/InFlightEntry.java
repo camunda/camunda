@@ -8,14 +8,14 @@
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.Limiter.Listener;
-import io.camunda.zeebe.logstreams.impl.LogStreamMetricsImpl;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public final class InFlightEntry {
-  final LogStreamMetricsImpl metrics;
+  final LogStreamMetrics metrics;
   LogAppendEntryMetadata entryMetadata;
   final AtomicReference<Listener> requestListener;
   final AtomicReference<CloseableSilently> writeTimer;
@@ -36,7 +36,7 @@ public final class InFlightEntry {
   long position;
 
   public InFlightEntry(
-      final LogStreamMetricsImpl metrics,
+      final LogStreamMetrics metrics,
       final LogAppendEntryMetadata entryMetadata,
       final Listener requestListener) {
     this.metrics = metrics;
