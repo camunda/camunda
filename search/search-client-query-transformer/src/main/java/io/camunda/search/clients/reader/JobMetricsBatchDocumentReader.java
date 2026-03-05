@@ -8,6 +8,7 @@
 package io.camunda.search.clients.reader;
 
 import io.camunda.search.aggregation.result.GlobalJobStatisticsAggregationResult;
+import io.camunda.search.aggregation.result.JobErrorStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.JobTimeSeriesStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.JobTypeStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.JobWorkerStatisticsAggregationResult;
@@ -65,6 +66,7 @@ public class JobMetricsBatchDocumentReader extends DocumentBasedReader
   @Override
   public SearchQueryResult<JobErrorStatisticsEntity> getJobErrorStatistics(
       final JobErrorStatisticsQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    throw new UnsupportedOperationException("Job error statistics is not yet implemented");
+    return aggregateToResult(
+        query, JobErrorStatisticsAggregationResult.class, resourceAccessChecks);
   }
 }
