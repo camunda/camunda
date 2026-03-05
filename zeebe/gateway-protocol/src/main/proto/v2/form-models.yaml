@@ -15,8 +15,14 @@ components:
           allOf:
             - $ref: "identifiers.yaml#/components/schemas/FormId"
         schema:
-          description: The form content.
-          type: object
+          description: |
+            The form content as a JSON string.
+
+            **Breaking change in 8.9**: This field was incorrectly specified as `type: object` in previous versions,
+            but the actual runtime behavior has always been to return a JSON string. This specification now correctly
+            reflects the actual implementation. This is a bug fix to align the OpenAPI specification with the actual
+            API behavior that has existed since the field was introduced.
+          type: string
         version:
           description: The version of the the deployed form.
           type: integer
