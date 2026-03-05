@@ -22,6 +22,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.regex.Pattern;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -243,6 +245,49 @@ class OidcFlowTest {
         assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
       }
       return new ObjectMapper().readTree(response.body()).get("access_token").asText();
+    }
+  }
+
+  @Nested
+  class ProtectedResourceMetadata {
+    @Test
+    public void shouldReturnProtectedResourceMetadataLinkInUnauthorizedResponse() {
+      // when an unauthenticated client accesses a protected API endpoint
+      final MvcTestResult result =
+          mockMvcTester
+              .get()
+              .uri(DUMMY_V2_API_ENDPOINT)
+              .accept(MediaType.APPLICATION_JSON)
+              .exchange();
+
+      // then the 401 response includes a resource_metadata link in WWW-Authenticate
+      assertThat(result).hasStatus(HttpStatus.UNAUTHORIZED);
+      final var wwwAuthenticate = result.getResponse().getHeader("WWW-Authenticate");
+      assertThat(wwwAuthenticate).isNotNull();
+      final var matcher =
+          Pattern.compile("resource_metadata=\"([^\"]+)\"").matcher(wwwAuthenticate);
+      assertThat(matcher.find())
+          .as("WWW-Authenticate should contain resource_metadata parameter")
+          .isTrue();
+      assertThat(matcher.group(1)).contains("/.well-known/oauth-protected-resource");
+    }
+
+    @Test
+    public void shouldReturnProtectedResourceMetadataWithoutAuthentication() {
+      final MvcTestResult result =
+          mockMvcTester
+              .get()
+              .uri("/.well-known/oauth-protected-resource")
+              .accept(MediaType.APPLICATION_JSON)
+              .exchange();
+
+      assertThat(result).hasStatus(HttpStatus.OK);
+      assertThat(result).hasContentTypeCompatibleWith(MediaType.APPLICATION_JSON);
+      assertThat(result)
+          .bodyJson()
+          .extractingPath("authorization_servers")
+          .asInstanceOf(InstanceOfAssertFactories.LIST)
+          .containsExactly(keycloak.getAuthServerUrl() + "/realms/" + REALM);
     }
   }
 }
