@@ -14,14 +14,14 @@ const createModification = ({
   id,
   name,
   value,
-  selectedFlowNodeName,
+  selectedElementName,
 }: {
   scopeId: string | null;
   areFormFieldsValid: boolean;
   id: string;
   name: string;
   value: string;
-  selectedFlowNodeName: string;
+  selectedElementName: string;
 }) => {
   if (scopeId === null || !areFormFieldsValid || name === '' || value === '') {
     return;
@@ -44,7 +44,7 @@ const createModification = ({
         operation: 'ADD_VARIABLE',
         scopeId,
         id,
-        elementName: selectedFlowNodeName,
+        elementName: selectedElementName,
         name,
         newValue: value,
       },

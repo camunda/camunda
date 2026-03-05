@@ -87,9 +87,9 @@ const targetDefinition = createProcessDefinition({
 /**
  * Returns a custom matcher function which ignores all option elements from comboboxes.
  */
-const getMatcherFunction = (flowNodeName: string): MatcherFunction => {
+const getMatcherFunction = (elementName: string): MatcherFunction => {
   return (content, element) => {
-    return content === flowNodeName && element?.tagName !== 'OPTION';
+    return content === elementName && element?.tagName !== 'OPTION';
   };
 };
 
@@ -104,7 +104,7 @@ describe('MigrationView/BottomPanel', () => {
     processInstanceMigrationStore.setSourceProcessDefinition(sourceDefinition);
     processInstanceMigrationStore.setTargetProcessDefinition(targetDefinition);
   });
-  it('should render source flow nodes', async () => {
+  it('should render source elements', async () => {
     mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));
     mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));
 
@@ -328,7 +328,7 @@ describe('MigrationView/BottomPanel', () => {
     },
   );
 
-  it('should auto-map flow nodes', async () => {
+  it('should auto-map elements', async () => {
     // source process definition
     mockFetchProcessDefinitionXml({
       processDefinitionKey: SOURCE_PROCESS_DEFINITION_KEY,
@@ -487,7 +487,7 @@ describe('MigrationView/BottomPanel', () => {
       MultiInstanceSubProcess.id,
     );
 
-    // Expect no auto-mapping (flow node does not exist in target)
+    // Expect no auto-mapping (element does not exist in target)
     expect(comboboxShippingSubProcess).toHaveValue('');
 
     expect(comboboxMessageNonInterrupting).toHaveValue('');
@@ -506,7 +506,7 @@ describe('MigrationView/BottomPanel', () => {
     expect(comboboxTaskY).toBeEnabled();
   });
 
-  it('should add tags for unmapped flow nodes', async () => {
+  it('should add tags for unmapped elements', async () => {
     // source process definition
     mockFetchProcessDefinitionXml({
       processDefinitionKey: SOURCE_PROCESS_DEFINITION_KEY,
@@ -680,7 +680,7 @@ describe('MigrationView/BottomPanel', () => {
     ).toBeInTheDocument();
   }, 10000);
 
-  it('should hide mapped flow nodes', async () => {
+  it('should hide mapped elements', async () => {
     mockFetchProcessDefinitionXml({
       processDefinitionKey: SOURCE_PROCESS_DEFINITION_KEY,
     }).withSuccess(open('instanceMigration.bpmn'));
@@ -702,7 +702,7 @@ describe('MigrationView/BottomPanel', () => {
       HEADER_ROW_COUNT + CONTENT_ROW_COUNT,
     );
 
-    // Toggle on unmapped flow nodes
+    // Toggle on unmapped elements
     await user.click(screen.getByLabelText(/show only not mapped/i));
 
     // Expect the following rows to be hidden (because they're mapped)
@@ -811,7 +811,7 @@ describe('MigrationView/BottomPanel', () => {
     expect(screen.getByLabelText(/show only not mapped/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/show only not mapped/i)).toBeVisible();
 
-    // Toggle off unmapped flow nodes
+    // Toggle off unmapped elements
     await user.click(screen.getByLabelText(/show only not mapped/i));
 
     // Expect all rows to be visible again

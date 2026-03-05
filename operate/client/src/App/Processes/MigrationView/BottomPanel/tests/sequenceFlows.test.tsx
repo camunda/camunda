@@ -175,7 +175,7 @@ describe('BottomPanel - sequence flow mappings', () => {
       }),
     ).toBeVisible();
 
-    // Toggle on unmapped flow nodes
+    // Toggle on unmapped elements
     await user.click(screen.getByText(/show only not mapped/i));
 
     // Expect not mapped items to be visible

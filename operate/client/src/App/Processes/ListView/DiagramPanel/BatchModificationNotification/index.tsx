@@ -40,12 +40,12 @@ const BatchModificationNotification: React.FC<Props> = observer(
       sourceElementId,
     );
 
-    const sourceFlowNodeName = getElementName({
+    const sourceElementName = getElementName({
       businessObjects: processDefinitionData?.diagramModel.elementsById,
       elementId: sourceElementId,
     });
 
-    const targetFlowNodeName = getElementName({
+    const targetElementName = getElementName({
       businessObjects: processDefinitionData?.diagramModel.elementsById,
       elementId: targetElementId,
     });
@@ -58,12 +58,12 @@ const BatchModificationNotification: React.FC<Props> = observer(
           kind="info"
           title=""
           subtitle={
-            sourceFlowNodeName === '' || targetFlowNodeName === ''
+            sourceElementName === '' || targetElementName === ''
               ? 'Please select where you want to move the selected instances on the diagram.'
               : `Modification scheduled: Move ${pluralSuffix(
                   instancesCount,
                   'instance',
-                )} from “${sourceFlowNodeName}” to “${targetFlowNodeName}”. Press “Review Modification” button to confirm.`
+                )} from “${sourceElementName}” to “${targetElementName}”. Press “Review Modification” button to confirm.`
           }
         />
         {targetElementId && onUndoClick && (

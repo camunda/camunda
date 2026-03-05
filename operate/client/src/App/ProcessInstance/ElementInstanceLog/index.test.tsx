@@ -252,7 +252,7 @@ describe('ElementInstanceLog', () => {
     vi.useRealTimers();
   });
 
-  it('should render flow node instances tree', async () => {
+  it('should render element instances tree', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     mockFetchProcessDefinitionXml().withSuccess('');

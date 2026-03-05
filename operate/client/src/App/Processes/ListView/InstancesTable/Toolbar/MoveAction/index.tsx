@@ -33,7 +33,7 @@ const localStorageKey = 'hideMoveModificationHelperModal';
 
 const MoveAction: React.FC = observer(() => {
   const location = useLocation();
-  const {flowNodeId} = getProcessInstanceFilters(location.search);
+  const {flowNodeId: elementId} = getProcessInstanceFilters(location.search);
 
   const {hasSelectedRunningInstances} = processInstancesSelectionStore;
 
@@ -42,10 +42,10 @@ const MoveAction: React.FC = observer(() => {
     processDefinitionKey,
   });
 
-  const businessObject: BusinessObject | null = flowNodeId
+  const businessObject: BusinessObject | null = elementId
     ? (getElement({
         businessObjects: processDefinitionData?.diagramModel.elementsById,
-        elementId: flowNodeId,
+        elementId,
       }) ?? null)
     : null;
 
@@ -60,7 +60,7 @@ const MoveAction: React.FC = observer(() => {
   const isDisabled =
     batchModificationStore.state.isEnabled ||
     isNil(businessObject) ||
-    flowNodeId === undefined ||
+    elementId === undefined ||
     !isTypeSupported(businessObject) ||
     !hasSelectedRunningInstances ||
     isWithinMultiInstance(businessObject) ||
@@ -71,7 +71,7 @@ const MoveAction: React.FC = observer(() => {
       return undefined;
     }
 
-    if (flowNodeId === undefined || isNil(businessObject)) {
+    if (elementId === undefined || isNil(businessObject)) {
       return 'Please select an element from the diagram first.';
     }
     if (!isTypeSupported(businessObject)) {

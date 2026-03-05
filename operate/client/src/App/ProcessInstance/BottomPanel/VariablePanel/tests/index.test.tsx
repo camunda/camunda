@@ -46,12 +46,12 @@ const TestSelectionControls: React.FC = () => {
         type="button"
         onClick={() =>
           selectElementInstance({
-            elementId: 'TEST_FLOW_NODE',
+            elementId: 'TEST_ELEMENT',
             elementInstanceKey: '2',
           })
         }
       >
-        select test flow node
+        select test element
       </button>
       <button
         type="button"
@@ -109,7 +109,7 @@ const getWrapper = (...args: Parameters<typeof getBaseWrapper>) => {
 describe('VariablePanel', () => {
   const statistics = [
     {
-      elementId: 'TEST_FLOW_NODE',
+      elementId: 'TEST_ELEMENT',
       active: 0,
       canceled: 0,
       incidents: 0,
@@ -412,8 +412,8 @@ describe('VariablePanel', () => {
 
     mockFetchElementInstance('2').withSuccess({
       elementInstanceKey: '2',
-      elementId: 'TEST_FLOW_NODE',
-      elementName: 'Test Flow Node',
+      elementId: 'TEST_ELEMENT',
+      elementName: 'Test Element',
       type: 'SERVICE_TASK',
       state: 'ACTIVE',
       startDate: '2018-06-21',
@@ -428,7 +428,7 @@ describe('VariablePanel', () => {
     });
 
     await user.click(
-      screen.getByRole('button', {name: /select test flow node/i}),
+      screen.getByRole('button', {name: /select test element/i}),
     );
 
     expect(
@@ -523,7 +523,7 @@ describe('VariablePanel', () => {
     );
   });
 
-  it('should select correct tab when navigating between flow nodes', async () => {
+  it('should select correct tab when navigating between elements', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockSearchVariables().withSuccess({
       items: [createVariable()],

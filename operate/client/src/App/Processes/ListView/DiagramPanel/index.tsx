@@ -95,7 +95,7 @@ const DiagramPanel: React.FC = observer(() => {
     processDefinitionKey: selectedDefinitionKey,
   });
   const selectableIds = processDefinitionXML?.selectableFlowNodes.map(
-    (flowNode) => flowNode.id,
+    (element) => element.id,
   );
 
   const {data: businessObjects} = useBusinessObjects();
@@ -125,16 +125,16 @@ const DiagramPanel: React.FC = observer(() => {
     batchModificationStore.state.isEnabled,
   );
 
-  const flowNodeIdsWithIncidents = processInstanceOverlayData
+  const elementIdsWithIncidents = processInstanceOverlayData
     ?.filter(({type}) => type === 'statistics-incidents')
     ?.map((overlay) => overlay.elementId);
 
-  const selectableFlowNodesWithIncidents = flowNodeIdsWithIncidents?.map(
-    (flowNodeId) => businessObjects?.[flowNodeId],
+  const selectableElementsWithIncidents = elementIdsWithIncidents?.map(
+    (elementId) => businessObjects?.[elementId],
   );
 
   const subprocessOverlays = getSubprocessOverlayFromIncidentElements(
-    selectableFlowNodesWithIncidents,
+    selectableElementsWithIncidents,
     'statistics-incidents',
   );
 
@@ -172,20 +172,20 @@ const DiagramPanel: React.FC = observer(() => {
       return selectableIds;
     }
 
-    return selectableIds?.filter((selectedFlowNodeId) => {
-      if (selectedFlowNodeId === flowNodeId) {
+    return selectableIds?.filter((selectedElementId) => {
+      if (selectedElementId === flowNodeId) {
         return false;
       }
-      if (selectedFlowNodeId === undefined) {
+      if (selectedElementId === undefined) {
         return false;
       }
 
-      const flowNode = getElement({
+      const element = getElement({
         businessObjects: processDefinitionXML?.diagramModel.elementsById,
-        elementId: selectedFlowNodeId,
+        elementId: selectedElementId,
       });
 
-      return isMoveModificationTarget(flowNode);
+      return isMoveModificationTarget(element);
     });
   };
 
@@ -200,15 +200,15 @@ const DiagramPanel: React.FC = observer(() => {
   };
 
   const handleElementSelection = (
-    selectedFlowNodeId: string | null | undefined,
+    selectedElementId: string | null | undefined,
   ) => {
     if (batchModificationStore.state.isEnabled) {
       return batchModificationStore.selectTargetElement(
-        selectedFlowNodeId ?? null,
+        selectedElementId ?? null,
       );
     }
 
-    if (selectedFlowNodeId === null || selectedFlowNodeId === undefined) {
+    if (selectedElementId === null || selectedElementId === undefined) {
       setSearchParams((p) => {
         p.delete('flowNodeId');
         return p;
@@ -217,7 +217,7 @@ const DiagramPanel: React.FC = observer(() => {
     }
 
     setSearchParams((p) => {
-      p.set('flowNodeId', selectedFlowNodeId);
+      p.set('flowNodeId', selectedElementId);
       return p;
     });
   };
