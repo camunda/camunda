@@ -14,10 +14,12 @@ Add the following dependency to your Maven project alongside `camunda-process-te
 ```xml
 <dependency>
   <groupId>io.camunda</groupId>
-  <artifactId>camunda-process-test-starter-langchain4j</artifactId>
+  <artifactId>camunda-process-test-langchain4j</artifactId>
   <scope>test</scope>
 </dependency>
 ```
+
+If the project is relying on `camunda-process-test-spring`, no additional dependency is required.
 
 ## Configuration
 
