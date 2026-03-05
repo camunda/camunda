@@ -154,7 +154,7 @@ orchestration:
         zeebe.broker.flowControl.write.limit: 10000
         zeebe.broker.flowControl.write.throttling.enabled: "true"
         # Schema management has been moved out of exporter - to be bootstrap at start; once
-        camunda.data.secondary-storage.retention.enabled: "true"
+        camunda.data.secondary-storage.retention.enabled: "false"
         camunda.data.secondary-storage.retention.minimum-age: "70m"
         # We define the retention policy name for both, ES and OpenSearch, to be the same, as the ILM policy is compatible with both and it simplifies the configuration.
         camunda.data.secondary-storage.elasticsearch.history.policy-name: "camunda-retention-policy"
@@ -176,7 +176,7 @@ orchestration:
   history:
     retention:
       ## @param core.history.retention.enabled if true, the ILM Policy is created and applied to the index templates.
-      enabled: true
+      enabled: false
       ## @param core.history.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
       minimumAge: 70m
   # @param core.env can be used to set extra environment variables in each broker container

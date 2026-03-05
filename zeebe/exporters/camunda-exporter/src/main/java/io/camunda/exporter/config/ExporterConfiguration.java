@@ -220,7 +220,7 @@ public class ExporterConfiguration {
   }
 
   public static class HistoryConfiguration {
-    private boolean processInstanceEnabled = true;
+    private boolean processInstanceEnabled = false;
     private ProcessInstanceRetentionMode processInstanceRetentionMode =
         ProcessInstanceRetentionMode.PI_HIERARCHY;
     private String elsRolloverDateFormat = "date";
