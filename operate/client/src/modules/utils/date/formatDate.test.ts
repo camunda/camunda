@@ -38,6 +38,6 @@ describe('formatDate', () => {
     const givenDate = new Date('2019-11-06T14:24:15.422');
     const expectedDate = '2019-11-06 14:24:15';
 
-    expect(formatDate(givenDate, null)).toEqual(expectedDate);
+    expect(formatDate(givenDate, 'custom')).toEqual(expectedDate);
   });
 });
