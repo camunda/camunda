@@ -49,6 +49,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
 
       - name: Package camunda-dist
         shell: bash
@@ -134,6 +135,7 @@ jobs:
 
       - name: Wait for camunda process to start
         run: bash -c 'while ! curl -s -f "http://localhost:9600/actuator/health"; do sleep 5; done'
+        timeout-minutes: 5
       - name: Unit tests
         run: go test ./...
         working-directory: ./c8run
