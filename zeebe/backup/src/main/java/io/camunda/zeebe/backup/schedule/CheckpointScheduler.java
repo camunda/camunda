@@ -78,14 +78,16 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     acquirePartitionStates(CheckpointStateResponse::getCheckpointStates)
         .thenApply(this::determineNextCheckpoint, this)
         .andThen(this::markerCheckpoint, this)
-        .onComplete(this::handleExecutionCompletion, this);
+        .onComplete((res, err) -> handleExecutionCompletion(res, err, CheckpointType.MARKER), this);
   }
 
   private void backupSchedulingTask() {
     acquirePartitionStates(CheckpointStateResponse::getBackupStates)
         .thenApply(this::determineNextBackup, this)
         .andThen(this::backupCheckpoint, this)
-        .onComplete(this::handleExecutionCompletion, this);
+        .onComplete(
+            (res, err) -> handleExecutionCompletion(res, err, CheckpointType.SCHEDULED_BACKUP),
+            this);
   }
 
   /**
@@ -191,8 +193,8 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     return future;
   }
 
-  private void handleExecutionCompletion(final ExecutionResult result, final Throwable error) {
-    final CheckpointType type = result.type;
+  private void handleExecutionCompletion(
+      final ExecutionResult result, final Throwable error, final CheckpointType type) {
     final long delay;
     if (error != null) {
       delay = backOff(error, type);
