@@ -158,6 +158,7 @@ class CsrfProtectionRequestMatcherTest {
 
   private static Stream<Arguments> protectedPaths() {
     final Set<String> protectedPaths = new HashSet<>(WebSecurityConfig.API_PATHS);
+    protectedPaths.removeAll(WebSecurityConfig.UNPROTECTED_API_PATHS);
     return Stream.of(protectedPaths.stream().map(Arguments::of).toArray(Arguments[]::new));
   }
 
