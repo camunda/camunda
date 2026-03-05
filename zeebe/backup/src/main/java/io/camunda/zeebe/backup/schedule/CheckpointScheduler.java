@@ -19,6 +19,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.LongSummaryStatistics;
+import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -170,8 +171,8 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   /**
    * Detects whether any partition is lagging behind by comparing the spread (max - min) of
    * checkpoint timestamps across partitions against the schedule interval. If the spread is greater
-   * than the double of interval, a partition is considered a lagging and a {@link
-   * PartitionLaggingException} is thrown to trigger the backoff.
+   * than the interval times LAGGING_PARTITION_FACTOR, a partition is considered a lagging and a
+   * {@link PartitionLaggingException} is thrown to trigger the backoff.
    */
   private void detectLaggingPartition(final LongSummaryStatistics stats, final Schedule schedule) {
     if (schedule == null || stats.getCount() < 2) {
@@ -180,8 +181,13 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
 
     final var now = ActorClock.currentInstant();
     final long spreadMs = stats.getMax() - stats.getMin();
-    final long intervalMs =
-        Duration.between(now, schedule.nextExecution(now).orElse(Instant.MAX)).toMillis();
+    final Optional<Instant> nextExecution = schedule.nextExecution(now);
+    if (nextExecution.isEmpty()) {
+      return;
+    }
+    final Instant followingExecution =
+        schedule.nextExecution(nextExecution.get()).orElse(Instant.MAX);
+    final long intervalMs = Duration.between(nextExecution.get(), followingExecution).toMillis();
 
     if (spreadMs > intervalMs * LAGGING_PARTITION_FACTOR) {
       LOG.warn(
