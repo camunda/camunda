@@ -18,7 +18,7 @@ import type {
   BatchOperationType,
   DecisionInstanceState,
 } from '@camunda/camunda-api-zod-schemas/8.9';
-import type {useCurrentPage} from 'App/Layout/useCurrentPage';
+import type {useCurrentPage} from 'modules/hooks/useCurrentPage';
 
 const EVENT_PREFIX = 'operate:';
 
