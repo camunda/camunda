@@ -27,7 +27,6 @@
     <version.spring-boot>3.5.11</version.spring-boot>
     <!-- Spring Framework 6.x is required for Spring Boot 3.x -->
     <version.spring>6.2.16</version.spring>
-    <version.roaster>2.31.0.Final</version.roaster>
     <version.aspectjweaver>1.9.25.1</version.aspectjweaver>
     <generated.test.sources.path>${project.build.directory}/generated-test-sources/java</generated.test.sources.path>
     <camunda-spring-boot-starter.sourcedir>${project.basedir}/../camunda-spring-boot-starter/src</camunda-spring-boot-starter.sourcedir>
@@ -57,13 +56,6 @@
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
       <optional>true</optional>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jboss.forge.roaster</groupId>
-      <artifactId>roaster-api</artifactId>
-      <version>${version.roaster}</version>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -277,14 +269,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <dependencies>
-          <!-- Needed for the roaster generator used -->
-          <dependency>
-            <groupId>org.jboss.forge.roaster</groupId>
-            <artifactId>roaster-jdt</artifactId>
-            <version>${version.roaster}</version>
-          </dependency>
-        </dependencies>
         <executions>
           <!-- This executes the test generator classes -->
           <execution>
