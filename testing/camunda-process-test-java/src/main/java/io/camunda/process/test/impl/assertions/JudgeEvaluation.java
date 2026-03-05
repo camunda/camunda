@@ -90,15 +90,12 @@ class JudgeEvaluation {
 
   public Result evaluate(final String input) throws JudgeResponseParseException {
     LOG.debug("Evaluating input against expectation='{}'", expectation);
-    LOG.trace("Input value length: {} chars", input != null ? input.length() : 0);
 
     final String prompt = buildPrompt(expectation, input);
-    LOG.trace("Built prompt for judge LLM: {} chars", prompt.length());
-
     LOG.debug("Sending prompt to judge LLM");
+
     final String response = chatModel.generate(prompt);
     LOG.debug("Received response from judge LLM");
-    LOG.trace("Judge LLM response length: {} chars", response != null ? response.length() : 0);
 
     final Result result = parseResponse(response);
     LOG.debug(
@@ -155,7 +152,7 @@ class JudgeEvaluation {
 
     // Handle markdown-wrapped JSON: ```json ... ``` or ``` ... ```
     if (trimmed.startsWith("```")) {
-      LOG.trace("Response is wrapped in markdown code block, extracting JSON");
+      LOG.debug("Response is wrapped in markdown code block, extracting JSON");
       final int firstNewline = trimmed.indexOf('\n');
       if (firstNewline >= 0) {
         trimmed = trimmed.substring(firstNewline + 1);
