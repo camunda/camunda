@@ -330,7 +330,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final String destinationIndexName,
       final Map<String, List<String>> keysByField,
       final Map<String, String> filters) {
-    if (keysByField.isEmpty()) {
+    // just skip reindexing and only delete from main index
+    if (true) {
       return CompletableFuture.completedFuture(null);
     }
 
