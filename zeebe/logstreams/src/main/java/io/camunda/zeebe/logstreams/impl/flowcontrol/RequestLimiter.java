@@ -8,15 +8,15 @@
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.limiter.AbstractLimiter;
-import io.camunda.zeebe.logstreams.impl.LogStreamMetricsImpl;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Optional;
 
 public final class RequestLimiter extends AbstractLimiter<Intent> {
 
-  private final LogStreamMetricsImpl metrics;
+  private final LogStreamMetrics metrics;
 
-  private RequestLimiter(final CommandRateLimiterBuilder builder, final LogStreamMetricsImpl metrics) {
+  private RequestLimiter(final CommandRateLimiterBuilder builder, final LogStreamMetrics metrics) {
     super(builder);
     this.metrics = metrics;
     metrics.setInflightRequests(0);
@@ -50,7 +50,7 @@ public final class RequestLimiter extends AbstractLimiter<Intent> {
       return this;
     }
 
-    public RequestLimiter build(final LogStreamMetricsImpl metrics) {
+    public RequestLimiter build(final LogStreamMetrics metrics) {
       return new RequestLimiter(this, metrics);
     }
   }

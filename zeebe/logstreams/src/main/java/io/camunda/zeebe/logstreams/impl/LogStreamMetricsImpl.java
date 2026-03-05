@@ -50,7 +50,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.concurrent.atomic.AtomicLong;
 
-public final class LogStreamMetricsImpl {
+public final class LogStreamMetricsImpl implements LogStreamMetrics {
   private final AtomicLong inflightAppends = new AtomicLong();
   private final AtomicLong inflightRequests = new AtomicLong();
   private final AtomicLong requestLimit = new AtomicLong();
