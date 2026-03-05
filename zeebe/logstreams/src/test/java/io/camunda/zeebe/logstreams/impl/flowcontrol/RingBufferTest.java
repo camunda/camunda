@@ -25,7 +25,8 @@ import org.junit.jupiter.api.Test;
 
 final class RingBufferTest {
 
-  private static final LogStreamMetricsImpl METRICS = new LogStreamMetricsImpl(new SimpleMeterRegistry());
+  private static final LogStreamMetricsImpl METRICS =
+      new LogStreamMetricsImpl(new SimpleMeterRegistry());
 
   /** Creates a new InFlightEntry. Position is set by {@link RingBuffer#put}. */
   private static InFlightEntry newEntry() {
@@ -271,6 +272,25 @@ final class RingBufferTest {
       final var failures = new ConcurrentLinkedQueue<Throwable>();
       final var startLatch = new CountDownLatch(1);
 
+      final var counter = new AtomicInteger(0);
+
+      final var limitListener =
+          new Listener() {
+            @Override
+            public void onSuccess() {
+              counter.incrementAndGet();
+            }
+
+            @Override
+            public void onIgnore() {
+              counter.incrementAndGet();
+            }
+
+            @Override
+            public void onDropped() {
+              counter.incrementAndGet();
+            }
+          };
       final var writer =
           new Thread(
               () -> {
@@ -318,6 +338,16 @@ final class RingBufferTest {
       assertThat(failures).isEmpty();
       assertThat(hits.get()).as("expected some hits (entry still present)").isGreaterThan(0);
       assertThat(misses.get()).as("expected some misses (entry displaced)").isGreaterThan(0);
+
+      // Clean up the last entries still in the buffer (positions that were never displaced):
+      // the implementation checks the position, not just the array index.
+      for (long pos = ITERATIONS - smallCapacity + 1; pos <= ITERATIONS; pos++) {
+        final var entry = buffer.get(pos);
+        if (entry != null) {
+          entry.cleanup();
+        }
+      }
+      assertThat(counter.get()).isEqualTo(ITERATIONS);
     }
 
     /** Starts all threads, releases the latch, and waits for all threads to finish. */
