@@ -18,6 +18,7 @@ package io.camunda.process.test.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -120,7 +121,6 @@ public class ExecutionListenerTest {
 
   @BeforeEach
   void configureMocks() {
-    CamundaAssert.setJudgeConfig(null);
     when(camundaRuntimeBuilder.build()).thenReturn(camundaContainerRuntime);
 
     when(camundaContainerRuntime.getCamundaGrpcApiAddress()).thenReturn(GRPC_API_ADDRESS);
@@ -134,18 +134,28 @@ public class ExecutionListenerTest {
 
     when(processCoverageBuilder.build()).thenReturn(processCoverage);
     when(testContext.getApplicationContext()).thenReturn(applicationContext);
-    when(applicationContext.getBean(CamundaClientProxy.class)).thenReturn(camundaClientProxy);
-    when(applicationContext.getBean(ZeebeClientProxy.class)).thenReturn(zeebeClientProxy);
-    when(applicationContext.getBean(JsonMapper.class)).thenReturn(null);
-    when(applicationContext.getBean(io.camunda.zeebe.client.api.JsonMapper.class)).thenReturn(null);
-    when(applicationContext.getBean(CamundaProcessTestContextProxy.class))
+    lenient()
+        .when(applicationContext.getBean(CamundaClientProxy.class))
+        .thenReturn(camundaClientProxy);
+    lenient().when(applicationContext.getBean(ZeebeClientProxy.class)).thenReturn(zeebeClientProxy);
+    lenient().when(applicationContext.getBean(JsonMapper.class)).thenReturn(null);
+    lenient()
+        .when(applicationContext.getBean(io.camunda.zeebe.client.api.JsonMapper.class))
+        .thenReturn(null);
+    lenient()
+        .when(applicationContext.getBean(CamundaProcessTestContextProxy.class))
         .thenReturn(camundaProcessTestContextProxy);
-    when(applicationContext.getBean(TestCaseRunnerProxy.class)).thenReturn(testCaseRunnerProxy);
-    when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
+    lenient()
+        .when(applicationContext.getBean(TestCaseRunnerProxy.class))
+        .thenReturn(testCaseRunnerProxy);
+    lenient()
+        .when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
         .thenReturn(new CamundaProcessTestRuntimeConfiguration());
-    when(applicationContext.getBean(CamundaClientProperties.class))
+    lenient()
+        .when(applicationContext.getBean(CamundaClientProperties.class))
         .thenReturn(camundaClientProperties);
-    when(applicationContext.getBean(ChatModelAdapter.class))
+    lenient()
+        .when(applicationContext.getBean(ChatModelAdapter.class))
         .thenThrow(new NoSuchBeanDefinitionException(ChatModelAdapter.class));
   }
 
