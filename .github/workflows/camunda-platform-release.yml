@@ -1273,7 +1273,7 @@ jobs:
           variables: |
             {
               "is_camunda_release_successful": "true",
-              "workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }      
       - name: Send success Slack notification
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
