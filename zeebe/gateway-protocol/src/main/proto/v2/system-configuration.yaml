@@ -1,0 +1,77 @@
+## Endpoint definitions
+
+paths:
+  /system/configuration/job-metrics:
+    get:
+      tags:
+        - System
+      operationId: getJobMetricsConfiguration
+      summary: Job metrics configuration
+      description: |
+        Returns the current configuration for job metrics collection and export.
+      responses:
+        "200":
+          description: Job metrics configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobMetricsConfigurationResponse'
+              examples:
+                example-1:
+                  value:
+                    enabled: true
+                    exportInterval: "PT5M"
+                    maxWorkerNameLength: 100
+                    maxJobTypeLength: 100
+                    maxTenantIdLength: 30
+                    maxUniqueKeys: 9500
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
+## Schema definitions
+
+components:
+  schemas:
+
+    JobMetricsConfigurationResponse:
+      description: Configuration for job metrics collection and export.
+      type: object
+      required:
+        - enabled
+        - exportInterval
+        - maxWorkerNameLength
+        - maxJobTypeLength
+        - maxTenantIdLength
+        - maxUniqueKeys
+      properties:
+        enabled:
+          description: Whether job metrics export is enabled.
+          type: boolean
+          example: true
+        exportInterval:
+          description: The interval at which job metrics are exported, as an ISO 8601 duration.
+          type: string
+          example: "PT5M"
+        maxWorkerNameLength:
+          description: The maximum length of the worker name used in job metrics labels.
+          type: integer
+          format: int32
+          example: 100
+        maxJobTypeLength:
+          description: The maximum length of the job type used in job metrics labels.
+          type: integer
+          format: int32
+          example: 100
+        maxTenantIdLength:
+          description: The maximum length of the tenant ID used in job metrics labels.
+          type: integer
+          format: int32
+          example: 30
+        maxUniqueKeys:
+          description: The maximum number of unique metric keys tracked for job metrics.
+          type: integer
+          format: int32
+          example: 9500
+
