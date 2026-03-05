@@ -6,7 +6,7 @@
 ## @camunda/orchestration-cluster
 ################################
 
-# .codeowners if for fine-grained ownership attribution, CODEOWNERS for GH review enforcement etc.
+# .codeowners is for fine-grained ownership attribution, CODEOWNERS for GH review enforcement etc.
 # see https://github.com/multimediallc/codeowners-plus
 .codeowners                 @camunda/orchestration-cluster
 CODEOWNERS                  @camunda/orchestration-cluster
