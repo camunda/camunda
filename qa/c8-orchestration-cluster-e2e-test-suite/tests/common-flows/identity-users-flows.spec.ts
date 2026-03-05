@@ -184,6 +184,7 @@ test.describe('Identity User Flows', () => {
       await loginPage.login(testUser!.username, testUser!.password);
       await expect(page).toHaveURL(new RegExp(`admin`));
       await verifyAccess(page);
+      await sleep(2000);
     });
 
     await test.step(`Verify Operate access`, async () => {
