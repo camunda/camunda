@@ -7,8 +7,11 @@
  */
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.agrona.BitUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A fixed-capacity ring buffer for {@link InFlightEntry} instances, indexed by position. Uses
@@ -28,9 +31,11 @@ import org.agrona.BitUtil;
  */
 final class RingBuffer {
   private static final int DEFAULT_CAPACITY = 8 * 1024; // 8K slots
+  private static final Logger LOGGER = LoggerFactory.getLogger(RingBuffer.class);
 
   private final AtomicReferenceArray<InFlightEntry> buffer;
   private final int mask;
+  private final AtomicLong lastWrittenPosition = new AtomicLong();
 
   /**
    * Creates a new ring buffer with at least the given capacity. The actual capacity is rounded up
@@ -61,8 +66,16 @@ final class RingBuffer {
     entry.position = position;
     final var displaced = buffer.getAndSet((int) (position & mask), entry);
     if (displaced != null) {
+      // position is a long, which will get boxed without the if check
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace(
+            "Found non-null entry at position {} while doing a put at position {}: cleaning it up",
+            displaced.position,
+            position);
+      }
       displaced.cleanup();
     }
+    lastWrittenPosition.set(position);
   }
 
   /**
@@ -72,6 +85,10 @@ final class RingBuffer {
   InFlightEntry get(final long position) {
     final var entry = buffer.get((int) (position & mask));
     return entry != null && entry.position == position ? entry : null;
+  }
+
+  long lastWrittenPosition() {
+    return lastWrittenPosition.get();
   }
 
   /**
