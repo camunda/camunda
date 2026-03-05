@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.message;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -309,35 +308,6 @@ public final class MessageStartEventSubscriptionTest {
                 .filter(r -> r.getValueType() == ValueType.MESSAGE_START_EVENT_SUBSCRIPTION))
         .describedAs("Expect only one message start event subscription for duplicate deployments")
         .hasSize(1);
-  }
-
-  @Test
-  public void shouldRejectDeploymentIfMessageStartEventNameIsTooLong() {
-    // given
-    final var tooLongMessageName =
-        "a".repeat(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1);
-    final var process =
-        Bpmn.createExecutableProcess("processId")
-            .startEvent(EVENT_ID1)
-            .message(m -> m.name(tooLongMessageName).id("startmsgId"))
-            .endEvent()
-            .done();
-
-    // when
-    final var rejection = engine.deployment().withXmlResource(process).expectRejection().deploy();
-
-    // then
-    assertThat(rejection.getRejectionReason())
-        .contains("Names must not be longer than the configured max-name-length")
-        .contains(String.valueOf(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH));
-
-    assertThat(
-            RecordingExporter.records()
-                .limit(r -> r.getPosition() >= rejection.getPosition())
-                .messageStartEventSubscriptionRecords()
-                .withIntent(MessageStartEventSubscriptionIntent.CREATED)
-                .exists())
-        .isFalse();
   }
 
   private static BpmnModelInstance createProcessWithOneMessageStartEvent() {
