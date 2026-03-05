@@ -23,8 +23,81 @@ defaults:
     shell: bash
 
 jobs:
+  cleanup-opensearch-indices:
+    name: "[PRE] Cleanup old AWS OpenSearch indices. OS ver.${{ matrix.os_version }}"
+    permissions:
+      contents: read
+      actions: write
+    timeout-minutes: 30
+    runs-on: aws-core-8-default
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: ${{ fromJSON(format('[{0}]', inputs.os_version || '"2.19", "3.3"')) }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Import secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_19_URL;
+            secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_3_3_URL;
+      - name: Set temp GH envs
+        id: temp-vars
+        run: |
+          {
+            echo "AWS_REGION=$AWS_REGION"
+            echo "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION"
+            echo "AWS_ROLE_ARN=$AWS_ROLE_ARN"
+            echo "AWS_WEB_IDENTITY_TOKEN_FILE=$AWS_WEB_IDENTITY_TOKEN_FILE"
+            echo "AWS_STS_REGIONAL_ENDPOINTS=$AWS_STS_REGIONAL_ENDPOINTS"
+          } >> "$GITHUB_ENV"
+
+          if [[ "${{ matrix.os_version }}" = "2.19" ]]
+          then
+            echo "Using OS 2.19"
+            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_19_URL }};
+          elif [[ "${{ matrix.os_version }}" = "3.3" ]]
+          then
+            echo "Using OS 3.3"
+            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_3_3_URL }};
+          else
+            echo "Incorrect on usupported version of OpenSearch"
+            exit 1
+          fi
+          echo "OS_URL=$OS_URL" >> "$GITHUB_ENV"
+      - uses: aws-actions/configure-aws-credentials@v6
+        name: Pre-login to AWS
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          web-identity-token-file: ${{ env.AWS_WEB_IDENTITY_TOKEN_FILE }}
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+      - name: Delete old aws opensearch indices
+        env:
+          OPENSEARCH_URL: ${{ env.OS_URL }}
+          DRY_RUN: "false"
+          AGE_HOURS: "1"
+        run: bash .github/scripts/clean-up-aws-opensearch-indices.sh
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "cleanup-opensearch-indices/${{ matrix.os_version }}"
+          build_status: ${{ job.status }}
+          user_description: "General"
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   integration-tests:
     name: "[IT] ${{ matrix.name }}. OS ver.${{ matrix.os_version }}"
+    needs: cleanup-opensearch-indices
     permissions:
       contents: read
       actions: write
