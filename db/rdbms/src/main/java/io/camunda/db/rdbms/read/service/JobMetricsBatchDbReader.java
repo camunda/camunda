@@ -11,10 +11,12 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.GlobalJobStatisticsDbQuery;
+import io.camunda.db.rdbms.read.domain.JobErrorStatisticsDbQuery;
 import io.camunda.db.rdbms.read.domain.JobTimeSeriesStatisticsDbQuery;
 import io.camunda.db.rdbms.read.domain.JobTypeStatisticsDbQuery;
 import io.camunda.db.rdbms.read.domain.JobWorkerStatisticsDbQuery;
 import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
+import io.camunda.db.rdbms.sql.columns.JobErrorStatisticsColumn;
 import io.camunda.db.rdbms.sql.columns.JobTimeSeriesStatisticsColumn;
 import io.camunda.db.rdbms.sql.columns.JobTypeStatisticsColumn;
 import io.camunda.db.rdbms.sql.columns.JobWorkerStatisticsColumn;
@@ -32,6 +34,7 @@ import io.camunda.search.query.JobTimeSeriesStatisticsQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
 import io.camunda.search.query.JobWorkerStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.sort.JobErrorStatisticsSort;
 import io.camunda.search.sort.JobTimeSeriesStatisticsSort;
 import io.camunda.search.sort.JobTypeStatisticsSort;
 import io.camunda.search.sort.JobWorkerStatisticsSort;
@@ -59,10 +62,15 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
   private static final JobTimeSeriesStatisticsSort JOB_TIME_SERIES_FIXED_SORT =
       JobTimeSeriesStatisticsSort.of(b -> b.time().asc());
 
+  // Fixed sort: errorCode asc, errorMessage asc
+  private static final JobErrorStatisticsSort JOB_ERROR_STATS_FIXED_SORT =
+      JobErrorStatisticsSort.of(b -> b.errorCode().asc());
+
   private final JobMetricsBatchMapper jobMetricsBatchMapper;
 
   private final AbstractEntityReader<JobWorkerStatisticsEntity> workerStatsReader;
   private final AbstractEntityReader<JobTimeSeriesStatisticsEntity> timeSeriesStatsReader;
+  private final AbstractEntityReader<JobErrorStatisticsEntity> errorStatsReader;
 
   public JobMetricsBatchDbReader(
       final JobMetricsBatchMapper jobMetricsBatchMapper, final RdbmsReaderConfig readerConfig) {
@@ -70,6 +78,7 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
     this.jobMetricsBatchMapper = jobMetricsBatchMapper;
     workerStatsReader = new WorkerStatsReader(readerConfig);
     timeSeriesStatsReader = new TimeSeriesStatsReader(readerConfig);
+    errorStatsReader = new ErrorStatsReader(readerConfig);
   }
 
   @Override
@@ -217,7 +226,37 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
   @Override
   public SearchQueryResult<JobErrorStatisticsEntity> getJobErrorStatistics(
       final JobErrorStatisticsQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    throw new UnsupportedOperationException("Job error statistics is not yet implemented");
+    LOG.trace("[RDBMS DB] Search job error statistics with {}", query);
+
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+      return EmptyResults.JOB_ERROR_STATISTICS;
+    }
+
+    final var dbSort = errorStatsReader.convertSort(JOB_ERROR_STATS_FIXED_SORT);
+    final var dbPage =
+        errorStatsReader.convertPaging(
+            dbSort, Optional.ofNullable(query.page()).orElse(SearchQueryPage.DEFAULT));
+
+    final var dbQuery =
+        JobErrorStatisticsDbQuery.of(
+            b ->
+                b.filter(query.filter())
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
+                    .sort(dbSort)
+                    .page(dbPage));
+
+    final var results = jobMetricsBatchMapper.jobErrorStatistics(dbQuery);
+    final var entities =
+        results.stream()
+            .map(
+                result ->
+                    new JobErrorStatisticsEntity(
+                        result.errorCode(),
+                        result.errorMessage(),
+                        ofNullable(result.workers()).orElse(0)))
+            .toList();
+
+    return errorStatsReader.buildSearchQueryResult(entities.size(), entities, dbSort);
   }
 
   /** Inner reader for worker statistics to provide typed AbstractEntityReader methods. */
@@ -238,6 +277,15 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
     }
   }
 
+  /** Inner reader for error statistics to provide typed AbstractEntityReader methods. */
+  private static final class ErrorStatsReader
+      extends AbstractEntityReader<JobErrorStatisticsEntity> {
+
+    ErrorStatsReader(final RdbmsReaderConfig readerConfig) {
+      super(JobErrorStatisticsColumn.values(), readerConfig);
+    }
+  }
+
   private static final class EmptyResults {
     private static final SearchQueryResult<JobTypeStatisticsEntity> JOB_TYPE_STATISTICS =
         SearchQueryResult.of(f -> f.total(0L).items(Collections.emptyList()).endCursor(""));
@@ -248,6 +296,9 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
     private static final SearchQueryResult<JobTimeSeriesStatisticsEntity>
         JOB_TIME_SERIES_STATISTICS =
             SearchQueryResult.of(f -> f.total(0L).items(Collections.emptyList()).endCursor(""));
+
+    private static final SearchQueryResult<JobErrorStatisticsEntity> JOB_ERROR_STATISTICS =
+        SearchQueryResult.of(f -> f.total(0L).items(Collections.emptyList()).endCursor(""));
 
     private static final GlobalJobStatisticsEntity GLOBAL_JOB_STATISTICS =
         new GlobalJobStatisticsEntity(
