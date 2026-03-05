@@ -208,9 +208,11 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/Username'
         name:
           description: The name of the user.
+          nullable: true
           type: string
         email:
           description: The email of the user.
+          nullable: true
           type: string
       required:
         - username
@@ -237,9 +239,11 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/Username'
         name:
           description: The name of the user.
+          nullable: true
           type: string
         email:
           description: The email of the user.
+          nullable: true
           type: string
       required:
         - username
@@ -253,9 +257,11 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/Username'
         name:
           description: The name of the user.
+          nullable: true
           type: string
         email:
           description: The email of the user.
+          nullable: true
           type: string
       required:
         - username
