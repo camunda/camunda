@@ -144,7 +144,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
 
     if (spreadMs > intervalMs * LAGGING_PARTITION_FACTOR) {
       LOG.warn(
-          "Detected lagging partition states: spread {} ms exceeds interval {} ms. Checkpoint scheduling will be delayed until states are more aligned.",
+          "Detected lagging partition states: spread {} ms exceeds interval {} ms",
           spreadMs,
           intervalMs);
       throw new PartitionLaggingException(spreadMs, intervalMs);
