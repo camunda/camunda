@@ -3,7 +3,7 @@
 LangChain4j bridge for Camunda Process
 Test [LLM-as-a-judge assertions](../camunda-process-test-java/README.md).
 
-Provides a `ChatModelAdapterFactory` implementation that creates a `ChatModelAdapter` from
+Provides a `JudgeConfigBootstrapProvider` implementation that creates a `JudgeConfig` containing a `ChatModelAdapter` implementation from
 LangChain4j chat models, supporting OpenAI, Anthropic, Amazon Bedrock, and any
 OpenAI-compatible endpoint.
 
@@ -12,7 +12,6 @@ OpenAI-compatible endpoint.
 Add the following dependency to your Maven project alongside `camunda-process-test-java`:
 
 ```xml
-
 <dependency>
   <groupId>io.camunda</groupId>
   <artifactId>camunda-process-test-starter-langchain4j</artifactId>
@@ -20,37 +19,9 @@ Add the following dependency to your Maven project alongside `camunda-process-te
 </dependency>
 ```
 
-The provider-specific LangChain4j artifacts are marked `optional`, so you must also add the
-one you need:
-
-```xml
-<dependencies>
-  <!-- OpenAI or OpenAI-compatible -->
-  <dependency>
-    <groupId>dev.langchain4j</groupId>
-    <artifactId>langchain4j-open-ai</artifactId>
-    <version>...</version>
-  </dependency>
-
-  <!-- Anthropic -->
-  <dependency>
-    <groupId>dev.langchain4j</groupId>
-    <artifactId>langchain4j-anthropic</artifactId>
-    <version>...</version>
-  </dependency>
-
-  <!-- Amazon Bedrock -->
-  <dependency>
-    <groupId>dev.langchain4j</groupId>
-    <artifactId>langchain4j-bedrock</artifactId>
-    <version>...</version>
-  </dependency>
-</dependencies>
-```
-
 ## Configuration
 
-Judge configuration is read from `camunda-container-runtime-version.properties` file if `camunda-process-test-java` is being used.
+Judge configuration is read from `camunda-container-runtime.properties` file if `camunda-process-test-java` is being used.
 If used in combination with `camunda-process-test-spring` application properties are to be preferred.
 
 Set `judge.chatModel.provider` to one of the supported provider names.
