@@ -9,7 +9,7 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetricsImpl;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit.Throttling;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
@@ -42,7 +42,7 @@ public class FlowControlTest {
   @BeforeEach
   public void setup() {
     meterRegistry = new SimpleMeterRegistry();
-    final var logStreamMetrics = new LogStreamMetrics(meterRegistry);
+    final var logStreamMetrics = new LogStreamMetricsImpl(meterRegistry);
     final var writeRateLimit =
         new RateLimit(
             true, 1, Duration.ofSeconds(10), new Throttling(true, 1L, 0L, Duration.ofSeconds(1)));
