@@ -20,8 +20,77 @@ const Paths = {
   processes() {
     return '/processes';
   },
-  processInstance(processInstanceId: string | null = ':processInstanceId') {
+  processInstance(
+    processInstanceId: string | null = ':processInstanceId',
+    isParent = false,
+  ) {
+    const path = `/processes/${processInstanceId}`;
+
+    if (isParent) {
+      return `${path}/*`;
+    }
+
     return `/processes/${processInstanceId}`;
+  },
+  processInstanceInputMappings(
+    params: {processInstanceId?: string | null; isRelative?: boolean} = {
+      processInstanceId: ':processInstanceId',
+      isRelative: false,
+    },
+  ) {
+    const {processInstanceId = ':processInstanceId', isRelative = false} =
+      params;
+
+    if (isRelative) {
+      return 'input-mappings';
+    }
+
+    return `/processes/${processInstanceId}/input-mappings`;
+  },
+  processInstanceOutputMappings(
+    params: {processInstanceId?: string | null; isRelative?: boolean} = {
+      processInstanceId: ':processInstanceId',
+      isRelative: false,
+    },
+  ) {
+    const {processInstanceId = ':processInstanceId', isRelative = false} =
+      params;
+
+    if (isRelative) {
+      return 'output-mappings';
+    }
+
+    return `/processes/${processInstanceId}/output-mappings`;
+  },
+  processInstanceListeners(
+    params: {processInstanceId?: string | null; isRelative?: boolean} = {
+      processInstanceId: ':processInstanceId',
+      isRelative: false,
+    },
+  ) {
+    const {processInstanceId = ':processInstanceId', isRelative = false} =
+      params;
+
+    if (isRelative) {
+      return 'listeners';
+    }
+
+    return `/processes/${processInstanceId}/listeners`;
+  },
+  processInstanceOperationsLog(
+    params: {processInstanceId?: string | null; isRelative?: boolean} = {
+      processInstanceId: ':processInstanceId',
+      isRelative: false,
+    },
+  ) {
+    const {processInstanceId = ':processInstanceId', isRelative = false} =
+      params;
+
+    if (isRelative) {
+      return 'operations-log';
+    }
+
+    return `/processes/${processInstanceId}/operations-log`;
   },
   decisions() {
     return '/decisions';
