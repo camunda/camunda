@@ -570,15 +570,7 @@ public class OpensearchEngineClientIT {
     final var policyJsonNode =
         objectMapper.readTree(openSearchClient.generic().execute(request).getBody().get().body());
 
-    return policyJsonNode
-        .path("policy")
-        .path("states")
-        .path(0)
-        .path("transitions")
-        .path(0)
-        .path("conditions")
-        .get("min_index_age")
-        .asText();
+    return policyJsonNode.at("/policy/states/0/transitions/0/conditions/min_index_age").asText();
   }
 
   @Nested
