@@ -12,7 +12,7 @@ import {Paths} from 'modules/Routes';
 import {Container} from './styled';
 import {TabListNav} from './TabListNav';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
-import {useCurrentPage} from 'App/Layout/useCurrentPage';
+import {useCurrentPage} from 'modules/hooks/useCurrentPage';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 
