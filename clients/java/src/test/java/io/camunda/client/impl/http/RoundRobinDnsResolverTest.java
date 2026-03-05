@@ -77,16 +77,16 @@ class RoundRobinDnsResolverTest {
 
   @Test
   void shouldMaintainSeparateCountersPerHost() throws UnknownHostException {
-    // given — resolve two different hosts
-    final InetAddress[] result1 = resolver.resolve("127.0.0.1");
-    final InetAddress[] result2 = resolver.resolve("127.0.0.1");
+    // given — resolve host "localhost" several times to advance its counter
+    resolver.resolve("localhost");
+    resolver.resolve("localhost");
 
-    // when — resolve a different host
-    final InetAddress[] otherResult = resolver.resolve("localhost");
+    // when — resolve a different host for the first time
+    final InetAddress[] firstForIpHost = resolver.resolve("127.0.0.1");
 
-    // then — results should be independent
-    assertThat(result1).isNotNull();
-    assertThat(result2).isNotNull();
-    assertThat(otherResult).isNotNull();
+    // then — the new host should start from index 0, independent of the other host's counter
+    // For single-address hosts like 127.0.0.1, the address should be returned unchanged
+    assertThat(firstForIpHost).hasSize(1);
+    assertThat(firstForIpHost[0].getHostAddress()).isEqualTo("127.0.0.1");
   }
 }
