@@ -19,6 +19,8 @@ const useCurrentPage = () => {
     | 'batch-operations'
     | 'operations-log'
     | 'process-details'
+    | 'process-details-details'
+    | 'process-details-incidents'
     | 'process-details-input-mappings'
     | 'process-details-output-mappings'
     | 'process-details-listeners'
@@ -51,6 +53,16 @@ const useCurrentPage = () => {
 
     if (matchPath(Paths.processInstance(), location.pathname) !== null) {
       return 'process-details';
+    }
+
+    if (matchPath(Paths.processInstanceDetails(), location.pathname) !== null) {
+      return 'process-details-details';
+    }
+
+    if (
+      matchPath(Paths.processInstanceIncidents(), location.pathname) !== null
+    ) {
+      return 'process-details-incidents';
     }
 
     if (
