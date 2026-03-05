@@ -228,7 +228,7 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
                 op ->
                     op.update(
                         u ->
-                            u.index(operationIndexTemplateDescriptor.getFullQualifiedName())
+                            u.index(operationIndexTemplateDescriptor.getIndexPattern())
                                 .id(id)
                                 .action(a -> a.doc(fieldsToUpdate))
                                 .retryOnConflict(3))));
