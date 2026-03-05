@@ -5,6 +5,9 @@
 name: Docker Build, Helm Deploy & E2E Tests (SaaS + Helm)
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       version:
@@ -65,6 +68,7 @@ jobs:
     permissions: { }
     if: >
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
       (github.event_name == 'pull_request' &&
       !contains(github.event.pull_request.labels.*.name, 'skip-always-green'))
     steps:
