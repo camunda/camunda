@@ -17,13 +17,10 @@ import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecisionInstance';
 import type {DrdPanelState} from 'modules/queries/decisionInstances/useDrdPanelState';
 import {getClientConfig} from 'modules/utils/getClientConfig';
+import {useNavigate} from 'react-router-dom';
 
 const getHeaderColumns = (isMultiTenancyEnabled: boolean = false) => {
   return [
-    {
-      name: 'Decision Name',
-      skeletonWidth: '136px',
-    },
     {
       name: 'Decision Instance Key',
       skeletonWidth: '137px',
@@ -60,6 +57,7 @@ const Header: React.FC<HeaderProps> = ({
   decisionEvaluationInstanceKey,
   onChangeDrdPanelState,
 }) => {
+  const navigate = useNavigate();
   const isMultiTenancyEnabled = getClientConfig().multiTenancyEnabled;
   const headerColumns = getHeaderColumns(isMultiTenancyEnabled);
   const tenantsById = useAvailableTenants();
@@ -83,12 +81,12 @@ const Header: React.FC<HeaderProps> = ({
     return (
       <InstanceHeader
         state={decisionInstance.state}
+        instanceName={decisionInstance.decisionDefinitionName}
+        incidentsCount={decisionInstance.state === 'FAILED' ? 1 : 0}
+        backButtonLabel="Back"
+        onBackClick={() => navigate(-1)}
         headerColumns={headerColumns.map(({name}) => name)}
         bodyColumns={[
-          {
-            title: decisionInstance.decisionDefinitionName,
-            content: decisionInstance.decisionDefinitionName,
-          },
           {
             title: decisionInstance.decisionEvaluationInstanceKey,
             content: decisionInstance.decisionEvaluationInstanceKey,
@@ -131,7 +129,7 @@ const Header: React.FC<HeaderProps> = ({
               ]
             : []),
           {
-            title: formatDate(decisionInstance.evaluationDate) ?? '--',
+            title: formatDate(decisionInstance.evaluationDate),
             content: formatDate(decisionInstance.evaluationDate),
           },
           {

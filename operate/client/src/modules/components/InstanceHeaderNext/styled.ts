@@ -14,12 +14,15 @@ import {
 } from '@carbon/react';
 
 const Table = styled.table`
-  width: 100%;
-  padding-left: var(--cds-spacing-05);
   table-layout: fixed;
   border-collapse: separate;
-  border-spacing: var(--cds-spacing-01);
+  border-spacing: 0 var(--cds-spacing-01);
   color: var(--cds-text-secondary);
+
+  th:not(:first-child),
+  td:not(:first-child) {
+    padding-left: var(--cds-spacing-07);
+  }
 `;
 
 const Th = styled.th`
@@ -57,6 +60,7 @@ const Container = styled.header<ContainerProps>`
     return css`
       display: flex;
       align-items: center;
+      gap: var(--cds-spacing-05);
       background-color: var(--cds-layer-01);
       padding: var(--cds-spacing-02) var(--cds-spacing-05);
       border-bottom: 1px solid var(--cds-border-subtle-01);
@@ -64,8 +68,39 @@ const Container = styled.header<ContainerProps>`
       css`
         border-bottom: none;
       `}
+
+      & > :last-child {
+        margin-left: auto;
+      }
     `;
   }}
+`;
+
+const NameContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-spacing-01);
+  margin-right: var(--cds-spacing-05);
+`;
+
+const InstanceName = styled.span`
+  ${styles.label02};
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--cds-text-secondary);
+
+  &:has(+ span) {
+    ${styles.label01};
+  }
+`;
+
+const IncidentCount = styled.span`
+  ${styles.label02};
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--cds-support-error);
 `;
 
 const SkeletonText = styled(BaseSkeletonText)`
@@ -77,4 +112,14 @@ const SkeletonIcon = styled(BaseSkeletonIcon)`
   height: var(--cds-spacing-06);
 `;
 
-export {Table, Td, Th, Container, SkeletonText, SkeletonIcon};
+export {
+  Table,
+  Td,
+  Th,
+  Container,
+  SkeletonText,
+  SkeletonIcon,
+  NameContainer,
+  InstanceName,
+  IncidentCount,
+};
