@@ -141,6 +141,14 @@ class TaskDetailsPage {
       },
       onFailure: async () => {
         console.log('Task completed banner not visible, retrying...');
+        await this.page.reload();
+        await sleep(1000);
+        if (
+          (await this.completeTaskButton.isVisible()) &&
+          (await this.completeTaskButton.isEnabled())
+        ) {
+          await expect(this.completeTaskButton).toBeVisible({timeout: 60000});
+        }
       },
     });
   }
@@ -175,6 +183,7 @@ class TaskDetailsPage {
     await this.getNthVariableValueInput(1).fill(value);
     await expect(this.getNthVariableNameInput(1)).toHaveValue(name);
     await expect(this.getNthVariableValueInput(1)).toHaveValue(value);
+    await sleep(200);
   }
 
   async fillNumber(number: string): Promise<void> {
