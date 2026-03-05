@@ -33,7 +33,7 @@ import java.util.Objects;
  * member to a passive or reserve member, the active member must update the passive/reserve member's
  * configuration to ensure it is in the expected state.
  */
-public class ConfigureRequest extends AbstractRaftRequest {
+public final class ConfigureRequest extends AbstractRaftRequest {
 
   private final long term;
   private final String leader;

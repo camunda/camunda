@@ -30,7 +30,7 @@ import io.atomix.cluster.MemberId;
  * followers to determine whether a candidate should receive their vote based on log and other
  * information.
  */
-public class VoteRequest extends AbstractRaftRequest {
+public final class VoteRequest extends AbstractRaftRequest {
 
   private final long term;
   private final String candidate;

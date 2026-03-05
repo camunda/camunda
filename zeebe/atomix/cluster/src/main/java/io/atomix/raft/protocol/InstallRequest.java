@@ -36,7 +36,7 @@ import java.util.Objects;
  * and other metadata. The last install request will be sent with {@link #complete()} being {@code
  * true} to indicate that all chunks of the snapshot have been sent.
  */
-public class InstallRequest extends AbstractRaftRequest {
+public final class InstallRequest extends AbstractRaftRequest {
 
   // the term of the node sending the install request
   private final long currentTerm;

@@ -54,6 +54,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
@@ -92,11 +93,14 @@ public final class ControllableRaftContexts {
 
   private final int nodeCount;
   private final Map<MemberId, RaftContext> raftServers = new HashMap<>();
+  private final Map<MemberId, Function<RaftStorage.Builder, RaftStorage.Builder>>
+      storageConfigurators = new HashMap<>();
   private final Map<MemberId, TestFileBasedSnapshotStore> snapshotStores = new HashMap<>();
   private final Map<MemberId, MeterRegistry> meterRegistries = new HashMap<>();
   private Duration electionTimeout;
   private Duration heartbeatTimeout;
   private int nextEntry = 0;
+  private RaftPartitionConfig partitionConfig = new RaftPartitionConfig();
 
   // Used only for verification. Map[term -> leader]
   private final NavigableMap<Long, MemberId> leadersAtTerms = new TreeMap<>();
@@ -108,8 +112,27 @@ public final class ControllableRaftContexts {
     this.nodeCount = nodeCount;
   }
 
+  public ControllableRaftContexts withStorageConfigurator(
+      final MemberId memberId,
+      final Function<RaftStorage.Builder, RaftStorage.Builder> configurator) {
+    storageConfigurators.put(memberId, configurator);
+    return this;
+  }
+
+  public ControllableRaftContexts withPartitionConfig(final RaftPartitionConfig config) {
+    partitionConfig = config;
+    return this;
+  }
+
   public Map<MemberId, RaftContext> getRaftServers() {
     return raftServers;
+  }
+
+  public List<MemberId> getMembersWithRole(final RaftServer.Role role) {
+    return raftServers.entrySet().stream()
+        .filter(e -> e.getValue().getRole() == role)
+        .map(Map.Entry::getKey)
+        .toList();
   }
 
   public RaftContext getRaftContext(final int memberId) {
@@ -211,9 +234,14 @@ public final class ControllableRaftContexts {
             new TestConcurrencyControl(),
             meterRegistries.computeIfAbsent(memberId, this::meterRegistryForMember));
     snapshotStores.put(memberId, snapshotStore);
+    final Function<RaftStorage.Builder, RaftStorage.Builder> extraConfigurator =
+        storageConfigurators.getOrDefault(memberId, Function.identity());
     final RaftContext raftContext =
         createRaftContext(
-            memberId, random, createStorage(memberId, cfg -> cfg.withSnapshotStore(snapshotStore)));
+            memberId,
+            random,
+            createStorage(
+                memberId, cfg -> extraConfigurator.apply(cfg.withSnapshotStore(snapshotStore))));
     raftServers.put(memberId, raftContext);
     return raftContext;
   }
@@ -231,7 +259,7 @@ public final class ControllableRaftContexts {
             getRaftThreadContextFactory(memberId),
             () -> random,
             RaftElectionConfig.ofPriorityElection(nodeCount, Integer.parseInt(memberId.id()) + 1),
-            new RaftPartitionConfig(),
+            partitionConfig,
             meterRegistries.computeIfAbsent(memberId, this::meterRegistryForMember));
     raft.setEntryValidator(new NoopEntryValidator());
     return raft;
@@ -472,6 +500,24 @@ public final class ControllableRaftContexts {
 
     // Wait until member has recovered lost data and have caught up with the leader
     waitUntilMembersIsReadyIn(newContext, 100);
+  }
+
+  public void awaitClusterReady() {
+    int steps = 500;
+    while (steps-- > 0) {
+      tickHeartbeatTimeout();
+      processAllMessage();
+      runUntilDone();
+      if (hasLeaderAtTheLatestTerm() && hasReplicatedAllEntries()) {
+        // One more round to ensure the leader has received all responses
+        // (which sets appendSucceeded=true, enabling append pipelining)
+        processAllMessage();
+        runUntilDone();
+        return;
+      }
+    }
+    assertThat(hasLeaderAtTheLatestTerm()).describedAs("Cluster should have a leader").isTrue();
+    assertThat(hasReplicatedAllEntries()).describedAs("All entries should be replicated").isTrue();
   }
 
   private void waitUntilThereIsAnotherLeader(final MemberId memberId) {
