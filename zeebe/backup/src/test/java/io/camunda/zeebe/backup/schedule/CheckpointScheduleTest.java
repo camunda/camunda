@@ -487,6 +487,119 @@ public class CheckpointScheduleTest {
     verify(backupRequestHandler, times(2)).getCheckpointState();
   }
 
+  @Test
+  void shouldBackOffWhenPartitionIsLaggingBehindOnBackup() {
+    // given
+    final var interval = Duration.ofSeconds(10);
+    final var now = actorScheduler.getClock().getCurrentTime();
+    checkpointScheduler = createScheduler(null, new Schedule.IntervalSchedule(interval));
+
+    // Two partitions with backup states: partition 1 is lagging behind by more than the interval
+    final var laggingTimestamp = now.minus(Duration.ofSeconds(16)).toEpochMilli();
+    final var currentTimestamp = now.toEpochMilli();
+    final var response = new CheckpointStateResponse();
+    response.setBackupStates(
+        Set.of(
+            new PartitionCheckpointState(
+                1, laggingTimestamp, CheckpointType.SCHEDULED_BACKUP, laggingTimestamp, -1),
+            new PartitionCheckpointState(
+                2, currentTimestamp, CheckpointType.SCHEDULED_BACKUP, currentTimestamp, -1)));
+
+    // First call returns lagging state, second call returns healthy state
+    when(backupRequestHandler.getCheckpointState())
+        .thenReturn(CompletableFuture.completedStage(response))
+        .thenReturn(CompletableFuture.completedStage(checkpointState(0L, currentTimestamp)));
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+
+    // then - no checkpoint should have been taken due to lagging partition
+    verify(backupRequestHandler, times(1)).getCheckpointState();
+    verify(backupRequestHandler, times(0)).checkpoint(any());
+
+    // Move clock past initial backoff (1s) to allow retry
+    actorScheduler.updateClock(Duration.ofSeconds(2));
+    actorScheduler.workUntilDone();
+
+    // Should have retried after backoff
+    verify(backupRequestHandler, times(2)).getCheckpointState();
+  }
+
+  @Test
+  void shouldBackOffWhenPartitionIsLaggingBehindOnCheckpoint() {
+    // given
+    final var interval = Duration.ofSeconds(10);
+    final var now = actorScheduler.getClock().getCurrentTime();
+    checkpointScheduler = createScheduler(new Schedule.IntervalSchedule(interval), null);
+
+    // Two partitions with checkpoint states: partition 1 is lagging behind by more than the
+    // interval
+    final var laggingTimestamp = now.minus(Duration.ofSeconds(16)).toEpochMilli();
+    final var currentTimestamp = now.toEpochMilli();
+    final var response = new CheckpointStateResponse();
+    response.setCheckpointStates(
+        Set.of(
+            new PartitionCheckpointState(
+                1, laggingTimestamp, CheckpointType.MARKER, laggingTimestamp, -1),
+            new PartitionCheckpointState(
+                2, currentTimestamp, CheckpointType.MARKER, currentTimestamp, -1)));
+
+    // First call returns lagging state, second call returns healthy state
+    when(backupRequestHandler.getCheckpointState())
+        .thenReturn(CompletableFuture.completedStage(response))
+        .thenReturn(CompletableFuture.completedStage(checkpointState(currentTimestamp, 0L)));
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+
+    // then - no checkpoint should have been taken due to lagging partition
+    verify(backupRequestHandler, times(1)).getCheckpointState();
+    verify(backupRequestHandler, times(0)).checkpoint(any());
+
+    // Move clock past initial backoff (1s) to allow retry
+    actorScheduler.updateClock(Duration.ofSeconds(2));
+    actorScheduler.workUntilDone();
+
+    // Should have retried after backoff
+    verify(backupRequestHandler, times(2)).getCheckpointState();
+  }
+
+  @Test
+  void shouldNotBackOffWhenPartitionSpreadIsWithinLimit() {
+    // given
+    final var interval = Duration.ofSeconds(10);
+    final var now = actorScheduler.getClock().getCurrentTime();
+    checkpointScheduler = createScheduler(null, new Schedule.IntervalSchedule(interval));
+
+    // Two partitions with backup states that are within the interval spread
+    final var slightlyOlderTimestamp = now.minus(Duration.ofSeconds(14)).toEpochMilli();
+    final var currentTimestamp = now.toEpochMilli();
+    final var response = new CheckpointStateResponse();
+    response.setBackupStates(
+        Set.of(
+            new PartitionCheckpointState(
+                1,
+                slightlyOlderTimestamp,
+                CheckpointType.SCHEDULED_BACKUP,
+                slightlyOlderTimestamp,
+                -1),
+            new PartitionCheckpointState(
+                2, currentTimestamp, CheckpointType.SCHEDULED_BACKUP, currentTimestamp, -1)));
+
+    when(backupRequestHandler.getCheckpointState())
+        .thenReturn(CompletableFuture.completedStage(response));
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+
+    // then - should proceed normally, no backoff
+    verify(backupRequestHandler, times(1)).getCheckpointState();
+    verify(backupRequestHandler, times(1)).checkpoint(any());
+  }
+
   private CheckpointStateResponse checkpointState(
       final long checkpointTimestamp, final long backupTimestamp) {
     final var response = new CheckpointStateResponse();
