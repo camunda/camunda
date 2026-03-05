@@ -16,7 +16,11 @@
  */
 package io.atomix.cluster;
 
+import io.atomix.cluster.protocol.GroupMembershipEventListener.GroupMembershipState;
 import io.atomix.utils.event.EventListener;
 
 /** Entity capable of receiving device cluster-related events. */
-public interface ClusterMembershipEventListener extends EventListener<ClusterMembershipEvent> {}
+public interface ClusterMembershipEventListener extends EventListener<ClusterMembershipEvent> {
+
+  default void onState(final GroupMembershipState state) {}
+}

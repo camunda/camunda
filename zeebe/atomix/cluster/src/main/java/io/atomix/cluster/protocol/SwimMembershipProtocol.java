@@ -30,6 +30,7 @@ import io.atomix.cluster.discovery.NodeDiscoveryEvent;
 import io.atomix.cluster.discovery.NodeDiscoveryEventListener;
 import io.atomix.cluster.discovery.NodeDiscoveryService;
 import io.atomix.cluster.impl.AddressSerializer;
+import io.atomix.cluster.protocol.GroupMembershipEventListener.GroupMembershipState;
 import io.atomix.utils.Version;
 import io.atomix.utils.event.AbstractListenerManager;
 import io.atomix.utils.net.Address;
@@ -216,6 +217,14 @@ public class SwimMembershipProtocol
       LOGGER.info("Stopped");
     }
     return CompletableFuture.completedFuture(null);
+  }
+
+  @Override
+  public void addListener(final GroupMembershipEventListener listener) {
+    listener.onState(
+        new GroupMembershipState(
+            members.values().stream().map(Member::id).collect(Collectors.toSet())));
+    super.addListener(listener);
   }
 
   @Override
