@@ -24,7 +24,7 @@ final class OpenAiChatModelBuilder {
 
   private OpenAiChatModelBuilder() {}
 
-  static ChatModel build(final JudgeConfigurationData data) {
+  static ChatModel build(final JudgeConfigBootstrapData data) {
     final String model = require(data.getModel(), "model", "openai");
     final String apiKey = require(data.getApiKey(), "apiKey", "openai");
 

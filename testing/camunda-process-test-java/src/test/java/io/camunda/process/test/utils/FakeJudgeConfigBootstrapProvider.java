@@ -16,8 +16,8 @@
 package io.camunda.process.test.utils;
 
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
 import io.camunda.process.test.api.judge.JudgeConfigBootstrapProvider;
-import io.camunda.process.test.api.judge.JudgeConfigurationData;
 
 /**
  * A test-scoped {@link JudgeConfigBootstrapProvider} registered via SPI for verifying ServiceLoader
@@ -27,7 +27,7 @@ import io.camunda.process.test.api.judge.JudgeConfigurationData;
 public class FakeJudgeConfigBootstrapProvider implements JudgeConfigBootstrapProvider {
 
   @Override
-  public JudgeConfig bootstrap(final JudgeConfigurationData data) {
+  public JudgeConfig bootstrap(final JudgeConfigBootstrapData data) {
     return JudgeConfig.of(prompt -> "{\"score\": 1.0, \"reasoning\": \"fake\"}");
   }
 }
