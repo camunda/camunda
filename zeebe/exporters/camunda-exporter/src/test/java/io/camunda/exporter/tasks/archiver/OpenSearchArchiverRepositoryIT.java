@@ -1011,6 +1011,67 @@ final class OpenSearchArchiverRepositoryIT {
     assertThat(request2.getEndpoint()).isEqualTo("/_plugins/_ism/add/" + indexName1);
   }
 
+  /**
+   * Verifies that when the ISM policy's {@code min_index_age} is changed via {@link
+   * OpensearchEngineClient#putIndexLifeCyclePolicy} and {@link ApplyRolloverPeriodJob#execute()}
+   * runs, the cached policy on the managed indices is eventually updated to reflect the new {@code
+   * min_index_age}.
+   *
+   * <p>This exercises the real-world scenario where an operator changes the retention period and
+   * the background {@link ApplyRolloverPeriodJob} re-applies the policy to all historical indices.
+   */
+  @Test
+  void shouldUpdateMinIndexAgeOnManagedIndicesWhenApplyRolloverPeriodJobRuns() throws Exception {
+    // given
+    changeIndexStateManagementJobInterval(1);
+
+    final var initialMinAge = "5d";
+    final var updatedMinAge = "1m";
+    final var policyName = retention.getPolicyName();
+
+    retention.setEnabled(true);
+    retention.setMinimumAge(initialMinAge);
+
+    startupSchema();
+
+    // Create a historical index (date suffix matches the historical pattern)
+    final var historicalIndex =
+        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName()
+            + "2026-01-10";
+    testClient.indices().create(r -> r.index(historicalIndex));
+
+    final var repository = createRepository();
+    final var job = new ApplyRolloverPeriodJob(repository, LOGGER);
+
+    // Apply the policy to all historical indices via the actual job
+    assertThat(job.execute()).succeedsWithin(Duration.ofSeconds(30));
+
+    // Wait until the ISM system has cached the initial policy on the managed index
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                assertThat(getIndexPolicyMinAge(historicalIndex, policyName))
+                    .isEqualTo(initialMinAge));
+
+    // when: update the ISM policy to a new min_index_age
+    retention.setMinimumAge(updatedMinAge);
+    startupSchema();
+
+    // Run the job again to re-apply the updated policy
+    assertThat(job.execute()).succeedsWithin(Duration.ofSeconds(30));
+
+    // then: the cached policy on the managed index should eventually reflect the updated value
+    Awaitility.await()
+        .atMost(Duration.ofMinutes(3))
+        .pollInterval(Duration.ofSeconds(5))
+        .untilAsserted(
+            () ->
+                assertThat(getIndexPolicyMinAge(historicalIndex, policyName))
+                    .isEqualTo(updatedMinAge));
+
+    changeIndexStateManagementJobInterval(5);
+  }
+
   @Test
   void shouldApplyIlmToAllHistoricalIndices() throws Exception {
     // given
@@ -1305,6 +1366,27 @@ final class OpenSearchArchiverRepositoryIT {
         .until(() -> fetchPolicyForIndex(indexName), policy -> !policy.equals("null"));
   }
 
+  /**
+   * Returns the {@code min_index_age} from the cached ISM policy snapshot on the given index, using
+   * the {@code show_policy=true} parameter on the explain API.
+   */
+  private String getIndexPolicyMinAge(final String indexName, final String policyName)
+      throws IOException {
+    final var req =
+        Requests.builder()
+            .method("GET")
+            .endpoint("/_plugins/_ism/explain/" + indexName)
+            .query(Map.of("show_policy", "true"))
+            .build();
+    final var resp = testClient.generic().execute(req);
+    final var json = MAPPER.readTree(resp.getBody().orElseThrow().bodyAsString());
+    final var indexNode = json.path(indexName);
+    if (!policyName.equals(indexNode.path("policy_id").asText())) {
+      return null;
+    }
+    return indexNode.at("/policy/states/0/transitions/0/conditions/min_index_age").asText(null);
+  }
+
   // no need to close resource returned here, since the transport is closed above anyway
   private OpenSearchArchiverRepository createRepository() {
     return createRepository(1);
@@ -1514,6 +1596,17 @@ final class OpenSearchArchiverRepositoryIT {
     } catch (final Exception e) {
       LOGGER.warn("Could not delete test ISM policies", e);
     }
+  }
+
+  private void changeIndexStateManagementJobInterval(final int interval) throws IOException {
+    testClient
+        .cluster()
+        .putSettings(
+            r ->
+                r.transient_(
+                    Map.of(
+                        "plugins.index_state_management.job_interval",
+                        org.opensearch.client.json.JsonData.of(interval))));
   }
 
   private record TestAuditLogDocument(String id, String entityType) implements TDocument {}
