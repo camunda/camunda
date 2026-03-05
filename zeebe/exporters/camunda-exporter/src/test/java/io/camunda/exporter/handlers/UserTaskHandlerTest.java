@@ -14,18 +14,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.ExporterMetadata;
-import io.camunda.exporter.cache.TestFormCache;
 import io.camunda.exporter.cache.TestProcessCache;
-import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
-import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
-import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -55,7 +51,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class UserTaskHandlerTest {
   private static final Set<UserTaskIntent> SUPPORTED_INTENTS =
       EnumSet.of(
-          UserTaskIntent.CREATING,
           UserTaskIntent.CREATED,
           UserTaskIntent.COMPLETING,
           UserTaskIntent.COMPLETED,
@@ -75,12 +70,11 @@ public class UserTaskHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-tasklist-task";
-  private final TestFormCache formCache = new TestFormCache();
   private final TestProcessCache processCache = new TestProcessCache();
   private final ExporterMetadata exporterMetadata =
       new ExporterMetadata(TestObjectMapper.objectMapper());
   private final UserTaskHandler underTest =
-      new UserTaskHandler(indexName, formCache, processCache, exporterMetadata);
+      new UserTaskHandler(indexName, processCache, exporterMetadata);
 
   @BeforeEach
   void resetMetadata() {
@@ -198,7 +192,7 @@ public class UserTaskHandlerTest {
   }
 
   @Test
-  void shouldAddEntityOnFlushForNewVersionReferenceRecord() {
+  void shouldAddEntityOnFlushForNewVersionReefrenceRecord() {
     // given
     final long firstIngestedUserTaskKey = 100;
     final long recordKey = 110;
@@ -259,104 +253,6 @@ public class UserTaskHandlerTest {
             inputEntity,
             updateFieldsMap,
             String.valueOf(recordKey));
-  }
-
-  @Test
-  void shouldCreateEntityFromRecord() {
-    // given
-    final long processInstanceKey = 123;
-    final long processDefinitionKey = 555;
-    final long flowNodeInstanceKey = 456;
-    final long recordKey = 110;
-    exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, 100);
-    final var dateTime = OffsetDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
-    final var formKey = 456L;
-    final var elementId = "elementId";
-    final UserTaskRecordValue taskRecordValue =
-        ImmutableUserTaskRecordValue.builder()
-            .from(factory.generateObject(UserTaskRecordValue.class))
-            .withAssignee("")
-            .withChangedAttributes(List.of())
-            .withFollowUpDate(dateTime)
-            .withDueDate(dateTime)
-            .withCandidateGroupsList(Arrays.asList("group1", "group2"))
-            .withCandidateUsersList(Arrays.asList("user1", "user2"))
-            .withProcessInstanceKey(processInstanceKey)
-            .withProcessDefinitionKey(processDefinitionKey)
-            .withElementInstanceKey(flowNodeInstanceKey)
-            .withFormKey(formKey)
-            .withElementId(elementId)
-            .build();
-
-    final Record<UserTaskRecordValue> taskCreatingRecord =
-        factory.generateRecord(
-            ValueType.USER_TASK,
-            r ->
-                r.withIntent(UserTaskIntent.CREATING)
-                    .withKey(recordKey)
-                    .withValue(taskRecordValue)
-                    .withTimestamp(System.currentTimeMillis()));
-
-    formCache.put(String.valueOf(formKey), new CachedFormEntity("my-form", 987L));
-    processCache.put(
-        processDefinitionKey,
-        new CachedProcessEntity(
-            "my-process", 1, "v1", List.of(), Map.of(elementId, "my-flow-node")));
-
-    // when
-    final TaskEntity taskEntity =
-        new TaskEntity().setId(String.valueOf(taskRecordValue.getElementInstanceKey()));
-    underTest.updateEntity(taskCreatingRecord, taskEntity);
-
-    final Record<UserTaskRecordValue> taskCreatedRecord =
-        factory.generateRecord(
-            ValueType.USER_TASK,
-            r ->
-                r.withIntent(UserTaskIntent.CREATED)
-                    .withKey(recordKey)
-                    .withValue(taskRecordValue)
-                    .withTimestamp(System.currentTimeMillis()));
-    underTest.updateEntity(taskCreatedRecord, taskEntity);
-
-    // then
-    assertThat(taskEntity.getId())
-        .isEqualTo(String.valueOf(taskRecordValue.getElementInstanceKey()));
-    assertThat(taskEntity.getKey()).isEqualTo(taskCreatingRecord.getKey());
-    assertThat(taskEntity.getTenantId()).isEqualTo(taskRecordValue.getTenantId());
-    assertThat(taskEntity.getPartitionId()).isEqualTo(taskCreatingRecord.getPartitionId());
-    assertThat(taskEntity.getPosition()).isEqualTo(taskCreatingRecord.getPosition());
-    assertThat(taskEntity.getProcessInstanceId()).isEqualTo(String.valueOf(processInstanceKey));
-    assertThat(taskEntity.getFlowNodeBpmnId()).isEqualTo(taskRecordValue.getElementId());
-    assertThat(taskEntity.getName()).isEqualTo("my-flow-node");
-    assertThat(taskEntity.getBpmnProcessId()).isEqualTo(taskRecordValue.getBpmnProcessId());
-    assertThat(taskEntity.getProcessDefinitionId())
-        .isEqualTo(String.valueOf(taskRecordValue.getProcessDefinitionKey()));
-    assertThat(taskEntity.getProcessDefinitionVersion())
-        .isEqualTo(taskRecordValue.getProcessDefinitionVersion());
-    assertThat(taskEntity.getFormKey()).isEqualTo(String.valueOf(taskRecordValue.getFormKey()));
-    assertThat(taskEntity.getFormId()).isEqualTo("my-form");
-    assertThat(taskEntity.getFormVersion()).isEqualTo(987L);
-    assertThat(taskEntity.getExternalFormReference())
-        .isEqualTo(taskRecordValue.getExternalFormReference());
-    assertThat(taskEntity.getCustomHeaders()).isEqualTo(taskRecordValue.getCustomHeaders());
-    assertThat(taskEntity.getPriority()).isEqualTo(taskRecordValue.getPriority());
-    assertThat(taskEntity.getAction()).isEqualTo(taskRecordValue.getAction());
-    assertThat(taskEntity.getDueDate()).isEqualTo(dateTime);
-    assertThat(taskEntity.getFollowUpDate()).isEqualTo(dateTime);
-    assertThat(Arrays.stream(taskEntity.getCandidateGroups()).toList())
-        .isEqualTo(taskRecordValue.getCandidateGroupsList());
-    assertThat(Arrays.stream(taskEntity.getCandidateUsers()).toList())
-        .isEqualTo(taskRecordValue.getCandidateUsersList());
-    assertThat(taskEntity.getAssignee()).isNull();
-    assertThat(taskEntity.getJoin()).isNotNull();
-    assertThat(taskEntity.getJoin().getParent()).isEqualTo(processInstanceKey);
-    assertThat(taskEntity.getJoin().getName()).isEqualTo(TaskJoinRelationshipType.TASK.getType());
-    assertThat(taskEntity.getState()).isEqualTo(TaskState.CREATED);
-    assertThat(taskEntity.getCreationTime())
-        .isEqualTo(
-            ExporterUtil.toZonedOffsetDateTime(
-                Instant.ofEpochMilli(taskCreatingRecord.getTimestamp())));
-    assertThat(taskEntity.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
   }
 
   @Test
@@ -1125,7 +1021,7 @@ public class UserTaskHandlerTest {
    */
   private TaskState mapIntentToExpectedState(final UserTaskIntent intent) {
     return switch (intent) {
-      case CREATING -> TaskState.CREATING;
+      case CREATING -> null;
       case CREATED, ASSIGNED, ASSIGNMENT_DENIED, UPDATED, UPDATE_DENIED, COMPLETION_DENIED ->
           TaskState.CREATED;
       case ASSIGNING, CLAIMING -> TaskState.ASSIGNING;

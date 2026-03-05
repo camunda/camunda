@@ -61,6 +61,7 @@ final class BulkIndexRequest implements ContentProducer {
       "decisionEvaluationInstanceKey";
   private static final String BATCH_OPERATION_REFERENCE_PROPERTY = "batchOperationReference";
   private static final String TAGS_PROPERTY = "tags";
+  private static final String JOB_TO_USER_TASK_MIGRATION_PROPERTY = "jobToUserTaskMigration";
   private static final String RESULT_PROPERTY = "result";
   private static final String DENIED_REASON_PROPERTY = "deniedReason";
   private static final String RUNTIME_INSTRUCTIONS_PROPERTY = "runtimeInstructions";
@@ -214,7 +215,7 @@ final class BulkIndexRequest implements ContentProducer {
   @JsonIgnoreProperties({DENIED_REASON_PROPERTY})
   private static final class UserTask87Mixin {}
 
-  @JsonIgnoreProperties({RESULT_PROPERTY, TAGS_PROPERTY})
+  @JsonIgnoreProperties({RESULT_PROPERTY, TAGS_PROPERTY, JOB_TO_USER_TASK_MIGRATION_PROPERTY})
   private static final class Job87Mixin {}
 
   @JsonIgnoreProperties({AUTH_INFO_PROPERTY})
