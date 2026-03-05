@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.tenant;
 
+import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_GROUPS_ENABLED;
+import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_USERS_ENABLED;
+
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -39,9 +42,6 @@ import io.camunda.zeebe.util.Either;
 import java.util.Map;
 
 public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
-
-  public static final String IS_CAMUNDA_USERS_ENABLED = "is_camunda_users_enabled";
-  public static final String IS_CAMUNDA_GROUPS_ENABLED = "is_camunda_groups_enabled";
 
   private static final String TENANT_NOT_FOUND_ERROR_MESSAGE =
       "Expected to add entity to tenant with ID '%s', but no tenant with this ID exists.";

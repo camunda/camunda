@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_GROUPS_ENABLED;
+import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_USERS_ENABLED;
+
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
@@ -39,8 +42,6 @@ public class AuthorizationEntityValidator {
       "Expected to %s authorization, but resource matcher is UNSPECIFIED. Please specify a valid resource matcher (ID, ANY or PROPERTY).";
   public static final String MATCHER_NOT_SUPPORTED_ERROR_MESSAGE =
       "Expected to %s authorization, but resource matcher '%s' is not supported.";
-  public static final String IS_CAMUNDA_USERS_ENABLED = "is_camunda_users_enabled";
-  public static final String IS_CAMUNDA_GROUPS_ENABLED = "is_camunda_groups_enabled";
 
   private final UserState userState;
   private final MappingRuleState mappingRuleState;

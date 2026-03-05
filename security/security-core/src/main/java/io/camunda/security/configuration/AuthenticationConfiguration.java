@@ -60,4 +60,12 @@ public class AuthenticationConfiguration {
   public void setProviders(final ProvidersConfiguration providers) {
     this.providers = providers;
   }
+
+  public boolean isCamundaGroupsEnabled() {
+    return !(getMethod() == AuthenticationMethod.OIDC && getOidc().isGroupsClaimConfigured());
+  }
+
+  public boolean isCamundaUsersEnabled() {
+    return getMethod() != AuthenticationMethod.OIDC;
+  }
 }
