@@ -1398,6 +1398,11 @@ final class OpenSearchArchiverRepositoryIT {
   private OpenSearchTransport createTransport() {
     try {
       return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(SEARCH_DB.osUrl()))
+          .setHttpClientConfigCallback(
+              httpClientBuilder -> {
+                httpClientBuilder.disableContentCompression();
+                return httpClientBuilder;
+              })
           .setMapper(new JacksonJsonpMapper())
           .build();
     } catch (final Exception e) {
