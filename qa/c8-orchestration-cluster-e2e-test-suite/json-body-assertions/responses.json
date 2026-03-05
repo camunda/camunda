@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "17982fe2b235f3f205ed5d66fe7d18a62879f2cc",
-    "generatedAt": "2026-03-05T14:22:24.165Z",
+    "commit": "7a7030520fc24077a9f9a4e7f1d5e255f6566d8d",
+    "generatedAt": "2026-03-05T14:58:51.741Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "602d525da3b533f2c97930eae90c081e2f679d8de803105ef194350780fce2a6"
+    "specSha256": "589c5f7deebf0feba40c40f3f8aa90027211ddbafa9608e218f6a4da1071364a"
   },
   "responses": [
     {
@@ -1096,9 +1096,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1108,7 +1106,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1128,9 +1127,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1140,7 +1137,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1160,9 +1158,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1172,7 +1168,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1187,6 +1184,10 @@
             "children": {
               "required": [
                 {
+                  "name": "isTruncated",
+                  "type": "boolean"
+                },
+                {
                   "name": "name",
                   "type": "string"
                 },
@@ -1197,12 +1198,6 @@
                     "GLOBAL",
                     "TENANT"
                   ]
-                }
-              ],
-              "optional": [
-                {
-                  "name": "isTruncated",
-                  "type": "boolean"
                 },
                 {
                   "name": "tenantId",
@@ -1213,7 +1208,8 @@
                   "name": "value",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -1264,9 +1260,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1276,7 +1270,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1296,9 +1291,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1308,7 +1301,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1328,9 +1322,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1340,7 +1332,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5350,7 +5343,7 @@
           },
           {
             "name": "schema",
-            "type": "object"
+            "type": "string"
           },
           {
             "name": "tenantId",
@@ -7840,7 +7833,7 @@
           },
           {
             "name": "schema",
-            "type": "object"
+            "type": "string"
           },
           {
             "name": "tenantId",
