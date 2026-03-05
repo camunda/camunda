@@ -153,6 +153,8 @@ class TaskDetailsPage {
     await this.clickAddVariableButton();
     await this.getNthVariableNameInput(1).fill(name);
     await this.getNthVariableValueInput(1).fill(value);
+    await expect(this.getNthVariableNameInput(1)).toHaveValue(name);
+    await expect(this.getNthVariableValueInput(1)).toHaveValue(value);
   }
 
   async fillNumber(number: string): Promise<void> {
