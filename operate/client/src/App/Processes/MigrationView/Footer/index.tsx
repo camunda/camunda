@@ -11,7 +11,6 @@ import {observer} from 'mobx-react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {Container} from './styled';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
-import {processesStore} from 'modules/stores/processes/processes.migration';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
@@ -124,17 +123,14 @@ const Footer: React.FC = observer(() => {
                 open={open}
                 setOpen={setOpen}
                 onSubmit={() => {
-                  const {selectedTargetProcess, selectedTargetVersion} =
-                    processesStore.migrationState;
-
                   const {
                     elementMapping,
                     batchOperationQuery,
-                    targetProcessDefinitionKey,
-                    sourceProcessDefinitionKey,
+                    targetProcessDefinition,
+                    sourceProcessDefinition,
                   } = processInstanceMigrationStore.state;
 
-                  if (!batchOperationQuery || !targetProcessDefinitionKey) {
+                  if (!batchOperationQuery || !targetProcessDefinition) {
                     return;
                   }
 
@@ -163,13 +159,14 @@ const Footer: React.FC = observer(() => {
                           }
                         : undefined,
                     processDefinitionKey:
-                      sourceProcessDefinitionKey ?? undefined,
+                      sourceProcessDefinition?.processDefinitionKey,
                   });
 
                   migrateProcess({
                     ...requestBody,
                     migrationPlan: {
-                      targetProcessDefinitionKey,
+                      targetProcessDefinitionKey:
+                        targetProcessDefinition.processDefinitionKey,
                       mappingInstructions: Object.entries(elementMapping).map(
                         ([sourceElementId, targetElementId]) => ({
                           sourceElementId,
@@ -190,12 +187,8 @@ const Footer: React.FC = observer(() => {
                     Locations.processes({
                       active: true,
                       incidents: true,
-                      ...(selectedTargetProcess
-                        ? {process: selectedTargetProcess.bpmnProcessId}
-                        : {}),
-                      ...(selectedTargetVersion
-                        ? {version: selectedTargetVersion.toString()}
-                        : {}),
+                      process: targetProcessDefinition.processDefinitionId,
+                      version: targetProcessDefinition.version.toString(),
                     }),
                   );
                 }}
