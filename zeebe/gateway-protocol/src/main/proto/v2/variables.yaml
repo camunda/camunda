@@ -199,6 +199,8 @@ components:
     VariableResult:
       description: Variable search response item.
       type: object
+      required:
+        - value
       allOf:
         - $ref: '#/components/schemas/VariableResultBase'
       properties:

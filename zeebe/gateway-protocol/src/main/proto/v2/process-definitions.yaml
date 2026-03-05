@@ -384,6 +384,15 @@ components:
 
     ProcessDefinitionResult:
       type: object
+      required:
+        - processDefinitionKey
+        - name
+        - resourceName
+        - version
+        - versionTag
+        - processDefinitionId
+        - tenantId
+        - hasStartForm
       properties:
         name:
           description: Name of this process definition.

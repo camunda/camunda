@@ -500,19 +500,33 @@ components:
     UserTaskResult:
       type: object
       required:
+        - tenantId
+        - userTaskKey
+        - name
+        - processInstanceKey
         - rootProcessInstanceKey
+        - processDefinitionKey
+        - elementInstanceKey
+        - processDefinitionId
+        - processName
+        - state
         - candidateGroups
         - candidateUsers
+        - elementId
+        - creationDate
         - customHeaders
+        - priority
         - tags
         - assignee
         - completionDate
         - dueDate
         - externalFormReference
         - followUpDate
+        - processDefinitionVersion
         - formKey
       properties:
         name:
+          nullable: true
           type: string
           description: The name for this user task.
         state:

@@ -402,6 +402,16 @@ components:
     IncidentResult:
       type: object
       required:
+        - incidentKey
+        - processDefinitionKey
+        - processInstanceKey
+        - elementInstanceKey
+        - creationTime
+        - state
+        - errorType
+        - errorMessage
+        - elementId
+        - processDefinitionId
         - rootProcessInstanceKey
         - jobKey
         - tenantId

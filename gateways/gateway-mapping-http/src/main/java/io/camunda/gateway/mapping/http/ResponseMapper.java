@@ -390,7 +390,7 @@ public final class ResponseMapper {
     return new ResourceResult()
         .resourceName(resourceRecord.getResourceName())
         .version(resourceRecord.getVersion())
-        .versionTag(resourceRecord.getVersionTag())
+        .versionTag(emptyToNull(resourceRecord.getVersionTag()))
         .resourceId(resourceRecord.getResourceId())
         .tenantId(resourceRecord.getTenantId())
         .resourceKey(String.valueOf(resourceRecord.getResourceKey()));
