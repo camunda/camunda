@@ -236,7 +236,7 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
                 op ->
                     op.update(
                         u ->
-                            u.index(operationIndexTemplateDescriptor.getIndexPattern())
+                            u.index(operationIndexTemplateDescriptor.getFullQualifiedName())
                                 .id(id)
                                 .document(fieldsToUpdate)
                                 .retryOnConflict(3))));
@@ -248,11 +248,30 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
                 .thenComposeAsync(
                     response -> {
                       if (response.errors()) {
-                        final var errorMessage =
-                            "Bulk updating operations by ids '%s' failed with errors: %s"
-                                .formatted(ids, response.items());
-                        logger.error(errorMessage);
-                        return CompletableFuture.failedFuture(new RuntimeException(errorMessage));
+                        // Filter out errors from archived operations (document_missing_exception)
+                        // These operations are already archived and will be cleaned up by retention
+                        final var actualErrors =
+                            response.items().stream()
+                                .filter(item -> item.error() != null)
+                                .filter(
+                                    item ->
+                                        item.error().type() != null
+                                            && !item.error()
+                                                .type()
+                                                .equals("document_missing_exception"))
+                                .toList();
+
+                        if (!actualErrors.isEmpty()) {
+                          final var errorMessage =
+                              "Bulk updating operations by ids '%s' failed with errors: %s"
+                                  .formatted(ids, actualErrors);
+                          logger.error(errorMessage);
+                          return CompletableFuture.failedFuture(new RuntimeException(errorMessage));
+                        }
+                        // All errors were document_missing_exception, log as debug and continue
+                        logger.debug(
+                            "Bulk updating operations completed with {} document_missing_exception errors (archived operations)",
+                            response.items().stream().filter(item -> item.error() != null).count());
                       }
                       return CompletableFuture.completedFuture(ids);
                     },
