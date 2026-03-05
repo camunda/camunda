@@ -76,26 +76,27 @@ runs:
         else
           echo "result=" >> $GITHUB_OUTPUT
         fi
-    ######################## Report test result #############################  
+    ######################## Report test result #############################
     - name: Get detailed info on JUnit tests
       id: get-detailed-junit-tests
       if: ${{ inputs.detailed_junit_tests == 'true' && steps.secrets.outputs.gcloud_sa_key != '' }}
       shell: bash
       run: |
         TEST_RESULTS_FILE=$(mktemp --suffix=.jsonl)
-        echo "test_results_file=${TEST_RESULTS_FILE}" >> $GITHUB_OUTPUT        
+        echo "test_results_file=${TEST_RESULTS_FILE}" >> $GITHUB_OUTPUT
         find . -iname 'TEST-*.xml' | python3 .ci/scripts/ci/observe-build-status/junit-test-results-to-jsonl.py > "${TEST_RESULTS_FILE}"
         echo "Generated $(wc -l < "${TEST_RESULTS_FILE}") test results"
 
     - name: Submit test results
-      uses: camunda/infra-global-github-actions/submit-test-status@main
+      uses: camunda/infra-global-github-actions/submit-test-status@speedup-bigquery-insert
       if: ${{ (inputs.detailed_junit_tests == 'true') && steps.secrets.outputs.gcloud_sa_key != '' }}
       with:
         test_results_file_path: "${{ steps.get-detailed-junit-tests.outputs.test_results_file }}"
         job_name_override: "${{ inputs.job_name }}"
-        gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"   
+        gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
+
    ######################## Report build result #############################
-    - uses: camunda/infra-global-github-actions/submit-build-status@main
+    - uses: camunda/infra-global-github-actions/submit-build-status@speedup-bigquery-insert
       if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
       with:
         job_name_override: "${{ inputs.job_name }}"
