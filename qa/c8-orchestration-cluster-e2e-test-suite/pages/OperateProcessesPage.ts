@@ -95,7 +95,9 @@ class OperateProcessesPage {
     this.migrateBatchOperationButton = page.getByRole('button', {
       name: 'Migrate',
     });
-    this.cancelBatchOperationButton = page.getByLabel('data table toolbar').getByRole('button', {name: 'Cancel'});
+    this.cancelBatchOperationButton = page
+      .getByLabel('data table toolbar')
+      .getByRole('button', {name: 'Cancel'});
     this.applyCancelBatchOperationDialogButton = page
       .getByRole('dialog')
       .getByRole('button', {name: 'Apply'});
@@ -326,7 +328,11 @@ class OperateProcessesPage {
       }
     }
     await expect(
-      this.page.getByText(`${count} items selected`).first(),
+      this.page
+        .getByText(
+          count === 1 ? `${count} item selected` : `${count} items selected`,
+        )
+        .first(),
     ).toBeVisible();
   }
 

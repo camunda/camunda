@@ -45,6 +45,10 @@ class OperateHomePage {
     await this.processesTab.click();
   }
 
+  async clickDashboardLink(): Promise<void> {
+    await this.operateBanner.click();
+  }
+
   async clickEditVariableButton(variableName: string): Promise<void> {
     const editVariableButton = 'Edit variable ' + variableName;
     await this.page.getByLabel(editVariableButton).click();
