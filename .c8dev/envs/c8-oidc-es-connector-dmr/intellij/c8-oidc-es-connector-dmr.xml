@@ -1,0 +1,43 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="c8-oidc-es-connector-dmr" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <option name="ACTIVE_PROFILES" value="dev,broker,consolidated-auth,identity,tasklist,operate" />
+    <additionalParameters>
+      <param><option name="enabled" value="true" /><option name="name" value="zeebe.broker.gateway.security.enabled" /><option name="value" value="false" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.security.authentication.method" /><option name="value" value="oidc" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.security.authentication.oidc.issuer-uri" /><option name="value" value="http://localhost:18080/realms/camunda-platform" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.security.authentication.oidc.client-id" /><option name="value" value="camunda-demo" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.security.authentication.oidc.client-secret" /><option name="value" value="camunda-demo-secret" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.security.authentication.oidc.username-claim" /><option name="value" value="preferred_username" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.security.authorizations.enabled" /><option name="value" value="false" /></param>
+    </additionalParameters>
+    <envs>
+      <env name="ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT" value="3" />
+      <env name="CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_WAITFORIMPORTERS" value="false" />
+      <env name="CAMUNDA_SECURITY_CSRF_ENABLED" value="false" />
+      <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME" value="io.camunda.exporter.CamundaExporter" />
+      <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL" value="http://localhost:9200" />
+      <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS" value="false" />
+      <env name="CAMUNDA_MCP_ENABLED" value="true" />
+    </envs>
+    <module name="camunda-zeebe" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="io.camunda.application.StandaloneCamunda" />
+    <extension name="net.ashald.envfile">
+      <option name="IS_ENABLED" value="false" />
+      <option name="IS_SUBST" value="false" />
+      <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
+      <option name="IS_IGNORE_MISSING_FILES" value="false" />
+      <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
+      <ENTRIES>
+        <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
+      </ENTRIES>
+    </extension>
+    <method v="2">
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="c8-oidc-es-connector-dmr Stop Other Envs" run_configuration_type="ShConfigurationType" />
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="c8-oidc-es-connector-dmr Start Env" run_configuration_type="ShConfigurationType" />
+      <option name="Make" enabled="true" />
+    </method>
+    <teardown>
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="c8-oidc-es-connector-dmr Stop Env" run_configuration_type="ShConfigurationType" />
+    </teardown>
+  </configuration>
+</component>

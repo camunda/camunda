@@ -1,0 +1,98 @@
+networks:
+  c8-oidc-es-connector-dmr: {}
+
+services:
+
+  traefik:
+    image: traefik:v3
+    container_name: c8-oidc-es-connector-dmr-traefik
+    command:
+      - --providers.docker=true
+      - --providers.docker.network=c8-oidc-es-connector-dmr
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - c8-oidc-es-connector-dmr
+    restart: always
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.4
+    container_name: c8-oidc-es-connector-dmr-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - cluster.name=elasticsearch
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
+      - action.destructive_requires_name=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.elasticsearch-c8-oidc-es-connector-dmr.rule=Host(`elasticsearch.c8-oidc-es-connector-dmr.localhost`)
+      - traefik.http.services.elasticsearch-c8-oidc-es-connector-dmr.loadbalancer.server.port=9200
+    ports:
+      - "9200:9200"
+    volumes:
+      - c8-oidc-es-connector-dmr-elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - c8-oidc-es-connector-dmr
+    restart: always
+
+  connectors:
+    image: camunda/connectors-bundle:SNAPSHOT
+    container_name: c8-oidc-es-connector-dmr-connectors
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.connectors-c8-oidc-es-connector-dmr.rule=Host(`connectors.c8-oidc-es-connector-dmr.localhost`)
+      - traefik.http.services.connectors-c8-oidc-es-connector-dmr.loadbalancer.server.port=8080
+    ports:
+      - "8086:8080"
+    environment:
+      - CAMUNDA_CLIENT_RESTADDRESS=http://host.docker.internal:8080/v2
+      - CAMUNDA_CLIENT_GRPCADDRESS=http://host.docker.internal:26500
+      - CAMUNDA_CLIENT_AUTH_METHOD=oidc
+      - CAMUNDA_CLIENT_AUTH_CLIENTID=connectors
+      - CAMUNDA_CLIENT_AUTH_CLIENTSECRET=connectors-secret
+      - CAMUNDA_CLIENT_AUTH_TOKENURL=http://c8-oidc-es-connector-dmr-keycloak:8080/realms/camunda-platform/protocol/openid-connect/token
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - c8-oidc-es-connector-dmr
+    restart: always
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:nightly
+    container_name: c8-oidc-es-connector-dmr-keycloak
+    command: start-dev --import-realm --features=cimd
+    environment:
+      - KC_HEALTH_ENABLED=true
+      - KC_HTTP_PORT=8080
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.keycloak-c8-oidc-es-connector-dmr.rule=Host(`keycloak.c8-oidc-es-connector-dmr.localhost`)
+      - traefik.http.services.keycloak-c8-oidc-es-connector-dmr.loadbalancer.server.port=8080
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import/:ro
+    ports:
+      - "18080:8080"
+    networks:
+      - c8-oidc-es-connector-dmr
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/9000 && printf 'GET /health/ready HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && grep -q 'UP' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: always
+
+volumes:
+  c8-oidc-es-connector-dmr-elasticsearch-data:

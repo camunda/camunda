@@ -1,0 +1,5 @@
+auth=oidc
+datastore=elasticsearch
+connectors=SNAPSHOT
+localLlm=none
+model=qwen3:0.6b
