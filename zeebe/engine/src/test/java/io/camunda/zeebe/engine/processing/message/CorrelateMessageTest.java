@@ -10,13 +10,11 @@ package io.camunda.zeebe.engine.processing.message;
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -62,29 +60,6 @@ public final class CorrelateMessageTest {
                 .getValue())
         .hasName(MESSAGE_NAME)
         .hasCorrelationKey(CORRELATION_KEY);
-  }
-
-  @Test
-  public void shouldRejectCorrelateIfCorrelationKeyExceedsMaxLength() {
-    // given
-    final var tooLongCorrelationKey =
-        "a".repeat(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1);
-
-    // when
-    final var rejection =
-        engine
-            .messageCorrelation()
-            .withCorrelationKey(tooLongCorrelationKey)
-            .withName(MESSAGE_NAME)
-            .expectRejection()
-            .correlate();
-
-    // then
-    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason())
-        .contains("Expected correlation key to be at most")
-        .contains(String.valueOf(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH));
   }
 
   @Test

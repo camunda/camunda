@@ -20,6 +20,7 @@ import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.ProcessEngineConfiguration;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -54,6 +55,7 @@ public class MessageControllerTest extends RestControllerTest {
   @MockitoBean MessageServices messageServices;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean ProcessEngineConfiguration processEngineConfiguration;
   @Captor ArgumentCaptor<CorrelateMessageRequest> correlationRequestCaptor;
   @Captor ArgumentCaptor<PublicationMessageRequest> publicationRequestCaptor;
 
@@ -63,6 +65,7 @@ public class MessageControllerTest extends RestControllerTest {
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(messageServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(messageServices);
+    when(processEngineConfiguration.getMaxNameFieldLength()).thenReturn(32 * 1024);
   }
 
   @Test

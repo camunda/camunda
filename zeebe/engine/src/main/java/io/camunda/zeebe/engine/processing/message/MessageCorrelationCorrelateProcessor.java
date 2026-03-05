@@ -50,7 +50,6 @@ public final class MessageCorrelationCorrelateProcessor
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
-  private final int maxNameFieldLength;
 
   public MessageCorrelationCorrelateProcessor(
       final Writers writers,
@@ -62,14 +61,12 @@ public final class MessageCorrelationCorrelateProcessor
       final MessageState messageState,
       final MessageSubscriptionState messageSubscriptionState,
       final SubscriptionCommandSender commandSender,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final int maxNameFieldLength) {
+      final AuthorizationCheckBehavior authCheckBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
     this.authCheckBehavior = authCheckBehavior;
-    this.maxNameFieldLength = maxNameFieldLength;
     final var eventHandle =
         new EventHandle(
             keyGenerator,
@@ -91,14 +88,6 @@ public final class MessageCorrelationCorrelateProcessor
   @Override
   public void processRecord(final TypedRecord<MessageCorrelationRecord> command) {
     final var messageCorrelationRecord = command.getValue();
-    if (messageCorrelationRecord.getCorrelationKey().length() > maxNameFieldLength) {
-      final var reason =
-          "Expected correlation key to be at most %d characters long (configured max-name-length), but was %d characters."
-              .formatted(maxNameFieldLength, messageCorrelationRecord.getCorrelationKey().length());
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, reason);
-      return;
-    }
 
     // Check tenant authorization if not an internal command
     if (!command.isInternalCommand()) {
