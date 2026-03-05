@@ -60,7 +60,7 @@ SCRIPT_DIR=$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")
 DOCKERFILE_PATH="${SCRIPT_DIR}/../../../optimize.Dockerfile"
 
 echo "[INFO] Looking for digest in Dockerfile: ${DOCKERFILE_PATH}"
-DIGEST=$(cat "$DOCKERFILE_PATH" | grep -o 'sha256:[a-f0-9]\{64\}' | head -n 1)
+DIGEST=$(cat "$DOCKERFILE_PATH" | grep 'BASE_DIGEST=' | head -1 | grep -o 'sha256:[a-f0-9]\{64\}')
 if [[ -z "$DIGEST" ]]; then
     echo >&2 "Docker image digest can not be found in the Dockerfile (with name $DOCKERFILE_PATH)"
     exit 1
@@ -80,7 +80,9 @@ for imageName in "$@"; do
 
   # Extract the actual labels from the info - make sure to sort keys so we always have the same
   # ordering for maps to compare things properly
-  actualLabels=$(echo "${imageInfo}" | jq --sort-keys '.[0].Config.Labels')
+  # Exclude the minimus.images.version label, since it changes every time the image is patched, and
+  # we can't really know in advance reliably what it will be.
+  actualLabels=$(echo "${imageInfo}" | jq --sort-keys '.[0].Config.Labels | del(."io.minimus.images.version")')
 
   if [[ -z "${actualLabels}" || "${actualLabels}" == "null" || "${actualLabels}" == "[]" ]]; then
     echo >&2 "No labels found in the given image ${imageName}; raw inspect output to follow"
