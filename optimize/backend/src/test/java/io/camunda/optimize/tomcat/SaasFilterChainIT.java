@@ -28,13 +28,13 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.web.FilterChainProxy;
@@ -49,8 +49,8 @@ import org.springframework.web.context.WebApplicationContext;
  * <p>The Spring context is started with the {@code cloud} profile, which activates {@link
  * io.camunda.optimize.rest.security.cloud.CCSaaSSecurityConfigurerAdapter} and {@link
  * CCSaasRequestAdjustmentFilter}. Cloud-specific configuration (clusterId, Auth0 domain, etc.) is
- * provided via the nested {@link SaasConfig} test configuration bean. No real database, Auth0, or
- * Zeebe connection is required.
+ * provided via {@code saas-filter-it.yaml} on the test classpath, loaded by the inner {@link
+ * SaasConfig} {@code @TestConfiguration}. No real database, Auth0, or Zeebe connection is required.
  *
  * <p>Test scenarios covered:
  *
@@ -70,7 +70,6 @@ import org.springframework.web.context.WebApplicationContext;
  */
 @Tag("ccsm-test")
 @ActiveProfiles("cloud")
-@Import(SaasFilterChainIT.SaasConfig.class)
 @SpringBootTest(
     classes = {Main.class},
     properties = {
@@ -79,6 +78,7 @@ import org.springframework.web.context.WebApplicationContext;
       "optimize.import.enabled=false",
       "spring.main.allow-bean-definition-overriding=true",
     })
+@Import(SaasFilterChainIT.SaasConfig.class)
 public class SaasFilterChainIT {
 
   static final String CLUSTER_ID = "abc-123";
@@ -123,48 +123,25 @@ public class SaasFilterChainIT {
             .build();
   }
 
+  // ---------------------------------------------------------------------------
+  // Cluster-ID prefix redirect and home page
+  // ---------------------------------------------------------------------------
+
   @TestConfiguration
+  @Profile("cloud")
   static class SaasConfig {
 
     @Bean("configurationService")
     @Primary
-    @ConditionalOnMissingBean(ConfigurationService.class)
     public ConfigurationService saasTestConfigurationService() {
-      final ConfigurationService config =
-          ConfigurationServiceBuilder.createConfiguration()
-              .loadConfigurationFrom("service-config.yaml")
-              .build();
-
-      final var cloud = config.getAuthConfiguration().getCloudAuthConfiguration();
-      cloud.setClusterId(CLUSTER_ID);
-      cloud.setDomain("localhost");
-      cloud.setClientId("optimize-test-client");
-      cloud.setClientSecret("optimize-test-secret");
-      cloud.setOrganizationId("test-org");
-      cloud.setOrganizationClaimName("https://camunda.com/orgs");
-      cloud.setAudience("optimize");
-      cloud.setUserAccessTokenAudience("optimize");
-
-      // prevent real JWT / network calls
-      config.getOptimizeApiConfiguration().setJwtSetUri("http://localhost:0/dummy-jwks");
-
-      // populate security response headers so ResponseSecurityHeaderFilter has something to write
-      final var headers =
-          config.getSecurityConfiguration().getResponseHeaders().getHeadersWithValues();
-      headers.put(
-          "Content-Security-Policy",
-          "default-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'");
-      headers.put("X-Content-Type-Options", "nosniff");
-      headers.put("X-Frame-Options", "DENY");
-      headers.put("Referrer-Policy", "no-referrer");
-      headers.put("X-XSS-Protection", "0");
-
-      return config;
+      return ConfigurationServiceBuilder.createConfiguration()
+          .loadConfigurationFrom("service-config.yaml", "saas-filter-it.yaml")
+          .build();
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Cluster-ID prefix redirect and home page
+  // SPA deep-link redirect under cluster-ID prefix
   // ---------------------------------------------------------------------------
 
   @Nested
@@ -193,7 +170,7 @@ public class SaasFilterChainIT {
   }
 
   // ---------------------------------------------------------------------------
-  // SPA deep-link redirect under cluster-ID prefix
+  // Public endpoints under cluster-ID prefix
   // ---------------------------------------------------------------------------
 
   @Nested
@@ -216,7 +193,7 @@ public class SaasFilterChainIT {
   }
 
   // ---------------------------------------------------------------------------
-  // Public endpoints under cluster-ID prefix
+  // Protected endpoints — require authentication (OAuth2 / session cookie)
   // ---------------------------------------------------------------------------
 
   @Nested
@@ -251,7 +228,8 @@ public class SaasFilterChainIT {
   }
 
   // ---------------------------------------------------------------------------
-  // Protected endpoints — require authentication (OAuth2 / session cookie)
+  // External-API path rewrite (CCSaasRequestAdjustmentFilter)
+  // /<clusterId>/external/api/* → /api/external/* after strip + rewrite
   // ---------------------------------------------------------------------------
 
   @Nested
@@ -276,8 +254,7 @@ public class SaasFilterChainIT {
   }
 
   // ---------------------------------------------------------------------------
-  // External-API path rewrite (CCSaasRequestAdjustmentFilter)
-  // /<clusterId>/external/api/* → /api/external/* after strip + rewrite
+  // Security headers (ResponseSecurityHeaderFilter)
   // ---------------------------------------------------------------------------
 
   @Nested
@@ -310,7 +287,7 @@ public class SaasFilterChainIT {
   }
 
   // ---------------------------------------------------------------------------
-  // Security headers (ResponseSecurityHeaderFilter)
+  // NoCachingFilter
   // ---------------------------------------------------------------------------
 
   @Nested
@@ -328,10 +305,6 @@ public class SaasFilterChainIT {
           .andExpect(header().exists("Content-Security-Policy"));
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // NoCachingFilter
-  // ---------------------------------------------------------------------------
 
   @Nested
   class NoCaching {

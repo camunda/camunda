@@ -40,6 +40,7 @@ import org.springframework.web.context.WebApplicationContext;
       "spring.task.scheduling.enabled=false",
       "optimize.import.enabled=false",
       "spring.main.allow-bean-definition-overriding=true",
+      "optimize.filter-chain-it=true",
     })
 @Tag("ccsm-test")
 public abstract class FilterIntegrationTestBase {

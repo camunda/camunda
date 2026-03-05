@@ -36,6 +36,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -115,7 +116,7 @@ class CcsmFilterChainIT extends FilterIntegrationTestBase {
 
     @Bean
     @Primary
-    @ConditionalOnMissingBean(SessionService.class)
+    @ConditionalOnProperty(name = "optimize.filter-chain-it", havingValue = "true")
     public SessionService mockSessionService() {
       final SessionService sessionService = mock(SessionService.class);
       when(sessionService.getRequestUserOrFailNotAuthorized(any())).thenReturn("test");
