@@ -170,6 +170,12 @@ public class GlobalListenerIT {
 
   private void assertDbModelEqualToEntity(
       final GlobalListenerDbModel dbModel, final GlobalListenerEntity entity) {
-    assertThat(entity).usingRecursiveComparison().isEqualTo(dbModel);
+    assertThat(entity)
+        .as("Expect retrieved entity to have the same field values as the db model")
+        .usingRecursiveComparison()
+        // ordering of event types is not significant for the equality of the entity and the db
+        // model, so ignore it in the comparison
+        .ignoringCollectionOrderInFields("eventTypes")
+        .isEqualTo(dbModel);
   }
 }
