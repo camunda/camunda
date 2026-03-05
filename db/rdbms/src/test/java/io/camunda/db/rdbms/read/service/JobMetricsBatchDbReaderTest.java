@@ -14,11 +14,13 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.read.domain.GlobalJobStatisticsDbResult;
+import io.camunda.db.rdbms.read.domain.JobErrorStatisticsDbResult;
 import io.camunda.db.rdbms.read.domain.JobTimeSeriesStatisticsDbResult;
 import io.camunda.db.rdbms.read.domain.JobTypeStatisticsDbResult;
 import io.camunda.db.rdbms.read.domain.JobWorkerStatisticsDbResult;
 import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
+import io.camunda.search.query.JobErrorStatisticsQuery;
 import io.camunda.search.query.JobTimeSeriesStatisticsQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
 import io.camunda.search.query.JobWorkerStatisticsQuery;
@@ -836,5 +838,99 @@ class JobMetricsBatchDbReaderTest {
     assertThat(item.created().lastUpdatedAt()).isEqualTo(lastCreated);
     assertThat(item.completed().lastUpdatedAt()).isEqualTo(lastCompleted);
     assertThat(item.failed().lastUpdatedAt()).isEqualTo(lastFailed);
+  }
+
+  // -----------------------------------------------------------------------
+  // getJobErrorStatistics
+  // -----------------------------------------------------------------------
+
+  @Test
+  void shouldReturnEmptyErrorStatisticsWhenTenantCheckEnabledButNoTenants() {
+    // given
+    final var now = OffsetDateTime.now();
+    final var query =
+        JobErrorStatisticsQuery.of(
+            b -> b.filter(f -> f.from(now.minusDays(1)).to(now).jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(List.of()));
+
+    // when
+    final var result = jobMetricsBatchDbReader.getJobErrorStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.total()).isZero();
+    assertThat(result.items()).isEmpty();
+    verifyNoInteractions(jobMetricsBatchMapper);
+  }
+
+  @Test
+  void shouldReturnErrorStatisticsFromMapper() {
+    // given
+    final var dbResult1 = new JobErrorStatisticsDbResult("IO_ERROR", "Disk full", 3);
+    final var dbResult2 = new JobErrorStatisticsDbResult("TIMEOUT", "Connection timed out", 7);
+    when(jobMetricsBatchMapper.jobErrorStatistics(any())).thenReturn(List.of(dbResult1, dbResult2));
+
+    final var now = OffsetDateTime.now();
+    final var query =
+        JobErrorStatisticsQuery.of(
+            b -> b.filter(f -> f.from(now.minusDays(1)).to(now).jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when
+    final var result = jobMetricsBatchDbReader.getJobErrorStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.total()).isEqualTo(2L);
+    assertThat(result.items()).hasSize(2);
+
+    assertThat(result.items().get(0).errorCode()).isEqualTo("IO_ERROR");
+    assertThat(result.items().get(0).errorMessage()).isEqualTo("Disk full");
+    assertThat(result.items().get(0).workers()).isEqualTo(3);
+
+    assertThat(result.items().get(1).errorCode()).isEqualTo("TIMEOUT");
+    assertThat(result.items().get(1).errorMessage()).isEqualTo("Connection timed out");
+    assertThat(result.items().get(1).workers()).isEqualTo(7);
+  }
+
+  @Test
+  void shouldReturnErrorStatisticsWithNullWorkersDefaultingToZero() {
+    // given
+    final var dbResult = new JobErrorStatisticsDbResult("IO_ERROR", "msg", null);
+    when(jobMetricsBatchMapper.jobErrorStatistics(any())).thenReturn(List.of(dbResult));
+
+    final var now = OffsetDateTime.now();
+    final var query =
+        JobErrorStatisticsQuery.of(
+            b -> b.filter(f -> f.from(now.minusDays(1)).to(now).jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when
+    final var result = jobMetricsBatchDbReader.getJobErrorStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().workers()).isZero();
+  }
+
+  @Test
+  void shouldReturnEmptyErrorStatisticsWhenMapperReturnsEmptyList() {
+    // given
+    when(jobMetricsBatchMapper.jobErrorStatistics(any())).thenReturn(List.of());
+
+    final var now = OffsetDateTime.now();
+    final var query =
+        JobErrorStatisticsQuery.of(
+            b -> b.filter(f -> f.from(now.minusDays(1)).to(now).jobType("some-task")));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when
+    final var result = jobMetricsBatchDbReader.getJobErrorStatistics(query, resourceAccessChecks);
+
+    // then
+    assertThat(result.total()).isZero();
+    assertThat(result.items()).isEmpty();
   }
 }

@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.JobMetricsBatchDbModel;
 import io.camunda.db.rdbms.write.domain.JobMetricsBatchDbModel.Builder;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
+import io.camunda.search.entities.JobErrorStatisticsEntity;
 import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
@@ -300,6 +301,20 @@ public final class JobMetricsBatchFixtures extends CommonFixtures {
                 .max(OffsetDateTime::compareTo)
                 .map(JobMetricsBatchFixtures::toUtc)
                 .orElseThrow());
+  }
+
+  /**
+   * Asserts that a {@link JobErrorStatisticsEntity} matches the expected errorCode, errorMessage
+   * and distinct worker count derived from a list of {@link JobMetricsBatchDbModel}.
+   */
+  public static void assertErrorStats(
+      final JobErrorStatisticsEntity stats,
+      final String expectedErrorCode,
+      final String expectedErrorMessage,
+      final int expectedWorkers) {
+    assertThat(stats.errorCode()).isEqualTo(expectedErrorCode);
+    assertThat(stats.errorMessage()).isEqualTo(expectedErrorMessage);
+    assertThat(stats.workers()).isEqualTo(expectedWorkers);
   }
 
   private static OffsetDateTime toUtc(final OffsetDateTime timestamp) {

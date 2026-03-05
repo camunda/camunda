@@ -241,6 +241,64 @@
     </where>
   </sql>
 
+  <resultMap id="JobErrorStatisticsResultMap"
+    type="io.camunda.db.rdbms.read.domain.JobErrorStatisticsDbResult">
+    <constructor>
+      <arg column="ERROR_CODE"    javaType="java.lang.String"/>
+      <arg column="ERROR_MESSAGE" javaType="java.lang.String"/>
+      <arg column="WORKERS"       javaType="java.lang.Integer"/>
+    </constructor>
+  </resultMap>
+
+  <select id="jobErrorStatistics"
+    parameterType="io.camunda.db.rdbms.read.domain.JobErrorStatisticsDbQuery"
+    resultMap="JobErrorStatisticsResultMap"
+    statementType="PREPARED">
+    SELECT
+      ERROR_CODE,
+      ERROR_MESSAGE,
+      COUNT(DISTINCT WORKER) AS WORKERS
+    FROM ${prefix}JOB
+    <include refid="io.camunda.db.rdbms.sql.JobMetricsBatchMapper.jobErrorStatisticsFilter"/>
+    <trim prefix="AND" prefixOverrides="WHERE">
+      <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    </trim>
+    GROUP BY ERROR_CODE, ERROR_MESSAGE
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="jobErrorStatisticsFilter">
+    WHERE ERROR_CODE IS NOT NULL
+    <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+      AND TENANT_ID IN
+      <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+        #{tenantId}
+      </foreach>
+    </if>
+    <if test="filter.from != null">
+      AND CREATION_TIME &gt;= #{filter.from}
+    </if>
+    <if test="filter.to != null">
+      AND CREATION_TIME &lt;= #{filter.to}
+    </if>
+    <if test="filter.jobType != null">
+      AND TYPE = #{filter.jobType}
+    </if>
+    <if test="filter.errorCodeOperations != null and !filter.errorCodeOperations.isEmpty()">
+      <foreach collection="filter.errorCodeOperations" item="operation">
+        AND ERROR_CODE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.errorMessageOperations != null and !filter.errorMessageOperations.isEmpty()">
+      <foreach collection="filter.errorMessageOperations" item="operation">
+        AND ERROR_MESSAGE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+  </sql>
+
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.JobMetricsBatchDbModel">
     INSERT INTO ${prefix}JOB_METRICS_BATCH (JOB_METRICS_BATCH_KEY,
                                             PARTITION_ID,
