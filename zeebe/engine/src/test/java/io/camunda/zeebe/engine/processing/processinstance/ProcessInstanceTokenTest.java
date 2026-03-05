@@ -390,7 +390,6 @@ public final class ProcessInstanceTokenTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .serviceTask("task", t -> t.zeebeJobType("task"))
                 .intermediateCatchEvent(
                     "catch",
                     e ->
@@ -408,11 +407,24 @@ public final class ProcessInstanceTokenTest {
             .create();
 
     // when
-    ENGINE.job().ofInstance(processInstanceKey).withType("task").complete();
+    final Record<ProcessInstanceRecordValue> catchEventActivatingRecord =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("catch")
+            .getFirst();
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
+    assertThat(incident.getValue().getErrorMessage())
+        .isEqualTo(
+            "Expected message name to be at most %d characters long (configured max-name-length), but was %d characters."
+                .formatted(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH, tooLongValue.length()));
+    assertThat(incident.getValue().getElementId()).isEqualTo("catch");
+    assertThat(incident.getValue().getElementInstanceKey())
+        .isEqualTo(catchEventActivatingRecord.getKey());
+    assertThat(incident.getValue().getVariableScopeKey())
+        .isEqualTo(catchEventActivatingRecord.getKey());
     ENGINE
         .variables()
         .ofScope(incident.getValue().getElementInstanceKey())
@@ -433,7 +445,6 @@ public final class ProcessInstanceTokenTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .serviceTask("task", t -> t.zeebeJobType("task"))
                 .intermediateCatchEvent(
                     "catch",
                     e ->
@@ -452,11 +463,24 @@ public final class ProcessInstanceTokenTest {
             .create();
 
     // when
-    ENGINE.job().ofInstance(processInstanceKey).withType("task").complete();
+    final Record<ProcessInstanceRecordValue> catchEventActivatingRecord =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("catch")
+            .getFirst();
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
+    assertThat(incident.getValue().getErrorMessage())
+        .isEqualTo(
+            "Expected correlation key to be at most %d characters long (configured max-name-length), but was %d characters."
+                .formatted(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH, tooLongValue.length()));
+    assertThat(incident.getValue().getElementId()).isEqualTo("catch");
+    assertThat(incident.getValue().getElementInstanceKey())
+        .isEqualTo(catchEventActivatingRecord.getKey());
+    assertThat(incident.getValue().getVariableScopeKey())
+        .isEqualTo(catchEventActivatingRecord.getKey());
     ENGINE
         .variables()
         .ofScope(incident.getValue().getElementInstanceKey())
