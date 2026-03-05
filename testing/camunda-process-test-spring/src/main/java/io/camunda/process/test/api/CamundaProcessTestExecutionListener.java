@@ -280,11 +280,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private void initializeJudgeConfig(
       final TestContext testContext,
       final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
-
     final JudgeConfiguration judgeConfiguration = runtimeConfiguration.getJudge();
-    if (!judgeConfiguration.isExplicitlyConfigured()) {
-      return;
-    }
 
     // Try Spring bean first
     final ChatModelAdapter contextAdapter = findChatModelAdapterBean(testContext);
@@ -294,6 +290,10 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
               contextAdapter,
               judgeConfiguration.getThreshold(),
               judgeConfiguration.getCustomPrompt()));
+      return;
+    }
+
+    if (!judgeConfiguration.isExplicitlyConfigured()) {
       return;
     }
 
