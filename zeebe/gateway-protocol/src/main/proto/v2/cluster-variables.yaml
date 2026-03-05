@@ -368,6 +368,8 @@ components:
           description: The new value of the cluster variable. Can be any JSON object or primitive value. Will be serialized as a JSON string in responses.
     ClusterVariableResult:
       type: object
+      required:
+        - value
       allOf:
         - $ref: '#/components/schemas/ClusterVariableResultBase'
       properties:
@@ -377,6 +379,9 @@ components:
     ClusterVariableSearchResult:
       description: Cluster variable search response item.
       type: object
+      required:
+        - value
+        - isTruncated
       allOf:
         - $ref: '#/components/schemas/ClusterVariableResultBase'
       properties:
@@ -392,6 +397,7 @@ components:
       required:
         - name
         - scope
+        - tenantId
       properties:
         name:
           type: string
