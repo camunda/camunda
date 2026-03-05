@@ -51,6 +51,8 @@
     <zeebe.version>8.8.15</zeebe.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>8.7.0-alpha4</zeebe.docker.version>
+    <!-- Identity version used for CI smoketest docker-compose -->
+    <identity.version>8.8.9</identity.version>
 
     <!-- maven plugins -->
     <surefire-plugin.version>3.5.5</surefire-plugin.version>
