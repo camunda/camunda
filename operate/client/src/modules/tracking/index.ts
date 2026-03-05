@@ -18,6 +18,7 @@ import type {
   BatchOperationType,
   DecisionInstanceState,
 } from '@camunda/camunda-api-zod-schemas/8.9';
+import type {useCurrentPage} from 'App/Layout/useCurrentPage';
 
 const EVENT_PREFIX = 'operate:';
 
@@ -52,15 +53,7 @@ type Events =
         | 'decision-instances-parent-process-details'
         | 'decision-details-parent-process-details'
         | 'decision-details-version';
-      currentPage?:
-        | 'dashboard'
-        | 'processes'
-        | 'decisions'
-        | 'batch-operations'
-        | 'operations-log'
-        | 'process-details'
-        | 'decision-details'
-        | 'login';
+      currentPage?: ReturnType<typeof useCurrentPage>['currentPage'];
     }
   | {
       eventName: 'theme-toggle';
