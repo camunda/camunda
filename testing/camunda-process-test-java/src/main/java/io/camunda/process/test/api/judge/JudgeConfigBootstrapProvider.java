@@ -21,11 +21,16 @@ public interface JudgeConfigBootstrapProvider {
   /**
    * Bootstraps a {@link JudgeConfig} from the given configuration data.
    *
-   * <p>Implementations must not throw exceptions for unrecognized or missing provider
-   * configuration. Return {@code null} if the data does not contain sufficient judge configuration.
+   * <p>Implementations must not throw exceptions when the given data does not contain configuration
+   * for this provider or the provider is unrecognized; in such cases they must return {@code null}.
+   *
+   * <p>If the data contains configuration for a known provider but the configuration is invalid or
+   * incomplete, implementations should throw an appropriate runtime exception (for example, an
+   * {@link IllegalStateException}) to signal misconfiguration.
    *
    * @param data the typed configuration data to bootstrap from
-   * @return a configured {@link JudgeConfig}, or {@code null} if not configured
+   * @return a configured {@link JudgeConfig}, or {@code null} if no configuration is present for
+   *     this provider
    */
   JudgeConfig bootstrap(JudgeConfigBootstrapData data);
 }
