@@ -9,6 +9,8 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.agrona.BitUtil;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,11 +30,12 @@ import org.slf4j.LoggerFactory;
  * position. This keeps all concurrency concerns (position stamping + volatile publication) inside
  * the ring buffer.
  */
+@NullMarked
 final class RingBuffer {
   private static final int DEFAULT_CAPACITY = 8 * 1024; // 8K slots
   private static final Logger LOGGER = LoggerFactory.getLogger(RingBuffer.class);
 
-  private final AtomicReferenceArray<InFlightEntry> buffer;
+  private final AtomicReferenceArray<@Nullable InFlightEntry> buffer;
   private final int mask;
   // NOTE: this field is not volatile
   private long lastWrittenPosition = -1;
@@ -85,7 +88,7 @@ final class RingBuffer {
    * Returns the entry at the given position, or null if the slot is empty or holds an entry for a
    * different position (i.e. the slot was overwritten by a wraparound).
    */
-  InFlightEntry get(final long position) {
+  @Nullable InFlightEntry get(final long position) {
     final var entry = buffer.get((int) (position & mask));
     return entry != null && entry.position == position ? entry : null;
   }

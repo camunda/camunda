@@ -25,6 +25,8 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Maintains a view of in-flight entries as they are being appended, written, committed and finally
@@ -78,13 +80,14 @@ import java.util.List;
  * RateMeasurements to update the cluster load and the exporting rate metrics.
  */
 @SuppressWarnings("UnstableApiUsage")
+@NullMarked
 public final class FlowControl implements AppendListener {
 
   private final LogStreamMetrics metrics;
-  private RateLimit writeRateLimit;
+  @Nullable private RateLimit writeRateLimit;
   private Limit requestLimit;
   private Limiter<Intent> processingLimiter;
-  private RateLimiter writeRateLimiter;
+  @Nullable private RateLimiter writeRateLimiter;
   private final RateMeasurement exportingRate =
       new RateMeasurement(
           ActorClock::currentTimeMillis, Duration.ofMinutes(5), Duration.ofSeconds(10));
