@@ -7,14 +7,20 @@
  */
 package io.camunda.it.mcp.authentication;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import org.junit.jupiter.api.Test;
 
 @MultiDbTest
 public class BasicAuthMcpServerIT extends AuthenticatedMcpServerTest {
@@ -48,6 +54,24 @@ public class BasicAuthMcpServerIT extends AuthenticatedMcpServerTest {
   @Override
   protected McpSyncHttpClientRequestCustomizer createRestrictedMcpClientRequestCustomizer() {
     return createBasicAuthAuthenticator(RESTRICTED_USER);
+  }
+
+  @Test
+  void shouldNotReturnOAuth20ProtectedResourceMetadataLink() throws Exception {
+    try (final var httpClient = HttpClient.newHttpClient()) {
+      // given — hit a protected endpoint without credentials
+      final var unauthorizedResponse =
+          httpClient.send(
+              HttpRequest.newBuilder(TEST_INSTANCE.restAddress().resolve("/mcp/cluster"))
+                  .GET()
+                  .build(),
+              HttpResponse.BodyHandlers.ofString());
+
+      // then — 401 response without WWW-Authenticate/resource_metadata header
+      assertThat(unauthorizedResponse.statusCode()).isEqualTo(401);
+      final var wwwAuthenticate = unauthorizedResponse.headers().firstValue("WWW-Authenticate");
+      assertThat(wwwAuthenticate).isNotPresent();
+    }
   }
 
   private McpSyncHttpClientRequestCustomizer createBasicAuthAuthenticator(final TestUser user) {
