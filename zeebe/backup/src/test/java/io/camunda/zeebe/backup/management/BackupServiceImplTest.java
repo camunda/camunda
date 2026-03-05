@@ -326,6 +326,58 @@ class BackupServiceImplTest {
   }
 
   @Test
+  void shouldOnlyMarkBackupsAsFailedWithCheckpointIdLessThanOrEqualToLastCheckpointId() {
+    // given
+    final long lastCheckpointId = 10;
+    final var backupWithLowerCheckpointId = new BackupIdentifierImpl(1, 1, 5);
+    final var backupWithEqualCheckpointId = new BackupIdentifierImpl(2, 1, 10);
+    final var backupWithHigherCheckpointId = new BackupIdentifierImpl(3, 1, 15);
+
+    final var lowerCheckpointStatus =
+        new BackupStatusImpl(
+            backupWithLowerCheckpointId,
+            Optional.empty(),
+            BackupStatusCode.IN_PROGRESS,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var equalCheckpointStatus =
+        new BackupStatusImpl(
+            backupWithEqualCheckpointId,
+            Optional.empty(),
+            BackupStatusCode.IN_PROGRESS,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var higherCheckpointStatus =
+        new BackupStatusImpl(
+            backupWithHigherCheckpointId,
+            Optional.empty(),
+            BackupStatusCode.IN_PROGRESS,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+
+    when(backupStore.list(any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                List.of(lowerCheckpointStatus, equalCheckpointStatus, higherCheckpointStatus)));
+    when(backupStore.markFailed(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(BackupStatusCode.FAILED));
+
+    // when
+    backupService.failInProgressBackups(1, lastCheckpointId, concurrencyControl);
+
+    // then
+    final var expectedFailureReason = "Backup is cancelled due to leader change.";
+    verify(backupStore, timeout(1000))
+        .markFailed(backupWithLowerCheckpointId, expectedFailureReason);
+    verify(backupStore, timeout(1000))
+        .markFailed(backupWithEqualCheckpointId, expectedFailureReason);
+    verify(backupStore, never()).markFailed(backupWithHigherCheckpointId, expectedFailureReason);
+  }
+
+  @Test
   void shouldNotTakeNewBackupIfBackupAlreadyCompleted() {
     // given
     final ControllableInProgressBackup inProgressBackup = new ControllableInProgressBackup();
