@@ -20,7 +20,7 @@ import dev.langchain4j.model.chat.ChatModel;
 public class JudgeConfigBootstrap implements JudgeConfigBootstrapProvider {
 
   @Override
-  public JudgeConfig bootstrap(final JudgeConfigurationData data) {
+  public JudgeConfig bootstrap(final JudgeConfigBootstrapData data) {
     final String provider = data.getProvider();
     if (provider == null || provider.trim().isEmpty()) {
       return null;
@@ -35,7 +35,7 @@ public class JudgeConfigBootstrap implements JudgeConfigBootstrapProvider {
     return JudgeConfig.of(adapter, data.getThreshold(), data.getCustomPrompt());
   }
 
-  private ChatModel createChatModel(final JudgeConfigurationData data, final String provider) {
+  private ChatModel createChatModel(final JudgeConfigBootstrapData data, final String provider) {
     return switch (provider) {
       case "openai" -> OpenAiChatModelBuilder.build(data);
       case "anthropic" -> AnthropicChatModelBuilder.build(data);

@@ -28,8 +28,8 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldBuildChatModelWithAccessKeyCredentials() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder()
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder()
             .model("anthropic.claude-3-5-sonnet-20241022-v2:0")
             .region("us-east-1")
             .credentialsAccessKey("test-access-key")
@@ -46,8 +46,8 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldBuildChatModelWithApiKey() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder()
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder()
             .model("anthropic.claude-3-5-sonnet-20241022-v2:0")
             .region("us-east-1")
             .apiKey("test-api-key")
@@ -63,8 +63,8 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldBuildChatModelWithDefaultCredentialChain() {
     // given — no explicit authentication, uses AWS default credential chain
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder()
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder()
             .model("anthropic.claude-3-5-sonnet-20241022-v2:0")
             .region("us-east-1")
             .build();
@@ -81,8 +81,8 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldThrowWhenModelMissing() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder()
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder()
             .region("us-east-1")
             .credentialsAccessKey("test-access-key")
             .credentialsSecretKey("test-secret-key")
@@ -98,8 +98,8 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldThrowWhenModelBlank() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder().model("  ").region("us-east-1").build();
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder().model("  ").region("us-east-1").build();
 
     // when / then
     assertThatThrownBy(() -> BedrockChatModelBuilder.build(data))
@@ -112,8 +112,8 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldThrowWhenBothAuthMethodsProvided() {
     // given — both accessKey/secretKey and apiKey are set
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder()
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder()
             .model("anthropic.claude-3-5-sonnet-20241022-v2:0")
             .region("us-east-1")
             .credentialsAccessKey("test-access-key")

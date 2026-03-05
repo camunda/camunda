@@ -31,7 +31,7 @@ public class JudgeConfigBootstrapTest {
   @Test
   void shouldReturnNullWhenNotConfigured() {
     // given
-    final JudgeConfigurationData data = JudgeConfigurationData.builder().build();
+    final JudgeConfigBootstrapData data = JudgeConfigBootstrapData.builder().build();
 
     // when
     final JudgeConfig config = bootstrap.bootstrap(data);
@@ -44,7 +44,8 @@ public class JudgeConfigBootstrapTest {
   @ValueSource(strings = {"unknown-provider", "   "})
   void shouldReturnNullWhenProviderIsNotRecognised(final String provider) {
     // given
-    final JudgeConfigurationData data = JudgeConfigurationData.builder().provider(provider).build();
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder().provider(provider).build();
 
     // when
     final JudgeConfig config = bootstrap.bootstrap(data);
@@ -55,7 +56,8 @@ public class JudgeConfigBootstrapTest {
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("providerConfigurations")
-  void shouldBootstrapKnownProvider(final String providerName, final JudgeConfigurationData data) {
+  void shouldBootstrapKnownProvider(
+      final String providerName, final JudgeConfigBootstrapData data) {
     // when
     final JudgeConfig config = bootstrap.bootstrap(data);
 
@@ -77,8 +79,8 @@ public class JudgeConfigBootstrapTest {
   @Test
   void shouldBootstrapWithCustomThresholdAndPrompt() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder()
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder()
             .provider("openai")
             .model("gpt-4o")
             .apiKey("test-key")
@@ -95,24 +97,24 @@ public class JudgeConfigBootstrapTest {
     assertThat(config.getCustomPrompt()).isEqualTo("Custom evaluation criteria");
   }
 
-  private static JudgeConfigurationData openAiData() {
-    return JudgeConfigurationData.builder()
+  private static JudgeConfigBootstrapData openAiData() {
+    return JudgeConfigBootstrapData.builder()
         .provider("openai")
         .model("gpt-4o")
         .apiKey("test-key")
         .build();
   }
 
-  private static JudgeConfigurationData anthropicData() {
-    return JudgeConfigurationData.builder()
+  private static JudgeConfigBootstrapData anthropicData() {
+    return JudgeConfigBootstrapData.builder()
         .provider("anthropic")
         .model("claude-3-5-sonnet-20241022")
         .apiKey("test-key")
         .build();
   }
 
-  private static JudgeConfigurationData bedrockData() {
-    return JudgeConfigurationData.builder()
+  private static JudgeConfigBootstrapData bedrockData() {
+    return JudgeConfigBootstrapData.builder()
         .provider("amazon-bedrock")
         .model("anthropic.claude-3-5-sonnet-20241022-v2:0")
         .region("us-east-1")
@@ -121,8 +123,8 @@ public class JudgeConfigBootstrapTest {
         .build();
   }
 
-  private static JudgeConfigurationData openAiCompatibleData() {
-    return JudgeConfigurationData.builder()
+  private static JudgeConfigBootstrapData openAiCompatibleData() {
+    return JudgeConfigBootstrapData.builder()
         .provider("openai-compatible")
         .model("mistral-7b")
         .baseUrl("http://localhost:11434/v1")
