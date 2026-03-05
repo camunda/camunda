@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -125,6 +126,7 @@ final class ArchiverJobTest {
           exporterMetrics,
           logger,
           executor,
+          new Semaphore(Integer.MAX_VALUE),
           recordArchivingMetric,
           recordArchivedMetric);
       indexTemplateDescriptor = mock(IndexTemplateDescriptor.class);

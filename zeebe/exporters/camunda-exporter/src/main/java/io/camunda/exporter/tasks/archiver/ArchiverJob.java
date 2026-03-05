@@ -17,6 +17,9 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
@@ -27,10 +30,16 @@ import org.slf4j.Logger;
  */
 public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundTask {
 
+  // Virtual-thread executor used exclusively for blocking semaphore.acquire() calls.
+  // This prevent using main (platform-threaded) executor, avoiding thread starvation.
+  private static final ExecutorService SEMAPHORE_EXECUTOR =
+      Executors.newVirtualThreadPerTaskExecutor();
+
   private final ArchiverRepository archiverRepository;
   private final CamundaExporterMetrics exporterMetrics;
   private final Logger logger;
   private final Executor executor;
+  private final Semaphore reindexSemaphore;
 
   private final Consumer<Integer> recordArchivingMetric;
   private final Consumer<Integer> recordArchivedMetric;
@@ -40,12 +49,14 @@ public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundT
       final CamundaExporterMetrics exporterMetrics,
       final Logger logger,
       final Executor executor,
+      final Semaphore reindexSemaphore,
       final Consumer<Integer> recordArchivingMetric,
       final Consumer<Integer> recordArchivedMetric) {
     this.archiverRepository = archiverRepository;
     this.exporterMetrics = exporterMetrics;
     this.logger = logger;
     this.executor = executor;
+    this.reindexSemaphore = reindexSemaphore;
     this.recordArchivingMetric = recordArchivingMetric;
     this.recordArchivedMetric = recordArchivedMetric;
   }
@@ -133,9 +144,16 @@ public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundT
     final var sourceIdxName = templateDescriptor.getFullQualifiedName();
     final var idsMap = createIdsByFieldMap(templateDescriptor, batch);
     final var finishDate = batch.finishDate();
-    return archiverRepository
-        .moveDocuments(sourceIdxName, sourceIdxName + finishDate, idsMap, filters, executor)
-        .thenApplyAsync(ok -> batch.size(), executor);
+
+    // Note: Acquire the semaphore on a virtual thread to avoid blocking the main executor threads
+    return CompletableFuture.supplyAsync(this::getReindexPermit, SEMAPHORE_EXECUTOR)
+        .thenComposeAsync(
+            ignored ->
+                archiverRepository.moveDocuments(
+                    sourceIdxName, sourceIdxName + finishDate, idsMap, filters, executor),
+            executor)
+        .whenCompleteAsync((result, error) -> releaseReindexPermit(), SEMAPHORE_EXECUTOR)
+        .thenApply(ok -> batch.size());
   }
 
   /**
@@ -149,4 +167,22 @@ public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundT
    */
   protected abstract Map<String, List<String>> createIdsByFieldMap(
       final IndexTemplateDescriptor templateDescriptor, final B batch);
+
+  private boolean getReindexPermit() {
+    try {
+      reindexSemaphore.acquire();
+      exporterMetrics.beginArchiverReindexTask();
+      return true;
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      logger.error(
+          "Archiver job interrupted while waiting for reindex permit: {}", e.getMessage(), e);
+      return false;
+    }
+  }
+
+  private void releaseReindexPermit() {
+    reindexSemaphore.release();
+    exporterMetrics.completeArchiverReindexTask();
+  }
 }

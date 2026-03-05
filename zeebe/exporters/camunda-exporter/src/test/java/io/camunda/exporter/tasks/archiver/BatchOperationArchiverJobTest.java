@@ -18,6 +18,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ final class BatchOperationArchiverJobTest extends ArchiverJobRecordingMetricsAbs
   private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
+  private final Semaphore reindexSemaphore = new Semaphore(Integer.MAX_VALUE);
 
   private final TestRepository repository = new TestRepository();
   private final BatchOperationTemplate batchOperationTemplate =
@@ -38,7 +40,13 @@ final class BatchOperationArchiverJobTest extends ArchiverJobRecordingMetricsAbs
 
   private final BatchOperationArchiverJob job =
       new BatchOperationArchiverJob(
-          repository, batchOperationTemplate, List.of(auditLogTemplate), metrics, LOGGER, executor);
+          repository,
+          batchOperationTemplate,
+          List.of(auditLogTemplate),
+          metrics,
+          LOGGER,
+          executor,
+          reindexSemaphore);
 
   @BeforeEach
   void setUp() {

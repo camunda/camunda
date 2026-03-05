@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 
 /**
@@ -37,12 +38,14 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
       final List<ProcessInstanceDependant> processInstanceDependants,
       final CamundaExporterMetrics metrics,
       final Logger logger,
-      final Executor executor) {
+      final Executor executor,
+      final Semaphore reindexSemaphore) {
     super(
         repository,
         metrics,
         logger,
         executor,
+        reindexSemaphore,
         metrics::recordProcessInstancesArchiving,
         metrics::recordProcessInstancesArchived);
     this.processInstanceTemplate = processInstanceTemplate;

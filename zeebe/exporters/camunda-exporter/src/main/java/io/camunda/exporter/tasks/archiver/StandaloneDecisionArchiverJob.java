@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 
 public class StandaloneDecisionArchiverJob extends ArchiverJob<BasicArchiveBatch> {
@@ -31,12 +32,14 @@ public class StandaloneDecisionArchiverJob extends ArchiverJob<BasicArchiveBatch
       final CamundaExporterMetrics metrics,
       final Logger logger,
       final Executor executor,
+      final Semaphore reindexSemaphore,
       final List<DecisionInstanceDependant> decisionInstanceDependants) {
     super(
         repository,
         metrics,
         logger,
         executor,
+        reindexSemaphore,
         metrics::recordStandaloneDecisionsArchiving,
         metrics::recordStandaloneDecisionsArchived);
     this.decisionInstanceTemplate = decisionInstanceTemplate;

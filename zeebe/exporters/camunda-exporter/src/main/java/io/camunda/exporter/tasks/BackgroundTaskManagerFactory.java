@@ -68,6 +68,7 @@ import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
@@ -84,6 +85,7 @@ public final class BackgroundTaskManagerFactory {
   private final ObjectMapper objectMapper;
 
   private ScheduledThreadPoolExecutor executor;
+  private Semaphore reindexSemaphore;
   private ArchiverRepository archiverRepository;
   private IncidentUpdateRepository incidentRepository;
   private BatchOperationUpdateRepository batchOperationUpdateRepository;
@@ -117,6 +119,7 @@ public final class BackgroundTaskManagerFactory {
 
   public BackgroundTaskManager build() {
     executor = buildExecutor();
+    reindexSemaphore = new Semaphore(getMaxParallelArchiverReindexTasks());
 
     // initialize all repositories based on connection type to reuse clients
     if (config.getConnect().getTypeEnum().isOpenSearch()) {
@@ -153,6 +156,22 @@ public final class BackgroundTaskManagerFactory {
         executor,
         tasks,
         Duration.ofSeconds(5));
+  }
+
+  private int getMaxParallelArchiverReindexTasks() {
+    if (config.getHistory().getMaxParallelArchiverReindexTasks() <= 0) {
+      logger.info(
+          "Creating a reindexing throttler with unlimited parallel execution permits. Use "
+              + "the `history.maxParallelArchiverReindexTasks` config property to set a lower "
+              + "number of parallel execution permits to reduce resource usage.");
+      return Integer.MAX_VALUE;
+    }
+
+    logger.debug(
+        "Creating reindexing throttler with {} parallel permits.",
+        config.getHistory().getMaxParallelArchiverReindexTasks());
+
+    return config.getHistory().getMaxParallelArchiverReindexTasks();
   }
 
   private OpensearchBatchOperationUpdateRepository createBatchOperationRepository(
@@ -408,7 +427,8 @@ public final class BackgroundTaskManagerFactory {
             dependantTemplates,
             metrics,
             logger,
-            executor));
+            executor,
+            reindexSemaphore));
   }
 
   private ReschedulingTask buildBatchOperationArchiverJob() {
@@ -425,7 +445,8 @@ public final class BackgroundTaskManagerFactory {
             dependantTemplates,
             metrics,
             logger,
-            executor));
+            executor,
+            reindexSemaphore));
   }
 
   private ReschedulingTask buildUsageMetricsArchiverJob() {
@@ -435,7 +456,8 @@ public final class BackgroundTaskManagerFactory {
             resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class),
             metrics,
             logger,
-            executor));
+            executor,
+            reindexSemaphore));
   }
 
   private ReschedulingTask buildUsageMetricsTUArchiverJob() {
@@ -445,7 +467,8 @@ public final class BackgroundTaskManagerFactory {
             resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class),
             metrics,
             logger,
-            executor));
+            executor,
+            reindexSemaphore));
   }
 
   private ReschedulingTask buildJobBatchMetricsArchiverJob() {
@@ -455,7 +478,8 @@ public final class BackgroundTaskManagerFactory {
             resourceProvider.getIndexTemplateDescriptor(JobMetricsBatchTemplate.class),
             metrics,
             logger,
-            executor));
+            executor,
+            reindexSemaphore));
   }
 
   private ReschedulingTask buildStandaloneDecisionArchiverJob() {
@@ -472,6 +496,7 @@ public final class BackgroundTaskManagerFactory {
             metrics,
             logger,
             executor,
+            reindexSemaphore,
             dependantTemplates));
   }
 
@@ -516,7 +541,8 @@ public final class BackgroundTaskManagerFactory {
             resourceProvider.getIndexTemplateDescriptor(AuditLogTemplate.class),
             metrics,
             logger,
-            executor));
+            executor,
+            reindexSemaphore));
   }
 
   private ScheduledThreadPoolExecutor buildExecutor() {

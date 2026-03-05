@@ -21,6 +21,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,7 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
       LoggerFactory.getLogger(ProcessInstanceArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
+  private final Semaphore reindexSemaphore = new Semaphore(Integer.MAX_VALUE);
 
   private final TestRepository repository = new TestRepository();
   private final ListViewTemplate processInstanceTemplate = new ListViewTemplate("", true);
@@ -50,7 +52,8 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
           List.of(decisionInstanceTemplate, sequenceFlowTemplate, auditLogTemplate),
           metrics,
           LOGGER,
-          executor);
+          executor,
+          reindexSemaphore);
 
   @BeforeEach
   void setUp() {
@@ -84,7 +87,13 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
     // given
     final ProcessInstanceArchiverJob processInstanceJob =
         new ProcessInstanceArchiverJob(
-            repository, processInstanceTemplate, List.of(), metrics, LOGGER, executor);
+            repository,
+            processInstanceTemplate,
+            List.of(),
+            metrics,
+            LOGGER,
+            executor,
+            reindexSemaphore);
 
     // when
     final int count = processInstanceJob.execute().toCompletableFuture().join();
@@ -169,7 +178,13 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
     final var dependant = new WeirdlyNamedDependant();
     final var job =
         new ProcessInstanceArchiverJob(
-            repository, processInstanceTemplate, List.of(dependant), metrics, LOGGER, executor);
+            repository,
+            processInstanceTemplate,
+            List.of(dependant),
+            metrics,
+            LOGGER,
+            executor,
+            reindexSemaphore);
     repository.batch = new ProcessInstanceArchiveBatch("2024-01-01", List.of(1L, 2L), List.of());
 
     // when
