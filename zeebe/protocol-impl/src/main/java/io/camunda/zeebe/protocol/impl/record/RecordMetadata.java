@@ -57,7 +57,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private long requestId;
   private short intentValue = Intent.NULL_VAL;
   private int requestStreamId;
-  private AuthInfo authorization;
+  private AuthInfo authorization = EMPTY_AUTH;
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
   private AgentInfo agent;
@@ -139,7 +139,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + RecordMetadataEncoder.rejectionReasonHeaderLength()
         + rejectionReason.capacity()
         + RecordMetadataEncoder.authorizationHeaderLength()
-        + authorizationOrEmpty().getLength()
+        + authorization.getLength()
         + RecordMetadataEncoder.agentHeaderLength()
         + (agent != null ? agent.getLength() : 0);
   }
@@ -171,7 +171,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
 
     BufferUtil.writeLengthPrefixed(
-        authorizationOrEmpty(),
+        authorization,
         encoder,
         RecordMetadataEncoder.authorizationHeaderLength(),
         RecordMetadataEncoder.BYTE_ORDER);
@@ -268,42 +268,35 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public RecordMetadata authorization(final AuthInfo authorization) {
-    this.authorization = authorization;
+    this.authorization = authorization != null ? authorization : EMPTY_AUTH;
     return this;
   }
 
   public RecordMetadata authorization(final DirectBuffer buffer) {
-    authorization = AuthInfo.of(buffer);
+    final var parsed = AuthInfo.of(buffer);
+    this.authorization = parsed != null ? parsed : EMPTY_AUTH;
     return this;
   }
 
   public AuthInfo getAuthorization() {
-    return authorizationOrEmpty();
+    return authorization;
   }
 
   /**
-   * Returns the authorization if set, or the shared empty sentinel. This is used for serialization
-   * so that the wire format is preserved regardless of whether authorization is null internally.
-   */
-  private AuthInfo authorizationOrEmpty() {
-    return authorization != null ? authorization : EMPTY_AUTH;
-  }
-
-  /**
-   * Decodes the authorization field from the SBE decoder. Returns null (avoiding allocation) when
-   * the serialized bytes are identical to the empty sentinel, since {@link #authorizationOrEmpty()}
-   * will substitute the shared instance on read.
+   * Decodes the authorization field from the SBE decoder. Returns the shared empty sentinel when
+   * the serialized bytes are absent or identical to it (avoiding allocation).
    */
   private static AuthInfo decodeAuthorization(final RecordMetadataDecoder decoder) {
     final int length = decoder.authorizationLength();
     if (length <= 0) {
       decoder.skipAuthorization();
-      return null;
+      return EMPTY_AUTH;
     }
 
     final var buffer = new UnsafeBuffer();
     decoder.wrapAuthorization(buffer);
-    return AuthInfo.of(buffer);
+    final var parsed = AuthInfo.of(buffer);
+    return parsed != null ? parsed : EMPTY_AUTH;
   }
 
   public AgentInfo getAgent() {
@@ -361,7 +354,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     intent = null;
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
-    authorization = null;
+    authorization = EMPTY_AUTH;
     agent = null;
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;
@@ -380,7 +373,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         requestStreamId,
         rejectionType,
         rejectionReason,
-        authorizationOrEmpty(),
+        authorization,
         protocolVersion,
         brokerVersion,
         recordVersion,
@@ -406,7 +399,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && recordType == that.recordType
         && rejectionType == that.rejectionType
         && rejectionReason.equals(that.rejectionReason)
-        && authorizationOrEmpty().equals(that.authorizationOrEmpty())
+        && authorization.equals(that.authorization)
         && Objects.equals(agent, that.agent)
         && brokerVersion.equals(that.brokerVersion)
         && recordVersion == that.recordVersion
@@ -436,7 +429,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
       builder.append(", rejectionReason=").append(BufferUtil.bufferAsString(rejectionReason));
     }
 
-    if (authorization != null && !authorization.isEmpty()) {
+    if (!authorization.isEmpty()) {
       builder.append(", authorization=").append(authorization);
     }
     if (operationReference != RecordMetadataEncoder.operationReferenceNullValue()) {

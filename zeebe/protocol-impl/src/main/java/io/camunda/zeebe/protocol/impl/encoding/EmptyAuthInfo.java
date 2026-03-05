@@ -13,10 +13,9 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * An immutable, singleton-safe empty {@link AuthInfo}. This subclass guards against accidental
- * mutation of a shared static instance by throwing {@link UnsupportedOperationException} on {@link
- * #wrap} and {@link #reset}. All derived values (claims, decoded map, serialized buffer) are cached
- * eagerly since they never change.
+ * An immutable, singleton-safe empty {@link AuthInfo}. This subclass is frozen at construction and
+ * caches all derived values (claims, decoded map, serialized buffer) eagerly since they never
+ * change.
  */
 public final class EmptyAuthInfo extends AuthInfo {
 
@@ -35,20 +34,11 @@ public final class EmptyAuthInfo extends AuthInfo {
     final var buf = new UnsafeBuffer(bytes);
     super.write(buf, 0);
     cachedBuffer = buf;
+    freeze();
   }
 
   public static AuthInfo getInstance() {
     return INSTANCE;
-  }
-
-  @Override
-  public void reset() {
-    throw new UnsupportedOperationException("EmptyAuthInfo is immutable");
-  }
-
-  @Override
-  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    throw new UnsupportedOperationException("EmptyAuthInfo is immutable");
   }
 
   @Override

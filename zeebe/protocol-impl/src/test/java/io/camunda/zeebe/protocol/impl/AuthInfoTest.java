@@ -73,7 +73,7 @@ final class AuthInfoTest {
       authInfo.write(buffer, 0);
 
       // decode
-      final var decoded = AuthInfo.empty();
+      final var decoded = AuthInfo.mutable();
       decoded.wrap(buffer, 0, buffer.capacity());
       return decoded;
     }
@@ -216,6 +216,60 @@ final class AuthInfoTest {
 
       // then — no corrupted writes
       assertThat(errors.get()).isZero();
+    }
+  }
+
+  @Nested
+  class FreezeTests {
+    @Test
+    void shouldThrowOnWrapAfterFreeze() {
+      final var auth = AuthInfo.mutable();
+      auth.freeze();
+      final var buffer = new UnsafeBuffer(new byte[0]);
+
+      assertThatThrownBy(() -> auth.wrap(buffer, 0, 0))
+          .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void shouldThrowOnResetAfterFreeze() {
+      final var auth = AuthInfo.mutable();
+      auth.freeze();
+
+      assertThatThrownBy(auth::reset).isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void shouldFreezeIdempotently() {
+      final var auth = AuthInfo.mutable();
+      auth.freeze();
+      auth.freeze(); // second call should not throw
+
+      assertThat(auth.isFrozen()).isTrue();
+    }
+
+    @Test
+    void shouldMakeFactoryResultsImmutable() {
+      final var buffer = new UnsafeBuffer(new byte[0]);
+
+      assertThatThrownBy(() -> AuthInfo.withJwt("token").wrap(buffer, 0, 0))
+          .isInstanceOf(UnsupportedOperationException.class);
+      assertThatThrownBy(() -> AuthInfo.preAuthorized().wrap(buffer, 0, 0))
+          .isInstanceOf(UnsupportedOperationException.class);
+      assertThatThrownBy(() -> AuthInfo.withClaims(Map.of()).wrap(buffer, 0, 0))
+          .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void shouldAllowMutationBeforeFreeze() {
+      final var auth = AuthInfo.mutable();
+      final var jwt = AuthInfo.withJwt("token");
+      final var buffer = new UnsafeBuffer(new byte[jwt.getLength()]);
+      jwt.write(buffer, 0);
+
+      // should not throw — mutable instance can be wrapped
+      auth.wrap(buffer, 0, jwt.getLength());
+      assertThat(auth.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.JWT);
     }
   }
 

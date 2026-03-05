@@ -22,8 +22,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * AuthInfo is treated as immutable after construction. Use the static factory methods to create
- * instances. The only mutation allowed is through {@link #wrap} and {@link #reset}, which are part
- * of the {@link UnpackedObject} serialization contract.
+ * instances. Call {@link #freeze()} to make an instance permanently immutable — after freezing,
+ * {@link #wrap} and {@link #reset} will throw {@link UnsupportedOperationException}. All factory
+ * methods except {@link #mutable()} return frozen instances.
  */
 public class AuthInfo extends UnpackedObject {
 
@@ -33,6 +34,7 @@ public class AuthInfo extends UnpackedObject {
   private final StringProperty authDataProp = new StringProperty("authData", "").sanitized();
   private final DocumentProperty claimsProp = new DocumentProperty("claims").sanitized();
   private transient volatile Map<String, Object> cachedDecodedMap;
+  private transient volatile boolean frozen;
 
   protected AuthInfo() {
     super(3);
@@ -40,12 +42,36 @@ public class AuthInfo extends UnpackedObject {
   }
 
   /**
-   * Creates a new mutable, empty AuthInfo. Intended for the msgpack {@link
-   * io.camunda.zeebe.msgpack.property.ObjectProperty} framework (which requires a mutable template
-   * instance for deserialization) and for tests that need a default-valued instance.
+   * Returns the shared immutable empty AuthInfo singleton. This is the default "no authorization"
+   * sentinel.
    */
   public static AuthInfo empty() {
+    return EmptyAuthInfo.getInstance();
+  }
+
+  /**
+   * Creates a new mutable, unfrozen AuthInfo. Intended for the msgpack {@link
+   * io.camunda.zeebe.msgpack.property.ObjectProperty} framework (which requires a mutable template
+   * instance for deserialization).
+   */
+  public static AuthInfo mutable() {
     return new AuthInfo();
+  }
+
+  /**
+   * Permanently freezes this instance. After freezing, {@link #wrap} and {@link #reset} will throw
+   * {@link UnsupportedOperationException}. This operation is idempotent and cannot be undone.
+   *
+   * @return this instance, for chaining
+   */
+  public AuthInfo freeze() {
+    frozen = true;
+    return this;
+  }
+
+  @JsonIgnore
+  public boolean isFrozen() {
+    return frozen;
   }
 
   // --- Static factory methods ---
@@ -55,20 +81,20 @@ public class AuthInfo extends UnpackedObject {
     auth.formatProp.setValue(AuthDataFormat.UNKNOWN);
     auth.claimsProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(claims)));
     auth.cachedDecodedMap = Collections.unmodifiableMap(claims);
-    return auth;
+    return auth.freeze();
   }
 
   public static AuthInfo withClaims(final DirectBuffer claimsBuffer) {
     final var auth = new AuthInfo();
     auth.claimsProp.setValue(claimsBuffer);
-    return auth;
+    return auth.freeze();
   }
 
   public static AuthInfo withJwt(final String token) {
     final var auth = new AuthInfo();
     auth.formatProp.setValue(AuthDataFormat.JWT);
     auth.authDataProp.setValue(token);
-    return auth;
+    return auth.freeze();
   }
 
   public static AuthInfo withJwt(final String token, final Map<String, Object> claims) {
@@ -77,14 +103,14 @@ public class AuthInfo extends UnpackedObject {
     auth.authDataProp.setValue(token);
     auth.claimsProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(claims)));
     auth.cachedDecodedMap = Collections.unmodifiableMap(claims);
-    return auth;
+    return auth.freeze();
   }
 
   public static AuthInfo preAuthorized() {
     final var auth = new AuthInfo();
     auth.formatProp.setValue(AuthDataFormat.PRE_AUTHORIZED);
     auth.cachedDecodedMap = Map.of();
-    return auth;
+    return auth.freeze();
   }
 
   public static AuthInfo preAuthorized(final Map<String, Object> claims) {
@@ -92,7 +118,7 @@ public class AuthInfo extends UnpackedObject {
     auth.formatProp.setValue(AuthDataFormat.PRE_AUTHORIZED);
     auth.claimsProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(claims)));
     auth.cachedDecodedMap = Collections.unmodifiableMap(claims);
-    return auth;
+    return auth.freeze();
   }
 
   /**
@@ -107,7 +133,7 @@ public class AuthInfo extends UnpackedObject {
 
     final var auth = new AuthInfo();
     auth.wrap(buffer);
-    return auth;
+    return auth.freeze();
   }
 
   public static AuthInfo of(final AuthInfo info) {
@@ -117,7 +143,7 @@ public class AuthInfo extends UnpackedObject {
 
     final var auth = new AuthInfo();
     auth.copyFrom(info);
-    return auth;
+    return auth.freeze();
   }
 
   // --- Getters ---
@@ -132,6 +158,9 @@ public class AuthInfo extends UnpackedObject {
 
   @Override
   public void reset() {
+    if (frozen) {
+      throw new UnsupportedOperationException("Cannot reset a frozen AuthInfo");
+    }
     formatProp.setValue(AuthDataFormat.UNKNOWN);
     authDataProp.setValue("");
     claimsProp.reset();
@@ -152,6 +181,9 @@ public class AuthInfo extends UnpackedObject {
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    if (frozen) {
+      throw new UnsupportedOperationException("Cannot wrap a frozen AuthInfo");
+    }
     super.wrap(buffer, offset, length);
     cachedDecodedMap = null;
   }
@@ -178,20 +210,27 @@ public class AuthInfo extends UnpackedObject {
   }
 
   /**
-   * Returns the decoded claims map, lazily computed and cached on first access. For JWT format,
-   * decodes the token. For other formats, deserializes from msgpack. The returned map is
-   * unmodifiable.
+   * Returns the decoded claims map. For frozen instances the result is lazily computed and cached.
+   * For mutable instances the result is always recomputed (since the underlying data may change).
+   * For JWT format, decodes the token. For other formats, deserializes from msgpack. The returned
+   * map is unmodifiable.
    */
   public Map<String, Object> toDecodedMap() {
-    if (cachedDecodedMap == null) {
-      if (getFormat() == AuthDataFormat.JWT) {
-        cachedDecodedMap =
-            Collections.unmodifiableMap(new JwtDecoder(getAuthData()).decode().getClaims());
-      } else {
-        cachedDecodedMap = getClaims();
-      }
+    if (cachedDecodedMap != null) {
+      return cachedDecodedMap;
     }
-    return cachedDecodedMap;
+
+    final Map<String, Object> result;
+    if (getFormat() == AuthDataFormat.JWT) {
+      result = Collections.unmodifiableMap(new JwtDecoder(getAuthData()).decode().getClaims());
+    } else {
+      result = getClaims();
+    }
+
+    if (frozen) {
+      cachedDecodedMap = result;
+    }
+    return result;
   }
 
   public boolean hasAnyClaims() {
