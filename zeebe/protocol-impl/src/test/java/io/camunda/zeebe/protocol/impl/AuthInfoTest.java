@@ -64,7 +64,7 @@ final class AuthInfoTest {
       // then
       assertThat(decoded.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.UNKNOWN);
       assertThat(decoded.getAuthData()).isEqualTo("");
-      assertThat(decoded.getClaims()).isEqualTo(Map.of());
+      assertThat(decoded.toDecodedMap()).isEqualTo(Map.of());
     }
 
     private AuthInfo encodeDecode(final AuthInfo authInfo) {
@@ -159,7 +159,7 @@ final class AuthInfoTest {
     void shouldReturnEmptyClaims() {
       final var empty = EmptyAuthInfo.getInstance();
 
-      assertThat(empty.getClaims()).isEmpty();
+      assertThat(empty.toDecodedMap()).isEmpty();
       assertThat(empty.toDecodedMap()).isEmpty();
       assertThat(empty.hasAnyClaims()).isFalse();
     }
@@ -302,7 +302,7 @@ final class AuthInfoTest {
     }
 
     @Test
-    void shouldReturnNullWhenOfBufferCalledWithEmptyAuthInfo() {
+    void shouldReturnEmptySingletonWhenOfBufferCalledWithEmptyAuthInfo() {
       // given — serialize an empty AuthInfo
       final var empty = AuthInfo.empty();
       final var buffer = new UnsafeBuffer(new byte[empty.getLength()]);
@@ -311,8 +311,8 @@ final class AuthInfoTest {
       // when
       final AuthInfo result = AuthInfo.of(buffer);
 
-      // then — should return null (optimization: avoids allocation)
-      assertThat(result).isNull();
+      // then — should return the empty singleton (avoids allocation)
+      assertThat(result).isSameAs(AuthInfo.empty());
     }
 
     @Test

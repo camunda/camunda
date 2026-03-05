@@ -46,25 +46,9 @@ public final class EmptyAuthInfo extends AuthInfo {
     return length;
   }
 
-  /**
-   * Thread-safe override: copies from the pre-computed cached buffer instead of using the inherited
-   * mutable {@link io.camunda.zeebe.msgpack.MsgPackWriter} instance field, which is not safe for a
-   * shared singleton.
-   */
-  @Override
-  public int write(final MutableDirectBuffer buffer, final int offset) {
-    buffer.putBytes(offset, cachedBuffer, 0, length);
-    return length;
-  }
-
   @Override
   public DirectBuffer toDirectBuffer() {
     return cachedBuffer;
-  }
-
-  @Override
-  public Map<String, Object> getClaims() {
-    return EMPTY_MAP;
   }
 
   @Override
@@ -75,5 +59,11 @@ public final class EmptyAuthInfo extends AuthInfo {
   @Override
   public boolean hasAnyClaims() {
     return false;
+  }
+
+  @Override
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    buffer.putBytes(offset, cachedBuffer, 0, length);
+    return length;
   }
 }

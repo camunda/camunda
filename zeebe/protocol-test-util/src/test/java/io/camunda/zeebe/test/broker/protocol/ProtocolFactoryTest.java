@@ -238,7 +238,7 @@ final class ProtocolFactoryTest {
         .isNotNull()
         .isNotEqualTo(AuthInfo.AuthDataFormat.UNKNOWN); // Should be randomized
     assertThat(authInfo.getAuthData()).isNotEmpty();
-    assertThat(authInfo.getClaims()).isNotEmpty();
+    assertThat(authInfo.toDecodedMap()).isNotEmpty();
   }
 
   @Test
