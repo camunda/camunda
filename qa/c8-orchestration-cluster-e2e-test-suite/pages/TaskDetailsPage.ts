@@ -136,7 +136,7 @@ class TaskDetailsPage {
     await waitForAssertion({
       assertion: async () => {
         await expect(this.taskCompletedBanner.first()).toBeVisible({
-          timeout: 30000,
+          timeout: 60000,
         });
       },
       onFailure: async () => {

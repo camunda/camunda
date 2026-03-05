@@ -96,7 +96,6 @@ class OperateProcessesPage {
       name: 'Migrate',
     });
     this.cancelBatchOperationButton = page
-
       .getByLabel('data table toolbar')
       .getByRole('button', {name: 'Cancel'});
     this.applyCancelBatchOperationDialogButton = page

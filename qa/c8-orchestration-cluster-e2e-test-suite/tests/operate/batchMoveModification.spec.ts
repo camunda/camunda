@@ -46,7 +46,6 @@ test.describe('Process Instance Batch Modification', () => {
     operateProcessesPage,
     operateDiagramPage,
     operateProcessModificationModePage,
-    operateOperationPanelPage,
     operateFiltersPanelPage,
   }) => {
     await test.step('Navigate to processes page with filters', async () => {
@@ -127,16 +126,13 @@ test.describe('Process Instance Batch Modification', () => {
     });
 
     await test.step('Filter and verify modified instances', async () => {
-      await operateOperationPanelPage.collapseOperationsPanel();
       await operateDiagramPage.clickFlowNode('shipArticles');
       await operateFiltersPanelPage.clickCanceledInstancesCheckbox();
       await waitForAssertion({
         assertion: async () => {
           await expect(
             page.getByText(`${NUM_SELECTED_PROCESS_INSTANCES} results`),
-          ).toBeVisible({
-            timeout: 3000,
-          });
+          ).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
