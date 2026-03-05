@@ -18,12 +18,17 @@ package io.camunda.process.test.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.JudgeConfigBootstrap;
 import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.NestedTestConfiguration;
 import org.springframework.test.context.NestedTestConfiguration.EnclosingConfiguration;
 
@@ -161,6 +166,38 @@ public class JudgeConfigBootstrapIT {
       final JudgeConfig config = CamundaAssert.getJudgeConfig();
       assertThat(config).isNotNull();
       assertThat(config.getChatModel()).isNotNull();
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = JudgeConfigBootstrapIT.class,
+      properties = {
+        "camunda.process-test.judge.threshold=0.145",
+        "camunda.process-test.judge.customPrompt=Custom prompt",
+      })
+  @CamundaSpringProcessTest
+  @Import(JudgeConfigBootstrapIT.ChatModelAdapterConfig.class)
+  class WithChatModelAdapterBean {
+
+    @Autowired private ChatModelAdapter chatModelAdapter;
+
+    @Test
+    void shouldUseSpringBeanWhenChatModelAdapterBeanIsPresent() {
+      final JudgeConfig config = CamundaAssert.getJudgeConfig();
+      assertThat(config).isNotNull();
+      assertThat(config.getChatModel()).isSameAs(chatModelAdapter);
+      assertThat(config.getThreshold()).isEqualTo(0.145);
+      assertThat(config.getCustomPrompt()).isEqualTo("Custom prompt");
+    }
+  }
+
+  @Configuration
+  static class ChatModelAdapterConfig {
+
+    @Bean
+    ChatModelAdapter chatModelAdapter() {
+      return prompt -> "mocked response";
     }
   }
 
