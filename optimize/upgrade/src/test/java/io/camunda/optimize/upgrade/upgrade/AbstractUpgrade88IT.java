@@ -12,6 +12,7 @@ import io.camunda.optimize.upgrade.AbstractUpgradeIT;
 import io.camunda.optimize.upgrade.db.indices.VariableUpdateInstanceIndexOld;
 import io.camunda.optimize.upgrade.es.indices.VariableUpdateInstanceIndexOldES;
 import io.camunda.optimize.upgrade.os.indices.VariableUpdateInstanceIndexOldOS;
+import io.camunda.optimize.upgrade.plan.ExplicitUpgradePlansSupplier;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanRegistry;
 import java.util.List;
@@ -35,7 +36,7 @@ public class AbstractUpgrade88IT extends AbstractUpgradeIT {
 
   protected void performUpgrade() {
     final List<UpgradePlan> upgradePlans =
-        new UpgradePlanRegistry(upgradeDependencies)
+        new UpgradePlanRegistry(new ExplicitUpgradePlansSupplier(upgradeDependencies))
             .getSequentialUpgradePlansToTargetVersion(TO_VERSION);
     upgradePlans.forEach(plan -> upgradeProcedure.performUpgrade(plan));
   }
