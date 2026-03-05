@@ -18,7 +18,7 @@ import io.camunda.zeebe.util.ExponentialBackoff;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Comparator;
+import java.util.LongSummaryStatistics;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +30,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   // also create a checkpoint, this avoids  redundant checkpoints and the possibility for
   // checkpointId collisions.
   static final long SKIP_CHECKPOINT_THRESHOLD = Duration.ofSeconds(2).toMillis();
+  static final double LAGGING_PARTITION_FACTOR = 1.5;
   private static final long BACKOFF_INITIAL_DELAY_MS = 1000;
   private static final long BACKOFF_MAX_DELAY_MS = 10_000;
 
@@ -129,7 +130,10 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   }
 
   /**
-   * Acquires the earliest checkpoint and backup state from all partitions.
+   * Acquires the earliest checkpoint and backup state from all partitions. If a partition is
+   * detected as lagging behind (i.e. the spread between the earliest and latest partition timestamp
+   * exceeds the schedule interval), a {@link PartitionLaggingException} is thrown to trigger the
+   * backoff mechanism and delay the checkpoint/backup.
    *
    * @return The current state {@link CheckpointState} containing the earliest checkpoint
    *     timestamp(left) and earliest backup timestamp(right).
@@ -140,10 +144,16 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
         .getCheckpointState()
         .thenApplyAsync(
             response -> {
+              final var checkpointStats = timestampStats(response.getCheckpointStates());
+              final var backupStats = timestampStats(response.getBackupStates());
+
+              detectLaggingPartition(checkpointStats, checkpointSchedule);
+              detectLaggingPartition(backupStats, backupSchedule);
+
               final Instant minCheckpointTimestamp =
-                  minFromState(response.getCheckpointStates(), checkpointSchedule);
-              final Instant minBackupTimestamp =
-                  minFromState(response.getBackupStates(), backupSchedule);
+                  minFromStats(checkpointStats, checkpointSchedule);
+              final Instant minBackupTimestamp = minFromStats(backupStats, backupSchedule);
+
               return new CheckpointState(minCheckpointTimestamp, minBackupTimestamp);
             },
             this)
@@ -151,14 +161,43 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     return future;
   }
 
-  private Instant minFromState(
-      final Set<PartitionCheckpointState> states, final Schedule schedule) {
-    final var now = ActorClock.currentInstant();
+  private LongSummaryStatistics timestampStats(final Set<PartitionCheckpointState> states) {
     return states.stream()
-        .min(Comparator.comparingLong(PartitionCheckpointState::checkpointId))
-        .map(PartitionCheckpointState::checkpointTimestamp)
-        .map(Instant::ofEpochMilli)
-        .orElseGet(() -> schedule == null ? null : previousExecution(schedule, now));
+        .mapToLong(PartitionCheckpointState::checkpointTimestamp)
+        .summaryStatistics();
+  }
+
+  /**
+   * Detects whether any partition is lagging behind by comparing the spread (max - min) of
+   * checkpoint timestamps across partitions against the schedule interval. If the spread is greater
+   * than the double of interval, a partition is considered a lagging and a {@link
+   * PartitionLaggingException} is thrown to trigger the backoff.
+   */
+  private void detectLaggingPartition(final LongSummaryStatistics stats, final Schedule schedule) {
+    if (schedule == null || stats.getCount() < 2) {
+      return;
+    }
+
+    final var now = ActorClock.currentInstant();
+    final long spreadMs = stats.getMax() - stats.getMin();
+    final long intervalMs =
+        Duration.between(now, schedule.nextExecution(now).orElse(Instant.MAX)).toMillis();
+
+    if (spreadMs > intervalMs * LAGGING_PARTITION_FACTOR) {
+      LOG.warn(
+          "Detected lagging partition in states: spread {} ms exceeds interval {} ms. Delaying next execution.",
+          spreadMs,
+          intervalMs);
+      throw new PartitionLaggingException(spreadMs, intervalMs);
+    }
+  }
+
+  private Instant minFromStats(final LongSummaryStatistics stats, final Schedule schedule) {
+    if (stats.getCount() > 0) {
+      return Instant.ofEpochMilli(stats.getMin());
+    }
+    final var now = ActorClock.currentInstant();
+    return schedule == null ? null : previousExecution(schedule, now);
   }
 
   private ScheduleInstruction determineCheckpoint(final CheckpointState state) {
@@ -231,6 +270,14 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   static class CouldNotDetermineNextExecution extends RuntimeException {
     public CouldNotDetermineNextExecution(final Schedule schedule) {
       super("Could not determine next execution time for schedule: %s".formatted(schedule));
+    }
+  }
+
+  static class PartitionLaggingException extends RuntimeException {
+    public PartitionLaggingException(final long spreadMs, final long intervalMs) {
+      super(
+          "Partition lagging in states: spread %d ms exceeds interval %d ms"
+              .formatted(spreadMs, intervalMs));
     }
   }
 
