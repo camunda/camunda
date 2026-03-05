@@ -13834,10 +13834,10 @@ react-full-screen@^1.1.1:
   dependencies:
     fscreen "^1.0.2"
 
-react-grid-layout@^1.5.2:
-  version "1.5.2"
-  resolved "https://registry.yarnpkg.com/react-grid-layout/-/react-grid-layout-1.5.2.tgz#d5a6775446ce540c0df3985c41b5d64622fc6f87"
-  integrity sha512-vT7xmQqszTT+sQw/LfisrEO4le1EPNnSEMVHy6sBZyzS3yGkMywdOd+5iEFFwQwt0NSaGkxuRmYwa1JsP6OJdw==
+react-grid-layout@^2.0.0:
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/react-grid-layout/-/react-grid-layout-2.2.2.tgz#8fa1802ffafc21c5aeb087b75809acaac53071a4"
+  integrity sha512-yNo9pxQWoxHWRAwHGSVT4DEGELYPyQ7+q9lFclb5jcqeFzva63/2F72CryS/jiTIr/SBIlTaDdyjqH+ODg8oBw==
   dependencies:
     clsx "^2.1.1"
     fast-equals "^4.0.3"
