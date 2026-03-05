@@ -1,0 +1,78 @@
+{
+  "groups": [
+    {
+      "name": "camunda.process-test.judge",
+      "description": "Configuration for the AI judge used in agentic process test assertions."
+    },
+    {
+      "name": "camunda.process-test.judge.chat-model",
+      "description": "Configuration for the chat model used by the AI judge."
+    },
+    {
+      "name": "camunda.process-test.judge.chat-model.credentials",
+      "description": "AWS credentials for the Amazon Bedrock chat model provider."
+    }
+  ],
+  "properties": [
+    {
+      "name": "camunda.process-test.judge.threshold",
+      "description": "The confidence threshold for the AI judge to consider an assertion as passed.",
+      "defaultValue": 0.5
+    },
+    {
+      "name": "camunda.process-test.judge.custom-prompt",
+      "description": "A custom prompt to use for the AI judge instead of the default one."
+    },
+    {
+      "name": "camunda.process-test.judge.chat-model.provider",
+      "description": "The LLM provider to use for the AI judge. Supported providers: openai, anthropic, amazon-bedrock, openai-compatible."
+    },
+    {
+      "name": "camunda.process-test.judge.chat-model.model",
+      "description": "The model name to use for the AI judge (e.g. 'gpt-4o', 'claude-sonnet-4-20250514', 'us.anthropic.claude-sonnet-4-20250514-v1:0')."
+    },
+    {
+      "name": "camunda.process-test.judge.chat-model.api-key",
+      "description": "The API key for authenticating with the chat model provider."
+    },
+    {
+      "name": "camunda.process-test.judge.chat-model.base-url",
+      "description": "The base URL for the chat model API. Required for the 'openai-compatible' provider."
+    },
+    {
+      "name": "camunda.process-test.judge.chat-model.region",
+      "description": "The AWS region for the Amazon Bedrock provider (e.g. 'us-east-1')."
+    },
+    {
+      "name": "camunda.process-test.judge.chat-model.credentials.access-key",
+      "description": "The AWS access key for authenticating with Amazon Bedrock."
+    },
+    {
+      "name": "camunda.process-test.judge.chat-model.credentials.secret-key",
+      "description": "The AWS secret key for authenticating with Amazon Bedrock."
+    }
+  ],
+  "hints": [
+    {
+      "name": "camunda.process-test.judge.chat-model.provider",
+      "values": [
+        {
+          "value": "openai",
+          "description": "Use OpenAI models (requires api-key and model)."
+        },
+        {
+          "value": "anthropic",
+          "description": "Use Anthropic models (requires api-key and model)."
+        },
+        {
+          "value": "amazon-bedrock",
+          "description": "Use Amazon Bedrock models (requires model; optionally credentials or api-key)."
+        },
+        {
+          "value": "openai-compatible",
+          "description": "Use an OpenAI-compatible API (requires base-url and model)."
+        }
+      ]
+    }
+  ]
+}

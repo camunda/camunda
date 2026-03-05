@@ -25,6 +25,7 @@ import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimePr
 import io.camunda.process.test.impl.runtime.properties.CamundaProcessTestClientProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.CoverageReportProperties;
+import io.camunda.process.test.impl.runtime.properties.JudgeProperties;
 import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeProperties;
 import io.camunda.process.test.impl.runtime.util.VersionedPropertiesUtil;
 import java.io.IOException;
@@ -55,8 +56,10 @@ public final class ContainerRuntimePropertiesUtil {
   private final ConnectorsContainerRuntimeProperties connectorsContainerRuntimeProperties;
   private final RemoteRuntimeProperties remoteRuntimeProperties;
   private final CoverageReportProperties coverageReportProperties;
+  private final JudgeProperties judgeProperties;
   private final CamundaProcessTestClientProperties camundaProcessTestClientProperties;
 
+  private final Properties rawProperties;
   private final CamundaProcessTestRuntimeMode runtimeMode;
   private final boolean multiTenancyEnabled;
 
@@ -65,6 +68,7 @@ public final class ContainerRuntimePropertiesUtil {
   public ContainerRuntimePropertiesUtil(
       final Properties properties, final GitPropertiesUtil gitProperties) {
 
+    rawProperties = properties;
     final VersionedPropertiesUtil versionedPropsReader = new VersionedPropertiesUtil(gitProperties);
 
     elasticsearchVersion =
@@ -79,6 +83,7 @@ public final class ContainerRuntimePropertiesUtil {
         new ConnectorsContainerRuntimeProperties(properties, versionedPropsReader);
     remoteRuntimeProperties = new RemoteRuntimeProperties(properties);
     coverageReportProperties = new CoverageReportProperties(properties);
+    judgeProperties = new JudgeProperties(properties);
     camundaProcessTestClientProperties = new CamundaProcessTestClientProperties(properties);
 
     runtimeMode =
@@ -255,5 +260,15 @@ public final class ContainerRuntimePropertiesUtil {
 
   public CamundaProcessTestClientProperties getCamundaClientProperties() {
     return camundaProcessTestClientProperties;
+  }
+
+  public JudgeProperties getJudgeProperties() {
+    return judgeProperties;
+  }
+
+  public Properties getRawProperties() {
+    final Properties copy = new Properties();
+    copy.putAll(rawProperties);
+    return copy;
   }
 }
