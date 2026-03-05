@@ -83,8 +83,9 @@ paths:
 components:
   schemas:
     UsageMetricsResponse:
-      required: 
+      required:
         - tenants
+        - activeTenants
       type: object
       allOf:
         - $ref: '#/components/schemas/UsageMetricsResponseItem'
@@ -104,6 +105,10 @@ components:
               - $ref: '#/components/schemas/UsageMetricsResponseItem'
 
     UsageMetricsResponseItem:
+      required:
+        - processInstances
+        - decisionInstances
+        - assignees
       type: object
       properties:
         processInstances:
