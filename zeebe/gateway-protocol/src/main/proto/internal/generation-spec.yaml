@@ -10746,7 +10746,7 @@ components:
           type: string
         schema:
           description: The form content.
-          type: object
+          type: string
         version:
           description: The version of the the deployed form.
           type: integer
