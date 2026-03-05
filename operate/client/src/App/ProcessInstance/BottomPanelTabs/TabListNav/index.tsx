@@ -7,7 +7,7 @@
  */
 
 import {useLocation, useNavigate, type Path} from 'react-router-dom';
-import cn from 'classnames';
+import {cn} from './cn';
 import {Nav, Button} from './styled';
 
 type Props = {
