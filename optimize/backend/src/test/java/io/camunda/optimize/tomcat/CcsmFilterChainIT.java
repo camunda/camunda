@@ -35,6 +35,7 @@ import java.net.URI;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -53,6 +54,7 @@ class CcsmFilterChainIT extends FilterIntegrationTestBase {
 
     @Bean("configurationService")
     @Primary
+    @ConditionalOnMissingBean(ConfigurationService.class)
     public ConfigurationService ccsmTestConfigurationService() {
       final ConfigurationService config =
           ConfigurationServiceBuilder.createConfiguration()
@@ -87,12 +89,14 @@ class CcsmFilterChainIT extends FilterIntegrationTestBase {
      */
     @Bean
     @Primary
+    @ConditionalOnMissingBean(AuthenticationManager.class)
     public AuthenticationManager mockAuthenticationManager() {
       return mock(AuthenticationManager.class);
     }
 
     @Bean
     @Primary
+    @ConditionalOnMissingBean(Identity.class)
     public Identity mockIdentity() {
       final Identity identity = mock(Identity.class);
       final Authentication auth = mock(Authentication.class);
@@ -111,6 +115,7 @@ class CcsmFilterChainIT extends FilterIntegrationTestBase {
 
     @Bean
     @Primary
+    @ConditionalOnMissingBean(SessionService.class)
     public SessionService mockSessionService() {
       final SessionService sessionService = mock(SessionService.class);
       when(sessionService.getRequestUserOrFailNotAuthorized(any())).thenReturn("test");

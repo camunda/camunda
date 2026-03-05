@@ -27,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -125,6 +126,7 @@ public class SaasFilterChainIT {
 
     @Bean("configurationService")
     @Primary
+    @ConditionalOnMissingBean(ConfigurationService.class)
     public ConfigurationService saasTestConfigurationService() {
       final ConfigurationService config =
           ConfigurationServiceBuilder.createConfiguration()

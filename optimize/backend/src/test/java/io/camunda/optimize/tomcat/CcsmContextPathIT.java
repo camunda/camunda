@@ -27,6 +27,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilde
 import io.camunda.optimize.tomcat.filter.support.FilterIntegrationTestBase;
 import java.net.URI;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -71,6 +72,7 @@ class CcsmContextPathIT extends FilterIntegrationTestBase {
 
     @Bean("configurationService")
     @Primary
+    @ConditionalOnMissingBean(ConfigurationService.class)
     public ConfigurationService ccsmTestConfigurationService() {
       final ConfigurationService config =
           ConfigurationServiceBuilder.createConfiguration()
@@ -89,12 +91,14 @@ class CcsmContextPathIT extends FilterIntegrationTestBase {
 
     @Bean
     @Primary
+    @ConditionalOnMissingBean(AuthenticationManager.class)
     public AuthenticationManager mockAuthenticationManager() {
       return mock(AuthenticationManager.class);
     }
 
     @Bean
     @Primary
+    @ConditionalOnMissingBean(Identity.class)
     public Identity mockIdentity() {
       final Identity identity = mock(Identity.class);
       final Authentication auth = mock(Authentication.class);
