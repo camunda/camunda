@@ -15,9 +15,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
@@ -566,5 +568,36 @@ public final class ElementInstanceStateTest {
     assertThat(record.getVersion()).isEqualTo(1);
     assertThat(record.getProcessDefinitionKey()).isEqualTo(2);
     assertThat(record.getBpmnElementType()).isEqualTo(BpmnElementType.START_EVENT);
+  }
+
+  @Test
+  public void shouldRemoveRuntimeInstructionsForProcessInstance() {
+    // given
+    final long processInstanceKey = 100L;
+    final var instruction =
+        new ProcessInstanceCreationRuntimeInstruction()
+            .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+            .setAfterElementId("taskA");
+    elementInstanceState.addRuntimeInstructions(processInstanceKey, List.of(instruction));
+
+    // verify instructions exist
+    assertThat(elementInstanceState.getRuntimeInstructionsForElementId(processInstanceKey, "taskA"))
+        .isNotEmpty();
+
+    // when
+    elementInstanceState.removeRuntimeInstructions(processInstanceKey);
+
+    // then
+    assertThat(elementInstanceState.getRuntimeInstructionsForElementId(processInstanceKey, "taskA"))
+        .isEmpty();
+  }
+
+  @Test
+  public void shouldNotFailWhenRemovingNonExistentRuntimeInstructions() {
+    // given - no runtime instructions exist for this key
+    final long processInstanceKey = 999L;
+
+    // when/then - should not throw
+    elementInstanceState.removeRuntimeInstructions(processInstanceKey);
   }
 }
