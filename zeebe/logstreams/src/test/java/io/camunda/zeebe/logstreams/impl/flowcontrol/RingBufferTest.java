@@ -10,7 +10,8 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
+import com.netflix.concurrency.limits.Limiter.Listener;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetricsImpl;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -24,7 +25,7 @@ import org.junit.jupiter.api.Test;
 
 final class RingBufferTest {
 
-  private static final LogStreamMetrics METRICS = new LogStreamMetrics(new SimpleMeterRegistry());
+  private static final LogStreamMetricsImpl METRICS = new LogStreamMetricsImpl(new SimpleMeterRegistry());
 
   /** Creates a new InFlightEntry. Position is set by {@link RingBuffer#put}. */
   private static InFlightEntry newEntry() {
