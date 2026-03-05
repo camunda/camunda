@@ -32,7 +32,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-@CompatibilityTest
+@CompatibilityTest(envVars = "ZEEBE_BROKER_EXPERIMENTAL_ENGINE_JOBMETRICS_EXPORTINTERVAL=PT2S")
 public class JobTypeStatisticsIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
