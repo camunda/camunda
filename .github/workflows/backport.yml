@@ -49,6 +49,7 @@ jobs:
             relates to ${issue_refs}
 
           add_author_as_assignee: true
+          add_author_as_reviewer: true
           experimental: >
             {
               "conflict_resolution": "draft_commit_conflicts"
