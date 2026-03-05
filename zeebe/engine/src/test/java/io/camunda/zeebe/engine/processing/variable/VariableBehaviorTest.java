@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.engine.util.RecordingTypedEventWriter;
 import io.camunda.zeebe.engine.util.RecordingTypedEventWriter.RecordedEvent;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -38,6 +39,8 @@ import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @ExtendWith(ProcessingStateExtension.class)
 final class VariableBehaviorTest {
@@ -711,6 +714,93 @@ final class VariableBehaviorTest {
                   .hasBpmnProcessId("process")
                   .hasTenantId(tenantId);
             });
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldMergeDocumentWithVariableSource(final boolean isApiSource) {
+    // given
+    final long processDefinitionKey = 1;
+    final long rootScopeKey = 1;
+    final long parentScopeKey = 2;
+    final long childScopeKey = 3;
+    final long elementInstanceKey = 42;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    final Map<String, Object> document = Map.of("foo", "bar");
+    state.createScope(rootScopeKey, VariableState.NO_PARENT);
+    state.createScope(parentScopeKey, rootScopeKey);
+    state.createScope(childScopeKey, parentScopeKey);
+    final var variableSource =
+        isApiSource ? VariableSourceRecord.api() : VariableSourceRecord.none();
+    final var behavior = this.behavior.withVariableSource(variableSource);
+
+    // when
+    behavior.mergeDocument(
+        childScopeKey,
+        processDefinitionKey,
+        rootScopeKey,
+        rootScopeKey,
+        bpmnProcessId,
+        tenantId,
+        MsgPackUtil.asMsgPack(document));
+
+    // then
+    final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
+    assertThat(events).hasSize(1);
+    final var event = events.getFirst();
+    assertThat(event.intent).isEqualTo(VariableIntent.CREATED);
+    VariableRecordValueAssert.assertThat(event.value)
+        .hasName("foo")
+        .hasValue("\"bar\"")
+        .hasScopeKey(rootScopeKey)
+        .hasProcessDefinitionKey(processDefinitionKey)
+        .hasProcessInstanceKey(rootScopeKey)
+        .hasBpmnProcessId("process")
+        .hasSource(variableSource);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldMergeLocalDocumentWithVariableSource(final boolean isApiSource) {
+    // given
+    final long processDefinitionKey = 1;
+    final long parentScopeKey = 1;
+    final long childScopeKey = 2;
+    final long rootKey = 3;
+    final DirectBuffer bpmnProcessId = BufferUtil.wrapString("process");
+    final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+    final Map<String, Object> document = Map.of("foo", "bar");
+    state.createScope(parentScopeKey, VariableState.NO_PARENT);
+    state.createScope(childScopeKey, parentScopeKey);
+    final var variableSource =
+        isApiSource ? VariableSourceRecord.api() : VariableSourceRecord.none();
+    final var behavior = this.behavior.withVariableSource(variableSource);
+
+    // when
+    behavior.mergeLocalDocument(
+        childScopeKey,
+        processDefinitionKey,
+        parentScopeKey,
+        rootKey,
+        bpmnProcessId,
+        tenantId,
+        MsgPackUtil.asMsgPack(document));
+
+    // then
+    final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
+    assertThat(events).hasSize(1);
+    final var event = events.getFirst();
+    assertThat(event.intent).isEqualTo(VariableIntent.CREATED);
+    VariableRecordValueAssert.assertThat(event.value)
+        .hasName("foo")
+        .hasValue("\"bar\"")
+        .hasScopeKey(childScopeKey)
+        .hasProcessDefinitionKey(processDefinitionKey)
+        .hasProcessInstanceKey(parentScopeKey)
+        .hasBpmnProcessId("process")
+        .hasTenantId(tenantId)
+        .hasSource(variableSource);
   }
 
   @SuppressWarnings("unchecked")

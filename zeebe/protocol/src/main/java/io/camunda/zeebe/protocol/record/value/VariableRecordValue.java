@@ -80,4 +80,11 @@ public interface VariableRecordValue
    * @return the key of the root process instance, or {@code -1} if not set
    */
   long getRootProcessInstanceKey();
+
+  /**
+   * @return the source of the variable operation, e.g. {@code VariableOperationType.API} if the
+   *     variable was triggered through the API, or {@code VariableOperationType.UNKNOWN} if the
+   *     source is unknown.
+   */
+  VariableSourceValue getSource();
 }
