@@ -769,6 +769,7 @@ components:
         description:
           type: string
           description: The description of the tenant.
+          nullable: true
           example: Customer Service department business processes
       required:
         - tenantId
@@ -798,6 +799,7 @@ components:
           description: The name of the tenant.
         description:
           type: string
+          nullable: true
           description: The description of the tenant.
       required:
         - tenantId
@@ -817,6 +819,7 @@ components:
         description:
           type: string
           description: The tenant description.
+          nullable: true
           example: Customer Service department business processes
       required:
         - tenantId
