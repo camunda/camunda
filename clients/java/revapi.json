@@ -56,6 +56,13 @@
           "code": "java.method.removed",
           "old": "method io.camunda.client.api.search.filter.AuthorizationFilter io.camunda.client.api.search.filter.AuthorizationFilter::resourceIds(java.util.List<java.lang.String>)",
           "justification": "Updated the parameter type from List to Collection to make API more flexible. This remains backward-compatible for users, as any List already implements Collection and callers can continue passing the same arguments."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChangedCovariantly",
+          "old": "method java.lang.Object io.camunda.client.api.search.response.Form::getSchema()",
+          "new": "method java.lang.String io.camunda.client.api.search.response.Form::getSchema()",
+          "justification": "This method was previously returning Object, which was a bug. Changing it to String is a more accurate return type and remains backward-compatible, as callers can still treat the returned value as an Object if needed."
         }
       ]
     }
