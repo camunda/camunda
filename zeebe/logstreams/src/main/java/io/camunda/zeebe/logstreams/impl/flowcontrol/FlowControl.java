@@ -85,7 +85,7 @@ public final class FlowControl implements AppendListener {
 
   private final LogStreamMetrics metrics;
   @Nullable private RateLimit writeRateLimit;
-  private Limit requestLimit;
+  @Nullable private Limit requestLimit;
   private Limiter<Intent> processingLimiter;
   @Nullable private RateLimiter writeRateLimiter;
   private final RateMeasurement exportingRate =
@@ -94,7 +94,7 @@ public final class FlowControl implements AppendListener {
   private final RateMeasurement writeRate =
       new RateMeasurement(
           ActorClock::currentTimeMillis, Duration.ofMinutes(5), Duration.ofSeconds(10));
-  private RateLimitThrottle writeRateThrottle;
+  @Nullable private RateLimitThrottle writeRateThrottle;
   private volatile long lastWrittenPosition = -1;
   private volatile long lastExportedPosition;
 
@@ -111,8 +111,8 @@ public final class FlowControl implements AppendListener {
 
   public FlowControl(
       final LogStreamMetrics metrics,
-      final Limit requestLimit,
-      final RateLimit writeRateLimit,
+      final @Nullable Limit requestLimit,
+      final @Nullable RateLimit writeRateLimit,
       final int inFlightCapacity) {
     this.metrics = metrics;
     inFlight = new RingBuffer(inFlightCapacity);
@@ -196,7 +196,10 @@ public final class FlowControl implements AppendListener {
     if (inFlightEntry != null) {
       inFlightEntry.onWrite();
     }
-    if (writeRate.observe(highestPosition) && writeRateLimit != null && writeRateLimit.enabled()) {
+    if (writeRate.observe(highestPosition)
+        && writeRateLimit != null
+        && writeRateLimit.enabled()
+        && writeRateLimiter != null) {
       metrics.setPartitionLoad(
           Math.min((float) (writeRate.rate() / writeRateLimiter.getRate() * 100L), 100));
     }
@@ -238,11 +241,11 @@ public final class FlowControl implements AppendListener {
     }
   }
 
-  public Limit getRequestLimit() {
+  public @Nullable Limit getRequestLimit() {
     return requestLimit;
   }
 
-  public void setRequestLimit(final Limit requestLimit) {
+  public void setRequestLimit(final @Nullable Limit requestLimit) {
     this.requestLimit = requestLimit;
     processingLimiter =
         requestLimit != null
@@ -250,11 +253,11 @@ public final class FlowControl implements AppendListener {
             : new NoopLimiter<>();
   }
 
-  public RateLimit getWriteRateLimit() {
+  public @Nullable RateLimit getWriteRateLimit() {
     return writeRateLimit;
   }
 
-  public void setWriteRateLimit(final RateLimit writeRateLimit) {
+  public void setWriteRateLimit(final @Nullable RateLimit writeRateLimit) {
     this.writeRateLimit = writeRateLimit;
     writeRateLimiter = writeRateLimit == null ? null : writeRateLimit.limiter();
     writeRateThrottle =
