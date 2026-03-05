@@ -22,7 +22,6 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 public class CamundaProcessTestRuntimeDefaults {
 
@@ -99,5 +98,4 @@ public class CamundaProcessTestRuntimeDefaults {
       PROPERTIES_UTIL.getCoverageReportProperties().getCoverageExcludedProcesses();
 
   public static final JudgeProperties JUDGE_PROPERTIES = PROPERTIES_UTIL.getJudgeProperties();
-  public static final Properties RAW_PROPERTIES = PROPERTIES_UTIL.getRawProperties();
 }
