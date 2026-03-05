@@ -187,6 +187,7 @@ test.describe('task details page', () => {
       name: 'zeebeVar',
       value: '{"Name":"John","Age":20}',
     });
+    await sleep(200);
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
     await taskPanelPage.openTask('JobWorker_user_task');
@@ -199,6 +200,7 @@ test.describe('task details page', () => {
       name: 'jobWorkerVar',
       value: '{"Name":"John","Age":22}',
     });
+    await sleep(200);
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
@@ -424,6 +426,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.assertFieldValue('Number', '2');
     await taskDetailsPage.clickDecrementButton();
     await taskDetailsPage.assertFieldValue('Number', '1');
+    await sleep(200);
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
