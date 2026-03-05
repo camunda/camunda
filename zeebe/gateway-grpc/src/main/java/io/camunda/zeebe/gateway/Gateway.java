@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway;
 
 import com.google.rpc.Code;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -210,14 +209,13 @@ public final class Gateway implements CloseableSilently {
       final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
       final StreamJobsHandler streamJobsHandler) {
     final NetworkCfg network = gatewayCfg.getNetwork();
-    final MultiTenancyConfiguration multiTenancy = securityConfiguration.getMultiTenancy();
-
     final var serverBuilder = applyNetworkConfig(network);
     applyExecutorConfiguration(serverBuilder);
     applySecurityConfiguration(serverBuilder);
 
     final var endpointManager =
-        new EndpointManager(brokerClient, activateJobsHandler, streamJobsHandler, multiTenancy);
+        new EndpointManager(
+            brokerClient, activateJobsHandler, streamJobsHandler, securityConfiguration);
     final var gatewayGrpcService = new GatewayGrpcService(endpointManager);
     return buildServer(serverBuilder, gatewayGrpcService);
   }

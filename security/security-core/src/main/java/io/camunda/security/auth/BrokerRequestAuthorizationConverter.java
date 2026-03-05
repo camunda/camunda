@@ -24,10 +24,14 @@ public class BrokerRequestAuthorizationConverter {
 
   private final boolean camundaGroupsEnabled;
   private final boolean camundaUsersEnabled;
+  private final boolean authorizationEmbeddingEnabled;
 
   public BrokerRequestAuthorizationConverter(final SecurityConfiguration securityConfiguration) {
     camundaGroupsEnabled = isCamundaGroupsEnabled(securityConfiguration);
     camundaUsersEnabled = isCamundaUsersEnabled(securityConfiguration);
+    authorizationEmbeddingEnabled =
+        securityConfiguration.getAuthorizations().isEnabled()
+            || securityConfiguration.getMultiTenancy().isChecksEnabled();
   }
 
   protected boolean isCamundaGroupsEnabled(final SecurityConfiguration securityConfiguration) {
@@ -42,6 +46,9 @@ public class BrokerRequestAuthorizationConverter {
   }
 
   public Map<String, Object> convert(final CamundaAuthentication authentication) {
+    if (!authorizationEmbeddingEnabled) {
+      return Map.of();
+    }
 
     final var authorization = new HashMap<String, Object>();
     authorization.put(IS_CAMUNDA_GROUPS_ENABLED, camundaGroupsEnabled);

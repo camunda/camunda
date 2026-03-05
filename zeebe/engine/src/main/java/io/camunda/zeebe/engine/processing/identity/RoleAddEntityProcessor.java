@@ -35,8 +35,8 @@ import java.util.Map;
 
 public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
 
-  public static final String IS_CAMUNDA_USERS_ENABLED = "is_camunda_users_enabled";
-  public static final String IS_CAMUNDA_GROUPS_ENABLED = "is_camunda_groups_enabled";
+  private static final String IS_CAMUNDA_USERS_ENABLED = "is_camunda_users_enabled";
+  private static final String IS_CAMUNDA_GROUPS_ENABLED = "is_camunda_groups_enabled";
   public static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
       "Expected to update role with ID '%s', but a role with this ID does not exist.";
   public static final String ENTITY_NOT_FOUND_ERROR_MESSAGE =
@@ -102,7 +102,8 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(command.getAuthorizations(), entityType, entityId)) {
+    if (!command.isInternalCommand()
+        && !isEntityPresent(command.getAuthorizations(), entityType, entityId)) {
       final var errorMessage =
           ENTITY_NOT_FOUND_ERROR_MESSAGE.formatted(entityId, entityType, record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
@@ -147,11 +148,14 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       final Map<String, Object> authorizations,
       final EntityType entityType,
       final String entityId) {
-
-    final boolean localUserEnabled =
-        (boolean) authorizations.getOrDefault(IS_CAMUNDA_USERS_ENABLED, false);
     final boolean localGroupEnabled =
-        (boolean) authorizations.getOrDefault(IS_CAMUNDA_GROUPS_ENABLED, false);
+        (boolean)
+            authorizations.getOrDefault(
+                IS_CAMUNDA_GROUPS_ENABLED, authCheckBehavior.isCamundaGroupsEnabled());
+    final boolean localUserEnabled =
+        (boolean)
+            authorizations.getOrDefault(
+                IS_CAMUNDA_USERS_ENABLED, authCheckBehavior.isCamundaUsersEnabled());
     return switch (entityType) {
       case GROUP -> !localGroupEnabled || groupState.get(entityId).isPresent();
       case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();

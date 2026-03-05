@@ -8,8 +8,6 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.GROUP_DOES_NOT_EXIST_ERROR_MESSAGE;
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.IS_CAMUNDA_GROUPS_ENABLED;
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.IS_CAMUNDA_USERS_ENABLED;
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE;
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.ROLE_DOES_NOT_EXIST_ERROR_MESSAGE;
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.USER_DOES_NOT_EXIST_ERROR_MESSAGE;
@@ -66,7 +64,8 @@ class AuthorizationEntityValidatorTest {
     when(processingState.getGroupState()).thenReturn(groupState);
     when(processingState.getRoleState()).thenReturn(roleState);
 
-    checker = new AuthorizationEntityValidator(processingState);
+    checker = new AuthorizationEntityValidator(processingState, true, true);
+    lenient().when(command.getAuthorizations()).thenReturn(Map.of());
     lenient().when(userState.getUser("user1")).thenReturn(Optional.of(mock(PersistedUser.class)));
     lenient().when(roleState.getRole("role1")).thenReturn(Optional.of(mock(PersistedRole.class)));
     lenient().when(groupState.get("group1")).thenReturn(Optional.of(mock(PersistedGroup.class)));
@@ -87,19 +86,15 @@ class AuthorizationEntityValidatorTest {
       final boolean localGroupEnabled) {
 
     // given
+    final var testChecker =
+        new AuthorizationEntityValidator(processingState, localGroupEnabled, localUserEnabled);
     final AuthorizationRecord record =
         createAuthorizationRecord(ownerType, ownerId, resourceType, resourceId);
 
     when(command.getValue()).thenReturn(record);
-    when(command.getAuthorizations())
-        .thenReturn(
-            Map.of(
-                IS_CAMUNDA_USERS_ENABLED,
-                localUserEnabled,
-                IS_CAMUNDA_GROUPS_ENABLED,
-                localGroupEnabled));
     // when
-    final Either<Rejection, AuthorizationRecord> result = checker.ownerAndResourceExists(command);
+    final Either<Rejection, AuthorizationRecord> result =
+        testChecker.ownerAndResourceExists(command);
 
     // then
     assertThat(result.isRight()).isTrue();
@@ -132,20 +127,16 @@ class AuthorizationEntityValidatorTest {
       final String expectedErrorMessage) {
 
     // given
+    final var testChecker =
+        new AuthorizationEntityValidator(processingState, localGroupEnabled, localUserEnabled);
     final AuthorizationRecord record =
         createAuthorizationRecord(ownerType, ownerId, resourceType, resourceId);
 
     when(command.getValue()).thenReturn(record);
-    when(command.getAuthorizations())
-        .thenReturn(
-            Map.of(
-                IS_CAMUNDA_USERS_ENABLED,
-                localUserEnabled,
-                IS_CAMUNDA_GROUPS_ENABLED,
-                localGroupEnabled));
 
     // when
-    final Either<Rejection, AuthorizationRecord> result = checker.ownerAndResourceExists(command);
+    final Either<Rejection, AuthorizationRecord> result =
+        testChecker.ownerAndResourceExists(command);
 
     // then
     assertThat(result.isLeft()).isTrue();
