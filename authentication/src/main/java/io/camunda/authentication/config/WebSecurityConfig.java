@@ -79,6 +79,7 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.ContentTypeOptionsConfig;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.HstsConfig;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer.ProtectedResourceMetadataConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.config.observation.SecurityObservationSettings;
 import org.springframework.security.core.Authentication;
@@ -864,6 +865,7 @@ public class WebSecurityConfig {
     public SecurityFilterChain oidcApiSecurity(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
+        final ClientRegistrationRepository clientRegistrationRepository,
         final JwtDecoder jwtDecoder,
         final SecurityConfiguration securityConfiguration,
         final CookieCsrfTokenRepository csrfTokenRepository,
@@ -903,6 +905,9 @@ public class WebSecurityConfig {
                   oauth2 ->
                       oauth2
                           .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder))
+                          .protectedResourceMetadata(
+                              oauthProtectedResourceMetadataCustomizer(
+                                  clientRegistrationRepository))
                           .withObjectPostProcessor(postProcessBearerTokenFailureHandler()))
               .oauth2Login(AbstractHttpConfigurer::disable)
               .oidcLogout(AbstractHttpConfigurer::disable)
@@ -988,6 +993,9 @@ public class WebSecurityConfig {
                   oauth2 ->
                       oauth2
                           .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder))
+                          .protectedResourceMetadata(
+                              oauthProtectedResourceMetadataCustomizer(
+                                  clientRegistrationRepository))
                           .withObjectPostProcessor(postProcessBearerTokenFailureHandler()))
               .oauth2Login(
                   oauthLoginConfigurer -> {
@@ -1024,6 +1032,21 @@ public class WebSecurityConfig {
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
       return filterChainBuilder.build();
+    }
+
+    private Customizer<ProtectedResourceMetadataConfigurer>
+        oauthProtectedResourceMetadataCustomizer(
+            final ClientRegistrationRepository clientRegistrationRepository) {
+      final var issuerUris =
+          StreamSupport.stream(
+                  ((Iterable<ClientRegistration>) clientRegistrationRepository).spliterator(),
+                  false)
+              .map(clientRegistration -> clientRegistration.getProviderDetails().getIssuerUri())
+              .toList();
+
+      return prmConfigurer ->
+          prmConfigurer.protectedResourceMetadataCustomizer(
+              prmBuilder -> issuerUris.forEach(prmBuilder::authorizationServer));
     }
 
     private OAuth2AuthorizationRequestResolver authorizationRequestResolver(
