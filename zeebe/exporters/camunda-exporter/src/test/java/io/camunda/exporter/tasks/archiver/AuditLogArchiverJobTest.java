@@ -16,6 +16,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -26,6 +27,7 @@ public class AuditLogArchiverJobTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(AuditLogArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
+  private final Semaphore reindexSemaphore = new Semaphore(Integer.MAX_VALUE);
 
   private final NoopAuditLogArchiverRepository auditLogArchiverRepository =
       new NoopAuditLogArchiverRepository();
@@ -40,7 +42,8 @@ public class AuditLogArchiverJobTest {
           auditLogTemplate,
           metrics,
           LOGGER,
-          executor);
+          executor,
+          reindexSemaphore);
 
   @AfterEach
   void cleanUp() {

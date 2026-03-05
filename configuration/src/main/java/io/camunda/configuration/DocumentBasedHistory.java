@@ -25,6 +25,7 @@ public class DocumentBasedHistory {
   private static final String DEFAULT_HISTORY_ROLLOVER_INTERVAL = "1d";
   private static final int DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE = 100;
   private static final String DEFAULT_HISTORY_WAIT_PERIOD_BEFORE_ARCHIVING = "1h";
+  private static final int DEFAULT_HISTORY_MAX_PARALLEL_ARCHIVER_REINDEX_TASKS = 5;
   private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
       Map.of(
           "process-instance-enabled",
@@ -70,6 +71,9 @@ public class DocumentBasedHistory {
 
   /** Maximum millisecond interval between archiver runs due to failure backoffs */
   private Duration maxDelayBetweenRuns = DEFAULT_HISTORY_MAX_DELAY_BETWEEN_RUNS;
+
+  /** Maximum archiver reindex tasks per partition (set `-1` for unlimited with caution) */
+  private int maxParallelArchiverReindexTasks = DEFAULT_HISTORY_MAX_PARALLEL_ARCHIVER_REINDEX_TASKS;
 
   /** Defines the name of the created and applied ILM policy. */
   private String policyName = DEFAULT_HISTORY_POLICY_NAME;
@@ -185,6 +189,14 @@ public class DocumentBasedHistory {
 
   public void setMaxDelayBetweenRuns(final Duration maxDelayBetweenRuns) {
     this.maxDelayBetweenRuns = maxDelayBetweenRuns;
+  }
+
+  public int getMaxParallelArchiverReindexTasks() {
+    return maxParallelArchiverReindexTasks;
+  }
+
+  public void setMaxParallelArchiverReindexTasks(final int maxParallelArchiverReindexTasks) {
+    this.maxParallelArchiverReindexTasks = maxParallelArchiverReindexTasks;
   }
 
   public String getPolicyName() {

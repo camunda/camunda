@@ -19,6 +19,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
       LoggerFactory.getLogger(StandaloneDecisionArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
+  private final Semaphore reindexSemaphore = new Semaphore(Integer.MAX_VALUE);
 
   private final TestRepository repository = new TestRepository();
   private final DecisionInstanceTemplate decisionInstanceTemplate =
@@ -47,6 +49,7 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
           metrics,
           LOGGER,
           executor,
+          reindexSemaphore,
           List.of(auditLogTemplate));
 
   @BeforeEach
@@ -80,7 +83,13 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
     // given
     final StandaloneDecisionArchiverJob standaloneDecisionArchiverJob =
         new StandaloneDecisionArchiverJob(
-            repository, decisionInstanceTemplate, metrics, LOGGER, executor, List.of());
+            repository,
+            decisionInstanceTemplate,
+            metrics,
+            LOGGER,
+            executor,
+            reindexSemaphore,
+            List.of());
 
     // when
     final int count = standaloneDecisionArchiverJob.execute().toCompletableFuture().join();
@@ -149,7 +158,13 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
     final var dependant = new WeirdlyNamedDependant();
     final var job =
         new StandaloneDecisionArchiverJob(
-            repository, decisionInstanceTemplate, metrics, LOGGER, executor, List.of(dependant));
+            repository,
+            decisionInstanceTemplate,
+            metrics,
+            LOGGER,
+            executor,
+            reindexSemaphore,
+            List.of(dependant));
     repository.batch = new BasicArchiveBatch("2024-01-01", List.of("1", "2"));
 
     // when

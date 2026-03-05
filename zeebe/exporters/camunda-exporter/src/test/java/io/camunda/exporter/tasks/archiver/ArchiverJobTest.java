@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ final class ArchiverJobTest {
   private static final String ID_FIELD_NAME = "id-field";
 
   private final Executor executor = Runnable::run;
+  private final Semaphore reindexSemaphore = new Semaphore(Integer.MAX_VALUE);
 
   private final TestRepository repository = new TestRepository();
   private final CamundaExporterMetrics metrics = mock(CamundaExporterMetrics.class);
@@ -47,7 +49,7 @@ final class ArchiverJobTest {
 
   private final IdxTemplateArchiver job =
       new IdxTemplateArchiver(
-          repository, metrics, LOGGER, executor, recordArchiving, recordArchived);
+          repository, metrics, LOGGER, executor, reindexSemaphore, recordArchiving, recordArchived);
 
   @Test
   void shouldReturnZeroIfNoBatchGiven() {
@@ -118,6 +120,7 @@ final class ArchiverJobTest {
         final CamundaExporterMetrics exporterMetrics,
         final Logger logger,
         final Executor executor,
+        final Semaphore reindexSemaphore,
         final Consumer<Integer> recordArchivingMetric,
         final Consumer<Integer> recordArchivedMetric) {
       super(
@@ -125,6 +128,7 @@ final class ArchiverJobTest {
           exporterMetrics,
           logger,
           executor,
+          reindexSemaphore,
           recordArchivingMetric,
           recordArchivedMetric);
       indexTemplateDescriptor = mock(IndexTemplateDescriptor.class);

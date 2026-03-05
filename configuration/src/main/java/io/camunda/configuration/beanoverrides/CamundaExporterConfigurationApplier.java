@@ -151,6 +151,8 @@ public final class CamundaExporterConfigurationApplier {
     target.setRolloverInterval(source.getHistory().getRolloverInterval());
     target.setRolloverBatchSize(source.getHistory().getRolloverBatchSize());
     target.setWaitPeriodBeforeArchiving(source.getHistory().getWaitPeriodBeforeArchiving());
+    target.setMaxParallelArchiverReindexTasks(
+        source.getHistory().getMaxParallelArchiverReindexTasks());
     target.setDelayBetweenRuns(
         Math.toIntExact(source.getHistory().getDelayBetweenRuns().toMillis()));
     target.setMaxDelayBetweenRuns(
