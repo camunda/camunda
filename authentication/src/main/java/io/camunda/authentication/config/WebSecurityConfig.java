@@ -631,9 +631,14 @@ public class WebSecurityConfig {
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
         final TokenClaimsConverter tokenClaimsConverter,
-        final HttpServletRequest request) {
+        final HttpServletRequest request,
+        final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
       return new OidcUserAuthenticationConverter(
-          authorizedClientRepository, oidcAccessTokenDecoderFactory, tokenClaimsConverter, request);
+          authorizedClientRepository,
+          oidcAccessTokenDecoderFactory,
+          tokenClaimsConverter,
+          request,
+          buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository));
     }
 
     @Bean
@@ -718,18 +723,27 @@ public class WebSecurityConfig {
     @Bean
     public JwtDecoder jwtDecoder(
         final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
-        final ClientRegistrationRepository clientRegistrationRepository) {
+        final ClientRegistrationRepository clientRegistrationRepository,
+        final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
       final var repository = (Iterable<ClientRegistration>) clientRegistrationRepository;
       final var clientRegistrations =
           StreamSupport.stream(repository.spliterator(), false).toList();
 
+      final var additionalJwkSetUrisByIssuer =
+          buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository);
+
       if (clientRegistrations.size() == 1) {
         final var clientRegistration = clientRegistrations.getFirst();
+        final var additionalUris =
+            additionalJwkSetUrisByIssuer.get(
+                clientRegistration.getProviderDetails().getIssuerUri());
         LOG.info(
             "Create Access Token JWT Decoder for OIDC Provider: {}",
             clientRegistration.getRegistrationId());
         return new SupplierJwtDecoder(
-            () -> oidcAccessTokenDecoderFactory.createAccessTokenDecoder(clientRegistration));
+            () ->
+                oidcAccessTokenDecoderFactory.createAccessTokenDecoder(
+                    clientRegistration, additionalUris));
       } else {
         LOG.info(
             "Create Issuer Aware JWT Decoder for multiple OIDC Providers: [{}]",
@@ -739,8 +753,31 @@ public class WebSecurityConfig {
         return new SupplierJwtDecoder(
             () ->
                 oidcAccessTokenDecoderFactory.createIssuerAwareAccessTokenDecoder(
-                    clientRegistrations));
+                    clientRegistrations, additionalJwkSetUrisByIssuer));
       }
+    }
+
+    private Map<String, List<String>> buildAdditionalJwkSetUrisByIssuer(
+        final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
+      return oidcProviderRepository.getOidcAuthenticationConfigurations().values().stream()
+          .filter(
+              config ->
+                  config.getIssuerUri() != null
+                      && config.getAdditionalJwkSetUris() != null
+                      && !config.getAdditionalJwkSetUris().isEmpty())
+          .collect(
+              toMap(
+                  OidcAuthenticationConfiguration::getIssuerUri,
+                  config -> List.copyOf(config.getAdditionalJwkSetUris()),
+                  (a, b) -> {
+                    if (!a.equals(b)) {
+                      throw new IllegalStateException(
+                          "Multiple OIDC providers share the same issuer URI with different"
+                              + " additional JWKS URIs. Ensure each issuer has a consistent"
+                              + " configuration.");
+                    }
+                    return a;
+                  }));
     }
 
     @Bean

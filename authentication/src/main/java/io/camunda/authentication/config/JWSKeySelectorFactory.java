@@ -16,7 +16,11 @@ import com.nimbusds.jose.proc.SecurityContext;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Factory for creating {@link JWSKeySelector} instances based on a configured set of allowed {@link
@@ -59,7 +63,7 @@ public class JWSKeySelectorFactory {
    * @throws IllegalArgumentException if the URI is malformed
    */
   public JWSKeySelector<SecurityContext> createJWSKeySelector(final String jwkSetUri) {
-    if (jwkSetUri == null || jwkSetUri.isBlank()) {
+    if (!StringUtils.hasText(jwkSetUri)) {
       throw new IllegalArgumentException(ERROR_MISSING_JWK_SET_URI);
     }
 
@@ -67,6 +71,36 @@ public class JWSKeySelectorFactory {
     final var jwkSource = createJWKSource(url);
     final var jwsAlgorithms = getJWSAlgorithms();
     return new JWSVerificationKeySelector<>(jwsAlgorithms, jwkSource);
+  }
+
+  /**
+   * Creates a {@link JWSKeySelector} for the given primary JWK Set URI and optional additional
+   * URIs. When additional URIs are provided, a {@link CompositeJWKSource} is used to aggregate keys
+   * from all sources.
+   *
+   * @param jwkSetUri the primary JWK Set URI
+   * @param additionalJwkSetUris additional JWK Set URIs to query for key resolution
+   * @return a {@link JWSVerificationKeySelector} configured with the allowed algorithms
+   * @throws IllegalArgumentException if the primary URI is malformed
+   */
+  public JWSKeySelector<SecurityContext> createJWSKeySelector(
+      final String jwkSetUri, final List<String> additionalJwkSetUris) {
+    if (CollectionUtils.isEmpty(additionalJwkSetUris)) {
+      return createJWSKeySelector(jwkSetUri);
+    }
+
+    if (!StringUtils.hasText(jwkSetUri)) {
+      throw new IllegalArgumentException(ERROR_MISSING_JWK_SET_URI);
+    }
+
+    final var sources =
+        Stream.concat(
+                Stream.of(jwkSetUri), additionalJwkSetUris.stream().filter(StringUtils::hasText))
+            .map(uri -> createJWKSource(toURL(uri)))
+            .toList();
+
+    final var compositeSource = new CompositeJWKSource<>(sources);
+    return new JWSVerificationKeySelector<>(getJWSAlgorithms(), compositeSource);
   }
 
   /**

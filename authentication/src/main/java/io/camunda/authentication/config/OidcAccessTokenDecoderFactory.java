@@ -16,7 +16,9 @@ import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import com.nimbusds.jwt.proc.JWTProcessor;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,11 +67,27 @@ public class OidcAccessTokenDecoderFactory {
    */
   public JwtDecoder createIssuerAwareAccessTokenDecoder(
       final List<ClientRegistration> clientRegistrations) {
+    return createIssuerAwareAccessTokenDecoder(clientRegistrations, Collections.emptyMap());
+  }
+
+  /**
+   * Creates a {@link JwtDecoder} that supports multiple OIDC Providers by resolving issuer-specific
+   * keys and validation logic at runtime, with support for additional JWK Set URIs per issuer.
+   *
+   * @param clientRegistrations the list of client registrations to support
+   * @param additionalJwkSetUrisByIssuer a map of issuer URI to additional JWK Set URIs
+   * @return a {@link JwtDecoder} capable of handling multiple issuers with multi-JWKS support
+   * @throws IllegalArgumentException if any registration is missing an issuer URI
+   */
+  public JwtDecoder createIssuerAwareAccessTokenDecoder(
+      final List<ClientRegistration> clientRegistrations,
+      final Map<String, List<String>> additionalJwkSetUrisByIssuer) {
     LOG.debug(
         "Creating an Issuer Aware JwtDecoder for multiple OIDC Providers: {}",
         clientRegistrations.size());
     validateClientRegistrationsHaveIssuer(clientRegistrations);
-    final var jwtProcessor = createIssuerAwareJwtProcessor(clientRegistrations);
+    final var jwtProcessor =
+        createIssuerAwareJwtProcessor(clientRegistrations, additionalJwkSetUrisByIssuer);
     final var jwtValidator = createIssuerAwareJwtValidator(clientRegistrations);
     return createNimbusJwtDecoder(jwtProcessor, jwtValidator);
   }
@@ -106,8 +124,23 @@ public class OidcAccessTokenDecoderFactory {
    * @throws IllegalArgumentException if the registration is missing a JWK Set URI
    */
   public JwtDecoder createAccessTokenDecoder(final ClientRegistration clientRegistration) {
+    return createAccessTokenDecoder(clientRegistration, null);
+  }
+
+  /**
+   * Creates a {@link JwtDecoder} for a single OIDC Identity Provider with optional additional JWK
+   * Set URIs.
+   *
+   * @param clientRegistration the client registration to use
+   * @param additionalJwkSetUris additional JWK Set URIs for key resolution
+   * @return a {@link JwtDecoder} for that client
+   * @throws IllegalArgumentException if the registration is missing a JWK Set URI
+   */
+  public JwtDecoder createAccessTokenDecoder(
+      final ClientRegistration clientRegistration, final List<String> additionalJwkSetUris) {
     LOG.debug("Creating JwtDecoder for OIDC Provider {}", clientRegistration.getRegistrationId());
-    final var jwtProcessor = createJwtProcessor(clientRegistration);
+    LOG.debug("Additional JWK Set URIs: {}", additionalJwkSetUris);
+    final var jwtProcessor = createJwtProcessor(clientRegistration, additionalJwkSetUris);
     final var jwtValidator = createJwtValidator(clientRegistration);
     return createNimbusJwtDecoder(jwtProcessor, jwtValidator);
   }
@@ -156,8 +189,23 @@ public class OidcAccessTokenDecoderFactory {
    */
   protected ConfigurableJWTProcessor<SecurityContext> createIssuerAwareJwtProcessor(
       final List<ClientRegistration> clientRegistrations) {
+    return createIssuerAwareJwtProcessor(clientRegistrations, Collections.emptyMap());
+  }
+
+  /**
+   * Creates a {@link ConfigurableJWTProcessor} that is aware of multiple issuers and supports
+   * additional JWK Set URIs per issuer.
+   *
+   * @param clientRegistrations the list of client registrations
+   * @param additionalJwkSetUrisByIssuer a map of issuer URI to additional JWK Set URIs
+   * @return a configured JWT processor
+   */
+  protected ConfigurableJWTProcessor<SecurityContext> createIssuerAwareJwtProcessor(
+      final List<ClientRegistration> clientRegistrations,
+      final Map<String, List<String>> additionalJwkSetUrisByIssuer) {
     final var jwsKeySelector =
-        new IssuerAwareJWSKeySelector(clientRegistrations, jwsKeySelectorFactory);
+        new IssuerAwareJWSKeySelector(
+            clientRegistrations, jwsKeySelectorFactory, additionalJwkSetUrisByIssuer);
     return createAndCustomizeJwtProcessor(
         processor -> processor.setJWTClaimsSetAwareJWSKeySelector(jwsKeySelector));
   }
@@ -170,8 +218,22 @@ public class OidcAccessTokenDecoderFactory {
    */
   protected ConfigurableJWTProcessor<SecurityContext> createJwtProcessor(
       final ClientRegistration clientRegistration) {
+    return createJwtProcessor(clientRegistration, null);
+  }
+
+  /**
+   * Creates a {@link ConfigurableJWTProcessor} for a single issuer with optional additional JWK Set
+   * URIs.
+   *
+   * @param clientRegistration the client registration
+   * @param additionalJwkSetUris additional JWK Set URIs for key resolution
+   * @return a configured JWT processor
+   */
+  protected ConfigurableJWTProcessor<SecurityContext> createJwtProcessor(
+      final ClientRegistration clientRegistration, final List<String> additionalJwkSetUris) {
     final var jwkSetUri = getJWKSetUri(clientRegistration);
-    final var jwsKeySelector = jwsKeySelectorFactory.createJWSKeySelector(jwkSetUri);
+    final var jwsKeySelector =
+        jwsKeySelectorFactory.createJWSKeySelector(jwkSetUri, additionalJwkSetUris);
     return createAndCustomizeJwtProcessor(processor -> processor.setJWSKeySelector(jwsKeySelector));
   }
 
