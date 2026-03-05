@@ -119,8 +119,8 @@ public final class StartEventTransformer implements ModelElementTransformer<Star
   private void validateMessageNameLength(final String messageName, final TransformContext context) {
     if (messageName.length() > context.getMaxNameFieldLength()) {
       throw new IllegalStateException(
-          "Expected message name to be at most %d characters long (configured max-name-length), but was %d characters."
-              .formatted(context.getMaxNameFieldLength(), messageName.length()));
+          "Expected message name '%s' to be at most %d characters long (configured max-name-length), but was %d characters."
+              .formatted(messageName, context.getMaxNameFieldLength(), messageName.length()));
     }
   }
 
