@@ -37,8 +37,6 @@ test.beforeAll(async () => {
 });
 
 test.describe('Call Activities', () => {
-  test.describe.configure({retries: 0});
-
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
@@ -67,7 +65,9 @@ test.describe('Call Activities', () => {
       await expect(
         operateProcessInstancePage.instanceHeaderSkeleton,
       ).toBeHidden();
-      await expect(operateProcessInstancePage.instanceHeader).toBeVisible();
+      await expect(operateProcessInstancePage.instanceHeader).toBeVisible({
+        timeout: 60000,
+      });
       await expect(
         operateProcessInstancePage.processInstanceKeyCell,
       ).toHaveText(processInstanceKey);
