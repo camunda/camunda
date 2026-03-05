@@ -15,6 +15,7 @@ import {BottomPanelTabs} from './index';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {createProcessInstance, searchResult} from 'modules/testUtils';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {LocationLog} from 'modules/utils/LocationLog';
 
 const PROCESS_INSTANCE_ID = '123';
 
@@ -26,30 +27,30 @@ function getWrapper(initialPath?: string) {
           path: Paths.processInstance(undefined, true),
           element: children,
           children: [
-            {index: true, element: null},
+            {index: true, element: <LocationLog />},
             {
               path: Paths.processInstanceDetails({isRelative: true}),
-              element: null,
+              element: <LocationLog />,
             },
             {
               path: Paths.processInstanceIncidents({isRelative: true}),
-              element: null,
+              element: <LocationLog />,
             },
             {
               path: Paths.processInstanceInputMappings({isRelative: true}),
-              element: null,
+              element: <LocationLog />,
             },
             {
               path: Paths.processInstanceOutputMappings({isRelative: true}),
-              element: null,
+              element: <LocationLog />,
             },
             {
               path: Paths.processInstanceListeners({isRelative: true}),
-              element: null,
+              element: <LocationLog />,
             },
             {
               path: Paths.processInstanceOperationsLog({isRelative: true}),
-              element: null,
+              element: <LocationLog />,
             },
           ],
         },
@@ -187,5 +188,172 @@ describe('<BottomPanelTabs />', () => {
     expect(tabs[4]).toHaveAccessibleName('Output Mappings');
     expect(tabs[5]).toHaveAccessibleName('Listeners');
     expect(tabs[6]).toHaveAccessibleName('Operations Log');
+  });
+
+  it('should navigate to the correct route when clicking always visible tabs', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+
+    const {user} = render(<BottomPanelTabs />, {wrapper: getWrapper()});
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processInstance(PROCESS_INSTANCE_ID),
+    );
+
+    await user.click(screen.getByRole('link', {name: /^Listeners$/i}));
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceListeners({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+
+    await user.click(screen.getByRole('link', {name: /^Operations Log$/i}));
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceOperationsLog({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+
+    await user.click(screen.getByRole('link', {name: /^Variables$/i}));
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processInstance(PROCESS_INSTANCE_ID),
+    );
+  });
+
+  it('should navigate to the correct route when clicking element-dependent tabs', async () => {
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+
+    const {user} = render(<BottomPanelTabs />, {
+      wrapper: getWrapper(SELECTED_PATH),
+    });
+
+    await user.click(screen.getByRole('link', {name: /^Details$/i}));
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceDetails({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+
+    await user.click(screen.getByRole('link', {name: /^Input Mappings$/i}));
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceInputMappings({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+
+    await user.click(screen.getByRole('link', {name: /^Output Mappings$/i}));
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceOutputMappings({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should navigate to the Incidents route when clicking the Incidents tab', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: true,
+      }),
+    );
+
+    const {user} = render(<BottomPanelTabs />, {wrapper: getWrapper()});
+
+    const incidentsTab = await screen.findByRole('link', {
+      name: /^Incidents$/i,
+    });
+
+    await user.click(incidentsTab);
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceIncidents({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should preserve search params when navigating between tabs', async () => {
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+
+    const {user} = render(<BottomPanelTabs />, {
+      wrapper: getWrapper(SELECTED_PATH),
+    });
+
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?elementId=someElement',
+    );
+
+    await user.click(screen.getByRole('link', {name: /^Listeners$/i}));
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceListeners({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?elementId=someElement',
+    );
+
+    await user.click(screen.getByRole('link', {name: /^Variables$/i}));
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      Paths.processInstance(PROCESS_INSTANCE_ID),
+    );
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      '?elementId=someElement',
+    );
+  });
+
+  it('should mark the navigated-to tab as selected', async () => {
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+
+    const {user} = render(<BottomPanelTabs />, {wrapper: getWrapper()});
+
+    expect(screen.getByRole('link', {name: /^Variables$/i})).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(
+      screen.getByRole('link', {name: /^Listeners$/i}),
+    ).not.toHaveAttribute('aria-current');
+
+    await user.click(screen.getByRole('link', {name: /^Listeners$/i}));
+
+    expect(screen.getByRole('link', {name: /^Listeners$/i})).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(
+      screen.getByRole('link', {name: /^Variables$/i}),
+    ).not.toHaveAttribute('aria-current');
   });
 });
