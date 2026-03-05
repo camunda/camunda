@@ -655,15 +655,15 @@ public class JobSearchIT {
         camundaClient.newJobSearchRequest().sort(s -> s.worker().desc()).send().join();
 
     // then
-    // note: Oracle treats empty strings as NULLs in the DB, but the entity mapper converts
-    // NULL back to "" (see JobEntityMapper). The Oracle-specific ORDER BY uses NULLS FIRST/LAST
-    // to match the default NULL ordering of other databases, so natural ordering works here.
+    // note: For OracleDB empty strings are treated as NULLs, so we need to handle nulls in sorting
     assertThat(resultAsc.items())
         .extracting(Job::getWorker)
-        .containsExactlyElementsOf(all.stream().sorted(Comparator.naturalOrder()).toList());
+        .containsExactlyElementsOf(
+            all.stream().sorted(Comparator.nullsLast(Comparator.naturalOrder())).toList());
     assertThat(resultDesc.items())
         .extracting(Job::getWorker)
-        .containsExactlyElementsOf(all.stream().sorted(Comparator.reverseOrder()).toList());
+        .containsExactlyElementsOf(
+            all.stream().sorted(Comparator.nullsFirst(Comparator.reverseOrder())).toList());
   }
 
   @Test
