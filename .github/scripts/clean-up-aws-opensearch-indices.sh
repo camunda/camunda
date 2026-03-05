@@ -5,15 +5,15 @@ set -euo pipefail
 DRY_RUN="${DRY_RUN:-true}"
 AGE_HOURS="${AGE_HOURS:-6}"
 
-# requests-aws4auth handles SigV4 signing; boto3 resolves AWS credentials automatically
-pip install -q "requests-aws4auth==1.3.1"
+# opensearch-py is the official OpenSearch Python client with built-in AWS SigV4 auth support
+pip install -q "opensearch-py==3.1.0"
 
 python3 - <<'PYTHON_SCRIPT'
-import os, json, time, sys
+import os, sys, time
+from urllib.parse import urlparse
 
 import boto3
-import requests
-from requests_aws4auth import AWS4Auth
+from opensearchpy import OpenSearch, NotFoundError, RequestsHttpConnection, AWSV4SignerAuth
 
 OPENSEARCH_URL = os.environ["OPENSEARCH_URL"].rstrip("/")
 REGION = os.environ.get("AWS_REGION", os.environ.get("AWS_DEFAULT_REGION", "us-east-1"))
@@ -25,19 +25,24 @@ raw_creds = boto3.Session().get_credentials()
 if raw_creds is None:
     print("ERROR: No AWS credentials found. Ensure the runner has a configured IAM role or credentials.")
     sys.exit(1)
-creds = raw_creds.get_frozen_credentials()
-awsauth = AWS4Auth(creds.access_key, creds.secret_key, REGION, "es", session_token=creds.token)
 
-resp = requests.get(
-    f"{OPENSEARCH_URL}/_cat/indices",
-    params={"format": "json", "h": "index,creation.date"},
-    auth=awsauth,
+awsauth = AWSV4SignerAuth(raw_creds, REGION, "es")
+
+parsed = urlparse(OPENSEARCH_URL)
+client = OpenSearch(
+    hosts=[{"host": parsed.hostname, "port": parsed.port or (443 if parsed.scheme == "https" else 80)}],
+    http_auth=awsauth,
+    use_ssl=parsed.scheme == "https",
+    verify_certs=True,
+    connection_class=RequestsHttpConnection,
 )
-if resp.status_code != 200:
-    print(f"ERROR: Failed to list indices (HTTP {resp.status_code}): {resp.text[:500]}")
-    sys.exit(1)
 
-indices = [idx for idx in resp.json() if not idx["index"].startswith(".")]
+try:
+    all_indices = client.cat.indices(h="index,creation.date", format="json")
+except Exception as e:
+    print(f"ERROR: Failed to list indices: {e}")
+    sys.exit(1)
+indices = [idx for idx in all_indices if not idx["index"].startswith(".")]
 if not indices:
     print("INFO: No user indices found, nothing to delete.")
     sys.exit(0)
@@ -62,14 +67,14 @@ for idx in indices:
         deleted += 1
         print(f"  [DRY RUN] Would delete: {idx_name} (age: {age_seconds // 3600}h {(age_seconds % 3600) // 60}m)")
     else:
-        del_resp = requests.delete(f"{OPENSEARCH_URL}/{idx_name}", auth=awsauth)
-        if del_resp.status_code == 200:
+        try:
+            client.indices.delete(index=idx_name)
             deleted += 1
-        elif del_resp.status_code == 404:
+        except NotFoundError:
             skipped_already_gone += 1
-        else:
+        except Exception as e:
             skipped_error += 1
-            print(f"  WARN: Failed to delete {idx_name} (HTTP {del_resp.status_code})")
+            print(f"  WARN: Failed to delete {idx_name}: {e}")
 
 prefix = "[DRY RUN] " if DRY_RUN else ""
 print(f"\n{prefix}Summary: {len(indices)} indices found | {deleted} deleted | {skipped_young} too young | {skipped_already_gone} already gone | {skipped_error} errors")
