@@ -13,12 +13,10 @@ import io.camunda.optimize.service.metadata.Version;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.plan.factories.UpgradePlanFactory;
 import io.camunda.optimize.upgrade.util.VersionUtil;
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ScanResult;
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
@@ -27,48 +25,22 @@ public class UpgradePlanRegistry {
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(UpgradePlanRegistry.class);
   private final Map<Semver, UpgradePlan> upgradePlans;
 
-  public UpgradePlanRegistry(final UpgradeExecutionDependencies upgradeExecutionDependencies) {
-    upgradePlans = new HashMap<>();
-    try (final ScanResult scanResult =
-        new ClassGraph()
-            .enableClassInfo()
-            .acceptPackages(UpgradePlanFactory.class.getPackage().getName())
-            .scan()) {
-      scanResult
-          .getClassesImplementing(UpgradePlanFactory.class.getName())
-          .forEach(
-              upgradePlanFactoryClass -> {
-                try {
-                  final UpgradePlanFactory planFactory =
-                      (UpgradePlanFactory)
-                          upgradePlanFactoryClass.loadClass().getConstructor().newInstance();
-                  final UpgradePlan upgradePlan =
-                      planFactory.createUpgradePlan(upgradeExecutionDependencies);
-                  upgradePlans.put(upgradePlan.getToVersion(), upgradePlan);
-                } catch (final InstantiationException
-                    | IllegalAccessException
-                    | InvocationTargetException
-                    | NoSuchMethodException e) {
-                  LOG.error(
-                      "Could not instantiate {}, will skip this factory.",
-                      upgradePlanFactoryClass.getName());
-                  throw new UpgradeRuntimeException(
-                      "Failed to instantiate upgrade plan: " + upgradePlanFactoryClass.getName());
-                }
-              });
-    }
+  public UpgradePlanRegistry(final Supplier<List<UpgradePlan>> plansSupplier) {
+    this(plansSupplier, Version.VERSION);
+  }
+
+  @VisibleForTesting
+  UpgradePlanRegistry(
+      final Supplier<List<UpgradePlan>> plansSupplier, final String currentVersion) {
+    this.upgradePlans = new HashMap<>();
+    plansSupplier.get().forEach(plan -> upgradePlans.put(plan.getToVersion(), plan));
 
     // Generate the cross-minor no-op plan (e.g. 8.9 -> 8.10.0) if no explicit factory already
     // targets X.Y.0, then fill any missing patch-to-patch gaps within the current minor.
     // Plans beyond the actual target version are harmlessly filtered by
     // `getSequentialUpgradePlansToTargetVersion`.
-    generateMissingCrossMinorUpgradePlan(Version.VERSION);
-    generateMissingPatchUpgradePlans(Version.VERSION);
-  }
-
-  @VisibleForTesting
-  UpgradePlanRegistry(final Map<Semver, UpgradePlan> upgradePlans) {
-    this.upgradePlans = upgradePlans;
+    generateMissingCrossMinorUpgradePlan(currentVersion);
+    generateMissingPatchUpgradePlans(currentVersion);
   }
 
   /**
@@ -87,8 +59,7 @@ public class UpgradePlanRegistry {
    * @throws UpgradeRuntimeException if the previous minor version cannot be computed and no
    *     explicit plan targets {@code X.Y.0}
    */
-  @VisibleForTesting
-  void generateMissingCrossMinorUpgradePlan(final String currentVersion) {
+  private void generateMissingCrossMinorUpgradePlan(final String currentVersion) {
     final var toVersion = new Semver(Version.getMajorAndMinor(currentVersion) + ".0");
 
     if (upgradePlans.containsKey(toVersion)) {
@@ -153,8 +124,7 @@ public class UpgradePlanRegistry {
    *
    * @param currentVersion the current application version string (e.g. {@code "8.9.3"})
    */
-  @VisibleForTesting
-  void generateMissingPatchUpgradePlans(final String currentVersion) {
+  private void generateMissingPatchUpgradePlans(final String currentVersion) {
     final var version = new Semver(currentVersion);
     final int major = version.getMajor();
     final int minor = version.getMinor();
