@@ -20,11 +20,16 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.properties.CamundaClientProperties;
+import io.camunda.process.test.api.judge.ChatModelAdapter;
+import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.judge.JudgeConfigBootstrapProvider;
+import io.camunda.process.test.api.judge.JudgeConfigurationData;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.configuration.CoverageReportConfiguration;
+import io.camunda.process.test.impl.configuration.JudgeConfiguration;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
@@ -50,9 +55,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.ServiceLoader;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.core.Ordered;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.TestExecutionListener;
@@ -150,6 +159,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // initialize json mapper
     initializeJsonMapper(jsonMapper, zeebeJsonMapper);
+
+    // initialize judge config
+    initializeJudgeConfig(testContext, runtimeConfiguration);
   }
 
   @Override
@@ -180,6 +192,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     // initialize assertions
     final CamundaDataSource dataSource = new CamundaDataSource(client);
     CamundaAssert.initialize(dataSource);
+
+    // re-initialize judge config (reset in afterTestMethod clears the ThreadLocal)
+    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
+        testContext.getApplicationContext().getBean(CamundaProcessTestRuntimeConfiguration.class);
+    initializeJudgeConfig(testContext, runtimeConfiguration);
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
@@ -245,6 +262,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
 
     runtime.close();
+
+    CamundaAssert.setJudgeConfig(null);
   }
 
   private void initializeJsonMapper(
@@ -254,6 +273,74 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       CamundaAssert.setJsonMapper(jsonMapper);
     } else if (zeebeJsonMapper != null) {
       CamundaAssert.setJsonMapper(zeebeJsonMapper);
+    }
+  }
+
+  private void initializeJudgeConfig(
+      final TestContext testContext,
+      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+
+    final JudgeConfiguration judgeConfiguration = runtimeConfiguration.getJudge();
+    if (!judgeConfiguration.isExplicitlyConfigured()) {
+      return;
+    }
+
+    // Try Spring bean first
+    final ChatModelAdapter contextAdapter = findChatModelAdapterBean(testContext);
+    if (contextAdapter != null) {
+      CamundaAssert.setJudgeConfig(
+          JudgeConfig.of(
+              contextAdapter,
+              judgeConfiguration.getThreshold(),
+              judgeConfiguration.getCustomPrompt()));
+      return;
+    }
+
+    // Fall back to SPI bootstrap
+    final JudgeConfigurationData configurationData = toConfigurationData(judgeConfiguration);
+
+    loadJudgeConfigProviders()
+        .map(p -> p.bootstrap(configurationData))
+        .filter(Objects::nonNull)
+        .findFirst()
+        .ifPresentOrElse(
+            CamundaAssert::setJudgeConfig,
+            () -> {
+              throw new IllegalStateException(
+                  "Judge configuration is present but no JudgeConfigBootstrapProvider could be resolved. "
+                      + "Ensure judge.chatModel.provider is configured and "
+                      + "the appropriate provider module is on the classpath.");
+            });
+  }
+
+  private Stream<JudgeConfigBootstrapProvider> loadJudgeConfigProviders() {
+    return ServiceLoader.load(
+            JudgeConfigBootstrapProvider.class, JudgeConfigBootstrapProvider.class.getClassLoader())
+        .stream()
+        .map(ServiceLoader.Provider::get);
+  }
+
+  private JudgeConfigurationData toConfigurationData(final JudgeConfiguration judgeConfiguration) {
+    final JudgeConfiguration.ChatModelConfiguration chatModel = judgeConfiguration.getChatModel();
+    final JudgeConfiguration.CredentialsConfiguration credentials = chatModel.getCredentials();
+    return JudgeConfigurationData.builder()
+        .provider(chatModel.getProvider())
+        .model(chatModel.getModel())
+        .apiKey(chatModel.getApiKey())
+        .baseUrl(chatModel.getBaseUrl())
+        .region(chatModel.getRegion())
+        .credentialsAccessKey(credentials != null ? credentials.getAccessKey() : null)
+        .credentialsSecretKey(credentials != null ? credentials.getSecretKey() : null)
+        .threshold(judgeConfiguration.getThreshold())
+        .customPrompt(judgeConfiguration.getCustomPrompt())
+        .build();
+  }
+
+  private ChatModelAdapter findChatModelAdapterBean(final TestContext testContext) {
+    try {
+      return testContext.getApplicationContext().getBean(ChatModelAdapter.class);
+    } catch (final NoSuchBeanDefinitionException e) {
+      return null;
     }
   }
 

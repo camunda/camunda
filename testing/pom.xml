@@ -26,6 +26,7 @@
     <module>camunda-process-test-spring-boot-3</module>
     <module>camunda-process-test-example</module>
     <module>camunda-process-test-json-test-cases</module>
+    <module>camunda-process-test-langchain4j</module>
   </modules>
 
   <properties>
@@ -39,6 +40,19 @@
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
           <skipITs>${skipITs}</skipITs>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration combine.self="append">
+          <ignoredUnusedDeclaredDependencies>
+            <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
+            <dep>org.apache.logging.log4j:log4j-core</dep>
+            <dep>io.camunda:zeebe-build-tools</dep>
+            <dep>org.junit.jupiter:junit-jupiter-engine</dep>
+          </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
     </plugins>

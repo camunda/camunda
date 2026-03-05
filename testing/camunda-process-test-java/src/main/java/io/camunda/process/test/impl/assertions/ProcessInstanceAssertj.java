@@ -24,6 +24,7 @@ import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
+import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import java.util.Arrays;
 import java.util.List;
@@ -47,6 +48,7 @@ public class ProcessInstanceAssertj
   private final VariableAssertj variableAssertj;
   private final IncidentAssertj incidentAssertj;
   private final MessageSubscriptionAssertj messageSubscriptionAssertj;
+  private final JudgeAssertj judgeAssertj;
   private final String failureMessagePrefix;
   private final Function<String, ElementSelector> elementSelector;
 
@@ -57,13 +59,15 @@ public class ProcessInstanceAssertj
       final CamundaAssertAwaitBehavior awaitBehavior,
       final CamundaAssertJsonMapper jsonMapper,
       final long processInstanceKey,
-      final Function<String, ElementSelector> elementSelector) {
+      final Function<String, ElementSelector> elementSelector,
+      final JudgeConfig judgeConfig) {
     this(
         dataSource,
         awaitBehavior,
         jsonMapper,
         ProcessInstanceSelectors.byKey(processInstanceKey),
-        elementSelector);
+        elementSelector,
+        judgeConfig);
   }
 
   public ProcessInstanceAssertj(
@@ -71,7 +75,8 @@ public class ProcessInstanceAssertj
       final CamundaAssertAwaitBehavior awaitBehavior,
       final CamundaAssertJsonMapper jsonMapper,
       final ProcessInstanceSelector processInstanceSelector,
-      final Function<String, ElementSelector> elementSelector) {
+      final Function<String, ElementSelector> elementSelector,
+      final JudgeConfig judgeConfig) {
     super(processInstanceSelector, ProcessInstanceAssertj.class);
     this.dataSource = dataSource;
     this.awaitBehavior = awaitBehavior;
@@ -84,6 +89,7 @@ public class ProcessInstanceAssertj
     incidentAssertj = new IncidentAssertj(dataSource, awaitBehavior, failureMessagePrefix);
     messageSubscriptionAssertj =
         new MessageSubscriptionAssertj(dataSource, awaitBehavior, failureMessagePrefix);
+    judgeAssertj = new JudgeAssertj(dataSource, awaitBehavior, judgeConfig, failureMessagePrefix);
   }
 
   @Override
@@ -396,6 +402,63 @@ public class ProcessInstanceAssertj
       final String messageName, final String correlationKey) {
     messageSubscriptionAssertj.hasCorrelatedMessage(
         getProcessInstanceKey(), messageName, correlationKey);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasVariableSatisfiesJudge(
+      final String variableName, final String expectation) {
+    judgeAssertj.hasVariableSatisfiesJudge(getProcessInstanceKey(), variableName, expectation);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasVariableSatisfiesJudge(
+      final String variableName, final String expectation, final double threshold) {
+    judgeAssertj.hasVariableSatisfiesJudge(
+        getProcessInstanceKey(), variableName, expectation, threshold);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
+      final String elementId, final String variableName, final String expectation) {
+    judgeAssertj.hasLocalVariableSatisfiesJudge(
+        getProcessInstanceKey(), elementSelector.apply(elementId), variableName, expectation);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
+      final String elementId,
+      final String variableName,
+      final String expectation,
+      final double threshold) {
+    judgeAssertj.hasLocalVariableSatisfiesJudge(
+        getProcessInstanceKey(),
+        elementSelector.apply(elementId),
+        variableName,
+        expectation,
+        threshold);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
+      final ElementSelector selector, final String variableName, final String expectation) {
+    judgeAssertj.hasLocalVariableSatisfiesJudge(
+        getProcessInstanceKey(), selector, variableName, expectation);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
+      final ElementSelector selector,
+      final String variableName,
+      final String expectation,
+      final double threshold) {
+    judgeAssertj.hasLocalVariableSatisfiesJudge(
+        getProcessInstanceKey(), selector, variableName, expectation, threshold);
     return this;
   }
 
