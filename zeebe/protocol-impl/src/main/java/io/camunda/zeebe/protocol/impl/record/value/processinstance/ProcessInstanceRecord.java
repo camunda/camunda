@@ -214,13 +214,14 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   @Override
   public List<List<Long>> getElementInstancePath() {
-    final var elementInstancePath = new ArrayList<List<Long>>();
-    elementInstancePathProp.forEach(
-        pe -> {
-          final var pathEntry = new ArrayList<Long>();
-          pe.forEach(e -> pathEntry.add(e.getValue()));
-          elementInstancePath.add(pathEntry);
-        });
+    final var elementInstancePath = new ArrayList<List<Long>>(elementInstancePathProp.size());
+    for (final var pe : elementInstancePathProp) {
+      final var pathEntry = new ArrayList<Long>(pe.size());
+      for (final var e : pe) {
+        pathEntry.add(e.getValue());
+      }
+      elementInstancePath.add(pathEntry);
+    }
     return elementInstancePath;
   }
 
