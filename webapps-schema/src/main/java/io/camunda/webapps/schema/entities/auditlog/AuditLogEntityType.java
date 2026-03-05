@@ -12,6 +12,7 @@ public enum AuditLogEntityType {
   PROCESS_INSTANCE,
   VARIABLE,
   INCIDENT,
+  JOB,
   USER_TASK,
   DECISION,
   BATCH,

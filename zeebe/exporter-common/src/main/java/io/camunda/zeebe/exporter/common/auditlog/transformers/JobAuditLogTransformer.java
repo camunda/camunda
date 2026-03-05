@@ -7,24 +7,21 @@
  */
 package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
-import static io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs.PROCESS_INSTANCE_MIGRATION_CONFIG;
-
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 
-public class ProcessInstanceMigrationAuditLogTransformer
-    implements AuditLogTransformer<ProcessInstanceMigrationRecordValue> {
+public class JobAuditLogTransformer implements AuditLogTransformer<JobRecordValue> {
 
   @Override
   public TransformerConfig config() {
-    return PROCESS_INSTANCE_MIGRATION_CONFIG;
+    return AuditLogTransformerConfigs.JOB_CONFIG;
   }
 
   @Override
-  public void transform(
-      final Record<ProcessInstanceMigrationRecordValue> record, final AuditLogEntry log) {
+  public void transform(final Record<JobRecordValue> record, final AuditLogEntry log) {
+    log.setJobKey(record.getKey());
     final var value = record.getValue();
-    log.setProcessDefinitionKey(value.getTargetProcessDefinitionKey());
+    log.setEntityDescription(value.getType());
   }
 }

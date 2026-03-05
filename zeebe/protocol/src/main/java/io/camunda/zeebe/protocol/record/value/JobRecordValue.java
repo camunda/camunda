@@ -31,7 +31,10 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableJobRecordValue.Builder.class)
 public interface JobRecordValue
-    extends RecordValueWithVariables, ProcessInstanceRelated, TenantOwned {
+    extends RecordValueWithVariables,
+        ProcessInstanceRelated,
+        AuditLogProcessInstanceRelated,
+        TenantOwned {
 
   /**
    * @return the type of the job
@@ -99,11 +102,13 @@ public interface JobRecordValue
   /**
    * @return the element instance key of the corresponding service task
    */
+  @Override
   long getElementInstanceKey();
 
   /**
    * @return the bpmn process id of the corresponding process definition
    */
+  @Override
   String getBpmnProcessId();
 
   /**
@@ -114,6 +119,7 @@ public interface JobRecordValue
   /**
    * @return the process key of the corresponding process definition
    */
+  @Override
   long getProcessDefinitionKey();
 
   /**
