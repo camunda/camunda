@@ -22,6 +22,7 @@ import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
 import io.camunda.process.test.api.judge.JudgeConfigBootstrapProvider;
 import io.camunda.process.test.api.judge.JudgeConfigurationData;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
@@ -297,7 +298,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
 
     // Fall back to SPI bootstrap
-    final JudgeConfigurationData configurationData = toConfigurationData(judgeConfiguration);
+    final JudgeConfigBootstrapData configurationData = toConfigurationData(judgeConfiguration);
 
     loadJudgeConfigProviders()
         .map(p -> p.bootstrap(configurationData))
@@ -320,10 +321,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .map(ServiceLoader.Provider::get);
   }
 
-  private JudgeConfigurationData toConfigurationData(final JudgeConfiguration judgeConfiguration) {
+  private JudgeConfigBootstrapData toConfigurationData(
+      final JudgeConfiguration judgeConfiguration) {
     final JudgeConfiguration.ChatModelConfiguration chatModel = judgeConfiguration.getChatModel();
     final JudgeConfiguration.CredentialsConfiguration credentials = chatModel.getCredentials();
-    return JudgeConfigurationData.builder()
+    return JudgeConfigBootstrapData.builder()
         .provider(chatModel.getProvider())
         .model(chatModel.getModel())
         .apiKey(chatModel.getApiKey())

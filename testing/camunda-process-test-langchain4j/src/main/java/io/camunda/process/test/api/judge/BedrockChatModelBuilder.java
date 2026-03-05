@@ -33,7 +33,7 @@ final class BedrockChatModelBuilder {
 
   private BedrockChatModelBuilder() {}
 
-  static ChatModel build(final JudgeConfigurationData data) {
+  static ChatModel build(final JudgeConfigBootstrapData data) {
     final String model = require(data.getModel(), "model", "amazon-bedrock");
 
     final String region = data.getRegion();
