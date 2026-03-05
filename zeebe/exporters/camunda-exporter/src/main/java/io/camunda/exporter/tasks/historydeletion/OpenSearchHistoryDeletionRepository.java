@@ -236,7 +236,7 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
                 op ->
                     op.update(
                         u ->
-                            u.index(operationIndexTemplateDescriptor.getFullQualifiedName())
+                            u.index(operationIndexTemplateDescriptor.getIndexPattern())
                                 .id(id)
                                 .document(fieldsToUpdate)
                                 .retryOnConflict(3))));
