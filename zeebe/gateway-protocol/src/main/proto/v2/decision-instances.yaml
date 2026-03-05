@@ -45,7 +45,7 @@ paths:
           required: true
           description: The assigned key of the decision instance, which acts as a unique identifier for this decision instance.
           schema:
-            $ref: 'keys.yaml#/components/schemas/DecisionInstanceKey'
+            $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKey'
       responses:
         "200":
           description: The decision instance is successfully returned.
