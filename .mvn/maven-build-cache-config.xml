@@ -11,12 +11,38 @@
     <hashAlgorithm>XX</hashAlgorithm>
     <validateXml>true</validateXml>
     <local>
-      <maxBuildsCached>5</maxBuildsCached>
+      <maxBuildsCached>10</maxBuildsCached>
     </local>
+    <!-- Save generated sources alongside the JAR so they are restored on cache hits.
+         This covers protobuf, openapi, and SBE generated Java files. -->
+    <attachedOutputs>
+      <dirNames>
+        <dirName>generated-sources</dirName>
+      </dirNames>
+    </attachedOutputs>
   </configuration>
   <input>
     <global>
-      <glob>{*.java,*.xml,*.properties, *.proto, resources/api/*.xml, rest-api*.yml }</glob>
+      <!-- Match all common source/config file types recursively across modules.
+           XML is restricted to src/main to avoid IDE (.idea/) and tool configs (spotbugs/).
+           pom.xml is matched separately at the module root.
+           YAML is intentionally excluded here; specific YAML directories (e.g. REST API specs)
+           are added via targeted <include> entries below. -->
+      <glob>{*.java,pom.xml,src/main/**/*.xml,*.properties,*.proto,*.factories,*.imports,*.json}</glob>
+      <includes>
+        <!-- Explicit include for the parent POM directory: changes to shared build config
+             affect all modules but may not be detected via effective-POM checksumming alone. -->
+        <include recursive="false" glob="pom.xml">parent</include>
+        <!-- Include OpenAPI/REST API YAML specs used for code generation. -->
+        <include glob="{*.yaml,*.yml}">zeebe/gateway-protocol/src/main/proto</include>
+        <include glob="{*.yaml,*.yml}">dist/src/main/resources/api</include>
+      </includes>
+      <!-- Exclude target/ entirely: unpacked proto/YAML files land there and would
+           invalidate the cache on every clean since they don't exist before initialize. -->
+      <excludes>
+        <exclude>target</exclude>
+      </excludes>
     </global>
   </input>
+
 </cache>
