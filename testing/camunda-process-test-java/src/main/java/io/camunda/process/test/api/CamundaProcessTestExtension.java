@@ -18,6 +18,8 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.judge.JudgeConfigBootstrapProvider;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
@@ -30,6 +32,7 @@ import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import io.camunda.process.test.impl.testCases.CamundaTestCaseRunner;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
@@ -44,6 +47,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -110,6 +115,8 @@ public class CamundaProcessTestExtension
 
   private CamundaProcessTestRuntime runtime;
   private CamundaProcessTestResultCollector processTestResultCollector;
+
+  private JudgeConfig judgeConfig;
 
   private JsonMapper jsonMapper;
   private io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
@@ -184,6 +191,9 @@ public class CamundaProcessTestExtension
 
     // initialize json mapper
     initializeJsonMapper(jsonMapper, zeebeJsonMapper);
+
+    // initialize judge config
+    initializeJudgeConfig();
   }
 
   private CamundaManagementClient createManagementClient(
@@ -207,6 +217,34 @@ public class CamundaProcessTestExtension
     } else if (zeebeJsonMapper != null) {
       CamundaAssert.setJsonMapper(zeebeJsonMapper);
     }
+  }
+
+  private void initializeJudgeConfig() {
+    if (judgeConfig != null) {
+      CamundaAssert.setJudgeConfig(judgeConfig);
+      return;
+    }
+
+    if (CamundaAssert.getJudgeConfig() != null) {
+      return;
+    }
+
+    tryBootstrappingJudgeConfig().ifPresent(CamundaAssert::setJudgeConfig);
+  }
+
+  private Optional<JudgeConfig> tryBootstrappingJudgeConfig() {
+    for (final JudgeConfigBootstrapProvider provider :
+        ServiceLoader.load(
+            JudgeConfigBootstrapProvider.class,
+            JudgeConfigBootstrapProvider.class.getClassLoader())) {
+      final JudgeConfig bootstrapped =
+          provider.bootstrap(
+              CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.toJudgeConfigurationData());
+      if (bootstrapped != null) {
+        return Optional.of(bootstrapped);
+      }
+    }
+    return Optional.empty();
   }
 
   private boolean hasProcessTestExtension(final ExtensionContext context) {
@@ -257,6 +295,9 @@ public class CamundaProcessTestExtension
     final CamundaDataSource dataSource =
         new CamundaDataSource(camundaProcessTestContext.createClient());
     CamundaAssert.initialize(dataSource);
+
+    // re-initialize judge config (reset in afterEach clears the ThreadLocal)
+    initializeJudgeConfig();
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
@@ -391,6 +432,9 @@ public class CamundaProcessTestExtension
     } catch (final Throwable t) {
       LOG.warn("Failed to report process coverage, skipping.", t);
     }
+
+    CamundaAssert.setJudgeConfig(null);
+
     runtime.close();
   }
 
@@ -636,6 +680,17 @@ public class CamundaProcessTestExtension
    */
   public CamundaProcessTestExtension withMultiTenancyEnabled(final boolean enabled) {
     runtimeBuilder.withMultiTenancyEnabled(enabled);
+    return this;
+  }
+
+  /**
+   * Configure the judge for LLM-as-a-judge assertions.
+   *
+   * @param judgeConfig the judge configuration
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withJudgeConfig(final JudgeConfig judgeConfig) {
+    this.judgeConfig = judgeConfig;
     return this;
   }
 
