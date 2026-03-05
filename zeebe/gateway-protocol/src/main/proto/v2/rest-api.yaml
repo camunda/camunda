@@ -239,6 +239,8 @@ paths:
     $ref: 'job-metrics.yaml#/paths/~1jobs~1statistics~1global'
   /jobs/statistics/by-types:
     $ref: 'job-metrics.yaml#/paths/~1jobs~1statistics~1by-types'
+  /jobs/statistics/by-workers:
+    $ref: 'job-metrics.yaml#/paths/~1jobs~1statistics~1by-workers'
 
   # License endpoints
   /license:

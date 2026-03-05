@@ -12,8 +12,10 @@ import io.camunda.search.aggregation.result.JobTypeStatisticsAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
+import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
+import io.camunda.search.query.JobWorkerStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -46,5 +48,22 @@ public class JobMetricsBatchDocumentReader extends DocumentBasedReader
         aggResult.items(),
         null,
         aggResult.endCursor());
+  }
+
+  @Override
+  public SearchQueryResult<JobWorkerStatisticsEntity> getJobWorkerStatistics(
+      final JobWorkerStatisticsQuery query, final ResourceAccessChecks resourceAccessChecks) {
+    // TODO enabled in a follow up PR
+    throw new UnsupportedOperationException("Job worker statistics is not yet supported");
+    //    final var aggResult =
+    //        getSearchExecutor()
+    //            .aggregate(query, JobWorkerStatisticsAggregationResult.class,
+    // resourceAccessChecks);
+    //    return new SearchQueryResult<>(
+    //        aggResult.items().size(),
+    //        !aggResult.items().isEmpty(),
+    //        aggResult.items(),
+    //        null,
+    //        aggResult.endCursor());
   }
 }
