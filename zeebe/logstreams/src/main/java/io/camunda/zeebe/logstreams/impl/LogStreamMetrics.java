@@ -82,7 +82,7 @@ public final class LogStreamMetrics {
     appendLatency = MicrometerUtil.buildTimer(WRITE_LATENCY).register(registry);
 
     registerGauge(INFLIGHT_APPENDS, inflightAppends);
-    registerGauge(INFLIGHT_REQUESTS, inflightAppends);
+    registerGauge(INFLIGHT_REQUESTS, inflightRequests);
     registerGauge(REQUEST_LIMIT, requestLimit);
     registerGauge(LAST_COMMITTED_POSITION, lastCommitted);
     registerGauge(LAST_WRITTEN_POSITION, lastWritten);
