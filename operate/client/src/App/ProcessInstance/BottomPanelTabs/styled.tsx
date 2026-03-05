@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled from 'styled-components';
+import {styled} from 'styled-components';
 
 const Container = styled.div`
   background-color: var(--cds-layer);
