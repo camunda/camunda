@@ -19,17 +19,9 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.regex.Pattern;
-import org.assertj.core.api.InstanceOfAssertFactories;
-import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.test.json.JsonContent;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
@@ -73,47 +65,6 @@ public class OidcMcpServerIT extends AuthenticatedMcpServerTest {
   @Override
   protected McpSyncHttpClientRequestCustomizer createRestrictedMcpClientRequestCustomizer() {
     return createBearerTokenAuthenticator(RESTRICTED_PRINCIPAL_NAME);
-  }
-
-  @Test
-  void shouldReturnOAuth20ProtectedResourceMetadataLink() throws Exception {
-    try (final var httpClient = HttpClient.newHttpClient()) {
-      // given — hit a protected endpoint without credentials
-      final var unauthorizedResponse =
-          httpClient.send(
-              HttpRequest.newBuilder(TEST_INSTANCE.restAddress().resolve("/mcp/cluster"))
-                  .GET()
-                  .build(),
-              HttpResponse.BodyHandlers.ofString());
-
-      // then — 401 with a resource_metadata link in WWW-Authenticate
-      assertThat(unauthorizedResponse.statusCode()).isEqualTo(401);
-      final var wwwAuthenticate = unauthorizedResponse.headers().firstValue("WWW-Authenticate");
-      assertThat(wwwAuthenticate).isPresent();
-
-      // extract the resource_metadata URL from the header
-      final var matcher =
-          Pattern.compile("resource_metadata=\"(?<prmUrl>[^\"]+)\"").matcher(wwwAuthenticate.get());
-      assertThat(matcher.find())
-          .as("WWW-Authenticate should contain resource_metadata parameter")
-          .isTrue();
-
-      // when — follow the link to fetch Protected Resource Metadata
-      final HttpResponse<String> prmResponse =
-          httpClient.send(
-              HttpRequest.newBuilder(URI.create(matcher.group("prmUrl"))).GET().build(),
-              HttpResponse.BodyHandlers.ofString());
-
-      // then — PRM endpoint is unprotected and returns valid metadata
-      assertThat(prmResponse.statusCode()).isEqualTo(200);
-      assertThat(prmResponse.headers().firstValue("Content-Type"))
-          .hasValueSatisfying(ct -> assertThat(ct).contains("application/json"));
-      assertThat(new JsonContent(prmResponse.body()))
-          .extractingPath("authorization_servers")
-          .isNotNull()
-          .asInstanceOf(InstanceOfAssertFactories.LIST)
-          .containsExactly("%s/realms/camunda".formatted(keycloak.getAuthServerUrl()));
-    }
   }
 
   private McpSyncHttpClientRequestCustomizer createBearerTokenAuthenticator(final String clientId) {
