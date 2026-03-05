@@ -8,6 +8,7 @@
 package io.camunda.security.validation;
 
 import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.ArrayList;
@@ -54,6 +55,11 @@ public class TenantValidator {
   private static void validateTenantName(final String name, final List<String> violations) {
     if (name == null || name.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
+    }
+    if (name != null && name.length() > ValidationConstants.MAX_FIELD_LENGTH) {
+      violations.add(
+          ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
+              "name", ValidationConstants.MAX_FIELD_LENGTH));
     }
   }
 }
