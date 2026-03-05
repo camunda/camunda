@@ -22,6 +22,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -295,6 +296,29 @@ class MultipleOidcProviderFlowTest {
 
       // Spring returns 500 in such cases
       assertThat(result).hasStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Nested
+  class ProtectedResourceMetadata {
+    @Test
+    public void shouldReturnProtectedResourceMetadataWithAllIssuerUris() {
+      final MvcTestResult result =
+          mockMvcTester
+              .get()
+              .uri("/.well-known/oauth-protected-resource")
+              .accept(MediaType.APPLICATION_JSON)
+              .exchange();
+
+      assertThat(result).hasStatus(HttpStatus.OK);
+      assertThat(result).hasContentTypeCompatibleWith(MediaType.APPLICATION_JSON);
+      assertThat(result)
+          .bodyJson()
+          .extractingPath("authorization_servers")
+          .asInstanceOf(InstanceOfAssertFactories.LIST)
+          .containsExactlyInAnyOrder(
+              keycloak.getAuthServerUrl() + "/realms/camunda-bar",
+              keycloak.getAuthServerUrl() + "/realms/camunda-foo");
     }
   }
 }
