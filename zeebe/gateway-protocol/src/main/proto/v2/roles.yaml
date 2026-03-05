@@ -705,6 +705,7 @@ components:
           type: string
         description:
           description: The description of the created role.
+          nullable: true
           type: string
       required:
         - roleId
@@ -731,6 +732,7 @@ components:
           description: The display name of the updated role.
         description:
           type: string
+          nullable: true
           description: The description of the updated role.
         roleId:
           type: string
@@ -752,6 +754,7 @@ components:
           description: The role id.
         description:
           type: string
+          nullable: true
           description: The description of the role.
       required:
         - roleId
