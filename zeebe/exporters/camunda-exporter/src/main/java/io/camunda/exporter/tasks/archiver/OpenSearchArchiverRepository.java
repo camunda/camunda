@@ -60,7 +60,7 @@ import org.opensearch.client.opensearch.core.reindex.Source;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Requests;
-import org.opensearch.client.opensearch.indices.IndexState;
+import org.opensearch.client.opensearch.generic.Response;
 import org.slf4j.Logger;
 
 public final class OpenSearchArchiverRepository extends OpensearchRepository
@@ -439,31 +439,72 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private CompletableFuture<Void> applyPolicyToIndices(
       final String policyName, final String indexNamePattern) {
     logger.debug("Applying policy '{}' to indices: {}", policyName, indexNamePattern);
-    final AddPolicyRequestBody value = new AddPolicyRequestBody(policyName);
-    final var request =
-        Requests.builder().method("POST").endpoint("/_plugins/_ism/add/" + indexNamePattern);
+
+    final var jsonpMapper = genericClient._transport().jsonpMapper();
+
     return sendRequestAsync(
-            () ->
-                genericClient.executeAsync(
-                    request.json(value, genericClient._transport().jsonpMapper()).build()))
+            () -> {
+              final var addRequest =
+                  Requests.builder()
+                      .method("POST")
+                      .endpoint("/_plugins/_ism/add/" + indexNamePattern)
+                      .json(new AddPolicyRequestBody(policyName), jsonpMapper)
+                      .build();
+              return genericClient.executeAsync(addRequest);
+            })
         .thenComposeAsync(
-            response -> {
-              if (response.getStatus() >= 400) {
-                return CompletableFuture.failedFuture(
-                    new ExporterException(
-                        "Failed to set index lifecycle policy '"
-                            + policyName
-                            + "' for index: "
-                            + indexNamePattern
-                            + ".\n"
-                            + "Status: "
-                            + response.getStatus()
-                            + ", Reason: "
-                            + response.getReason()));
-              }
-              return CompletableFuture.completedFuture(null);
-            },
+            resp -> checkIsmResponse(resp, "add", policyName, indexNamePattern), executor)
+        .thenComposeAsync(
+            ignored ->
+                sendRequestAsync(
+                    () -> {
+                      final var changeRequest =
+                          Requests.builder()
+                              .method("POST")
+                              .endpoint("/_plugins/_ism/change_policy/" + indexNamePattern)
+                              .json(new AddPolicyRequestBody(policyName), jsonpMapper)
+                              .build();
+                      return genericClient.executeAsync(changeRequest);
+                    }),
+            executor)
+        .thenComposeAsync(
+            resp -> checkIsmResponse(resp, "change_policy", policyName, indexNamePattern),
             executor);
+  }
+
+  private CompletableFuture<Void> checkIsmResponse(
+      final Response response,
+      final String operation,
+      final String policyName,
+      final String indexNamePattern) {
+    final var status = response.getStatus();
+
+    // change_policy returns 400 when zero indices match the resolved pattern, harmless —
+    // there are no managed indices to update.
+    if ((status == 400) && "change_policy".equals(operation)) {
+      logger.debug(
+          "No managed indices to update for pattern '{}' (change_policy '{}' returned {})",
+          indexNamePattern,
+          policyName,
+          status);
+      return CompletableFuture.completedFuture(null);
+    }
+
+    if (status >= 400) {
+      return CompletableFuture.failedFuture(
+          new ExporterException(
+              "Failed to "
+                  + operation
+                  + " index lifecycle policy '"
+                  + policyName
+                  + "' for index: "
+                  + indexNamePattern
+                  + ".\nStatus: "
+                  + status
+                  + ", Reason: "
+                  + response.getReason()));
+    }
+    return CompletableFuture.completedFuture(null);
   }
 
   private SearchRequest createFinishedInstancesSearchRequest() {
