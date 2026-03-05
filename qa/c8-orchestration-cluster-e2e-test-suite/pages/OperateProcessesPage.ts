@@ -50,6 +50,8 @@ class OperateProcessesPage {
   readonly expandOperationsButton: Locator;
   readonly inProgressBar: Locator;
   readonly resultsText: Locator;
+  readonly viewParentInstanceLink: Locator;
+  readonly calledInstanceCell: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -146,6 +148,13 @@ class OperateProcessesPage {
       '[role="progressbar"][aria-busy="true"]',
     );
     this.resultsText = page.getByText('results');
+    this.viewParentInstanceLink = page
+      .getByTestId('data-list')
+      .getByRole('link', {name: /view parent instance/i});
+    this.calledInstanceCell = page
+      .getByTestId('data-list')
+      .getByTestId('cell-processInstanceKey')
+      .first();
   }
 
   async filterByProcessName(name: string): Promise<void> {
@@ -376,18 +385,8 @@ class OperateProcessesPage {
     }
   }
 
-  calledInstanceCell(): Locator {
-    return this.page
-      .getByTestId('data-list')
-      .getByTestId('cell-processInstanceKey')
-      .first();
-  }
-
   async clickViewParentInstanceFromList(): Promise<void> {
-    await this.page
-      .getByTestId('data-list')
-      .getByRole('link', {name: /view parent instance/i})
-      .click();
+    await this.viewParentInstanceLink.click();
   }
 }
 

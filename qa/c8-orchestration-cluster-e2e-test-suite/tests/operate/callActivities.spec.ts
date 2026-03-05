@@ -11,7 +11,7 @@ import {expect} from '@playwright/test';
 import {deploy, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
-import {leep, sleep} from 'utils/sleep';
+import {sleep} from 'utils/sleep';
 
 type ProcessDeployment = {
   readonly processInstanceKey: string;
@@ -90,9 +90,8 @@ test.describe('Call Activities', () => {
     let calledProcessInstanceId: string;
 
     await test.step('Get called process instance ID', async () => {
-      calledProcessInstanceId = await operateProcessesPage
-        .calledInstanceCell()
-        .innerText();
+      calledProcessInstanceId =
+        await operateProcessesPage.calledInstanceCell.innerText();
     });
 
     await test.step('Navigate back to parent instance from list', async () => {

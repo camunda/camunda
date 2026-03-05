@@ -42,6 +42,8 @@ class OperateProcessInstancePage {
   readonly migratedTag: Locator;
   readonly instanceHeaderSkeleton: Locator;
   readonly processInstanceKeyCell: Locator;
+  readonly viewAllCalledInstancesLink: Locator;
+  readonly viewParentInstanceLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -91,6 +93,12 @@ class OperateProcessInstancePage {
       .getByTestId('instance-header')
       .locator('td')
       .nth(1);
+    this.viewAllCalledInstancesLink = page.getByRole('link', {
+      name: /view all called instances/i,
+    });
+    this.viewParentInstanceLink = this.instanceHeader.getByRole('link', {
+      name: /view parent instance/i,
+    });
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
@@ -108,15 +116,11 @@ class OperateProcessInstancePage {
   }
 
   async clickViewAllCalledInstances(): Promise<void> {
-    await this.page
-      .getByRole('link', {name: /view all called instances/i})
-      .click();
+    await this.viewAllCalledInstancesLink.click();
   }
 
   async clickViewParentInstance(): Promise<void> {
-    await this.instanceHeader
-      .getByRole('link', {name: /view parent instance/i})
-      .click();
+    await this.viewParentInstanceLink.click();
   }
 
   async getProcessInstanceKey(): Promise<string> {
