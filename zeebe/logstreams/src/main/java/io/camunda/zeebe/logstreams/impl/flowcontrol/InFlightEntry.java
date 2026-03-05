@@ -18,6 +18,8 @@ public final class InFlightEntry {
   Listener requestListener;
   CloseableSilently writeTimer;
   CloseableSilently commitTimer;
+  long requestId = -1;
+  int requestStreamId = -1;
 
   /**
    * The position this entry was registered at in the ring buffer. Set by {@link RingBuffer#put}

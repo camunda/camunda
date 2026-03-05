@@ -11,7 +11,12 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 
 public sealed interface WriteContext {
   static WriteContext userCommand(final Intent intent) {
-    return new UserCommand(intent);
+    return new UserCommand(intent, -1, -1);
+  }
+
+  static WriteContext userCommand(
+      final Intent intent, final long requestId, final int requestStreamId) {
+    return new UserCommand(intent, requestId, requestStreamId);
   }
 
   static WriteContext processingResult(final Intent intent) {
@@ -30,7 +35,7 @@ public sealed interface WriteContext {
     return Internal.INSTANCE;
   }
 
-  record UserCommand(Intent intent) implements WriteContext {}
+  record UserCommand(Intent intent, long requestId, int requestStreamId) implements WriteContext {}
 
   record ProcessingResult(Intent intent) implements WriteContext {}
 

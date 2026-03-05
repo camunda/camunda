@@ -62,7 +62,7 @@ public class FlowControlTest {
   @MethodSource("intentClassesProvider")
   public void shouldBlockCommandsBasedOnIntent(final Intent intent) {
     // given
-    final var writeContext = new UserCommand(intent);
+    final var writeContext = new UserCommand(intent, -1, -1);
 
     // when
     final var permits =
@@ -150,7 +150,7 @@ public class FlowControlTest {
     @Test
     void shouldCleanupInFlightEntryOnCommitError() {
       // given - acquire and register an in-flight entry
-      final var writeContext = new UserCommand(JobIntent.COMPLETE);
+      final var writeContext = new UserCommand(JobIntent.COMPLETE, -1, -1);
       final var entry =
           flowControl
               .tryAcquire(
@@ -183,6 +183,77 @@ public class FlowControlTest {
                           .intent(JobIntent.COMPLETE),
                       new UnifiedRecordValue(0))));
       EitherAssert.assertThat(nextEntry).isRight();
+    }
+
+    @Test
+    void shouldInvokeCommitErrorHandlerWithRequestMetadata() {
+      // given - set up a commit error handler and register a user command entry
+      final var capturedRequestId = new long[] {-1};
+      final var capturedStreamId = new int[] {-1};
+      final var capturedError = new Throwable[] {null};
+      flowControl.setCommitErrorHandler(
+          (requestId, requestStreamId, error) -> {
+            capturedRequestId[0] = requestId;
+            capturedStreamId[0] = requestStreamId;
+            capturedError[0] = error;
+          });
+
+      final var writeContext = new UserCommand(JobIntent.COMPLETE, 123L, 1);
+      final var entry =
+          flowControl
+              .tryAcquire(
+                  writeContext,
+                  List.of(
+                      LogAppendEntry.of(
+                          new RecordMetadata()
+                              .recordType(RecordType.COMMAND)
+                              .valueType(ValueType.JOB)
+                              .intent(JobIntent.COMPLETE),
+                          new UnifiedRecordValue(0))))
+              .get();
+      final long highestPosition = 42L;
+      flowControl.registerEntry(highestPosition, entry);
+      flowControl.onAppended(entry);
+
+      // when - simulate a commit error
+      final var error = new RuntimeException("Leader stepping down");
+      flowControl.onCommitError(1, highestPosition, error);
+
+      // then - the handler should be called with the correct request metadata
+      assertThat(capturedRequestId[0]).isEqualTo(123L);
+      assertThat(capturedStreamId[0]).isEqualTo(1);
+      assertThat(capturedError[0]).isSameAs(error);
+    }
+
+    @Test
+    void shouldNotInvokeCommitErrorHandlerForNonUserCommandEntries() {
+      // given - set up a commit error handler and register an internal entry (no request metadata)
+      final var handlerCalled = new boolean[] {false};
+      flowControl.setCommitErrorHandler(
+          (requestId, requestStreamId, error) -> handlerCalled[0] = true);
+
+      final var writeContext = WriteContext.internal();
+      final var entry =
+          flowControl
+              .tryAcquire(
+                  writeContext,
+                  List.of(
+                      LogAppendEntry.of(
+                          new RecordMetadata()
+                              .recordType(RecordType.COMMAND)
+                              .valueType(ValueType.JOB)
+                              .intent(JobIntent.COMPLETE),
+                          new UnifiedRecordValue(0))))
+              .get();
+      final long highestPosition = 42L;
+      flowControl.registerEntry(highestPosition, entry);
+      flowControl.onAppended(entry);
+
+      // when - simulate a commit error
+      flowControl.onCommitError(1, highestPosition, new RuntimeException("Leader stepping down"));
+
+      // then - the handler should NOT be called (requestId is -1 for internal entries)
+      assertThat(handlerCalled[0]).isFalse();
     }
 
     @Test
