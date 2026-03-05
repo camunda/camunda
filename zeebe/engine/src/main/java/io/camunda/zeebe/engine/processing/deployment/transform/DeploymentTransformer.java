@@ -36,9 +36,9 @@ import org.slf4j.Logger;
 public final class DeploymentTransformer {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
-  private static final DeploymentResourceTransformer UNKNOWN_RESOURCE =
-      new UnknownResourceTransformer();
   private final Map<String, DeploymentResourceTransformer> resourceTransformers;
+  private final DeploymentResourceTransformer defaultResourceTransformer;
+  private final boolean enableGenericResourceDeployment;
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
   // internal changes during processing
   private RejectionType rejectionType;
@@ -77,9 +77,15 @@ public final class DeploymentTransformer {
         new FormResourceTransformer(
             keyGenerator, stateWriter, checksumGenerator, processingState.getFormState(), config);
 
-    final var resourceTransformer =
+    final var rpaTransformer =
         new RpaTransformer(
             keyGenerator, stateWriter, checksumGenerator, processingState.getResourceState());
+
+    defaultResourceTransformer =
+        new DefaultResourceTransformer(
+            keyGenerator, stateWriter, checksumGenerator, processingState.getResourceState());
+
+    enableGenericResourceDeployment = featureFlags.enableGenericResourceDeployment();
 
     resourceTransformers =
         Map.ofEntries(
@@ -87,7 +93,7 @@ public final class DeploymentTransformer {
             entry(".xml", bpmnResourceTransformer),
             entry(".dmn", dmnResourceTransformer),
             entry(".form", formResourceTransformer),
-            entry(".rpa", resourceTransformer));
+            entry(".rpa", rpaTransformer));
   }
 
   public DirectBuffer getChecksum(final byte[] resource) {
@@ -139,7 +145,15 @@ public final class DeploymentTransformer {
       }
     }
 
-    // step 2: update metadata (optionally) and write actual event records
+    // step 2: update metadata (optionally) and write actual event records.
+    // Note: if every resource in the deployment turned out to be a duplicate (hasDuplicatesOnly),
+    // no records are written. Otherwise, any resource that was individually marked as a duplicate
+    // must also be re-versioned so that all resources in the deployment share the same deployment
+    // key and version increment (versioning invariant).
+    // Note: the resource ID is used as join key here to find the matching metadata entry, since it
+    // is guaranteed to be unique within a deployment (enforced by checkForDuplicateResourceId).
+    // The distributed path in DeploymentCreateProcessor re-computes the checksum instead, since
+    // the resource ID is not available on DeploymentResource without parsing.
     if (success) {
       for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
         success &= writeRecords(deploymentResource, deploymentEvent, errors);
@@ -216,7 +230,11 @@ public final class DeploymentTransformer {
         .filter(entry -> resourceName.endsWith(entry.getKey()))
         .map(Entry::getValue)
         .findFirst()
-        .orElse(UNKNOWN_RESOURCE);
+        .orElseGet(
+            () ->
+                enableGenericResourceDeployment
+                    ? defaultResourceTransformer
+                    : new UnsupportedResourceTransformer(resourceName));
   }
 
   private static void handleUnexpectedError(
@@ -225,16 +243,31 @@ public final class DeploymentTransformer {
     errors.append("\n'").append(resourceName).append("': ").append(exception.getMessage());
   }
 
-  private static final class UnknownResourceTransformer implements DeploymentResourceTransformer {
+  /**
+   * A transformer that rejects resources with unrecognized file extensions. Used when the
+   * {@code enableGenericResourceDeployment} alpha feature flag is disabled.
+   */
+  private static final class UnsupportedResourceTransformer
+      implements DeploymentResourceTransformer {
+
+    private final String resourceName;
+
+    UnsupportedResourceTransformer(final String resourceName) {
+      this.resourceName = resourceName;
+    }
 
     @Override
     public Either<Failure, Void> createMetadata(
         final DeploymentResource resource,
         final DeploymentRecord deployment,
         final DeploymentResourceContext context) {
-      final var failureMessage =
-          String.format("%n'%s': unknown resource type", resource.getResourceName());
-      return Either.left(new Failure(failureMessage));
+      return Either.left(
+          new Failure(
+              "'" + resourceName + "': unknown resource type. Generic resource deployment is"
+                  + " an alpha feature and must be enabled via"
+                  + " camunda.processing.enable-generic-resource-deployment=true"
+                  + " (or zeebe.broker.experimental.features.enableGenericResourceDeployment=true"
+                  + " for legacy configuration)."));
     }
 
     @Override

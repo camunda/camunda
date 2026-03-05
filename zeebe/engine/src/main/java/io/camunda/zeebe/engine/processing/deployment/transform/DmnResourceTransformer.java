@@ -226,6 +226,15 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
         .orElse(NO_VALIDATION_ERROR);
   }
 
+  private String findResourceName(
+      final DeploymentRecord deploymentEvent, final long decisionRequirementsKey) {
+    return deploymentEvent.getDecisionRequirementsMetadata().stream()
+        .filter(drg -> drg.getDecisionRequirementsKey() == decisionRequirementsKey)
+        .map(DecisionRequirementsMetadataValue::getResourceName)
+        .findFirst()
+        .orElse("<?>");
+  }
+
   private Either<Failure, ?> checkDrdIdNameLength(
       final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
     final var decisionRequirementsId = parsedDrg.getId();
@@ -288,16 +297,6 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                             name,
                             resource.getResourceName()))))
         .orElse(NO_VALIDATION_ERROR);
-  }
-
-  private String findResourceName(
-      final DeploymentRecord deploymentEvent, final long decisionRequirementsKey) {
-
-    return deploymentEvent.getDecisionRequirementsMetadata().stream()
-        .filter(drg -> drg.getDecisionRequirementsKey() == decisionRequirementsKey)
-        .map(DecisionRequirementsMetadataValue::getResourceName)
-        .findFirst()
-        .orElse("<?>");
   }
 
   private void appendMetadataToDeploymentEvent(

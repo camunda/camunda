@@ -8,3 +8,4 @@ zeebe:
         enableTimerDueDateCheckerAsync: true
         enableStraightThroughProcessingLoopDetector: false
         enableMessageBodyOnExpired: false
+        enableGenericResourceDeployment: true

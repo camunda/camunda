@@ -1,0 +1,2 @@
+This is a second test generic resource file.
+It has different content from test-generic-1.txt.

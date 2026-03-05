@@ -1014,6 +1014,11 @@ camunda: # Type: io.camunda.configuration.Camunda
     # and avoid performance degradation, the default value is false, meaning message bodies will not be
     # appended unless explicitly enabled.
     enable-message-body-on-expired: false # Type: Boolean, Env: CAMUNDA_PROCESSING_ENABLEMESSAGEBODYONEXPIRED
+    # Alpha feature: enables deployment of generic resources (any file type not recognized as BPMN,
+    # DMN, form, or RPA). When disabled (default), files with unrecognized extensions are rejected
+    # at deployment time. Enable this only when you need to store arbitrary resources for use via
+    # linked-resource service task bindings.
+    enable-generic-resource-deployment: false # Type: Boolean, Env: CAMUNDA_PROCESSING_ENABLEGENERICRESOURCEDEPLOYMENT
     # Configures if the basic operations on RocksDB, such as inserting or deleting key-value pairs, should
     # check preconditions, for example that a key does not already exist when inserting.
     enable-preconditions-check: false # Type: Boolean, Env: CAMUNDA_PROCESSING_ENABLEPRECONDITIONSCHECK

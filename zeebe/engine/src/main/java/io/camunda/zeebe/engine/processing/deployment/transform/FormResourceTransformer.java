@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.function.LongSupplier;
@@ -81,13 +82,11 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
         .findFirst()
         .ifPresent(
             metadata -> {
-              var key = metadata.getFormKey();
               if (metadata.isDuplicate()) {
                 // create new version as the deployment contains at least one other non-duplicate
                 // resource and all resources in a deployment should be versioned together
-                key = keyGenerator.nextKey();
                 metadata
-                    .setFormKey(key)
+                    .setFormKey(keyGenerator.nextKey())
                     .setVersion(
                         formState.getNextFormVersion(metadata.getFormId(), metadata.getTenantId()))
                     .setDuplicate(false)
@@ -164,15 +163,12 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
         .findLatestFormById(formRecord.getFormId(), tenantId)
         .ifPresentOrElse(
             latestForm -> {
-              final boolean isDuplicate =
-                  latestForm.getChecksum().equals(formRecord.getChecksumBuffer())
-                      && latestForm.getResourceName().equals(formRecord.getResourceNameBuffer());
-
-              if (isDuplicate) {
-                final int latestVersion = latestForm.getVersion();
+              if (formRecord.isDuplicateOf(
+                  BufferUtil.bufferAsArray(latestForm.getChecksum()),
+                  BufferUtil.bufferAsString(latestForm.getResourceName()))) {
                 formRecord
                     .setFormKey(latestForm.getFormKey())
-                    .setVersion(latestVersion)
+                    .setVersion(latestForm.getVersion())
                     .setDeploymentKey(latestForm.getDeploymentKey())
                     .setDuplicate(true);
               } else {
