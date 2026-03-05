@@ -101,13 +101,13 @@ func (s *ShutdownHandler) stopProcess(pidPath string) error {
 		return fmt.Errorf("stopProcess: unable to stat pidfile: %w", err)
 	}
 
-	pid, err := s.ProcessHandler.ReadPIDFromFile(pidPath)
+	pidList, err := s.ProcessHandler.ReadPIDsFromFile(pidPath)
 	if err != nil {
 		return fmt.Errorf("stopProcess: %w", err)
 	}
 
 	var killErr error
-	processPids := s.ProcessHandler.GetProcessFromPid(pid)
+	processPids := s.ProcessHandler.CollectCandidatePIDs(pidList)
 	for _, procPid := range processPids {
 		if procPid <= 0 {
 			continue
