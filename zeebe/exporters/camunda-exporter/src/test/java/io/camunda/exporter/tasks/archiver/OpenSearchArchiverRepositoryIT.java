@@ -11,6 +11,7 @@ import static io.camunda.search.test.utils.SearchDBExtension.ARCHIVER_IDX_PREFIX
 import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static io.camunda.search.test.utils.SearchDBExtension.create;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -937,10 +938,13 @@ final class OpenSearchArchiverRepositoryIT {
     final ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
 
     Awaitility.await()
-        .untilAsserted(() -> verify(genericClientSpy, times(1)).executeAsync(captor.capture()));
-
-    final var request = captor.getValue();
-    assertThat(request.getEndpoint()).isEqualTo("/_plugins/_ism/add/" + indexName2);
+        .untilAsserted(
+            () -> {
+              verify(genericClientSpy, atLeastOnce()).executeAsync(captor.capture());
+              assertThat(captor.getAllValues())
+                  .map(Request::getEndpoint)
+                  .anyMatch(e -> e.equals("/_plugins/_ism/add/" + indexName2));
+            });
     reset(genericClientSpy);
 
     // setting policy first time for srcIndexName but second time for indexName2, it
@@ -953,11 +957,13 @@ final class OpenSearchArchiverRepositoryIT {
     final var captor2 = ArgumentCaptor.forClass(Request.class);
 
     Awaitility.await()
-        .untilAsserted(() -> verify(genericClientSpy, times(1)).executeAsync(captor2.capture()));
-
-    final Request request2 = captor2.getValue();
-
-    assertThat(request2.getEndpoint()).isEqualTo("/_plugins/_ism/add/" + indexName1);
+        .untilAsserted(
+            () -> {
+              verify(genericClientSpy, atLeastOnce()).executeAsync(captor2.capture());
+              assertThat(captor2.getAllValues())
+                  .map(Request::getEndpoint)
+                  .anyMatch(e -> e.equals("/_plugins/_ism/add/" + indexName1));
+            });
   }
 
   @Test
@@ -989,11 +995,14 @@ final class OpenSearchArchiverRepositoryIT {
 
     final ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
 
-    verify(genericClientSpy, times(2)).executeAsync(captor.capture());
+    verify(genericClientSpy, atLeastOnce()).executeAsync(captor.capture());
 
-    final var requests = captor.getAllValues();
-    assertThat(requests)
-        .map(Request::getEndpoint)
+    final var addEndpoints =
+        captor.getAllValues().stream()
+            .map(Request::getEndpoint)
+            .filter(e -> e.startsWith("/_plugins/_ism/add/"))
+            .toList();
+    assertThat(addEndpoints)
         .containsExactlyInAnyOrder(
             "/_plugins/_ism/add/" + indexName1, "/_plugins/_ism/add/" + indexName2);
 
@@ -1006,9 +1015,13 @@ final class OpenSearchArchiverRepositoryIT {
 
     // then - only indexName1 should be included in the request, since the cache for it has expired
     final var captor2 = ArgumentCaptor.forClass(Request.class);
-    verify(genericClientSpy, times(1)).executeAsync(captor2.capture());
-    final var request2 = captor2.getValue();
-    assertThat(request2.getEndpoint()).isEqualTo("/_plugins/_ism/add/" + indexName1);
+    verify(genericClientSpy, atLeastOnce()).executeAsync(captor2.capture());
+    final var addEndpoints2 =
+        captor2.getAllValues().stream()
+            .map(Request::getEndpoint)
+            .filter(e -> e.startsWith("/_plugins/_ism/add/"))
+            .toList();
+    assertThat(addEndpoints2).containsExactly("/_plugins/_ism/add/" + indexName1);
   }
 
   /**
@@ -1099,12 +1112,16 @@ final class OpenSearchArchiverRepositoryIT {
         .untilAsserted(
             () ->
                 verify(
-                        genericClientSpy, times(20) // number of index templates
+                        genericClientSpy,
+                        times(
+                            40) // number of index templates * 2 (for change policy requests and add
+                        // policy requests)
                         )
                     .executeAsync(captor.capture()));
 
     final var putIndicesSettingsRequests = captor.getAllValues();
     assertThat(putIndicesSettingsRequests)
+        .filteredOn(req -> req.getEndpoint().contains("_ism/add"))
         .hasSize(20)
         .allSatisfy(
             request -> {
