@@ -308,6 +308,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
       - uses: ./.github/actions/build-zeebe
         name: Build Zeebe
         id: build-camunda
