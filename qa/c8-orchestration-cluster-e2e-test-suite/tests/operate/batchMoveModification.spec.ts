@@ -25,7 +25,7 @@ test.beforeAll(async () => {
   await deploy(['./resources/orderProcessBatchMod_v_1.bpmn']);
   await createInstances('orderProcessBatchMod', 1, NUM_PROCESS_INSTANCES);
 
-  await sleep(3000);
+  await sleep(5000);
 });
 
 test.describe('Process Instance Batch Modification', () => {

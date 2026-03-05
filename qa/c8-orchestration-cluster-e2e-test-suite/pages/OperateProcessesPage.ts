@@ -50,6 +50,8 @@ class OperateProcessesPage {
   readonly expandOperationsButton: Locator;
   readonly inProgressBar: Locator;
   readonly resultsText: Locator;
+  readonly viewParentInstanceLink: Locator;
+  readonly calledInstanceCell: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -146,6 +148,13 @@ class OperateProcessesPage {
       '[role="progressbar"][aria-busy="true"]',
     );
     this.resultsText = page.getByText('results');
+    this.viewParentInstanceLink = page
+      .getByTestId('data-list')
+      .getByRole('link', {name: /view parent instance/i});
+    this.calledInstanceCell = page
+      .getByTestId('data-list')
+      .getByTestId('cell-processInstanceKey')
+      .first();
   }
 
   async filterByProcessName(name: string): Promise<void> {
@@ -374,6 +383,10 @@ class OperateProcessesPage {
         'Progress bar did not appear or disappeared too quickly - operation likely completed fast',
       );
     }
+  }
+
+  async clickViewParentInstanceFromList(): Promise<void> {
+    await this.viewParentInstanceLink.click();
   }
 }
 
