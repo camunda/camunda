@@ -122,17 +122,23 @@ public class AuthInfo extends UnpackedObject {
   }
 
   /**
-   * Creates a new AuthInfo by deserializing from the given buffer. Returns null if the buffer
-   * represents an empty AuthInfo (identical to {@link EmptyAuthInfo}), avoiding allocation.
+   * Creates a new AuthInfo by deserializing from the given buffer. Returns the empty singleton if
+   * the buffer matches it, avoiding allocation. The buffer contents are copied so the returned
+   * instance does not retain a reference to the caller's buffer (which may be reused, e.g. in the
+   * processing state machine).
    */
   public static AuthInfo of(final DirectBuffer buffer) {
-    if (buffer.capacity() <= EmptyAuthInfo.getInstance().getLength()
+    if (buffer.capacity() == EmptyAuthInfo.getInstance().getLength()
         && buffer.equals(EmptyAuthInfo.getInstance().toDirectBuffer())) {
-      return null;
+      return empty();
     }
 
+    // Copy the buffer so deserialized properties don't reference the caller's buffer.
+    final var copy = new byte[buffer.capacity()];
+    buffer.getBytes(0, copy);
+
     final var auth = new AuthInfo();
-    auth.wrap(buffer);
+    auth.wrap(new UnsafeBuffer(copy));
     return auth.freeze();
   }
 
