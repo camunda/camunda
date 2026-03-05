@@ -32,96 +32,15 @@ const Paths = {
 
     return `/processes/${processInstanceId}`;
   },
-  processInstanceDetails(
-    params: {processInstanceId?: string | null; isRelative?: boolean} = {
-      processInstanceId: ':processInstanceId',
-      isRelative: false,
-    },
-  ) {
-    const {processInstanceId = ':processInstanceId', isRelative = false} =
-      params;
-
-    if (isRelative) {
-      return 'details';
-    }
-
-    return `/processes/${processInstanceId}/details`;
-  },
-  processInstanceIncidents(
-    params: {processInstanceId?: string | null; isRelative?: boolean} = {
-      processInstanceId: ':processInstanceId',
-      isRelative: false,
-    },
-  ) {
-    const {processInstanceId = ':processInstanceId', isRelative = false} =
-      params;
-
-    if (isRelative) {
-      return 'incidents';
-    }
-
-    return `/processes/${processInstanceId}/incidents`;
-  },
-  processInstanceInputMappings(
-    params: {processInstanceId?: string | null; isRelative?: boolean} = {
-      processInstanceId: ':processInstanceId',
-      isRelative: false,
-    },
-  ) {
-    const {processInstanceId = ':processInstanceId', isRelative = false} =
-      params;
-
-    if (isRelative) {
-      return 'input-mappings';
-    }
-
-    return `/processes/${processInstanceId}/input-mappings`;
-  },
-  processInstanceOutputMappings(
-    params: {processInstanceId?: string | null; isRelative?: boolean} = {
-      processInstanceId: ':processInstanceId',
-      isRelative: false,
-    },
-  ) {
-    const {processInstanceId = ':processInstanceId', isRelative = false} =
-      params;
-
-    if (isRelative) {
-      return 'output-mappings';
-    }
-
-    return `/processes/${processInstanceId}/output-mappings`;
-  },
-  processInstanceListeners(
-    params: {processInstanceId?: string | null; isRelative?: boolean} = {
-      processInstanceId: ':processInstanceId',
-      isRelative: false,
-    },
-  ) {
-    const {processInstanceId = ':processInstanceId', isRelative = false} =
-      params;
-
-    if (isRelative) {
-      return 'listeners';
-    }
-
-    return `/processes/${processInstanceId}/listeners`;
-  },
-  processInstanceOperationsLog(
-    params: {processInstanceId?: string | null; isRelative?: boolean} = {
-      processInstanceId: ':processInstanceId',
-      isRelative: false,
-    },
-  ) {
-    const {processInstanceId = ':processInstanceId', isRelative = false} =
-      params;
-
-    if (isRelative) {
-      return 'operations-log';
-    }
-
-    return `/processes/${processInstanceId}/operations-log`;
-  },
+  processInstanceDetails: getRelativeProcessInstancePathHandler('details'),
+  processInstanceIncidents: getRelativeProcessInstancePathHandler('incidents'),
+  processInstanceInputMappings:
+    getRelativeProcessInstancePathHandler('input-mappings'),
+  processInstanceOutputMappings:
+    getRelativeProcessInstancePathHandler('output-mappings'),
+  processInstanceListeners: getRelativeProcessInstancePathHandler('listeners'),
+  processInstanceOperationsLog:
+    getRelativeProcessInstancePathHandler('operations-log'),
   decisions() {
     return '/decisions';
   },
@@ -141,6 +60,24 @@ const Paths = {
     return `/batch-operations/${batchOperationKey}`;
   },
 } as const;
+
+function getRelativeProcessInstancePathHandler(path: string) {
+  return (
+    params: {processInstanceId?: string | null; isRelative?: boolean} = {
+      processInstanceId: ':processInstanceId',
+      isRelative: false,
+    },
+  ) => {
+    const {processInstanceId = ':processInstanceId', isRelative = false} =
+      params;
+
+    if (isRelative) {
+      return path;
+    }
+
+    return `/processes/${processInstanceId}/${path}`;
+  };
+}
 
 const Locations = {
   processes(filters?: ProcessInstanceFilters): To {
