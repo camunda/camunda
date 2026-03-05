@@ -50,6 +50,8 @@ import java.util.List;
  *       raft thread.
  *   <li>Calls to {@link #onCommit(long, long)} from the log storage, serialized through the single
  *       raft thread.
+ *   <li>Calls to {@link #onCommitError(long, long, Throwable)} from the log storage, serialized
+ *       through the single raft thread.
  *   <li>Calls to {@link #onProcessed(long)} from the stream processor, serialized through the
  *       stream processor actor.
  * </ol>
@@ -59,8 +61,8 @@ import java.util.List;
  * guarantees that the entry is present in the buffer when {@link #onWrite(long, long)} and {@link
  * #onCommit(long, long)} callbacks fire.
  *
- * <p>{@link #onWrite(long, long)} and {@link #onCommit(long, long)} and {@link #onProcessed(long)}
- * can be called in any order.
+ * <p>{@link #onWrite(long, long)}, {@link #onCommit(long, long)}, {@link #onCommitError(long, long,
+ * Throwable)} and {@link #onProcessed(long)} can be called in any order.
  *
  * <p>The {@link #inFlight} ring buffer is a fixed-capacity {@link RingBuffer} indexed by position.
  * It is modified by {@link #registerEntry(long, InFlightEntry)} (under the sequencer lock) and read
@@ -206,6 +208,16 @@ public final class FlowControl implements AppendListener {
     final var inFlightEntry = inFlight.get(highestPosition);
     if (inFlightEntry != null) {
       inFlightEntry.onCommit();
+    }
+  }
+
+  @Override
+  public void onCommitError(final long index, final long highestPosition, final Throwable error) {
+    metrics.decreaseInflightAppends();
+    final var inFlightEntry = inFlight.get(highestPosition);
+    if (inFlightEntry != null) {
+      inFlightEntry.cleanup();
+      inFlight.remove(inFlightEntry);
     }
   }
 

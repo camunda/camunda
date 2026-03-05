@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.Either;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -31,6 +32,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -139,5 +142,54 @@ public class FlowControlTest {
                                 .intent(intent),
                             new UnifiedRecordValue(0)))))
         .toList();
+  }
+
+  @Nested
+  class OnCommitError {
+
+    @Test
+    void shouldCleanupInFlightEntryOnCommitError() {
+      // given - acquire and register an in-flight entry
+      final var writeContext = new UserCommand(JobIntent.COMPLETE);
+      final var entry =
+          flowControl
+              .tryAcquire(
+                  writeContext,
+                  List.of(
+                      LogAppendEntry.of(
+                          new RecordMetadata()
+                              .recordType(RecordType.COMMAND)
+                              .valueType(ValueType.JOB)
+                              .intent(JobIntent.COMPLETE),
+                          new UnifiedRecordValue(0))))
+              .get();
+      final long highestPosition = 42L;
+      flowControl.registerEntry(highestPosition, entry);
+      flowControl.onAppended(entry);
+
+      // when - simulate a commit error (e.g., leader stepping down)
+      flowControl.onCommitError(1, highestPosition, new RuntimeException("Leader stepping down"));
+
+      // then - the in-flight entry should be cleaned up and removed
+      // Verify by trying to acquire again - if cleanup released the limiter slot, it should work
+      final var nextEntry =
+          flowControl.tryAcquire(
+              writeContext,
+              List.of(
+                  LogAppendEntry.of(
+                      new RecordMetadata()
+                          .recordType(RecordType.COMMAND)
+                          .valueType(ValueType.JOB)
+                          .intent(JobIntent.COMPLETE),
+                      new UnifiedRecordValue(0))));
+      EitherAssert.assertThat(nextEntry).isRight();
+    }
+
+    @Test
+    void shouldHandleCommitErrorForNonExistentEntry() {
+      // when - commit error for a position that was never registered
+      // then - should not throw
+      flowControl.onCommitError(1, 999L, new RuntimeException("Leader stepping down"));
+    }
   }
 }
