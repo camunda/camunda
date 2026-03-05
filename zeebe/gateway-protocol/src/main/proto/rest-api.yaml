@@ -11856,8 +11856,8 @@ components:
           allOf:
             - $ref: "#/components/schemas/FormId"
         schema:
-          description: The form content.
-          type: object
+          description: The form content as a JSON string.
+          type: string
         version:
           description: The version of the the deployed form.
           type: integer
