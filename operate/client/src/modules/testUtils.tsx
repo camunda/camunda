@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {BatchOperationDto} from './api/sharedTypes';
 import type {
   ProcessInstance,
   Variable,
@@ -16,11 +15,6 @@ import type {
   QueryProcessDefinitionsResponseBody,
   QueryProcessInstancesResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.9';
-import type {
-  ProcessInstanceEntity,
-  OperationEntity,
-  InstanceOperationEntity,
-} from 'modules/types/operate';
 import type {EnhancedIncident} from './hooks/incidents';
 
 const createRandomId = function* createRandomId(type: string) {
@@ -75,69 +69,6 @@ const createEnhancedIncident = (
     processDefinitionName: 'Some Process Name',
     elementName: 'Always Failing Task',
     isSelected: false,
-    ...options,
-  };
-};
-
-/**
- * @returns a mocked incident Object
- * @param {*} customProps Obj with any type of custom property
- */
-const createOperation = (
-  options: Partial<InstanceOperationEntity> = {},
-): InstanceOperationEntity => {
-  return {
-    id: randomIdIterator.next().value,
-    errorMessage: 'string',
-    state: 'SENT',
-    type: 'RESOLVE_INCIDENT',
-    batchOperationId: 'fe19ed17-a213-4b8d-ad10-2fb6d2bd89e5',
-    completedDate: null,
-    ...options,
-  };
-};
-
-const createBatchOperation = (
-  options: Partial<BatchOperationDto> = {},
-): BatchOperationDto => {
-  return {
-    id: randomIdIterator.next().value,
-    name: null,
-    type: 'RESOLVE_INCIDENT',
-    startDate: '2022-11-02T16:00:17.105+0100',
-    endDate: null,
-    username: 'demo',
-    instancesCount: 1,
-    operationsTotalCount: 1,
-    operationsFinishedCount: 0,
-    ...options,
-  };
-};
-
-/**
- * @returns a mocked instance Object with a unique id
- * @param {*} customProps Obj with any type of custom property
- * @deprecated this function is used to create data in the format of internal API responses.
- */
-const createInstance = (
-  options: Partial<ProcessInstanceEntity> = {},
-): ProcessInstanceEntity => {
-  return {
-    id: randomIdIterator.next().value,
-    processId: '2',
-    processName: 'someProcessName',
-    processVersion: 1,
-    startDate: '2018-06-21',
-    endDate: null,
-    state: 'ACTIVE',
-    bpmnProcessId: 'someKey',
-    hasActiveOperation: false,
-    operations: [createOperation()],
-    sortValues: [],
-    parentInstanceId: null,
-    rootInstanceId: null,
-    callHierarchy: [],
-    tenantId: '<default>',
     ...options,
   };
 };
@@ -470,42 +401,6 @@ const mockCallActivityProcessXML = `<?xml version="1.0" encoding="UTF-8"?>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>
 `;
-
-const operations: OperationEntity[] = [
-  {
-    id: '921455fd-849a-49c5-be17-c92eb6d9e946',
-    name: null,
-    type: 'CANCEL_PROCESS_INSTANCE',
-    startDate: '2020-09-30T06:02:32.748+0000',
-    endDate: '2020-09-29T15:38:34.372+0000',
-    instancesCount: 1,
-    operationsTotalCount: 1,
-    operationsFinishedCount: 0,
-    sortValues: ['9223372036854775807', '1601445752748'],
-  },
-  {
-    id: 'd116b2a3-eb19-47f1-85c0-60b3e1814aa2',
-    name: null,
-    type: 'CANCEL_PROCESS_INSTANCE',
-    startDate: '2020-09-29T15:37:20.187+0000',
-    endDate: '2020-09-29T15:38:34.372+0000',
-    instancesCount: 1,
-    operationsTotalCount: 1,
-    operationsFinishedCount: 1,
-    sortValues: ['1601393914372', '1601393840187'],
-  },
-  {
-    id: '68d41595-bbee-49d0-84c8-8713dc8584d5',
-    name: null,
-    type: 'CANCEL_PROCESS_INSTANCE',
-    startDate: '2020-09-29T15:37:16.052+0000',
-    endDate: '2020-09-29T15:38:22.227+0000',
-    instancesCount: 1,
-    operationsTotalCount: 1,
-    operationsFinishedCount: 1,
-    sortValues: ['1601393902227', '1601393836052'],
-  },
-];
 
 const multiInstanceProcess = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1kgscet" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.16.0">
@@ -992,15 +887,12 @@ export {
   mockProcessXML,
   mockProcessWithInputOutputMappingsXML,
   mockCallActivityProcessXML,
-  operations,
   multiInstanceProcess,
   eventSubProcess,
   mockProcessInstancesV2,
   createVariable,
-  createBatchOperation,
   createUser,
   createProcessInstance,
   createProcessDefinition,
-  createInstance,
   adHocSubProcessInnerInstance,
 };

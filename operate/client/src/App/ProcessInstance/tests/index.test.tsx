@@ -7,15 +7,14 @@
  */
 
 import {render, screen, within} from 'modules/testing-library';
-import {testData} from './index.setup';
 import {ProcessInstance} from '../index';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {PAGE_TITLE} from 'modules/constants';
-import {getProcessName} from 'modules/utils/instance';
 import {getWrapper, mockRequests} from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {createVariable} from 'modules/testUtils';
+import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
+import {getProcessDefinitionName} from 'modules/utils/instance';
 
 vi.mock('modules/utils/bpmn');
 
@@ -50,8 +49,8 @@ describe('ProcessInstance', () => {
 
     expect(document.title).toBe(
       PAGE_TITLE.INSTANCE(
-        testData.fetch.onPageLoad.processInstance.id,
-        getProcessName(testData.fetch.onPageLoad.processInstance),
+        mockProcessInstance.processInstanceKey,
+        getProcessDefinitionName(mockProcessInstance),
       ),
     );
 
@@ -62,13 +61,7 @@ describe('ProcessInstance', () => {
   it('should display skeletons until instance is available', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
-    mockFetchProcessInstanceDeprecated().withServerError(404);
-
     render(<ProcessInstance />, {wrapper: getWrapper()});
-
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      testData.fetch.onPageLoad.processInstance,
-    );
 
     vi.runOnlyPendingTimers();
 
@@ -83,7 +76,6 @@ describe('ProcessInstance', () => {
   });
 
   it('should display forbidden content', async () => {
-    mockFetchProcessInstanceDeprecated().withServerError(403);
     mockFetchProcessInstance().withServerError(403);
 
     render(<ProcessInstance />, {wrapper: getWrapper()});
