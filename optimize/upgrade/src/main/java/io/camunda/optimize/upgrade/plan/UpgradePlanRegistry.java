@@ -26,14 +26,13 @@ public class UpgradePlanRegistry {
   private final Map<Semver, UpgradePlan> upgradePlans;
 
   public UpgradePlanRegistry(final Supplier<List<UpgradePlan>> plansSupplier) {
-    this(plansSupplier, Version.VERSION);
+    this(plansSupplier.get(), Version.VERSION);
   }
 
   @VisibleForTesting
-  UpgradePlanRegistry(
-      final Supplier<List<UpgradePlan>> plansSupplier, final String currentVersion) {
-    this.upgradePlans = new HashMap<>();
-    plansSupplier.get().forEach(plan -> upgradePlans.put(plan.getToVersion(), plan));
+  UpgradePlanRegistry(final List<UpgradePlan> explicitUpgradePlans, final String currentVersion) {
+    upgradePlans = new HashMap<>();
+    explicitUpgradePlans.forEach(plan -> upgradePlans.put(plan.getToVersion(), plan));
 
     // Generate the cross-minor no-op plan (e.g. 8.9 -> 8.10.0) if no explicit factory already
     // targets X.Y.0, then fill any missing patch-to-patch gaps within the current minor.

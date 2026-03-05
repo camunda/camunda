@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.vdurmont.semver4j.Semver;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
@@ -28,7 +29,7 @@ public class UpgradePlanRegistryTest {
             .toList();
 
     // when
-    final var registry = new UpgradePlanRegistry(() -> upgradePlans, "3.8.2");
+    final var registry = new UpgradePlanRegistry(upgradePlans, "3.8.2");
 
     // then
     assertThat(registry.getSequentialUpgradePlansToTargetVersion("3.8.2"))
@@ -43,7 +44,7 @@ public class UpgradePlanRegistryTest {
     final var targetVersion = "8.8.3";
 
     // when
-    final var registry = new UpgradePlanRegistry(List::of, targetVersion);
+    final var registry = new UpgradePlanRegistry(Collections.emptyList(), targetVersion);
 
     // then
     final var plans = registry.getSequentialUpgradePlansToTargetVersion(targetVersion);
@@ -63,8 +64,7 @@ public class UpgradePlanRegistryTest {
     final var explicitPlan882to883 = createUpgradePlan("8.8.2", "8.8.3");
 
     // when
-    final var registry =
-        new UpgradePlanRegistry(() -> List.of(explicitPlan882to883), targetVersion);
+    final var registry = new UpgradePlanRegistry(List.of(explicitPlan882to883), targetVersion);
 
     // then
     final var plans = registry.getSequentialUpgradePlansToTargetVersion(targetVersion);
@@ -85,7 +85,7 @@ public class UpgradePlanRegistryTest {
     final var targetVersion = "8.9.0";
 
     // when
-    final var registry = new UpgradePlanRegistry(List::of, targetVersion);
+    final var registry = new UpgradePlanRegistry(Collections.emptyList(), targetVersion);
 
     // then
     final var plans = registry.getSequentialUpgradePlansToTargetVersion(targetVersion);
@@ -102,8 +102,7 @@ public class UpgradePlanRegistryTest {
     final var crossMinorPlan87to880 = createUpgradePlan("8.7", "8.8.0");
 
     // when
-    final var registry =
-        new UpgradePlanRegistry(() -> List.of(crossMinorPlan87to880), targetVersion);
+    final var registry = new UpgradePlanRegistry(List.of(crossMinorPlan87to880), targetVersion);
 
     // then: explicit cross-minor plan is preserved, plus 3 auto-generated patch plans
     final var plans = registry.getSequentialUpgradePlansToTargetVersion(targetVersion);
@@ -123,7 +122,7 @@ public class UpgradePlanRegistryTest {
     final var targetVersion = "8.10.3";
 
     // when
-    final var registry = new UpgradePlanRegistry(List::of, targetVersion);
+    final var registry = new UpgradePlanRegistry(Collections.emptyList(), targetVersion);
 
     // then: a no-op plan from 8.9 -> 8.10.0 is generated
     final var plans = registry.getSequentialUpgradePlansToTargetVersion(targetVersion);
@@ -139,7 +138,7 @@ public class UpgradePlanRegistryTest {
     final var currentVersion = "9.0.2";
 
     // when / then: previous minor cannot be computed — an explicit factory is required
-    assertThatThrownBy(() -> new UpgradePlanRegistry(List::of, currentVersion))
+    assertThatThrownBy(() -> new UpgradePlanRegistry(Collections.emptyList(), currentVersion))
         .isInstanceOf(UpgradeRuntimeException.class)
         .hasMessage(
             "Cannot compute previous minor version from 9.0.2. An explicit UpgradePlanFactory targeting 9.0.0 is required.");
@@ -152,7 +151,7 @@ public class UpgradePlanRegistryTest {
     final var explicitPlan89to900 = createUpgradePlan("8.9", targetVersion);
 
     // when - then: no exception — the existing plan is preserved
-    final var registry = new UpgradePlanRegistry(() -> List.of(explicitPlan89to900), targetVersion);
+    final var registry = new UpgradePlanRegistry(List.of(explicitPlan89to900), targetVersion);
 
     final var plans = registry.getSequentialUpgradePlansToTargetVersion(targetVersion);
     assertThat(plans)
@@ -167,7 +166,7 @@ public class UpgradePlanRegistryTest {
     final var jumpPlan882to8810 = createUpgradePlan("8.8.2", "8.8.10");
 
     // when
-    final var registry = new UpgradePlanRegistry(() -> List.of(jumpPlan882to8810), targetVersion);
+    final var registry = new UpgradePlanRegistry(List.of(jumpPlan882to8810), targetVersion);
 
     // then: no plans for 8.8.3 through 8.8.9
     final var plans = registry.getSequentialUpgradePlansToTargetVersion(targetVersion);
@@ -189,7 +188,7 @@ public class UpgradePlanRegistryTest {
     final var jumpPlan883to887 = createUpgradePlan("8.8.3", targetVersion);
 
     // when
-    final var registry = new UpgradePlanRegistry(() -> List.of(jumpPlan883to887), targetVersion);
+    final var registry = new UpgradePlanRegistry(List.of(jumpPlan883to887), targetVersion);
 
     // then: auto 0->1->2->3, jump 3->7, no 8.8.4/5/6
     final var plans = registry.getSequentialUpgradePlansToTargetVersion(targetVersion);
@@ -210,7 +209,7 @@ public class UpgradePlanRegistryTest {
     final var jumpPlan880to885 = createUpgradePlan("8.8.0", "8.8.5");
 
     // when
-    final var registry = new UpgradePlanRegistry(() -> List.of(jumpPlan880to885), targetVersion);
+    final var registry = new UpgradePlanRegistry(List.of(jumpPlan880to885), targetVersion);
 
     // then: jump 0->5, auto 5->6->7, no 8.8.1/2/3/4
     final var plans = registry.getSequentialUpgradePlansToTargetVersion(targetVersion);
