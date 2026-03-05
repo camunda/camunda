@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.agrona.BitUtil;
 import org.slf4j.Logger;
@@ -35,7 +34,8 @@ final class RingBuffer {
 
   private final AtomicReferenceArray<InFlightEntry> buffer;
   private final int mask;
-  private final AtomicLong lastWrittenPosition = new AtomicLong();
+  // NOTE: this field is not volatile
+  private long lastWrittenPosition = -1;
 
   /**
    * Creates a new ring buffer with at least the given capacity. The actual capacity is rounded up
@@ -64,6 +64,10 @@ final class RingBuffer {
   void put(final long position, final InFlightEntry entry) {
     // Plain write, published by the volatile getAndSet below (happens-before).
     entry.position = position;
+    // IMPORTANT:
+    // lastWrittenPosition must be written before the buffer is modified:
+    // clients that will do a get() will see the updated value.
+    lastWrittenPosition = position;
     final var displaced = buffer.getAndSet((int) (position & mask), entry);
     if (displaced != null) {
       // position is a long, which will get boxed without the if check
@@ -75,7 +79,6 @@ final class RingBuffer {
       }
       displaced.cleanup();
     }
-    lastWrittenPosition.set(position);
   }
 
   /**
@@ -87,8 +90,18 @@ final class RingBuffer {
     return entry != null && entry.position == position ? entry : null;
   }
 
+  /**
+   * The returned value is not a volatile read, so it might not be up to date, unless a {@link
+   * RingBuffer#get(long)} is called beforehand.
+   *
+   * <p>This is done to not add overhead (as it's in the hot path) as this getter is not really
+   * necessary in production code. If it becomes necessary to have a volatile read, then the field
+   * must be updated.
+   *
+   * @return the last written position to the buffer
+   */
   long lastWrittenPosition() {
-    return lastWrittenPosition.get();
+    return lastWrittenPosition;
   }
 
   /**
