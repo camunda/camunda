@@ -53,10 +53,6 @@ const skeletonColumns: {
     skeletonWidth: '142px',
   },
   {
-    name: 'End Date',
-    skeletonWidth: '142px',
-  },
-  {
     name: 'Called Instances',
     skeletonWidth: '142px',
   },
@@ -93,7 +89,13 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   });
 
   if (processInstance === null || isPending) {
-    return <Skeleton headerColumns={skeletonColumns} />;
+    return (
+      <Skeleton
+        backButtonLabel="Back"
+        onBackClick={() => navigate(-1)}
+        headerColumns={skeletonColumns}
+      />
+    );
   }
 
   const versionColumnTitle = `View process "${getProcessDefinitionName(

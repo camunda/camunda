@@ -66,7 +66,13 @@ const Header: React.FC<HeaderProps> = ({
   );
 
   if (status === 'pending') {
-    return <Skeleton headerColumns={headerColumns} />;
+    return (
+      <Skeleton
+        backButtonLabel="Back"
+        onBackClick={() => navigate(-1)}
+        headerColumns={headerColumns}
+      />
+    );
   }
 
   if (status === 'success' && decisionInstance !== null) {
