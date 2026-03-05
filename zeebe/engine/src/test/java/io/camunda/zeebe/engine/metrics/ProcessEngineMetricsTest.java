@@ -258,7 +258,14 @@ public class ProcessEngineMetricsTest {
     engine.stop();
     engine.start();
 
-    assertThat(activeRootProcessInstanceGauge()).isNotNull().isEqualTo(3);
+    // we create a new pi to register the metric
+    final long processInstanceKey4 = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey4)
+        .withElementType(BpmnElementType.USER_TASK)
+        .await();
+
+    assertThat(activeRootProcessInstanceGauge()).isNotNull().isEqualTo(4);
   }
 
   private Double activatedProcessInstanceMetric() {
