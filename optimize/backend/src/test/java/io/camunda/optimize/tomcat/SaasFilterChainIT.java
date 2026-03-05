@@ -25,6 +25,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -67,6 +68,7 @@ import org.springframework.web.context.WebApplicationContext;
  *   <li>No-cache headers — present on API and SPA root responses
  * </ul>
  */
+@Tag("ccsm-test")
 @ActiveProfiles("cloud")
 @Import(SaasFilterChainIT.SaasConfig.class)
 @SpringBootTest(

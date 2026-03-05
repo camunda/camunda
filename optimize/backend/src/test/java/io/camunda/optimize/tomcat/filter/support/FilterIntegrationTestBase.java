@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
 import io.camunda.optimize.Main;
 import io.camunda.optimize.tomcat.CCSMRequestAdjustmentFilter;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -40,6 +41,7 @@ import org.springframework.web.context.WebApplicationContext;
       "optimize.import.enabled=false",
       "spring.main.allow-bean-definition-overriding=true",
     })
+@Tag("ccsm-test")
 public abstract class FilterIntegrationTestBase {
 
   @Autowired protected WebApplicationContext wac;
