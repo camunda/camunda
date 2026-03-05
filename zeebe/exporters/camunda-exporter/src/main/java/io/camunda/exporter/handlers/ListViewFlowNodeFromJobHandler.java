@@ -48,14 +48,11 @@ public class ListViewFlowNodeFromJobHandler
 
   @Override
   public boolean handlesRecord(final Record<JobRecordValue> record) {
-    // do not handle record if the job is executed on a process instance instead of a flow node
-    // instance
     final var recordValue = record.getValue();
-    // only execute update if job is on a flownode (not on a process)
-    if (recordValue.getElementInstanceKey() == recordValue.getProcessInstanceKey()) {
-      return false;
-    }
-    return true;
+    // only execute update if job is on a flownode instance (not on a process instance)
+    // only execute update if it's not a job cancellation from a user task implementation migration
+    return recordValue.getElementInstanceKey() != recordValue.getProcessInstanceKey()
+        && !recordValue.isJobToUserTaskMigration();
   }
 
   @Override
