@@ -173,10 +173,7 @@ public class CheckpointSchedulerAcceptanceIT {
     cluster
         .brokers()
         .values()
-        .forEach(
-            broker ->
-                configureBroker(
-                    broker, backupCfg -> backupCfg.setCheckpointInterval(Duration.ofSeconds(5))));
+        .forEach(broker -> configureBroker(broker, backupCfg -> backupCfg.setSchedule("PT5S")));
 
     cluster.start().awaitCompleteTopology();
     client = cluster.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(2)).build();
@@ -189,7 +186,7 @@ public class CheckpointSchedulerAcceptanceIT {
               final var actuator = BackupActuator.of(cluster.availableGateway());
               final var state = actuator.state();
 
-              assertCheckpointsCreated(state, CheckpointType.MARKER);
+              assertCheckpointsCreated(state, CheckpointType.SCHEDULED_BACKUP);
 
               final var checkpointIds =
                   state.getCheckpointStates().stream()
@@ -224,7 +221,7 @@ public class CheckpointSchedulerAcceptanceIT {
               final var actuator = BackupActuator.of(cluster.availableGateway());
               final var state = actuator.state();
 
-              assertCheckpointsCreated(state, CheckpointType.MARKER);
+              assertCheckpointsCreated(state, CheckpointType.SCHEDULED_BACKUP);
 
               final var checkpointIds =
                   state.getCheckpointStates().stream()
