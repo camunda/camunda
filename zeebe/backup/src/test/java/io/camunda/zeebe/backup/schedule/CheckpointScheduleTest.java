@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.backup.schedule;
 
-import static io.camunda.zeebe.backup.schedule.CheckpointScheduler.SKIP_CHECKPOINT_THRESHOLD;
 import static io.camunda.zeebe.backup.schedule.SchedulerMetrics.LAST_CHECKPOINT_GAUGE_NAME;
 import static io.camunda.zeebe.backup.schedule.SchedulerMetrics.LAST_CHECKPOINT_ID_GAUGE_NAME;
 import static io.camunda.zeebe.backup.schedule.SchedulerMetrics.NEXT_CHECKPOINT_GAUGE_NAME;
@@ -166,14 +165,13 @@ public class CheckpointScheduleTest {
   }
 
   @Test
-  void shouldRequestBackupInsteadOfCheckpoint() {
-    // given
+  void shouldRunBothSchedulesIndependently() {
+    // given – both schedules are enabled with the same interval
     final var now = actorScheduler.getClock().getCurrentTime();
-    final var backupInterval = Duration.ofSeconds(5).toMillis() + SKIP_CHECKPOINT_THRESHOLD;
     checkpointScheduler =
         createScheduler(
             new Schedule.IntervalSchedule(Duration.ofSeconds(5)),
-            new Schedule.IntervalSchedule(Duration.ofMillis(backupInterval)));
+            new Schedule.IntervalSchedule(Duration.ofSeconds(5)));
 
     when(backupRequestHandler.getCheckpointState())
         .thenReturn(
@@ -183,16 +181,16 @@ public class CheckpointScheduleTest {
     // when
     actorScheduler.submitActor(checkpointScheduler);
     actorScheduler.workUntilDone();
-    actorScheduler.updateClock(Duration.ofMillis(backupInterval));
+    actorScheduler.updateClock(Duration.ofSeconds(5));
     actorScheduler.workUntilDone();
 
-    // then
-    verify(backupRequestHandler, times(2)).getCheckpointState();
-
+    // then – both loops fire independently
+    verify(backupRequestHandler, times(1)).checkpoint(CheckpointType.MARKER);
+    verify(backupRequestHandler, times(1))
+        .takeBackup(anyLong(), argThat(type -> type == CheckpointType.MARKER));
     verify(backupRequestHandler, times(1)).checkpoint(CheckpointType.SCHEDULED_BACKUP);
     verify(backupRequestHandler, times(1))
         .takeBackup(anyLong(), argThat(type -> type == CheckpointType.SCHEDULED_BACKUP));
-    verifyNoMoreInteractions(backupRequestHandler);
   }
 
   @Test
@@ -275,50 +273,63 @@ public class CheckpointScheduleTest {
               final int count = callCount.incrementAndGet();
               switch (count) {
                 case 1:
-                  // initial
+                  // marker loop: initial state
                   return CompletableFuture.completedStage(
                       checkpointState(initTime.toEpochMilli(), latestBackupCheckpoint));
                 case 2:
-                  // after 5s
+                  // backup loop: initial state
+                  return CompletableFuture.completedStage(
+                      checkpointState(initTime.toEpochMilli(), latestBackupCheckpoint));
+                case 3:
+                  // marker loop after 5s
                   return CompletableFuture.completedStage(
                       checkpointState(
                           initTime.plusSeconds(5).toEpochMilli(), latestBackupCheckpoint));
-                case 3:
-                  // after 10s
+                case 4:
+                  // backup loop after 5s (not due yet)
+                  return CompletableFuture.completedStage(
+                      checkpointState(
+                          initTime.plusSeconds(5).toEpochMilli(), latestBackupCheckpoint));
+                case 5:
+                  // marker loop after 10s
                   return CompletableFuture.completedStage(
                       checkpointState(
                           initTime.plusSeconds(10).toEpochMilli(), latestBackupCheckpoint));
-                case 4:
-                  // after 15s
+                case 6:
+                  // backup loop after 10s (not due yet)
                   return CompletableFuture.completedStage(
                       checkpointState(
-                          initTime.plusSeconds(15).toEpochMilli(),
-                          latestBackupCheckpoint + Duration.ofSeconds(15).toMillis()));
-                case 5:
-                  // after 20s
+                          initTime.plusSeconds(10).toEpochMilli(), latestBackupCheckpoint));
+                case 7:
+                  // marker loop after 15s
                   return CompletableFuture.completedStage(
                       checkpointState(
-                          initTime.plusSeconds(25).toEpochMilli(),
-                          latestBackupCheckpoint + Duration.ofSeconds(15).toMillis()));
+                          initTime.plusSeconds(15).toEpochMilli(), latestBackupCheckpoint));
+                case 8:
+                  // backup loop after 15s (due now)
+                  return CompletableFuture.completedStage(
+                      checkpointState(
+                          initTime.plusSeconds(15).toEpochMilli(), latestBackupCheckpoint));
                 default:
-                  return null;
+                  return CompletableFuture.completedStage(
+                      checkpointState(
+                          initTime.plusSeconds(20).toEpochMilli(),
+                          latestBackupCheckpoint + Duration.ofSeconds(15).toMillis()));
               }
             });
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 3; i++) {
       actorScheduler.updateClock(Duration.ofSeconds(5));
       actorScheduler.workUntilDone();
     }
-    verify(backupRequestHandler, times(5)).getCheckpointState();
 
-    // then
+    // then – marker fires every 5s (3 times), backup fires at 15s (1 time)
     verify(backupRequestHandler, times(3)).checkpoint(CheckpointType.MARKER);
     verify(backupRequestHandler, times(3))
         .takeBackup(anyLong(), argThat(type -> type == CheckpointType.MARKER));
     verify(backupRequestHandler, times(1)).checkpoint(CheckpointType.SCHEDULED_BACKUP);
     verify(backupRequestHandler, times(1))
         .takeBackup(anyLong(), argThat(type -> type == CheckpointType.SCHEDULED_BACKUP));
-    verifyNoMoreInteractions(backupRequestHandler);
   }
 
   @Test
@@ -527,7 +538,7 @@ public class CheckpointScheduleTest {
   }
 
   @Test
-  void shouldBackOffWhenPartitionIsLaggingBehindOnCheckpoint() {
+  void shouldNotBackOffWhenPartitionIsLaggingBehindOnCheckpoint() {
     // given
     final var interval = Duration.ofSeconds(10);
     final var now = actorScheduler.getClock().getCurrentTime();
@@ -535,8 +546,8 @@ public class CheckpointScheduleTest {
 
     // Two partitions with checkpoint states: partition 1 is lagging behind by more than the
     // interval
-    final var laggingTimestamp = now.minus(Duration.ofSeconds(16)).toEpochMilli();
-    final var currentTimestamp = now.toEpochMilli();
+    final var laggingTimestamp = now.minus(Duration.ofSeconds(25)).toEpochMilli();
+    final var currentTimestamp = now.minus(Duration.ofSeconds(11)).toEpochMilli();
     final var response = new CheckpointStateResponse();
     response.setCheckpointStates(
         Set.of(
@@ -554,16 +565,9 @@ public class CheckpointScheduleTest {
     actorScheduler.submitActor(checkpointScheduler);
     actorScheduler.workUntilDone();
 
-    // then - no checkpoint should have been taken due to lagging partition
+    // then
     verify(backupRequestHandler, times(1)).getCheckpointState();
-    verify(backupRequestHandler, times(0)).checkpoint(any());
-
-    // Move clock past initial backoff (1s) to allow retry
-    actorScheduler.updateClock(Duration.ofSeconds(2));
-    actorScheduler.workUntilDone();
-
-    // Should have retried after backoff
-    verify(backupRequestHandler, times(2)).getCheckpointState();
+    verify(backupRequestHandler, times(1)).checkpoint(any());
   }
 
   @Test
