@@ -119,8 +119,12 @@ test.describe('decision instance page', () => {
       decisionInstanceKey: '1',
     });
 
-    // wait for monaco-editor to be fully rendered
-    await page.waitForTimeout(500);
+    await expect(
+      page.getByRole('heading', {name: 'Invoice Business Decisions'}),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId('results-json-viewer').getByText('$1000'),
+    ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
