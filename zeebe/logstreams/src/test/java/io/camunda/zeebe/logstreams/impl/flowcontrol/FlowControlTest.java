@@ -28,6 +28,10 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AutoClose;
@@ -188,14 +192,14 @@ public class FlowControlTest {
     @Test
     void shouldInvokeCommitErrorHandlerWithRequestMetadata() {
       // given - set up a commit error handler and register a user command entry
-      final var capturedRequestId = new long[] {-1};
-      final var capturedStreamId = new int[] {-1};
-      final var capturedError = new Throwable[] {null};
+      final var capturedRequestId = new AtomicLong(-1);
+      final var capturedStreamId = new AtomicInteger(-1);
+      final var capturedError = new AtomicReference<Throwable>();
       flowControl.setCommitErrorHandler(
           (requestId, requestStreamId, error) -> {
-            capturedRequestId[0] = requestId;
-            capturedStreamId[0] = requestStreamId;
-            capturedError[0] = error;
+            capturedRequestId.set(requestId);
+            capturedStreamId.set(requestStreamId);
+            capturedError.set(error);
           });
 
       final var writeContext = new UserCommand(JobIntent.COMPLETE, 123L, 1);
@@ -220,17 +224,17 @@ public class FlowControlTest {
       flowControl.onCommitError(1, highestPosition, error);
 
       // then - the handler should be called with the correct request metadata
-      assertThat(capturedRequestId[0]).isEqualTo(123L);
-      assertThat(capturedStreamId[0]).isEqualTo(1);
-      assertThat(capturedError[0]).isSameAs(error);
+      assertThat(capturedRequestId.get()).isEqualTo(123L);
+      assertThat(capturedStreamId.get()).isEqualTo(1);
+      assertThat(capturedError.get()).isSameAs(error);
     }
 
     @Test
     void shouldNotInvokeCommitErrorHandlerForNonUserCommandEntries() {
       // given - set up a commit error handler and register an internal entry (no request metadata)
-      final var handlerCalled = new boolean[] {false};
+      final var handlerCalled = new AtomicBoolean(false);
       flowControl.setCommitErrorHandler(
-          (requestId, requestStreamId, error) -> handlerCalled[0] = true);
+          (requestId, requestStreamId, error) -> handlerCalled.set(true));
 
       final var writeContext = WriteContext.internal();
       final var entry =
@@ -253,7 +257,7 @@ public class FlowControlTest {
       flowControl.onCommitError(1, highestPosition, new RuntimeException("Leader stepping down"));
 
       // then - the handler should NOT be called (requestId is -1 for internal entries)
-      assertThat(handlerCalled[0]).isFalse();
+      assertThat(handlerCalled.get()).isFalse();
     }
 
     @Test

@@ -18,7 +18,14 @@ public final class InFlightEntry {
   Listener requestListener;
   CloseableSilently writeTimer;
   CloseableSilently commitTimer;
+
+  /**
+   * Request identification for user commands. A value of {@code -1} indicates no request metadata
+   * (e.g., for internal or processing-result entries). A non-negative value indicates a user
+   * command whose commit error should be reported back to the client.
+   */
   long requestId = -1;
+
   int requestStreamId = -1;
 
   /**
