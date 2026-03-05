@@ -212,6 +212,10 @@ components:
         email:
           description: The email of the user.
           type: string
+      required:
+        - username
+        - name
+        - email
 
     UserUpdateRequest:
       type: object
@@ -237,6 +241,10 @@ components:
         email:
           description: The email of the user.
           type: string
+      required:
+        - username
+        - name
+        - email
 
     UserResult:
       type: object
@@ -249,6 +257,10 @@ components:
         email:
           description: The email of the user.
           type: string
+      required:
+        - username
+        - name
+        - email
 
     UserSearchQuerySortRequest:
       type: object

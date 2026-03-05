@@ -770,6 +770,10 @@ components:
           type: string
           description: The description of the tenant.
           example: Customer Service department business processes
+      required:
+        - tenantId
+        - name
+        - description
 
     TenantUpdateRequest:
       type: object
@@ -795,6 +799,10 @@ components:
         description:
           type: string
           description: The description of the tenant.
+      required:
+        - tenantId
+        - name
+        - description
 
     TenantResult:
       description: Tenant search response item.
@@ -810,6 +818,10 @@ components:
           type: string
           description: The tenant description.
           example: Customer Service department business processes
+      required:
+        - tenantId
+        - name
+        - description
 
     TenantSearchQuerySortRequest:
       type: object
@@ -873,6 +885,8 @@ components:
       properties:
         username:
           $ref: 'identifiers.yaml#/components/schemas/Username'
+      required:
+        - username
 
     TenantUserSearchResult:
       required:
@@ -918,6 +932,8 @@ components:
         clientId:
           description: The ID of the client.
           type: string
+      required:
+        - clientId
 
     TenantClientSearchResult:
       required:
@@ -963,6 +979,8 @@ components:
         groupId:
           description: The groupId of the group.
           type: string
+      required:
+        - groupId
 
     TenantGroupSearchResult:
       type: object
