@@ -95,6 +95,14 @@ const routes = createRoutesFromElements(
           <>
             <Route index element={null} />
             <Route
+              path={Paths.processInstanceDetails({isRelative: true})}
+              element={null}
+            />
+            <Route
+              path={Paths.processInstanceIncidents({isRelative: true})}
+              element={null}
+            />
+            <Route
               path={Paths.processInstanceInputMappings({isRelative: true})}
               element={null}
             />

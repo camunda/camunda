@@ -32,6 +32,36 @@ const Paths = {
 
     return `/processes/${processInstanceId}`;
   },
+  processInstanceDetails(
+    params: {processInstanceId?: string | null; isRelative?: boolean} = {
+      processInstanceId: ':processInstanceId',
+      isRelative: false,
+    },
+  ) {
+    const {processInstanceId = ':processInstanceId', isRelative = false} =
+      params;
+
+    if (isRelative) {
+      return 'details';
+    }
+
+    return `/processes/${processInstanceId}/details`;
+  },
+  processInstanceIncidents(
+    params: {processInstanceId?: string | null; isRelative?: boolean} = {
+      processInstanceId: ':processInstanceId',
+      isRelative: false,
+    },
+  ) {
+    const {processInstanceId = ':processInstanceId', isRelative = false} =
+      params;
+
+    if (isRelative) {
+      return 'incidents';
+    }
+
+    return `/processes/${processInstanceId}/incidents`;
+  },
   processInstanceInputMappings(
     params: {processInstanceId?: string | null; isRelative?: boolean} = {
       processInstanceId: ':processInstanceId',
