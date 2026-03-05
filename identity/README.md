@@ -79,7 +79,7 @@ CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true \
 If you would like to enable operate and tasklist, you can add their profile to the `SPRING_PROFILES_ACTIVE` variable like this:
 
 ```
-SPRING_PROFILES_ACTIVE=operate,tasklist,consolidated-auth,broker,identity,elasticsearch/rdbmsH2  \
+SPRING_PROFILES_ACTIVE=operate,tasklist,consolidated-auth,broker,identity,elasticsearch  \
 ./dist/target/camunda-zeebe/bin/camunda
 ```
 
@@ -89,3 +89,4 @@ SPRING_PROFILES_ACTIVE=operate,tasklist,consolidated-auth,broker,identity,elasti
 SPRING_PROFILES_ACTIVE=broker,identity,consolidated-auth \
 ./dist/target/camunda-zeebe/bin/camunda
 ```
+
