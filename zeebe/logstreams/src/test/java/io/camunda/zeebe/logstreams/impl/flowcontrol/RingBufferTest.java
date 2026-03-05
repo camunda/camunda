@@ -15,6 +15,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import org.awaitility.Awaitility;
@@ -268,15 +269,13 @@ final class RingBufferTest {
       final var buffer = new RingBuffer(smallCapacity);
       final var failures = new ConcurrentLinkedQueue<Throwable>();
       final var startLatch = new CountDownLatch(1);
-      final var writerPosition = new AtomicLong(0);
 
       final var writer =
           new Thread(
               () -> {
                 awaitLatch(startLatch);
                 for (long pos = 1; pos <= ITERATIONS; pos++) {
-                  buffer.put(pos, newEntry());
-                  writerPosition.set(pos);
+                  buffer.put(pos, new InFlightEntry(METRICS, null, limitListener));
                 }
               });
 
@@ -289,7 +288,7 @@ final class RingBufferTest {
                 awaitLatch(startLatch);
                 long readerPos = 0;
                 while (readerPos < ITERATIONS) {
-                  final long writerPos = writerPosition.get();
+                  final long writerPos = buffer.lastWrittenPosition();
                   if (writerPos <= readerPos) {
                     LockSupport.parkNanos(1);
                     continue;
