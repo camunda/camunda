@@ -52,7 +52,7 @@ judge.chatModel.region=eu-central-1
 judge.chatModel.model=eu.anthropic.claude-sonnet-4-5-20250929-v1:0
 judge.chatModel.credentials.accessKey=<your access key                      # optional; uses default credentials chain if absent
 judge.chatModel.credentials.secretKey=<your secret key>                     # optional
-judge.chatModel.credentials.apiKey=<your api key>                           # optional, instead of accessKey and secretKey
+judge.chatModel.apiKey=<your api key>                                       # optional, instead of accessKey and secretKey
 ```
 
 ### OpenAI-compatible
