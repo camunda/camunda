@@ -375,6 +375,20 @@ class OperateProcessesPage {
       );
     }
   }
+
+  calledInstanceCell(): Locator {
+    return this.page
+      .getByTestId('data-list')
+      .getByTestId('cell-processInstanceKey')
+      .first();
+  }
+
+  async clickViewParentInstanceFromList(): Promise<void> {
+    await this.page
+      .getByTestId('data-list')
+      .getByRole('link', {name: /view parent instance/i})
+      .click();
+  }
 }
 
 export {OperateProcessesPage};

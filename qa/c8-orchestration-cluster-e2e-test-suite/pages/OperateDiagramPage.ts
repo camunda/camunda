@@ -240,4 +240,12 @@ export class OperateDiagramPage {
       );
     }
   }
+
+  getPopoverText(pattern: RegExp | string): Locator {
+    return this.popover.getByText(pattern);
+  }
+
+  async clickPopoverLink(pattern: RegExp | string): Promise<void> {
+    await this.popover.getByRole('link', {name: pattern}).click();
+  }
 }

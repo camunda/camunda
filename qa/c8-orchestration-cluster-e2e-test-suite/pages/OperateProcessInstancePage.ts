@@ -40,6 +40,8 @@ class OperateProcessInstancePage {
   readonly variableValueInput: Locator;
   readonly variableAddedBanner: Locator;
   readonly migratedTag: Locator;
+  readonly instanceHeaderSkeleton: Locator;
+  readonly processInstanceKeyCell: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -84,6 +86,11 @@ class OperateProcessInstancePage {
     this.migratedTag = page.locator('.cds--tag.cds--tag--green', {
       hasText: /^Migrated/,
     });
+    this.instanceHeaderSkeleton = page.getByTestId('instance-header-skeleton');
+    this.processInstanceKeyCell = page
+      .getByTestId('instance-header')
+      .locator('td')
+      .nth(1);
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
@@ -94,8 +101,22 @@ class OperateProcessInstancePage {
     return this.page.getByTestId(variableName).locator('td').last();
   }
 
-  async navigateToProcessInstance({id}: {id: string}): Promise<void> {
-    await this.page.goto(`/operate/processes/instances/${id}`);
+  async navigateToProcessInstance(id: string): Promise<void> {
+    const base =
+      process.env.CORE_APPLICATION_OPERATE_URL ?? 'http://localhost:8081';
+    await this.page.goto(`${base}/operate/processes/${id}`);
+  }
+
+  async clickViewAllCalledInstances(): Promise<void> {
+    await this.page
+      .getByRole('link', {name: /view all called instances/i})
+      .click();
+  }
+
+  async clickViewParentInstance(): Promise<void> {
+    await this.instanceHeader
+      .getByRole('link', {name: /view parent instance/i})
+      .click();
   }
 
   async getProcessInstanceKey(): Promise<string> {
