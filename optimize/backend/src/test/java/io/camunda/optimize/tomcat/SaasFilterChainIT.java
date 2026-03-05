@@ -31,10 +31,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.web.FilterChainProxy;
@@ -77,6 +77,7 @@ import org.springframework.web.context.WebApplicationContext;
       "spring.task.scheduling.enabled=false",
       "optimize.import.enabled=false",
       "spring.main.allow-bean-definition-overriding=true",
+      "optimize.saas-filter-chain-it=true",
     })
 @Import(SaasFilterChainIT.SaasConfig.class)
 public class SaasFilterChainIT {
@@ -128,11 +129,11 @@ public class SaasFilterChainIT {
   // ---------------------------------------------------------------------------
 
   @TestConfiguration
-  @Profile("cloud")
   static class SaasConfig {
 
     @Bean("configurationService")
     @Primary
+    @ConditionalOnProperty(name = "optimize.saas-filter-chain-it", havingValue = "true")
     public ConfigurationService saasTestConfigurationService() {
       return ConfigurationServiceBuilder.createConfiguration()
           .loadConfigurationFrom("service-config.yaml", "saas-filter-it.yaml")

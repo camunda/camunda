@@ -45,9 +45,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 @ActiveProfiles("ccsm")
 @Import(CcsmFilterChainIT.CcsmConfig.class)
+@TestPropertySource(properties = {"optimize.ccsm-filter-chain-it=true"})
 class CcsmFilterChainIT extends FilterIntegrationTestBase {
 
   @TestConfiguration
@@ -114,12 +116,12 @@ class CcsmFilterChainIT extends FilterIntegrationTestBase {
       return identity;
     }
 
-    @Bean
-    @Primary
-    @ConditionalOnProperty(name = "optimize.filter-chain-it", havingValue = "true")
-    public SessionService mockSessionService() {
+    @Bean("sessionService")
+    @ConditionalOnProperty(name = "optimize.ccsm-filter-chain-it", havingValue = "true")
+    public SessionService mockSessionService(final ConfigurationService configurationService) {
       final SessionService sessionService = mock(SessionService.class);
       when(sessionService.getRequestUserOrFailNotAuthorized(any())).thenReturn("test");
+      when(sessionService.getConfigurationService()).thenReturn(configurationService);
       return sessionService;
     }
   }
