@@ -337,6 +337,12 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
+  public void removeRuntimeInstructions(final long processInstanceKey) {
+    elementInstanceKey.wrapLong(processInstanceKey);
+    runtimeInstructionsByProcessInstanceKey.deleteIfExists(elementInstanceKey);
+  }
+
+  @Override
   public ElementInstance getInstance(final long key) {
     elementInstanceKey.wrapLong(key);
     return elementInstanceColumnFamily.get(elementInstanceKey, ElementInstance::new);
