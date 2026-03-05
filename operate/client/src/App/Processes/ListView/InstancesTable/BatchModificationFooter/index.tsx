@@ -43,12 +43,12 @@ const onTransition = ({
 };
 
 const BatchModificationFooter: React.FC = observer(() => {
-  const isTargetFlowNodeSelected =
+  const isTargetElementSelected =
     batchModificationStore.state.selectedTargetElementId !== null;
 
   const isButtonDisabled =
     processInstancesSelectionStore.selectedProcessInstanceCount < 1 ||
-    !isTargetFlowNodeSelected;
+    !isTargetElementSelected;
 
   const {isNavigationInterrupted, confirmNavigation, cancelNavigation} =
     useCallbackPrompt({
@@ -108,9 +108,9 @@ const BatchModificationFooter: React.FC = observer(() => {
             // store in the next tick, which is fine.
             setTimeout(batchModificationStore.reset, 0);
           }}
-          danger={isTargetFlowNodeSelected}
+          danger={isTargetElementSelected}
         >
-          {isTargetFlowNodeSelected ? (
+          {isTargetElementSelected ? (
             <>
               <p>About to discard all added modifications</p>
               <p>Click “Exit” to proceed.</p>

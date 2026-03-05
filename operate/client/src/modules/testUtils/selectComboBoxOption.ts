@@ -44,7 +44,7 @@ const selectTenant = async ({user, option}: SelectProps) => {
   await user.click(screen.getByRole('option', {name: option}));
 };
 
-const selectFlowNode = ({user, option}: SelectProps) => {
+const selectElement = ({user, option}: SelectProps) => {
   return selectComboBoxOption({
     user,
     option,
@@ -91,7 +91,7 @@ export {
   selectProcess,
   selectProcessVersion,
   selectTenant,
-  selectFlowNode,
+  selectElement,
   selectDecision,
   selectDecisionVersion,
   clearComboBox,

@@ -87,9 +87,9 @@ const targetDefinition = createProcessDefinition({
 /**
  * Returns a custom matcher function which ignores all option elements from comboboxes.
  */
-const getMatcherFunction = (flowNodeName: string): MatcherFunction => {
+const getMatcherFunction = (elementName: string): MatcherFunction => {
   return (content, element) => {
-    return content === flowNodeName && element?.tagName !== 'OPTION';
+    return content === elementName && element?.tagName !== 'OPTION';
   };
 };
 

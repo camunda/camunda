@@ -37,8 +37,8 @@ const TOGGLE_LABEL = 'Show only not mapped';
 const BottomPanel: React.FC = observer(() => {
   const {selectedSourceElementIds} = processInstanceMigrationStore;
 
-  const handleCheckIsRowSelected = (selectedSourceFlowNodes?: string[]) => {
-    return (rowId: string) => selectedSourceFlowNodes?.includes(rowId) ?? false;
+  const handleCheckIsRowSelected = (selectedSourceElements?: string[]) => {
+    return (rowId: string) => selectedSourceElements?.includes(rowId) ?? false;
   };
 
   const {
@@ -76,7 +76,7 @@ const BottomPanel: React.FC = observer(() => {
       targetData?.selectableSequenceFlows,
     ) ?? [];
 
-  const filteredSourceFlowNodes = [
+  const filteredSourceElements = [
     ...mappableElements,
     ...mappableSequenceFlows,
   ].filter(({sourceElement}) => {
@@ -118,17 +118,17 @@ const BottomPanel: React.FC = observer(() => {
   }, [sourceData, targetData]);
 
   /**
-   * Returns true if an element with flowNodeId is auto-mappable
+   * Returns true if an element with elementId is auto-mappable
    */
-  const isAutoMappable = (flowNodeId: string) => {
+  const isAutoMappable = (elementId: string) => {
     return (
       autoMappableElements.find(({id}) => {
-        return flowNodeId === id;
+        return elementId === id;
       }) !== undefined
     );
   };
 
-  const hasSelectableSourceFlowNodes =
+  const hasSelectableSourceElements =
     sourceData?.selectableFlowNodes &&
     sourceData.selectableFlowNodes.length > 0;
 
@@ -182,7 +182,7 @@ const BottomPanel: React.FC = observer(() => {
 
   return (
     <BottomSection>
-      {!hasSelectableSourceFlowNodes && !hasSelectableSourceSequenceFlows ? (
+      {!hasSelectableSourceElements && !hasSelectableSourceSequenceFlows ? (
         <ErrorMessageContainer>
           <ErrorMessage
             message="There are no mappable flow nodes or sequence flows."
@@ -224,7 +224,7 @@ const BottomPanel: React.FC = observer(() => {
             checkIsRowSelected={handleCheckIsRowSelected(
               selectedSourceElementIds,
             )}
-            rows={filteredSourceFlowNodes.map(
+            rows={filteredSourceElements.map(
               ({sourceElement, selectableTargetElement}) => {
                 const isMapped = elementMapping[sourceElement.id] !== undefined;
 

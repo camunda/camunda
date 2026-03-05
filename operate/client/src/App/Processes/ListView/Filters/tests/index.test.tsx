@@ -17,7 +17,7 @@ import {
 import {Filters} from '../index';
 import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
 import {
-  selectFlowNode,
+  selectElement,
   selectProcess,
   selectProcessVersion,
 } from 'modules/testUtils/selectComboBoxOption';
@@ -265,7 +265,7 @@ describe('Filters', () => {
       MOCK_VALUES.errorMessage,
     );
 
-    await selectFlowNode({user, option: 'Service Task 1'});
+    await selectElement({user, option: 'Service Task 1'});
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Variable'));

@@ -69,12 +69,12 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
     const willAllElementsBeCanceled = useWillAllElementsBeCanceled();
     const modificationsByElement = useModificationsByElement();
     const {data: processInstance} = useProcessInstance();
-    const flowNodeModificationsTableRef = useRef<HTMLDivElement>(null);
+    const elementModificationsTableRef = useRef<HTMLDivElement>(null);
     const variableModificationsTableRef = useRef<HTMLDivElement>(null);
 
     useLayoutEffect(() => {
       if (
-        flowNodeModificationsTableRef.current === null ||
+        elementModificationsTableRef.current === null ||
         variableModificationsTableRef.current === null
       ) {
         return;
@@ -83,18 +83,18 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
       const variableModificationsTableScrollWidth =
         variableModificationsTableRef.current.offsetWidth -
         variableModificationsTableRef.current.scrollWidth;
-      const flowNodeModificationsTableScrollWidth =
-        flowNodeModificationsTableRef.current.offsetWidth -
-        flowNodeModificationsTableRef.current.scrollWidth;
+      const elementModificationsTableScrollWidth =
+        elementModificationsTableRef.current.offsetWidth -
+        elementModificationsTableRef.current.scrollWidth;
 
       if (
         variableModificationsTableScrollWidth !==
-        flowNodeModificationsTableScrollWidth
+        elementModificationsTableScrollWidth
       ) {
-        flowNodeModificationsTableRef.current.style.paddingRight = `${variableModificationsTableScrollWidth}px`;
-        variableModificationsTableRef.current.style.paddingRight = `${flowNodeModificationsTableScrollWidth}px`;
+        elementModificationsTableRef.current.style.paddingRight = `${variableModificationsTableScrollWidth}px`;
+        variableModificationsTableRef.current.style.paddingRight = `${elementModificationsTableScrollWidth}px`;
       } else {
-        flowNodeModificationsTableRef.current.style.paddingRight = '0px';
+        elementModificationsTableRef.current.style.paddingRight = '0px';
         variableModificationsTableRef.current.style.paddingRight = '0px';
       }
     });
@@ -190,7 +190,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
           <EmptyMessage>No planned element modifications</EmptyMessage>
         ) : (
           <DataTable
-            ref={flowNodeModificationsTableRef}
+            ref={elementModificationsTableRef}
             columnsWithNoContentPadding={['delete']}
             headers={[
               {header: ' ', key: 'emptyCell'},
@@ -222,7 +222,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
             ]}
             rows={modificationsStore.elementModifications.map(
               (modification, index) => {
-                const flowNodeId =
+                const elementId =
                   modification.operation === 'MOVE_TOKEN'
                     ? modification.targetElement.id
                     : modification.element.id;
@@ -265,7 +265,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                     <span data-testid="affected-token-count">
                       {modification.operation === 'CANCEL_TOKEN'
                         ? modification.visibleAffectedTokenCount +
-                          (modificationsByElement[flowNodeId]
+                          (modificationsByElement[elementId]
                             ?.cancelledChildTokens ?? 0)
                         : modification.affectedTokenCount}
                     </span>

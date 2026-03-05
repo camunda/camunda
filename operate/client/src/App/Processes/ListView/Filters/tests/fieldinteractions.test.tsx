@@ -16,7 +16,7 @@ import {
   searchResult,
 } from 'modules/testUtils';
 import {
-  selectFlowNode,
+  selectElement,
   selectProcess,
   selectProcessVersion,
 } from 'modules/testUtils/selectComboBoxOption';
@@ -181,7 +181,7 @@ describe('Interaction with other fields during validation', () => {
 
     expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
 
-    await selectFlowNode({user, option: 'Service Task 1'});
+    await selectElement({user, option: 'Service Task 1'});
 
     expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
   });
