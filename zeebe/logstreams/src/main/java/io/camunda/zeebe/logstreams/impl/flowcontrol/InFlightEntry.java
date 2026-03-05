@@ -12,6 +12,7 @@ import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 public final class InFlightEntry {
   final LogStreamMetrics metrics;
@@ -70,20 +71,11 @@ public final class InFlightEntry {
   }
 
   public void onProcessed() {
-    final var requestListener = this.requestListener.getAndSet(null);
-    if (requestListener != null) {
-      requestListener.onSuccess();
-      metrics.decreaseInflightRequests();
-    }
+    closeRequestListener(Listener::onSuccess);
   }
 
   public void cleanup() {
-    final var requestListener = this.requestListener.getAndSet(null);
-    if (requestListener != null) {
-      requestListener.onIgnore();
-      metrics.decreaseInflightRequests();
-    }
-
+    closeRequestListener(Listener::onIgnore);
     closeIfPossible(writeTimer);
     closeIfPossible(commitTimer);
   }
@@ -92,6 +84,14 @@ public final class InFlightEntry {
     final var closeable = closeableRef.getAndSet(null);
     if (closeable != null) {
       closeable.close();
+    }
+  }
+
+  private void closeRequestListener(final Consumer<Listener> consumer) {
+    final var requestListener = this.requestListener.getAndSet(null);
+    if (requestListener != null) {
+      consumer.accept(requestListener);
+      metrics.decreaseInflightRequests();
     }
   }
 }
