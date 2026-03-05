@@ -179,7 +179,7 @@ public class ProcessEngineMetricsTest {
   }
 
   @Test
-  public void shouldTrackActiveRootProcessInstanceGauge() {
+  public void shouldTrackActiveProcessInstanceGauge() {
     // given
     engine
         .deployment()
@@ -218,7 +218,7 @@ public class ProcessEngineMetricsTest {
   }
 
   @Test
-  public void shouldInitializeActiveRootProcessInstanceGaugeAfterRecovery() {
+  public void shouldInitializeActiveProcessInstanceGaugeAfterRecovery() {
     // given - deploy process and create instances
     engine
         .deployment()

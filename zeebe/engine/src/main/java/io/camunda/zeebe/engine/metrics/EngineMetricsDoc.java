@@ -141,13 +141,13 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
-  /** Number of currently active root process instances */
-  ACTIVE_ROOT_PROCESS_INSTANCES {
+  /** Number of currently active process instances */
+  ACTIVE_PROCESS_INSTANCES {
     private static final KeyName[] KEY_NAMES = new KeyName[] {EngineKeyNames.ORGANIZATION_ID};
 
     @Override
     public String getDescription() {
-      return "Number of currently active root process instances";
+      return "Number of currently active process instances";
     }
 
     @Override
