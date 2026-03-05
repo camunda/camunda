@@ -36,13 +36,13 @@ public final class ProcessEngineMetrics {
       Map3D.ofEnum(EngineAction.class, BpmnElementType.class, BpmnEventType.class, Counter[]::new);
   private final Map<EngineAction, Counter> executedEvents = new EnumMap<>(EngineAction.class);
   private final Map<EngineAction, Counter> evaluatedDmnElements = new EnumMap<>(EngineAction.class);
-  private final AtomicLong activeRootProcessInstances = new AtomicLong(0);
-  private boolean isActiveRootProcessInstanceGaugeRegistered = false;
+  private final AtomicLong activeProcessInstances = new AtomicLong(0);
+  private boolean isActiveProcessInstanceGaugeRegistered = false;
 
   public ProcessEngineMetrics(
       final MeterRegistry registry, final long initialActiveRootProcessInstances) {
     this.registry = Objects.requireNonNull(registry, "must specify a registry");
-    activeRootProcessInstances.set(initialActiveRootProcessInstances);
+    activeProcessInstances.set(initialActiveRootProcessInstances);
   }
 
   public void processInstanceCreated(final ProcessInstanceCreationRecord instanceCreationRecord) {
@@ -62,9 +62,12 @@ public final class ProcessEngineMetrics {
     final var eventTypeName = extractEventTypeName(eventType);
     elementInstanceEvent(EngineAction.ACTIVATED, elementType, eventTypeName);
 
+    if (isProcessInstance(elementType)) {
+      increaseActiveProcessInstances();
+    }
+
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
       increaseRootProcessInstance(EngineAction.ACTIVATED);
-      increaseActiveRootProcessInstances();
     }
   }
 
@@ -74,9 +77,12 @@ public final class ProcessEngineMetrics {
     final var eventTypeName = extractEventTypeName(eventType);
     elementInstanceEvent(EngineAction.COMPLETED, elementType, eventTypeName);
 
+    if (isProcessInstance(elementType)) {
+      decreaseActiveRootProcessInstances();
+    }
+
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
       increaseRootProcessInstance(EngineAction.COMPLETED);
-      decreaseActiveRootProcessInstances();
     }
   }
 
@@ -86,9 +92,12 @@ public final class ProcessEngineMetrics {
     final var eventTypeName = extractEventTypeName(eventType);
     elementInstanceEvent(EngineAction.TERMINATED, elementType, eventTypeName);
 
+    if (isProcessInstance(elementType)) {
+      decreaseActiveRootProcessInstances();
+    }
+
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
       increaseRootProcessInstance(EngineAction.TERMINATED);
-      decreaseActiveRootProcessInstances();
     }
   }
 
@@ -107,14 +116,14 @@ public final class ProcessEngineMetrics {
         .increment();
   }
 
-  private void increaseActiveRootProcessInstances() {
-    registerActiveRootProcessInstanceGaugeIfNeeded();
-    activeRootProcessInstances.incrementAndGet();
+  private void increaseActiveProcessInstances() {
+    registerActiveProcessInstanceGaugeIfNeeded();
+    activeProcessInstances.incrementAndGet();
   }
 
   private void decreaseActiveRootProcessInstances() {
-    registerActiveRootProcessInstanceGaugeIfNeeded();
-    activeRootProcessInstances.decrementAndGet();
+    registerActiveProcessInstanceGaugeIfNeeded();
+    activeProcessInstances.decrementAndGet();
   }
 
   private void increaseRootProcessInstance(final EngineAction action) {
@@ -181,14 +190,14 @@ public final class ProcessEngineMetrics {
         .register(registry);
   }
 
-  private void registerActiveRootProcessInstanceGaugeIfNeeded() {
-    if (!isActiveRootProcessInstanceGaugeRegistered) {
-      final var meterDoc = EngineMetricsDoc.ACTIVE_ROOT_PROCESS_INSTANCES;
-      Gauge.builder(meterDoc.getName(), activeRootProcessInstances, AtomicLong::get)
+  private void registerActiveProcessInstanceGaugeIfNeeded() {
+    if (!isActiveProcessInstanceGaugeRegistered) {
+      final var meterDoc = EngineMetricsDoc.ACTIVE_PROCESS_INSTANCES;
+      Gauge.builder(meterDoc.getName(), activeProcessInstances, AtomicLong::get)
           .description(meterDoc.getDescription())
           .tag(EngineKeyNames.ORGANIZATION_ID.asString(), ORGANIZATION_ID)
           .register(registry);
-      isActiveRootProcessInstanceGaugeRegistered = true;
+      isActiveProcessInstanceGaugeRegistered = true;
     }
   }
 }

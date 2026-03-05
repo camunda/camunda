@@ -172,14 +172,14 @@ public interface ElementInstanceState {
       final Predicate<Long> ignoreWhen);
 
   /**
-   * Returns the number of active root process instances. This includes all root process instances
-   * that are currently active, regardless of their process definition. This method is useful for
-   * monitoring and metrics purposes, as it provides insight into the overall number of active root
-   * process instances in the system.
+   * Returns the number of active process instances. This includes all process instances that are
+   * currently active, regardless of their process definition. This method is useful for monitoring
+   * and metrics purposes, as it provides insight into the overall number of active process
+   * instances in the system.
    *
-   * @return the number of active root process instances.
+   * @return the number of active process instances.
    */
-  long getActiveRootProcessInstanceCount();
+  long getActiveProcessInstanceCount();
 
   @FunctionalInterface
   interface TakenSequenceFlowVisitor {

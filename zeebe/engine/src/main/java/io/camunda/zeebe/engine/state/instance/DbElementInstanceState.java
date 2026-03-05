@@ -40,8 +40,8 @@ import org.agrona.collections.MutableInteger;
 
 public final class DbElementInstanceState implements MutableElementInstanceState {
 
-  // Root process instance counter
-  private static final long ROOT_PROCESS_INSTANCE_COUNTER_KEY = 1L;
+  // active process instance counter
+  private static final long ACTIVE_PROCESS_INSTANCE_COUNTER_KEY = 1L;
   private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>, DbNil>
       parentChildColumnFamily;
   private final DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>> parentChildKey;
@@ -86,9 +86,9 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   private final ProcessInstanceByBusinessIdIndexKey processInstanceByBusinessIdIndexKey;
   private final ColumnFamily<ProcessInstanceByBusinessIdIndexKey, DbNil>
       processInstanceByBusinessIdIndexKeyColumnFamily;
-  private final DbLong rootProcessInstanceCounterKey;
-  private final DbLong rootProcessInstanceCounterValue;
-  private final ColumnFamily<DbLong, DbLong> rootProcessInstanceCounterColumnFamily;
+  private final DbLong activeProcessInstanceCounterKey;
+  private final DbLong activeProcessInstanceCounterValue;
+  private final ColumnFamily<DbLong, DbLong> activeProcessInstanceCounterColumnFamily;
 
   public DbElementInstanceState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -170,17 +170,17 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             processInstanceByBusinessIdIndexKey,
             DbNil.INSTANCE);
 
-    rootProcessInstanceCounterKey = new DbLong();
-    rootProcessInstanceCounterKey.wrapLong(ROOT_PROCESS_INSTANCE_COUNTER_KEY);
-    rootProcessInstanceCounterValue = new DbLong();
-    rootProcessInstanceCounterColumnFamily =
+    activeProcessInstanceCounterKey = new DbLong();
+    activeProcessInstanceCounterKey.wrapLong(ACTIVE_PROCESS_INSTANCE_COUNTER_KEY);
+    activeProcessInstanceCounterValue = new DbLong();
+    activeProcessInstanceCounterColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.ROOT_PROCESS_INSTANCE_COUNT,
+            ZbColumnFamilies.ACTIVE_PROCESS_INSTANCE_COUNT,
             transactionContext,
-            rootProcessInstanceCounterKey,
-            rootProcessInstanceCounterValue);
+            activeProcessInstanceCounterKey,
+            activeProcessInstanceCounterValue);
     // only relevant after a migration
-    initializeRootProcessInstanceCounterIfNeeded();
+    initializeActiveProcessInstanceCounterIfNeeded();
   }
 
   @Override
@@ -222,17 +222,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     variableState.removeScope(key);
     awaitProcessInstanceResultMetadataColumnFamily.deleteIfExists(elementInstanceKey);
     removeNumberOfTakenSequenceFlows(key);
+    decrementActiveProcessInstanceCount();
 
     final var recordValue = instance.getValue();
     if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
       processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
       processInstanceKeyByProcessDefinitionKeyColumnFamily.deleteExisting(
           processInstanceKeyByProcessDefinitionKey);
-
-      // Decrement the root process instance counter for root instances (no parent)
-      if (parent == -1) {
-        decrementActiveRootProcessInstanceCount();
-      }
     }
 
     if (parent > 0) {
@@ -256,17 +252,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     elementInstanceColumnFamily.insert(elementInstanceKey, instance);
     parentChildColumnFamily.insert(parentChildKey, DbNil.INSTANCE);
     variableState.createScope(elementInstanceKey.getValue(), parentKey.inner().getValue());
+    incrementActiveProcessInstanceCount();
 
     final var recordValue = instance.getValue();
     if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
       processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
       processInstanceKeyByProcessDefinitionKeyColumnFamily.insert(
           processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
-
-      // Increment the root process instance counter for root instances (no parent)
-      if (instance.getParentKey() == -1) {
-        incrementActiveRootProcessInstanceCount();
-      }
     }
   }
 
@@ -411,47 +403,44 @@ public final class DbElementInstanceState implements MutableElementInstanceState
         processInstanceByBusinessIdIndexKey);
   }
 
-  private void incrementActiveRootProcessInstanceCount() {
+  private void incrementActiveProcessInstanceCount() {
     final var currentValue =
-        rootProcessInstanceCounterColumnFamily.get(rootProcessInstanceCounterKey);
+        activeProcessInstanceCounterColumnFamily.get(activeProcessInstanceCounterKey);
 
     final long newValue = currentValue.getValue() + 1;
 
-    rootProcessInstanceCounterValue.wrapLong(newValue);
-    rootProcessInstanceCounterColumnFamily.update(
-        rootProcessInstanceCounterKey, rootProcessInstanceCounterValue);
+    activeProcessInstanceCounterValue.wrapLong(newValue);
+    activeProcessInstanceCounterColumnFamily.update(
+        activeProcessInstanceCounterKey, activeProcessInstanceCounterValue);
   }
 
-  private void decrementActiveRootProcessInstanceCount() {
+  private void decrementActiveProcessInstanceCount() {
     final var currentValue =
-        rootProcessInstanceCounterColumnFamily.get(rootProcessInstanceCounterKey);
+        activeProcessInstanceCounterColumnFamily.get(activeProcessInstanceCounterKey);
 
-    rootProcessInstanceCounterValue.wrapLong(currentValue.getValue() - 1);
-    rootProcessInstanceCounterColumnFamily.update(
-        rootProcessInstanceCounterKey, rootProcessInstanceCounterValue);
+    activeProcessInstanceCounterValue.wrapLong(currentValue.getValue() - 1);
+    activeProcessInstanceCounterColumnFamily.update(
+        activeProcessInstanceCounterKey, activeProcessInstanceCounterValue);
   }
 
   /**
    * Initializes the root process instance counter if it hasn't been initialized yet. This handles
    * the migration scenario where the counter column family is new and doesn't have a value yet. In
-   * this case, we count the existing root process instances and initialize the counter with that
-   * value.
+   * this case, we count the existing process instances and initialize the counter with that value.
    */
-  private void initializeRootProcessInstanceCounterIfNeeded() {
+  private void initializeActiveProcessInstanceCounterIfNeeded() {
     final var currentValue =
-        rootProcessInstanceCounterColumnFamily.get(rootProcessInstanceCounterKey);
+        activeProcessInstanceCounterColumnFamily.get(activeProcessInstanceCounterKey);
 
     if (currentValue == null) {
       // We won't have a value if the cluster is new or after a migration. If it is a migration we
-      // need to count the existing root process instances and initialize the counter with that
+      // need to count the existing process instances and initialize the counter with that
       // value. If it is a new cluster, the count will be 0.
-      // We only count instances with no parent, meaning root PIs (parentKey == -1).
-      parentKey.inner().wrapLong(-1L);
-      final long count = parentChildColumnFamily.countEqualPrefix(parentKey);
+      final long count = parentChildColumnFamily.count();
 
-      rootProcessInstanceCounterValue.wrapLong(count);
-      rootProcessInstanceCounterColumnFamily.insert(
-          rootProcessInstanceCounterKey, rootProcessInstanceCounterValue);
+      activeProcessInstanceCounterValue.wrapLong(count);
+      activeProcessInstanceCounterColumnFamily.insert(
+          activeProcessInstanceCounterKey, activeProcessInstanceCounterValue);
     }
   }
 
@@ -659,8 +648,8 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public long getActiveRootProcessInstanceCount() {
-    return rootProcessInstanceCounterColumnFamily.get(rootProcessInstanceCounterKey).getValue();
+  public long getActiveProcessInstanceCount() {
+    return activeProcessInstanceCounterColumnFamily.get(activeProcessInstanceCounterKey).getValue();
   }
 
   private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {
