@@ -362,4 +362,13 @@ public final class SortOptionBuilders {
       final Function<GlobalListenerSort.Builder, ObjectBuilder<GlobalListenerSort>> fn) {
     return fn.apply(globalListener()).build();
   }
+
+  public static JobErrorStatisticsSort.Builder jobErrorStatistics() {
+    return new JobErrorStatisticsSort.Builder();
+  }
+
+  public static JobErrorStatisticsSort jobErrorStatistics(
+      final Function<JobErrorStatisticsSort.Builder, ObjectBuilder<JobErrorStatisticsSort>> fn) {
+    return fn.apply(jobErrorStatistics()).build();
+  }
 }
