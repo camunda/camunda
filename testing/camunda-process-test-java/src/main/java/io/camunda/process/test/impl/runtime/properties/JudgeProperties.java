@@ -19,7 +19,7 @@ import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getProper
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrNull;
 
 import io.camunda.process.test.api.judge.JudgeConfig;
-import io.camunda.process.test.api.judge.JudgeConfigurationData;
+import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
 import java.util.Properties;
 
 public class JudgeProperties {
@@ -110,8 +110,8 @@ public class JudgeProperties {
     return chatModelCredentialsSecretKey;
   }
 
-  public JudgeConfigurationData toJudgeConfigurationData() {
-    return JudgeConfigurationData.builder()
+  public JudgeConfigBootstrapData toJudgeConfigurationData() {
+    return JudgeConfigBootstrapData.builder()
         .provider(chatModelProvider)
         .model(chatModelModel)
         .apiKey(chatModelApiKey)

@@ -16,7 +16,7 @@
 package io.camunda.process.test.api.judge;
 
 /** Typed configuration data passed to a {@link JudgeConfigBootstrapProvider}. */
-public final class JudgeConfigurationData {
+public final class JudgeConfigBootstrapData {
 
   private final String provider;
   private final String model;
@@ -28,7 +28,7 @@ public final class JudgeConfigurationData {
   private final double threshold;
   private final String customPrompt;
 
-  private JudgeConfigurationData(final Builder builder) {
+  private JudgeConfigBootstrapData(final Builder builder) {
     provider = builder.provider;
     model = builder.model;
     apiKey = builder.apiKey;
@@ -137,8 +137,8 @@ public final class JudgeConfigurationData {
       return this;
     }
 
-    public JudgeConfigurationData build() {
-      return new JudgeConfigurationData(this);
+    public JudgeConfigBootstrapData build() {
+      return new JudgeConfigBootstrapData(this);
     }
   }
 }

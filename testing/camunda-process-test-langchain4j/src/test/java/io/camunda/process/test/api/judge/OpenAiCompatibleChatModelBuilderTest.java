@@ -26,8 +26,8 @@ class OpenAiCompatibleChatModelBuilderTest {
   @Test
   void shouldBuildChatModelWithApiKey() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder()
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder()
             .baseUrl("http://localhost:11434/v1")
             .model("llama3")
             .apiKey("test-api-key")
@@ -43,8 +43,8 @@ class OpenAiCompatibleChatModelBuilderTest {
   @Test
   void shouldBuildChatModelWithoutApiKey() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder()
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder()
             .baseUrl("http://localhost:11434/v1")
             .model("llama3")
             .build();
@@ -59,7 +59,8 @@ class OpenAiCompatibleChatModelBuilderTest {
   @Test
   void shouldThrowWhenBaseUrlMissing() {
     // given
-    final JudgeConfigurationData data = JudgeConfigurationData.builder().model("llama3").build();
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder().model("llama3").build();
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleChatModelBuilder.build(data))
@@ -71,8 +72,8 @@ class OpenAiCompatibleChatModelBuilderTest {
   @Test
   void shouldThrowWhenModelMissing() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder().baseUrl("http://localhost:11434/v1").build();
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder().baseUrl("http://localhost:11434/v1").build();
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleChatModelBuilder.build(data))
@@ -84,8 +85,8 @@ class OpenAiCompatibleChatModelBuilderTest {
   @Test
   void shouldThrowWhenBaseUrlBlank() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder().baseUrl("  ").model("llama3").build();
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder().baseUrl("  ").model("llama3").build();
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleChatModelBuilder.build(data))
@@ -96,8 +97,8 @@ class OpenAiCompatibleChatModelBuilderTest {
   @Test
   void shouldThrowWhenModelBlank() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder().baseUrl("http://localhost:11434/v1").model("").build();
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder().baseUrl("http://localhost:11434/v1").model("").build();
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleChatModelBuilder.build(data))

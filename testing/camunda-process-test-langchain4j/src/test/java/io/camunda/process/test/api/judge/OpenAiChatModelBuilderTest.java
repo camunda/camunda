@@ -26,8 +26,8 @@ class OpenAiChatModelBuilderTest {
   @Test
   void shouldBuildChatModel() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder().apiKey("test-api-key").model("gpt-4o").build();
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder().apiKey("test-api-key").model("gpt-4o").build();
 
     // when
     final ChatModel chatModel = OpenAiChatModelBuilder.build(data);
@@ -39,7 +39,8 @@ class OpenAiChatModelBuilderTest {
   @Test
   void shouldThrowWhenApiKeyMissing() {
     // given
-    final JudgeConfigurationData data = JudgeConfigurationData.builder().model("gpt-4o").build();
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder().model("gpt-4o").build();
 
     // when / then
     assertThatThrownBy(() -> OpenAiChatModelBuilder.build(data))
@@ -51,8 +52,8 @@ class OpenAiChatModelBuilderTest {
   @Test
   void shouldThrowWhenModelMissing() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder().apiKey("test-api-key").build();
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder().apiKey("test-api-key").build();
 
     // when / then
     assertThatThrownBy(() -> OpenAiChatModelBuilder.build(data))
@@ -64,8 +65,8 @@ class OpenAiChatModelBuilderTest {
   @Test
   void shouldThrowWhenApiKeyBlank() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder().apiKey("  ").model("gpt-4o").build();
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder().apiKey("  ").model("gpt-4o").build();
 
     // when / then
     assertThatThrownBy(() -> OpenAiChatModelBuilder.build(data))
@@ -76,8 +77,8 @@ class OpenAiChatModelBuilderTest {
   @Test
   void shouldThrowWhenModelBlank() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder().apiKey("test-api-key").model("").build();
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder().apiKey("test-api-key").model("").build();
 
     // when / then
     assertThatThrownBy(() -> OpenAiChatModelBuilder.build(data))

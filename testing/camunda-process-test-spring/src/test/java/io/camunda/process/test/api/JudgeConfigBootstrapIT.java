@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.JudgeConfigBootstrap;
-import io.camunda.process.test.api.judge.JudgeConfigurationData;
+import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -171,23 +171,26 @@ public class JudgeConfigBootstrapIT {
 
     @Test
     void shouldReturnNullWhenProviderNotConfigured() {
-      final JudgeConfigurationData data = JudgeConfigurationData.builder().build();
+      final JudgeConfigBootstrapData data = JudgeConfigBootstrapData.builder().build();
       final JudgeConfig config = bootstrap.bootstrap(data);
       assertThat(config).isNull();
     }
 
     @Test
     void shouldReturnNullWhenProviderIsUnknown() {
-      final JudgeConfigurationData data =
-          JudgeConfigurationData.builder().provider("unknown-provider").model("test-model").build();
+      final JudgeConfigBootstrapData data =
+          JudgeConfigBootstrapData.builder()
+              .provider("unknown-provider")
+              .model("test-model")
+              .build();
       final JudgeConfig config = bootstrap.bootstrap(data);
       assertThat(config).isNull();
     }
 
     @Test
     void shouldThrowWhenRequiredFieldMissing() {
-      final JudgeConfigurationData data =
-          JudgeConfigurationData.builder().provider("openai").build();
+      final JudgeConfigBootstrapData data =
+          JudgeConfigBootstrapData.builder().provider("openai").build();
       assertThatThrownBy(() -> bootstrap.bootstrap(data)).isInstanceOf(IllegalStateException.class);
     }
   }

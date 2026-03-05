@@ -26,8 +26,8 @@ class AnthropicChatModelBuilderTest {
   @Test
   void shouldBuildChatModel() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder()
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder()
             .apiKey("test-api-key")
             .model("claude-3-5-sonnet-20241022")
             .build();
@@ -42,8 +42,8 @@ class AnthropicChatModelBuilderTest {
   @Test
   void shouldThrowWhenApiKeyMissing() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder().model("claude-3-5-sonnet-20241022").build();
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder().model("claude-3-5-sonnet-20241022").build();
 
     // when / then
     assertThatThrownBy(() -> AnthropicChatModelBuilder.build(data))
@@ -55,8 +55,8 @@ class AnthropicChatModelBuilderTest {
   @Test
   void shouldThrowWhenModelMissing() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder().apiKey("test-api-key").build();
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder().apiKey("test-api-key").build();
 
     // when / then
     assertThatThrownBy(() -> AnthropicChatModelBuilder.build(data))
@@ -68,8 +68,8 @@ class AnthropicChatModelBuilderTest {
   @Test
   void shouldThrowWhenApiKeyBlank() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder().apiKey("  ").model("claude-3-5-sonnet-20241022").build();
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder().apiKey("  ").model("claude-3-5-sonnet-20241022").build();
 
     // when / then
     assertThatThrownBy(() -> AnthropicChatModelBuilder.build(data))
@@ -80,8 +80,8 @@ class AnthropicChatModelBuilderTest {
   @Test
   void shouldThrowWhenModelBlank() {
     // given
-    final JudgeConfigurationData data =
-        JudgeConfigurationData.builder().apiKey("test-api-key").model("").build();
+    final JudgeConfigBootstrapData data =
+        JudgeConfigBootstrapData.builder().apiKey("test-api-key").model("").build();
 
     // when / then
     assertThatThrownBy(() -> AnthropicChatModelBuilder.build(data))
