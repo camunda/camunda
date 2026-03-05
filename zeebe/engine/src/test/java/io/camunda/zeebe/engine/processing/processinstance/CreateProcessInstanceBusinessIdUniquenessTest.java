@@ -810,4 +810,83 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
             but an instance with this business id already exists for process definition '%s'"""
                 .formatted(businessId, processId));
   }
+
+  @Test
+  public void shouldRejectVersionMigrationWhenAnotherInstanceOfSameProcessHasSameBusinessId() {
+    final String processId = helper.getBpmnProcessId();
+    final String businessId = "biz-123";
+
+    // given - deploy version 1 and version 2 of the same process
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .deploy();
+    final long v2ProcessDefinitionKey =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                    .userTask("another_task", AbstractUserTaskBuilder::zeebeUserTask)
+                    .endEvent()
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst()
+            .getProcessDefinitionKey();
+
+    // and - restart the engine with uniqueness disabled so we can create two instances with the
+    // same business id for the same process definition
+    ENGINE.stop();
+    ENGINE.withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(false));
+    ENGINE.start();
+
+    final var v1ProcessInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVersion(1)
+            .withBusinessId(businessId)
+            .create();
+    ENGINE
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withVersion(2)
+        .withBusinessId(businessId)
+        .create();
+
+    // and - restart the engine with uniqueness re-enabled
+    ENGINE.stop();
+    ENGINE.withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true));
+    ENGINE.start();
+
+    // when - try to migrate the v1 instance to v2
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(v1ProcessInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(v2ProcessDefinitionKey)
+            .addMappingInstruction("task", "task")
+            .expectRejection()
+            .migrate();
+
+    // then - should be rejected because the v2 instance already holds the business id
+    // for the same process definition
+    assertThat(rejection)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            """
+            Expected to migrate instance '%s' with business id '%s' to process definition key '%s', \
+            but an active instance with this business id already exists for the target process definition"""
+                .formatted(v1ProcessInstanceKey, businessId, v2ProcessDefinitionKey));
+  }
 }
