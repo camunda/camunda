@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
+import static java.util.Objects.requireNonNull;
+
 import com.netflix.concurrency.limits.Limit;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -14,19 +16,21 @@ import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
-import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public final class LogStreamBuilderImpl implements LogStreamBuilder {
   private static final int MINIMUM_FRAGMENT_SIZE = 4 * 1024;
   private int maxFragmentSize = 1024 * 1024 * 4;
   private int partitionId = -1;
-  private LogStorage logStorage;
-  private String logName;
-  private InstantSource clock;
-  private Limit requestLimit;
-  private RateLimit writeRateLimit;
+  @Nullable private LogStorage logStorage;
+  @Nullable private String logName;
+  @Nullable private InstantSource clock;
+  @Nullable private Limit requestLimit;
+  @Nullable private RateLimit writeRateLimit;
   private int inFlightCapacity;
-  private MeterRegistry meterRegistry;
+  @Nullable private MeterRegistry meterRegistry;
 
   @Override
   public LogStreamBuilder withMaxFragmentSize(final int maxFragmentSize) {
@@ -84,24 +88,6 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
 
   @Override
   public LogStream build() {
-    validate();
-
-    return new LogStreamImpl(
-        logName,
-        partitionId,
-        maxFragmentSize,
-        logStorage,
-        clock,
-        requestLimit,
-        writeRateLimit,
-        inFlightCapacity,
-        meterRegistry);
-  }
-
-  private void validate() {
-    Objects.requireNonNull(logStorage, "Must specify a log storage");
-    Objects.requireNonNull(clock, "Must specify a clock source");
-    Objects.requireNonNull(meterRegistry, "Must specify a meter registry");
 
     if (maxFragmentSize < MINIMUM_FRAGMENT_SIZE) {
       throw new IllegalArgumentException(
@@ -109,5 +95,16 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
               "Expected fragment size to be at least '%d', but was '%d'",
               MINIMUM_FRAGMENT_SIZE, maxFragmentSize));
     }
+
+    return new LogStreamImpl(
+        logName,
+        partitionId,
+        maxFragmentSize,
+        requireNonNull(logStorage, "Must specify a log storage"),
+        requireNonNull(clock, "Must specify a clock source"),
+        requestLimit,
+        writeRateLimit,
+        inFlightCapacity,
+        requireNonNull(meterRegistry, "Must specify a meter registry"));
   }
 }

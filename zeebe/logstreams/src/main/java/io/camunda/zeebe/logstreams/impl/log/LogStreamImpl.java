@@ -22,8 +22,11 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
+@NullMarked
 public final class LogStreamImpl implements LogStream, CommitListener {
 
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
@@ -31,7 +34,7 @@ public final class LogStreamImpl implements LogStream, CommitListener {
   private final Collection<LogStreamReader> readers = new CopyOnWriteArrayList<>();
   private final Collection<LogRecordAwaiter> recordAwaiters = new CopyOnWriteArrayList<>();
 
-  private final String logName;
+  private @Nullable final String logName;
   private final int partitionId;
   private final LogStorage logStorage;
   private final FlowControl flowControl;
@@ -39,13 +42,13 @@ public final class LogStreamImpl implements LogStream, CommitListener {
   private volatile boolean closed;
 
   LogStreamImpl(
-      final String logName,
+      @Nullable final String logName,
       final int partitionId,
       final int maxFragmentSize,
       final LogStorage logStorage,
       final InstantSource clock,
-      final Limit requestLimit,
-      final RateLimit writeRateLimit,
+      @Nullable final Limit requestLimit,
+      @Nullable final RateLimit writeRateLimit,
       final int inFlightCapacity,
       final MeterRegistry meterRegistry) {
     this.logName = logName;
@@ -83,7 +86,7 @@ public final class LogStreamImpl implements LogStream, CommitListener {
   }
 
   @Override
-  public String getLogName() {
+  public @Nullable String getLogName() {
     return logName;
   }
 

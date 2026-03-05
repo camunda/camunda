@@ -13,7 +13,9 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.List;
 import java.util.Objects;
 import org.agrona.MutableDirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public record SequencedBatch(
     long timestamp,
     long firstPosition,
