@@ -5,11 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.auth.spring.config;
+package io.camunda.auth.domain.config;
 
 public class MultiTenancyConfiguration {
-  private boolean checksEnabled = false;
-  private boolean apiEnabled = true;
+
+  public static final String API_ENABLED_PROPERTY = "camunda.security.multiTenancy.apiEnabled";
+  private static final boolean DEFAULT_MULTITENANCY_CHECKS_ENABLED = false;
+  private static final boolean DEFAULT_API_ENABLED = true;
+
+  private boolean checksEnabled = DEFAULT_MULTITENANCY_CHECKS_ENABLED;
+  private boolean apiEnabled = DEFAULT_API_ENABLED;
 
   public boolean isChecksEnabled() {
     return checksEnabled;

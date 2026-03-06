@@ -14,8 +14,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.auth.domain.config.MultiTenancyConfiguration;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway;
 
 import io.atomix.utils.net.Address;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.auth.domain.config.MultiTenancyConfiguration;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;

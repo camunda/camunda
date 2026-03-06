@@ -12,10 +12,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.auth.domain.config.MultiTenancyConfiguration;
 import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ConditionalServices;
 import io.camunda.service.ConditionalServices.EvaluateConditionalRequest;
 import io.camunda.service.exception.ErrorMapper;
