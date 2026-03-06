@@ -24,7 +24,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 @CamundaProcessTest
-public class TestDeploymentIT {
+public class DeploymentAnnotationIT {
 
   private CamundaClient client;
 
