@@ -523,20 +523,23 @@ final class BackupServiceImpl {
       final SequencedCollection<BackupRange> ranges) {
     final var result = new ArrayList<BackupRangeStatus>(ranges.size());
     for (final var range : ranges) {
+      // IMPORTANT: getCheckpoint() returns a shared mutable flyweight from the column
+      // family. We must extract data into an immutable record immediately after each
+      // call, before the next call overwrites the flyweight's internal buffer.
       final var firstMeta = checkpointMetadataState.getCheckpoint(range.start());
+      final var first = firstMeta == null ? null : toCheckpointInfo(range.start(), firstMeta);
       final var lastMeta = checkpointMetadataState.getCheckpoint(range.end());
-      if (firstMeta == null || lastMeta == null) {
+      final var last = lastMeta == null ? null : toCheckpointInfo(range.end(), lastMeta);
+      if (first == null || last == null) {
         LOG.atWarn()
             .addKeyValue("rangeStart", range.start())
             .addKeyValue("rangeEnd", range.end())
-            .addKeyValue("firstMetaPresent", firstMeta != null)
-            .addKeyValue("lastMetaPresent", lastMeta != null)
+            .addKeyValue("firstMetaPresent", first != null)
+            .addKeyValue("lastMetaPresent", last != null)
             .setMessage("Checkpoint metadata missing for range boundary, skipping range")
             .log();
         continue;
       }
-      final var first = toCheckpointInfo(range.start(), firstMeta);
-      final var last = toCheckpointInfo(range.end(), lastMeta);
       result.add(new BackupRangeStatus(first, last));
     }
     future.complete(result);
