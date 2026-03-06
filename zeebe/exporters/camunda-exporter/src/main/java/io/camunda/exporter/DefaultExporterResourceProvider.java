@@ -59,6 +59,7 @@ import io.camunda.exporter.handlers.UsageMetricExportedHandler;
 import io.camunda.exporter.handlers.UserCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.UserDeletedHandler;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler;
+import io.camunda.exporter.handlers.UserTaskCreatingHandler;
 import io.camunda.exporter.handlers.UserTaskHandler;
 import io.camunda.exporter.handlers.UserTaskJobBasedHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
@@ -241,9 +242,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
             new EventFromProcessMessageSubscriptionHandler(
                 indexDescriptors.get(EventTemplate.class).getFullQualifiedName()),
-            new UserTaskHandler(
+            new UserTaskCreatingHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 formCache,
+                processCache,
+                exporterMetadata),
+            new UserTaskHandler(
+                indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 processCache,
                 exporterMetadata),
             new UserTaskJobBasedHandler(
