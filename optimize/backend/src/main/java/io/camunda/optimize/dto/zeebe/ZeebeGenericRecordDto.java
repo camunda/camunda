@@ -37,13 +37,15 @@ public class ZeebeGenericRecordDto {
   private String rejectionReason;
   private String brokerVersion;
   private ValueType valueType;
+
   /**
    * Raw value payload stored as a map so that this single DTO class can represent records of any
    * value type. Each import service is responsible for converting this map to its specific typed
-   * value DTO (e.g., {@code ZeebeProcessInstanceDataDto}) via
-   * {@code ObjectMapper.convertValue(value, SpecificValueDto.class)}.
+   * value DTO (e.g., {@code ZeebeProcessInstanceDataDto}) via {@code
+   * ObjectMapper.convertValue(value, SpecificValueDto.class)}.
    */
   private Map<String, Object> value;
+
   /** Intent stored as a plain string so it can hold any value-type-specific intent enum name. */
   private String intent;
 

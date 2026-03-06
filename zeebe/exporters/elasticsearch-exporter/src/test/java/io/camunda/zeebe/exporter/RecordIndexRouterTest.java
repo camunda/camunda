@@ -69,8 +69,7 @@ final class RecordIndexRouterTest {
     final var index = router.indexFor(record);
 
     // then
-    assertThat(index)
-        .isEqualTo("foo-bar_" + VersionUtil.getVersionLowerCase() + "_2022-04-01_13");
+    assertThat(index).isEqualTo("foo-bar_" + VersionUtil.getVersionLowerCase() + "_2022-04-01_13");
   }
 
   @Test

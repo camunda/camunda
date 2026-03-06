@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -36,6 +37,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
   private static final StringValue SOURCE_KEY = new StringValue("source");
+  private static final StringValue ORDINAL_KEY = new StringValue("ordinal");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final BinaryProperty valueProp = new BinaryProperty(VALUE_KEY);
@@ -50,6 +52,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
   private final ObjectProperty<VariableSourceRecord> sourceProp =
       new ObjectProperty<>(SOURCE_KEY, new VariableSourceRecord());
+  private final IntegerProperty ordinalProp = new IntegerProperty(ORDINAL_KEY, 0);
 
   /**
    * Cached JSON representation of the value. Lazily computed on first call to {@link #getValue()}
@@ -58,7 +61,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private String cachedJsonValue;
 
   public VariableRecord() {
-    super(9);
+    super(10);
     declareProperty(nameProp)
         .declareProperty(valueProp)
         .declareProperty(scopeKeyProp)
@@ -67,7 +70,8 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(tenantIdProp)
         .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(sourceProp);
+        .declareProperty(sourceProp)
+        .declareProperty(ordinalProp);
   }
 
   @Override
@@ -188,6 +192,16 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
 
   public VariableRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public int getOrdinal() {
+    return ordinalProp.getValue();
+  }
+
+  public VariableRecord setOrdinal(final int ordinal) {
+    ordinalProp.setValue(ordinal);
     return this;
   }
 }

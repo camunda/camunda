@@ -9,7 +9,6 @@ package io.camunda.optimize.service.importing.engine.service.zeebe;
 
 import static io.camunda.optimize.dto.optimize.importing.UserTaskIdentityOperationType.CLAIM_OPERATION_TYPE;
 import static io.camunda.optimize.dto.optimize.importing.UserTaskIdentityOperationType.UNCLAIM_OPERATION_TYPE;
-import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CANCELED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETED;
@@ -90,7 +89,8 @@ public class ZeebeUserTaskImportService implements ImportService<ZeebeUserTaskRe
     if (zeebeRecords.isEmpty()) {
       return Optional.empty();
     }
-    final List<FlatUserTaskDto> flatUserTasks = filterAndMapZeebeRecordsToFlatUserTasks(zeebeRecords);
+    final List<FlatUserTaskDto> flatUserTasks =
+        filterAndMapZeebeRecordsToFlatUserTasks(zeebeRecords);
     if (flatUserTasks.isEmpty()) {
       return Optional.empty();
     }
@@ -142,8 +142,13 @@ public class ZeebeUserTaskImportService implements ImportService<ZeebeUserTaskRe
           final FlatUserTaskDto userTaskDto =
               userTasksByKey.computeIfAbsent(
                   recordKey,
-                  k -> createSkeletonFlatUserTask(processDefinitionKey, processDefinitionVersion,
-                      processDefinitionId, processInstanceId, recordValue));
+                  k ->
+                      createSkeletonFlatUserTask(
+                          processDefinitionKey,
+                          processDefinitionVersion,
+                          processDefinitionId,
+                          processInstanceId,
+                          recordValue));
           final List<AssigneeOperationDto> assigneeOps =
               assigneeOpsByKey.computeIfAbsent(recordKey, k -> new ArrayList<>());
 
@@ -200,8 +205,7 @@ public class ZeebeUserTaskImportService implements ImportService<ZeebeUserTaskRe
 
   private void updateTotalDuration(final FlatUserTaskDto dto) {
     if (dto.getStartDate() != null && dto.getEndDate() != null) {
-      dto.setTotalDurationInMs(
-          dto.getStartDate().until(dto.getEndDate(), ChronoUnit.MILLIS));
+      dto.setTotalDurationInMs(dto.getStartDate().until(dto.getEndDate(), ChronoUnit.MILLIS));
     }
   }
 
@@ -306,4 +310,3 @@ public class ZeebeUserTaskImportService implements ImportService<ZeebeUserTaskRe
     return importJob;
   }
 }
-

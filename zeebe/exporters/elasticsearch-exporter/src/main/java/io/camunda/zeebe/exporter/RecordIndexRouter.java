@@ -56,8 +56,8 @@ final class RecordIndexRouter {
   }
 
   /**
-   * Returns the index prefix for the given version, without the date suffix. All records
-   * regardless of value type share this prefix.
+   * Returns the index prefix for the given version, without the date suffix. All records regardless
+   * of value type share this prefix.
    */
   String indexPrefix(final String version) {
     return config.prefix + INDEX_DELIMITER + version;

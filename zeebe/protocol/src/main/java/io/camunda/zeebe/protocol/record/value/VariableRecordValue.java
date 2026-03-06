@@ -88,4 +88,13 @@ public interface VariableRecordValue
    *     source is unknown.
    */
   VariableSourceValue getSource();
+
+  /**
+   * Returns the ordinal captured at the time the process instance hosting this variable was
+   * created.
+   *
+   * @return the ordinal, or {@code 0} if not set
+   * @since 8.10
+   */
+  int getOrdinal();
 }

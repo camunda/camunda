@@ -35,8 +35,8 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * Factory that creates a {@link ZeebeCombinedImportMediator} for each Zeebe partition. The
- * combined mediator replaces the four separate per-type mediator factories
+ * Factory that creates a {@link ZeebeCombinedImportMediator} for each Zeebe partition. The combined
+ * mediator replaces the four separate per-type mediator factories
  * (ZeebeProcessInstanceImportMediatorFactory, ZeebeVariableImportMediatorFactory,
  * ZeebeIncidentImportMediatorFactory, ZeebeUserTaskImportMediatorFactory) and wires them all into a
  * single fetch-and-dispatch pipeline.
@@ -112,8 +112,7 @@ public class ZeebeCombinedImportMediatorFactory extends AbstractZeebeImportMedia
                 processDefinitionReader,
                 objectVariableService,
                 databaseClient),
-            new ZeebeIncidentImportService(
-                configurationService, incidentWriter, databaseClient),
+            new ZeebeIncidentImportService(configurationService, incidentWriter, databaseClient),
             new ZeebeUserTaskImportService(
                 configurationService, userTaskWriter, partitionId, databaseClient),
             objectMapper,

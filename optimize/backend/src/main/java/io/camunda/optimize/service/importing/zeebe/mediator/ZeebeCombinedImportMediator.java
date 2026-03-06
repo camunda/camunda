@@ -69,8 +69,10 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
   private final ConfigurationService configurationService;
   private final BackoffCalculator idleBackoffCalculator;
   private final BackoffCalculator errorBackoffCalculator = new BackoffCalculator(10, 1000);
+
   /** Single executor shared by all import services for this mediator instance. */
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
+
   /** Sliding window cache for combined Zeebe records; drives PreFlattenedDTO production. */
   private final ZeebeImportSlidingWindowCache slidingWindowCache;
 
@@ -293,8 +295,7 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
   }
 
   private Timer getIndexingDurationTimer() {
-    return OptimizeMetrics.getTimer(
-        INDEXING_DURATION_METRIC, "COMBINED", fetcher.getPartitionId());
+    return OptimizeMetrics.getTimer(INDEXING_DURATION_METRIC, "COMBINED", fetcher.getPartitionId());
   }
 
   private void calculateNewBackoffUntilBlocked() {

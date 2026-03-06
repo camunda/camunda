@@ -37,9 +37,9 @@ public class PreFlattenedWriter {
   }
 
   /**
-   * Generates a list of {@link ImportRequestDto} (INDEX type) for the given {@link
-   * PreFlattenedDTO} documents. Ensures the required per-definition indices and the shared
-   * multi-alias exist before returning the requests.
+   * Generates a list of {@link ImportRequestDto} (INDEX type) for the given {@link PreFlattenedDTO}
+   * documents. Ensures the required per-definition indices and the shared multi-alias exist before
+   * returning the requests.
    *
    * @param dtos the pre-flattened DTOs to index
    * @return list of import requests ready for bulk execution

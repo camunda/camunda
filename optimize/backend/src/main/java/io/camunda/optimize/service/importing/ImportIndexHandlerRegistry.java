@@ -79,8 +79,7 @@ public class ImportIndexHandlerRegistry {
     return getZeebeImportIndexHandler(partitionId, ZeebeUserTaskImportIndexHandler.class);
   }
 
-  public ZeebeRecordImportIndexHandler getZeebeRecordImportIndexHandler(
-      final Integer partitionId) {
+  public ZeebeRecordImportIndexHandler getZeebeRecordImportIndexHandler(final Integer partitionId) {
     return getZeebeImportIndexHandler(partitionId, ZeebeRecordImportIndexHandler.class);
   }
 

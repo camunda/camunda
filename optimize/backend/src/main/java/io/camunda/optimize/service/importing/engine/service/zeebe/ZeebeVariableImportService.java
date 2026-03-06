@@ -104,7 +104,8 @@ public class ZeebeVariableImportService implements ImportService<ZeebeVariableRe
     if (zeebeRecords.isEmpty()) {
       return Optional.empty();
     }
-    final List<FlatVariableDto> flatVariables = filterAndMapZeebeRecordsToFlatVariables(zeebeRecords);
+    final List<FlatVariableDto> flatVariables =
+        filterAndMapZeebeRecordsToFlatVariables(zeebeRecords);
     if (flatVariables.isEmpty()) {
       return Optional.empty();
     }

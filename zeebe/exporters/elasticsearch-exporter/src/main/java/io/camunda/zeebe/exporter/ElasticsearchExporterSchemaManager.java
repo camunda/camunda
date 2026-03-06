@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.exporter;
 
-import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.HashSet;
 import java.util.Set;

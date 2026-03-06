@@ -39,8 +39,7 @@ public class UserTaskWriter {
     this.indexRepository = indexRepository;
   }
 
-  public List<ImportRequestDto> generateFlatUserTaskImports(
-      final List<FlatUserTaskDto> userTasks) {
+  public List<ImportRequestDto> generateFlatUserTaskImports(final List<FlatUserTaskDto> userTasks) {
     final String importItemName = "flat user tasks";
     LOG.debug("Creating imports for [{}].", importItemName);
     indexRepository.createMissingIndices(
@@ -57,8 +56,7 @@ public class UserTaskWriter {
 
   private ImportRequestDto buildImportRequest(
       final FlatUserTaskDto userTask, final String importItemName) {
-    final String indexName =
-        getFlatUserTaskIndexAliasName(userTask.getProcessDefinitionKey());
+    final String indexName = getFlatUserTaskIndexAliasName(userTask.getProcessDefinitionKey());
     if (userTask.isNew()) {
       return ImportRequestDto.builder()
           .importName(importItemName)

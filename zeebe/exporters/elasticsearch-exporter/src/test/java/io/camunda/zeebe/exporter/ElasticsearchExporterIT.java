@@ -43,7 +43,6 @@ import java.util.function.UnaryOperator;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -241,8 +240,7 @@ final class ElasticsearchExporterIT {
   void shouldPutIndexTemplate() {
     // given
     final var version = VersionUtil.getVersionLowerCase();
-    final var record =
-        factory.generateRecord(r -> r.withBrokerVersion(version));
+    final var record = factory.generateRecord(r -> r.withBrokerVersion(version));
     final var expectedIndexTemplateName = indexRouter.indexPrefix(version);
 
     // when - export a single record to enforce installing the combined index template
@@ -469,8 +467,7 @@ final class ElasticsearchExporterIT {
       export(record);
 
       // then
-      final var template =
-          testClient.getIndexTemplate(VersionUtil.getVersionLowerCase());
+      final var template = testClient.getIndexTemplate(VersionUtil.getVersionLowerCase());
       assertThat(template)
           .as("should have created combined index template")
           .isPresent()
@@ -489,8 +486,7 @@ final class ElasticsearchExporterIT {
       export(record);
 
       // then
-      final var template =
-          testClient.getIndexTemplate(VersionUtil.getVersionLowerCase());
+      final var template = testClient.getIndexTemplate(VersionUtil.getVersionLowerCase());
       assertThat(template)
           .as("should have created combined index template")
           .isPresent()

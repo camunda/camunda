@@ -36,6 +36,7 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.MessageTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.OrdinalTemplate;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
@@ -90,7 +91,8 @@ public class IndexDescriptors {
                 new HistoryDeletionIndex(indexPrefix, isElasticsearch),
                 new JobMetricsBatchTemplate(indexPrefix, isElasticsearch),
                 new AuditLogCleanupIndex(indexPrefix, isElasticsearch),
-                new GlobalListenerIndex(indexPrefix, isElasticsearch))
+                new GlobalListenerIndex(indexPrefix, isElasticsearch),
+                new OrdinalTemplate(indexPrefix, isElasticsearch))
             .collect(Collectors.toMap(Object::getClass, Function.identity()));
   }
 

@@ -53,6 +53,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.OrdinalIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -114,6 +115,7 @@ import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.OrdinalRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
@@ -333,6 +335,7 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.MULTI_INSTANCE,
         new Mapping<>(MultiInstanceRecordValue.class, MultiInstanceIntent.class));
+    mapping.put(ValueType.ORDINAL, new Mapping<>(OrdinalRecordValue.class, OrdinalIntent.class));
     mapping.put(
         ValueType.RUNTIME_INSTRUCTION,
         new Mapping<>(RuntimeInstructionRecordValue.class, RuntimeInstructionIntent.class));

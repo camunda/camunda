@@ -136,7 +136,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getVariableState(),
             writers.state(),
             conditionalBehavior,
-            processingState.getKeyGenerator());
+            processingState.getKeyGenerator(),
+            processingState.getElementInstanceState());
 
     catchEventBehavior =
         new CatchEventBehavior(

@@ -10,8 +10,8 @@ package io.camunda.zeebe.exporter;
 import io.camunda.zeebe.protocol.record.Record;
 
 /**
- * Maintains a single global counter for all records regardless of value type. In the combined
- * Zeebe index all value types are stored together, so the sequence counter must reflect the global
+ * Maintains a single global counter for all records regardless of value type. In the combined Zeebe
+ * index all value types are stored together, so the sequence counter must reflect the global
  * ordering across all record types rather than per-type ordering.
  *
  * @see <a href="https://github.com/camunda/camunda/issues/10568">Related issue</a>

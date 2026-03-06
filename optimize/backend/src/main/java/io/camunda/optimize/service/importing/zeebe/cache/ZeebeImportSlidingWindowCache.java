@@ -56,6 +56,7 @@ public class ZeebeImportSlidingWindowCache {
   // ---- generic (combined-index) record storage ----
   private final CopyOnWriteArrayList<GenericBatchEntry> genericEntries =
       new CopyOnWriteArrayList<>();
+
   /** Timestamp of the last 1-second poll; used to detect records added since the previous tick. */
   private volatile long lastGenericPollTimeMs = System.currentTimeMillis();
 
@@ -101,9 +102,8 @@ public class ZeebeImportSlidingWindowCache {
   }
 
   /**
-   * Accepts a batch of generic Zeebe records (from the combined index) and adds them to the
-   * generic sliding window. These records are polled every second for {@link PreFlattenedDTO}
-   * production.
+   * Accepts a batch of generic Zeebe records (from the combined index) and adds them to the generic
+   * sliding window. These records are polled every second for {@link PreFlattenedDTO} production.
    *
    * @param records records fetched from the combined Zeebe index
    */
@@ -130,8 +130,8 @@ public class ZeebeImportSlidingWindowCache {
   }
 
   /**
-   * Evicts entries that have fallen outside the 10-second sliding window and logs a summary.
-   * Called once per second via {@link #tick()}.
+   * Evicts entries that have fallen outside the 10-second sliding window and logs a summary. Called
+   * once per second via {@link #tick()}.
    */
   void evict() {
     final long cutoffMs = System.currentTimeMillis() - (WINDOW_DURATION_SECONDS * 1_000L);
@@ -151,10 +151,10 @@ public class ZeebeImportSlidingWindowCache {
 
   /**
    * Inspects records added since the previous 1-second tick and creates a {@link PreFlattenedDTO}
-   * for every PROCESS_INSTANCE / ELEMENT_ACTIVATING / PROCESS event found. The {@code region}
-   * field is resolved by scanning the entire 10-second generic window for a VARIABLE record whose
-   * name is {@code "region"} <em>and</em> whose {@code processInstanceKey} matches the activating
-   * process instance.
+   * for every PROCESS_INSTANCE / ELEMENT_ACTIVATING / PROCESS event found. The {@code region} field
+   * is resolved by scanning the entire 10-second generic window for a VARIABLE record whose name is
+   * {@code "region"} <em>and</em> whose {@code processInstanceKey} matches the activating process
+   * instance.
    *
    * @return list of DTOs produced during this tick (may be empty)
    */
@@ -212,11 +212,7 @@ public class ZeebeImportSlidingWindowCache {
               .findFirst();
       region.ifPresent(dto::setRegion);
 
-      LOG.info(
-          "PreFlattenedDTO [partition={}, recordType={}]: {}",
-          partitionId,
-          recordType,
-          dto);
+      LOG.info("PreFlattenedDTO [partition={}, recordType={}]: {}", partitionId, recordType, dto);
 
       result.add(dto);
     }

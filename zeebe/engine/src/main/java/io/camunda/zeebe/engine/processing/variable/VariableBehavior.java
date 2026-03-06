@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.variable;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior.VariableEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.variable.DocumentEntry;
 import io.camunda.zeebe.engine.state.variable.IndexedDocument;
@@ -37,6 +38,7 @@ public final class VariableBehavior {
   private final StateWriter stateWriter;
   private final BpmnConditionalBehavior conditionalBehavior;
   private final KeyGenerator keyGenerator;
+  private final ElementInstanceState elementInstanceState;
 
   private final IndexedDocument indexedDocument = new IndexedDocument();
   private final VariableRecord variableRecord = new VariableRecord();
@@ -46,11 +48,13 @@ public final class VariableBehavior {
       final VariableState variableState,
       final StateWriter stateWriter,
       final BpmnConditionalBehavior conditionalBehavior,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final ElementInstanceState elementInstanceState) {
     this.variableState = variableState;
     this.stateWriter = stateWriter;
     this.conditionalBehavior = conditionalBehavior;
     this.keyGenerator = keyGenerator;
+    this.elementInstanceState = elementInstanceState;
     variableSourceRecord = VariableSourceRecord.none();
   }
 
@@ -59,17 +63,24 @@ public final class VariableBehavior {
       final StateWriter stateWriter,
       final BpmnConditionalBehavior conditionalBehavior,
       final KeyGenerator keyGenerator,
+      final ElementInstanceState elementInstanceState,
       final VariableSourceRecord variableSourceRecord) {
     this.variableState = variableState;
     this.stateWriter = stateWriter;
     this.conditionalBehavior = conditionalBehavior;
     this.keyGenerator = keyGenerator;
+    this.elementInstanceState = elementInstanceState;
     this.variableSourceRecord = variableSourceRecord;
   }
 
   public VariableBehavior withVariableSource(final VariableSourceRecord source) {
     return new VariableBehavior(
-        variableState, stateWriter, conditionalBehavior, keyGenerator, source);
+        variableState,
+        stateWriter,
+        conditionalBehavior,
+        keyGenerator,
+        elementInstanceState,
+        source);
   }
 
   /**
@@ -106,7 +117,8 @@ public final class VariableBehavior {
         .setRootProcessInstanceKey(rootProcessInstanceKey)
         .setBpmnProcessId(bpmnProcessId)
         .setTenantId(tenantId)
-        .setSource(variableSourceRecord);
+        .setSource(variableSourceRecord)
+        .setOrdinal(getProcessInstanceOrdinal(processInstanceKey));
     final List<VariableEvent> variableEvents = new ArrayList<>();
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
@@ -162,7 +174,8 @@ public final class VariableBehavior {
         .setRootProcessInstanceKey(rootProcessInstanceKey)
         .setBpmnProcessId(bpmnProcessId)
         .setTenantId(tenantId)
-        .setSource(variableSourceRecord);
+        .setSource(variableSourceRecord)
+        .setOrdinal(getProcessInstanceOrdinal(processInstanceKey));
     while ((parentScope = variableState.getParentScopeKey(currentScope)) > 0) {
       final Iterator<DocumentEntry> entryIterator = indexedDocument.iterator();
 
@@ -271,5 +284,13 @@ public final class VariableBehavior {
     variableRecordCopy.copyFrom(variableRecord);
 
     return variableRecordCopy;
+  }
+
+  private int getProcessInstanceOrdinal(final long processInstanceKey) {
+    if (elementInstanceState == null) {
+      return 0;
+    }
+    final var instance = elementInstanceState.getInstance(processInstanceKey);
+    return instance != null ? instance.getValue().getOrdinal() : 0;
   }
 }

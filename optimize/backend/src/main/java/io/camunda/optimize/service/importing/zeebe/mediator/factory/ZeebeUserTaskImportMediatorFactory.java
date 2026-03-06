@@ -58,13 +58,9 @@ public class ZeebeUserTaskImportMediatorFactory extends AbstractZeebeImportMedia
                 objectMapper,
                 configurationService),
             new ZeebeUserTaskImportService(
-                configurationService,
-                userTaskWriter,
-                partitionId,
-                databaseClient),
+                configurationService, userTaskWriter, partitionId, databaseClient),
             configurationService,
             new BackoffCalculator(configurationService),
             new ZeebeImportSlidingWindowCache(partitionId, "USER_TASK")));
   }
 }
-

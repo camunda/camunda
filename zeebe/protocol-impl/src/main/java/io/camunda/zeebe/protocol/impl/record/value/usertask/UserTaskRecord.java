@@ -153,9 +153,10 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final StringProperty deniedReasonProp = new StringProperty("deniedReason", EMPTY_STRING);
   private final ArrayProperty<StringValue> tagsProp = new ArrayProperty<>("tags", StringValue::new);
   private final LongProperty listenersConfigKeyProp = new LongProperty("listenersConfigKey", -1L);
+  private final IntegerProperty ordinalProp = new IntegerProperty("ordinal", 0);
 
   public UserTaskRecord() {
-    super(25);
+    super(26);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsListProp)
@@ -180,7 +181,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(deniedReasonProp)
         .declareProperty(tagsProp)
         .declareProperty(listenersConfigKeyProp)
-        .declareProperty(rootProcessInstanceKeyProp);
+        .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(ordinalProp);
   }
 
   /** Like {@link #wrap(UserTaskRecord)} but does not set the variables. */
@@ -210,6 +212,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     setTags(record.getTags());
     listenersConfigKeyProp.setValue(record.getListenersConfigKey());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
+    ordinalProp.setValue(record.getOrdinal());
   }
 
   /**
@@ -788,6 +791,16 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord resetChangedAttributes() {
     changedAttributesProp.reset();
+    return this;
+  }
+
+  @Override
+  public int getOrdinal() {
+    return ordinalProp.getValue();
+  }
+
+  public UserTaskRecord setOrdinal(final int ordinal) {
+    ordinalProp.setValue(ordinal);
     return this;
   }
 }
