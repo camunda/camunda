@@ -24,6 +24,7 @@ public final class JobFixtures extends CommonFixtures {
     final var builder =
         new JobDbModel.Builder()
             .jobKey(nextKey())
+            .type("type-" + generateRandomString(20))
             .processDefinitionKey(nextKey())
             .processDefinitionId("job-" + generateRandomString(20))
             .processInstanceKey(nextKey())
