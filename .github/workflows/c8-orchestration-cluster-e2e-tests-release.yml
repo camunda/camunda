@@ -617,7 +617,7 @@ jobs:
                 # stable/8.8: run all tests excluding @v1-only tagged tests
                 TEST_ARGS+=(tests/ --grep-invert '@v1-only')
               else
-                # main: run all tests excluding v1/ directories
+                # main, stable 8.9: run all tests excluding v1/ directories
                 TEST_ARGS+=(tests/ --grep-invert 'v1/')
               fi
             else
