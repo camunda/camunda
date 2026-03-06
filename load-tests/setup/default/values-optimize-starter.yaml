@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: optimize-load-tester
+  namespace: namespace-bh
+  labels:
+    app: optimize-load-tester
+    app.kubernetes.io/component: zeebe-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: optimize-load-tester
+  template:
+    metadata:
+      labels:
+        app: optimize-load-tester
+        app.kubernetes.io/component: zeebe-client
+    spec:
+      containers:
+        - name: optimize
+          image: gcr.io/zeebe-io/optimize-load-tester:namespace-bh-2f0a1af
+          env:
+            - name: OPTIMIZE_BASE_URL
+              value: "http://namespace-bh"
+            - name: OPTIMIZE_KEYCLOAK_URL
+              value: "http://namespace-bh-keycloak"
+            - name: OPTIMIZE_REALM
+              value: "camunda-platform"
+            - name: OPTIMIZE_CLIENT_ID
+              value: "optimize"
+            - name: OPTIMIZE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-optimize-client-token
+            - name: OPTIMIZE_USERNAME
+              value: "demo"
+            - name: OPTIMIZE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-firstuser-password
+          resources:
+            limits:
+              cpu: 250m
+              memory: 512Mi
+            requests:
+              cpu: 250m
+              memory: 512Mi
+          # Add liveness probe to restart if it hangs
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 9600
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3

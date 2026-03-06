@@ -8,6 +8,7 @@ global:
         secret:
           existingSecret: camunda-credentials
           existingSecretKey: identity-optimize-client-token
+        redirectUrl: "http://localhost:8083"
 
 identity:
   enabled: true
