@@ -21,6 +21,7 @@ import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.RequestType;
 import io.camunda.optimize.dto.optimize.query.process.FlatUserTaskDto;
 import io.camunda.optimize.service.db.repository.IndexRepository;
+import io.camunda.optimize.service.importing.zeebe.cache.OrdinalCache;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,20 +35,23 @@ public class UserTaskWriter {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(UserTaskWriter.class);
   private final IndexRepository indexRepository;
+  private final OrdinalCache ordinalCache;
 
-  public UserTaskWriter(final IndexRepository indexRepository) {
+  public UserTaskWriter(final IndexRepository indexRepository, final OrdinalCache ordinalCache) {
     this.indexRepository = indexRepository;
+    this.ordinalCache = ordinalCache;
   }
 
   public List<ImportRequestDto> generateFlatUserTaskImports(final List<FlatUserTaskDto> userTasks) {
     final String importItemName = "flat user tasks";
     LOG.debug("Creating imports for [{}].", importItemName);
-    indexRepository.createMissingIndices(
-        FLAT_USER_TASK_INDEX,
-        Set.of(FLAT_USER_TASK_MULTI_ALIAS),
+
+    final Set<String> combinedKeys =
         userTasks.stream()
-            .map(FlatUserTaskDto::getProcessDefinitionKey)
-            .collect(Collectors.toSet()));
+            .map(t -> combinedKey(t.getProcessDefinitionKey(), t.getOrdinal()))
+            .collect(Collectors.toSet());
+    indexRepository.createMissingIndices(
+        FLAT_USER_TASK_INDEX, Set.of(FLAT_USER_TASK_MULTI_ALIAS), combinedKeys);
 
     return userTasks.stream()
         .map(userTask -> buildImportRequest(userTask, importItemName))
@@ -56,7 +60,10 @@ public class UserTaskWriter {
 
   private ImportRequestDto buildImportRequest(
       final FlatUserTaskDto userTask, final String importItemName) {
-    final String indexName = getFlatUserTaskIndexAliasName(userTask.getProcessDefinitionKey());
+    final String indexName =
+        getFlatUserTaskIndexAliasName(
+            userTask.getProcessDefinitionKey(),
+            ordinalCache.getTickString(userTask.getOrdinal()));
     if (userTask.isNew()) {
       return ImportRequestDto.builder()
           .importName(importItemName)
@@ -92,5 +99,9 @@ public class UserTaskWriter {
           .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
           .build();
     }
+  }
+
+  private String combinedKey(final String processDefinitionKey, final int ordinal) {
+    return processDefinitionKey + "-" + ordinalCache.getTickString(ordinal);
   }
 }

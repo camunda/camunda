@@ -87,12 +87,30 @@ public final class InstanceIndexUtil {
     }
   }
 
+  /**
+   * Returns the flat flow-node-instance index alias name composed of the process definition key
+   * and the ordinal tick string (e.g. {@code "20260306-1430"}). Both components are mandatory.
+   */
+  public static String getFlatFlowNodeInstanceIndexAliasName(
+      final String processDefinitionKey, final String ordinalTick) {
+    return FlatFlowNodeInstanceIndex.constructIndexName(processDefinitionKey, ordinalTick);
+  }
+
   public static String getFlatIncidentIndexAliasName(final String processDefinitionKey) {
     if (processDefinitionKey == null) {
       return FLAT_INCIDENT_MULTI_ALIAS;
     } else {
       return FlatIncidentIndex.constructIndexName(processDefinitionKey);
     }
+  }
+
+  /**
+   * Returns the flat incident index alias name composed of the process definition key and the
+   * ordinal tick string (e.g. {@code "20260306-1430"}). Both components are mandatory.
+   */
+  public static String getFlatIncidentIndexAliasName(
+      final String processDefinitionKey, final String ordinalTick) {
+    return FlatIncidentIndex.constructIndexName(processDefinitionKey, ordinalTick);
   }
 
   public static String getFlatUserTaskIndexAliasName(final String processDefinitionKey) {
@@ -103,12 +121,30 @@ public final class InstanceIndexUtil {
     }
   }
 
+  /**
+   * Returns the flat user-task index alias name composed of the process definition key and the
+   * ordinal tick string (e.g. {@code "20260306-1430"}). Both components are mandatory.
+   */
+  public static String getFlatUserTaskIndexAliasName(
+      final String processDefinitionKey, final String ordinalTick) {
+    return FlatUserTaskIndex.constructIndexName(processDefinitionKey, ordinalTick);
+  }
+
   public static String getFlatVariableIndexAliasName(final String processDefinitionKey) {
     if (processDefinitionKey == null) {
       return FLAT_VARIABLE_MULTI_ALIAS;
     } else {
       return FlatVariableIndex.constructIndexName(processDefinitionKey);
     }
+  }
+
+  /**
+   * Returns the flat variable index alias name composed of the process definition key and the
+   * ordinal tick string (e.g. {@code "20260306-1430"}). Both components are mandatory.
+   */
+  public static String getFlatVariableIndexAliasName(
+      final String processDefinitionKey, final String ordinalTick) {
+    return FlatVariableIndex.constructIndexName(processDefinitionKey, ordinalTick);
   }
 
   public static String getPreFlattenedIndexAliasName(final String processDefinitionKey) {

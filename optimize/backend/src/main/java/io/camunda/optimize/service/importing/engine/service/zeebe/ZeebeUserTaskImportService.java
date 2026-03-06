@@ -200,6 +200,7 @@ public class ZeebeUserTaskImportService implements ImportService<ZeebeUserTaskRe
     dto.setTenantId(userTaskData.getTenantId());
     dto.setCanceled(false);
     dto.setPartition(partitionId);
+    dto.setOrdinal(userTaskData.getOrdinal());
     return dto;
   }
 

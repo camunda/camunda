@@ -16,6 +16,7 @@ import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.RequestType;
 import io.camunda.optimize.dto.optimize.persistence.incident.FlatIncidentDto;
 import io.camunda.optimize.service.db.repository.IndexRepository;
+import io.camunda.optimize.service.importing.zeebe.cache.OrdinalCache;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -27,20 +28,24 @@ public class IncidentWriter {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(IncidentWriter.class);
   private final IndexRepository indexRepository;
+  private final OrdinalCache ordinalCache;
 
-  public IncidentWriter(final IndexRepository indexRepository) {
+  public IncidentWriter(final IndexRepository indexRepository, final OrdinalCache ordinalCache) {
     this.indexRepository = indexRepository;
+    this.ordinalCache = ordinalCache;
   }
 
   public List<ImportRequestDto> generateFlatIncidentImports(final List<FlatIncidentDto> incidents) {
     final String importItemName = "flat incidents";
     LOG.debug("Creating imports for [{}].", importItemName);
-    indexRepository.createMissingIndices(
-        FLAT_INCIDENT_INDEX,
-        Set.of(FLAT_INCIDENT_MULTI_ALIAS),
+
+    // Compute combined index keys (processDefinitionKey-ordinalTick) for index creation.
+    final Set<String> combinedKeys =
         incidents.stream()
-            .map(FlatIncidentDto::getProcessDefinitionKey)
-            .collect(Collectors.toSet()));
+            .map(i -> combinedKey(i.getProcessDefinitionKey(), i.getOrdinal()))
+            .collect(Collectors.toSet());
+    indexRepository.createMissingIndices(
+        FLAT_INCIDENT_INDEX, Set.of(FLAT_INCIDENT_MULTI_ALIAS), combinedKeys);
 
     return incidents.stream()
         .map(
@@ -49,10 +54,17 @@ public class IncidentWriter {
                     .importName(importItemName)
                     .type(RequestType.INDEX)
                     .id(incident.getId())
-                    .indexName(getFlatIncidentIndexAliasName(incident.getProcessDefinitionKey()))
+                    .indexName(
+                        getFlatIncidentIndexAliasName(
+                            incident.getProcessDefinitionKey(),
+                            ordinalCache.getTickString(incident.getOrdinal())))
                     .source(incident)
                     .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
                     .build())
         .toList();
+  }
+
+  private String combinedKey(final String processDefinitionKey, final int ordinal) {
+    return processDefinitionKey + "-" + ordinalCache.getTickString(ordinal);
   }
 }

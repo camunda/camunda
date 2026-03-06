@@ -26,6 +26,7 @@ public class FlatVariableDto implements OptimizeDto {
   private List<String> value;
   private long version;
   private int partition;
+  private int ordinal;
 
   public FlatVariableDto() {}
 
@@ -146,5 +147,13 @@ public class FlatVariableDto implements OptimizeDto {
 
   public void setPartition(final int partition) {
     this.partition = partition;
+  }
+
+  public int getOrdinal() {
+    return ordinal;
+  }
+
+  public void setOrdinal(final int ordinal) {
+    this.ordinal = ordinal;
   }
 }

@@ -161,6 +161,7 @@ public class ZeebeIncidentImportService implements ImportService<ZeebeIncidentRe
     flatIncident.setIncidentMessage(data.getErrorMessage());
     flatIncident.setDefinitionKey(data.getBpmnProcessId());
     flatIncident.setTenantId(data.getTenantId());
+    flatIncident.setOrdinal(data.getOrdinal());
     return flatIncident;
   }
 

@@ -143,6 +143,7 @@ public class ZeebeVariableImportService implements ImportService<ZeebeVariableRe
     final String processDefinitionKey = getBpmnProcessId(firstRecordValue);
     final String processDefinitionId = String.valueOf(firstRecordValue.getProcessDefinitionKey());
     final String processInstanceId = String.valueOf(firstRecordValue.getProcessInstanceKey());
+    final int ordinal = firstRecordValue.getOrdinal();
 
     final List<ProcessVariableUpdateDto> variables =
         resolveDuplicateUpdates(recordsForInstance).stream()
@@ -159,13 +160,17 @@ public class ZeebeVariableImportService implements ImportService<ZeebeVariableRe
     }
     return processVariablesToImport.stream()
         .map(
-            variable ->
-                FlatVariableDto.fromProcessInstanceAndVariable(
-                    processDefinitionKey,
-                    null,
-                    processDefinitionId,
-                    processInstanceId,
-                    convertToSimpleProcessVariableDto(variable)))
+            variable -> {
+              final FlatVariableDto dto =
+                  FlatVariableDto.fromProcessInstanceAndVariable(
+                      processDefinitionKey,
+                      null,
+                      processDefinitionId,
+                      processInstanceId,
+                      convertToSimpleProcessVariableDto(variable));
+              dto.setOrdinal(ordinal);
+              return dto;
+            })
         .toList();
   }
 

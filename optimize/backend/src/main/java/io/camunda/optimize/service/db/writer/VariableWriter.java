@@ -16,6 +16,7 @@ import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.RequestType;
 import io.camunda.optimize.dto.optimize.query.variable.FlatVariableDto;
 import io.camunda.optimize.service.db.repository.IndexRepository;
+import io.camunda.optimize.service.importing.zeebe.cache.OrdinalCache;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -27,20 +28,23 @@ public class VariableWriter {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(VariableWriter.class);
   private final IndexRepository indexRepository;
+  private final OrdinalCache ordinalCache;
 
-  public VariableWriter(final IndexRepository indexRepository) {
+  public VariableWriter(final IndexRepository indexRepository, final OrdinalCache ordinalCache) {
     this.indexRepository = indexRepository;
+    this.ordinalCache = ordinalCache;
   }
 
   public List<ImportRequestDto> generateFlatVariableImports(final List<FlatVariableDto> variables) {
     final String importItemName = "flat variables";
     LOG.debug("Creating imports for [{}].", importItemName);
-    indexRepository.createMissingIndices(
-        FLAT_VARIABLE_INDEX,
-        Set.of(FLAT_VARIABLE_MULTI_ALIAS),
+
+    final Set<String> combinedKeys =
         variables.stream()
-            .map(FlatVariableDto::getProcessDefinitionKey)
-            .collect(Collectors.toSet()));
+            .map(v -> combinedKey(v.getProcessDefinitionKey(), v.getOrdinal()))
+            .collect(Collectors.toSet());
+    indexRepository.createMissingIndices(
+        FLAT_VARIABLE_INDEX, Set.of(FLAT_VARIABLE_MULTI_ALIAS), combinedKeys);
 
     return variables.stream()
         .map(
@@ -49,10 +53,17 @@ public class VariableWriter {
                     .importName(importItemName)
                     .type(RequestType.INDEX)
                     .id(variable.getId())
-                    .indexName(getFlatVariableIndexAliasName(variable.getProcessDefinitionKey()))
+                    .indexName(
+                        getFlatVariableIndexAliasName(
+                            variable.getProcessDefinitionKey(),
+                            ordinalCache.getTickString(variable.getOrdinal())))
                     .source(variable)
                     .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
                     .build())
         .toList();
+  }
+
+  private String combinedKey(final String processDefinitionKey, final int ordinal) {
+    return processDefinitionKey + "-" + ordinalCache.getTickString(ordinal);
   }
 }

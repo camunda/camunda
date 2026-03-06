@@ -65,6 +65,18 @@ public abstract class FlatFlowNodeInstanceIndex<TBuilder> extends AbstractInstan
         + flowNodeInstanceIndexKey.toLowerCase(Locale.ENGLISH);
   }
 
+  /**
+   * Constructs the index name using both the process definition key and the ordinal tick string
+   * (e.g. {@code "20260306-1430"}). The ordinal tick is mandatory.
+   */
+  public static String constructIndexName(
+      final String flowNodeInstanceIndexKey, final String ordinalTick) {
+    return FLAT_FLOW_NODE_INSTANCE_INDEX_PREFIX
+        + flowNodeInstanceIndexKey.toLowerCase(Locale.ENGLISH)
+        + "-"
+        + ordinalTick;
+  }
+
   @Override
   public String getIndexName() {
     return indexName;

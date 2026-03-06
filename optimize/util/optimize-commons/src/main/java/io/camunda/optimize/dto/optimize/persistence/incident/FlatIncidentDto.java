@@ -33,6 +33,7 @@ public class FlatIncidentDto implements OptimizeDto {
   private String definitionVersion;
   private String tenantId;
   private int partition;
+  private int ordinal;
 
   public FlatIncidentDto() {}
 
@@ -229,5 +230,13 @@ public class FlatIncidentDto implements OptimizeDto {
 
   public void setPartition(final int partition) {
     this.partition = partition;
+  }
+
+  public int getOrdinal() {
+    return ordinal;
+  }
+
+  public void setOrdinal(final int ordinal) {
+    this.ordinal = ordinal;
   }
 }

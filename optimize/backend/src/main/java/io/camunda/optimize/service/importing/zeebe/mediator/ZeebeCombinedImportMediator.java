@@ -24,6 +24,7 @@ import io.camunda.optimize.service.importing.DatabaseImportRequestJob;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.mediator.MediatorRank;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeIncidentImportService;
+import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeOrdinalImportService;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeProcessInstanceImportService;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeUserTaskImportService;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeVariableImportService;
@@ -67,6 +68,7 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
   private final ZeebeVariableImportService variableImportService;
   private final ZeebeIncidentImportService incidentImportService;
   private final ZeebeUserTaskImportService userTaskImportService;
+  private final ZeebeOrdinalImportService ordinalImportService;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
   private final BackoffCalculator idleBackoffCalculator;
@@ -87,6 +89,7 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
       final ZeebeVariableImportService variableImportService,
       final ZeebeIncidentImportService incidentImportService,
       final ZeebeUserTaskImportService userTaskImportService,
+      final ZeebeOrdinalImportService ordinalImportService,
       final ObjectMapper objectMapper,
       final ConfigurationService configurationService,
       final BackoffCalculator idleBackoffCalculator,
@@ -98,6 +101,7 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
     this.variableImportService = variableImportService;
     this.incidentImportService = incidentImportService;
     this.userTaskImportService = userTaskImportService;
+    this.ordinalImportService = ordinalImportService;
     this.objectMapper = objectMapper;
     this.configurationService = configurationService;
     this.idleBackoffCalculator = idleBackoffCalculator;
@@ -197,6 +201,9 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
         records.size());
 
     if (!records.isEmpty()) {
+      // Process ORDINAL records first so the OrdinalCache is populated before flat-index imports.
+      ordinalImportService.processOrdinalRecords(records);
+
       // Feed records to the sliding window cache for PreFlattenedDTO production
       slidingWindowCache.acceptGeneric(records);
 

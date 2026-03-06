@@ -38,6 +38,8 @@ public final class DatabaseConstants {
   public static final String FLAT_USER_TASK_MULTI_ALIAS = "flat-user-task";
   public static final String FLAT_VARIABLE_MULTI_ALIAS = "flat-variable";
   public static final String PRE_FLATTENED_MULTI_ALIAS = "pre-flattened";
+  public static final String ORDINAL_MULTI_ALIAS = "ordinal";
+  public static final String ORDINAL_INDEX_NAME = "ordinal";
   public static final String SINGLE_PROCESS_REPORT_INDEX_NAME = "single-process-report";
   public static final String SINGLE_DECISION_REPORT_INDEX_NAME = "single-decision-report";
   public static final String COMBINED_REPORT_INDEX_NAME = "combined-report";
@@ -60,6 +62,7 @@ public final class DatabaseConstants {
   public static final String ZEEBE_VARIABLE_INDEX_NAME = "variable";
   public static final String ZEEBE_INCIDENT_INDEX_NAME = "incident";
   public static final String ZEEBE_USER_TASK_INDEX_NAME = "user-task";
+  public static final String ZEEBE_ORDINAL_INDEX_NAME = "ordinal";
 
   /**
    * Combined index alias used by the refactored Elasticsearch exporter, which stores all value

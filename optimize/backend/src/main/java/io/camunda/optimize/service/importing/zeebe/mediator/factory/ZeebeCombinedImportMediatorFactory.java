@@ -13,6 +13,7 @@ import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.writer.FlowNodeInstanceWriter;
 import io.camunda.optimize.service.db.writer.IncidentWriter;
+import io.camunda.optimize.service.db.writer.OrdinalWriter;
 import io.camunda.optimize.service.db.writer.PreFlattenedWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.db.writer.UserTaskWriter;
@@ -21,9 +22,11 @@ import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeIncidentImportService;
+import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeOrdinalImportService;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeProcessInstanceImportService;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeUserTaskImportService;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeVariableImportService;
+import io.camunda.optimize.service.importing.zeebe.cache.OrdinalCache;
 import io.camunda.optimize.service.importing.zeebe.cache.ZeebeImportSlidingWindowCache;
 import io.camunda.optimize.service.importing.zeebe.db.ZeebeRecordFetcher;
 import io.camunda.optimize.service.importing.zeebe.mediator.ZeebeCombinedImportMediator;
@@ -52,6 +55,8 @@ public class ZeebeCombinedImportMediatorFactory extends AbstractZeebeImportMedia
   private final IncidentWriter incidentWriter;
   private final UserTaskWriter userTaskWriter;
   private final PreFlattenedWriter preFlattenedWriter;
+  private final OrdinalWriter ordinalWriter;
+  private final OrdinalCache ordinalCache;
 
   public ZeebeCombinedImportMediatorFactory(
       final BeanFactory beanFactory,
@@ -66,7 +71,9 @@ public class ZeebeCombinedImportMediatorFactory extends AbstractZeebeImportMedia
       final ObjectVariableService objectVariableService,
       final IncidentWriter incidentWriter,
       final UserTaskWriter userTaskWriter,
-      final PreFlattenedWriter preFlattenedWriter) {
+      final PreFlattenedWriter preFlattenedWriter,
+      final OrdinalWriter ordinalWriter,
+      final OrdinalCache ordinalCache) {
     super(
         beanFactory,
         importIndexHandlerRegistry,
@@ -81,6 +88,8 @@ public class ZeebeCombinedImportMediatorFactory extends AbstractZeebeImportMedia
     this.incidentWriter = incidentWriter;
     this.userTaskWriter = userTaskWriter;
     this.preFlattenedWriter = preFlattenedWriter;
+    this.ordinalWriter = ordinalWriter;
+    this.ordinalCache = ordinalCache;
   }
 
   @Override
@@ -115,6 +124,8 @@ public class ZeebeCombinedImportMediatorFactory extends AbstractZeebeImportMedia
             new ZeebeIncidentImportService(configurationService, incidentWriter, databaseClient),
             new ZeebeUserTaskImportService(
                 configurationService, userTaskWriter, partitionId, databaseClient),
+            new ZeebeOrdinalImportService(
+                ordinalCache, ordinalWriter, databaseClient, configurationService),
             objectMapper,
             configurationService,
             new BackoffCalculator(configurationService),

@@ -57,6 +57,18 @@ public abstract class FlatIncidentIndex<TBuilder> extends AbstractInstanceIndex<
     return FLAT_INCIDENT_INDEX_PREFIX + incidentIndexKey.toLowerCase(Locale.ENGLISH);
   }
 
+  /**
+   * Constructs the index name using both the process definition key and the ordinal tick string
+   * (e.g. {@code "20260306-1430"}). The ordinal tick is mandatory.
+   */
+  public static String constructIndexName(
+      final String incidentIndexKey, final String ordinalTick) {
+    return FLAT_INCIDENT_INDEX_PREFIX
+        + incidentIndexKey.toLowerCase(Locale.ENGLISH)
+        + "-"
+        + ordinalTick;
+  }
+
   @Override
   public String getIndexName() {
     return indexName;
