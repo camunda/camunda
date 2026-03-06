@@ -505,10 +505,9 @@ public final class BpmnStateTransitionBehavior {
     }
 
     final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
-    if (processInstance == null || processInstance.isTerminating()) {
-      // if the process instance is null (already removed from state) or already terminating, we
-      // don't need to interrupt and terminate it again — the instruction is stale or already
-      // processed.
+    if (processInstance.isTerminating()) {
+      // if the process instance is already terminating, we don't need to interrupt and terminate it
+      // again, the instruction has already been processed.
       return Either.right(context);
     }
 
