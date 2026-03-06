@@ -566,7 +566,7 @@ final class ElasticsearchExporterTest {
     }
 
     @Test
-    void shouldIncrementRecordCounterByValueType() {
+    void shouldIncrementRecordCounterGlobally() {
       // given
       final var records =
           List.of(
@@ -587,7 +587,10 @@ final class ElasticsearchExporterTest {
 
       assertThat(recordSequenceCaptor.getAllValues())
           .extracting(RecordSequence::counter)
-          .containsExactly(1L, 2L, 1L, 1L, 3L, 2L);
+          .describedAs(
+              "Expect that the counter is always incrementing regardless of value type,"
+                  + " because all records go into the same combined index")
+          .containsExactly(1L, 2L, 3L, 4L, 5L, 6L);
     }
 
     @Test
@@ -634,8 +637,7 @@ final class ElasticsearchExporterTest {
       records.forEach(exporter::export);
 
       // then
-      final var expectedMetadataAsJSON =
-          "{\"recordCountersByValueType\":{\"PROCESS_INSTANCE\":2,\"VARIABLE\":1}}";
+      final var expectedMetadataAsJSON = "{\"recordCounter\":3}";
       assertThat(controller.readMetadata())
           .map(metadata -> new String(metadata, StandardCharsets.UTF_8))
           .hasValue(expectedMetadataAsJSON);
@@ -643,7 +645,35 @@ final class ElasticsearchExporterTest {
 
     @Test
     void shouldRestoreRecordCountersOnOpen() {
-      // given
+      // given - new format metadata
+      final var storedMetadataAsJSON = "{\"recordCounter\":3}";
+      final var serializedMetadata = storedMetadataAsJSON.getBytes(StandardCharsets.UTF_8);
+      controller.updateLastExportedRecordPosition(0L, serializedMetadata);
+
+      exporter.open(controller);
+
+      final var records =
+          List.of(
+              newRecord(PARTITION_ID, ValueType.PROCESS_INSTANCE),
+              newRecord(PARTITION_ID, ValueType.VARIABLE),
+              newRecord(PARTITION_ID, ValueType.JOB));
+      when(client.index(any(), any())).thenReturn(true);
+
+      // when
+      records.forEach(exporter::export);
+
+      // then - counter continues from where it left off (3), incrementing globally
+      final var recordSequenceCaptor = ArgumentCaptor.forClass(RecordSequence.class);
+      verify(client, times(records.size())).index(any(), recordSequenceCaptor.capture());
+
+      assertThat(recordSequenceCaptor.getAllValues())
+          .extracting(RecordSequence::counter)
+          .containsExactly(4L, 5L, 6L);
+    }
+
+    @Test
+    void shouldMigrateFromLegacyPerValueTypeCountersOnOpen() {
+      // given - legacy format metadata with per-value-type counters
       final var storedMetadataAsJSON =
           "{\"recordCountersByValueType\":{\"PROCESS_INSTANCE\":2,\"VARIABLE\":1}}";
       final var serializedMetadata = storedMetadataAsJSON.getBytes(StandardCharsets.UTF_8);
@@ -661,13 +691,16 @@ final class ElasticsearchExporterTest {
       // when
       records.forEach(exporter::export);
 
-      // then
+      // then - counter is migrated from max of per-type values (2) and continues globally
       final var recordSequenceCaptor = ArgumentCaptor.forClass(RecordSequence.class);
       verify(client, times(records.size())).index(any(), recordSequenceCaptor.capture());
 
       assertThat(recordSequenceCaptor.getAllValues())
           .extracting(RecordSequence::counter)
-          .containsExactly(3L, 2L, 1L);
+          .describedAs(
+              "Expect that the counter is migrated from max of old per-type counters (2)"
+                  + " and new records continue globally from there")
+          .containsExactly(3L, 4L, 5L);
     }
 
     private static Record<?> newRecord(final int partitionId, final ValueType valueType) {

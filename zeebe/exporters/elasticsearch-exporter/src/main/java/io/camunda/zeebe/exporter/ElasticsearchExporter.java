@@ -82,9 +82,7 @@ public class ElasticsearchExporter implements Exporter {
           controller
               .readMetadata()
               .map(this::deserializeExporterMetadata)
-              .map(ElasticsearchExporterMetadata::getRecordCountersByValueType)
-              .filter(counters -> !counters.isEmpty())
-              .map(ElasticsearchRecordCounters::new)
+              .map(this::toRecordCounters)
               .orElse(new ElasticsearchRecordCounters());
 
       scheduleDelayedFlush();
@@ -239,7 +237,7 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   private void updateLastExportedPosition() {
-    exporterMetadata.setRecordCountersByValueType(recordCounters.getRecordCounters());
+    exporterMetadata.setRecordCounter(recordCounters.getRecordCounter());
     final var serializeExporterMetadata = serializeExporterMetadata(exporterMetadata);
     controller.updateLastExportedRecordPosition(lastPosition, serializeExporterMetadata);
   }
@@ -258,6 +256,28 @@ public class ElasticsearchExporter implements Exporter {
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to deserialize exporter metadata", e);
     }
+  }
+
+  /**
+   * Converts deserialized metadata to an {@link ElasticsearchRecordCounters} instance.
+   *
+   * <p>If the metadata contains the new single {@code recordCounter} field (value > 0), it is used
+   * directly. Otherwise, the legacy per-value-type counters are migrated by taking the maximum
+   * counter value across all types.
+   */
+  private ElasticsearchRecordCounters toRecordCounters(
+      final ElasticsearchExporterMetadata metadata) {
+    final long counter = metadata.getRecordCounter();
+    if (counter > 0) {
+      return new ElasticsearchRecordCounters(counter);
+    }
+    // migration path: derive a single counter from the old per-value-type map
+    final long migratedCounter =
+        metadata.getRecordCountersByValueType().values().stream()
+            .mapToLong(Long::longValue)
+            .max()
+            .orElse(0L);
+    return new ElasticsearchRecordCounters(migratedCounter);
   }
 
   /**
