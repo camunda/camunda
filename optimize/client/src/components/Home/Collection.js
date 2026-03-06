@@ -123,6 +123,7 @@ export class Collection extends Component {
       <Grid className="Collection" fullWidth>
         <PageTitle pageName={t('common.collection.label')} resourceName={collection?.name} />
         <Column sm={4} md={8} lg={16}>
+<<<<<<< HEAD
           <Stack className="layoutContainer" gap={6} orientation="vertical">
             <CollectionHeader
               collection={collection}
@@ -151,6 +152,105 @@ export class Collection extends Component {
               </Tabs.Tab>
               {userSearchAvailable && collection && (
                 <>
+=======
+          <C3Page
+            isLoading={isLoading}
+            breadcrumbs={{
+              elements: [
+                {
+                  key: '1',
+                  label: t('navigation.collections'),
+                  routeProps: {
+                    to: '/collections',
+                  },
+                },
+              ],
+              forwardRef: forwardRef((props, ref) => <Link {...props} ref={ref} />),
+            }}
+            header={{
+              title: (
+                <Stack gap={4} orientation="horizontal" className="titleContainer">
+                  <Folder size="24" />
+                  <span className="collectionName" title={collection?.name}>
+                    {collection?.name}
+                  </span>
+                </Stack>
+              ),
+              tag: collection && formatRole(collection?.currentUserRole),
+              menuItems: [
+                {
+                  key: 'edit',
+                  label: t('common.edit'),
+                  onClick: () => {
+                    this.startCollectionEditing();
+                  },
+                },
+                {
+                  key: 'copy',
+                  label: t('common.copy'),
+                  onClick: () => {
+                    this.copyEntity({...collection, entityType: 'collection'});
+                  },
+                },
+                {
+                  key: 'delete',
+                  label: t('common.delete'),
+                  onClick: () => {
+                    this.deleteEntity({...collection, entityType: 'collection'});
+                  },
+                  isDelete: true,
+                },
+              ],
+            }}
+          >
+            <div>
+              <Tabs value={currentTab} isLoading={!collection && isLoading}>
+                <Tabs.Tab
+                  key="home"
+                  value="home"
+                  title={t('home.collectionTitleWithAmpersand')}
+                  onClick={() => this.props.history.push('.')}
+                >
+                  <CollectionEnitiesList
+                    collection={collection}
+                    entities={entities}
+                    isLoading={isLoading}
+                    sorting={sorting}
+                    copyEntity={this.copyEntity}
+                    deleteEntity={this.deleteEntity}
+                    loadEntities={this.loadEntities}
+                    redirectTo={(url) => this.setState({redirect: url})}
+                  />
+                </Tabs.Tab>
+                {userSearchAvailable && collection && (
+                  <>
+                    <Tabs.Tab
+                      key="alerts"
+                      value="alerts"
+                      title={t('alert.label-plural')}
+                      onClick={() => this.props.history.push('alerts')}
+                    >
+                      <AlertList
+                        readOnly={collection.currentUserRole === 'viewer'}
+                        collection={collection.id}
+                      />
+                    </Tabs.Tab>
+                    <Tabs.Tab
+                      key="users"
+                      value="users"
+                      title={t('common.user.label-plural')}
+                      onClick={() => this.props.history.push('users')}
+                    >
+                      <UserList
+                        readOnly={collection.currentUserRole !== 'manager'}
+                        onChange={this.loadCollection}
+                        collection={collection.id}
+                      />
+                    </Tabs.Tab>
+                  </>
+                )}
+                {collection && (
+>>>>>>> ea8574a6 (fix: Show ellipsis for large titles on Optimize)
                   <Tabs.Tab
                     key="alerts"
                     value="alerts"
