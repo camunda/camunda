@@ -944,6 +944,45 @@ public final class ProcessInstanceServiceTest {
           .sendRequest(any(BrokerCreateProcessInstanceWithResultRequest.class));
     }
 
+    @Test
+    void shouldPreserveRoundRobinDispatchStrategyAcrossWithAuthenticationCalls() {
+      // given - the services instance has a RequestRetryHandler with round-robin strategy
+      final var triedPartitions = new ArrayList<Integer>();
+      final var mockResponse = new ProcessInstanceCreationRecord();
+
+      when(brokerClient.sendRequest(any(BrokerCreateProcessInstanceRequest.class)))
+          .thenAnswer(
+              invocation -> {
+                final var brokerRequest =
+                    invocation.getArgument(0, BrokerCreateProcessInstanceRequest.class);
+                triedPartitions.add(brokerRequest.getPartitionId());
+                return CompletableFuture.completedFuture(new BrokerResponse<>(mockResponse));
+              });
+
+      // when - calling withAuthentication multiple times and creating instances
+      final var auth1 = CamundaAuthentication.none();
+      final var auth2 = CamundaAuthentication.none();
+      final var auth3 = CamundaAuthentication.none();
+
+      services
+          .withAuthentication(auth1)
+          .createProcessInstance(createProcessInstanceRequest(null))
+          .join();
+      services
+          .withAuthentication(auth2)
+          .createProcessInstance(createProcessInstanceRequest(null))
+          .join();
+      services
+          .withAuthentication(auth3)
+          .createProcessInstance(createProcessInstanceRequest(null))
+          .join();
+
+      // then - the round robin strategy should distribute requests across different partitions
+      // With 3 partitions and round-robin, we expect different partitions to be used
+      assertThat(triedPartitions).hasSize(3);
+      assertThat(triedPartitions).doesNotHaveDuplicates();
+    }
+
     private ProcessInstanceServices.ProcessInstanceCreateRequest createProcessInstanceRequest(
         final String businessId) {
       return new ProcessInstanceServices.ProcessInstanceCreateRequest(
