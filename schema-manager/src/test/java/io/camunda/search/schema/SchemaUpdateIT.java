@@ -83,15 +83,12 @@ class SchemaUpdateIT {
             .withEnv("SPRING_PROFILES_ACTIVE", "broker,standalone")
             .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", databaseType.toString())
             .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_%s_URL".formatted(databaseType.name()), url)
-            .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix)
-            .withEnv("CAMUNDA_DATABASE_INDEX_NUMBEROFREPLICAS", "1")
-            .withEnv("CAMUNDA_DATABASE_RETENTION_ENABLED", "true")
-            .withEnv("CAMUNDA_DATABASE_RETENTION_ENABLED", "true")
             .withEnv(
-                "CAMUNDA_DATA_SECONDARY_STORAGE_%s_INDEX_PREFIX".formatted(databaseType.name()),
-                indexPrefix)
+                "CAMUNDA_DATA_SECONDARYSTORAGE_%s_NUMBEROFREPLICAS".formatted(databaseType.name()),
+                "1")
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_RETENTION_ENABLED", "true")
             .withEnv(
-                "CAMUNDA_DATA_SECONDARY_STORAGE_%s_INDEX_PREFIX".formatted(databaseType.name()),
+                "CAMUNDA_DATA_SECONDARYSTORAGE_%s_INDEXPREFIX".formatted(databaseType.name()),
                 indexPrefix)) {
       previousVersionContainer.start();
       previousVersionContainer.followOutput(new Slf4jLogConsumer(LOG));
