@@ -4,6 +4,7 @@
 > Status: Draft
 > Scope: Cluster‑internal Orchestration Cluster Identity.
 > Out of scope: Management Identity (Web Modeler, Console, Optimize) except where explicitly mentioned.
+> Camunda Version: 8.9
 
 ---
 
@@ -13,11 +14,12 @@ The Identity module is the cluster‑embedded authentication and authorization s
 
 - Unified access management for all cluster components: Zeebe, Operate, Tasklist, Orchestration Cluster REST/gRPC APIs.
 - Flexible authentication:
-  - OIDC with external IdPs (Entra ID, Okta, Keycloak, Auth0, …)
-  - Basic authentication and no‑auth for local and simple Self‑Managed setups.
-- Fine‑grained, resource‑based authorizations across runtime resources (for example, `PROCESS_DEFINITION`, `PROCESS_INSTANCE`, `USER_TASK`).
-- Cluster‑local multi‑tenancy in Self‑Managed deployments.
-- Embedded storage using Zeebe’s primary log and secondary search storage (Elasticsearch/RDBMS), so there is no dedicated identity database for the common case.
+  - OIDC with external IdPs (Keycloak, Okta, Auth0, Microsoft Entra ID, Amazon Cognito and other “generic OIDC providers”)
+  - Basic authentication
+  - no‑auth for local and simple Self‑Managed setups
+- Fine‑grained, resource‑based authorizations across runtime resources (e.g. `PROCESS_DEFINITION`, `PROCESS_INSTANCE`, `USER_TASK`).
+- Tenant management is handled directly in Orchestration Cluster Identity in Self‑Managed, allowing tenants per cluster for runtime data and access isolation.
+- No dedicated identity database is needed since the primary and secondary storage from zeebe us used for identity entities.
 
 Goals:
 
