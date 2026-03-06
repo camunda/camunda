@@ -32,6 +32,7 @@ import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 import {PageErrorBoundary} from 'modules/components/PageErrorBoundary';
+import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
 
 const Wrapper: React.FC = () => {
   return (
@@ -84,12 +85,42 @@ const routes = createRoutesFromElements(
         }}
       />
       <Route
-        path={Paths.processInstance()}
+        path={Paths.processInstance(undefined, IS_NEW_PROCESS_INSTANCE_PAGE)}
         lazy={async () => {
           const {ProcessInstance} = await import('./ProcessInstance');
           return {Component: ProcessInstance};
         }}
-      />
+      >
+        {IS_NEW_PROCESS_INSTANCE_PAGE ? (
+          <>
+            <Route index element={null} />
+            <Route
+              path={Paths.processInstanceDetails({isRelative: true})}
+              element={null}
+            />
+            <Route
+              path={Paths.processInstanceIncidents({isRelative: true})}
+              element={null}
+            />
+            <Route
+              path={Paths.processInstanceInputMappings({isRelative: true})}
+              element={null}
+            />
+            <Route
+              path={Paths.processInstanceOutputMappings({isRelative: true})}
+              element={null}
+            />
+            <Route
+              path={Paths.processInstanceListeners({isRelative: true})}
+              element={null}
+            />
+            <Route
+              path={Paths.processInstanceOperationsLog({isRelative: true})}
+              element={null}
+            />
+          </>
+        ) : null}
+      </Route>
       <Route
         path={Paths.decisions()}
         lazy={async () => {

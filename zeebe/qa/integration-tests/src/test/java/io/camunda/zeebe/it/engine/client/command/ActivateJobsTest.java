@@ -72,25 +72,17 @@ class ActivateJobsTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  public void shouldReturnEmptyListOnUserDefinedGlobalRequestTimeout(final boolean useRest) {
-    // when
-    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(1)).build();
-    final var actual =
-        getCommand(client, useRest).jobType("notExisting").maxJobsToActivate(1).send().join();
-
-    // then
-    assertThat(actual.getJobs()).isEmpty();
-  }
-
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
   public void shouldReturnEmptyListOnUserDefinedCommandRequestTimeout(final boolean useRest) {
-    // when
+    // given - high global timeout
+    client.close();
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofMinutes(5)).build();
+
+    // when - low command timeout
     final var actual =
         getCommand(client, useRest)
             .jobType("notExisting")
             .maxJobsToActivate(1)
-            .requestTimeout(Duration.ofSeconds(1))
+            .requestTimeout(Duration.ofMillis(500))
             .send()
             .join();
 

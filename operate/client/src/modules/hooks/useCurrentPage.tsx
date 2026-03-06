@@ -19,6 +19,12 @@ const useCurrentPage = () => {
     | 'batch-operations'
     | 'operations-log'
     | 'process-details'
+    | 'process-details-details'
+    | 'process-details-incidents'
+    | 'process-details-input-mappings'
+    | 'process-details-output-mappings'
+    | 'process-details-listeners'
+    | 'process-details-operations-log'
     | 'decision-details'
     | 'login'
     | undefined {
@@ -47,6 +53,43 @@ const useCurrentPage = () => {
 
     if (matchPath(Paths.processInstance(), location.pathname) !== null) {
       return 'process-details';
+    }
+
+    if (matchPath(Paths.processInstanceDetails(), location.pathname) !== null) {
+      return 'process-details-details';
+    }
+
+    if (
+      matchPath(Paths.processInstanceIncidents(), location.pathname) !== null
+    ) {
+      return 'process-details-incidents';
+    }
+
+    if (
+      matchPath(Paths.processInstanceInputMappings(), location.pathname) !==
+      null
+    ) {
+      return 'process-details-input-mappings';
+    }
+
+    if (
+      matchPath(Paths.processInstanceOutputMappings(), location.pathname) !==
+      null
+    ) {
+      return 'process-details-output-mappings';
+    }
+
+    if (
+      matchPath(Paths.processInstanceListeners(), location.pathname) !== null
+    ) {
+      return 'process-details-listeners';
+    }
+
+    if (
+      matchPath(Paths.processInstanceOperationsLog(), location.pathname) !==
+      null
+    ) {
+      return 'process-details-operations-log';
     }
 
     if (matchPath(Paths.decisionInstance(), location.pathname) !== null) {
