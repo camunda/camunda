@@ -76,7 +76,7 @@ describe('Dashboard', () => {
     render(<Dashboard />, {wrapper: Wrapper});
 
     expect(
-      await screen.findByText('Start by deploying a process'),
+      await screen.findByText('No running process instances'),
     ).toBeInTheDocument();
     expect(
       screen.queryByText('Process Incidents by Error Message'),
