@@ -176,9 +176,9 @@ describe('<TaskDetailsHistoryView />', () => {
       await screen.findByTestId('task-details-history-view'),
     ).toBeInTheDocument();
 
-    expect(screen.getByText('Operation')).toBeInTheDocument();
+    expect(screen.getByText('Operation type')).toBeInTheDocument();
     expect(screen.getByText('Actor')).toBeInTheDocument();
-    expect(screen.getByText('Time')).toBeInTheDocument();
+    expect(screen.getByText('Date')).toBeInTheDocument();
 
     expect(screen.getByText('Create task')).toBeInTheDocument();
     expect(screen.getByText('Assign task')).toBeInTheDocument();
@@ -380,7 +380,7 @@ describe('<TaskDetailsHistoryView />', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent('/0/history');
   });
 
-  it('should display sortable column headers for Operation, Actor, and Time', async () => {
+  it('should display sortable column headers for Operation, Actor, and Date', async () => {
     nodeMockServer.use(
       http.post(
         endpoints.queryUserTaskAuditLogs.getUrl({
@@ -400,13 +400,13 @@ describe('<TaskDetailsHistoryView />', () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /sort by operation/i}),
+      screen.getByRole('button', {name: /sort by operation type/i}),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: /sort by actor/i}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: /sort by time/i}),
+      screen.getByRole('button', {name: /sort by date/i}),
     ).toBeInTheDocument();
 
     expect(
@@ -435,7 +435,9 @@ describe('<TaskDetailsHistoryView />', () => {
       await screen.findByTestId('task-details-history-view'),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: /sort by operation/i}));
+    await user.click(
+      screen.getByRole('button', {name: /sort by operation type/i}),
+    );
 
     await waitFor(() => {
       expect(screen.getByTestId('search')).toHaveTextContent(
@@ -465,7 +467,7 @@ describe('<TaskDetailsHistoryView />', () => {
       await screen.findByTestId('task-details-history-view'),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: /sort by time/i}));
+    await user.click(screen.getByRole('button', {name: /sort by date/i}));
 
     await waitFor(() => {
       expect(screen.getByTestId('search')).toHaveTextContent(
@@ -473,7 +475,7 @@ describe('<TaskDetailsHistoryView />', () => {
       );
     });
 
-    await user.click(screen.getByRole('button', {name: /sort by time/i}));
+    await user.click(screen.getByRole('button', {name: /sort by date/i}));
 
     await waitFor(() => {
       expect(screen.getByTestId('search')).toHaveTextContent(
