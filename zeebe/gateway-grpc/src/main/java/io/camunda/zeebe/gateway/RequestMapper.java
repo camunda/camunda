@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.zeebe.gateway.cmd.InvalidBusinessIdException;
 import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerBroadcastSignalRequest;
@@ -76,6 +77,7 @@ import org.apache.commons.lang3.StringUtils;
 public final class RequestMapper extends RequestUtil {
 
   private static final Pattern TENANT_ID_MASK = Pattern.compile("^[\\w\\.-]{1,31}$");
+  private static final int MAX_BUSINESS_ID_LENGTH = 256;
   private static boolean isMultiTenancyEnabled = false;
 
   /**
@@ -264,7 +266,7 @@ public final class RequestMapper extends RequestUtil {
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
         .setStartInstructions(grpcRequest.getStartInstructionsList())
         .setTags(Set.copyOf(grpcRequest.getTagsList()))
-        .setBusinessId(grpcRequest.hasBusinessId() ? grpcRequest.getBusinessId() : "");
+        .setBusinessId(ensureBusinessIdValid(grpcRequest.getBusinessId()));
 
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
@@ -279,6 +281,7 @@ public final class RequestMapper extends RequestUtil {
     final var brokerRequest = new BrokerCreateProcessInstanceWithResultRequest();
 
     final var request = grpcRequest.getRequest();
+
     brokerRequest
         .setBpmnProcessId(request.getBpmnProcessId())
         .setKey(request.getProcessDefinitionKey())
@@ -288,7 +291,7 @@ public final class RequestMapper extends RequestUtil {
         .setStartInstructions(request.getStartInstructionsList())
         .setTags(Set.copyOf(request.getTagsList()))
         .setFetchVariables(grpcRequest.getFetchVariablesList())
-        .setBusinessId(request.getBusinessId());
+        .setBusinessId(ensureBusinessIdValid(request.getBusinessId()));
 
     if (request.hasOperationReference()) {
       brokerRequest.setOperationReference(request.getOperationReference());
@@ -467,6 +470,15 @@ public final class RequestMapper extends RequestUtil {
         .setClaims(claims);
 
     return jobActivationProperties;
+  }
+
+  public static String ensureBusinessIdValid(final String businessId) {
+    if (businessId != null && businessId.length() > MAX_BUSINESS_ID_LENGTH) {
+      throw new InvalidBusinessIdException(
+          businessId,
+          "business id exceeds the limit of %d characters".formatted(MAX_BUSINESS_ID_LENGTH));
+    }
+    return businessId;
   }
 
   public static String ensureTenantIdSet(final String commandName, final String tenantId) {

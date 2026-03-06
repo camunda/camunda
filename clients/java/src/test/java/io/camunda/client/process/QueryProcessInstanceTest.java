@@ -105,7 +105,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .elementId("elementId")
                     .elementInstanceState(ElementInstanceState.ACTIVE)
                     .hasElementInstanceIncident(true)
-                    .incidentErrorHashCode(123456789))
+                    .incidentErrorHashCode(123456789)
+                    .businessId("my-business-id"))
         .send()
         .join();
     // then
@@ -136,6 +137,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         .isEqualTo(ElementInstanceStateEnum.ACTIVE);
     assertThat(filter.getHasElementInstanceIncident()).isEqualTo(true);
     assertThat(filter.getIncidentErrorHashCode().get$Eq()).isEqualTo(123456789);
+    assertThat(filter.getBusinessId().get$Eq()).isEqualTo("my-business-id");
   }
 
   @Test
@@ -193,6 +195,44 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     final StringFilterProperty processInstanceKey = filter.getProcessDefinitionId();
     assertThat(processInstanceKey).isNotNull();
     assertThat(processInstanceKey.get$Like()).isEqualTo("string");
+  }
+
+  @Test
+  void shouldSearchProcessInstanceByBusinessIdStringFilter() {
+    // when
+    client
+        .newProcessInstanceSearchRequest()
+        .filter(f -> f.businessId(b -> b.like("order-*")))
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
+    final ProcessInstanceFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final StringFilterProperty businessId = filter.getBusinessId();
+    assertThat(businessId).isNotNull();
+    assertThat(businessId.get$Like()).isEqualTo("order-*");
+  }
+
+  @Test
+  void shouldSearchProcessInstanceByBusinessIdEqFilter() {
+    // when
+    client
+        .newProcessInstanceSearchRequest()
+        .filter(f -> f.businessId("my-business-id"))
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
+    final ProcessInstanceFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final StringFilterProperty businessId = filter.getBusinessId();
+    assertThat(businessId).isNotNull();
+    assertThat(businessId.get$Eq()).isEqualTo("my-business-id");
   }
 
   @Test
@@ -269,6 +309,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .hasIncident()
                     .desc()
                     .tenantId()
+                    .asc()
+                    .businessId()
                     .asc())
         .send()
         .join();
@@ -279,7 +321,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     final List<SearchRequestSort> sorts =
         SearchRequestSortMapper.fromProcessInstanceSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
-    assertThat(sorts).hasSize(13);
+    assertThat(sorts).hasSize(14);
     assertSort(sorts.get(0), "processInstanceKey", SortOrderEnum.ASC);
     assertSort(sorts.get(1), "processDefinitionId", SortOrderEnum.DESC);
     assertSort(sorts.get(2), "processDefinitionName", SortOrderEnum.ASC);
@@ -293,6 +335,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertSort(sorts.get(10), "state", SortOrderEnum.ASC);
     assertSort(sorts.get(11), "hasIncident", SortOrderEnum.DESC);
     assertSort(sorts.get(12), "tenantId", SortOrderEnum.ASC);
+    assertSort(sorts.get(13), "businessId", SortOrderEnum.ASC);
   }
 
   @Test

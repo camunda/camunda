@@ -746,6 +746,53 @@ final class RestorePointResolverTest {
   }
 
   @Test
+  void shouldResolveWhenExportedPositionIsNegativeOne() {
+    // given – exported position -1 means nothing has been exported yet; the backup needs to start
+    // from position 1 (the first exportable log entry). A range whose first log position is 1
+    // should be accepted.
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var cp = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var meta = metadata(1, List.of(cp), List.of(new RangeEntry(1, 1)));
+
+    // when – exportedPosition=-1 is normalized to 1; cp.firstLogPosition=1 <= 1 -> range accepted
+    final var result = RestorePointResolver.resolve(List.of(meta), null, null, Map.of(1, -1L));
+
+    // then
+    assertThat(result.globalCheckpointId()).isEqualTo(1);
+    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp);
+  }
+
+  @Test
+  void shouldResolveMultiplePartitionsWhenOneHasExportedPositionNegativeOne() {
+    // given – two partitions; partition 2 has exportedPosition=-1 (nothing exported yet)
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var t2 = Instant.parse("2025-01-02T00:00:00Z");
+
+    final var metadataByPartition =
+        List.of(
+            metadata(
+                1,
+                List.of(
+                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1)),
+                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101))),
+                List.of(new RangeEntry(1, 2))),
+            metadata(
+                2,
+                List.of(
+                    entry(1, 110, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1)),
+                    entry(2, 210, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(111))),
+                List.of(new RangeEntry(1, 2))));
+
+    // when – P1 exported 100, P2 exported nothing (-1 → normalized to 1)
+    final var result =
+        RestorePointResolver.resolve(metadataByPartition, null, null, Map.of(1, 100L, 2, -1L));
+
+    // then – both partitions resolve successfully
+    assertThat(result.globalCheckpointId()).isEqualTo(2);
+    assertThat(result.backupsByPartitionId()).hasSize(2);
+  }
+
+  @Test
   void shouldThrowWhenBackupsHaveDataGapAcrossMultiplePartitions() {
     // given – partition 1 is contiguous, partition 2 has a gap
     final var t1 = Instant.parse("2025-01-01T00:00:00Z");

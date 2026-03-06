@@ -655,6 +655,10 @@ public class SearchQueryFilterMapper {
         }
       }
 
+      ofNullable(filter.getBusinessId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::businessIdOperations);
+
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
             toVariableValueFilters(filter.getVariables());

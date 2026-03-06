@@ -302,8 +302,13 @@ components:
 
     AuthorizationResult:
       required:
-        - permissionTypes
+        - ownerId
+        - ownerType
+        - resourceType
+        - resourceId
         - resourcePropertyName
+        - permissionTypes
+        - authorizationKey
       type: object
       properties:
         ownerId:
@@ -354,6 +359,8 @@ components:
           allOf:
             - $ref: '#/components/schemas/AuthorizationKey'
           description: The key of the created authorization.
+      required:
+        - authorizationKey
 
     ## Enums
 

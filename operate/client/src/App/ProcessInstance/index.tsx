@@ -37,10 +37,36 @@ import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {useClearSelectionOnModificationUndo} from 'modules/hooks/elementSelection';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useNavigate, Outlet} from 'react-router-dom';
-import {Locations} from 'modules/Routes';
+import {useNavigate, matchPath, type Location} from 'react-router-dom';
+import {Locations, Paths} from 'modules/Routes';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
+import {BottomPanelTabs} from './BottomPanelTabs';
+
+const onProcessInstanceTabTransition = ({
+  currentLocation,
+  nextLocation,
+}: {
+  currentLocation: Location;
+  nextLocation: Location;
+  historyAction: string;
+}) => {
+  const currentProcessInstance = matchPath(
+    {path: Paths.processInstance(), end: false},
+    currentLocation.pathname,
+  );
+  const nextProcessInstance = matchPath(
+    {path: Paths.processInstance(), end: false},
+    nextLocation.pathname,
+  );
+
+  return (
+    currentProcessInstance !== null &&
+    nextProcessInstance !== null &&
+    currentProcessInstance.params.processInstanceId ===
+      nextProcessInstance.params.processInstanceId
+  );
+};
 
 const ProcessInstance: React.FC = observer(() => {
   const {data: processInstance, error} = useProcessInstance();
@@ -58,6 +84,7 @@ const ProcessInstance: React.FC = observer(() => {
     useCallbackPrompt({
       shouldInterrupt: modificationsStore.isModificationModeEnabled,
       ignoreSearchParams: true,
+      onTransition: onProcessInstanceTabTransition,
     });
 
   useClearSelectionOnModificationUndo();
@@ -167,10 +194,14 @@ const ProcessInstance: React.FC = observer(() => {
             }
             topPanel={<TopPanel />}
             bottomPanel={
-              <BottomPanel $shouldExpandPanel={isListenerTabSelected}>
+              <BottomPanel
+                $shouldExpandPanel={
+                  IS_NEW_PROCESS_INSTANCE_PAGE ? false : isListenerTabSelected
+                }
+              >
                 <ElementInstanceLog />
                 {IS_NEW_PROCESS_INSTANCE_PAGE ? (
-                  <Outlet />
+                  <BottomPanelTabs />
                 ) : (
                   <VariablePanel
                     setListenerTabVisibility={setListenerTabVisibility}

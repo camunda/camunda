@@ -35,7 +35,8 @@ public final class ProcessInstanceFixtures extends CommonFixtures {
             .endDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .version(RANDOM.nextInt(10000))
             .tenantId("tenant-" + RANDOM.nextInt(10000))
-            .partitionId(RANDOM.nextInt(10000));
+            .partitionId(RANDOM.nextInt(10000))
+            .businessId("business-" + RANDOM.nextInt(10000));
 
     return builderFunction.apply(builder).build();
   }

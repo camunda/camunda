@@ -11,13 +11,15 @@ import com.netflix.concurrency.limits.Limiter.Listener;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.util.CloseableSilently;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 public final class InFlightEntry {
   final LogStreamMetrics metrics;
   LogAppendEntryMetadata entryMetadata;
-  Listener requestListener;
-  CloseableSilently writeTimer;
-  CloseableSilently commitTimer;
+  final AtomicReference<Listener> requestListener;
+  final AtomicReference<CloseableSilently> writeTimer;
+  final AtomicReference<CloseableSilently> commitTimer;
 
   /**
    * The position this entry was registered at in the ring buffer. Set by {@link RingBuffer#put}
@@ -39,15 +41,15 @@ public final class InFlightEntry {
       final Listener requestListener) {
     this.metrics = metrics;
     this.entryMetadata = entryMetadata;
-    this.requestListener = requestListener;
-    writeTimer = null;
-    commitTimer = null;
+    this.requestListener = new AtomicReference<>(requestListener);
+    writeTimer = new AtomicReference<>(null);
+    commitTimer = new AtomicReference<>(null);
   }
 
   public void onAppend() {
-    writeTimer = metrics.startWriteTimer();
-    commitTimer = metrics.startCommitTimer();
-    if (requestListener != null) {
+    writeTimer.set(metrics.startWriteTimer());
+    commitTimer.set(metrics.startCommitTimer());
+    if (requestListener.get() != null) {
       metrics.increaseInflightRequests();
     }
   }
@@ -61,46 +63,35 @@ public final class InFlightEntry {
       }
       this.entryMetadata = null;
     }
-    final var writeTimer = this.writeTimer;
-    if (writeTimer != null) {
-      writeTimer.close();
-      this.writeTimer = null;
-    }
+    closeIfPossible(writeTimer);
   }
 
   public void onCommit() {
-    final var commitTimer = this.commitTimer;
-    if (commitTimer != null) {
-      commitTimer.close();
-      this.commitTimer = null;
-    }
+    closeIfPossible(commitTimer);
   }
 
   public void onProcessed() {
-    final var requestListener = this.requestListener;
-    if (requestListener != null) {
-      requestListener.onSuccess();
-      metrics.decreaseInflightRequests();
-      this.requestListener = null;
-    }
+    closeRequestListener(Listener::onSuccess);
   }
 
   public void cleanup() {
-    final var requestListener = this.requestListener;
+    closeRequestListener(Listener::onIgnore);
+    closeIfPossible(writeTimer);
+    closeIfPossible(commitTimer);
+  }
+
+  private void closeIfPossible(final AtomicReference<CloseableSilently> closeableRef) {
+    final var closeable = closeableRef.getAndSet(null);
+    if (closeable != null) {
+      closeable.close();
+    }
+  }
+
+  private void closeRequestListener(final Consumer<Listener> consumer) {
+    final var requestListener = this.requestListener.getAndSet(null);
     if (requestListener != null) {
-      requestListener.onIgnore();
+      consumer.accept(requestListener);
       metrics.decreaseInflightRequests();
-      this.requestListener = null;
-    }
-    final var writeTimer = this.writeTimer;
-    if (writeTimer != null) {
-      writeTimer.close();
-      this.writeTimer = null;
-    }
-    final var commitTimer = this.commitTimer;
-    if (commitTimer != null) {
-      commitTimer.close();
-      this.commitTimer = null;
     }
   }
 }

@@ -55,6 +55,7 @@ public final class ProcessInstanceFilterMapper {
     target.setElementId(filter.getElementId());
     target.setHasElementInstanceIncident(filter.getHasElementInstanceIncident());
     target.setIncidentErrorHashCode(filter.getIncidentErrorHashCode());
+    target.setBusinessId(filter.getBusinessId());
 
     return target;
   }

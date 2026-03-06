@@ -11,8 +11,10 @@ import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.waitForProcessInstance;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -222,5 +224,25 @@ public class ProcessInstanceCreateIT {
     assertThat(result.getProcessInstanceKey())
         .isEqualTo(processInstanceCreation.getProcessInstanceKey());
     assertThat(result.getBusinessId()).isEqualTo(BUSINESS_ID + "-with-result");
+  }
+
+  @Test
+  void shouldRejectProcessInstanceCreationWithBusinessIdExceedingMaxLength() {
+    // given
+    final String tooLongBusinessId = "a".repeat(257);
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newCreateInstanceCommand()
+                    .bpmnProcessId("process")
+                    .latestVersion()
+                    .businessId(tooLongBusinessId)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("businessId")
+        .hasMessageContaining("256");
   }
 }

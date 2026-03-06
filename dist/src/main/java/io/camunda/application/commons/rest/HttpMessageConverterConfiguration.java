@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.converter.ByteArrayHttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 
@@ -38,6 +39,14 @@ public class HttpMessageConverterConfiguration {
     // objects to plain Strings.
     // This behavior (custom converters taking precedence) changed with Spring Boot 4.0
     return new StringHttpMessageConverter(StandardCharsets.UTF_8);
+  }
+
+  @Bean
+  @Order(Ordered.HIGHEST_PRECEDENCE + 1)
+  public ByteArrayHttpMessageConverter byteHttpMessageConverter() {
+    // This converter is needed to properly handle byte arrays
+    // e.g. in the context of OpenAPI JSON schema generation
+    return new ByteArrayHttpMessageConverter();
   }
 
   @Bean

@@ -20,9 +20,27 @@ const Paths = {
   processes() {
     return '/processes';
   },
-  processInstance(processInstanceId: string | null = ':processInstanceId') {
+  processInstance(
+    processInstanceId: string | null = ':processInstanceId',
+    isParent = false,
+  ) {
+    const path = `/processes/${processInstanceId}`;
+
+    if (isParent) {
+      return `${path}/*`;
+    }
+
     return `/processes/${processInstanceId}`;
   },
+  processInstanceDetails: getRelativeProcessInstancePathHandler('details'),
+  processInstanceIncidents: getRelativeProcessInstancePathHandler('incidents'),
+  processInstanceInputMappings:
+    getRelativeProcessInstancePathHandler('input-mappings'),
+  processInstanceOutputMappings:
+    getRelativeProcessInstancePathHandler('output-mappings'),
+  processInstanceListeners: getRelativeProcessInstancePathHandler('listeners'),
+  processInstanceOperationsLog:
+    getRelativeProcessInstancePathHandler('operations-log'),
   decisions() {
     return '/decisions';
   },
@@ -42,6 +60,24 @@ const Paths = {
     return `/batch-operations/${batchOperationKey}`;
   },
 } as const;
+
+function getRelativeProcessInstancePathHandler(path: string) {
+  return (
+    params: {processInstanceId?: string | null; isRelative?: boolean} = {
+      processInstanceId: ':processInstanceId',
+      isRelative: false,
+    },
+  ) => {
+    const {processInstanceId = ':processInstanceId', isRelative = false} =
+      params;
+
+    if (isRelative) {
+      return path;
+    }
+
+    return `/processes/${processInstanceId}/${path}`;
+  };
+}
 
 const Locations = {
   processes(filters?: ProcessInstanceFilters): To {

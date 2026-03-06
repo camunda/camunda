@@ -10,7 +10,7 @@ package io.camunda.zeebe.logstreams.impl.log;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
-import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetricsImpl;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -40,7 +40,7 @@ final class SequencerTest {
     // given
     final long initialPosition = 1L;
     final var logStorage = Mockito.mock(LogStorage.class);
-    final var logStreamMetrics = new LogStreamMetrics(new SimpleMeterRegistry());
+    final var logStreamMetrics = new LogStreamMetricsImpl(new SimpleMeterRegistry());
     final var sequencer =
         new Sequencer(
             logStorage,
@@ -62,7 +62,7 @@ final class SequencerTest {
     // given
     final long initialPosition = 1L;
     final var logStorage = Mockito.mock(LogStorage.class);
-    final var logStreamMetrics = new LogStreamMetrics(new SimpleMeterRegistry());
+    final var logStreamMetrics = new LogStreamMetricsImpl(new SimpleMeterRegistry());
     final var sequencer =
         new Sequencer(
             logStorage,
@@ -87,7 +87,7 @@ final class SequencerTest {
   void writesSingleEntryToLogStorage() {
     // given
     final var logStorage = Mockito.mock(LogStorage.class);
-    final var logStreamMetrics = new LogStreamMetrics(new SimpleMeterRegistry());
+    final var logStreamMetrics = new LogStreamMetricsImpl(new SimpleMeterRegistry());
     final var sequencer =
         new Sequencer(
             logStorage,
@@ -109,7 +109,7 @@ final class SequencerTest {
   void writesMultipleEntriesToLogStorage() {
     // given
     final var logStorage = Mockito.mock(LogStorage.class);
-    final var logStreamMetrics = new LogStreamMetrics(new SimpleMeterRegistry());
+    final var logStreamMetrics = new LogStreamMetricsImpl(new SimpleMeterRegistry());
     final var sequencer =
         new Sequencer(
             logStorage,
@@ -132,7 +132,7 @@ final class SequencerTest {
   void maintainsPositionWithSingleWriterAndSingleEntry() throws InterruptedException {
     // given
     final var logStorage = new VerifyingLogStorage();
-    final var logStreamMetrics = new LogStreamMetrics(new SimpleMeterRegistry());
+    final var logStreamMetrics = new LogStreamMetricsImpl(new SimpleMeterRegistry());
     final var sequencer =
         new Sequencer(
             logStorage,
@@ -159,7 +159,7 @@ final class SequencerTest {
     // given
     final var numberOfWriters = 8;
     final var logStorage = new VerifyingLogStorage();
-    final var logStreamMetrics = new LogStreamMetrics(new SimpleMeterRegistry());
+    final var logStreamMetrics = new LogStreamMetricsImpl(new SimpleMeterRegistry());
     final var sequencer =
         new Sequencer(
             logStorage,
@@ -191,7 +191,7 @@ final class SequencerTest {
   void maintainsPositionWithSingleWriterAndMultipleEntries() throws InterruptedException {
     // given
     final var logStorage = new VerifyingLogStorage();
-    final var logStreamMetrics = new LogStreamMetrics(new SimpleMeterRegistry());
+    final var logStreamMetrics = new LogStreamMetricsImpl(new SimpleMeterRegistry());
     final var sequencer =
         new Sequencer(
             logStorage,
@@ -218,7 +218,7 @@ final class SequencerTest {
     // given
     final var numberOfWriters = 8;
     final var logStorage = new VerifyingLogStorage();
-    final var logStreamMetrics = new LogStreamMetrics(new SimpleMeterRegistry());
+    final var logStreamMetrics = new LogStreamMetricsImpl(new SimpleMeterRegistry());
     final var sequencer =
         new Sequencer(
             logStorage,

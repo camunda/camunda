@@ -36,7 +36,7 @@ public interface Form {
   /**
    * @return the schema of the form
    */
-  Object getSchema();
+  String getSchema();
 
   /**
    * @return the tenant identifier that owns this form

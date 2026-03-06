@@ -14,7 +14,7 @@ import {C3Navigation} from '@camunda/camunda-composite-components';
 import {Locations, Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {authenticationStore} from 'modules/stores/authentication';
-import {useCurrentPage} from '../useCurrentPage';
+import {useCurrentPage} from 'modules/hooks/useCurrentPage';
 import {licenseTagStore} from 'modules/stores/licenseTag';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';

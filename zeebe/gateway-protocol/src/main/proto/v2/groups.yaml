@@ -629,7 +629,12 @@ components:
           type: string
         description:
           description: The description of the created group.
+          nullable: true
           type: string
+      required:
+        - groupId
+        - name
+        - description
 
     GroupUpdateRequest:
       type: object
@@ -654,7 +659,12 @@ components:
           description: The name of the group.
         description:
           type: string
+          nullable: true
           description: The description of the group.
+      required:
+        - groupId
+        - name
+        - description
 
     GroupResult:
       description: Group search response item.
@@ -668,7 +678,12 @@ components:
           description: The group ID.
         description:
           type: string
+          nullable: true
           description: The group description.
+      required:
+        - name
+        - groupId
+        - description
 
     GroupSearchQuerySortRequest:
       type: object
@@ -733,6 +748,8 @@ components:
       properties:
         username:
           $ref: 'identifiers.yaml#/components/schemas/Username'
+      required:
+        - username
 
     GroupUserSearchResult:
       required:
@@ -777,6 +794,8 @@ components:
         clientId:
           description: The ID of the client.
           type: string
+      required:
+        - clientId
 
     GroupClientSearchResult:
       required:

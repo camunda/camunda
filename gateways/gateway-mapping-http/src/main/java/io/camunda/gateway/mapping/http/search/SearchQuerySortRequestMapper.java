@@ -374,6 +374,7 @@ public class SearchQuerySortRequestMapper {
         case STATE -> builder.state();
         case HAS_INCIDENT -> builder.hasIncident();
         case TENANT_ID -> builder.tenantId();
+        case BUSINESS_ID -> builder.businessId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

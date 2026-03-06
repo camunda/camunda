@@ -218,4 +218,92 @@ class ProcessInstanceRequestValidatorTest {
 
     assertThat(result).isEmpty();
   }
+
+  @Test
+  @DisplayName("Should reject businessId exceeding max length when creating by key")
+  void shouldRejectBusinessIdExceedingMaxLengthByKey() {
+    final var request = new ProcessInstanceCreationInstructionByKey();
+    request.setProcessDefinitionKey("123456789");
+    request.setBusinessId("a".repeat(257));
+
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    assertThat(result).isPresent();
+    final ProblemDetail problem = result.get();
+    assertThat(problem.getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(problem.getDetail()).contains("businessId").contains("256");
+  }
+
+  @Test
+  @DisplayName("Should reject businessId exceeding max length when creating by id")
+  void shouldRejectBusinessIdExceedingMaxLengthById() {
+    final var request = new ProcessInstanceCreationInstructionById();
+    request.setProcessDefinitionId("process-id");
+    request.setBusinessId("a".repeat(257));
+
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    assertThat(result).isPresent();
+    final ProblemDetail problem = result.get();
+    assertThat(problem.getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(problem.getDetail()).contains("businessId").contains("256");
+  }
+
+  @Test
+  @DisplayName("Should reject businessId exceeding max length in simple API")
+  void shouldRejectBusinessIdExceedingMaxLengthSimpleApi() {
+    final var request =
+        new io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction();
+    request.setProcessDefinitionId("process-id");
+    request.setBusinessId("a".repeat(257));
+
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateSimpleCreateProcessInstanceRequest(request);
+
+    assertThat(result).isPresent();
+    final ProblemDetail problem = result.get();
+    assertThat(problem.getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(problem.getDetail()).contains("businessId").contains("256");
+  }
+
+  @Test
+  @DisplayName("Should accept businessId with exactly max length")
+  void shouldAcceptBusinessIdWithMaxLength() {
+    final var request = new ProcessInstanceCreationInstructionByKey();
+    request.setProcessDefinitionKey("123456789");
+    request.setBusinessId("a".repeat(256));
+
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should accept null businessId")
+  void shouldAcceptNullBusinessId() {
+    final var request = new ProcessInstanceCreationInstructionByKey();
+    request.setProcessDefinitionKey("123456789");
+    request.setBusinessId(null);
+
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should accept empty businessId")
+  void shouldAcceptEmptyBusinessId() {
+    final var request = new ProcessInstanceCreationInstructionByKey();
+    request.setProcessDefinitionKey("123456789");
+    request.setBusinessId("");
+
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    assertThat(result).isEmpty();
+  }
 }

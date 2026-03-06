@@ -244,12 +244,16 @@ public class RestorePointResolver {
       @Nullable final Instant from,
       @Nullable final Long exportedPosition,
       @NonNull final BackupMetadata metadata) {
+    // An exported position of -1 means nothing has been exported yet, so the backup needs to
+    // start from position 1 (the first exportable log entry).
+    final Long effectiveExportedPosition =
+        exportedPosition != null && exportedPosition < 0 ? Long.valueOf(1L) : exportedPosition;
     LOG.atDebug()
         .addKeyValue("partition", metadata.partitionId())
         .log(
             "Finding restorable range covering {} and exported position {} in {} available ranges",
             from,
-            exportedPosition,
+            effectiveExportedPosition,
             metadata.ranges().size());
     return metadata.ranges().stream()
         .<RestorableRange>mapMulti(
@@ -272,8 +276,8 @@ public class RestorePointResolver {
                         from);
                 return;
               }
-              if (exportedPosition != null
-                  && startInfo.getFirstLogPositionOrDefault() > exportedPosition) {
+              if (effectiveExportedPosition != null
+                  && startInfo.getFirstLogPositionOrDefault() > effectiveExportedPosition) {
                 LOG.atTrace()
                     .addKeyValue("partition", metadata.partitionId())
                     .log(
@@ -281,10 +285,11 @@ public class RestorePointResolver {
                         range.start(),
                         range.end(),
                         startInfo.firstLogPosition(),
-                        exportedPosition);
+                        effectiveExportedPosition);
                 return;
               }
-              if (exportedPosition != null && endInfo.checkpointPosition() < exportedPosition) {
+              if (effectiveExportedPosition != null
+                  && endInfo.checkpointPosition() < effectiveExportedPosition) {
                 LOG.atTrace()
                     .addKeyValue("partition", metadata.partitionId())
                     .log(
@@ -292,7 +297,7 @@ public class RestorePointResolver {
                         range.start(),
                         range.end(),
                         endInfo.checkpointPosition(),
-                        exportedPosition);
+                        effectiveExportedPosition);
                 return;
               }
               LOG.atDebug()
@@ -306,7 +311,10 @@ public class RestorePointResolver {
                 new IllegalStateException(
                     "No usable range found for partition %d with from=%s, exportedPosition=%s. Available ranges: %s"
                         .formatted(
-                            metadata.partitionId(), from, exportedPosition, metadata.ranges())));
+                            metadata.partitionId(),
+                            from,
+                            effectiveExportedPosition,
+                            metadata.ranges())));
   }
 
   /** Binary search for a checkpoint entry in a sorted list of checkpoint entries. */

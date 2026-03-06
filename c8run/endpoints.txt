@@ -5,7 +5,7 @@
 Access each component using the following URLs:
 - Operate:                {{.OperateURL}}
 - Tasklist:               {{.TasklistURL}}
-- Identity:               {{.IdentityURL}}
+- Admin:                  {{.AdminURL}}
 
 Login with:
 - Username: {{.Username}}

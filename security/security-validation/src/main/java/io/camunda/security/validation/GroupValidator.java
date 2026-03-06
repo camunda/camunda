@@ -47,6 +47,10 @@ public final class GroupValidator {
   private static void validateGroupName(final String name, final List<String> violations) {
     if (name == null || name.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
+    } else if (name.length() > ValidationConstants.MAX_FIELD_LENGTH) {
+      violations.add(
+          ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
+              "name", ValidationConstants.MAX_FIELD_LENGTH));
     }
   }
 }

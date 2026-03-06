@@ -10,11 +10,13 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
+import com.netflix.concurrency.limits.Limiter.Listener;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetricsImpl;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import org.awaitility.Awaitility;
@@ -23,7 +25,8 @@ import org.junit.jupiter.api.Test;
 
 final class RingBufferTest {
 
-  private static final LogStreamMetrics METRICS = new LogStreamMetrics(new SimpleMeterRegistry());
+  private static final LogStreamMetricsImpl METRICS =
+      new LogStreamMetricsImpl(new SimpleMeterRegistry());
 
   /** Creates a new InFlightEntry. Position is set by {@link RingBuffer#put}. */
   private static InFlightEntry newEntry() {
@@ -268,15 +271,32 @@ final class RingBufferTest {
       final var buffer = new RingBuffer(smallCapacity);
       final var failures = new ConcurrentLinkedQueue<Throwable>();
       final var startLatch = new CountDownLatch(1);
-      final var writerPosition = new AtomicLong(0);
 
+      final var counter = new AtomicInteger(0);
+
+      final var limitListener =
+          new Listener() {
+            @Override
+            public void onSuccess() {
+              counter.incrementAndGet();
+            }
+
+            @Override
+            public void onIgnore() {
+              counter.incrementAndGet();
+            }
+
+            @Override
+            public void onDropped() {
+              counter.incrementAndGet();
+            }
+          };
       final var writer =
           new Thread(
               () -> {
                 awaitLatch(startLatch);
                 for (long pos = 1; pos <= ITERATIONS; pos++) {
-                  buffer.put(pos, newEntry());
-                  writerPosition.set(pos);
+                  buffer.put(pos, new InFlightEntry(METRICS, null, limitListener));
                 }
               });
 
@@ -289,7 +309,7 @@ final class RingBufferTest {
                 awaitLatch(startLatch);
                 long readerPos = 0;
                 while (readerPos < ITERATIONS) {
-                  final long writerPos = writerPosition.get();
+                  final long writerPos = buffer.lastWrittenPosition();
                   if (writerPos <= readerPos) {
                     LockSupport.parkNanos(1);
                     continue;
@@ -318,6 +338,16 @@ final class RingBufferTest {
       assertThat(failures).isEmpty();
       assertThat(hits.get()).as("expected some hits (entry still present)").isGreaterThan(0);
       assertThat(misses.get()).as("expected some misses (entry displaced)").isGreaterThan(0);
+
+      // Clean up the last entries still in the buffer (positions that were never displaced):
+      // the implementation checks the position, not just the array index.
+      for (long pos = ITERATIONS - smallCapacity + 1; pos <= ITERATIONS; pos++) {
+        final var entry = buffer.get(pos);
+        if (entry != null) {
+          entry.cleanup();
+        }
+      }
+      assertThat(counter.get()).isEqualTo(ITERATIONS);
     }
 
     /** Starts all threads, releases the latch, and waits for all threads to finish. */

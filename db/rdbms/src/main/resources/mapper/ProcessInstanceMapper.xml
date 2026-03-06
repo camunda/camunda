@@ -350,6 +350,14 @@
         )
       </foreach>
     </if>
+    <!-- Business ID filters -->
+    <if
+      test="filter.businessIdOperations != null and !filter.businessIdOperations.isEmpty()">
+      <foreach collection="filter.businessIdOperations" item="operation">
+        AND pi.BUSINESS_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessInstanceEntity">

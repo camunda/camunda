@@ -11,7 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import io.camunda.zeebe.gateway.cmd.InvalidBusinessIdException;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
@@ -567,6 +570,148 @@ public class RequestMapperTest {
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("Unrecognized tenantFilter option")
           .hasMessageContaining("expected one of ASSIGNED or PROVIDED");
+    }
+  }
+
+  @Nested
+  class CreateProcessInstanceRequestBusinessIdTest {
+
+    @Test
+    public void shouldAcceptValidBusinessId() {
+      // given
+      final var grpcRequest =
+          CreateProcessInstanceRequest.newBuilder()
+              .setBpmnProcessId("process")
+              .setBusinessId("order-12345")
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toCreateProcessInstanceRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEqualTo("order-12345");
+    }
+
+    @Test
+    public void shouldAcceptBusinessIdAtMaxLength() {
+      // given
+      final String maxLengthBusinessId = "a".repeat(256);
+      final var grpcRequest =
+          CreateProcessInstanceRequest.newBuilder()
+              .setBpmnProcessId("process")
+              .setBusinessId(maxLengthBusinessId)
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toCreateProcessInstanceRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEqualTo(maxLengthBusinessId);
+    }
+
+    @Test
+    public void shouldRejectBusinessIdExceedingMaxLength() {
+      // given
+      final String tooLongBusinessId = "a".repeat(257);
+      final var grpcRequest =
+          CreateProcessInstanceRequest.newBuilder()
+              .setBpmnProcessId("process")
+              .setBusinessId(tooLongBusinessId)
+              .build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toCreateProcessInstanceRequest(grpcRequest))
+          .isInstanceOf(InvalidBusinessIdException.class)
+          .hasMessageContaining("business id")
+          .hasMessageContaining("256");
+    }
+
+    @Test
+    public void shouldAcceptEmptyBusinessId() {
+      // given
+      final var grpcRequest =
+          CreateProcessInstanceRequest.newBuilder().setBpmnProcessId("process").build();
+
+      // when
+      final var brokerRequest = RequestMapper.toCreateProcessInstanceRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEmpty();
+    }
+  }
+
+  @Nested
+  class CreateProcessInstanceWithResultRequestBusinessIdTest {
+
+    @Test
+    public void shouldAcceptValidBusinessId() {
+      // given
+      final var grpcRequest =
+          CreateProcessInstanceWithResultRequest.newBuilder()
+              .setRequest(
+                  CreateProcessInstanceRequest.newBuilder()
+                      .setBpmnProcessId("process")
+                      .setBusinessId("order-12345"))
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toCreateProcessInstanceWithResultRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEqualTo("order-12345");
+    }
+
+    @Test
+    public void shouldAcceptBusinessIdAtMaxLength() {
+      // given
+      final String maxLengthBusinessId = "a".repeat(256);
+      final var grpcRequest =
+          CreateProcessInstanceWithResultRequest.newBuilder()
+              .setRequest(
+                  CreateProcessInstanceRequest.newBuilder()
+                      .setBpmnProcessId("process")
+                      .setBusinessId(maxLengthBusinessId))
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toCreateProcessInstanceWithResultRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEqualTo(maxLengthBusinessId);
+    }
+
+    @Test
+    public void shouldRejectBusinessIdExceedingMaxLength() {
+      // given
+      final String tooLongBusinessId = "a".repeat(257);
+      final var grpcRequest =
+          CreateProcessInstanceWithResultRequest.newBuilder()
+              .setRequest(
+                  CreateProcessInstanceRequest.newBuilder()
+                      .setBpmnProcessId("process")
+                      .setBusinessId(tooLongBusinessId))
+              .build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toCreateProcessInstanceWithResultRequest(grpcRequest))
+          .isInstanceOf(InvalidBusinessIdException.class)
+          .hasMessageContaining("business id")
+          .hasMessageContaining("256");
+    }
+
+    @Test
+    public void shouldAcceptEmptyBusinessId() {
+      // given
+      final var grpcRequest =
+          CreateProcessInstanceWithResultRequest.newBuilder()
+              .setRequest(CreateProcessInstanceRequest.newBuilder().setBpmnProcessId("process"))
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toCreateProcessInstanceWithResultRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEmpty();
     }
   }
 }

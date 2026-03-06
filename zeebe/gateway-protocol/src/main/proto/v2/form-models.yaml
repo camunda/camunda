@@ -21,8 +21,8 @@ components:
           allOf:
             - $ref: "identifiers.yaml#/components/schemas/FormId"
         schema:
-          description: The form content.
-          type: object
+          description: The form schema as a JSON document serialized as a string.
+          type: string
         version:
           description: The version of the the deployed form.
           type: integer
