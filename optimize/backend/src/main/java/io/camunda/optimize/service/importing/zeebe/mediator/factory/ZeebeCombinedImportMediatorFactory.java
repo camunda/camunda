@@ -13,6 +13,7 @@ import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.writer.FlowNodeInstanceWriter;
 import io.camunda.optimize.service.db.writer.IncidentWriter;
+import io.camunda.optimize.service.db.writer.PreFlattenedWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.db.writer.UserTaskWriter;
 import io.camunda.optimize.service.db.writer.VariableWriter;
@@ -50,6 +51,7 @@ public class ZeebeCombinedImportMediatorFactory extends AbstractZeebeImportMedia
   private final ObjectVariableService objectVariableService;
   private final IncidentWriter incidentWriter;
   private final UserTaskWriter userTaskWriter;
+  private final PreFlattenedWriter preFlattenedWriter;
 
   public ZeebeCombinedImportMediatorFactory(
       final BeanFactory beanFactory,
@@ -63,7 +65,8 @@ public class ZeebeCombinedImportMediatorFactory extends AbstractZeebeImportMedia
       final ProcessDefinitionReader processDefinitionReader,
       final ObjectVariableService objectVariableService,
       final IncidentWriter incidentWriter,
-      final UserTaskWriter userTaskWriter) {
+      final UserTaskWriter userTaskWriter,
+      final PreFlattenedWriter preFlattenedWriter) {
     super(
         beanFactory,
         importIndexHandlerRegistry,
@@ -77,6 +80,7 @@ public class ZeebeCombinedImportMediatorFactory extends AbstractZeebeImportMedia
     this.objectVariableService = objectVariableService;
     this.incidentWriter = incidentWriter;
     this.userTaskWriter = userTaskWriter;
+    this.preFlattenedWriter = preFlattenedWriter;
   }
 
   @Override
@@ -115,6 +119,11 @@ public class ZeebeCombinedImportMediatorFactory extends AbstractZeebeImportMedia
             objectMapper,
             configurationService,
             new BackoffCalculator(configurationService),
-            new ZeebeImportSlidingWindowCache(partitionId, "COMBINED")));
+            new ZeebeImportSlidingWindowCache(
+                partitionId,
+                "COMBINED",
+                preFlattenedWriter,
+                databaseClient,
+                configurationService)));
   }
 }

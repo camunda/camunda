@@ -37,6 +37,7 @@ public final class DatabaseConstants {
   public static final String FLAT_INCIDENT_MULTI_ALIAS = "flat-incident";
   public static final String FLAT_USER_TASK_MULTI_ALIAS = "flat-user-task";
   public static final String FLAT_VARIABLE_MULTI_ALIAS = "flat-variable";
+  public static final String PRE_FLATTENED_MULTI_ALIAS = "pre-flattened";
   public static final String SINGLE_PROCESS_REPORT_INDEX_NAME = "single-process-report";
   public static final String SINGLE_DECISION_REPORT_INDEX_NAME = "single-decision-report";
   public static final String COMBINED_REPORT_INDEX_NAME = "combined-report";
