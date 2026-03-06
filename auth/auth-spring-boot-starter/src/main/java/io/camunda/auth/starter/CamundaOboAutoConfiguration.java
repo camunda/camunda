@@ -23,7 +23,7 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
  * Security's {@link OAuth2AuthorizedClientManager} for token exchange, following the standard
  * Spring Security OAuth2 Client pattern.
  */
-@AutoConfiguration(after = CamundaTokenExchangeAutoConfiguration.class)
+@AutoConfiguration(after = CamundaAuthorizationGrantAutoConfiguration.class)
 @ConditionalOnProperty(name = "camunda.auth.obo.enabled", havingValue = "true")
 @ConditionalOnBean(OAuth2AuthorizedClientManager.class)
 public class CamundaOboAutoConfiguration {

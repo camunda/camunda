@@ -1,5 +1,5 @@
 io.camunda.auth.starter.CamundaAuthAutoConfiguration
 io.camunda.auth.starter.CamundaAuthSecurityAutoConfiguration
-io.camunda.auth.starter.CamundaTokenExchangeAutoConfiguration
+io.camunda.auth.starter.CamundaAuthorizationGrantAutoConfiguration
 io.camunda.auth.starter.CamundaOboAutoConfiguration
 io.camunda.auth.starter.CamundaAuthPersistenceAutoConfiguration

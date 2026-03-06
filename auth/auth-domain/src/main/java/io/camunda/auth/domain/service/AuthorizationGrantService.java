@@ -7,13 +7,14 @@
  */
 package io.camunda.auth.domain.service;
 
-import io.camunda.auth.domain.exception.TokenExchangeException;
-import io.camunda.auth.domain.model.TokenExchangeRequest;
-import io.camunda.auth.domain.model.TokenExchangeResponse;
+import io.camunda.auth.domain.exception.AuthorizationGrantException;
+import io.camunda.auth.domain.model.AuthorizationGrantRequest;
+import io.camunda.auth.domain.model.AuthorizationGrantResponse;
+import io.camunda.auth.domain.model.TokenExchangeGrantRequest;
 import io.camunda.auth.domain.model.TokenMetadata;
 import io.camunda.auth.domain.model.TokenMetadata.ExchangeStatus;
-import io.camunda.auth.domain.port.inbound.TokenExchangePort;
-import io.camunda.auth.domain.port.outbound.TokenExchangeClient;
+import io.camunda.auth.domain.port.inbound.AuthorizationGrantPort;
+import io.camunda.auth.domain.port.outbound.AuthorizationGrantClient;
 import io.camunda.auth.domain.port.outbound.TokenStorePort;
 import java.time.Instant;
 import java.util.Objects;
@@ -22,22 +23,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Domain service that orchestrates token exchange. Delegates to the configured {@link
- * TokenExchangeClient}, validates delegation chains, and persists audit records.
+ * Domain service that orchestrates authorization grant operations for all grant types. Delegates to
+ * the configured {@link AuthorizationGrantClient}, validates delegation chains (for token exchange
+ * only), and persists audit records.
  *
  * <p>Token caching is handled by Spring Security's {@code OAuth2AuthorizedClientService} — this
- * service focuses on the exchange itself and audit trail.
+ * service focuses on the grant itself and audit trail.
  */
-public class TokenExchangeService implements TokenExchangePort {
+public class AuthorizationGrantService implements AuthorizationGrantPort {
 
-  private static final Logger LOG = LoggerFactory.getLogger(TokenExchangeService.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AuthorizationGrantService.class);
 
-  private final TokenExchangeClient client;
+  private final AuthorizationGrantClient client;
   private final TokenStorePort tokenStore;
   private final DelegationChainValidator chainValidator;
 
-  public TokenExchangeService(
-      final TokenExchangeClient client,
+  public AuthorizationGrantService(
+      final AuthorizationGrantClient client,
       final TokenStorePort tokenStore,
       final DelegationChainValidator chainValidator) {
     this.client = Objects.requireNonNull(client, "client must not be null");
@@ -45,26 +47,31 @@ public class TokenExchangeService implements TokenExchangePort {
     this.chainValidator = chainValidator;
   }
 
-  public TokenExchangeService(final TokenExchangeClient client) {
+  public AuthorizationGrantService(final AuthorizationGrantClient client) {
     this(client, null, null);
   }
 
   @Override
-  public TokenExchangeResponse exchange(final TokenExchangeRequest request) {
+  public AuthorizationGrantResponse authorize(final AuthorizationGrantRequest request) {
     Objects.requireNonNull(request, "request must not be null");
 
-    // Validate delegation chain if validator is configured
-    if (chainValidator != null && request.actorToken() != null) {
-      chainValidator.validate(request.subjectToken());
+    // Validate delegation chain only for token exchange with an actor token
+    if (chainValidator != null
+        && request instanceof final TokenExchangeGrantRequest tokenExchange
+        && tokenExchange.actorToken() != null) {
+      chainValidator.validate(tokenExchange.subjectToken());
     }
 
-    // Perform exchange
+    // Perform authorization grant
     final String exchangeId = UUID.randomUUID().toString();
     final Instant exchangeTime = Instant.now();
 
     try {
-      LOG.debug("Performing token exchange for audience={}", request.audience());
-      final TokenExchangeResponse response = client.exchange(request);
+      LOG.debug(
+          "Performing authorization grant type={} for audience={}",
+          request.grantType(),
+          request.audience());
+      final AuthorizationGrantResponse response = client.authorize(request);
 
       // Store audit record
       if (tokenStore != null) {
@@ -81,7 +88,7 @@ public class TokenExchangeService implements TokenExchangePort {
 
       return response;
 
-    } catch (final TokenExchangeException e) {
+    } catch (final AuthorizationGrantException e) {
       // Store failed audit record
       if (tokenStore != null) {
         tokenStore.store(
