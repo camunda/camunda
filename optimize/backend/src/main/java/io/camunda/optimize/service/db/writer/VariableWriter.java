@@ -13,7 +13,6 @@ import static io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBui
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getFlatVariableIndexAliasName;
 
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
-import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.RequestType;
 import io.camunda.optimize.dto.optimize.query.variable.FlatVariableDto;
 import io.camunda.optimize.service.db.repository.IndexRepository;
@@ -33,39 +32,27 @@ public class VariableWriter {
     this.indexRepository = indexRepository;
   }
 
-  public List<ImportRequestDto> generateFlatVariableImports(
-      final List<ProcessInstanceDto> processInstances) {
+  public List<ImportRequestDto> generateFlatVariableImports(final List<FlatVariableDto> variables) {
     final String importItemName = "flat variables";
     LOG.debug("Creating imports for [{}].", importItemName);
     indexRepository.createMissingIndices(
         FLAT_VARIABLE_INDEX,
         Set.of(FLAT_VARIABLE_MULTI_ALIAS),
-        processInstances.stream()
-            .map(ProcessInstanceDto::getProcessDefinitionKey)
+        variables.stream()
+            .map(FlatVariableDto::getProcessDefinitionKey)
             .collect(Collectors.toSet()));
 
-    return processInstances.stream()
-        .flatMap(
-            instance ->
-                instance.getVariables().stream()
-                    .map(
-                        variable ->
-                            ImportRequestDto.builder()
-                                .importName(importItemName)
-                                .type(RequestType.INDEX)
-                                .id(variable.getId())
-                                .indexName(
-                                    getFlatVariableIndexAliasName(
-                                        instance.getProcessDefinitionKey()))
-                                .source(
-                                    FlatVariableDto.fromProcessInstanceAndVariable(
-                                        instance.getProcessDefinitionKey(),
-                                        instance.getProcessDefinitionVersion(),
-                                        instance.getProcessDefinitionId(),
-                                        instance.getProcessInstanceId(),
-                                        variable))
-                                .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
-                                .build()))
+    return variables.stream()
+        .map(
+            variable ->
+                ImportRequestDto.builder()
+                    .importName(importItemName)
+                    .type(RequestType.INDEX)
+                    .id(variable.getId())
+                    .indexName(getFlatVariableIndexAliasName(variable.getProcessDefinitionKey()))
+                    .source(variable)
+                    .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+                    .build())
         .toList();
   }
 }
