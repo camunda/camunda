@@ -790,16 +790,16 @@ jobs:
             owner: "General"
             module: "Zeebe"
             test-filter: "!io.camunda.zeebe.it.engine.**,!io.camunda.zeebe.it.cluster.**,!**/*$*.java"
-          # - group: qa-update
-          #   name: "Zeebe QA - Update"
-          #   maven-modules: "zeebe/qa/update-tests"
-          #   maven-build-threads: 1
-          #   maven-test-fork-count: 10
-          #   runs-on: gcp-perf-core-8-default
-          #   docker-repository: localhost:5000/camunda/zeebe
-          #   docker-file: Dockerfile
-          #   owner: "Core Features"
-          #   module: "Zeebe"
+          - group: qa-update
+            name: "Zeebe QA - Update"
+            maven-modules: "zeebe/qa/update-tests"
+            maven-build-threads: 1
+            maven-test-fork-count: 10
+            runs-on: gcp-perf-core-8-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+            owner: "Core Features"
+            module: "Zeebe"
           - group: qa-camunda-process-test
             name: "Camunda Process"
             maven-modules: "testing/camunda-process-test-java,testing/camunda-process-test-spring,testing/camunda-process-test-example"
