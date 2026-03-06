@@ -34,6 +34,7 @@ import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -41,6 +42,7 @@ import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @ExtendWith(MockitoExtension.class)
 @WebMvcTest(MessageController.class)
+@Import(ProcessEngineConfiguration.class)
 public class MessageControllerTest extends RestControllerTest {
 
   private static final String MESSAGE_BASE_URL = "/v2/messages";
@@ -55,7 +57,6 @@ public class MessageControllerTest extends RestControllerTest {
   @MockitoBean MessageServices messageServices;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
-  @MockitoBean ProcessEngineConfiguration processEngineConfiguration;
   @Captor ArgumentCaptor<CorrelateMessageRequest> correlationRequestCaptor;
   @Captor ArgumentCaptor<PublicationMessageRequest> publicationRequestCaptor;
 
@@ -65,7 +66,6 @@ public class MessageControllerTest extends RestControllerTest {
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(messageServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(messageServices);
-    when(processEngineConfiguration.getMaxNameFieldLength()).thenReturn(32 * 1024);
   }
 
   @Test
