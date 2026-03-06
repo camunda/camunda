@@ -52,6 +52,74 @@ type Props = {
   hasOuterBorderOnSelection?: boolean;
 };
 
+const useFullscreen = (
+  diagramRef: React.RefObject<HTMLDivElement | null>,
+  viewerRef: React.RefObject<BpmnJS | null>,
+) => {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const handleFullscreen = useCallback(() => {
+    const el = diagramRef.current;
+    if (el === null) {
+      return;
+    }
+
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+      return;
+    }
+
+    el.requestFullscreen();
+  }, [diagramRef]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(document.fullscreenElement === diagramRef.current);
+
+      requestAnimationFrame(() => {
+        viewerRef.current?.notifyResize();
+        viewerRef.current?.zoomReset();
+      });
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [diagramRef, viewerRef]);
+
+  return {isFullscreen, handleFullscreen};
+};
+
+const useMinimap = (
+  diagramCanvasRef: React.RefObject<HTMLDivElement | null>,
+  viewer: BpmnJS,
+  isDiagramRendered: boolean,
+) => {
+  const [isMinimapOpen, setIsMinimapOpen] = useState(false);
+
+  const resetMinimap = useCallback(() => {
+    setIsMinimapOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (isDiagramRendered && diagramCanvasRef.current) {
+      const minimap = diagramCanvasRef.current.querySelector('.djs-minimap');
+      if (minimap) {
+        minimap.setAttribute('aria-hidden', 'true');
+      }
+    }
+  }, [isDiagramRendered, diagramCanvasRef]);
+
+  const handleMinimapToggle = useCallback(() => {
+    viewer.toggleMinimap();
+    setIsMinimapOpen(viewer.isMinimapOpen());
+  }, [viewer]);
+
+  return {isMinimapOpen, handleMinimapToggle, resetMinimap};
+};
+
 const Diagram: React.FC<Props> = observer(
   ({
     xml,
@@ -73,8 +141,6 @@ const Diagram: React.FC<Props> = observer(
     const [isDiagramRendered, setIsDiagramRendered] = useState(false);
     const viewerRef = useRef<BpmnJS | null>(null);
     const [isViewboxChanging, setIsViewboxChanging] = useState(false);
-    const [isFullscreen, setIsFullscreen] = useState(false);
-    const [isMinimapOpen, setIsMinimapOpen] = useState(false);
 
     function getViewer() {
       if (viewerRef.current === null) {
@@ -83,6 +149,16 @@ const Diagram: React.FC<Props> = observer(
       return viewerRef.current;
     }
     const viewer = getViewer();
+
+    const {isFullscreen, handleFullscreen} = useFullscreen(
+      diagramRef,
+      viewerRef,
+    );
+    const {isMinimapOpen, handleMinimapToggle, resetMinimap} = useMinimap(
+      diagramCanvasRef,
+      viewer,
+      isDiagramRendered,
+    );
 
     useLayoutEffect(() => {
       async function renderDiagram() {
@@ -100,7 +176,7 @@ const Diagram: React.FC<Props> = observer(
             hasOuterBorderOnSelection,
           });
           setIsDiagramRendered(true);
-          setIsMinimapOpen(false);
+          resetMinimap();
         }
       }
       renderDiagram();
@@ -114,16 +190,8 @@ const Diagram: React.FC<Props> = observer(
       highlightedElementIds,
       nonSelectableNodeTooltipText,
       hasOuterBorderOnSelection,
+      resetMinimap,
     ]);
-
-    useEffect(() => {
-      if (isDiagramRendered && diagramCanvasRef.current) {
-        const minimap = diagramCanvasRef.current.querySelector('.djs-minimap');
-        if (minimap) {
-          minimap.setAttribute('aria-hidden', 'true');
-        }
-      }
-    }, [isDiagramRendered]);
 
     useEffect(() => {
       if (onElementSelection !== undefined) {
@@ -143,74 +211,6 @@ const Diagram: React.FC<Props> = observer(
         viewer.reset();
       };
     }, [viewer]);
-
-    const handleFullscreen = useCallback(() => {
-      const el = diagramRef.current;
-      if (el === null) {
-        return;
-      }
-
-      if (!document.fullscreenElement) {
-        if (el.requestFullscreen) {
-          el.requestFullscreen();
-        } else {
-          (
-            el as HTMLElement & {webkitRequestFullscreen?: () => void}
-          ).webkitRequestFullscreen?.();
-        }
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else {
-          (
-            document as Document & {webkitExitFullscreen?: () => void}
-          ).webkitExitFullscreen?.();
-        }
-      }
-    }, []);
-
-    const handleMinimapToggle = useCallback(() => {
-      viewer.toggleMinimap();
-      setIsMinimapOpen(viewer.isMinimapOpen());
-    }, [viewer]);
-
-    useEffect(() => {
-      const handleFullscreenChange = () => {
-        const fullscreenElement =
-          document.fullscreenElement ??
-          (document as Document & {webkitFullscreenElement?: Element})
-            .webkitFullscreenElement ??
-          null;
-
-        const isCurrentlyFullscreen =
-          fullscreenElement !== null &&
-          fullscreenElement === diagramRef.current;
-
-        setIsFullscreen(isCurrentlyFullscreen);
-
-        requestAnimationFrame(() => {
-          viewerRef.current?.notifyResize();
-          viewerRef.current?.zoomReset();
-        });
-      };
-
-      document.addEventListener('fullscreenchange', handleFullscreenChange);
-      document.addEventListener(
-        'webkitfullscreenchange',
-        handleFullscreenChange,
-      );
-
-      return () => {
-        document.removeEventListener(
-          'fullscreenchange',
-          handleFullscreenChange,
-        );
-        document.removeEventListener(
-          'webkitfullscreenchange',
-          handleFullscreenChange,
-        );
-      };
-    }, []);
 
     return (
       <StyledDiagram

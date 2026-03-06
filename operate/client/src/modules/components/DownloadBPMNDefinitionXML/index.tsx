@@ -61,7 +61,7 @@ const DownloadBPMNDefinitionXML: React.FC<Props> = ({
     <IconButton
       kind="tertiary"
       size="sm"
-      align="left"
+      align="top-right"
       disabled={isPending}
       onClick={() =>
         startTransition(async () => {

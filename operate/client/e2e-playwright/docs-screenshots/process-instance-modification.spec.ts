@@ -63,10 +63,7 @@ test.describe('process instance modification', () => {
       path: 'e2e-playwright/docs-screenshots/process-instance-modification/modification-mode.png',
     });
 
-    await page
-      .getByTestId('diagram-canvas')
-      .locator('[data-element-id="messageTask"]')
-      .click();
+    await processInstancePage.diagram.getFlowNodeById('messageTask').click();
 
     await expect(
       page.getByRole('button', {
@@ -99,10 +96,7 @@ test.describe('process instance modification', () => {
 
     await commonPage.deleteArrows();
 
-    await page
-      .getByTestId('diagram-canvas')
-      .locator('[data-element-id="lastTask"]')
-      .click();
+    await processInstancePage.diagram.getFlowNodeById('lastTask').click();
 
     await expect(
       page.getByRole('button', {name: /Add single element instance/i}),
@@ -158,10 +152,7 @@ test.describe('process instance modification', () => {
 
     await page.getByRole('button', {name: 'Continue'}).click();
 
-    await page
-      .getByTestId('diagram-canvas')
-      .locator('[data-element-id="messageTask"]')
-      .click();
+    await processInstancePage.diagram.getFlowNodeById('messageTask').click();
 
     await expect(
       page.getByRole('button', {
@@ -183,9 +174,8 @@ test.describe('process instance modification', () => {
 
     await moveTokenButton.click();
 
-    const lastTaskElement = await page
-      .getByTestId('diagram-canvas')
-      .locator('[data-element-id="lastTask"]');
+    const lastTaskElement =
+      processInstancePage.diagram.getFlowNodeById('lastTask');
 
     await commonPage.addDownArrow(lastTaskElement);
 
@@ -419,7 +409,7 @@ test.describe('process instance modification', () => {
 
     await page.getByRole('button', {name: 'Continue'}).click();
 
-    const timerEvent = await page.locator('[data-element-id="timerEvent"]');
+    const timerEvent = processInstancePage.diagram.getFlowNodeById('timerEvent');
 
     await commonPage.addDownArrow(timerEvent);
 

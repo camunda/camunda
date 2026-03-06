@@ -187,9 +187,7 @@ test.describe('process instance migration', () => {
 
     await migrationView.selectTargetSourceElement('Check payment');
 
-    const elements = page
-      .getByTestId('diagram-canvas')
-      .locator('[data-element-id="checkPayment"]');
+    const elements = processesPage.diagram.getFlowNodeById('checkPayment');
 
     await commonPage.addDownArrow(elements.first());
     await commonPage.addDownArrow(elements.nth(1));
@@ -361,14 +359,12 @@ test.describe('process instance migration', () => {
 
     // Verify ad hoc subprocess element is shown in both diagrams
     await expect(
-      page
-        .getByTestId('diagram-canvas')
-        .locator('[data-element-id="AD_HOC_SUBPROCESS"]'),
+      processesPage.diagram.getFlowNodeById('AD_HOC_SUBPROCESS'),
     ).toHaveCount(2);
 
     // Verify user task element is shown in the source diagram
     await expect(
-      page.getByTestId('diagram-canvas').locator('[data-element-id="A"]'),
+      processesPage.diagram.getFlowNodeById('A'),
     ).toHaveCount(1);
 
     // Map the ad hoc subprocess
