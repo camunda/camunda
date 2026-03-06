@@ -71,12 +71,12 @@ describe('<ColumnHeader />', () => {
   it('should show default sort indicator when isDefault and no URL param', () => {
     render(
       <ColumnHeader
-        label="Time"
+        label="Date"
         isDisabled={false}
         sortKey="timestamp"
         isDefault={true}
       >
-        Time
+        Date
       </ColumnHeader>,
       {
         wrapper: getWrapper(),
@@ -92,19 +92,21 @@ describe('<ColumnHeader />', () => {
   it('should navigate on click and update URL', async () => {
     const {user} = render(
       <ColumnHeader
-        label="Operation"
+        label="Operation type"
         isDisabled={false}
         sortKey="operationType"
         isDefault={false}
       >
-        Operation
+        Operation type
       </ColumnHeader>,
       {
         wrapper: getWrapper(),
       },
     );
 
-    await user.click(screen.getByRole('button', {name: /sort by operation/i}));
+    await user.click(
+      screen.getByRole('button', {name: /sort by operation type/i}),
+    );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/');
     expect(screen.getByTestId('search')).toHaveTextContent(
@@ -115,12 +117,12 @@ describe('<ColumnHeader />', () => {
   it('should toggle sort order when clicking same column', async () => {
     const {user} = render(
       <ColumnHeader
-        label="Time"
+        label="Date"
         isDisabled={false}
         sortKey="timestamp"
         isDefault={false}
       >
-        Operation
+        Date
       </ColumnHeader>,
       {
         wrapper: getWrapper('/?sort=timestamp%2Bdesc'),
@@ -132,7 +134,7 @@ describe('<ColumnHeader />', () => {
       'descending',
     );
 
-    await user.click(screen.getByRole('button', {name: /sort by time/i}));
+    await user.click(screen.getByRole('button', {name: /sort by date/i}));
 
     expect(screen.getByTestId('search')).toHaveTextContent(
       'sort=timestamp%2Basc',
@@ -163,12 +165,12 @@ describe('<ColumnHeader />', () => {
   it('should show no sort indicator for inactive column', () => {
     render(
       <ColumnHeader
-        label="Operation"
+        label="Operation type"
         isDisabled={false}
         sortKey="operationType"
         isDefault={false}
       >
-        Operation
+        Operation type
       </ColumnHeader>,
       {
         wrapper: getWrapper('/?sort=timestamp%2Basc'),
