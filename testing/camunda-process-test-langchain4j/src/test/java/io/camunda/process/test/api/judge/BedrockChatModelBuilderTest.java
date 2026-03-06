@@ -173,8 +173,8 @@ class BedrockChatModelBuilderTest {
     // when / then
     assertThatThrownBy(() -> BedrockChatModelBuilder.build(data))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("credentialsAccessKey")
-        .hasMessageContaining("credentialsSecretKey");
+        .hasMessageContaining("accessKey")
+        .hasMessageContaining("secretKey");
   }
 
   @Test
@@ -190,8 +190,8 @@ class BedrockChatModelBuilderTest {
     // when / then
     assertThatThrownBy(() -> BedrockChatModelBuilder.build(data))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("credentialsAccessKey")
-        .hasMessageContaining("credentialsSecretKey");
+        .hasMessageContaining("accessKey")
+        .hasMessageContaining("secretKey");
   }
 
   @Test
@@ -208,8 +208,8 @@ class BedrockChatModelBuilderTest {
     // when / then
     assertThatThrownBy(() -> BedrockChatModelBuilder.build(data))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("credentialsAccessKey")
-        .hasMessageContaining("credentialsSecretKey");
+        .hasMessageContaining("accessKey")
+        .hasMessageContaining("secretKey");
   }
 
   @Test
@@ -226,7 +226,7 @@ class BedrockChatModelBuilderTest {
     // when / then
     assertThatThrownBy(() -> BedrockChatModelBuilder.build(data))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("credentialsAccessKey")
-        .hasMessageContaining("credentialsSecretKey");
+        .hasMessageContaining("accessKey")
+        .hasMessageContaining("secretKey");
   }
 }
