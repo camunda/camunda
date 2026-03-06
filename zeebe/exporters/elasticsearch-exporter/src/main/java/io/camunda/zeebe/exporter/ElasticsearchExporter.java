@@ -16,6 +16,7 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.filter.DefaultRecordFilter;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
@@ -292,7 +293,8 @@ public class ElasticsearchExporter implements Exporter {
   private boolean shouldExportRecord(final Record<?> record) {
     final var recordVersion = getVersion(record.getBrokerVersion());
     if (configuration.getIsIncludeEnabledRecords()
-        || (recordVersion.major() == 8 && recordVersion.minor() < 8)) {
+        || (recordVersion.major() == 8 && recordVersion.minor() < 8)
+        || record.getValueType() == ValueType.ORDINAL) {
       return true;
     }
     return configuration.shouldIndexRequiredValueType(record.getValueType());
