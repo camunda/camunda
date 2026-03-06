@@ -17,7 +17,6 @@ import io.camunda.optimize.dto.zeebe.incident.ZeebeIncidentRecordDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import io.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
 import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
-import io.camunda.optimize.service.importing.DatabaseImportJob;
 import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.mediator.MediatorRank;
@@ -222,7 +221,7 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
         filterAndConvert(records, ValueType.USER_TASK, ZeebeUserTaskRecordDto.class);
 
     // Ask each service to create its import job (transformation only, no execution)
-    final List<DatabaseImportJob<?>> jobs = new ArrayList<>();
+    final List<Runnable> jobs = new ArrayList<>();
     processInstanceImportService.createImportJob(processInstanceRecords).ifPresent(jobs::add);
     variableImportService.createImportJob(variableRecords).ifPresent(jobs::add);
     incidentImportService.createImportJob(incidentRecords).ifPresent(jobs::add);
@@ -236,7 +235,7 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
     // Submit all collected jobs to the single executor; invoke the page-level callback once all
     // jobs have completed.
     final AtomicInteger remaining = new AtomicInteger(jobs.size());
-    for (final DatabaseImportJob<?> job : jobs) {
+    for (final Runnable job : jobs) {
       databaseImportJobExecutor.executeImportJob(
           wrapWithCallback(
               job,
@@ -249,12 +248,11 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
   }
 
   /**
-   * Wraps a {@link DatabaseImportJob} in a {@link Runnable} that runs the job and then invokes the
-   * given callback. This is needed because {@link DatabaseImportJob} stores its callback at
-   * construction time, but here the callback is a per-batch counter lambda created by the mediator.
+   * Wraps a job {@link Runnable} so that after the job completes, the given {@code
+   * completionCallback} is invoked. This is used to attach a per-batch counting callback to jobs
+   * that were created without one (or with a no-op callback).
    */
-  private Runnable wrapWithCallback(
-      final DatabaseImportJob<?> job, final Runnable completionCallback) {
+  private Runnable wrapWithCallback(final Runnable job, final Runnable completionCallback) {
     return () -> {
       job.run();
       completionCallback.run();
