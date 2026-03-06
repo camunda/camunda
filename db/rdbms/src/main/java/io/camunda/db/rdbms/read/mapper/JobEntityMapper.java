@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.mapper;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.write.domain.JobDbModel;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.JobEntity.JobKind;
@@ -47,14 +49,5 @@ public class JobEntityMapper {
         .creationTime(jobDbModel.creationTime())
         .lastUpdateTime(jobDbModel.lastUpdateTime())
         .build();
-  }
-
-  /**
-   * Oracle treats empty strings as NULL. This method converts null values back to empty strings for
-   * fields that are required (non-nullable) in the API specification but may legitimately be empty
-   * (e.g., protobuf default values).
-   */
-  private static String nullToEmpty(final String value) {
-    return value == null ? "" : value;
   }
 }
