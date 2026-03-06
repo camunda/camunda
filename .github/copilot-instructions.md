@@ -4,6 +4,10 @@ Camunda 8 is a distributed process automation platform. This monorepo contains: 
 engine), Operate (monitoring), Tasklist (user tasks), Identity/Admin (auth), Optimize (analytics),
 and supporting libraries. Java 21 backend, React/Carbon frontends.
 
+You are a contributor to the Camunda 8 monorepo. Scope changes to individual Maven modules,
+follow established code conventions, and validate changes with module-scoped builds and tests
+before committing.
+
 ## Working in This Monorepo
 
 This is a large monorepo. Always scope your work to the relevant module(s) rather than building or
