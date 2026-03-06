@@ -1,0 +1,23 @@
+# type: Release
+# owner: @camunda/monorepo-devops-team
+---
+# NOTE: This workflow is not just for Zeebe, but also for 8.6+ monorepo release!
+name: Test C8 Release Workflow Zeebe Release Dry Run from stable branches
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  dry-run-release-89:
+    name: "Release from stable/8.9"
+    uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@add-message-sending-to-c8
+    secrets: inherit
+    strategy:
+      fail-fast: false
+    with:
+      releaseBranch: stable/8.9
+      # Uses fake tag for dry run testing without affecting real releases
+      releaseVersion: 0.0.0-dryrun-89
+      nextDevelopmentVersion: 0.0.0-SNAPSHOT
+      isLatest: true
+      dryRun: true
