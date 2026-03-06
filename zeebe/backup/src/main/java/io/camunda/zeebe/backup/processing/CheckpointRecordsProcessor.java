@@ -40,6 +40,7 @@ public final class CheckpointRecordsProcessor
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointRecordsProcessor.class);
 
   private final BackupManager backupManager;
+  private final boolean trackBackupMetadata;
   private CheckpointCreateProcessor checkpointCreateProcessor;
   private CheckpointConfirmBackupProcessor checkpointConfirmBackupProcessor;
   private CheckpointDeleteBackupProcessor checkpointDeleteBackupProcessor;
@@ -61,8 +62,11 @@ public final class CheckpointRecordsProcessor
   private PartitionCountSupplier partitionCountSupplier;
 
   public CheckpointRecordsProcessor(
-      final BackupManager backupManager, final MeterRegistry registry) {
+      final BackupManager backupManager,
+      final MeterRegistry registry,
+      final boolean trackBackupMetadata) {
     this.backupManager = backupManager;
+    this.trackBackupMetadata = trackBackupMetadata;
     metrics = new CheckpointMetrics(registry);
   }
 
@@ -100,20 +104,35 @@ public final class CheckpointRecordsProcessor
     if (partitionCountSupplier == null) {
       throw new IllegalStateException("Partition count supplier is not initialized.");
     }
+    checkpointCreatedEventApplier =
+        new CheckpointCreatedEventApplier(
+            checkpointState, checkpointMetadataState, checkpointListeners, trackBackupMetadata);
+    checkpointBackupConfirmedApplier =
+        new CheckpointBackupConfirmedApplier(
+            checkpointState, checkpointMetadataState, backupRangeState, trackBackupMetadata);
+    checkpointBackupDeletedApplier =
+        new CheckpointBackupDeletedApplier(
+            checkpointMetadataState, backupRangeState, checkpointState);
+    checkpointStateClearedApplier =
+        new CheckpointStateClearedApplier(
+            checkpointState, checkpointMetadataState, backupRangeState);
 
     checkpointCreateProcessor =
         new CheckpointCreateProcessor(
             checkpointState,
             backupManager,
-            checkpointMetadataState,
-            checkpointListeners,
             scalingInProgressSupplier,
             partitionCountSupplier,
-            metrics);
+            metrics,
+            checkpointCreatedEventApplier);
 
     checkpointConfirmBackupProcessor =
         new CheckpointConfirmBackupProcessor(
-            checkpointState, checkpointMetadataState, backupRangeState, backupManager);
+            checkpointState,
+            checkpointMetadataState,
+            backupRangeState,
+            backupManager,
+            checkpointBackupConfirmedApplier);
 
     checkpointDeleteBackupProcessor =
         new CheckpointDeleteBackupProcessor(
@@ -122,19 +141,6 @@ public final class CheckpointRecordsProcessor
     checkpointClearStateProcessor =
         new CheckpointClearStateProcessor(
             checkpointState, checkpointMetadataState, backupRangeState, backupManager);
-
-    checkpointCreatedEventApplier =
-        new CheckpointCreatedEventApplier(
-            checkpointState, checkpointMetadataState, checkpointListeners);
-    checkpointBackupConfirmedApplier =
-        new CheckpointBackupConfirmedApplier(
-            checkpointState, checkpointMetadataState, backupRangeState);
-    checkpointBackupDeletedApplier =
-        new CheckpointBackupDeletedApplier(
-            checkpointMetadataState, backupRangeState, checkpointState);
-    checkpointStateClearedApplier =
-        new CheckpointStateClearedApplier(
-            checkpointState, checkpointMetadataState, backupRangeState);
 
     final long checkpointId = checkpointState.getLatestCheckpointId();
     final var checkpointType = checkpointState.getLatestCheckpointType();

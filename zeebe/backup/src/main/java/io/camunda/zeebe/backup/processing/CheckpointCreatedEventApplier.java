@@ -19,14 +19,17 @@ public final class CheckpointCreatedEventApplier {
   private final CheckpointState checkpointState;
   private final DbCheckpointMetadataState checkpointMetadataState;
   private final Set<CheckpointListener> checkpointListeners;
+  private final boolean trackBackupMetadata;
 
   public CheckpointCreatedEventApplier(
       final CheckpointState checkpointState,
       final DbCheckpointMetadataState checkpointMetadataState,
-      final Set<CheckpointListener> checkpointListeners) {
+      final Set<CheckpointListener> checkpointListeners,
+      final boolean trackBackupMetadata) {
     this.checkpointState = checkpointState;
     this.checkpointMetadataState = checkpointMetadataState;
     this.checkpointListeners = checkpointListeners;
+    this.trackBackupMetadata = trackBackupMetadata;
   }
 
   public void apply(final CheckpointRecord checkpointRecord, final long checkpointTimestamp) {
@@ -36,7 +39,7 @@ public final class CheckpointCreatedEventApplier {
         checkpointTimestamp,
         checkpointRecord.getCheckpointType());
 
-    if (checkpointRecord.getCheckpointType() == CheckpointType.MARKER) {
+    if (trackBackupMetadata && checkpointRecord.getCheckpointType() == CheckpointType.MARKER) {
       checkpointMetadataState.addMarkerCheckpoint(
           checkpointRecord.getCheckpointId(),
           checkpointRecord.getCheckpointPosition(),
