@@ -424,6 +424,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.assertFieldValue('Number', '2');
     await taskDetailsPage.clickDecrementButton();
     await taskDetailsPage.assertFieldValue('Number', '1');
+    await sleep(1000);
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
