@@ -1,90 +1,108 @@
-# Orchestration Cluster Project
+# Camunda 8 Monorepo
 
-The Orchestration Cluster is a distributed systems application with a Java backend and a React,
-Carbon based frontend. Its purpose is to provide a robust, scalable process automation platform
-using BPMN (Business Process Model and Notation) for process definition and execution.
+Camunda 8 is a distributed process automation platform. This monorepo contains: Zeebe (process
+engine), Operate (monitoring), Tasklist (user tasks), Identity/Admin (auth), Optimize (analytics),
+and supporting libraries. Java 21 backend, React/Carbon frontends.
 
-## Build & Commands
+## Working in This Monorepo
 
-- Clean: `./mvnw clean -T1C`
-- Lint: `./mvnw license:check spotless:check -T1C`
-- Auto format: `./mvnw license:format spotless:apply -T1C`
-- Build quickly: `./mvnw install -Dquickly -T1C`
-- Run static checks: `./mvnw verify -Dquickly -DskipChecks=false -P'!autoFormat,checkFormat,spotbugs' -T1C`
-- Run unit tests: `./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C`
-- Run integration tests: `./mvnw verify -Dquickly -DskipTests=false -DskipUTs -T1C`
-- Run all tests: `./mvnw verify -T1C`
-- Build the docker image: `./mvnw install -DskipChecks -DskipTests -T1C && docker build -f camunda.Dockerfile --target app -t "camunda/camunda:current-test" --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz .`
+This is a large monorepo. Always scope your work to the relevant module(s) rather than building or
+testing the entire project.
 
-### Development Environment
+Before modifying code in any module:
 
-- REST API: http://localhost:8080
-- gRPC API: http://localhost:26500
-- Management API: http://localhost:9600/actuator
+1. Read the module's README.md and any documentation in its directory.
+2. Check `docs/` for cross-cutting guides (e.g., `docs/testing.md`, `docs/rest-controller.md`).
+3. If working on the workflow engine, read `zeebe/engine/README.md`.
 
-## Code Style and Conventions
+### Key Modules
 
-- Defined via the Maven Spotless plugin, to auto format run `./mvnw spotless:check -T1C`
-- Follow conventions in `CONTRIBUTING.md` and all Markdown files in `docs/`
+| Module | Description |
+|---|---|
+| `zeebe/` | Core process engine (broker, engine, gateway, protocol, exporters) |
+| `operate/` | Process monitoring webapp |
+| `tasklist/` | User task management webapp |
+| `identity/` | Authentication and authorization |
+| `optimize/` | Process analytics (skipped with `-Dquickly`) |
+| `db/` | Database layer (rdbms, rdbms-schema) |
+| `search/` | Search client abstraction (Elasticsearch, OpenSearch) |
+| `service/` | Internal services |
+| `clients/` | Client libraries (Java, Spring Boot starters) |
+| `gateways/` | Gateway implementations (HTTP mapping, MCP) |
+| `security/` | Security core, protocol, validation |
+| `qa/` | Cross-component acceptance tests |
+| `testing/` | Process testing libraries |
 
-## Testing
+## Build Commands
 
-- Follow guidelines in `docs/testing.md` and all files in `docs/testing/`.
+All builds use the Maven wrapper (`./mvnw`). Use `-T1C` for parallel module builds.
 
-## Security
+### Module-scoped builds (preferred)
 
-- Use appropriate data types that limit exposure of sensitive information
-- Never commit secrets or API keys to repository
-- Use environment variables for sensitive data
-- Use HTTPS in production
-- Regular dependency updates
-- Follow principle of least privilege
+```bash
+# Build a single module
+./mvnw install -pl <module> -Dquickly -T1C
+
+# Build a module and its dependencies
+./mvnw install -pl <module> -am -Dquickly -T1C
+
+# Run a single test class in a module
+./mvnw verify -pl <module> -Dtest=MyTestClass -DskipTests=false -DskipITs -Dquickly
+
+# Run a single integration test in a module
+./mvnw verify -pl <module> -Dit.test=MyIT -DskipTests=false -DskipUTs -Dquickly
+```
+
+### Full-repo builds
+
+```bash
+# Quick build (skips tests, checks, Optimize)
+./mvnw clean install -Dquickly -T1C
+
+# Lint and format check
+./mvnw license:check spotless:check -T1C
+
+# Auto-format (run before committing)
+./mvnw license:format spotless:apply -T1C
+
+# Unit tests only
+./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C
+
+# Integration tests only
+./mvnw verify -Dquickly -DskipTests=false -DskipUTs -T1C
+```
+
+Note: `-Dquickly` skips tests, checks, and Optimize. Add `-DskipTests=false` to re-enable tests.
+
+## Code Style
+
+- Enforced by the Maven Spotless plugin (Google Java Format).
+- Run `./mvnw license:format spotless:apply -T1C` before committing.
+- Follow conventions in `CONTRIBUTING.md` and the
+  [Zeebe Code Style wiki](https://github.com/camunda/camunda/wiki/Code-Style).
+
+## Testing Conventions
+
+- Prefix test methods with `should` (e.g., `shouldRejectInvalidInput`).
+- Structure tests with `// given`, `// when`, `// then` comments.
+- Use AssertJ for assertions. Never use JUnit or Hamcrest assertions.
+- Use [Awaitility](http://www.awaitility.org/) for async waiting. Never use `Thread.sleep`.
+- Use JUnit 5. Migrate JUnit 4 tests when modifying them.
+- Detailed guide: `docs/testing.md` and `docs/testing/`.
+
+## Commit Conventions
+
+Uses [Conventional Commits](https://www.conventionalcommits.org/). Max 120 chars for the header.
+
+```
+<type>: <description>
+```
+
+Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `perf`, `refactor`, `style`, `test`
 
 ## Git Workflow
 
-- ALWAYS lint and format before committing
-- Auto fix formatting errors before committing
-- NEVER use `git push --force` on the main branch
-- Use `git push --force-with-lease` for feature branches if needed
-- Always verify current branch before force operations
-- Respect the commit guidelines in `CONTRIBUTING.md`
-
-## GitHub Actions CI
-
-- Always specify a comment with `# owner: TODO`
-- Do not hard code secrets
-- Do not use GitHub Secrets
-- Use the Hashicorp Vault action to retrieve credentials and secrets
-- For common set of steps, consider creating reusable workflows or composite actions to avoid duplication
-- Avoid introducing usage of new 3rd party GitHub Actions
-- For Maven jobs use the `setup-maven-cache` composite action
-- For NodeJS jobs relying on Yarn use the https://github.com/camunda/infra-global-github-actions/tree/main/setup-yarn-cache
-- Always specify `permissions: {}` on the GHA workflow job level of GHA workflows and use least permissions possible
-- Always specify `bash` as the default shell for GHA workflows to ensure proper pipefail behavior
-- Always specify `timeout-minutes` on GHA workflow jobs
-- Run `actionlint` on GHA workflow modifications to make sure there are no warnings or errors
-- Run `conftest test --rego-version v0 -o github --policy .github` on GHA workflow modifications to make sure there are no warnings or errors
-- The last step of each GHA workflow job must submit CI health metrics by using:
-
-  ```yaml
-  - name: Observe build status
-    if: always()
-    continue-on-error: true
-    uses: ./.github/actions/observe-build-status
-    with:
-      build_status: ${{ job.status }}
-      secret_vault_address: ${{ secrets.VAULT_ADDR }}
-      secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-  ```
-- Always create composite actions in `.github/actions` subdirectories named in kebab case
-- Always create a `README.md` for composite actions describing purpose, inputs, outputs and example usage
-
-## Finding Documentation
-
-- Always check whether documentation exists for the module you are working on
-- If documentation exists in the module, read it before making changes to the code
-- Check README.md and other markdown files in the directory to find documentation
-- If you work on the workflow engine, check the engine [README](/zeebe/engine/README.md)
-- Further documentation and development guidelines can be found in the `docs/` directory
+- Always format before committing: `./mvnw license:format spotless:apply -T1C`
+- Never use `git push --force` on the `main` branch; use `--force-with-lease` on feature branches.
+- Follow the commit and PR guidelines in `CONTRIBUTING.md`.
 
