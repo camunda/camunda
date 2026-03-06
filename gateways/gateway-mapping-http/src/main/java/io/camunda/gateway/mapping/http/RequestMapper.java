@@ -517,8 +517,7 @@ public class RequestMapper {
                 messagePublicationRequest.getTenantId(), multiTenancyEnabled, "Publish Message")
             .flatMap(
                 tenantId ->
-                    validateMessagePublicationRequest(
-                        messagePublicationRequest, maxNameFieldLength)
+                    validateMessagePublicationRequest(messagePublicationRequest, maxNameFieldLength)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)));
 
