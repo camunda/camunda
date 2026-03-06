@@ -149,8 +149,8 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 ## Before Submitting
 
 1. Format code: `./mvnw license:format spotless:apply -T1C`
-2. Build the changed module: `./mvnw install -pl <module> -am -Dquickly -T1C`
-3. Run module tests: `./mvnw verify -pl <module> -am -DskipTests=false -DskipITs -Dquickly -T1C` (add `-DskipUTs` instead of `-DskipITs` for integration tests only)
+2. Build the changed module and its dependencies: `./mvnw install -pl <module> -am -Dquickly -T1C`
+3. Run tests only for the changed module: `./mvnw verify -pl <module> -DskipTests=false -DskipITs -Dquickly -T1C` (add `-DskipUTs` instead of `-DskipITs` for integration tests only)
 4. Verify tests pass (zero failures)
 5. Commit with conventional commit format
 
