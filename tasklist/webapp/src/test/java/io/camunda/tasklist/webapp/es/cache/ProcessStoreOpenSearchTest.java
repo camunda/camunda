@@ -17,10 +17,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.auth.domain.config.MultiTenancyConfiguration;
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessProvider;

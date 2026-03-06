@@ -7,6 +7,9 @@
  */
 package io.camunda.auth.spring.config;
 
+import io.camunda.auth.domain.config.CsrfConfiguration;
+import io.camunda.auth.domain.config.MultiTenancyConfiguration;
+
 public class SecurityConfiguration {
   private AuthenticationConfiguration authentication = new AuthenticationConfiguration();
   private MultiTenancyConfiguration multiTenancy = new MultiTenancyConfiguration();

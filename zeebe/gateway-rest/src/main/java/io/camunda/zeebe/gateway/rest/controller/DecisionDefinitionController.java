@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.auth.domain.config.MultiTenancyConfiguration;
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.RequestMapper.DecisionEvaluationRequest;
@@ -20,7 +21,6 @@ import io.camunda.gateway.protocol.model.DecisionDefinitionSearchQuery;
 import io.camunda.gateway.protocol.model.DecisionDefinitionSearchQueryResult;
 import io.camunda.gateway.protocol.model.DecisionEvaluationInstruction;
 import io.camunda.search.query.DecisionDefinitionQuery;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
