@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -86,6 +87,8 @@ class CoverageReportUtilTest {
     assertThat(CoverageReportUtil.toJson(nonSerializableObject)).isNotNull();
   }
 
+  @Disabled(
+      "The frontend resources are not generate in the CI build. Should be fixed by https://github.com/camunda/camunda/issues/48222.")
   @Test
   void shouldGenerateHtmlReportFromTemplate() {
     // given
@@ -106,6 +109,8 @@ class CoverageReportUtilTest {
     assertThat(html).contains("\"definitions\" : { }");
   }
 
+  @Disabled(
+      "The frontend resources are not generate in the CI build. Should be fixed by https://github.com/camunda/camunda/issues/48222.")
   @Test
   void shouldReplaceTemplateVariableWithCoverageData() {
     // given
@@ -124,6 +129,8 @@ class CoverageReportUtilTest {
     assertThat(html).doesNotContain("{{ COVERAGE_DATA }}");
   }
 
+  @Disabled(
+      "The frontend resources are not generate in the CI build. Should be fixed by https://github.com/camunda/camunda/issues/48222.")
   @Test
   void shouldInstallReportDependenciesInNewDirectory(@TempDir final Path tempDir) {
     // given
@@ -156,6 +163,8 @@ class CoverageReportUtilTest {
     assertThat(resourcesDir.lastModified()).isEqualTo(originalModified);
   }
 
+  @Disabled(
+      "The frontend resources are not generate in the CI build. Should be fixed by https://github.com/camunda/camunda/issues/48222.")
   @Test
   void shouldCreateParentDirectoryIfNotExists(@TempDir final Path tempDir) {
     // given
