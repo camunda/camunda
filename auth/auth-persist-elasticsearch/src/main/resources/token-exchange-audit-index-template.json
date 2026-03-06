@@ -1,0 +1,45 @@
+{
+  "index_patterns": ["camunda-auth-token-exchange-audit*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 1
+    },
+    "mappings": {
+      "properties": {
+        "exchangeId": {
+          "type": "keyword"
+        },
+        "subjectPrincipalId": {
+          "type": "keyword"
+        },
+        "actorPrincipalId": {
+          "type": "keyword"
+        },
+        "targetAudience": {
+          "type": "keyword"
+        },
+        "grantedScopes": {
+          "type": "text"
+        },
+        "exchangeTime": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
+        "expiryTime": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
+        "exchangeStatus": {
+          "type": "keyword"
+        },
+        "idpType": {
+          "type": "keyword"
+        },
+        "tenantId": {
+          "type": "keyword"
+        }
+      }
+    }
+  }
+}
