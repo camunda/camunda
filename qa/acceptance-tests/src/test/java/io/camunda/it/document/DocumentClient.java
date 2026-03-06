@@ -39,6 +39,10 @@ public interface DocumentClient extends AutoCloseable {
   // TODO remove this when purge functionality is available
   void deleteAllIndices(final String indexPrefix) throws IOException;
 
+  void deleteAllIndexTemplates(final String indexPrefix) throws IOException;
+
+  List<String> getIndexTemplates(String indexPrefix) throws IOException;
+
   BackupRepository zeebeBackupRepository(
       String repositoryName, SnapshotNameProvider snapshotNameProvider);
 
