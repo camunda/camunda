@@ -324,16 +324,13 @@ final class ProcessInstanceElementActivatingV3Applier
 
   /**
    * Inserts the business id index for root process instances. This maps the business id to the
-   * process instance key, scoped by process definition key and tenant id.
+   * process instance key, scoped by process definition id and tenant id.
    */
   private void insertBusinessIdIndex(final ProcessInstanceRecord value) {
     final var businessId = value.getBusinessId();
     if (!businessId.isEmpty()) {
       elementInstanceState.insertProcessInstanceKeyByBusinessId(
-          businessId,
-          value.getProcessDefinitionKey(),
-          value.getTenantId(),
-          value.getProcessInstanceKey());
+          businessId, value.getBpmnProcessId(), value.getTenantId(), value.getProcessInstanceKey());
     }
   }
 }

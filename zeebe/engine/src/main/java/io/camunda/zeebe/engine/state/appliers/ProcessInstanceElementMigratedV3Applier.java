@@ -16,7 +16,9 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
 
 /** Applies state changes for `ProcessInstance:Element_Migrated` */
@@ -43,10 +45,12 @@ final class ProcessInstanceElementMigratedV3Applier
     }
 
     final var previousProcessDefinitionKey = new AtomicLong();
+    final var previousProcessDefinitionId = new AtomicReference<String>();
     elementInstanceState.updateInstance(
         elementInstanceKey,
         elementInstance -> {
           previousProcessDefinitionKey.set(elementInstance.getValue().getProcessDefinitionKey());
+          previousProcessDefinitionId.set(elementInstance.getValue().getBpmnProcessId());
           elementInstance
               .getValue()
               .setProcessDefinitionKey(value.getProcessDefinitionKey())
@@ -62,7 +66,7 @@ final class ProcessInstanceElementMigratedV3Applier
       elementInstanceState.insertProcessInstanceKeyByDefinitionKey(
           value.getProcessInstanceKey(), value.getProcessDefinitionKey());
 
-      migrateBusinessIdIndex(value, previousProcessDefinitionKey.get());
+      migrateBusinessIdIndex(value, previousProcessDefinitionId.get());
     }
   }
 
@@ -111,7 +115,7 @@ final class ProcessInstanceElementMigratedV3Applier
   }
 
   private void migrateBusinessIdIndex(
-      final ProcessInstanceRecord value, final long previousProcessDefinitionKey) {
+      final ProcessInstanceRecord value, final String previousProcessDefinitionId) {
     final String businessId = value.getBusinessId();
     if (businessId.isEmpty()) {
       return;
@@ -119,15 +123,17 @@ final class ProcessInstanceElementMigratedV3Applier
     if (value.hasParentProcessInstance()) {
       return;
     }
+    if (Objects.equals(previousProcessDefinitionId, value.getBpmnProcessId())) {
+      // no need to update the business id index if the process definition id didn't change
+      // note that the business id, the tenant id, and the instance key never change on migration
+      return;
+    }
     elementInstanceState.deleteProcessInstanceKeyMappingByBusinessId(
         businessId,
-        previousProcessDefinitionKey,
+        previousProcessDefinitionId,
         value.getTenantId(),
         value.getProcessInstanceKey());
     elementInstanceState.insertProcessInstanceKeyByBusinessId(
-        businessId,
-        value.getProcessDefinitionKey(),
-        value.getTenantId(),
-        value.getProcessInstanceKey());
+        businessId, value.getBpmnProcessId(), value.getTenantId(), value.getProcessInstanceKey());
   }
 }

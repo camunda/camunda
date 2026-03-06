@@ -79,8 +79,9 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   private final RuntimeInstructions runtimeInstructions;
   private final ColumnFamily<DbLong, RuntimeInstructions> runtimeInstructionsByProcessInstanceKey;
 
-  // Business ID index: [businessId | processDefinitionKey | tenantId | processInstanceKey] => NIL
+  // Business ID index: [businessId | processDefinitionId | tenantId | processInstanceKey] => NIL
   private final DbString businessId = new DbString();
+  private final DbString processDefinitionId = new DbString();
   private final DbString tenantId = new DbString();
   private final DbLong processInstanceKey = new DbLong();
   private final BusinessIdIndexKey businessIdIndexKey;
@@ -158,7 +159,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             elementInstanceKey,
             runtimeInstructions);
 
-    businessIdIndexKey = new BusinessIdIndexKey(businessId, processDefinitionKey, tenantId);
+    businessIdIndexKey = new BusinessIdIndexKey(businessId, processDefinitionId, tenantId);
     processInstanceByBusinessIdIndexKey =
         new ProcessInstanceByBusinessIdIndexKey(businessIdIndexKey, processInstanceKey);
     processInstanceByBusinessIdIndexKeyColumnFamily =
@@ -360,11 +361,11 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   @Override
   public void insertProcessInstanceKeyByBusinessId(
       final String businessId,
-      final long processDefinitionKey,
+      final String processDefinitionId,
       final String tenantId,
       final long processInstanceKey) {
     this.businessId.wrapString(businessId);
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    this.processDefinitionId.wrapString(processDefinitionId);
     this.tenantId.wrapString(tenantId);
     this.processInstanceKey.wrapLong(processInstanceKey);
 
@@ -375,11 +376,11 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   @Override
   public void deleteProcessInstanceKeyMappingByBusinessId(
       final String businessId,
-      final long processDefinitionKey,
+      final String processDefinitionId,
       final String tenantId,
       final long processInstanceKey) {
     this.businessId.wrapString(businessId);
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    this.processDefinitionId.wrapString(processDefinitionId);
     this.tenantId.wrapString(tenantId);
     this.processInstanceKey.wrapLong(processInstanceKey);
 
@@ -577,11 +578,11 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   @Override
   public boolean hasActiveProcessInstanceWithBusinessId(
       final String businessId,
-      final long processDefinitionKey,
+      final String processDefinitionId,
       final String tenantId,
       final Predicate<Long> ignoreWhen) {
     this.businessId.wrapString(businessId);
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    this.processDefinitionId.wrapString(processDefinitionId);
     this.tenantId.wrapString(tenantId);
     final var exists = new AtomicBoolean(false);
     processInstanceByBusinessIdIndexKeyColumnFamily.whileEqualPrefix(
@@ -614,23 +615,23 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     }
   }
 
-  private static class BusinessIdAndProcessDefinitionKey extends DbCompositeKey<DbString, DbLong> {
-    public BusinessIdAndProcessDefinitionKey(
-        final DbString businessId, final DbLong processDefinitionKey) {
-      super(businessId, processDefinitionKey);
+  private static class BusinessIdAndProcessDefinitionId extends DbCompositeKey<DbString, DbString> {
+    public BusinessIdAndProcessDefinitionId(
+        final DbString businessId, final DbString processDefinitionId) {
+      super(businessId, processDefinitionId);
     }
   }
 
   private static class BusinessIdIndexKey
-      extends KeyWithTenantId<BusinessIdAndProcessDefinitionKey> {
+      extends KeyWithTenantId<BusinessIdAndProcessDefinitionId> {
     public BusinessIdIndexKey(
-        final DbString businessId, final DbLong processDefinitionKey, final DbString tenantId) {
-      super(new BusinessIdAndProcessDefinitionKey(businessId, processDefinitionKey), tenantId);
+        final DbString businessId, final DbString processDefinitionId, final DbString tenantId) {
+      super(new BusinessIdAndProcessDefinitionId(businessId, processDefinitionId), tenantId);
     }
   }
 
   private static class ProcessInstanceByBusinessIdIndexKey
-      extends DbCompositeKey<KeyWithTenantId<BusinessIdAndProcessDefinitionKey>, DbLong> {
+      extends DbCompositeKey<KeyWithTenantId<BusinessIdAndProcessDefinitionId>, DbLong> {
 
     public ProcessInstanceByBusinessIdIndexKey(
         final BusinessIdIndexKey businessIdIndexKey, final DbLong processInstanceKey) {
