@@ -61,7 +61,7 @@ const DetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
               <>
                 <StructuredListRow>
                   <h5 className={styles.titleListCell}>
-                    {t('taskDetailsHistoryModalProperties')}:
+                    {t('taskDetailsHistoryModalDetails')}:
                   </h5>
                 </StructuredListRow>
                 <StructuredListRow className={styles.verticallyAlignedRow}>
