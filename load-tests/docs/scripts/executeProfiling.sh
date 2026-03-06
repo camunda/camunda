@@ -64,7 +64,7 @@ fi
 
 # Run profiling
 if [ -n "$database" ]; then
-  filename=flamegraph-$profiler_event-$(date +%Y-%m-%d_%H-%M-%S)-$database.html
+  filename=flamegraph-$database-$profiler_event-$(date +%Y-%m-%d_%H-%M-%S).html
 else
   filename=flamegraph-$profiler_event-$(date +%Y-%m-%d_%H-%M-%S).html
 fi
