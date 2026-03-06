@@ -94,6 +94,23 @@ Note: `-Dquickly` skips tests, checks, and Optimize. Add `-DskipTests=false` to 
 - Use JUnit 5. Migrate JUnit 4 tests when modifying them.
 - Detailed guide: `docs/testing.md` and `docs/testing/`.
 
+Example:
+
+```java
+@Test
+void shouldRejectInvalidInput() {
+  // given
+  final var input = new ProcessInput("invalid");
+
+  // when
+  final var result = validator.validate(input);
+
+  // then
+  assertThat(result.isValid()).isFalse();
+  assertThat(result.errors()).containsExactly("Input is not valid");
+}
+```
+
 ## Commit Conventions
 
 Uses [Conventional Commits](https://www.conventionalcommits.org/). Max 120 chars for the header.
