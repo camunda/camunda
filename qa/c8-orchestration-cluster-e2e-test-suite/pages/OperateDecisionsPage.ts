@@ -13,6 +13,7 @@ class OperateDecisionsPage {
   readonly decisionViewer: Locator;
   readonly decisionNameFilter: Locator;
   readonly decisionVersionFilter: Locator;
+  readonly viewDecisionInstanceLink: (decisionInstanceId: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -21,6 +22,10 @@ class OperateDecisionsPage {
     this.decisionVersionFilter = page.getByRole('combobox', {
       name: 'Version',
     });
+    this.viewDecisionInstanceLink = (decisionInstanceId: string) =>
+      page.getByRole('link', {
+        name: `View decision instance ${decisionInstanceId}`,
+      });
   }
 
   async selectDecisionName(name: string): Promise<void> {
@@ -35,6 +40,12 @@ class OperateDecisionsPage {
 
   async clearComboBox(): Promise<void> {
     await this.page.getByRole('button', {name: 'Clear selected item'}).click();
+  }
+
+  async clickViewDecisionInstanceLink(
+    decisionInstanceId: string,
+  ): Promise<void> {
+    await this.viewDecisionInstanceLink(decisionInstanceId).click();
   }
 }
 
