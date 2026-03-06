@@ -295,7 +295,7 @@ public class TenantAppliersTest {
             .setTenantKey(tenantKey)
             .setTenantId(tenantId)
             .setName("Tenant-" + tenantId);
-    new TenantCreatedApplier(tenantState).applyState(tenantKey, tenantRecord);
+    new TenantCreatedApplier(processingState).applyState(tenantKey, tenantRecord);
     return tenantRecord;
   }
 
