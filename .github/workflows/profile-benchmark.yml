@@ -1,0 +1,125 @@
+# description: Profiles a running benchmark load test and posts a PR comment with the flamegraph results
+# type: CI
+# owner: @camunda/reliability-testing
+name: Benchmark Profiling
+
+on:
+  workflow_call:
+    inputs:
+      name:
+        description: 'Name of the load test (Kubernetes namespace) to profile'
+        required: true
+        type: string
+      benchmark-label:
+        description: 'Human-readable label for the benchmark variant shown in the PR comment header (e.g. "Benchmark" or "Benchmark RDBMS")'
+        required: true
+        type: string
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  await-benchmark:
+    name: Await Benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions: {}
+    steps:
+      - name: Wait for load test to stabilize
+        run: sleep 900  # 15 minutes
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  run-profiling:
+    name: Run Profiling
+    needs: await-benchmark
+    uses: ./.github/workflows/profile-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ inputs.name }}
+      pod: ''
+
+  comment-pr:
+    name: Comment on PR with profiling results
+    needs: [run-profiling]
+    if: >
+      always() &&
+      !(github.event.action == 'unlabeled' && (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms')) &&
+      needs.run-profiling.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: 'read'
+      pull-requests: 'write'
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+      - name: Comment PR with profiling results
+        uses: actions/github-script@v8
+        env:
+          BENCHMARK_LABEL: ${{ inputs.benchmark-label }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // List all downloaded artifacts
+            const artifactPath = 'artifacts';
+            const artifacts = fs.readdirSync(artifactPath);
+
+            // Get artifact IDs from GitHub API
+            const { data: workflowArtifacts } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+            });
+
+            const benchmarkLabel = process.env.BENCHMARK_LABEL;
+            let comment = `## Profiling Results — ${benchmarkLabel}\n\n`;
+            comment += 'The benchmark has been profiled with the following events:\n\n';
+            comment += '| Event | Pod | Artifact |\n';
+            comment += '|-------|-----|----------|\n';
+
+            artifacts.forEach(artifact => {
+              const match = artifact.match(/flamegraph-(\w+)-(\w+-\d+)/);
+              if (match) {
+                const event = match[1];
+                const pod = match[2];
+
+                // Find the artifact ID for this artifact name
+                const artifactInfo = workflowArtifacts.artifacts.find(a => a.name === artifact);
+                if (artifactInfo) {
+                  const downloadUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${artifactInfo.id}`;
+                  comment += `| ${event} | ${pod} | [Download](${downloadUrl}) |\n`;
+                } else {
+                  comment += `| ${event} | ${pod} | N/A |\n`;
+                }
+              }
+            });
+
+            comment += '\n📊 [View all artifacts and workflow summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
