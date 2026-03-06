@@ -119,9 +119,31 @@ class TaskDetailsPage {
   }
 
   async clickCompleteTaskButton() {
+<<<<<<< HEAD
     await this.completeTaskButton.click({timeout: 60000});
     await expect(this.taskCompletedBanner).toBeVisible({
       timeout: 200000,
+=======
+    await expect(this.completeTaskButton).toBeVisible({timeout: 60000});
+    await this.completeTaskButton.click();
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.taskCompletedBanner.first()).toBeVisible({
+          timeout: 60000,
+        });
+      },
+      onFailure: async () => {
+        console.log('Task completed banner not visible, retrying...');
+        await this.page.reload();
+        await sleep(1000);
+        if (
+          (await this.completeTaskButton.isVisible()) &&
+          (await this.completeTaskButton.isEnabled())
+        ) {
+          await expect(this.completeTaskButton).toBeVisible({timeout: 60000});
+        }
+      },
+>>>>>>> a077983e (test: added reties)
     });
   }
 
@@ -153,6 +175,9 @@ class TaskDetailsPage {
     await this.clickAddVariableButton();
     await this.getNthVariableNameInput(1).fill(name);
     await this.getNthVariableValueInput(1).fill(value);
+    await expect(this.getNthVariableNameInput(1)).toHaveValue(name);
+    await expect(this.getNthVariableValueInput(1)).toHaveValue(value);
+    await sleep(200);
   }
 
   async fillNumber(number: string): Promise<void> {
