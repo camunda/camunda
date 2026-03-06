@@ -22,7 +22,7 @@ import org.springframework.test.json.JsonCompareMode;
 @WebMvcTest(SystemConfigurationController.class)
 public class SystemConfigurationControllerTest extends RestControllerTest {
 
-  static final String JOB_METRICS_CONFIG_URL = "/v2/system/configuration/job-metrics";
+  static final String SYSTEM_CONFIGURATION_URL = "/v2/system/configuration";
 
   @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
 
@@ -35,7 +35,7 @@ public class SystemConfigurationControllerTest extends RestControllerTest {
     // when/then
     webClient
         .get()
-        .uri(JOB_METRICS_CONFIG_URL)
+        .uri(SYSTEM_CONFIGURATION_URL)
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -46,12 +46,14 @@ public class SystemConfigurationControllerTest extends RestControllerTest {
         .json(
             """
             {
-              "enabled": true,
-              "exportInterval": "PT5M",
-              "maxWorkerNameLength": 100,
-              "maxJobTypeLength": 100,
-              "maxTenantIdLength": 30,
-              "maxUniqueKeys": 9500
+              "jobMetrics": {
+                "enabled": true,
+                "exportInterval": "PT5M",
+                "maxWorkerNameLength": 100,
+                "maxJobTypeLength": 100,
+                "maxTenantIdLength": 30,
+                "maxUniqueKeys": 9500
+              }
             }
             """,
             JsonCompareMode.STRICT);
@@ -72,7 +74,7 @@ public class SystemConfigurationControllerTest extends RestControllerTest {
     // when/then
     webClient
         .get()
-        .uri(JOB_METRICS_CONFIG_URL)
+        .uri(SYSTEM_CONFIGURATION_URL)
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -83,12 +85,14 @@ public class SystemConfigurationControllerTest extends RestControllerTest {
         .json(
             """
             {
-              "enabled": false,
-              "exportInterval": "PT10M",
-              "maxWorkerNameLength": 50,
-              "maxJobTypeLength": 200,
-              "maxTenantIdLength": 15,
-              "maxUniqueKeys": 5000
+              "jobMetrics": {
+                "enabled": false,
+                "exportInterval": "PT10M",
+                "maxWorkerNameLength": 50,
+                "maxJobTypeLength": 200,
+                "maxTenantIdLength": 15,
+                "maxUniqueKeys": 5000
+              }
             }
             """,
             JsonCompareMode.STRICT);
@@ -104,7 +108,7 @@ public class SystemConfigurationControllerTest extends RestControllerTest {
     // when/then
     webClient
         .get()
-        .uri(JOB_METRICS_CONFIG_URL)
+        .uri(SYSTEM_CONFIGURATION_URL)
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -113,12 +117,14 @@ public class SystemConfigurationControllerTest extends RestControllerTest {
         .json(
             """
             {
-              "enabled": false,
-              "exportInterval": "PT5M",
-              "maxWorkerNameLength": 100,
-              "maxJobTypeLength": 100,
-              "maxTenantIdLength": 30,
-              "maxUniqueKeys": 9500
+              "jobMetrics": {
+                "enabled": false,
+                "exportInterval": "PT5M",
+                "maxWorkerNameLength": 100,
+                "maxJobTypeLength": 100,
+                "maxTenantIdLength": 30,
+                "maxUniqueKeys": 9500
+              }
             }
             """,
             JsonCompareMode.STRICT);
