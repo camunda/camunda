@@ -40,6 +40,7 @@ import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.ConditionalScenarioConditionStep;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.assertions.JobSelector;
@@ -115,6 +116,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final JsonMapper jsonMapper;
   private final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
   private final CamundaAssertAwaitBehavior awaitBehavior;
+  private final ConditionalScenarioEngine conditionalScenarioEngine =
+      new ConditionalScenarioEngine();
 
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
@@ -661,6 +664,11 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                       .send()
                       .join();
                 }));
+  }
+
+  @Override
+  public ConditionalScenarioConditionStep when(final Runnable condition) {
+    return conditionalScenarioEngine.when(condition);
   }
 
   @Override
