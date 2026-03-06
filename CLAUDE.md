@@ -62,27 +62,27 @@ Default endpoints: REST API `localhost:8080`, gRPC `localhost:26500`, Actuator `
 
 ### Module Structure
 
-| Module | Purpose |
-|--------|---------|
-| `zeebe/` | Process engine core — broker, engine, gateway (gRPC + REST), protocol, exporters, clustering (Atomix), RocksDB state, logstreams |
-| `operate/` | Process monitoring webapp (Spring Boot + React) |
-| `tasklist/` | Human task management webapp (Spring Boot + React) |
-| `identity/` | Authentication & authorization (admin panel) |
-| `optimize/` | Process analytics (excluded from `-Dquickly` builds) |
-| `dist/` | Distribution assembly and `StandaloneCamunda` entry point |
-| `clients/java` | Java client library (language level 8) |
-| `clients/camunda-spring-boot-*-starter` | Spring Boot starter SDKs (2.x, 3.x, 4.x variants) |
-| `search/` | Search engine abstraction (Elasticsearch + OpenSearch implementations) |
-| `service/` | Shared business logic and data access services |
-| `db/` | RDBMS schema and implementations (PostgreSQL, MySQL, H2) |
-| `schema-manager/` | Database schema management |
-| `authentication/` | Shared auth mechanisms |
-| `webapps-common/` | Shared webapp code |
-| `client-components/` | Shared React component library |
-| `qa/` | Acceptance tests, E2E tests, ArchUnit tests |
-| `testing/` | Process test framework (`camunda-process-test-java`, Spring, DSL) |
-| `gateways/` | Gateway model, HTTP mapping, MCP gateway |
-| `configuration/` | Unified config management |
+|                 Module                  |                                                             Purpose                                                              |
+|-----------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| `zeebe/`                                | Process engine core — broker, engine, gateway (gRPC + REST), protocol, exporters, clustering (Atomix), RocksDB state, logstreams |
+| `operate/`                              | Process monitoring webapp (Spring Boot + React)                                                                                  |
+| `tasklist/`                             | Human task management webapp (Spring Boot + React)                                                                               |
+| `identity/`                             | Authentication & authorization (admin panel)                                                                                     |
+| `optimize/`                             | Process analytics (excluded from `-Dquickly` builds)                                                                             |
+| `dist/`                                 | Distribution assembly and `StandaloneCamunda` entry point                                                                        |
+| `clients/java`                          | Java client library (language level 8)                                                                                           |
+| `clients/camunda-spring-boot-*-starter` | Spring Boot starter SDKs (2.x, 3.x, 4.x variants)                                                                                |
+| `search/`                               | Search engine abstraction (Elasticsearch + OpenSearch implementations)                                                           |
+| `service/`                              | Shared business logic and data access services                                                                                   |
+| `db/`                                   | RDBMS schema and implementations (PostgreSQL, MySQL, H2)                                                                         |
+| `schema-manager/`                       | Database schema management                                                                                                       |
+| `authentication/`                       | Shared auth mechanisms                                                                                                           |
+| `webapps-common/`                       | Shared webapp code                                                                                                               |
+| `client-components/`                    | Shared React component library                                                                                                   |
+| `qa/`                                   | Acceptance tests, E2E tests, ArchUnit tests                                                                                      |
+| `testing/`                              | Process test framework (`camunda-process-test-java`, Spring, DSL)                                                                |
+| `gateways/`                             | Gateway model, HTTP mapping, MCP gateway                                                                                         |
+| `configuration/`                        | Unified config management                                                                                                        |
 
 ### Key Architectural Patterns
 
@@ -144,3 +144,4 @@ Always lint and format before committing: `./mvnw license:format spotless:apply 
 - macOS Apple Silicon: install Rosetta (`softwareupdate --install-rosetta`) if protoc fails.
 - Optimize is excluded from `-Dquickly` builds (use `-P include-optimize` to include it).
 - Only open the project in one IDE at a time to avoid Maven conflicts.
+
