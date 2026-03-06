@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.RoleMapper;
+import io.camunda.db.rdbms.write.domain.RoleDbModel;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
@@ -63,5 +64,26 @@ class RoleDbReaderTest {
     assertThat(result.total()).isEqualTo(21L);
     assertThat(result.items()).isEmpty();
     verify(roleMapper, times(0)).search(any());
+  }
+
+  @Test
+  void shouldMapNullStringFieldsToEmptyStrings() {
+    // Given: a RoleDbModel with null roleId and name (simulates Oracle NULL for empty strings)
+    final var model = new RoleDbModel.Builder().roleKey(1L).build();
+    when(roleMapper.count(any())).thenReturn(1L);
+    when(roleMapper.search(any())).thenReturn(List.of(model));
+
+    final RoleQuery query = RoleQuery.of(b -> b);
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // When
+    final var result = roleDbReader.search(query, resourceAccessChecks);
+
+    // Then: required string fields should be empty strings, not null
+    assertThat(result.items()).hasSize(1);
+    final var entity = result.items().getFirst();
+    assertThat(entity.roleId()).isEqualTo("");
+    assertThat(entity.name()).isEqualTo("");
   }
 }
