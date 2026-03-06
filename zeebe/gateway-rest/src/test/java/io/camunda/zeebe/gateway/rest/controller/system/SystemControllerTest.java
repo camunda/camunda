@@ -21,7 +21,10 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
 import io.camunda.zeebe.util.collection.Tuple;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Map;
@@ -32,9 +35,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@WebMvcTest(UsageMetricsController.class)
-public class UsageMetricsControllerTest extends RestControllerTest {
+@WebMvcTest(SystemController.class)
+public class SystemControllerTest extends RestControllerTest {
   static final String USAGE_METRICS_URL = "/v2/system/usage-metrics";
+  static final String SYSTEM_CONFIGURATION_URL = "/v2/system/configuration";
 
   static final String EXPECTED_SEARCH_RESPONSE =
       """
@@ -69,6 +73,7 @@ public class UsageMetricsControllerTest extends RestControllerTest {
 
   @MockitoBean UsageMetricsServices usageMetricsServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
 
   @BeforeEach
   void setupUsageMetricsServices() {
@@ -320,5 +325,109 @@ public class UsageMetricsControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldReturnDefaultJobMetricsConfiguration() {
+    // given
+    final var jobMetricsCfg = new JobMetricsConfiguration();
+    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
+
+    // when/then
+    webClient
+        .get()
+        .uri(SYSTEM_CONFIGURATION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "jobMetrics": {
+                "enabled": true,
+                "exportInterval": "PT5M",
+                "maxWorkerNameLength": 100,
+                "maxJobTypeLength": 100,
+                "maxTenantIdLength": 30,
+                "maxUniqueKeys": 9500
+              }
+            }
+            """,
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldReturnCustomJobMetricsConfiguration() {
+    // given
+    final var jobMetricsCfg = new JobMetricsConfiguration();
+    jobMetricsCfg.setEnabled(false);
+    jobMetricsCfg.setExportInterval(Duration.ofMinutes(10));
+    jobMetricsCfg.setMaxWorkerNameLength(50);
+    jobMetricsCfg.setMaxJobTypeLength(200);
+    jobMetricsCfg.setMaxTenantIdLength(15);
+    jobMetricsCfg.setMaxUniqueKeys(5000);
+    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
+
+    // when/then
+    webClient
+        .get()
+        .uri(SYSTEM_CONFIGURATION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "jobMetrics": {
+                "enabled": false,
+                "exportInterval": "PT10M",
+                "maxWorkerNameLength": 50,
+                "maxJobTypeLength": 200,
+                "maxTenantIdLength": 15,
+                "maxUniqueKeys": 5000
+              }
+            }
+            """,
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldReturnDisabledJobMetricsConfiguration() {
+    // given
+    final var jobMetricsCfg = new JobMetricsConfiguration();
+    jobMetricsCfg.setEnabled(false);
+    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
+
+    // when/then
+    webClient
+        .get()
+        .uri(SYSTEM_CONFIGURATION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "jobMetrics": {
+                "enabled": false,
+                "exportInterval": "PT5M",
+                "maxWorkerNameLength": 100,
+                "maxJobTypeLength": 100,
+                "maxTenantIdLength": 30,
+                "maxUniqueKeys": 9500
+              }
+            }
+            """,
+            JsonCompareMode.STRICT);
   }
 }
