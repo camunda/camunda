@@ -15,12 +15,15 @@
  */
 package io.camunda.process.test.api.judge;
 
+import static io.camunda.process.test.api.judge.ModelBuilderSupport.hasText;
 import static io.camunda.process.test.api.judge.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.bedrock.BedrockChatModel;
 import dev.langchain4j.model.chat.ChatModel;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -31,18 +34,26 @@ import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClientBuilde
 
 final class BedrockChatModelBuilder {
 
+  private static final Logger LOG = LoggerFactory.getLogger(BedrockChatModelBuilder.class);
+
   private BedrockChatModelBuilder() {}
 
   static ChatModel build(final JudgeConfigBootstrapData data) {
+    LOG.debug("Building Amazon Bedrock chat model");
+
     final String model = require(data.getModel(), "model", "amazon-bedrock");
 
-    final String region = data.getRegion();
-    final String accessKey = data.getCredentialsAccessKey();
-    final String secretKey = data.getCredentialsSecretKey();
-    final String apiKey = data.getApiKey();
+    final boolean hasAccessKey = hasText(data.getCredentialsAccessKey());
+    final boolean hasSecretKey = hasText(data.getCredentialsSecretKey());
+    final boolean hasKeyPairAuth = hasAccessKey && hasSecretKey;
+    final boolean hasPartialKeyPair = hasAccessKey != hasSecretKey;
+    final boolean hasApiKeyAuth = hasText(data.getApiKey());
 
-    final boolean hasKeyPairAuth = accessKey != null && secretKey != null;
-    final boolean hasApiKeyAuth = apiKey != null;
+    if (hasPartialKeyPair) {
+      throw new IllegalStateException(
+          "Incomplete key-pair authentication for the 'amazon-bedrock' provider: "
+              + "both 'accessKey' and 'secretKey' must be set together.");
+    }
 
     if (hasKeyPairAuth && hasApiKeyAuth) {
       throw new IllegalStateException(
@@ -52,24 +63,36 @@ final class BedrockChatModelBuilder {
 
     final BedrockRuntimeClientBuilder clientBuilder = BedrockRuntimeClient.builder();
 
-    if (region != null) {
-      clientBuilder.region(Region.of(region));
+    if (hasText(data.getRegion())) {
+      LOG.debug("Using configured region '{}'", data.getRegion().trim());
+      clientBuilder.region(Region.of(data.getRegion().trim()));
+    } else {
+      LOG.debug("No region configured, falling back to AWS default region resolution");
     }
 
     if (hasKeyPairAuth) {
+      LOG.debug("Using access key / secret key authentication");
       clientBuilder.credentialsProvider(
-          StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)));
-    }
-
-    if (hasApiKeyAuth) {
+          StaticCredentialsProvider.create(
+              AwsBasicCredentials.create(
+                  data.getCredentialsAccessKey().trim(), data.getCredentialsSecretKey().trim())));
+    } else if (hasApiKeyAuth) {
+      LOG.debug("Using API key (Bearer token) authentication");
       clientBuilder
           .credentialsProvider(AnonymousCredentialsProvider.create())
           .putAuthScheme(NoAuthAuthScheme.create());
 
       clientBuilder.overrideConfiguration(
-          config -> config.headers(Map.of("Authorization", List.of("Bearer " + apiKey))));
+          config ->
+              config.headers(
+                  Map.of("Authorization", List.of("Bearer " + data.getApiKey().trim()))));
+    } else {
+      LOG.debug("No explicit credentials configured, falling back to AWS default credential chain");
     }
 
-    return BedrockChatModel.builder().client(clientBuilder.build()).modelId(model).build();
+    final ChatModel chatModel =
+        BedrockChatModel.builder().client(clientBuilder.build()).modelId(model).build();
+    LOG.debug("Successfully built Amazon Bedrock chat model with modelId '{}'", model);
+    return chatModel;
   }
 }

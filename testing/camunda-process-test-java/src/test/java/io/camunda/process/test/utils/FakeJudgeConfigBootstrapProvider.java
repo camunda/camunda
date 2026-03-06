@@ -28,6 +28,8 @@ public class FakeJudgeConfigBootstrapProvider implements JudgeConfigBootstrapPro
 
   @Override
   public JudgeConfig bootstrap(final JudgeConfigBootstrapData data) {
-    return JudgeConfig.of(prompt -> "{\"score\": 1.0, \"reasoning\": \"fake\"}");
+    return JudgeConfig.of(prompt -> "{\"score\": 1.0, \"reasoning\": \"fake\"}")
+        .withCustomPrompt(data.getCustomPrompt())
+        .withThreshold(data.getThreshold());
   }
 }
