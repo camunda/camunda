@@ -298,6 +298,7 @@ jobs:
       camunda-helm-git-ref: ${{ inputs.helmRepositoryBranchName || 'main' }}
       camunda-helm-dir: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.9' }}
       namespace-prefix: monorepo
+      values-digest: true # include Helm values (incl. extra-values) in the computed digest so config/image changes get a new test deployment; must stay enabled here
       test-enabled: true
       e2e-enabled: true
       deployment-ttl: ${{ inputs.deployment-ttl || '' }}
