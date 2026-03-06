@@ -13,6 +13,12 @@ type OptionalFilter =
   | 'Decision Instance Key(s)'
   | 'Evaluation Date Range';
 
+const OPTIONAL_FILTER_ID: Record<OptionalFilter, string> = {
+  'Process Instance Key': 'processInstanceId',
+  'Decision Instance Key(s)': 'decisionInstanceIds',
+  'Evaluation Date Range': 'evaluationDateRange',
+};
+
 interface SearchParams {
   evaluated?: string;
   failed?: string;
@@ -99,9 +105,7 @@ class OperateDecisionsPage {
   async displayOptionalFilter(filterName: OptionalFilter): Promise<void> {
     await this.moreFiltersButton.click();
     await this.page
-      .getByRole('menuitem', {
-        name: filterName,
-      })
+      .getByTestId(`optional-filter-menuitem-${OPTIONAL_FILTER_ID[filterName]}`)
       .click();
   }
 }

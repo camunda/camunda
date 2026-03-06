@@ -18,6 +18,17 @@ type OptionalFilter =
   | 'End Date Range'
   | 'Failed job but retries left';
 
+const OPTIONAL_FILTER_ID: Record<OptionalFilter, string> = {
+  Variable: 'variable',
+  'Process Instance Key(s)': 'ids',
+  'Parent Process Instance Key': 'parentInstanceId',
+  'Operation Id': 'operationId',
+  'Error Message': 'errorMessage',
+  'Failed job but retries left': 'retriesLeft',
+  'Start Date Range': 'startDateRange',
+  'End Date Range': 'endDateRange',
+};
+
 export class OperateFiltersPanelPage {
   private page: Page;
   readonly activeInstancesCheckbox: Locator;
@@ -85,9 +96,9 @@ export class OperateFiltersPanelPage {
       .getByRole('button', {
         name: 'Clear selected item',
       });
-    this.processInstanceKeysFilterOption = this.page.getByRole('menuitem', {
-      name: 'Process Instance Key(s)',
-    });
+    this.processInstanceKeysFilterOption = this.page.getByTestId(
+      `optional-filter-menuitem-ids`,
+    );
     this.processInstanceKeysFilter = page.getByRole('textbox', {
       name: 'process instance key',
     });
@@ -162,9 +173,7 @@ export class OperateFiltersPanelPage {
     }
     await this.moreFiltersButton.click();
     await this.page
-      .getByRole('menuitem', {
-        name: filterName,
-      })
+      .getByTestId(`optional-filter-menuitem-${OPTIONAL_FILTER_ID[filterName]}`)
       .click();
   }
 
