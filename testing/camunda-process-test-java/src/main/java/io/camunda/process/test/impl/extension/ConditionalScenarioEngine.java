@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
@@ -57,7 +56,6 @@ public class ConditionalScenarioEngine {
   private final CopyOnWriteArrayList<Scenario> scenarios = new CopyOnWriteArrayList<>();
   private volatile Runnable contextInitializer;
   private volatile ScheduledExecutorService executor;
-  private volatile ScheduledFuture<?> pollingTask;
   private int persistentScenarioCount;
 
   /**
@@ -116,10 +114,6 @@ public class ConditionalScenarioEngine {
   }
 
   private void stopPolling() {
-    if (pollingTask != null) {
-      pollingTask.cancel(false);
-      pollingTask = null;
-    }
     if (executor != null) {
       executor.shutdown();
       try {
@@ -140,14 +134,8 @@ public class ConditionalScenarioEngine {
                 t.setDaemon(true);
                 return t;
               });
-    }
-    if (pollingTask == null) {
-      pollingTask =
-          executor.scheduleWithFixedDelay(
-              this::evaluateAllScenarios,
-              POLL_INTERVAL_MS,
-              POLL_INTERVAL_MS,
-              TimeUnit.MILLISECONDS);
+      executor.scheduleWithFixedDelay(
+          this::evaluateAllScenarios, POLL_INTERVAL_MS, POLL_INTERVAL_MS, TimeUnit.MILLISECONDS);
     }
   }
 
@@ -167,28 +155,22 @@ public class ConditionalScenarioEngine {
   }
 
   private void evaluateScenario(final Scenario scenario) {
+    if (isConditionMet(scenario)) {
+      scenario.fireAction();
+    }
+  }
+
+  private boolean isConditionMet(final Scenario scenario) {
     AwaitilityBehavior.setConditionProbeOverrides(
         CONDITION_PROBE_TIMEOUT, CONDITION_PROBE_INTERVAL);
     try {
       scenario.condition.run();
+      return true;
     } catch (final Throwable t) {
-      // condition not met — skip
-      return;
+      return false;
     } finally {
       AwaitilityBehavior.clearConditionProbeOverrides();
     }
-
-    // condition passed — fire the current action
-    final Runnable action = scenario.currentAction();
-    if (action == null) {
-      return;
-    }
-    try {
-      action.run();
-    } catch (final Throwable t) {
-      LOGGER.warn("Conditional scenario action threw an exception", t);
-    }
-    scenario.advanceAction();
   }
 
   private static final class Scenario {
@@ -205,16 +187,18 @@ public class ConditionalScenarioEngine {
       actions.add(action);
     }
 
-    Runnable currentAction() {
+    void fireAction() {
       if (actions.isEmpty()) {
-        return null;
+        return;
       }
       final int idx = actionIndex.get();
-      return actions.get(Math.min(idx, actions.size() - 1));
-    }
-
-    void advanceAction() {
-      actionIndex.getAndUpdate(idx -> Math.min(idx + 1, actions.size() - 1));
+      final Runnable action = actions.get(Math.min(idx, actions.size() - 1));
+      try {
+        action.run();
+      } catch (final Throwable t) {
+        LOGGER.warn("Conditional scenario action threw an exception", t);
+      }
+      actionIndex.getAndUpdate(i -> Math.min(i + 1, actions.size() - 1));
     }
 
     void resetActionPointer() {

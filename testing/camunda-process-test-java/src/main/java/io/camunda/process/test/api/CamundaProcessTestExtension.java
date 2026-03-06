@@ -26,6 +26,7 @@ import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
+import io.camunda.process.test.impl.extension.ConditionalScenarioEngine;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
@@ -115,6 +116,8 @@ public class CamundaProcessTestExtension
 
   private CamundaManagementClient camundaManagementClient;
   private CamundaProcessTestContext camundaProcessTestContext;
+  private final ConditionalScenarioEngine conditionalScenarioEngine =
+      new ConditionalScenarioEngine();
 
   CamundaProcessTestExtension(
       final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder,
@@ -165,7 +168,8 @@ public class CamundaProcessTestExtension
             camundaManagementClient,
             CamundaAssert.getAwaitBehavior(),
             jsonMapper,
-            zeebeJsonMapper);
+            zeebeJsonMapper,
+            conditionalScenarioEngine);
 
     // create process coverage
     processCoverage =
@@ -281,9 +285,7 @@ public class CamundaProcessTestExtension
         camundaProcessTestContext.createClient());
 
     // set up conditional scenario engine for this test
-    ((CamundaProcessTestContextImpl) camundaProcessTestContext)
-        .getConditionalScenarioEngine()
-        .start(() -> CamundaAssert.initialize(dataSource));
+    conditionalScenarioEngine.start(() -> CamundaAssert.initialize(dataSource));
   }
 
   private <T> void injectField(
@@ -325,9 +327,7 @@ public class CamundaProcessTestExtension
     }
 
     // stop conditional scenario engine before cleanup
-    ((CamundaProcessTestContextImpl) camundaProcessTestContext)
-        .getConditionalScenarioEngine()
-        .stop();
+    conditionalScenarioEngine.stop();
 
     try {
       processCoverage.collectTestRunCoverage(getCoverageTestName(context));
@@ -410,9 +410,7 @@ public class CamundaProcessTestExtension
     }
 
     // fully reset conditional scenario engine
-    final CamundaProcessTestContextImpl contextImpl =
-        (CamundaProcessTestContextImpl) camundaProcessTestContext;
-    contextImpl.getConditionalScenarioEngine().reset();
+    conditionalScenarioEngine.reset();
 
     try {
       processCoverage.reportCoverage();

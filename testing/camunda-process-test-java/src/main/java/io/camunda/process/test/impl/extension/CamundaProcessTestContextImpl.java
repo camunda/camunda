@@ -116,8 +116,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final JsonMapper jsonMapper;
   private final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
   private final CamundaAssertAwaitBehavior awaitBehavior;
-  private final ConditionalScenarioEngine conditionalScenarioEngine =
-      new ConditionalScenarioEngine();
+  private final ConditionalScenarioEngine conditionalScenarioEngine;
 
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
@@ -125,7 +124,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final CamundaManagementClient camundaManagementClient,
       final CamundaAssertAwaitBehavior awaitBehavior,
       final JsonMapper jsonMapper,
-      final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper) {
+      final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper,
+      final ConditionalScenarioEngine conditionalScenarioEngine) {
 
     camundaClientBuilderFactory = camundaRuntime.getCamundaClientBuilderFactory();
     camundaRestApiAddress = camundaRuntime.getCamundaRestApiAddress();
@@ -136,6 +136,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     this.awaitBehavior = awaitBehavior;
     this.jsonMapper = jsonMapper;
     this.zeebeJsonMapper = zeebeJsonMapper;
+    this.conditionalScenarioEngine = conditionalScenarioEngine;
   }
 
   @Override
@@ -664,10 +665,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                       .send()
                       .join();
                 }));
-  }
-
-  public ConditionalScenarioEngine getConditionalScenarioEngine() {
-    return conditionalScenarioEngine;
   }
 
   @Override

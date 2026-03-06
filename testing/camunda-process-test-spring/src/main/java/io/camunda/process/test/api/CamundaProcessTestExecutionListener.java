@@ -29,6 +29,7 @@ import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
+import io.camunda.process.test.impl.extension.ConditionalScenarioEngine;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.TestCaseRunnerProxy;
@@ -96,6 +97,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private CamundaManagementClient camundaManagementClient;
   private CamundaClient client;
   private ZeebeClient zeebeClient;
+  private final ConditionalScenarioEngine conditionalScenarioEngine =
+      new ConditionalScenarioEngine();
 
   public CamundaProcessTestExecutionListener() {
     this(CamundaProcessTestContainerRuntime.newBuilder(), ProcessCoverage.newBuilder(), LOG::info);
@@ -133,7 +136,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
             camundaManagementClient,
             CamundaAssert.getAwaitBehavior(),
             jsonMapper,
-            zeebeJsonMapper);
+            zeebeJsonMapper,
+            conditionalScenarioEngine);
 
     // create process coverage
     final CoverageReportConfiguration coverageReportConfiguration =
@@ -193,9 +197,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         testContext.getTestMethod(), testContext.getTestClass(), client);
 
     // set up conditional scenario engine for this test
-    ((CamundaProcessTestContextImpl) camundaProcessTestContext)
-        .getConditionalScenarioEngine()
-        .start(() -> CamundaAssert.initialize(dataSource));
+    conditionalScenarioEngine.start(() -> CamundaAssert.initialize(dataSource));
   }
 
   @Override
@@ -206,9 +208,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
 
     // stop conditional scenario engine before cleanup
-    ((CamundaProcessTestContextImpl) camundaProcessTestContext)
-        .getConditionalScenarioEngine()
-        .stop();
+    conditionalScenarioEngine.stop();
 
     try {
       processCoverage.collectTestRunCoverage(testContext.getTestMethod().getName());
@@ -254,9 +254,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
 
     // fully reset conditional scenario engine
-    ((CamundaProcessTestContextImpl) camundaProcessTestContext)
-        .getConditionalScenarioEngine()
-        .reset();
+    conditionalScenarioEngine.reset();
 
     try {
       processCoverage.reportCoverage();
