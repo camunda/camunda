@@ -1,0 +1,15 @@
+security:
+  auth:
+    cloud:
+      clientId: optimize-test-client
+      clientSecret: optimize-test-secret
+      domain: localhost
+      customDomain: localhost
+      organizationId: test-org
+      organizationClaimName: "https://camunda.com/orgs"
+      clusterId: abc-123
+      audience: optimize
+      userAccessTokenAudience: optimize
+
+api:
+  jwtSetUri: "http://localhost:0/dummy-jwks"
