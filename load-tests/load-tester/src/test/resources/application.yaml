@@ -1,0 +1,4 @@
+# Test configuration - disables the Camunda client to avoid connection attempts
+camunda:
+  client:
+    enabled: false

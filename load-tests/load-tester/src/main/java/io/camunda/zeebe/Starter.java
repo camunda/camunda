@@ -18,15 +18,17 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
-import io.camunda.zeebe.config.AppCfg;
-import io.camunda.zeebe.config.StarterCfg;
+import io.camunda.zeebe.config.LoadTesterProperties;
+import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.read.DataReadMeter;
 import io.camunda.zeebe.read.DataReadMeterQueryProvider;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -47,8 +49,13 @@ import java.util.function.BooleanSupplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
 
-public class Starter extends App {
+@Component
+@Profile("starter")
+public class Starter implements CommandLineRunner {
 
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
@@ -57,72 +64,60 @@ public class Starter extends App {
   private static final TypeReference<HashMap<String, Object>> VARIABLES_TYPE_REF =
       new TypeReference<>() {};
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  private final StarterCfg starterCfg;
-  private Timer responseLatencyTimer;
-  private ScheduledExecutorService executorService;
-  private ProcessInstanceStartMeter processInstanceStartMeter;
-  private DataReadMeter dataReadMeter;
+
+  private final CamundaClient client;
+  private final LoadTesterProperties properties;
+  private final StarterProperties starterCfg;
+  private final MeterRegistry registry;
+  private final PayloadReader payloadReader;
   private final AtomicLong businessKey = new AtomicLong(0);
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
       new AtomicReference<>(Instant.now());
 
-  Starter(final AppCfg config) {
-    super(config);
-    starterCfg = config.getStarter();
+  private Timer responseLatencyTimer;
+  private ScheduledExecutorService executorService;
+  private ProcessInstanceStartMeter processInstanceStartMeter;
+  private DataReadMeter dataReadMeter;
+
+  public Starter(
+      final CamundaClient client,
+      final LoadTesterProperties properties,
+      final MeterRegistry registry,
+      final PayloadReader payloadReader) {
+    this.client = client;
+    this.properties = properties;
+    this.starterCfg = properties.getStarter();
+    this.registry = registry;
+    this.payloadReader = payloadReader;
   }
 
   @Override
-  public void run() {
+  public void run(final String... args) {
     responseLatencyTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
 
-    final CamundaClient client = createCamundaClient();
+    printTopology();
 
-    // init - check for topology and deploy process
-    printTopology(client);
-
-    if (config.isMonitorDataAvailability()) {
-      setupDataAvailabilityMeter(client);
+    if (properties.isMonitorDataAvailability()) {
+      setupDataAvailabilityMeter();
     }
 
-    if (config.isPerformReadBenchmarks()) {
-      setupDataReadMeter(client);
+    if (properties.isPerformReadBenchmarks()) {
+      setupDataReadMeter();
     }
 
-    deployProcess(client, starterCfg);
+    deployProcess();
 
-    if (config.isPerformReadBenchmarks()) {
+    if (properties.isPerformReadBenchmarks()) {
       dataReadMeter.start();
     }
 
-    // setup to start instances on given rate
     final CountDownLatch countDownLatch = new CountDownLatch(1);
     executorService = Executors.newScheduledThreadPool(starterCfg.getThreads());
     final ScheduledFuture<?> scheduledTask =
-        scheduleProcessInstanceCreation(executorService, countDownLatch, client);
+        scheduleProcessInstanceCreation(executorService, countDownLatch);
 
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  if (!executorService.isShutdown()) {
-                    executorService.shutdown();
-                    if (config.isMonitorDataAvailability()) {
-                      processInstanceStartMeter.close();
-                    }
-                    if (config.isPerformReadBenchmarks()) {
-                      dataReadMeter.close();
-                    }
-                    try {
-                      executorService.awaitTermination(60, TimeUnit.SECONDS);
-                    } catch (final InterruptedException e) {
-                      LOG.error("Shutdown executor service was interrupted", e);
-                    }
-                  }
-                }));
-
-    // wait for starter to finish
     try {
       countDownLatch.await();
     } catch (final InterruptedException e) {
@@ -130,26 +125,59 @@ public class Starter extends App {
     }
 
     LOG.info("Starter finished");
-
     scheduledTask.cancel(true);
-    executorService.shutdown();
+    shutdown();
+  }
 
-    if (config.isMonitorDataAvailability()) {
+  @PreDestroy
+  public void shutdown() {
+    if (executorService != null && !executorService.isShutdown()) {
+      executorService.shutdown();
+      try {
+        executorService.awaitTermination(60, TimeUnit.SECONDS);
+      } catch (final InterruptedException e) {
+        LOG.error("Shutdown executor service was interrupted", e);
+      }
+    }
+    if (processInstanceStartMeter != null) {
       processInstanceStartMeter.close();
     }
-
-    if (config.isPerformReadBenchmarks()) {
+    if (dataReadMeter != null) {
       dataReadMeter.close();
     }
   }
 
-  private void setupDataAvailabilityMeter(final CamundaClient client) {
+  private void printTopology() {
+    while (true) {
+      try {
+        final var topology = client.newTopologyRequest().send().join();
+        topology
+            .getBrokers()
+            .forEach(
+                b -> {
+                  LOG.info("Broker {} - {} ({})", b.getNodeId(), b.getAddress(), b.getVersion());
+                  b.getPartitions()
+                      .forEach(p -> LOG.info("{} - {}", p.getPartitionId(), p.getRole()));
+                });
+        break;
+      } catch (final Exception e) {
+        THROTTLED_LOGGER.warn("Failed to retrieve topology: ", e);
+        try {
+          Thread.sleep(1000);
+        } catch (final InterruptedException ex) {
+          throw new RuntimeException(ex);
+        }
+      }
+    }
+  }
+
+  private void setupDataAvailabilityMeter() {
     LOG.info("Monitor data availability of started process instances");
     processInstanceStartMeter =
         new ProcessInstanceStartMeter(
             registry,
             Executors.newScheduledThreadPool(1),
-            config.getMonitorDataAvailabilityInterval(),
+            properties.getMonitorDataAvailabilityInterval(),
             (listOfStartedInstances) -> {
               final CamundaFuture<SearchResponse<ProcessInstance>> send =
                   client
@@ -167,7 +195,7 @@ public class Starter extends App {
     processInstanceStartMeter.start();
   }
 
-  private void setupDataReadMeter(final CamundaClient client) {
+  private void setupDataReadMeter() {
     LOG.info("Starting read benchmark queries");
     dataReadMeter =
         new DataReadMeter(
@@ -181,23 +209,20 @@ public class Starter extends App {
   }
 
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
-      final ScheduledExecutorService executorService,
-      final CountDownLatch countDownLatch,
-      final CamundaClient client) {
+      final ScheduledExecutorService executorService, final CountDownLatch countDownLatch) {
 
     final long intervalNanos = Math.floorDiv(NANOS_PER_SECOND, starterCfg.getRate());
     LOG.info("Creating an instance every {}ns", intervalNanos);
 
-    final String variablesString = readVariables(starterCfg.getPayloadPath());
+    final String variablesString = payloadReader.readPayload(starterCfg.getPayloadPath());
     final Map<String, Object> baseVariables =
         Collections.unmodifiableMap(deserializeVariables(variablesString));
 
-    final BooleanSupplier shouldContinue = createContinuationCondition(starterCfg);
+    final BooleanSupplier shouldContinue = createContinuationCondition();
 
     return executorService.scheduleAtFixedRate(
         () -> {
           if (!shouldContinue.getAsBoolean()) {
-            // signal completion of starter
             countDownLatch.countDown();
             return;
           }
@@ -209,12 +234,11 @@ public class Starter extends App {
             final var startTime = System.nanoTime();
             final CompletionStage<?> requestFuture;
             if (starterCfg.isStartViaMessage()) {
-              requestFuture = startInstanceByMessagePublishing(client, vars);
+              requestFuture = startInstanceByMessagePublishing(vars);
             } else if (starterCfg.isWithResults()) {
-              requestFuture =
-                  startInstanceWithAwaitingResult(client, starterCfg.getProcessId(), vars);
+              requestFuture = startInstanceWithAwaitingResult(starterCfg.getProcessId(), vars);
             } else {
-              requestFuture = startInstance(client, startTime, starterCfg.getProcessId(), vars);
+              requestFuture = startInstance(startTime, starterCfg.getProcessId(), vars);
             }
             requestFuture.whenComplete(
                 (noop, error) -> {
@@ -222,7 +246,6 @@ public class Starter extends App {
                   responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
                   if (error instanceof final StatusRuntimeException statusRuntimeException) {
                     if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
-                      // we don't want to flood the log
                       THROTTLED_LOGGER.warn(
                           "Error on creating new process instance with business key {}",
                           businessKey.get(),
@@ -240,10 +263,7 @@ public class Starter extends App {
   }
 
   private CompletionStage<ProcessInstanceEvent> startInstance(
-      final CamundaClient client,
-      final long startTime,
-      final String processId,
-      final HashMap<String, Object> variables) {
+      final long startTime, final String processId, final HashMap<String, Object> variables) {
     return client
         .newCreateInstanceCommand()
         .bpmnProcessId(processId)
@@ -252,7 +272,7 @@ public class Starter extends App {
         .send()
         .thenApply(
             (response) -> {
-              if (config.isMonitorDataAvailability()) {
+              if (properties.isMonitorDataAvailability()) {
                 final long processInstanceKey = response.getProcessInstanceKey();
                 processInstanceStartMeter.recordProcessInstanceStart(processInstanceKey, startTime);
               }
@@ -260,8 +280,7 @@ public class Starter extends App {
             })
         .thenApply(
             (response) -> {
-              // this is not totally threadsafe but good enough for our purpose
-              if (config.isPerformReadBenchmarks()
+              if (properties.isPerformReadBenchmarks()
                   && lastProcessInstanceKeyTimestamp
                       .get()
                       .plus(1, ChronoUnit.MINUTES)
@@ -277,7 +296,7 @@ public class Starter extends App {
   }
 
   private CompletionStage<?> startInstanceWithAwaitingResult(
-      final CamundaClient client, final String processId, final HashMap<String, Object> variables) {
+      final String processId, final HashMap<String, Object> variables) {
     return client
         .newCreateInstanceCommand()
         .bpmnProcessId(processId)
@@ -288,8 +307,7 @@ public class Starter extends App {
         .send();
   }
 
-  private CompletionStage<?> startInstanceByMessagePublishing(
-      final CamundaClient client, final Map<String, Object> variables) {
+  private CompletionStage<?> startInstanceByMessagePublishing(final Map<String, Object> variables) {
     return client
         .newPublishMessageCommand()
         .messageName(starterCfg.getMsgName())
@@ -300,22 +318,16 @@ public class Starter extends App {
   }
 
   private static HashMap<String, Object> deserializeVariables(final String variablesString) {
-    final HashMap<String, Object> variables;
     try {
-      variables = OBJECT_MAPPER.readValue(variablesString, VARIABLES_TYPE_REF);
+      return OBJECT_MAPPER.readValue(variablesString, VARIABLES_TYPE_REF);
     } catch (final JsonProcessingException e) {
       LOG.error("Failed to parse variables '{}'.", variablesString, e);
       throw new RuntimeException(e);
     }
-    return variables;
   }
 
-  private CamundaClient createCamundaClient() {
-    return newClientBuilder().numJobWorkerExecutionThreads(0).build();
-  }
-
-  private void deployProcess(final CamundaClient client, final StarterCfg starterCfg) {
-    final var deployCmd = constructDeploymentCommand(client, starterCfg);
+  private void deployProcess() {
+    final var deployCmd = constructDeploymentCommand();
 
     while (true) {
       try {
@@ -326,7 +338,7 @@ public class Starter extends App {
                 .findFirst()
                 .map(Process::getProcessDefinitionKey)
                 .orElse(0L);
-        if (config.isPerformReadBenchmarks()) {
+        if (properties.isPerformReadBenchmarks()) {
           dataReadMeter.setContextProcessDefinitionKey(benchmarkProcessDefinitionKey);
         }
         break;
@@ -341,8 +353,7 @@ public class Starter extends App {
     }
   }
 
-  private static DeployResourceCommandStep2 constructDeploymentCommand(
-      final CamundaClient client, final StarterCfg starterCfg) {
+  private DeployResourceCommandStep2 constructDeploymentCommand() {
     final var deployCmd =
         client.newDeployResourceCommand().addResourceFromClasspath(starterCfg.getBpmnXmlPath());
 
@@ -355,21 +366,14 @@ public class Starter extends App {
     return deployCmd;
   }
 
-  private BooleanSupplier createContinuationCondition(final StarterCfg starterCfg) {
+  private BooleanSupplier createContinuationCondition() {
     final int durationLimit = starterCfg.getDurationLimit();
 
     if (durationLimit > 0) {
-      // if there is a duration limit
       final LocalDateTime endTime = LocalDateTime.now().plus(durationLimit, ChronoUnit.SECONDS);
-      // continue until time is up
       return () -> LocalDateTime.now().isBefore(endTime);
     } else {
-      // otherwise continue forever
       return () -> true;
     }
-  }
-
-  public static void main(final String[] args) {
-    createApp(Starter::new);
   }
 }

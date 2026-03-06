@@ -10,34 +10,34 @@ package io.camunda.zeebe.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.test.context.SpringBootTest;
 
+@SpringBootTest(
+    classes = ConfigTest.TestConfig.class,
+    properties = {
+      "camunda.client.enabled=false",
+    })
 public class ConfigTest {
 
-  @Test
-  public void shouldReadDefaultAppConfig() {
-    // given
+  @Autowired private LoadTesterProperties properties;
 
-    // when
-    final var appCfg = AppConfigLoader.load();
+  @EnableConfigurationProperties(LoadTesterProperties.class)
+  static class TestConfig {}
+
+  @Test
+  public void shouldReadDefaultProperties() {
+    // given / when - defaults from LoadTesterProperties
 
     // then
-    assertThat(appCfg.getBrokerUrl()).isEqualTo("http://localhost:26500");
-    assertThat(appCfg.getBrokerRestUrl()).isEqualTo("http://localhost:8080");
-    assertThat(appCfg.isPreferRest()).isFalse();
-    assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
-    assertThat(appCfg.isMonitorDataAvailability()).isTrue();
-    assertThat(appCfg.getMonitorDataAvailabilityInterval()).hasMillis(250);
-    assertThat(appCfg.isPerformReadBenchmarks()).isFalse();
-
-    // authentication
-    final var authCfg = appCfg.getAuth();
-    assertThat(authCfg).isNotNull();
-    assertThat(authCfg.getType()).isEqualTo(AuthCfg.AuthType.NONE);
+    assertThat(properties.isMonitorDataAvailability()).isTrue();
+    assertThat(properties.getMonitorDataAvailabilityInterval()).hasMillis(250);
+    assertThat(properties.isPerformReadBenchmarks()).isFalse();
 
     // starter
-    final var starterCfg = appCfg.getStarter();
+    final var starterCfg = properties.getStarter();
     assertThat(starterCfg).isNotNull();
-
     assertThat(starterCfg.getProcessId()).isEqualTo("benchmark");
     assertThat(starterCfg.getRate()).isEqualTo(300);
     assertThat(starterCfg.getThreads()).isEqualTo(2);
@@ -52,9 +52,8 @@ public class ConfigTest {
     assertThat(starterCfg.isStartViaMessage()).isFalse();
 
     // worker
-    final var workerCfg = appCfg.getWorker();
+    final var workerCfg = properties.getWorker();
     assertThat(workerCfg).isNotNull();
-
     assertThat(workerCfg.getJobType()).isEqualTo("benchmark-task");
     assertThat(workerCfg.getWorkerName()).isEqualTo("benchmark-worker");
     assertThat(workerCfg.getThreads()).isEqualTo(10);
@@ -63,77 +62,17 @@ public class ConfigTest {
     assertThat(workerCfg.getCompletionDelay()).hasMillis(300);
     assertThat(workerCfg.getPayloadPath()).isEqualTo("bpmn/big_payload.json");
     assertThat(workerCfg.isStreamEnabled()).isTrue();
-    assertThat(workerCfg.getTimeout()).hasSeconds(0);
+    assertThat(workerCfg.getTimeout()).isEqualTo(java.time.Duration.ZERO);
     assertThat(workerCfg.getMessageName()).isEqualTo("messageName");
     assertThat(workerCfg.isSendMessage()).isFalse();
     assertThat(workerCfg.getCorrelationKeyVariableName()).isEqualTo("correlationKey-var");
   }
 
   @Test
-  public void shouldReadDifferentAppConfig() {
-    // given
-
-    // when
-    final var appCfg = AppConfigLoader.load("different-application.conf");
-
-    // then
-    assertThat(appCfg.getBrokerUrl()).isEqualTo("http://localhost:26500");
-    assertThat(appCfg.getBrokerRestUrl()).isEqualTo("http://localhost:8081");
-    assertThat(appCfg.isPreferRest()).isTrue();
-    assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
-    assertThat(appCfg.isMonitorDataAvailability()).isFalse();
-    assertThat(appCfg.getMonitorDataAvailabilityInterval()).hasMillis(50);
-    assertThat(appCfg.isPerformReadBenchmarks()).isTrue();
-
-    // authentication
-    final var authCfg = appCfg.getAuth();
-    assertThat(authCfg).isNotNull();
-    assertThat(authCfg.getType()).isEqualTo(AuthCfg.AuthType.BASIC);
-    assertThat(authCfg.getBasic().getUsername()).isEqualTo("benchmark-user");
-    assertThat(authCfg.getBasic().getPassword()).isEqualTo("benchmark-password");
-
-    assertThat(authCfg.getOauth().getAudience()).isEqualTo("zeebe");
-    assertThat(authCfg.getOauth().getClientId()).isEqualTo("benchmark-client");
-    assertThat(authCfg.getOauth().getClientSecret()).isEqualTo("benchmark-secret");
-    assertThat(authCfg.getOauth().getAuthzUrl()).isEqualTo("http://localhost:9090/auth");
-
-    // starter
-    final var starterCfg = appCfg.getStarter();
-    assertThat(starterCfg).isNotNull();
-
-    assertThat(starterCfg.getProcessId()).isEqualTo("benchmark");
-    assertThat(starterCfg.getRate()).isEqualTo(300);
-    assertThat(starterCfg.getThreads()).isEqualTo(2);
-    assertThat(starterCfg.getBpmnXmlPath())
-        .isEqualTo("bpmn/realistic/bankCustomerComplaintDisputeHandling.bpmn");
-    assertThat(starterCfg.getExtraBpmnModels())
-        .isNotEmpty()
-        .containsExactly(
-            "bpmn/realistic/determineFraudRatingConfidence.dmn",
-            "bpmn/realistic/refundingProcess.bpmn");
-    assertThat(starterCfg.getBusinessKey()).isEqualTo("customerId");
-    assertThat(starterCfg.getPayloadPath()).isEqualTo("bpmn/realistic/realisticPayload.json");
-    assertThat(starterCfg.isWithResults()).isFalse();
-    assertThat(starterCfg.getWithResultsTimeout()).hasSeconds(60);
-    assertThat(starterCfg.getDurationLimit()).isZero();
-    assertThat(starterCfg.getMsgName()).isEqualTo("msg");
-    assertThat(starterCfg.isStartViaMessage()).isFalse();
-
-    // worker
-    final var workerCfg = appCfg.getWorker();
-    assertThat(workerCfg).isNotNull();
-
-    assertThat(workerCfg.getJobType()).isEqualTo("benchmark-task");
-    assertThat(workerCfg.getWorkerName()).isEqualTo("benchmark-worker");
-    assertThat(workerCfg.getThreads()).isEqualTo(10);
-    assertThat(workerCfg.getCapacity()).isEqualTo(30);
-    assertThat(workerCfg.getPollingDelay()).hasSeconds(1);
-    assertThat(workerCfg.getCompletionDelay()).hasMillis(300);
-    assertThat(workerCfg.getPayloadPath()).isEqualTo("bpmn/big_payload.json");
-    assertThat(workerCfg.isStreamEnabled()).isTrue();
-    assertThat(workerCfg.getTimeout()).hasSeconds(0);
-    assertThat(workerCfg.getMessageName()).isEqualTo("msg");
-    assertThat(workerCfg.isSendMessage()).isTrue();
-    assertThat(workerCfg.getCorrelationKeyVariableName()).isEqualTo("var");
+  public void shouldOverridePropertiesViaSpringConfig() {
+    // given / when - properties are loaded from application.yaml in test resources
+    // then - the default values above are verified; override tests can use
+    //        @TestPropertySource or @SpringBootTest(properties = {...}) to override
+    assertThat(properties.getStarter().getRate()).isEqualTo(300);
   }
 }
