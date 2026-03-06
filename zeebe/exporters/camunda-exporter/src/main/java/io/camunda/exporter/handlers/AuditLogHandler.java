@@ -27,7 +27,6 @@ import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
-import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -143,42 +142,43 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
     entity
         .setEntityKey(log.getEntityKey())
         .setEntityType(mapEntityType(log.getEntityType()))
-        .setCategory(mapCategory(log))
-        .setOperationType(mapOperationType(log))
-        .setActorType(mapActorType(log))
-        .setActorId(log.getActor().actorId())
-        .setAgentElementId(log.getAgent().map(Agent::getElementId).orElse(null))
-        .setTenantScope(mapTenantScope(log))
-        .setTenantId(log.getTenant().map(AuditLogTenant::tenantId).orElse(null))
-        .setBatchOperationKey(log.getBatchOperationKey())
-        .setBatchOperationType(log.getBatchOperationType())
+        //        .setCategory(mapCategory(log))
+        //        .setOperationType(mapOperationType(log))
+        //        .setActorType(mapActorType(log))
+        //        .setActorId(log.getActor().actorId())
+        //        .setAgentElementId(log.getAgent().map(Agent::getElementId).orElse(null))
+        //        .setTenantScope(mapTenantScope(log))
+        //        .setTenantId(log.getTenant().map(AuditLogTenant::tenantId).orElse(null))
+        //        .setBatchOperationKey(log.getBatchOperationKey())
+        //        .setBatchOperationType(log.getBatchOperationType())
         .setProcessInstanceKey(log.getProcessInstanceKey())
-        .setEntityVersion(log.getEntityVersion())
-        .setEntityValueType(log.getEntityValueType())
-        .setEntityOperationIntent(log.getEntityOperationIntent())
+        //        .setEntityVersion(log.getEntityVersion())
+        //        .setEntityValueType(log.getEntityValueType())
+        //        .setEntityOperationIntent(log.getEntityOperationIntent())
         .setTimestamp(log.getTimestamp())
         .setAnnotation(log.getAnnotation());
 
     // transformer specific fields
     entity
-        .setResult(mapResult(log))
-        .setProcessDefinitionId(log.getProcessDefinitionId())
-        .setProcessDefinitionKey(log.getProcessDefinitionKey())
-        .setElementInstanceKey(log.getElementInstanceKey())
-        .setJobKey(log.getJobKey())
-        .setUserTaskKey(log.getUserTaskKey())
-        .setDecisionEvaluationKey(log.getDecisionEvaluationKey())
-        .setDecisionRequirementsId(log.getDecisionRequirementsId())
-        .setDecisionRequirementsKey(log.getDecisionRequirementsKey())
-        .setDecisionDefinitionId(log.getDecisionDefinitionId())
-        .setDecisionDefinitionKey(log.getDecisionDefinitionKey())
-        .setDeploymentKey(log.getDeploymentKey())
-        .setFormKey(log.getFormKey())
-        .setResourceKey(log.getResourceKey())
+        //        .setResult(mapResult(log))
+        //        .setProcessDefinitionId(log.getProcessDefinitionId())
+        //        .setProcessDefinitionKey(log.getProcessDefinitionKey())
+        //        .setElementInstanceKey(log.getElementInstanceKey())
+        //        .setJobKey(log.getJobKey())
+        //        .setUserTaskKey(log.getUserTaskKey())
+        //        .setDecisionEvaluationKey(log.getDecisionEvaluationKey())
+        //        .setDecisionRequirementsId(log.getDecisionRequirementsId())
+        //        .setDecisionRequirementsKey(log.getDecisionRequirementsKey())
+        //        .setDecisionDefinitionId(log.getDecisionDefinitionId())
+        //        .setDecisionDefinitionKey(log.getDecisionDefinitionKey())
+        //        .setDeploymentKey(log.getDeploymentKey())
+        //        .setFormKey(log.getFormKey())
+        //        .setResourceKey(log.getResourceKey())
         .setRootProcessInstanceKey(log.getRootProcessInstanceKey())
-        .setRelatedEntityKey(log.getRelatedEntityKey())
-        .setRelatedEntityType(mapEntityType(log.getRelatedEntityType()))
-        .setEntityDescription(log.getEntityDescription());
+    //        .setRelatedEntityKey(log.getRelatedEntityKey())
+    //        .setRelatedEntityType(mapEntityType(log.getRelatedEntityType()))
+    //        .setEntityDescription(log.getEntityDescription())
+    ;
 
     return entity;
   }
