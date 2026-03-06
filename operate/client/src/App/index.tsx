@@ -93,7 +93,14 @@ const routes = createRoutesFromElements(
       >
         {IS_NEW_PROCESS_INSTANCE_PAGE ? (
           <>
-            <Route index element={null} />
+            <Route
+              index
+              lazy={async () => {
+                const {VariablesTab} =
+                  await import('./ProcessInstance/BottomPanelTabs/VariablesTab/index');
+                return {Component: VariablesTab};
+              }}
+            />
             <Route
               path={Paths.processInstanceDetails({isRelative: true})}
               element={null}
@@ -104,19 +111,35 @@ const routes = createRoutesFromElements(
             />
             <Route
               path={Paths.processInstanceInputMappings({isRelative: true})}
-              element={null}
+              lazy={async () => {
+                const {InputMappingsTab} =
+                  await import('./ProcessInstance/BottomPanelTabs/InputMappingsTab');
+                return {Component: InputMappingsTab};
+              }}
             />
             <Route
               path={Paths.processInstanceOutputMappings({isRelative: true})}
-              element={null}
+              lazy={async () => {
+                const {OutputMappingsTab} =
+                  await import('./ProcessInstance/BottomPanelTabs/OutputMappingsTab');
+                return {Component: OutputMappingsTab};
+              }}
             />
             <Route
               path={Paths.processInstanceListeners({isRelative: true})}
-              element={null}
+              lazy={async () => {
+                const {ListenersTab} =
+                  await import('./ProcessInstance/BottomPanelTabs/ListenersTab/index');
+                return {Component: ListenersTab};
+              }}
             />
             <Route
               path={Paths.processInstanceOperationsLog({isRelative: true})}
-              element={null}
+              lazy={async () => {
+                const {OperationsLogTab} =
+                  await import('./ProcessInstance/BottomPanelTabs/OperationsLogTab/index');
+                return {Component: OperationsLogTab};
+              }}
             />
           </>
         ) : null}
