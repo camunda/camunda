@@ -55,13 +55,28 @@ public final class ProcessInstanceServices
       final CamundaSearchClient searchClient,
       final ServiceTransformers transformers,
       final Authentication authentication) {
+    this(
+        brokerClient,
+        searchClient,
+        transformers,
+        authentication,
+        new RequestRetryHandler(brokerClient, brokerClient.getTopologyManager()));
+  }
+
+  public ProcessInstanceServices(
+      final BrokerClient brokerClient,
+      final CamundaSearchClient searchClient,
+      final ServiceTransformers transformers,
+      final Authentication authentication,
+      final RequestRetryHandler requestRetryHandler) {
     super(brokerClient, searchClient, transformers, authentication);
-    requestRetryHandler = new RequestRetryHandler(brokerClient, brokerClient.getTopologyManager());
+    this.requestRetryHandler = requestRetryHandler;
   }
 
   @Override
   public ProcessInstanceServices withAuthentication(final Authentication authentication) {
-    return new ProcessInstanceServices(brokerClient, searchClient, transformers, authentication);
+    return new ProcessInstanceServices(
+        brokerClient, searchClient, transformers, authentication, requestRetryHandler);
   }
 
   @Override
