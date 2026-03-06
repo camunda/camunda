@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.security;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 
 public final class TasklistAuthenticationUtil {

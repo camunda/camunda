@@ -7,8 +7,8 @@
  */
 package io.camunda.authentication.converter;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.authentication.exception.CamundaAuthenticationException;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import java.util.List;
 import java.util.Optional;

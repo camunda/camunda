@@ -54,8 +54,7 @@ public class SpringSecurityTokenExchangeClient implements TokenExchangeClient {
         OAuth2AuthorizeRequest.withClientRegistrationId(clientRegistrationId)
             .principal(request.subjectToken())
             .attribute(
-                OAuth2AuthorizeRequest.class.getName() + ".SUBJECT_TOKEN",
-                request.subjectToken())
+                OAuth2AuthorizeRequest.class.getName() + ".SUBJECT_TOKEN", request.subjectToken())
             .attribute(
                 OAuth2AuthorizeRequest.class.getName() + ".SUBJECT_TOKEN_TYPE",
                 request.subjectTokenType().uri())

@@ -12,11 +12,31 @@ public class SecurityConfiguration {
   private MultiTenancyConfiguration multiTenancy = new MultiTenancyConfiguration();
   private CsrfConfiguration csrf = new CsrfConfiguration();
 
-  public AuthenticationConfiguration getAuthentication() { return authentication; }
-  public void setAuthentication(final AuthenticationConfiguration authentication) { this.authentication = authentication; }
-  public MultiTenancyConfiguration getMultiTenancy() { return multiTenancy; }
-  public void setMultiTenancy(final MultiTenancyConfiguration multiTenancy) { this.multiTenancy = multiTenancy; }
-  public boolean isApiProtected() { return !authentication.getUnprotectedApi(); }
-  public CsrfConfiguration getCsrf() { return csrf; }
-  public void setCsrf(final CsrfConfiguration csrf) { this.csrf = csrf; }
+  public AuthenticationConfiguration getAuthentication() {
+    return authentication;
+  }
+
+  public void setAuthentication(final AuthenticationConfiguration authentication) {
+    this.authentication = authentication;
+  }
+
+  public MultiTenancyConfiguration getMultiTenancy() {
+    return multiTenancy;
+  }
+
+  public void setMultiTenancy(final MultiTenancyConfiguration multiTenancy) {
+    this.multiTenancy = multiTenancy;
+  }
+
+  public boolean isApiProtected() {
+    return !authentication.getUnprotectedApi();
+  }
+
+  public CsrfConfiguration getCsrf() {
+    return csrf;
+  }
+
+  public void setCsrf(final CsrfConfiguration csrf) {
+    this.csrf = csrf;
+  }
 }

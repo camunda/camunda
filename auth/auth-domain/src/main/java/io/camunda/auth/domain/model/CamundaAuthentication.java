@@ -9,6 +9,9 @@ package io.camunda.auth.domain.model;
 
 import static java.util.Collections.unmodifiableList;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,15 +26,16 @@ import java.util.function.Function;
  * <p>Either {@code authenticatedUsername} or {@code authenticatedClientId} must be set, but not
  * both, unless the authentication represents an anonymous user in which case both can be null.
  */
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public record CamundaAuthentication(
-    String authenticatedUsername,
-    String authenticatedClientId,
-    boolean anonymousUser,
-    List<String> authenticatedGroupIds,
-    List<String> authenticatedRoleIds,
-    List<String> authenticatedTenantIds,
-    List<String> authenticatedMappingRuleIds,
-    Map<String, Object> claims)
+    @JsonProperty("authenticated_username") String authenticatedUsername,
+    @JsonProperty("authenticated_client_id") String authenticatedClientId,
+    @JsonProperty("anonymous_user") boolean anonymousUser,
+    @JsonProperty("authenticated_group_ids") List<String> authenticatedGroupIds,
+    @JsonProperty("authenticated_role_ids") List<String> authenticatedRoleIds,
+    @JsonProperty("authenticated_tenant_ids") List<String> authenticatedTenantIds,
+    @JsonProperty("authenticated_mapping_rule_ids") List<String> authenticatedMappingRuleIds,
+    @JsonProperty("claims") Map<String, Object> claims)
     implements Serializable {
 
   public CamundaAuthentication {
@@ -40,6 +44,7 @@ public record CamundaAuthentication(
     }
   }
 
+  @JsonIgnore
   public boolean isAnonymous() {
     return anonymousUser;
   }

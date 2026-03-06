@@ -29,8 +29,7 @@ public class AudienceValidator implements OAuth2TokenValidator<Jwt> {
     if (jwt.getAudience() == null || jwt.getAudience().isEmpty()) {
       return OAuth2TokenValidatorResult.failure(INVALID_AUDIENCE);
     }
-    final boolean hasValidAudience =
-        jwt.getAudience().stream().anyMatch(validAudiences::contains);
+    final boolean hasValidAudience = jwt.getAudience().stream().anyMatch(validAudiences::contains);
     return hasValidAudience
         ? OAuth2TokenValidatorResult.success()
         : OAuth2TokenValidatorResult.failure(INVALID_AUDIENCE);

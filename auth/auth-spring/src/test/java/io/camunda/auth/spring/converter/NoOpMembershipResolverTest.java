@@ -24,7 +24,8 @@ class NoOpMembershipResolverTest {
     final Map<String, Object> claims = Map.of("sub", "john");
 
     // when
-    final CamundaAuthentication auth = resolver.resolveMemberships(claims, "john", PrincipalType.USER);
+    final CamundaAuthentication auth =
+        resolver.resolveMemberships(claims, "john", PrincipalType.USER);
 
     // then
     assertThat(auth.authenticatedUsername()).isEqualTo("john");
@@ -53,11 +54,11 @@ class NoOpMembershipResolverTest {
   void shouldExtractGroupsFromClaimsWhenConfigured() {
     // given
     final var resolver = new NoOpMembershipResolver("groups");
-    final Map<String, Object> claims =
-        Map.of("sub", "john", "groups", List.of("admin", "users"));
+    final Map<String, Object> claims = Map.of("sub", "john", "groups", List.of("admin", "users"));
 
     // when
-    final CamundaAuthentication auth = resolver.resolveMemberships(claims, "john", PrincipalType.USER);
+    final CamundaAuthentication auth =
+        resolver.resolveMemberships(claims, "john", PrincipalType.USER);
 
     // then
     assertThat(auth.authenticatedGroupIds()).containsExactly("admin", "users");
@@ -70,7 +71,8 @@ class NoOpMembershipResolverTest {
     final Map<String, Object> claims = Map.of("sub", "john", "groups", "admin");
 
     // when
-    final CamundaAuthentication auth = resolver.resolveMemberships(claims, "john", PrincipalType.USER);
+    final CamundaAuthentication auth =
+        resolver.resolveMemberships(claims, "john", PrincipalType.USER);
 
     // then
     assertThat(auth.authenticatedGroupIds()).containsExactly("admin");
@@ -83,7 +85,8 @@ class NoOpMembershipResolverTest {
     final Map<String, Object> claims = Map.of("sub", "john");
 
     // when
-    final CamundaAuthentication auth = resolver.resolveMemberships(claims, "john", PrincipalType.USER);
+    final CamundaAuthentication auth =
+        resolver.resolveMemberships(claims, "john", PrincipalType.USER);
 
     // then
     assertThat(auth.authenticatedGroupIds()).isEmpty();
@@ -93,11 +96,11 @@ class NoOpMembershipResolverTest {
   void shouldReturnEmptyGroupsWhenNoGroupsClaimConfigured() {
     // given
     final var resolver = new NoOpMembershipResolver();
-    final Map<String, Object> claims =
-        Map.of("sub", "john", "groups", List.of("admin"));
+    final Map<String, Object> claims = Map.of("sub", "john", "groups", List.of("admin"));
 
     // when
-    final CamundaAuthentication auth = resolver.resolveMemberships(claims, "john", PrincipalType.USER);
+    final CamundaAuthentication auth =
+        resolver.resolveMemberships(claims, "john", PrincipalType.USER);
 
     // then
     assertThat(auth.authenticatedGroupIds()).isEmpty();

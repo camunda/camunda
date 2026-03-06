@@ -10,7 +10,6 @@ package io.camunda.auth.spring.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -53,8 +52,7 @@ class OAuth2RefreshTokenFilterTest {
   @BeforeEach
   void setUp() {
     // Fixed clock at epoch + 1000 seconds
-    final Clock fixedClock =
-        Clock.fixed(Instant.ofEpochSecond(1000), ZoneId.of("UTC"));
+    final Clock fixedClock = Clock.fixed(Instant.ofEpochSecond(1000), ZoneId.of("UTC"));
     filter =
         new OAuth2RefreshTokenFilter(
             authorizedClientRepository,
@@ -87,7 +85,8 @@ class OAuth2RefreshTokenFilterTest {
     final OAuth2AuthenticationToken authToken = createAuthToken("my-reg");
     SecurityContextHolder.getContext().setAuthentication(authToken);
 
-    final OAuth2AuthorizedClient client = createAuthorizedClient("my-reg", Instant.ofEpochSecond(2000));
+    final OAuth2AuthorizedClient client =
+        createAuthorizedClient("my-reg", Instant.ofEpochSecond(2000));
     when(authorizedClientRepository.loadAuthorizedClient("my-reg", authToken, request))
         .thenReturn(client);
 
@@ -147,10 +146,7 @@ class OAuth2RefreshTokenFilterTest {
 
   private OAuth2AuthenticationToken createAuthToken(final String registrationId) {
     final OAuth2User user =
-        new DefaultOAuth2User(
-            java.util.List.of(),
-            java.util.Map.of("sub", "user1"),
-            "sub");
+        new DefaultOAuth2User(java.util.List.of(), java.util.Map.of("sub", "user1"), "sub");
     return new OAuth2AuthenticationToken(user, java.util.List.of(), registrationId);
   }
 
@@ -172,9 +168,6 @@ class OAuth2RefreshTokenFilterTest {
             Instant.ofEpochSecond(0),
             expiresAt);
 
-    return new OAuth2AuthorizedClient(
-        registration,
-        "user1",
-        accessToken);
+    return new OAuth2AuthorizedClient(registration, "user1", accessToken);
   }
 }

@@ -7,11 +7,11 @@
  */
 package io.camunda.search.clients.auth;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.exception.TenantAccessDeniedException;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.auth.condition.AnyOfAuthorizationCondition;
 import io.camunda.security.auth.condition.AuthorizationConditions;

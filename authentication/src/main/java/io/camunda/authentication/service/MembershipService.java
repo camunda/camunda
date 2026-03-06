@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import java.util.Map;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 

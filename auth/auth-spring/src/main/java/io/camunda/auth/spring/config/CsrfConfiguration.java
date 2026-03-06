@@ -10,6 +10,11 @@ package io.camunda.auth.spring.config;
 public class CsrfConfiguration {
   private boolean enabled = true;
 
-  public boolean isEnabled() { return enabled; }
-  public void setEnabled(final boolean enabled) { this.enabled = enabled; }
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  public void setEnabled(final boolean enabled) {
+    this.enabled = enabled;
+  }
 }

@@ -10,10 +10,10 @@ package io.camunda.service;
 import static io.camunda.search.query.SearchQueryBuilders.decisionRequirementsSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.processDefinitionSearchQuery;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteResourceRequest;

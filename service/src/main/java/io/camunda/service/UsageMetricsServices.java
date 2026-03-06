@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import static io.camunda.search.query.UsageMetricsQueryMapper.mapToUsageMetricsTUQuery;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
@@ -16,7 +17,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;

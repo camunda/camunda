@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.gateway.interceptors.impl;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryBuilders;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.auth.OidcPrincipalLoader.OidcPrincipals;

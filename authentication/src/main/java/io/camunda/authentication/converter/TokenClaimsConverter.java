@@ -7,9 +7,9 @@
  */
 package io.camunda.authentication.converter;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.authentication.service.MembershipService.PrincipalType;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.Map;

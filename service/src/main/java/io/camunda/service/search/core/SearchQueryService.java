@@ -7,11 +7,11 @@
  */
 package io.camunda.service.search.core;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.SearchQueryBase;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ApiServices;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.exception.ErrorMapper;

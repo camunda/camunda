@@ -50,8 +50,7 @@ public class NoOpMembershipResolver implements MembershipResolver {
   }
 
   @SuppressWarnings("unchecked")
-  private List<String> extractGroups(
-      final Map<String, Object> claims, final String claimName) {
+  private List<String> extractGroups(final Map<String, Object> claims, final String claimName) {
     final Object value = claims.get(claimName);
     if (value == null) {
       return List.of();

@@ -16,6 +16,7 @@ import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_USERS_ENABLED;
 import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.HashMap;
 import java.util.Map;

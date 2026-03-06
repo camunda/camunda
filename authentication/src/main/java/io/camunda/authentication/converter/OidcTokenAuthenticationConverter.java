@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.converter;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import java.util.Optional;
 import org.springframework.security.core.Authentication;

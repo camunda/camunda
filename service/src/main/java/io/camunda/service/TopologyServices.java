@@ -8,8 +8,8 @@
 package io.camunda.service;
 
 import io.atomix.utils.net.Address;
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.TopologyServices.Topology.Builder;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.security.SecurityContextProvider;

@@ -7,6 +7,8 @@
  */
 package io.camunda.security.auth;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
+
 /**
  * Associates a given {@link CamundaAuthentication} with the current execution thread processing the
  * request.

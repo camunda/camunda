@@ -15,6 +15,7 @@ import static io.camunda.it.rdbms.db.fixtures.UserTaskFixtures.createAndSaveUser
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.UserTaskDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
@@ -35,7 +36,6 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.condition.AuthorizationConditions;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;

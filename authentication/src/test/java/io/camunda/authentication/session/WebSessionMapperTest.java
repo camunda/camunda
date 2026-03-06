@@ -10,9 +10,9 @@ package io.camunda.authentication.session;
 import static io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder.CAMUNDA_AUTHENTICATION_SESSION_HOLDER_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.authentication.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
 import io.camunda.search.entities.PersistentWebSessionEntity;
-import io.camunda.security.auth.CamundaAuthentication;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;

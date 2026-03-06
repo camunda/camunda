@@ -11,6 +11,8 @@ import io.camunda.auth.domain.model.CamundaAuthentication;
 
 public interface CamundaAuthenticationHolder {
   boolean supports();
+
   void set(CamundaAuthentication authentication);
+
   CamundaAuthentication get();
 }
