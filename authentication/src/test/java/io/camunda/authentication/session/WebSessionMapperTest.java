@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.session;
 
-import static io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder.CAMUNDA_AUTHENTICATION_SESSION_HOLDER_KEY;
+import static io.camunda.auth.spring.holder.HttpSessionBasedAuthenticationHolder.CAMUNDA_AUTHENTICATION_SESSION_HOLDER_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.auth.domain.model.CamundaAuthentication;

@@ -32,8 +32,12 @@ public class CamundaAuthProperties {
 
   @NestedConfigurationProperty private final OboProperties obo = new OboProperties();
 
+  @NestedConfigurationProperty private final SessionProperties session = new SessionProperties();
+
   @NestedConfigurationProperty
   private final PersistenceProperties persistence = new PersistenceProperties();
+
+  private boolean unprotectedApi = false;
 
   public String getMethod() {
     return method;
@@ -55,8 +59,20 @@ public class CamundaAuthProperties {
     return obo;
   }
 
+  public SessionProperties getSession() {
+    return session;
+  }
+
   public PersistenceProperties getPersistence() {
     return persistence;
+  }
+
+  public boolean isUnprotectedApi() {
+    return unprotectedApi;
+  }
+
+  public void setUnprotectedApi(final boolean unprotectedApi) {
+    this.unprotectedApi = unprotectedApi;
   }
 
   /** Camunda-specific OIDC claim mapping properties. */
@@ -190,6 +206,30 @@ public class CamundaAuthProperties {
 
     public void setAutoMigrate(final boolean autoMigrate) {
       this.autoMigrate = autoMigrate;
+    }
+  }
+
+  public static class SessionProperties {
+    /** Whether to enable HTTP session-based authentication holding. */
+    private boolean enabled = false;
+
+    /** How often to refresh authentication from session. ISO-8601 duration. */
+    private String refreshInterval = "PT30S";
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getRefreshInterval() {
+      return refreshInterval;
+    }
+
+    public void setRefreshInterval(final String refreshInterval) {
+      this.refreshInterval = refreshInterval;
     }
   }
 

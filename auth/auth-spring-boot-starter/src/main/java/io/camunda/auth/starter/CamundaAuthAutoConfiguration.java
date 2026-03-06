@@ -20,11 +20,15 @@ import io.camunda.auth.spring.SpringOidcTokenExchangeConverter;
 import io.camunda.auth.spring.converter.NoOpMembershipResolver;
 import io.camunda.auth.spring.converter.OidcTokenAuthenticationConverter;
 import io.camunda.auth.spring.converter.TokenClaimsConverter;
+import io.camunda.auth.spring.converter.UnprotectedCamundaAuthenticationConverter;
+import io.camunda.auth.spring.holder.HttpSessionBasedAuthenticationHolder;
 import io.camunda.auth.spring.holder.RequestContextBasedAuthenticationHolder;
 import io.camunda.auth.starter.config.CamundaAuthProperties;
+import java.time.Duration;
 import java.util.List;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.core.Authentication;
@@ -77,25 +81,34 @@ public class CamundaAuthAutoConfiguration {
   }
 
   @Bean
-  @ConditionalOnMissingBean(CamundaAuthenticationConverter.class)
-  public CamundaAuthenticationDelegatingConverter<Authentication> delegatingAuthenticationConverter(
-      final OidcTokenAuthenticationConverter oidcConverter) {
-    return new CamundaAuthenticationDelegatingConverter<>(
-        List.of((CamundaAuthenticationConverter<Authentication>) oidcConverter));
+  @ConditionalOnMissingBean(name = "requestContextBasedAuthenticationHolder")
+  public CamundaAuthenticationHolder requestContextBasedAuthenticationHolder() {
+    return new RequestContextBasedAuthenticationHolder();
   }
 
   @Bean
-  @ConditionalOnMissingBean
-  public CamundaAuthenticationHolder camundaAuthenticationHolder() {
-    return new CamundaAuthenticationDelegatingHolder(
-        List.of(new RequestContextBasedAuthenticationHolder()));
+  @ConditionalOnMissingBean(name = "httpSessionBasedAuthenticationHolder")
+  @ConditionalOnProperty(name = "camunda.auth.session.enabled", havingValue = "true")
+  public CamundaAuthenticationHolder httpSessionBasedAuthenticationHolder(
+      final CamundaAuthProperties properties) {
+    return new HttpSessionBasedAuthenticationHolder(
+        Duration.parse(properties.getSession().getRefreshInterval()));
+  }
+
+  @Bean
+  @ConditionalOnMissingBean(name = "unprotectedAuthenticationConverter")
+  @ConditionalOnProperty(name = "camunda.auth.unprotected-api", havingValue = "true")
+  public CamundaAuthenticationConverter<Authentication> unprotectedAuthenticationConverter() {
+    return new UnprotectedCamundaAuthenticationConverter();
   }
 
   @Bean
   @ConditionalOnMissingBean
   public CamundaAuthenticationProvider camundaAuthenticationProvider(
-      final CamundaAuthenticationHolder holder,
-      final CamundaAuthenticationConverter<Authentication> converter) {
-    return new DefaultCamundaAuthenticationProvider(holder, converter);
+      final List<CamundaAuthenticationHolder> holders,
+      final List<CamundaAuthenticationConverter<Authentication>> converters) {
+    return new DefaultCamundaAuthenticationProvider(
+        new CamundaAuthenticationDelegatingHolder(holders),
+        new CamundaAuthenticationDelegatingConverter<>(converters));
   }
 }
