@@ -121,6 +121,12 @@ Uses [Conventional Commits](https://www.conventionalcommits.org/). Max 120 chars
 
 Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `perf`, `refactor`, `style`, `test`
 
+## Pull Request Conventions
+
+- PR title follows conventional commit format (e.g., `feat: add user validation`)
+- Reference the issue number in the description (e.g., `Closes #1234`)
+- Keep PRs focused on a single concern
+
 ## Git Workflow
 
 - Always format before committing: `./mvnw license:format spotless:apply -T1C`
