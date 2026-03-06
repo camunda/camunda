@@ -255,6 +255,37 @@ public class AuthorizationIT {
   }
 
   @Test
+  void shouldReturnNonEmptyPermissionTypesListForAuthorization() {
+    // given - create an authorization
+    final var authorization =
+        camundaClient
+            .newCreateAuthorizationCommand()
+            .ownerId(USER_ID_1)
+            .ownerType(OwnerType.USER)
+            .resourceId("test-resource")
+            .resourceType(ResourceType.AUTHORIZATION)
+            .permissionTypes(CREATE)
+            .send()
+            .join();
+
+    // when
+    Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newAuthorizationGetRequest(authorization.getAuthorizationKey())
+                      .send()
+                      .join();
+
+              // then - permissionTypes should be non-empty list, not null (consistent across ES and
+              // RDBMS)
+              assertThat(result.getPermissionTypes()).isNotNull().isNotEmpty().contains(CREATE);
+            });
+  }
+
+  @Test
   void searchShouldReturnAuthorizationsFilteredByOwnerId() {
     // when
     final var ownerId = USER_ID_3;

@@ -120,7 +120,17 @@ class IncidentSearchIT {
     // then
     assertThat(result).isNotNull();
     assertThat(result.getIncidentKey()).isEqualTo(incidentKey);
-    assertThat(result.getRootProcessInstanceKey()).isEqualTo(incident.getProcessInstanceKey());
+    assertThat(result.getProcessDefinitionKey()).isEqualTo(incident.getProcessDefinitionKey());
+    assertThat(result.getProcessDefinitionId()).isEqualTo(incident.getProcessDefinitionId());
+    assertThat(result.getProcessInstanceKey()).isEqualTo(incident.getProcessInstanceKey());
+    assertThat(result.getErrorType()).isEqualTo(incident.getErrorType());
+    assertThat(result.getErrorMessage()).isEqualTo(incident.getErrorMessage());
+    assertThat(result.getElementId()).isEqualTo(incident.getElementId());
+    assertThat(result.getElementInstanceKey()).isEqualTo(incident.getElementInstanceKey());
+    assertThat(result.getCreationTime()).isEqualTo(incident.getCreationTime());
+    assertThat(result.getState()).isEqualTo(incident.getState());
+    assertThat(result.getJobKey()).isEqualTo(incident.getJobKey());
+    assertThat(result.getTenantId()).isEqualTo(incident.getTenantId());
   }
 
   @Test

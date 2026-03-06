@@ -706,6 +706,7 @@ class DecisionInstanceSearchIT {
     assertThat(result.getDecisionDefinitionType()).isEqualTo(DecisionDefinitionType.DECISION_TABLE);
     assertThat(result.getTenantId()).isEqualTo("<default>");
     assertThat(result.getDecisionDefinitionKey()).isEqualTo(decisionDefinitionKey);
+    assertThat(result.getRootDecisionDefinitionKey()).isNotNull();
     assertThat(result.getResult()).isEqualTo("\"day-to-day expense\"");
     assertThat(result.getEvaluationDate()).isNotNull();
 

@@ -40,6 +40,18 @@ public class RolesSearchIT {
   }
 
   @Test
+  void shouldGetRoleById() {
+    // when
+    final var role = camundaClient.newRoleGetRequest(ROLE_ID_1).send().join();
+
+    // then - assert all fields
+    assertThat(role).isNotNull();
+    assertThat(role.getRoleId()).isEqualTo(ROLE_ID_1);
+    assertThat(role.getName()).isEqualTo(ROLE_NAME_1);
+    assertThat(role.getDescription()).isEqualTo("description");
+  }
+
+  @Test
   void searchShouldReturnRoleFilteredByRoleName() {
     final var roleSearchResponse =
         camundaClient.newRolesSearchRequest().filter(fn -> fn.name(ROLE_NAME_1)).send().join();
