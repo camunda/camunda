@@ -8,9 +8,9 @@
 package io.camunda.zeebe;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.annotation.JobWorker;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
-import io.camunda.client.annotation.JobWorker;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
@@ -29,8 +29,7 @@ import org.springframework.stereotype.Component;
 public class Worker {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Worker.class);
-  private static final Logger THROTTLED_LOGGER =
-      new ThrottledLogger(LOGGER, Duration.ofSeconds(5));
+  private static final Logger THROTTLED_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(5));
 
   private final CamundaClient client;
   private final WorkerProperties workerCfg;
@@ -49,7 +48,7 @@ public class Worker {
     this.responseChecker.start();
   }
 
-  @JobWorker(type = "${load-tester.worker.job-type}", autoComplete = false)
+  @JobWorker(autoComplete = false)
   public void handleJob(final JobClient jobClient, final ActivatedJob job) {
     final long startHandlingTime = System.currentTimeMillis();
 

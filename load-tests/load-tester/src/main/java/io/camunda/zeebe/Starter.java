@@ -205,9 +205,7 @@ public class Starter implements CommandLineRunner {
             DataReadMeterQueryProvider.getDefaultQueries());
     dataReadMeter.setContextProcessDefinitionId(starterCfg.getProcessId());
     dataReadMeter.setContextBusinessKeySupplier(
-        () ->
-            Pair.of(
-                starterCfg.getBusinessKey(), businessKey.get() - starterCfg.getRate() * 60L));
+        () -> Pair.of(starterCfg.getBusinessKey(), businessKey.get() - starterCfg.getRate() * 60L));
   }
 
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
@@ -309,8 +307,7 @@ public class Starter implements CommandLineRunner {
         .send();
   }
 
-  private CompletionStage<?> startInstanceByMessagePublishing(
-      final Map<String, Object> variables) {
+  private CompletionStage<?> startInstanceByMessagePublishing(final Map<String, Object> variables) {
     return client
         .newPublishMessageCommand()
         .messageName(starterCfg.getMsgName())
