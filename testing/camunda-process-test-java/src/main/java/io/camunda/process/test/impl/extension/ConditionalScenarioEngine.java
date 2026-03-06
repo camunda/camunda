@@ -39,8 +39,9 @@ public class ConditionalScenarioEngine {
 
   private final CopyOnWriteArrayList<Scenario> scenarios = new CopyOnWriteArrayList<>();
   private volatile Runnable contextInitializer;
-  private ScheduledExecutorService executor;
-  private ScheduledFuture<?> pollingTask;
+  private volatile ScheduledExecutorService executor;
+  private volatile ScheduledFuture<?> pollingTask;
+  private int persistentScenarioCount;
 
   public ConditionalScenarioConditionStep when(final Runnable condition) {
     if (condition == null) {
@@ -51,23 +52,30 @@ public class ConditionalScenarioEngine {
     return new ConditionStepImpl(scenario);
   }
 
+  public void start(final Runnable contextInitializer) {
+    persistentScenarioCount = scenarios.size();
+    this.contextInitializer = contextInitializer;
+    if (!scenarios.isEmpty()) {
+      ensurePolling();
+    }
+  }
+
+  public void stop() {
+    stopPolling();
+    if (scenarios.size() > persistentScenarioCount) {
+      scenarios.subList(persistentScenarioCount, scenarios.size()).clear();
+    }
+    for (final Scenario scenario : scenarios) {
+      scenario.resetActionPointer();
+    }
+  }
+
   public void reset() {
-    if (pollingTask != null) {
-      pollingTask.cancel(false);
-      pollingTask = null;
-    }
-    if (executor != null) {
-      executor.shutdownNow();
-      executor = null;
-    }
+    stopPolling();
     scenarios.clear();
   }
 
-  public int getScenarioCount() {
-    return scenarios.size();
-  }
-
-  public void stopPolling() {
+  private void stopPolling() {
     if (pollingTask != null) {
       pollingTask.cancel(false);
       pollingTask = null;
@@ -80,28 +88,6 @@ public class ConditionalScenarioEngine {
         Thread.currentThread().interrupt();
       }
       executor = null;
-    }
-  }
-
-  public void startPolling() {
-    if (!scenarios.isEmpty()) {
-      ensurePolling();
-    }
-  }
-
-  public void resetActionPointers() {
-    for (final Scenario scenario : scenarios) {
-      scenario.resetActionPointer();
-    }
-  }
-
-  public void setContextInitializer(final Runnable contextInitializer) {
-    this.contextInitializer = contextInitializer;
-  }
-
-  public void trimTo(final int count) {
-    while (scenarios.size() > count) {
-      scenarios.remove(scenarios.size() - 1);
     }
   }
 
@@ -188,10 +174,7 @@ public class ConditionalScenarioEngine {
     }
 
     void advanceAction() {
-      final int idx = actionIndex.get();
-      if (idx < actions.size() - 1) {
-        actionIndex.incrementAndGet();
-      }
+      actionIndex.getAndUpdate(idx -> Math.min(idx + 1, actions.size() - 1));
     }
 
     void resetActionPointer() {
