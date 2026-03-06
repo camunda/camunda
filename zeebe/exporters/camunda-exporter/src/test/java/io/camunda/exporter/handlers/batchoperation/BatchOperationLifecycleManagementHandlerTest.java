@@ -282,9 +282,10 @@ class BatchOperationLifecycleManagementHandlerTest {
     handler.flush(entity, batchRequest);
 
     // then
-    final var argumentCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(batchRequest).update(eq(indexName), eq("12345"), argumentCaptor.capture());
-    final Map<String, Object> updateFields = argumentCaptor.getValue();
+    final var updateFieldsCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(batchRequest)
+        .upsert(eq(indexName), eq("12345"), eq(entity), updateFieldsCaptor.capture());
+    final Map<String, Object> updateFields = updateFieldsCaptor.getValue();
     assertThat(updateFields).containsEntry("state", BatchOperationState.CANCELED);
     assertThat(updateFields).containsEntry("endDate", entity.getEndDate());
   }
