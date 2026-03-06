@@ -24,6 +24,8 @@ import io.camunda.client.api.statistics.response.GlobalJobStatistics;
 import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatisticsByDefinition;
 import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatisticsByError;
 import io.camunda.client.api.statistics.response.JobStatusMetric;
+import io.camunda.client.api.statistics.response.JobTimeSeriesStatistics;
+import io.camunda.client.api.statistics.response.JobTimeSeriesStatisticsItem;
 import io.camunda.client.api.statistics.response.JobTypeStatistics;
 import io.camunda.client.api.statistics.response.JobTypeStatisticsItem;
 import io.camunda.client.api.statistics.response.JobWorkerStatistics;
@@ -39,6 +41,7 @@ import io.camunda.client.impl.search.response.SearchResponseImpl;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.GlobalJobStatisticsQueryResult;
 import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByErrorQueryResult;
+import io.camunda.client.protocol.rest.JobTimeSeriesStatisticsQueryResult;
 import io.camunda.client.protocol.rest.JobTypeStatisticsQueryResult;
 import io.camunda.client.protocol.rest.JobWorkerStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
@@ -221,6 +224,26 @@ public class StatisticsResponseMapper {
       final io.camunda.client.protocol.rest.JobWorkerStatisticsItem item) {
     return new JobWorkerStatisticsItemImpl(
         item.getWorker(),
+        toJobStatusMetric(item.getCreated()),
+        toJobStatusMetric(item.getCompleted()),
+        toJobStatusMetric(item.getFailed()));
+  }
+
+  public static JobTimeSeriesStatistics toJobTimeSeriesStatisticsResponse(
+      final JobTimeSeriesStatisticsQueryResult response) {
+    final io.camunda.client.api.search.response.SearchResponsePage page =
+        toSearchResponsePage(response.getPage());
+    final List<JobTimeSeriesStatisticsItem> items =
+        toSearchResponseInstances(
+            response.getItems(), StatisticsResponseMapper::toJobTimeSeriesStatisticsItem);
+    return new JobTimeSeriesStatisticsImpl(items, page);
+  }
+
+  private static JobTimeSeriesStatisticsItem toJobTimeSeriesStatisticsItem(
+      final io.camunda.client.protocol.rest.JobTimeSeriesStatisticsItem item) {
+    final OffsetDateTime time = ParseUtil.parseOffsetDateTimeOrNull(item.getTime());
+    return new JobTimeSeriesStatisticsItemImpl(
+        time,
         toJobStatusMetric(item.getCreated()),
         toJobStatusMetric(item.getCompleted()),
         toJobStatusMetric(item.getFailed()));
