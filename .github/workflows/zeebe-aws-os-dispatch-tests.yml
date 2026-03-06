@@ -61,16 +61,16 @@ jobs:
           if [[ "${{ matrix.os_version }}" = "2.19" ]]
           then
             echo "Using OS 2.19"
-            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_19_URL }};
+            OPENSEARCH_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_19_URL }};
           elif [[ "${{ matrix.os_version }}" = "3.3" ]]
           then
             echo "Using OS 3.3"
-            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_3_3_URL }};
+            OPENSEARCH_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_3_3_URL }};
           else
             echo "Incorrect on usupported version of OpenSearch"
             exit 1
           fi
-          echo "OS_URL=$OS_URL" >> "$GITHUB_ENV"
+          echo "OPENSEARCH_URL=$OPENSEARCH_URL" >> "$GITHUB_ENV"
       - uses: aws-actions/configure-aws-credentials@v6
         name: Pre-login to AWS
         with:
@@ -79,7 +79,7 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE_ARN }}
       - name: Delete old aws opensearch indices
         env:
-          OPENSEARCH_URL: ${{ env.OS_URL }}
+          OPENSEARCH_URL: ${{ env.OPENSEARCH_URL }}
           DRY_RUN: "false"
           AGE_HOURS: "1"
         run: bash .github/scripts/clean-up-aws-opensearch-indices.sh
@@ -168,16 +168,16 @@ jobs:
           if [[ "${{ matrix.os_version }}" = "2.19" ]]
           then
             echo "Using OS 2.19"
-            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_19_URL }};
+            OPENSEARCH_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_19_URL }};
           elif [[ "${{ matrix.os_version }}" = "3.3" ]]
           then
             echo "Using OS 3.3"
-            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_3_3_URL }};
+            OPENSEARCH_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_3_3_URL }};
           else
             echo "Incorrect on usupported version of OpenSearch"
             exit 1
           fi
-          echo "OS_URL=$OS_URL" >> "$GITHUB_ENV"
+          echo "OPENSEARCH_URL=$OPENSEARCH_URL" >> "$GITHUB_ENV"
       - uses: aws-actions/configure-aws-credentials@v6
         name: Pre-login to AWS
         with:
@@ -204,7 +204,7 @@ jobs:
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D flaky.test.reportDir=failsafe-reports
-          -D test.integration.opensearch.aws.url="${{ env.OS_URL }}"
+          -D test.integration.opensearch.aws.url="${{ env.OPENSEARCH_URL }}"
           -D test.integration.camunda.database.type=AWS_OS
           -D test.integration.opensearch.aws.timeout.seconds=180
           -P parallel-tests,extract-flaky-tests,multi-db-test
