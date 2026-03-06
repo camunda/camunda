@@ -34,19 +34,50 @@ public class AwaitilityBehavior implements CamundaAssertAwaitBehavior {
   private static final String UNEXPECTED_FAILURE_MESSAGE =
       "<No assertion error occurred, but an unexpected exception was thrown. Check the cause for details.>";
 
+  private static final ThreadLocal<Duration> TIMEOUT_OVERRIDE = new ThreadLocal<>();
+  private static final ThreadLocal<Duration> INTERVAL_OVERRIDE = new ThreadLocal<>();
+
   private Duration assertionTimeout = CamundaAssert.DEFAULT_ASSERTION_TIMEOUT;
   private Duration assertionInterval = CamundaAssert.DEFAULT_ASSERTION_INTERVAL;
 
+  public static void setConditionProbeOverrides(final Duration timeout, final Duration interval) {
+    TIMEOUT_OVERRIDE.set(timeout);
+    INTERVAL_OVERRIDE.set(interval);
+  }
+
+  public static void clearConditionProbeOverrides() {
+    TIMEOUT_OVERRIDE.remove();
+    INTERVAL_OVERRIDE.remove();
+  }
+
   @Override
   public void untilAsserted(final ThrowingRunnable assertion) throws AssertionError {
+    final Duration effectiveTimeout =
+        TIMEOUT_OVERRIDE.get() != null ? TIMEOUT_OVERRIDE.get() : assertionTimeout;
+
+    // Fast path for condition probing: single check, no Awaitility overhead
+    if (effectiveTimeout.isZero()) {
+      try {
+        assertion.run();
+      } catch (final Throwable t) {
+        if (t instanceof AssertionError) {
+          throw (AssertionError) t;
+        }
+        throw new AssertionError(t.getMessage(), t);
+      }
+      return;
+    }
+
     // If await() times out, the exception doesn't contain the assertion error. Use a reference to
     // store the error's failure message.
     final AtomicReference<String> failureMessage = new AtomicReference<>();
     final AtomicReference<Throwable> unexpectedException = new AtomicReference<>();
     try {
+      final Duration effectiveInterval =
+          INTERVAL_OVERRIDE.get() != null ? INTERVAL_OVERRIDE.get() : assertionInterval;
       Awaitility.await()
-          .timeout(assertionTimeout)
-          .pollInterval(assertionInterval)
+          .timeout(effectiveTimeout)
+          .pollInterval(effectiveInterval)
           .ignoreExceptionsInstanceOf(ClientException.class)
           .untilAsserted(
               () -> {

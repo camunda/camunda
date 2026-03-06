@@ -666,6 +666,10 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                 }));
   }
 
+  public ConditionalScenarioEngine getConditionalScenarioEngine() {
+    return conditionalScenarioEngine;
+  }
+
   @Override
   public ConditionalScenarioConditionStep when(final Runnable condition) {
     return conditionalScenarioEngine.when(condition);
