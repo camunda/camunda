@@ -54,7 +54,7 @@ const InputOutputMappings: React.FC<Props> = ({type, elementId}) => {
         <EmptyMessage message={`No ${type} Mappings defined`} />
       ) : (
         <StructuredList
-          label="Input Mappings"
+          label={`${type} Mappings`}
           headerSize="sm"
           headerColumns={[
             {
