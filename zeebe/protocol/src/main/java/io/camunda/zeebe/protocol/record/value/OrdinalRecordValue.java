@@ -23,7 +23,7 @@ import org.immutables.value.Value;
 /**
  * Represents an ordinal tick event or command.
  *
- * <p>The ordinal is a monotonically incrementing {@code short} counter that is incremented once per
+ * <p>The ordinal is a monotonically incrementing {@code int} counter that is incremented once per
  * minute. The {@code dateTime} field records the epoch-millisecond wall-clock time at which the
  * ordinal was last incremented, allowing callers to derive the exact date and minute represented by
  * any ordinal value.
@@ -35,7 +35,7 @@ import org.immutables.value.Value;
 public interface OrdinalRecordValue extends RecordValue {
 
   /**
-   * Returns the current ordinal value. The ordinal is a monotonically incrementing {@code short}
+   * Returns the current ordinal value. The ordinal is a monotonically incrementing {@code int}
    * (stored as {@code int} for msgpack compatibility) that increments by 1 every minute.
    */
   int getOrdinal();

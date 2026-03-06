@@ -91,12 +91,11 @@ public final class OrdinalTickScheduler implements Task, StreamProcessorLifecycl
     schedule(true);
   }
 
-  // Package-private setters for tests
-  void setProcessingContext(final ReadonlyStreamProcessorContext processingContext) {
+  // Package-private constructor for testing
+  OrdinalTickScheduler(
+      final InstantSource clock, final ReadonlyStreamProcessorContext processingContext) {
+    this.clock = clock;
     this.processingContext = processingContext;
-  }
-
-  void setShouldReschedule(final boolean shouldReschedule) {
-    this.shouldReschedule = shouldReschedule;
+    this.shouldReschedule = false;
   }
 }

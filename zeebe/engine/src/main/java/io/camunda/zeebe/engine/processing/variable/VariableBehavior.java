@@ -291,6 +291,6 @@ public final class VariableBehavior {
       return 0;
     }
     final var instance = elementInstanceState.getInstance(processInstanceKey);
-    return instance != null ? instance.getValue().getOrdinal() : 0;
+    return instance != null && instance.getValue() != null ? instance.getValue().getOrdinal() : 0;
   }
 }

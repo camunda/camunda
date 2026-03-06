@@ -209,11 +209,10 @@ public final class BpmnUserTaskBehavior {
 
   private int getOrdinalFromProcessInstance(final long processInstanceKey) {
     final var elementInstance = stateBehavior.getElementInstance(processInstanceKey);
-    if (elementInstance == null) {
+    if (elementInstance == null || elementInstance.getValue() == null) {
       return 0;
     }
-    final var processInstance = elementInstance.getValue();
-    return processInstance != null ? processInstance.getOrdinal() : 0;
+    return elementInstance.getValue().getOrdinal();
   }
 
   public Either<Failure, String> evaluateAssigneeExpression(

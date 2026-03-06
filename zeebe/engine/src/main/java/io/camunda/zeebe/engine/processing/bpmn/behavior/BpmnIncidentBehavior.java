@@ -100,6 +100,6 @@ public final class BpmnIncidentBehavior {
 
   private int getProcessInstanceOrdinal(final long processInstanceKey) {
     final var instance = elementInstanceState.getInstance(processInstanceKey);
-    return instance != null ? instance.getValue().getOrdinal() : 0;
+    return instance != null && instance.getValue() != null ? instance.getValue().getOrdinal() : 0;
   }
 }
