@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.ordinal;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.mutable.MutableOrdinalState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.OrdinalIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -19,6 +20,7 @@ public final class OrdinalProcessors {
   private OrdinalProcessors() {}
 
   public static void addOrdinalProcessors(
+      final MutableOrdinalState ordinalState,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final KeyGenerator keyGenerator,
@@ -27,7 +29,7 @@ public final class OrdinalProcessors {
         .onCommand(
             ValueType.ORDINAL,
             OrdinalIntent.TICK,
-            new OrdinalTickCommandProcessor(writers, keyGenerator, clock))
+            new OrdinalTickCommandProcessor(ordinalState, writers, keyGenerator, clock))
         .withListener(new OrdinalTickScheduler(clock));
   }
 }

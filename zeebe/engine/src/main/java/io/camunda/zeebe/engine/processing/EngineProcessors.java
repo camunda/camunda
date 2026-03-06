@@ -398,7 +398,8 @@ public final class EngineProcessors {
         keyGenerator,
         clock);
 
-    OrdinalProcessors.addOrdinalProcessors(typedRecordProcessors, writers, keyGenerator, clock);
+    OrdinalProcessors.addOrdinalProcessors(
+        processingState.getOrdinalState(), typedRecordProcessors, writers, keyGenerator, clock);
 
     return typedRecordProcessors;
   }

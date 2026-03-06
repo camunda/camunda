@@ -18,6 +18,7 @@ public final class DbOrdinalState implements MutableOrdinalState {
 
   private static final String KEY = "CURRENT";
 
+  private int current = -1;
   private final ColumnFamily<DbString, DbOrdinalEntry> columnFamily;
   private final DbString key = new DbString();
   private final DbOrdinalEntry value = new DbOrdinalEntry();
@@ -31,7 +32,8 @@ public final class DbOrdinalState implements MutableOrdinalState {
   @Override
   public int getCurrentOrdinal() {
     final var entry = getEntry();
-    return entry != null ? entry.getOrdinal() : 0;
+    current = current != -1 ? current : entry != null ? entry.getOrdinal() : 0;
+    return current;
   }
 
   @Override
@@ -42,9 +44,10 @@ public final class DbOrdinalState implements MutableOrdinalState {
 
   @Override
   public int incrementOrdinal(final long dateTimeMillis) {
+    final var nextOrdinal = getCurrentOrdinal() + 1;
+    current = nextOrdinal;
+
     key.wrapString(KEY);
-    final var current = columnFamily.get(key);
-    final int nextOrdinal = (current != null ? current.getOrdinal() : 0) + 1;
     value.set(nextOrdinal, dateTimeMillis);
     columnFamily.upsert(key, value);
     return nextOrdinal;

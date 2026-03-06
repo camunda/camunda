@@ -50,7 +50,6 @@ import io.camunda.exporter.handlers.MappingRuleCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.MappingRuleDeletedHandler;
 import io.camunda.exporter.handlers.MessageSubscriptionFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.MigratedVariableHandler;
-import io.camunda.exporter.handlers.OrdinalTickedHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.RoleCreateUpdateHandler;
@@ -121,7 +120,6 @@ import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
-import io.camunda.webapps.schema.descriptors.template.OrdinalTemplate;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
@@ -381,9 +379,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new GlobalListenerCreatedUpdatedHandler(
                 indexDescriptors.get(GlobalListenerIndex.class).getFullQualifiedName()),
             new GlobalListenerDeletedHandler(
-                indexDescriptors.get(GlobalListenerIndex.class).getFullQualifiedName()),
-            new OrdinalTickedHandler(
-                indexDescriptors.get(OrdinalTemplate.class).getFullQualifiedName())));
+                indexDescriptors.get(GlobalListenerIndex.class).getFullQualifiedName())));
 
     if (configuration.getAuditLog().isEnabled()) {
       addAuditLogHandlers(configuration.getAuditLog(), partitionId);

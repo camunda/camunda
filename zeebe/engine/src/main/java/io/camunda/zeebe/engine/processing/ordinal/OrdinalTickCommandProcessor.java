@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.mutable.MutableOrdinalState;
 import io.camunda.zeebe.protocol.impl.record.value.ordinal.OrdinalRecord;
 import io.camunda.zeebe.protocol.record.intent.OrdinalIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -20,12 +21,17 @@ import java.time.InstantSource;
 @ExcludeAuthorizationCheck
 public final class OrdinalTickCommandProcessor implements TypedRecordProcessor<OrdinalRecord> {
 
+  private final MutableOrdinalState ordinalState;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
   private final InstantSource clock;
 
   public OrdinalTickCommandProcessor(
-      final Writers writers, final KeyGenerator keyGenerator, final InstantSource clock) {
+      final MutableOrdinalState ordinalState,
+      final Writers writers,
+      final KeyGenerator keyGenerator,
+      final InstantSource clock) {
+    this.ordinalState = ordinalState;
     stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
     this.clock = clock;
@@ -34,7 +40,8 @@ public final class OrdinalTickCommandProcessor implements TypedRecordProcessor<O
   @Override
   public void processRecord(final TypedRecord<OrdinalRecord> command) {
     final long now = clock.millis();
-    final var ordinalRecord = new OrdinalRecord().setDateTime(now);
+    final var nextOrdinal = ordinalState.getCurrentOrdinal() + 1;
+    final var ordinalRecord = new OrdinalRecord().setDateTime(now).setOrdinal(nextOrdinal);
     final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, OrdinalIntent.TICKED, ordinalRecord);
   }
