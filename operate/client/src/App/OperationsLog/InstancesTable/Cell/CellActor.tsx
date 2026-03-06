@@ -43,7 +43,7 @@ const CellActor: React.FC<Props> = ({item}) => {
     <OperationLogName>
       {ActorIcon && (
         <Tooltip
-          align="bottom-left"
+          align="bottom-start"
           description={getTooltipActorContent(item.actorType)}
         >
           <ActorIcon />
@@ -51,7 +51,7 @@ const CellActor: React.FC<Props> = ({item}) => {
       )}
       {item.agentElementId && (
         <Tooltip
-          align="bottom-left"
+          align="bottom-start"
           description={getTooltipActorContent('AGENT')}
         >
           <AiAgentIcon />
