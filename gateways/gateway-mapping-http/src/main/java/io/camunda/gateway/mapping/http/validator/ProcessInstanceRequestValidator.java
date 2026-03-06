@@ -12,6 +12,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateBusinessId;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateOperationReference;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateProcessDefinitionId;
@@ -67,6 +68,7 @@ public class ProcessInstanceRequestValidator {
           }
           validateKeyFormat(request.getProcessDefinitionKey(), "processDefinitionKey", violations);
           validateOperationReference(request.getOperationReference(), violations);
+          validateBusinessId(request.getBusinessId(), violations);
           validateTags(request.getTags(), violations);
         });
   }
@@ -82,6 +84,7 @@ public class ProcessInstanceRequestValidator {
           }
           validateProcessDefinitionId(request.getProcessDefinitionId(), violations);
           validateOperationReference(request.getOperationReference(), violations);
+          validateBusinessId(request.getBusinessId(), violations);
           validateTags(request.getTags(), violations);
         });
   }
@@ -117,6 +120,8 @@ public class ProcessInstanceRequestValidator {
             violations.add(
                 "processDefinitionVersion can only be set when using processDefinitionId");
           }
+
+          validateBusinessId(request.getBusinessId(), violations);
         });
   }
 

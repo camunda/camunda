@@ -232,5 +232,24 @@ class SimpleRequestMapperTest {
       assertThat(mapped.processDefinitionKey()).isEqualTo(123L);
       assertThat(mapped.businessId()).isEqualTo(businessId);
     }
+
+    @Test
+    void shouldRejectBusinessIdExceedingMaxLength() {
+      // given
+      final var request =
+          new ProcessInstanceCreationInstruction()
+              .processDefinitionKey("123")
+              .businessId("a".repeat(257));
+
+      // when
+      final Either<ProblemDetail, ProcessInstanceCreateRequest> result =
+          SimpleRequestMapper.toCreateProcessInstance(request, false);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+      assertThat(result.getLeft().getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(result.getLeft().getDetail()).contains("businessId").contains("256");
+    }
   }
 }
