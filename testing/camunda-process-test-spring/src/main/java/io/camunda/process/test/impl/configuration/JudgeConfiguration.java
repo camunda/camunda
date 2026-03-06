@@ -16,9 +16,8 @@
 package io.camunda.process.test.impl.configuration;
 
 import io.camunda.process.test.api.judge.JudgeConfig;
-import io.camunda.process.test.impl.runtime.properties.JudgeProperties;
-import java.util.Properties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.util.StringUtils;
 
 public class JudgeConfiguration {
 
@@ -56,47 +55,8 @@ public class JudgeConfiguration {
 
   public boolean isExplicitlyConfigured() {
     return Double.compare(threshold, DEFAULT_THRESHOLD) != 0
-        || customPrompt != null
-        || chatModel.getProvider() != null;
-  }
-
-  public Properties toProperties() {
-    final Properties properties = new Properties();
-    putIfNotNull(
-        properties, JudgeProperties.PROPERTY_NAME_JUDGE_THRESHOLD, String.valueOf(threshold));
-    putIfNotNull(properties, JudgeProperties.PROPERTY_NAME_JUDGE_CUSTOM_PROMPT, customPrompt);
-    putIfNotNull(
-        properties,
-        JudgeProperties.PROPERTY_NAME_JUDGE_CHAT_MODEL_PROVIDER,
-        chatModel.getProvider());
-    putIfNotNull(
-        properties, JudgeProperties.PROPERTY_NAME_JUDGE_CHAT_MODEL_MODEL, chatModel.getModel());
-    putIfNotNull(
-        properties, JudgeProperties.PROPERTY_NAME_JUDGE_CHAT_MODEL_API_KEY, chatModel.getApiKey());
-    putIfNotNull(
-        properties,
-        JudgeProperties.PROPERTY_NAME_JUDGE_CHAT_MODEL_BASE_URL,
-        chatModel.getBaseUrl());
-    putIfNotNull(
-        properties, JudgeProperties.PROPERTY_NAME_JUDGE_CHAT_MODEL_REGION, chatModel.getRegion());
-    if (chatModel.getCredentials() != null) {
-      putIfNotNull(
-          properties,
-          JudgeProperties.PROPERTY_NAME_JUDGE_CHAT_MODEL_CREDENTIALS_ACCESS_KEY,
-          chatModel.getCredentials().getAccessKey());
-      putIfNotNull(
-          properties,
-          JudgeProperties.PROPERTY_NAME_JUDGE_CHAT_MODEL_CREDENTIALS_SECRET_KEY,
-          chatModel.getCredentials().getSecretKey());
-    }
-    return properties;
-  }
-
-  private static void putIfNotNull(
-      final Properties properties, final String key, final String value) {
-    if (value != null) {
-      properties.setProperty(key, value);
-    }
+        || StringUtils.hasText(customPrompt)
+        || StringUtils.hasText(chatModel.getProvider());
   }
 
   public static class ChatModelConfiguration {
