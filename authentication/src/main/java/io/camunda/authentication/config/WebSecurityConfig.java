@@ -53,6 +53,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -676,6 +677,20 @@ public class WebSecurityConfig {
       }
     }
 
+    private List<ClientRegistration> extractClientRegistrations(
+        final ClientRegistrationRepository clientRegistrationRepository) {
+      if (!(clientRegistrationRepository instanceof final Iterable<?> iterableRepository)) {
+        throw new IllegalStateException(
+            "Unable to extract OAuth 2.0 client registrations as clientRegistrationRepository %s is not iterable"
+                .formatted(clientRegistrationRepository.getClass()));
+      }
+
+      return StreamSupport.stream(iterableRepository.spliterator(), false)
+          .filter(ClientRegistration.class::isInstance)
+          .map(ClientRegistration.class::cast)
+          .toList();
+    }
+
     @Bean
     public TokenValidatorFactory tokenValidatorFactory(
         final SecurityConfiguration securityConfiguration,
@@ -729,9 +744,7 @@ public class WebSecurityConfig {
         final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
         final ClientRegistrationRepository clientRegistrationRepository,
         final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
-      final var repository = (Iterable<ClientRegistration>) clientRegistrationRepository;
-      final var clientRegistrations =
-          StreamSupport.stream(repository.spliterator(), false).toList();
+      final var clientRegistrations = extractClientRegistrations(clientRegistrationRepository);
 
       final var additionalJwkSetUrisByIssuer =
           buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository);
@@ -1038,10 +1051,10 @@ public class WebSecurityConfig {
         oauthProtectedResourceMetadataCustomizer(
             final ClientRegistrationRepository clientRegistrationRepository) {
       final var issuerUris =
-          StreamSupport.stream(
-                  ((Iterable<ClientRegistration>) clientRegistrationRepository).spliterator(),
-                  false)
+          extractClientRegistrations(clientRegistrationRepository).stream()
               .map(clientRegistration -> clientRegistration.getProviderDetails().getIssuerUri())
+              .filter(Objects::nonNull)
+              .distinct()
               .toList();
 
       return prmConfigurer ->
