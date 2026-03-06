@@ -15,7 +15,7 @@ import io.camunda.zeebe.util.PartitionUtil;
 import java.util.TreeSet;
 
 public class ScalingUpApplier implements TypedEventApplier<ScaleIntent, ScaleRecord> {
-  final MutableRoutingState routingState;
+  private final MutableRoutingState routingState;
 
   public ScalingUpApplier(final MutableRoutingState routingState) {
     this.routingState = routingState;
