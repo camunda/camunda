@@ -171,7 +171,7 @@ class TaskDetailsPage {
     await this.getNthVariableValueInput(1).fill(value);
     await expect(this.getNthVariableNameInput(1)).toHaveValue(name);
     await expect(this.getNthVariableValueInput(1)).toHaveValue(value);
-    await sleep(500);
+    await sleep(1000);
   }
 
   async fillNumber(number: string): Promise<void> {

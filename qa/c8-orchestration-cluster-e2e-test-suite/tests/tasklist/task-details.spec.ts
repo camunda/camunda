@@ -217,10 +217,9 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.unassignButton).toBeHidden();
     await expect(taskDetailsPage.completeTaskButton).toBeHidden();
 
-    await taskPanelPage.openTask('JobWorker_user_task');
-
     await waitForAssertion({
       assertion: async () => {
+        await taskPanelPage.openTask('JobWorker_user_task');
         await expect(page.getByText('jobWorkerVar')).toBeVisible();
         await expect(page.getByText('zeebeVar')).toBeVisible({timeout: 60000});
       },
