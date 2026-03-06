@@ -148,7 +148,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             timerChecker,
             routingInfo,
             clock,
-            transientProcessMessageSubscriptionState);
+            transientProcessMessageSubscriptionState,
+            config.getMaxNameFieldLength());
 
     stateBehavior = new BpmnStateBehavior(processingState, variableBehavior);
 

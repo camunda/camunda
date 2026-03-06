@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.model.transformation;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.AdHocSubProcessTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.BoundaryEventTransformer;
@@ -71,9 +72,16 @@ public final class BpmnTransformer {
   private final TransformationVisitor step5Visitor;
 
   private final ExpressionLanguage expressionLanguage;
+  private final int maxNameFieldLength;
 
   public BpmnTransformer(final ExpressionLanguage expressionLanguage) {
+    this(expressionLanguage, EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH);
+  }
+
+  public BpmnTransformer(
+      final ExpressionLanguage expressionLanguage, final int maxNameFieldLength) {
     this.expressionLanguage = expressionLanguage;
+    this.maxNameFieldLength = maxNameFieldLength;
 
     step1Visitor = new TransformationVisitor();
     step1Visitor.registerHandler(new ErrorTransformer());
@@ -121,6 +129,7 @@ public final class BpmnTransformer {
   public List<ExecutableProcess> transformDefinitions(final BpmnModelInstance modelInstance) {
     final TransformContext context = new TransformContext();
     context.setExpressionLanguage(expressionLanguage);
+    context.setMaxNameFieldLength(maxNameFieldLength);
 
     final ModelWalker walker = new ModelWalker(modelInstance);
     step1Visitor.setContext(context);
