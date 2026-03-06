@@ -80,7 +80,11 @@ export default function DashboardRenderer({
               customizeTileLink={customizeTileLink}
               loadTile={loadTile}
               tile={tile}
-              filter={filter.map((filter) => ({...filter, appliedTo: ['all']}))}
+              filter={
+                Array.isArray(filter)
+                  ? filter.map((filter) => ({...filter, appliedTo: ['all']}))
+                  : []
+              }
               addons={addons}
               onTileAdd={onTileAdd}
               onTileUpdate={onTileUpdate}
