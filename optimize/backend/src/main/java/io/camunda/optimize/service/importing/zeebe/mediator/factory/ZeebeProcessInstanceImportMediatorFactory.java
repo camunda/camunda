@@ -15,7 +15,6 @@ import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeProcessInstanceImportService;
-import io.camunda.optimize.service.importing.zeebe.cache.ZeebeImportSlidingWindowCache;
 import io.camunda.optimize.service.importing.zeebe.db.ZeebeProcessInstanceFetcher;
 import io.camunda.optimize.service.importing.zeebe.mediator.ZeebeProcessInstanceImportMediator;
 import io.camunda.optimize.service.util.BackoffCalculator;
@@ -69,6 +68,6 @@ public class ZeebeProcessInstanceImportMediatorFactory extends AbstractZeebeImpo
                 databaseClient),
             configurationService,
             new BackoffCalculator(configurationService),
-            new ZeebeImportSlidingWindowCache(partitionId, "PROCESS_INSTANCE")));
+            null));
   }
 }

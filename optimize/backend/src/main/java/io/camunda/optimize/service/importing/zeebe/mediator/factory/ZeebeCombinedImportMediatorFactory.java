@@ -119,10 +119,7 @@ public class ZeebeCombinedImportMediatorFactory extends AbstractZeebeImportMedia
             configurationService,
             new BackoffCalculator(configurationService),
             new ZeebeImportSlidingWindowCache(
-                partitionId,
-                "COMBINED",
-                preFlattenedWriter,
-                databaseClient,
-                configurationService)));
+                partitionId, "COMBINED", preFlattenedWriter, databaseClient, configurationService),
+            databaseClient));
   }
 }

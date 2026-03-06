@@ -16,7 +16,6 @@ import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeVariableImportService;
-import io.camunda.optimize.service.importing.zeebe.cache.ZeebeImportSlidingWindowCache;
 import io.camunda.optimize.service.importing.zeebe.db.ZeebeVariableFetcher;
 import io.camunda.optimize.service.importing.zeebe.mediator.ZeebeVariableImportMediator;
 import io.camunda.optimize.service.util.BackoffCalculator;
@@ -74,6 +73,6 @@ public class ZeebeVariableImportMediatorFactory extends AbstractZeebeImportMedia
                 databaseClient),
             configurationService,
             new BackoffCalculator(configurationService),
-            new ZeebeImportSlidingWindowCache(partitionId, "VARIABLE")));
+            null));
   }
 }

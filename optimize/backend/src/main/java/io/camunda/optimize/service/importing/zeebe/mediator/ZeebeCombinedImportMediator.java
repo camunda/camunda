@@ -12,12 +12,15 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.OptimizeMetrics;
+import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.zeebe.ZeebeGenericRecordDto;
 import io.camunda.optimize.dto.zeebe.incident.ZeebeIncidentRecordDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import io.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
 import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
+import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import io.camunda.optimize.service.importing.DatabaseImportRequestJob;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.mediator.MediatorRank;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeIncidentImportService;
@@ -40,7 +43,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,6 +78,8 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
   /** Sliding window cache for combined Zeebe records; drives PreFlattenedDTO production. */
   private final ZeebeImportSlidingWindowCache slidingWindowCache;
 
+  private final DatabaseClient client;
+
   public ZeebeCombinedImportMediator(
       final ZeebeRecordImportIndexHandler importIndexHandler,
       final ZeebeRecordFetcher fetcher,
@@ -86,7 +90,8 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
       final ObjectMapper objectMapper,
       final ConfigurationService configurationService,
       final BackoffCalculator idleBackoffCalculator,
-      final ZeebeImportSlidingWindowCache slidingWindowCache) {
+      final ZeebeImportSlidingWindowCache slidingWindowCache,
+      final DatabaseClient client) {
     this.importIndexHandler = importIndexHandler;
     this.fetcher = fetcher;
     this.processInstanceImportService = processInstanceImportService;
@@ -97,7 +102,8 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
     this.configurationService = configurationService;
     this.idleBackoffCalculator = idleBackoffCalculator;
     this.slidingWindowCache = slidingWindowCache;
-    this.databaseImportJobExecutor =
+    this.client = client;
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
   }
 
@@ -232,30 +238,27 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
         filterAndConvert(records, ValueType.USER_TASK, ZeebeUserTaskRecordDto.class);
 
     // Ask each service to create its import job (transformation only, no execution)
-    final List<Runnable> jobs = new ArrayList<>();
-    processInstanceImportService.createImportJob(processInstanceRecords).ifPresent(jobs::add);
-    variableImportService.createImportJob(variableRecords).ifPresent(jobs::add);
-    incidentImportService.createImportJob(incidentRecords).ifPresent(jobs::add);
-    userTaskImportService.createImportJob(userTaskRecords).ifPresent(jobs::add);
+    final List<ImportRequestDto> jobs = new ArrayList<>();
+
+    processInstanceImportService
+        .createImportJob(processInstanceRecords)
+        .ifPresent(j -> jobs.addAll(j.getImportRequests()));
+    variableImportService
+        .createImportJob(variableRecords)
+        .ifPresent(j -> jobs.addAll(j.getImportRequests()));
+    incidentImportService
+        .createImportJob(incidentRecords)
+        .ifPresent(j -> jobs.addAll(j.getImportRequests()));
+    userTaskImportService
+        .createImportJob(userTaskRecords)
+        .ifPresent(j -> jobs.addAll(j.getImportRequests()));
 
     if (jobs.isEmpty()) {
       allServicesCompleteCallback.run();
       return;
     }
 
-    // Submit all collected jobs to the single executor; invoke the page-level callback once all
-    // jobs have completed.
-    final AtomicInteger remaining = new AtomicInteger(jobs.size());
-    for (final Runnable job : jobs) {
-      databaseImportJobExecutor.executeImportJob(
-          wrapWithCallback(
-              job,
-              () -> {
-                if (remaining.decrementAndGet() == 0) {
-                  allServicesCompleteCallback.run();
-                }
-              }));
-    }
+    databaseImportJobExecutor.executeImportJob(wrapWithCallback(jobs, allServicesCompleteCallback));
   }
 
   /**
@@ -263,11 +266,9 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
    * completionCallback} is invoked. This is used to attach a per-batch counting callback to jobs
    * that were created without one (or with a no-op callback).
    */
-  private Runnable wrapWithCallback(final Runnable job, final Runnable completionCallback) {
-    return () -> {
-      job.run();
-      completionCallback.run();
-    };
+  private Runnable wrapWithCallback(
+      final List<ImportRequestDto> jobs, final Runnable completionCallback) {
+    return new DatabaseImportRequestJob(client, configurationService, completionCallback, jobs);
   }
 
   private <T> List<T> filterAndConvert(

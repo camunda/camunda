@@ -14,7 +14,6 @@ import io.camunda.optimize.service.db.writer.UserTaskWriter;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeUserTaskImportService;
-import io.camunda.optimize.service.importing.zeebe.cache.ZeebeImportSlidingWindowCache;
 import io.camunda.optimize.service.importing.zeebe.db.ZeebeUserTaskFetcher;
 import io.camunda.optimize.service.importing.zeebe.mediator.ZeebeUserTaskImportMediator;
 import io.camunda.optimize.service.util.BackoffCalculator;
@@ -61,6 +60,6 @@ public class ZeebeUserTaskImportMediatorFactory extends AbstractZeebeImportMedia
                 configurationService, userTaskWriter, partitionId, databaseClient),
             configurationService,
             new BackoffCalculator(configurationService),
-            new ZeebeImportSlidingWindowCache(partitionId, "USER_TASK")));
+            null));
   }
 }

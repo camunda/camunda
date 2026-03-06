@@ -89,6 +89,17 @@ public class ZeebeProcessInstanceImportJob implements Runnable {
   }
 
   private void persistEntities() {
+    final List<ImportRequestDto> allRequests = getImportRequests();
+
+    if (!allRequests.isEmpty()) {
+      databaseClient.executeImportRequestsAsBulk(
+          "Zeebe process instances and flow node instances",
+          allRequests,
+          configurationService.getSkipDataAfterNestedDocLimitReached());
+    }
+  }
+
+  public List<ImportRequestDto> getImportRequests() {
     final List<ImportRequestDto> allRequests = new ArrayList<>();
 
     if (!flatProcessInstances.isEmpty()) {
@@ -101,12 +112,6 @@ public class ZeebeProcessInstanceImportJob implements Runnable {
       allRequests.addAll(
           flowNodeInstanceWriter.generateFlatFlowNodeInstanceImports(flowNodeInstances));
     }
-
-    if (!allRequests.isEmpty()) {
-      databaseClient.executeImportRequestsAsBulk(
-          "Zeebe process instances and flow node instances",
-          allRequests,
-          configurationService.getSkipDataAfterNestedDocLimitReached());
-    }
+    return allRequests;
   }
 }

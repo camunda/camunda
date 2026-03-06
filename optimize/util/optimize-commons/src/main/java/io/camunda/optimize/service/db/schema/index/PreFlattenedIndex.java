@@ -38,7 +38,7 @@ public abstract class PreFlattenedIndex<TBuilder> extends AbstractInstanceIndex<
   }
 
   public static String constructIndexName(final String indexKey) {
-    return PRE_FLATTENED_INDEX_PREFIX + indexKey.toLowerCase(Locale.ENGLISH);
+    return PRE_FLATTENED_INDEX_PREFIX + "data";
   }
 
   @Override

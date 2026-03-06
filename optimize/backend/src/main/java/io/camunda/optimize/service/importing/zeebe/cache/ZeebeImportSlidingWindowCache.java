@@ -76,7 +76,7 @@ public class ZeebeImportSlidingWindowCache {
     this.preFlattenedWriter = preFlattenedWriter;
     this.databaseClient = databaseClient;
     this.configurationService = configurationService;
-    this.scheduler =
+    scheduler =
         Executors.newSingleThreadScheduledExecutor(
             r -> {
               final Thread thread =
@@ -211,9 +211,6 @@ public class ZeebeImportSlidingWindowCache {
               .filter(Objects::nonNull)
               .findFirst();
       region.ifPresent(dto::setRegion);
-
-      LOG.info("PreFlattenedDTO [partition={}, recordType={}]: {}", partitionId, recordType, dto);
-
       result.add(dto);
     }
 
@@ -235,11 +232,6 @@ public class ZeebeImportSlidingWindowCache {
           "pre-flattened process instances",
           preFlattenedWriter.generatePreFlattenedImports(dtos),
           configurationService.getSkipDataAfterNestedDocLimitReached());
-      LOG.debug(
-          "Flushed {} PreFlattenedDTO(s) [partition={}, recordType={}]",
-          dtos.size(),
-          partitionId,
-          recordType);
     } catch (final Exception e) {
       LOG.error(
           "Failed to flush {} PreFlattenedDTO(s) [partition={}, recordType={}]: {}",
