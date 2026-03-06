@@ -14,6 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.document.api.DocumentContent;
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentMetadataModel;
@@ -21,7 +22,6 @@ import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreRecord;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;

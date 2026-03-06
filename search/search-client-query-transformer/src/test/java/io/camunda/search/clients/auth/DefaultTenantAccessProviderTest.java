@@ -9,8 +9,8 @@ package io.camunda.search.clients.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.entities.TenantOwnedEntity;
-import io.camunda.security.auth.CamundaAuthentication;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

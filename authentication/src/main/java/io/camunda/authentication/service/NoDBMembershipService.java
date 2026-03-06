@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;

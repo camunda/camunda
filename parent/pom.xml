@@ -2343,6 +2343,15 @@
         <artifactId>json-flattener</artifactId>
         <version>${version.json-flattener}</version>
       </dependency>
+
+      <!-- Auth SDK BOM -->
+      <dependency>
+        <groupId>io.camunda.auth</groupId>
+        <artifactId>camunda-auth-bom</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 

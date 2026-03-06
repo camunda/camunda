@@ -11,8 +11,19 @@ public class MultiTenancyConfiguration {
   private boolean checksEnabled = false;
   private boolean apiEnabled = true;
 
-  public boolean isChecksEnabled() { return checksEnabled; }
-  public void setChecksEnabled(final boolean checksEnabled) { this.checksEnabled = checksEnabled; }
-  public boolean isApiEnabled() { return apiEnabled; }
-  public void setApiEnabled(final boolean apiEnabled) { this.apiEnabled = apiEnabled; }
+  public boolean isChecksEnabled() {
+    return checksEnabled;
+  }
+
+  public void setChecksEnabled(final boolean checksEnabled) {
+    this.checksEnabled = checksEnabled;
+  }
+
+  public boolean isApiEnabled() {
+    return apiEnabled;
+  }
+
+  public void setApiEnabled(final boolean apiEnabled) {
+    this.apiEnabled = apiEnabled;
+  }
 }

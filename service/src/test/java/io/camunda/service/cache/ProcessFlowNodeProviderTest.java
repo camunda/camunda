@@ -13,11 +13,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.cache.ProcessDefinitionProvider.ProcessCacheData;
 import io.camunda.service.cache.ProcessDefinitionProvider.ProcessElement;

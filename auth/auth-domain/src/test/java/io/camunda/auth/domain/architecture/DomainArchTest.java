@@ -63,16 +63,19 @@ final class DomainArchTest {
   }
 
   @Test
-  void domainMustNotDependOnJackson() {
+  void domainMustNotDependOnJacksonExceptAnnotations() {
     noClasses()
         .that()
         .resideInAPackage("io.camunda.auth.domain..")
         .should()
         .dependOnClassesThat()
-        .resideInAnyPackage("com.fasterxml.jackson..", "tools.jackson..")
+        .resideInAnyPackage(
+            "com.fasterxml.jackson.core..",
+            "com.fasterxml.jackson.databind..",
+            "tools.jackson..")
         .because(
-            "the domain module must not depend on Jackson — "
-                + "serialization is an infrastructure concern")
+            "the domain module must not depend on Jackson runtime — "
+                + "only pure metadata annotations (jackson-annotations) are allowed")
         .check(domainClasses);
   }
 

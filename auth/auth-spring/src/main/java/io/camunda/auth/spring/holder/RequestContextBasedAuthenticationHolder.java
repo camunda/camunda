@@ -24,8 +24,7 @@ public class RequestContextBasedAuthenticationHolder implements CamundaAuthentic
   public void set(final CamundaAuthentication authentication) {
     final RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
     if (attributes != null) {
-      attributes.setAttribute(
-          ATTRIBUTE_KEY, authentication, RequestAttributes.SCOPE_REQUEST);
+      attributes.setAttribute(ATTRIBUTE_KEY, authentication, RequestAttributes.SCOPE_REQUEST);
     }
   }
 

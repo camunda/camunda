@@ -14,18 +14,48 @@ public class AuthenticationConfiguration {
 
   private AuthenticationMethod method = DEFAULT_METHOD;
   private String authenticationRefreshInterval = "PT30S";
-  private OidcAuthenticationConfiguration oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+  private OidcAuthenticationConfiguration oidcAuthenticationConfiguration =
+      new OidcAuthenticationConfiguration();
   private boolean unprotectedApi = false;
   private ProvidersConfiguration providers;
 
-  public boolean getUnprotectedApi() { return unprotectedApi; }
-  public void setUnprotectedApi(final boolean value) { unprotectedApi = value; }
-  public AuthenticationMethod getMethod() { return method; }
-  public void setMethod(final AuthenticationMethod method) { this.method = method; }
-  public String getAuthenticationRefreshInterval() { return authenticationRefreshInterval; }
-  public void setAuthenticationRefreshInterval(final String authenticationRefreshInterval) { this.authenticationRefreshInterval = authenticationRefreshInterval; }
-  public OidcAuthenticationConfiguration getOidc() { return oidcAuthenticationConfiguration; }
-  public void setOidc(final OidcAuthenticationConfiguration configuration) { oidcAuthenticationConfiguration = configuration; }
-  public ProvidersConfiguration getProviders() { return providers; }
-  public void setProviders(final ProvidersConfiguration providers) { this.providers = providers; }
+  public boolean getUnprotectedApi() {
+    return unprotectedApi;
+  }
+
+  public void setUnprotectedApi(final boolean value) {
+    unprotectedApi = value;
+  }
+
+  public AuthenticationMethod getMethod() {
+    return method;
+  }
+
+  public void setMethod(final AuthenticationMethod method) {
+    this.method = method;
+  }
+
+  public String getAuthenticationRefreshInterval() {
+    return authenticationRefreshInterval;
+  }
+
+  public void setAuthenticationRefreshInterval(final String authenticationRefreshInterval) {
+    this.authenticationRefreshInterval = authenticationRefreshInterval;
+  }
+
+  public OidcAuthenticationConfiguration getOidc() {
+    return oidcAuthenticationConfiguration;
+  }
+
+  public void setOidc(final OidcAuthenticationConfiguration configuration) {
+    oidcAuthenticationConfiguration = configuration;
+  }
+
+  public ProvidersConfiguration getProviders() {
+    return providers;
+  }
+
+  public void setProviders(final ProvidersConfiguration providers) {
+    this.providers = providers;
+  }
 }

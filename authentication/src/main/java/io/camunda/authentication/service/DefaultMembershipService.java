@@ -10,11 +10,11 @@ package io.camunda.authentication.service;
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;

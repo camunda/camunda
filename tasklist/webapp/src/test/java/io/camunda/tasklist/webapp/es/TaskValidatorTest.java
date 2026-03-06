@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.tasklist.property.FeatureFlagProperties;
 import io.camunda.tasklist.property.TasklistProperties;

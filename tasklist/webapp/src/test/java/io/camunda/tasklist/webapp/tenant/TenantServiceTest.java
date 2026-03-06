@@ -9,7 +9,7 @@ package io.camunda.tasklist.webapp.tenant;
 
 import static org.mockito.Mockito.*;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.TenantAccess;

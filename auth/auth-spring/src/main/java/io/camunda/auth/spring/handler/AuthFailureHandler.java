@@ -21,13 +21,13 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import tools.jackson.databind.ObjectMapper;
 
 public class AuthFailureHandler
     implements AuthenticationFailureHandler, AccessDeniedHandler, AuthenticationEntryPoint {
 
   private static final Logger LOG = LoggerFactory.getLogger(AuthFailureHandler.class);
-  private final tools.jackson.databind.ObjectMapper objectMapper =
-      new tools.jackson.databind.ObjectMapper();
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
   public void onAuthenticationFailure(

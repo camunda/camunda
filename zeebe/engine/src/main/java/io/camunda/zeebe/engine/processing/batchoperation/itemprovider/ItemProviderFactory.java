@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation.itemprovider;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 

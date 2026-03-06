@@ -7,7 +7,7 @@
  */
 package io.camunda.search.clients.auth;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.security.reader.TenantAccess;
 import io.camunda.security.reader.TenantAccessProvider;
 

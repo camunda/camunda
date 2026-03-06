@@ -7,6 +7,8 @@
  */
 package io.camunda.security.auth;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
+
 public interface CamundaAuthenticationConverter<T> {
 
   boolean supports(final T authentication);

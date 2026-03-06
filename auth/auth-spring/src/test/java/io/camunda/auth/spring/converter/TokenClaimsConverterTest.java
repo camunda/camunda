@@ -52,8 +52,7 @@ class TokenClaimsConverterTest {
     final var converter =
         new TokenClaimsConverter("preferred_username", "azp", true, membershipResolver);
     final Map<String, Object> claims = Map.of("azp", "my-service");
-    final var expectedAuth =
-        new CamundaAuthentication.Builder().clientId("my-service").build();
+    final var expectedAuth = new CamundaAuthentication.Builder().clientId("my-service").build();
     when(membershipResolver.resolveMemberships(any(), eq("my-service"), eq(PrincipalType.CLIENT)))
         .thenReturn(expectedAuth);
 

@@ -16,9 +16,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.cache.ProcessCache.Configuration;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;

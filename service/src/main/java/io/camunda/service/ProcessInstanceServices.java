@@ -12,6 +12,7 @@ import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_UPDATE_AUTHORIZATION;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
 import io.camunda.search.entities.IncidentEntity;
@@ -28,7 +29,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;

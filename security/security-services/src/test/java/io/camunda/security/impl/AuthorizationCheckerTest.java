@@ -7,9 +7,9 @@
  */
 package io.camunda.security.impl;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;

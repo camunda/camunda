@@ -12,6 +12,11 @@ import java.util.Map;
 public class ProvidersConfiguration {
   private Map<String, OidcAuthenticationConfiguration> oidc;
 
-  public Map<String, OidcAuthenticationConfiguration> getOidc() { return oidc; }
-  public void setOidc(final Map<String, OidcAuthenticationConfiguration> oidc) { this.oidc = oidc; }
+  public Map<String, OidcAuthenticationConfiguration> getOidc() {
+    return oidc;
+  }
+
+  public void setOidc(final Map<String, OidcAuthenticationConfiguration> oidc) {
+    this.oidc = oidc;
+  }
 }

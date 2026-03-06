@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.ClusterStatus;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;

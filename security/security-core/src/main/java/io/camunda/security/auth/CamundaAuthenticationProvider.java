@@ -7,6 +7,8 @@
  */
 package io.camunda.security.auth;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
+
 /**
  * Provides the current {@link CamundaAuthentication} representing the authentication context for a
  * user, client, or anonymous principal.

@@ -44,7 +44,8 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
   public OAuth2RefreshTokenFilter(
       final OAuth2AuthorizedClientRepository authorizedClientRepository,
       final OAuth2AuthorizedClientManager authorizedClientManager) {
-    this(authorizedClientRepository, authorizedClientManager, DEFAULT_CLOCK_SKEW, Clock.systemUTC());
+    this(
+        authorizedClientRepository, authorizedClientManager, DEFAULT_CLOCK_SKEW, Clock.systemUTC());
   }
 
   public OAuth2RefreshTokenFilter(
@@ -80,10 +81,8 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
               org.springframework.security.oauth2.client.OAuth2AuthorizeRequest
                   .withClientRegistrationId(registrationId)
                   .principal(oauthToken)
-                  .attribute(
-                      HttpServletRequest.class.getName(), request)
-                  .attribute(
-                      HttpServletResponse.class.getName(), response)
+                  .attribute(HttpServletRequest.class.getName(), request)
+                  .attribute(HttpServletResponse.class.getName(), response)
                   .build();
 
           final OAuth2AuthorizedClient refreshedClient =
@@ -94,7 +93,8 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
                 refreshedClient, oauthToken, request, response);
             LOG.debug("Access token refreshed for registration '{}'", registrationId);
           } else {
-            LOG.warn("Token refresh returned null for registration '{}', logging out", registrationId);
+            LOG.warn(
+                "Token refresh returned null for registration '{}', logging out", registrationId);
             logout(request, response, authentication);
             return;
           }

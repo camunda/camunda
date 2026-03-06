@@ -9,7 +9,7 @@ package io.camunda.tasklist.util;
 
 import static io.camunda.tasklist.util.TasklistZeebeIntegrationTest.DEFAULT_USER_ID;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.tasklist.webapp.service.OrganizationService;
 import org.junit.jupiter.api.AfterEach;

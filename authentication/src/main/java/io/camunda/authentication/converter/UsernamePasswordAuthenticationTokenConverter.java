@@ -11,10 +11,10 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.ROLE;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;

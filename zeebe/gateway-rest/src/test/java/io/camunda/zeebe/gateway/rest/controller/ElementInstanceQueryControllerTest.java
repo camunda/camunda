@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
 import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
@@ -30,7 +31,6 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.FlowNodeInstanceSort;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.exception.ErrorMapper;

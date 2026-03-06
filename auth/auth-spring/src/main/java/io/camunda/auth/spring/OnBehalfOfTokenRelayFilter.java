@@ -68,8 +68,7 @@ public class OnBehalfOfTokenRelayFilter extends OncePerRequestFilter {
         if (authorizedClient != null && authorizedClient.getAccessToken() != null) {
           request.setAttribute(
               OBO_TOKEN_ATTRIBUTE, authorizedClient.getAccessToken().getTokenValue());
-          LOG.debug(
-              "OBO token exchange successful for registration={}", clientRegistrationId);
+          LOG.debug("OBO token exchange successful for registration={}", clientRegistrationId);
         }
       } catch (final Exception e) {
         LOG.warn(
