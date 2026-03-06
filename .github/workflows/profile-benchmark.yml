@@ -14,6 +14,14 @@ on:
         description: 'Human-readable label for the benchmark variant shown in the PR comment header (e.g. "Benchmark" or "Benchmark RDBMS")'
         required: true
         type: string
+      cluster:
+        description: 'Kubernetes cluster name to connect to via Teleport'
+        required: true
+        type: string
+      teleport-join-token:
+        description: 'Teleport join token for authenticating to the cluster'
+        required: true
+        type: string
 
 defaults:
   run:
@@ -114,6 +122,41 @@ jobs:
               repo: context.repo.repo,
               body: comment
             });
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  delete-namespace:
+    name: Delete Namespace
+    needs: comment-pr
+    if: always() && needs.comment-pr.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Set up Teleport
+        uses: teleport-actions/setup@v1
+        with:
+          version: 17.2.2
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@v2
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ inputs.teleport-join-token }}
+          kubernetes-cluster: ${{ inputs.cluster }}
+      - name: Delete namespace
+        run: |
+          kubectl delete ns "${{ inputs.name }}" --ignore-not-found
       - name: Observe build status
         if: always()
         continue-on-error: true
