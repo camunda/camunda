@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
@@ -72,6 +73,7 @@ public class JunitExtensionTest {
   @Mock private CamundaProcessTestContainerRuntime camundaContainerRuntime;
   @Mock private CamundaManagementClient camundaManagementClient;
   @Mock private CamundaProcessTestResultCollector camundaProcessTestResultCollector;
+  @Mock private CamundaProcessTestContainerProvider containerProvider;
 
   @Mock private ExtensionContext extensionContext;
   @Mock private TestInstances testInstances;
@@ -441,6 +443,23 @@ public class JunitExtensionTest {
 
     // then
     verify(camundaManagementClient).purgeCluster();
+  }
+
+  @Test
+  void shouldAddCustomContainerProviders() throws Exception {
+    // given
+    final CamundaProcessTestExtension extension =
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP)
+            .withContainerProvider(containerProvider)
+            .withContainerProvidersServiceLoaderEnabled(true);
+
+    // when
+    extension.beforeAll(extensionContext);
+    extension.beforeEach(extensionContext);
+
+    // then
+    verify(camundaRuntimeBuilder).withContainerProvider(containerProvider);
+    verify(camundaRuntimeBuilder).withContainerProvidersServiceLoaderEnabled(true);
   }
 
   private void setManagementClientDummy(final CamundaProcessTestExtension extension) {

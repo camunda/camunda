@@ -18,6 +18,7 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
@@ -660,6 +661,32 @@ public class CamundaProcessTestExtension
   public CamundaProcessTestExtension withJsonMapper(
       final io.camunda.zeebe.client.api.JsonMapper jsonMapper) {
     zeebeJsonMapper = jsonMapper;
+    return this;
+  }
+
+  /**
+   * Add a custom container via the given provider to the runtime. The container will be started
+   * together with the runtime and stopped when the runtime is closed.
+   *
+   * @param containerProvider the provider of the custom container
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withContainerProvider(
+      final CamundaProcessTestContainerProvider containerProvider) {
+    runtimeBuilder.withContainerProvider(containerProvider);
+    return this;
+  }
+
+  /**
+   * Enable or disable the loading of custom container providers via the Java ServiceLoader. By
+   * default, the ServiceLoader is enabled.
+   *
+   * @param enabled whether to load container providers via the Java ServiceLoader or not
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withContainerProvidersServiceLoaderEnabled(
+      final boolean enabled) {
+    runtimeBuilder.withContainerProvidersServiceLoaderEnabled(enabled);
     return this;
   }
 
