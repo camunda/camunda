@@ -138,7 +138,7 @@ jobs:
   delete-namespace:
     name: Delete Namespace
     needs: comment-pr
-    if: always() && needs.comment-pr.result != 'skipped'
+    if: always() && needs.comment-pr.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
