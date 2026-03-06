@@ -29,6 +29,7 @@ import static io.camunda.optimize.service.util.InstanceIndexUtil.getFlatProcessI
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.optimize.dto.optimize.FlatProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.RequestType;
@@ -167,14 +168,14 @@ public class ProcessInstanceWriter {
   }
 
   public List<ImportRequestDto> generateFlatProcessInstanceImports(
-      final List<ProcessInstanceDto> processInstances) {
+      final List<FlatProcessInstanceDto> processInstances) {
     final String importItemName = "flat process instances";
     LOG.debug("Creating imports for {} [{}].", processInstances.size(), importItemName);
     indexRepository.createMissingIndices(
         FLAT_PROCESS_INSTANCE_INDEX,
         Set.of(PROCESS_INSTANCE_MULTI_ALIAS),
         processInstances.stream()
-            .map(ProcessInstanceDto::getProcessDefinitionKey)
+            .map(FlatProcessInstanceDto::getProcessDefinitionKey)
             .collect(Collectors.toSet()));
 
     return processInstances.stream()
@@ -183,7 +184,7 @@ public class ProcessInstanceWriter {
   }
 
   private ImportRequestDto buildFlatProcessInstanceImportRequest(
-      final ProcessInstanceDto instance, final String importItemName) {
+      final FlatProcessInstanceDto instance, final String importItemName) {
     final String indexName =
         getFlatProcessInstanceIndexAliasName(instance.getProcessDefinitionKey());
     if (isNewProcessInstance(instance)) {
@@ -218,7 +219,7 @@ public class ProcessInstanceWriter {
     }
   }
 
-  private boolean isNewProcessInstance(final ProcessInstanceDto instance) {
+  private boolean isNewProcessInstance(final FlatProcessInstanceDto instance) {
     // A process instance is "new" (requires full INDEX) if it has a start date set,
     // meaning an ACTIVATING event was present in the current import batch.
     return instance.getStartDate() != null;

@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.importing.job;
 
+import io.camunda.optimize.dto.optimize.FlatProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.process.FlatFlowNodeInstanceDto;
@@ -38,6 +39,7 @@ public class ZeebeProcessInstanceImportJob implements Runnable {
   private final String sourceExportIndex;
 
   private List<ProcessInstanceDto> processInstances = List.of();
+  private List<FlatProcessInstanceDto> flatProcessInstances = List.of();
   private List<FlatFlowNodeInstanceDto> flowNodeInstances = List.of();
 
   public ZeebeProcessInstanceImportJob(
@@ -57,6 +59,10 @@ public class ZeebeProcessInstanceImportJob implements Runnable {
 
   public void setProcessInstances(final List<ProcessInstanceDto> processInstances) {
     this.processInstances = processInstances;
+  }
+
+  public void setFlatProcessInstances(final List<FlatProcessInstanceDto> flatProcessInstances) {
+    this.flatProcessInstances = flatProcessInstances;
   }
 
   public void setFlowNodeInstances(final List<FlatFlowNodeInstanceDto> flowNodeInstances) {
@@ -94,8 +100,9 @@ public class ZeebeProcessInstanceImportJob implements Runnable {
       allRequests.addAll(
           processInstanceWriter.generateProcessInstanceImports(
               processInstances, sourceExportIndex));
+      // flatProcessInstances is always derived from processInstances and has the same size
       allRequests.addAll(
-          processInstanceWriter.generateFlatProcessInstanceImports(processInstances));
+          processInstanceWriter.generateFlatProcessInstanceImports(flatProcessInstances));
     }
 
     if (!flowNodeInstances.isEmpty()) {

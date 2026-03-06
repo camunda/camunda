@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
+import io.camunda.optimize.dto.optimize.FlatProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
@@ -114,10 +115,15 @@ public class ZeebeProcessInstanceImportService
             .flatMap(records -> createFlatFlowNodeInstancesForData(records).stream())
             .collect(Collectors.toList());
 
+    // Build flat process instance DTOs (no nested collections) for the flat index
+    final List<FlatProcessInstanceDto> flatProcessInstances =
+        processInstances.stream().map(FlatProcessInstanceDto::from).collect(Collectors.toList());
+
     LOG.debug(
-        "Processing {} fetched zeebe process instance records: {} process instances, {} flow node instances.",
+        "Processing {} fetched zeebe process instance records: {} process instances, {} flat process instances, {} flow node instances.",
         zeebeRecords.size(),
         processInstances.size(),
+        flatProcessInstances.size(),
         flowNodeInstances.size());
 
     if (processInstances.isEmpty() && flowNodeInstances.isEmpty()) {
@@ -134,6 +140,7 @@ public class ZeebeProcessInstanceImportService
             databaseClient,
             ZEEBE_PROCESS_INSTANCE_INDEX_NAME);
     job.setProcessInstances(processInstances);
+    job.setFlatProcessInstances(flatProcessInstances);
     job.setFlowNodeInstances(flowNodeInstances);
     databaseImportJobExecutor.executeImportJob(job);
   }
