@@ -180,6 +180,7 @@ import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.GlobalJobStatisticsRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByErrorRequest;
+import io.camunda.client.api.statistics.request.JobErrorStatisticsRequest;
 import io.camunda.client.api.statistics.request.JobTimeSeriesStatisticsRequest;
 import io.camunda.client.api.statistics.request.JobTypeStatisticsRequest;
 import io.camunda.client.api.statistics.request.JobWorkerStatisticsRequest;
@@ -1059,6 +1060,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the job time-series statistics request
    */
   JobTimeSeriesStatisticsRequest newJobTimeSeriesStatisticsRequest(
+      final OffsetDateTime from, final OffsetDateTime to, final String jobType);
+
+  /**
+   * Executes a request to query per-error job metrics for a specific job type.
+   *
+   * <pre>
+   * camundaClient
+   *  .newJobErrorStatisticsRequest(OffsetDateTime.now().minusDays(1), OffsetDateTime.now(), "fetch-customer-data")
+   *  .send();
+   * </pre>
+   *
+   * @param from the start of the time range (inclusive)
+   * @param to the end of the time range (inclusive)
+   * @param jobType the job type to return error metrics for
+   * @return a builder for the job error statistics request
+   */
+  JobErrorStatisticsRequest newJobErrorStatisticsRequest(
       final OffsetDateTime from, final OffsetDateTime to, final String jobType);
 
   /**

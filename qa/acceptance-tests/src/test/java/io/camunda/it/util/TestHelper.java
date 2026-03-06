@@ -48,6 +48,7 @@ import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Tenant;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.statistics.response.GlobalJobStatistics;
+import io.camunda.client.api.statistics.response.JobErrorStatistics;
 import io.camunda.client.api.statistics.response.JobTimeSeriesStatistics;
 import io.camunda.client.api.statistics.response.JobTypeStatistics;
 import io.camunda.client.api.statistics.response.JobWorkerStatistics;
@@ -1121,6 +1122,35 @@ public final class TestHelper {
                 request = request.resolution(resolution);
               }
 
+              assertThat(request.send().join()).satisfies(fnRequirements);
+            });
+  }
+
+  public static void waitForJobErrorStatistics(
+      final CamundaClient camundaClient,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
+      final String jobType,
+      final Consumer<JobErrorStatistics> fnRequirements) {
+    waitForJobErrorStatistics(camundaClient, startTime, endTime, jobType, p -> {}, fnRequirements);
+  }
+
+  public static void waitForJobErrorStatistics(
+      final CamundaClient camundaClient,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
+      final String jobType,
+      final Consumer<SearchRequestPage> pageFn,
+      final Consumer<JobErrorStatistics> fnRequirements) {
+    Awaitility.await("should export job error statistics to secondary storage")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var request =
+                  camundaClient
+                      .newJobErrorStatisticsRequest(startTime, endTime, jobType)
+                      .page(pageFn);
               assertThat(request.send().join()).satisfies(fnRequirements);
             });
   }
