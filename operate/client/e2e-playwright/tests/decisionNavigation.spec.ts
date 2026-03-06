@@ -89,10 +89,10 @@ test.describe('Decision Navigation', () => {
 
     await expect(page.getByTestId('diagram')).toBeInViewport();
     await expect(
-      page.getByTestId('diagram').getByText(/define approver/i),
+      page.getByTestId('diagram').locator('[data-element-id="Activity_1tjwahx"]'),
     ).toBeVisible();
 
-    await page.getByTestId('diagram').getByText('Define approver').click();
+    await page.getByTestId('diagram').locator('[data-element-id="Activity_1tjwahx"]').click();
 
     await expect(page.getByTestId('popover')).toBeVisible();
     await page
@@ -130,7 +130,7 @@ test.describe('Decision Navigation', () => {
     await expect(page.getByTestId('diagram')).toBeInViewport();
 
     await expect(
-      page.getByTestId('diagram').getByText(/define approver/i),
+      page.getByTestId('diagram').locator('[data-element-id="Activity_1tjwahx"]'),
     ).toBeVisible();
 
     await page

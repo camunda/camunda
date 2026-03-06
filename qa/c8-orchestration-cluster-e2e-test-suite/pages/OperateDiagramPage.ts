@@ -25,7 +25,7 @@ export class OperateDiagramPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.diagram = this.page.getByTestId('diagram');
+    this.diagram = this.page.getByTestId('diagram-canvas');
     this.popover = this.page.getByTestId('popover');
     this.popoverLink = (name: string | RegExp) =>
       this.popover.getByRole('link', {name});
