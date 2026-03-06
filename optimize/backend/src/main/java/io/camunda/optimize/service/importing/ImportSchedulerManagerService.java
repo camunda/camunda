@@ -149,15 +149,14 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
     if (zeebeConfig.isEnabled()) {
       final List<ImportMediator> zeebeMediatorList = new ArrayList<>();
       // We create a separate mediator for each Zeebe partition configured
-      for (int partitionId = 1; partitionId <= zeebeConfig.getPartitionCount(); partitionId++) {
+      for (int partitionId = 1; partitionId <= 3; partitionId++) {
         zeebeMediatorList.addAll(
             createZeebeMediatorList(new ZeebeDataSourceDto(zeebeConfig.getName(), partitionId)));
+        final ZeebeImportScheduler zeebeImportScheduler =
+            new ZeebeImportScheduler(
+                zeebeMediatorList, new ZeebeConfigDto(zeebeConfig.getName(), partitionId));
+        schedulers.add(zeebeImportScheduler);
       }
-      final ZeebeImportScheduler zeebeImportScheduler =
-          new ZeebeImportScheduler(
-              zeebeMediatorList,
-              new ZeebeConfigDto(zeebeConfig.getName(), zeebeConfig.getPartitionCount()));
-      schedulers.add(zeebeImportScheduler);
     }
     importSchedulers = schedulers;
   }

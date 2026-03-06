@@ -154,6 +154,11 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
 
   // ---- private helpers ----
 
+  @Override
+  public int getPartition() {
+    return fetcher.getPartitionId();
+  }
+
   private boolean importNextPageWithRetries(final CompletableFuture<Void> importCompleted) {
     Boolean result = null;
     while (result == null) {

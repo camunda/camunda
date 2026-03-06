@@ -109,7 +109,7 @@ public abstract class AbstractZeebeRecordFetcher<T> {
     // where larger batches aren't possible. This could be when the payload is too large, for
     // example. Based on configured values,
     // Optimize will always aim to get back to the max configured batch size
-    dynamicBatchSize = configurationService.getConfiguredZeebe().getMaxImportPageSize();
+    dynamicBatchSize = 10000;
     consecutiveSuccessfulFetches = 0;
     batchSizeDeque = new ArrayDeque<>();
   }
@@ -131,33 +131,37 @@ public abstract class AbstractZeebeRecordFetcher<T> {
   }
 
   private void markFetchAsSuccessfulAndAdjustBatchSize() {
-    final int configuredDefaultBatchSize =
-        configurationService.getConfiguredZeebe().getMaxImportPageSize();
-    // When the batch size has been reduced, we keep track of successful fetches up to a maximum
-    // number of times
-    if (dynamicBatchSize != configuredDefaultBatchSize
-        && consecutiveSuccessfulFetches < getZeebeImportConfig().getDynamicBatchSuccessAttempts()) {
-      consecutiveSuccessfulFetches++;
-      // When we have reached the max number of consecutive successful fetches, we assume it is safe
-      // to start increasing the
-      // batch size again
-      if (consecutiveSuccessfulFetches >= getZeebeImportConfig().getDynamicBatchSuccessAttempts()) {
-        if (!batchSizeDeque.isEmpty()) {
-          dynamicBatchSize = batchSizeDeque.pop();
-        } else {
-          LOG.debug(
-              "Dynamic resizing complete, can now revert batch size back to default of {}",
-              configuredDefaultBatchSize);
-          dynamicBatchSize = configuredDefaultBatchSize;
-        }
-        LOG.info(
-            "Reverting batch size back to {} for fetching of {} records from partition {}",
-            dynamicBatchSize,
-            getBaseIndexName(),
-            partitionId);
-        consecutiveSuccessfulFetches = 0;
-      }
-    }
+    //    final int configuredDefaultBatchSize =
+    //        configurationService.getConfiguredZeebe().getMaxImportPageSize();
+    //    // When the batch size has been reduced, we keep track of successful fetches up to a
+    // maximum
+    //    // number of times
+    //    if (dynamicBatchSize != configuredDefaultBatchSize
+    //        && consecutiveSuccessfulFetches <
+    // getZeebeImportConfig().getDynamicBatchSuccessAttempts()) {
+    //      consecutiveSuccessfulFetches++;
+    //      // When we have reached the max number of consecutive successful fetches, we assume it
+    // is safe
+    //      // to start increasing the
+    //      // batch size again
+    //      if (consecutiveSuccessfulFetches >=
+    // getZeebeImportConfig().getDynamicBatchSuccessAttempts()) {
+    //        if (!batchSizeDeque.isEmpty()) {
+    //          dynamicBatchSize = batchSizeDeque.pop();
+    //        } else {
+    //          LOG.debug(
+    //              "Dynamic resizing complete, can now revert batch size back to default of {}",
+    //              configuredDefaultBatchSize);
+    //          dynamicBatchSize = configuredDefaultBatchSize;
+    //        }
+    //        LOG.info(
+    //            "Reverting batch size back to {} for fetching of {} records from partition {}",
+    //            dynamicBatchSize,
+    //            getBaseIndexName(),
+    //            partitionId);
+    //        consecutiveSuccessfulFetches = 0;
+    //      }
+    //    }
   }
 
   private void trackConsecutiveEmptyPages(final List<T> results) {

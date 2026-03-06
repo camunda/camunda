@@ -25,4 +25,8 @@ public interface ImportMediator {
   void shutdown();
 
   MediatorRank getRank();
+
+  default int getPartition() {
+    return 1;
+  }
 }
