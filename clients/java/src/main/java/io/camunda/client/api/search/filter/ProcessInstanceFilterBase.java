@@ -155,4 +155,10 @@ public interface ProcessInstanceFilterBase extends SearchRequestFilter {
 
   /** Filter by tags */
   ProcessInstanceFilterBase tags(final String... tags);
+
+  /** Filter by businessId */
+  ProcessInstanceFilterBase businessId(final String businessId);
+
+  /** Filter by businessId using {@link StringProperty} consumer */
+  ProcessInstanceFilterBase businessId(final Consumer<StringProperty> fn);
 }

@@ -610,6 +610,29 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
     assertThat(processInstanceFilter.hasIncident()).isNull();
     assertThat(processInstanceFilter.tenantIdOperations()).isEmpty();
     assertThat(processInstanceFilter.errorMessageOperations()).isEmpty();
+    assertThat(processInstanceFilter.businessIdOperations()).isEmpty();
+  }
+
+  @Test
+  public void shouldQueryByBusinessId() {
+    // given
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.businessIds("order-123"));
+
+    // when
+    final var searchRequest = transformQuery(processInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(), "businessId", "order-123");
   }
 
   @Test

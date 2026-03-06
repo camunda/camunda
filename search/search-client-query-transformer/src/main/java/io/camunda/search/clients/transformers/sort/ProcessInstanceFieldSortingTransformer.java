@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.sort;
 
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BUSINESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.END_DATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.KEY;
@@ -39,6 +40,7 @@ public class ProcessInstanceFieldSortingTransformer implements FieldSortingTrans
       case "state" -> STATE;
       case "hasIncident" -> INCIDENT;
       case "tenantId" -> TENANT_ID;
+      case "businessId" -> BUSINESS_ID;
       default -> throw new IllegalArgumentException("Unknown sortField: " + domainField);
     };
   }

@@ -330,6 +330,20 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
+  public ProcessInstanceFilter businessId(final String businessId) {
+    businessId(b -> b.eq(businessId));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter businessId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setBusinessId(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public ProcessInstanceFilterBase orFilters(final List<Consumer<ProcessInstanceFilterBase>> fns) {
     for (final Consumer<ProcessInstanceFilterBase> fn : fns) {
       final ProcessInstanceFilterImpl orFilter = new ProcessInstanceFilterImpl();
