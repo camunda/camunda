@@ -9,8 +9,10 @@ package io.camunda.optimize.service.db.schema.index;
 
 import co.elastic.clients.elasticsearch.indices.IndexSettings.Builder;
 import io.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
+import io.camunda.optimize.service.db.es.schema.index.FlatProcessInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.os.schema.index.DecisionInstanceIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.FlatProcessInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import java.util.function.Function;
@@ -18,6 +20,7 @@ import org.opensearch.client.opensearch.indices.IndexSettings;
 
 public enum IndexMappingCreatorBuilder {
   DECISION_INSTANCE_INDEX(DecisionInstanceIndexES::new, DecisionInstanceIndexOS::new),
+  FLAT_PROCESS_INSTANCE_INDEX(FlatProcessInstanceIndexES::new, FlatProcessInstanceIndexOS::new),
   PROCESS_INSTANCE_INDEX(ProcessInstanceIndexES::new, ProcessInstanceIndexOS::new);
 
   private final Function<
