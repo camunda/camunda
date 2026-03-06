@@ -290,6 +290,17 @@ public final class SortOptionBuilders {
     return fn.apply(jobWorkerStatistics()).build();
   }
 
+  public static JobTimeSeriesStatisticsSort.Builder jobTimeSeriesStatistics() {
+    return new JobTimeSeriesStatisticsSort.Builder();
+  }
+
+  public static JobTimeSeriesStatisticsSort jobTimeSeriesStatistics(
+      final Function<
+              JobTimeSeriesStatisticsSort.Builder, ObjectBuilder<JobTimeSeriesStatisticsSort>>
+          fn) {
+    return fn.apply(jobTimeSeriesStatistics()).build();
+  }
+
   public static CorrelatedMessageSubscriptionSort.Builder correlatedMessageSubscription() {
     return new CorrelatedMessageSubscriptionSort.Builder();
   }
