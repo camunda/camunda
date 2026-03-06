@@ -81,7 +81,6 @@ Note: `-Dquickly` skips tests, checks, and Optimize. Add `-DskipTests=false` to 
 ## Code Style
 
 - Enforced by the Maven Spotless plugin (Google Java Format).
-- Run `./mvnw license:format spotless:apply -T1C` before committing.
 - Follow conventions in `CONTRIBUTING.md` and the
   [Zeebe Code Style wiki](https://github.com/camunda/camunda/wiki/Code-Style).
 
@@ -129,7 +128,6 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 
 ## Git Workflow
 
-- Always format before committing: `./mvnw license:format spotless:apply -T1C`
 - Never use `git push --force` on the `main` branch; use `--force-with-lease` on feature branches.
 - Follow the commit and PR guidelines in `CONTRIBUTING.md`.
 
@@ -152,7 +150,7 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 
 1. Format code: `./mvnw license:format spotless:apply -T1C`
 2. Build the changed module: `./mvnw install -pl <module> -Dquickly -T1C`
-3. Run module tests: `./mvnw verify -pl <module> -DskipTests=false -Dquickly -T1C`
+3. Run module tests: `./mvnw verify -pl <module> -DskipTests=false -DskipITs -Dquickly -T1C` (add `-DskipUTs` instead of `-DskipITs` for integration tests only)
 4. Verify tests pass (zero failures)
 5. Commit with conventional commit format
 
