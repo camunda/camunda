@@ -66,9 +66,9 @@ const HEADERS_MAP = {
     isDefault: false,
     isDisabled: false,
   },
-  property: {
-    key: 'property',
-    header: 'taskDetailsHistoryPropertyHeader',
+  details: {
+    key: 'details',
+    header: 'taskDetailsHistoryDetailsHeader',
     sortKey: undefined,
     isDefault: false,
     isDisabled: true,
@@ -80,15 +80,15 @@ const HEADERS_MAP = {
     isDefault: false,
     isDisabled: false,
   },
-  time: {
-    key: 'time',
-    header: 'taskDetailsHistoryTimeHeader',
+  date: {
+    key: 'date',
+    header: 'taskDetailsHistoryDateHeader',
     sortKey: 'timestamp',
     isDefault: true,
     isDisabled: false,
   },
-  details: {
-    key: 'details',
+  actions: {
+    key: 'actions',
     header: '',
     sortKey: undefined,
     isDefault: false,
@@ -102,10 +102,10 @@ function isHeaderKey(key: string): key is keyof typeof HEADERS_MAP {
 
 const HEADERS: HeaderConfig[] = [
   HEADERS_MAP['operation'],
-  HEADERS_MAP['property'],
-  HEADERS_MAP['actor'],
-  HEADERS_MAP['time'],
   HEADERS_MAP['details'],
+  HEADERS_MAP['actor'],
+  HEADERS_MAP['date'],
+  HEADERS_MAP['actions'],
 ];
 
 function getSortFromUrl(search: string): AuditLogSort {
@@ -182,10 +182,10 @@ const TaskDetailsHistoryView: React.FC = () => {
       auditLogs.map((log) => ({
         id: log.auditLogKey,
         operation: t(getOperationTypeTranslationKey(log.operationType)),
-        property:
+        details:
           log.operationType === 'ASSIGN' ? (
             <>
-              <div className={styles.propertyLabel}>
+              <div className={styles.detailsLabel}>
                 {t('taskDetailsHistoryPropertyAssignee')}
               </div>
               {log.relatedEntityKey}
@@ -194,8 +194,8 @@ const TaskDetailsHistoryView: React.FC = () => {
             '-'
           ),
         actor: log.actorId,
-        time: formatDate(log.timestamp),
-        details: log.auditLogKey,
+        date: formatDate(log.timestamp),
+        actions: log.auditLogKey,
       })),
     [auditLogs, t],
   );
@@ -256,7 +256,7 @@ const TaskDetailsHistoryView: React.FC = () => {
                       <TableRow key={key} {...rowProps}>
                         {row.cells.map((cell) => (
                           <TableCell key={cell.id}>
-                            {cell.info.header === 'details' ? (
+                            {cell.info.header === 'actions' ? (
                               <Button
                                 kind="ghost"
                                 size="sm"
