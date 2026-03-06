@@ -116,9 +116,11 @@ public final class DbProcessState implements MutableProcessState {
       final EngineConfiguration config,
       final InstantSource clock,
       final ExpressionLanguageMetrics expressionLanguageMetrics) {
+    // Since this transformer is used for processes from the engine state, we set the max length to
+    // Integer.MAX_VALUE, because validation has already happened during deployment and we want to
+    // be able to transform processes even if the max length has been changes in the meantime.
     transformer =
-        BpmnFactory.createTransformer(
-            clock, expressionLanguageMetrics, config.getMaxNameFieldLength());
+        BpmnFactory.createTransformer(clock, expressionLanguageMetrics, Integer.MAX_VALUE);
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
     tenantIdKey = new DbString();
