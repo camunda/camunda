@@ -183,7 +183,8 @@ public class ProcessInstanceWriter {
                     .importName(importItemName)
                     .type(RequestType.INDEX)
                     .id(instance.getProcessInstanceId())
-                    .indexName(getFlatProcessInstanceIndexAliasName(instance.getProcessDefinitionKey()))
+                    .indexName(
+                        getFlatProcessInstanceIndexAliasName(instance.getProcessDefinitionKey()))
                     .source(instance)
                     .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
                     .build())
