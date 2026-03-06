@@ -228,6 +228,10 @@ public class CamundaProcessTestExtension
       return;
     }
 
+    if (!CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.isExplicitlyConfigured()) {
+      return;
+    }
+
     tryBootstrappingJudgeConfig().ifPresent(CamundaAssert::setJudgeConfig);
   }
 
