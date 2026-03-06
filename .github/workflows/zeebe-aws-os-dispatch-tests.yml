@@ -1,5 +1,9 @@
 # description: Runs Integration tests on different versions of AWS OS
-# test location: /zeebe/exporters/opensearch-exporter, /search/search-client-connect, /zeebe/exporters/camunda-exporter, /qa/acceptance-tests
+# test locations:
+#  - /qa/acceptance-tests
+#  - /search/search-client-opensearch,
+#  - /zeebe/exporters/camunda-exporter,
+#  - /zeebe/exporters/opensearch-exporter,
 # type: CI
 # owner: @camunda/core-features, @camunda/data-layer
 name: AWS OpenSearch Manual/Scheduled Run Integration Tests
@@ -7,8 +11,8 @@ name: AWS OpenSearch Manual/Scheduled Run Integration Tests
 on:
   workflow_dispatch:
     inputs:
-      os_version:
-        description: Version of AWS OS
+      opensearch-version:
+        description: Version of AWS OpenSearch
         type: choice
         options:
           - "2.19"
@@ -23,8 +27,53 @@ defaults:
     shell: bash
 
 jobs:
+  cleanup-opensearch-indices:
+    name: "[PRE] Cleanup old AWS OpenSearch indices. OS ver.${{ matrix.os_version }}"
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    runs-on: aws-core-8-default
+    strategy:
+      fail-fast: false
+      matrix:
+        os_version: ${{ fromJSON(format('[{0}]', github.event.inputs.opensearch-version || '"2.19", "3.3"')) }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup AWS OpenSearch
+        uses: ./.github/actions/setup-aws-opensearch-env
+        with:
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          opensearch-version: ${{ matrix.os_version }}
+      - name: Python setup
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install -q --disable-pip-version-check boto3==1.42.50 opensearch-py==3.1.0
+      - name: Delete old aws opensearch indices
+        env:
+          OPENSEARCH_URL: ${{ env.OPENSEARCH_URL }}
+          DRY_RUN: "false"
+          AGE_HOURS: "2"
+        run: python3 .github/scripts/clean-up-aws-opensearch-indices.py
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "cleanup-opensearch-indices/${{ matrix.os_version }}"
+          build_status: ${{ job.status }}
+          user_description: "General"
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   integration-tests:
     name: "[IT] ${{ matrix.name }}. OS ver.${{ matrix.os_version }}"
+    needs: cleanup-opensearch-indices
     permissions:
       contents: read
       actions: write
@@ -33,34 +82,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os_version: ${{ fromJSON(format('[{0}]', inputs.os_version || '"2.19", "3.3"')) }}
+        os_version: ${{ fromJSON(format('[{0}]', github.event.inputs.opensearch-version || '"2.19", "3.3"')) }}
         group:
-        - os-exporter
-        - search-client-os
-        - camunda-exporter
         - camunda-qa-acceptance-tests
+        - search-client-opensearch
+        - camunda-exporter
+        - zeebe-opensearch-exporter
         include:
-          - group: os-exporter
-            name: "Zeebe OS Exporter Integration Tests"
-            maven-modules: "'io.camunda:zeebe-opensearch-exporter'"
-            maven-build-threads: 2
-            maven-test-fork-count: 7
-            runs-on: aws-core-8-default
-            owner: "Data Layer"
-          - group: search-client-os
-            name: "Search Client AWS OS Integration Tests"
-            maven-modules: "'io.camunda:camunda-search-client-connect'"
-            maven-build-threads: 2
-            maven-test-fork-count: 7
-            runs-on: aws-core-8-default
-            owner: "Core Features"
-          - group: camunda-exporter
-            name: "Camunda Exporter AWS OS Integration Tests"
-            maven-modules: "'io.camunda:camunda-exporter'"
-            maven-build-threads: 2
-            maven-test-fork-count: 7
-            runs-on: aws-core-8-default
-            owner: "Data Layer"
           - group: camunda-qa-acceptance-tests
             name: "Camunda QA Integration Module"
             maven-modules: "'io.camunda:camunda-qa-acceptance-tests'"
@@ -68,49 +96,36 @@ jobs:
             maven-test-fork-count: 7
             runs-on: aws-core-8-default
             owner: "General"
+          - group: search-client-opensearch
+            name: "Search Client OpenSearch ITs"
+            maven-modules: "'io.camunda:camunda-search-client-connect,io.camunda:camunda-search-client-opensearch'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            runs-on: aws-core-8-default
+            owner: "Core Features"
+          - group: camunda-exporter
+            name: "Camunda Exporter ITs"
+            maven-modules: "'io.camunda:camunda-exporter'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            runs-on: aws-core-8-default
+            owner: "Data Layer"
+          - group: zeebe-opensearch-exporter
+            name: "Zeebe OpenSearch Exporter ITs"
+            maven-modules: "'io.camunda:zeebe-opensearch-exporter'"
+            maven-build-threads: 2
+            maven-test-fork-count: 7
+            runs-on: aws-core-8-default
+            owner: "Data Layer"
     steps:
       - uses: actions/checkout@v6
-      - name: Import secrets from Vault
-        id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+      - name: Setup AWS OpenSearch
+        uses: ./.github/actions/setup-aws-opensearch-env
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_19_URL;
-            secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_3_3_URL;
-      - name: Set temp GH envs
-        id: temp-vars
-        run: |
-          {
-            echo "AWS_REGION=$AWS_REGION"
-            echo "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION"
-            echo "AWS_ROLE_ARN=$AWS_ROLE_ARN"
-            echo "AWS_WEB_IDENTITY_TOKEN_FILE=$AWS_WEB_IDENTITY_TOKEN_FILE"
-            echo "AWS_STS_REGIONAL_ENDPOINTS=$AWS_STS_REGIONAL_ENDPOINTS"
-          } >> "$GITHUB_ENV"
-
-          if [[ "${{ matrix.os_version }}" = "2.19" ]]
-          then
-            echo "Using OS 2.19"
-            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_19_URL }};
-          elif [[ "${{ matrix.os_version }}" = "3.3" ]]
-          then
-            echo "Using OS 3.3"
-            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_3_3_URL }};
-          else
-            echo "Incorrect on usupported version of OpenSearch"
-            exit 1
-          fi
-          echo "OS_URL=$OS_URL" >> "$GITHUB_ENV"
-      - uses: aws-actions/configure-aws-credentials@v6
-        name: Pre-login to AWS
-        with:
-          aws-region: ${{ env.AWS_REGION }}
-          web-identity-token-file: ${{ env.AWS_WEB_IDENTITY_TOKEN_FILE }}
-          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          opensearch-version: ${{ matrix.os_version }}
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: it-${{ matrix.group }}
@@ -131,7 +146,7 @@ jobs:
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D flaky.test.reportDir=failsafe-reports
-          -D test.integration.opensearch.aws.url="${{ env.OS_URL }}"
+          -D test.integration.opensearch.aws.url="${{ env.OPENSEARCH_URL }}"
           -D test.integration.camunda.database.type=AWS_OS
           -D test.integration.opensearch.aws.timeout.seconds=180
           -P parallel-tests,extract-flaky-tests,multi-db-test
