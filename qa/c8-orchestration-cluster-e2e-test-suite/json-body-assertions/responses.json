@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "71b157c758c600853dcd31490490ec9f3f0c3a24",
-    "generatedAt": "2026-03-04T14:58:43.186Z",
+    "commit": "7a7030520fc24077a9f9a4e7f1d5e255f6566d8d",
+    "generatedAt": "2026-03-05T14:58:51.741Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "e25acc822357080e0fa8fe8a78afeee58a6d0f809b5387569b2ad0f48988fa2f"
+    "specSha256": "589c5f7deebf0feba40c40f3f8aa90027211ddbafa9608e218f6a4da1071364a"
   },
   "responses": [
     {
@@ -1096,9 +1096,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1108,7 +1106,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1128,9 +1127,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1140,7 +1137,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1160,9 +1158,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1172,7 +1168,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1187,6 +1184,10 @@
             "children": {
               "required": [
                 {
+                  "name": "isTruncated",
+                  "type": "boolean"
+                },
+                {
                   "name": "name",
                   "type": "string"
                 },
@@ -1197,12 +1198,6 @@
                     "GLOBAL",
                     "TENANT"
                   ]
-                }
-              ],
-              "optional": [
-                {
-                  "name": "isTruncated",
-                  "type": "boolean"
                 },
                 {
                   "name": "tenantId",
@@ -1213,7 +1208,8 @@
                   "name": "value",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -1264,9 +1260,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1276,7 +1270,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1296,9 +1291,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1308,7 +1301,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1328,9 +1322,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1340,7 +1332,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -2959,22 +2952,6 @@
             "children": {
               "required": [
                 {
-                  "name": "jobKey",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "tenantId",
-                  "type": "string"
-                }
-              ],
-              "optional": [
-                {
                   "name": "creationTime",
                   "type": "string"
                 },
@@ -3017,6 +2994,11 @@
                   "type": "string"
                 },
                 {
+                  "name": "jobKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "processDefinitionId",
                   "type": "string"
                 },
@@ -3029,6 +3011,11 @@
                   "type": "string"
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "state",
                   "type": "string",
                   "enumValues": [
@@ -3038,8 +3025,13 @@
                     "RESOLVED",
                     "UNKNOWN"
                   ]
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -3670,22 +3662,6 @@
             "children": {
               "required": [
                 {
-                  "name": "jobKey",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "tenantId",
-                  "type": "string"
-                }
-              ],
-              "optional": [
-                {
                   "name": "creationTime",
                   "type": "string"
                 },
@@ -3728,6 +3704,11 @@
                   "type": "string"
                 },
                 {
+                  "name": "jobKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "processDefinitionId",
                   "type": "string"
                 },
@@ -3740,6 +3721,11 @@
                   "type": "string"
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "state",
                   "type": "string",
                   "enumValues": [
@@ -3749,8 +3735,13 @@
                     "RESOLVED",
                     "UNKNOWN"
                   ]
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -3790,22 +3781,6 @@
       "status": "200",
       "schema": {
         "required": [
-          {
-            "name": "jobKey",
-            "type": "string",
-            "nullable": true
-          },
-          {
-            "name": "rootProcessInstanceKey",
-            "type": "string",
-            "nullable": true
-          },
-          {
-            "name": "tenantId",
-            "type": "string"
-          }
-        ],
-        "optional": [
           {
             "name": "creationTime",
             "type": "string"
@@ -3849,6 +3824,11 @@
             "type": "string"
           },
           {
+            "name": "jobKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
             "name": "processDefinitionId",
             "type": "string"
           },
@@ -3861,6 +3841,11 @@
             "type": "string"
           },
           {
+            "name": "rootProcessInstanceKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
             "name": "state",
             "type": "string",
             "enumValues": [
@@ -3870,8 +3855,13 @@
               "RESOLVED",
               "UNKNOWN"
             ]
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5080,8 +5070,7 @@
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "hasStartForm",
                   "type": "boolean"
@@ -5116,7 +5105,8 @@
                   "type": "string",
                   "nullable": true
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -5298,8 +5288,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "hasStartForm",
             "type": "boolean"
@@ -5334,7 +5323,8 @@
             "type": "string",
             "nullable": true
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5342,8 +5332,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "formId",
             "type": "string"
@@ -5354,7 +5343,7 @@
           },
           {
             "name": "schema",
-            "type": "object"
+            "type": "string"
           },
           {
             "name": "tenantId",
@@ -5364,7 +5353,8 @@
             "name": "version",
             "type": "number"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5942,22 +5932,6 @@
             "children": {
               "required": [
                 {
-                  "name": "jobKey",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "tenantId",
-                  "type": "string"
-                }
-              ],
-              "optional": [
-                {
                   "name": "creationTime",
                   "type": "string"
                 },
@@ -6000,6 +5974,11 @@
                   "type": "string"
                 },
                 {
+                  "name": "jobKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "processDefinitionId",
                   "type": "string"
                 },
@@ -6012,6 +5991,11 @@
                   "type": "string"
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "state",
                   "type": "string",
                   "enumValues": [
@@ -6021,8 +6005,13 @@
                     "RESOLVED",
                     "UNKNOWN"
                   ]
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -6152,8 +6141,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "resourceId",
             "type": "string"
@@ -6176,9 +6164,11 @@
           },
           {
             "name": "versionTag",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -6624,12 +6614,6 @@
       "schema": {
         "required": [
           {
-            "name": "tenants",
-            "type": "object"
-          }
-        ],
-        "optional": [
-          {
             "name": "activeTenants",
             "type": "number"
           },
@@ -6644,8 +6628,13 @@
           {
             "name": "processInstances",
             "type": "number"
+          },
+          {
+            "name": "tenants",
+            "type": "object"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -7315,6 +7304,10 @@
                   "nullable": true
                 },
                 {
+                  "name": "creationDate",
+                  "type": "string"
+                },
+                {
                   "name": "customHeaders",
                   "type": "object"
                 },
@@ -7322,6 +7315,14 @@
                   "name": "dueDate",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "elementInstanceKey",
+                  "type": "string"
                 },
                 {
                   "name": "externalFormReference",
@@ -7339,32 +7340,9 @@
                   "nullable": true
                 },
                 {
-                  "name": "rootProcessInstanceKey",
+                  "name": "name",
                   "type": "string",
                   "nullable": true
-                },
-                {
-                  "name": "tags",
-                  "type": "array<string>",
-                  "rawRefName": "tags"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "creationDate",
-                  "type": "string"
-                },
-                {
-                  "name": "elementId",
-                  "type": "string"
-                },
-                {
-                  "name": "elementInstanceKey",
-                  "type": "string"
-                },
-                {
-                  "name": "name",
-                  "type": "string"
                 },
                 {
                   "name": "priority",
@@ -7392,6 +7370,11 @@
                   "nullable": true
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "state",
                   "type": "string",
                   "enumValues": [
@@ -7407,6 +7390,11 @@
                   ]
                 },
                 {
+                  "name": "tags",
+                  "type": "array<string>",
+                  "rawRefName": "tags"
+                },
+                {
                   "name": "tenantId",
                   "type": "string",
                   "underlyingPrimitive": "string",
@@ -7417,7 +7405,8 @@
                   "name": "userTaskKey",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -7476,6 +7465,10 @@
             "nullable": true
           },
           {
+            "name": "creationDate",
+            "type": "string"
+          },
+          {
             "name": "customHeaders",
             "type": "object"
           },
@@ -7483,6 +7476,14 @@
             "name": "dueDate",
             "type": "string",
             "nullable": true
+          },
+          {
+            "name": "elementId",
+            "type": "string"
+          },
+          {
+            "name": "elementInstanceKey",
+            "type": "string"
           },
           {
             "name": "externalFormReference",
@@ -7500,32 +7501,9 @@
             "nullable": true
           },
           {
-            "name": "rootProcessInstanceKey",
+            "name": "name",
             "type": "string",
             "nullable": true
-          },
-          {
-            "name": "tags",
-            "type": "array<string>",
-            "rawRefName": "tags"
-          }
-        ],
-        "optional": [
-          {
-            "name": "creationDate",
-            "type": "string"
-          },
-          {
-            "name": "elementId",
-            "type": "string"
-          },
-          {
-            "name": "elementInstanceKey",
-            "type": "string"
-          },
-          {
-            "name": "name",
-            "type": "string"
           },
           {
             "name": "priority",
@@ -7553,6 +7531,11 @@
             "nullable": true
           },
           {
+            "name": "rootProcessInstanceKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
             "name": "state",
             "type": "string",
             "enumValues": [
@@ -7568,6 +7551,11 @@
             ]
           },
           {
+            "name": "tags",
+            "type": "array<string>",
+            "rawRefName": "tags"
+          },
+          {
             "name": "tenantId",
             "type": "string",
             "underlyingPrimitive": "string",
@@ -7578,7 +7566,8 @@
             "name": "userTaskKey",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -7833,8 +7822,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "formId",
             "type": "string"
@@ -7845,7 +7833,7 @@
           },
           {
             "name": "schema",
-            "type": "object"
+            "type": "string"
           },
           {
             "name": "tenantId",
@@ -7855,7 +7843,8 @@
             "name": "version",
             "type": "number"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -8046,16 +8035,15 @@
             "type": "string"
           },
           {
+            "name": "value",
+            "type": "string"
+          },
+          {
             "name": "variableKey",
             "type": "string"
           }
         ],
-        "optional": [
-          {
-            "name": "value",
-            "type": "string"
-          }
-        ]
+        "optional": []
       }
     }
   ]
