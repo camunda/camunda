@@ -27,7 +27,6 @@
   <modules>
     <module>auth-bom</module>
     <module>auth-domain</module>
-    <module>auth-token-exchange</module>
     <module>auth-persist-rdbms</module>
     <module>auth-persist-elasticsearch</module>
     <module>auth-spring</module>
@@ -47,9 +46,9 @@
     <version.spring-boot>4.0.3</version.spring-boot>
 
     <!-- Third-party libraries -->
-    <version.caffeine>3.2.3</version.caffeine>
     <version.elasticsearch-java-client>8.19.12</version.elasticsearch-java-client>
     <version.mybatis-spring-boot-starter>4.0.1</version.mybatis-spring-boot-starter>
+    <version.archunit>1.4.1</version.archunit>
     <version.wiremock>3.13.2</version.wiremock>
     <version.testcontainers>2.0.3</version.testcontainers>
 
@@ -76,11 +75,6 @@
       <dependency>
         <groupId>io.camunda.auth</groupId>
         <artifactId>camunda-auth-domain</artifactId>
-        <version>${camunda-auth.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.camunda.auth</groupId>
-        <artifactId>camunda-auth-token-exchange</artifactId>
         <version>${camunda-auth.version}</version>
       </dependency>
       <dependency>
@@ -119,6 +113,21 @@
         <groupId>co.elastic.clients</groupId>
         <artifactId>elasticsearch-java</artifactId>
         <version>${version.elasticsearch-java-client}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.tngtech.archunit</groupId>
+        <artifactId>archunit</artifactId>
+        <version>${version.archunit}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.tngtech.archunit</groupId>
+        <artifactId>archunit-junit5-api</artifactId>
+        <version>${version.archunit}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.tngtech.archunit</groupId>
+        <artifactId>archunit-junit5-engine</artifactId>
+        <version>${version.archunit}</version>
       </dependency>
       <dependency>
         <groupId>org.wiremock</groupId>

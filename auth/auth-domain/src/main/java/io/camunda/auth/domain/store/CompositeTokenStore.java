@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.auth.exchange.store;
+package io.camunda.auth.domain.store;
 
 import io.camunda.auth.domain.model.TokenMetadata;
 import io.camunda.auth.domain.port.outbound.TokenStorePort;
