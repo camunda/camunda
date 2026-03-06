@@ -1,5 +1,3 @@
-///usr/bin/env java --enable-preview --source 21 "$0" "$@" ; exit $?
-
 import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -15,8 +13,12 @@ import org.w3c.dom.*;
  *
  * Inventories all test files in the Camunda monorepo, mapping each to its codeowner and test type.
  *
- * Usage:
+ * Usage (from repository root):
  *   java scripts/TestFileInventory.java [--verify] [--help]
+ *
+ * Or compile and run:
+ *   javac scripts/TestFileInventory.java
+ *   java -cp scripts TestFileInventory [--verify] [--help]
  *
  * Options:
  *   --verify    Cross-check classification against Maven's actual plugin resolution
