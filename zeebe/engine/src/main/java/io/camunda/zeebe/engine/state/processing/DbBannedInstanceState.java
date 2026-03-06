@@ -54,7 +54,7 @@ public final class DbBannedInstanceState implements MutableBannedInstanceState {
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     final var counter = new AtomicInteger(0);
-    bannedInstanceColumnFamily.forEach(ignore -> counter.getAndIncrement());
+    bannedInstanceColumnFamily.forEachKey(ignore -> counter.getAndIncrement());
     bannedInstanceMetrics.setBannedInstanceCounter(counter.get());
   }
 
@@ -89,7 +89,7 @@ public final class DbBannedInstanceState implements MutableBannedInstanceState {
   @Override
   public List<Long> getBannedProcessInstanceKeys() {
     final List<Long> bannedInstanceKeys = new ArrayList<>();
-    bannedInstanceColumnFamily.forEach((key, nil) -> bannedInstanceKeys.add(key.getValue()));
+    bannedInstanceColumnFamily.forEachKey(key -> bannedInstanceKeys.add(key.getValue()));
     return bannedInstanceKeys;
   }
 

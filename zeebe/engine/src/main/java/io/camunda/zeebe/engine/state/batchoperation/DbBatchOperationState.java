@@ -332,7 +332,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     final var pendingBatchOperation = new AtomicReference<PersistedBatchOperation>();
 
     pendingBatchOperationColumnFamily.whileTrue(
-        (key, nil) -> {
+        key -> {
           final var batchOperation = batchOperationColumnFamily.get(key);
           if (batchOperation != null) {
             pendingBatchOperation.set(batchOperation);
@@ -377,10 +377,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
     // then delete all chunks
     batchOperationChunksColumnFamily.whileEqualPrefix(
-        batchKey,
-        (compositeKey, entityTypeValue) -> {
-          batchOperationChunksColumnFamily.deleteExisting(compositeKey);
-        });
+        batchKey, batchOperationChunksColumnFamily::deleteExisting);
 
     // finally delete batch operation itself
     batchOperationColumnFamily.deleteExisting(batchKey);

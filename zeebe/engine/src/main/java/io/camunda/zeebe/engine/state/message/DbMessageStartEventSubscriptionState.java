@@ -126,7 +126,7 @@ public final class DbMessageStartEventSubscriptionState
 
     subscriptionsOfProcessDefinitionKeyColumnFamily.whileEqualPrefix(
         this.processDefinitionKey,
-        (key, value) -> {
+        (key) -> {
           tenantIdKey.wrapBuffer(key.second().tenantKey().getBuffer());
           final var subscription =
               subscriptionsColumnFamily.get(messageNameAndProcessDefinitionKey);

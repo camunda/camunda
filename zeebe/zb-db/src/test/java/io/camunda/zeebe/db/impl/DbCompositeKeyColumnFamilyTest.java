@@ -613,6 +613,174 @@ public final class DbCompositeKeyColumnFamilyTest {
     assertThat(count).describedAs("Only counts entries matching 'foo'").isEqualTo(2);
   }
 
+  // ---- Key-only iteration tests ----
+
+  @Test
+  public void shouldUseForEachKey() {
+    // given
+    upsertKeyValuePair("foo", 12, "baring");
+    upsertKeyValuePair("foo", 13, "different value");
+    upsertKeyValuePair("this is the one", 255, "as you know");
+    upsertKeyValuePair("hello", 34, "world");
+    upsertKeyValuePair("another", 923113, "string");
+    upsertKeyValuePair("might", 37426, "be good");
+
+    // when
+    final List<String> firstKeyParts = new ArrayList<>();
+    final List<Long> secondKeyParts = new ArrayList<>();
+    columnFamily.forEachKey(
+        key -> {
+          firstKeyParts.add(key.first().toString());
+          secondKeyParts.add(key.second().getValue());
+        });
+
+    // then
+    assertThat(firstKeyParts)
+        .containsExactly("foo", "foo", "hello", "might", "another", "this is the one");
+    assertThat(secondKeyParts).containsExactly(12L, 13L, 34L, 37426L, 923113L, 255L);
+  }
+
+  @Test
+  public void shouldUseWhileEqualPrefixKey() {
+    // given
+    upsertKeyValuePair("foo", 12, "baring");
+    upsertKeyValuePair("foobar", 53, "expected value");
+    upsertKeyValuePair("foo", 13, "different value");
+    upsertKeyValuePair("foo", 213, "oh wow");
+    upsertKeyValuePair("foo", 53, "expected value");
+    upsertKeyValuePair("this is the one", 255, "as you know");
+    upsertKeyValuePair("hello", 34, "world");
+    upsertKeyValuePair("another", 923113, "string");
+    upsertKeyValuePair("might", 37426, "be good");
+
+    // when
+    firstKey.wrapString("foo");
+    final List<String> firstKeyParts = new ArrayList<>();
+    final List<Long> secondKeyParts = new ArrayList<>();
+    columnFamily.whileEqualPrefix(
+        firstKey,
+        key -> {
+          firstKeyParts.add(key.first().toString());
+          secondKeyParts.add(key.second().getValue());
+        });
+
+    // then
+    assertThat(firstKeyParts).containsOnly("foo");
+    assertThat(secondKeyParts).containsExactly(12L, 13L, 53L, 213L);
+  }
+
+  @Test
+  public void shouldUseWhileEqualPrefixKeyAndTrue() {
+    // given
+    upsertKeyValuePair("foo", 12, "baring");
+    upsertKeyValuePair("foobar", 53, "expected value");
+    upsertKeyValuePair("foo", 13, "different value");
+    upsertKeyValuePair("foo", 213, "oh wow");
+    upsertKeyValuePair("foo", 53, "expected value");
+    upsertKeyValuePair("this is the one", 255, "as you know");
+    upsertKeyValuePair("hello", 34, "world");
+    upsertKeyValuePair("another", 923113, "string");
+    upsertKeyValuePair("might", 37426, "be good");
+
+    // when
+    firstKey.wrapString("foo");
+    final List<String> firstKeyParts = new ArrayList<>();
+    final List<Long> secondKeyParts = new ArrayList<>();
+    columnFamily.whileEqualPrefix(
+        firstKey,
+        key -> {
+          firstKeyParts.add(key.first().toString());
+          secondKeyParts.add(key.second().getValue());
+          return key.second().getValue() < 50;
+        });
+
+    // then
+    assertThat(firstKeyParts).containsOnly("foo");
+    assertThat(secondKeyParts).containsExactly(12L, 13L, 53L);
+  }
+
+  @Test
+  public void shouldUseWhileEqualPrefixKeyWithStartAt() {
+    // given
+    upsertKeyValuePair("foo", 1, "first");
+    upsertKeyValuePair("bar", 2, "second");
+    upsertKeyValuePair("foo", 3, "third");
+    upsertKeyValuePair("foo", 4, "fourth");
+    upsertKeyValuePair("baz", 5, "fifth");
+
+    // when
+    firstKey.wrapString("foo");
+    secondKey.wrapLong(3L);
+    final List<String> firstKeyParts = new ArrayList<>();
+    final List<Long> secondKeyParts = new ArrayList<>();
+    columnFamily.whileEqualPrefix(
+        firstKey,
+        compositeKey,
+        key -> {
+          firstKeyParts.add(key.first().toString());
+          secondKeyParts.add(key.second().getValue());
+          return true;
+        });
+
+    // then
+    assertThat(firstKeyParts).containsOnly("foo");
+    assertThat(secondKeyParts).containsExactly(3L, 4L);
+  }
+
+  @Test
+  public void shouldUseWhileEqualPrefixKeyWithStartAtMissingKey() {
+    // given
+    upsertKeyValuePair("foo", 1, "first");
+    upsertKeyValuePair("bar", 2, "second");
+    upsertKeyValuePair("foo", 4, "fourth");
+    upsertKeyValuePair("baz", 5, "fifth");
+
+    // when
+    firstKey.wrapString("foo");
+    secondKey.wrapLong(3L);
+    final List<String> firstKeyParts = new ArrayList<>();
+    final List<Long> secondKeyParts = new ArrayList<>();
+    columnFamily.whileEqualPrefix(
+        firstKey,
+        compositeKey,
+        key -> {
+          firstKeyParts.add(key.first().toString());
+          secondKeyParts.add(key.second().getValue());
+          return true;
+        });
+
+    // then
+    assertThat(firstKeyParts).containsOnly("foo");
+    assertThat(secondKeyParts).containsExactly(4L);
+  }
+
+  @Test
+  public void shouldUseWhileEqualPrefixKeyWithStartAtMissingPrefix() {
+    // given
+    upsertKeyValuePair("foo", 1, "first");
+    upsertKeyValuePair("bar", 2, "second");
+    upsertKeyValuePair("foo", 3, "third");
+    upsertKeyValuePair("foo", 4, "fourth");
+
+    // when
+    firstKey.wrapString("baz");
+    secondKey.wrapLong(1L);
+    final List<String> firstKeyParts = new ArrayList<>();
+    final List<Long> secondKeyParts = new ArrayList<>();
+    columnFamily.whileEqualPrefix(
+        firstKey,
+        compositeKey,
+        key -> {
+          firstKeyParts.add(key.first().toString());
+          secondKeyParts.add(key.second().getValue());
+          return true;
+        });
+
+    // then
+    assertThat(firstKeyParts).isEmpty();
+    assertThat(secondKeyParts).isEmpty();
+  }
+
   private void upsertKeyValuePair(final String firstKey, final long secondKey, final String value) {
     this.firstKey.wrapString(firstKey);
     this.secondKey.wrapLong(secondKey);

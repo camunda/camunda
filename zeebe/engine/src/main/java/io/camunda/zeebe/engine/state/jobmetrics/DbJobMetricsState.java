@@ -122,8 +122,10 @@ public class DbJobMetricsState implements MutableJobMetricsState {
   }
 
   private void populateStringEncodingCache() {
-    stringEncodingColumnFamily.forEach(
-        (key, value) -> stringEncodingCache.put(key.toString(), value.getValue()));
+    stringEncodingColumnFamily.forEachKey(
+        (key) ->
+            stringEncodingCache.put(
+                key.toString(), stringEncodingColumnFamily.get(key).getValue()));
   }
 
   private void populateMetricsCache() {
@@ -194,11 +196,10 @@ public class DbJobMetricsState implements MutableJobMetricsState {
   @Override
   public void cleanUp() {
     // Delete all keys in metrics column family
-    metricsColumnFamily.forEach((mk, mv) -> metricsColumnFamily.deleteExisting(mk));
+    metricsColumnFamily.forEachKey(metricsColumnFamily::deleteExisting);
 
     // Delete all keys in string encoding column family
-    stringEncodingColumnFamily.forEach(
-        (dbString, dbInt) -> stringEncodingColumnFamily.deleteExisting(dbString));
+    stringEncodingColumnFamily.forEachKey(stringEncodingColumnFamily::deleteExisting);
 
     // Clear the caches
     stringEncodingCache.clear();

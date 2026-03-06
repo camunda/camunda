@@ -128,7 +128,7 @@ public final class DbSignalSubscriptionState implements MutableSignalSubscriptio
   private void visitSubscriptions(final SignalSubscriptionVisitor visitor) {
     subscriptionKeyAndSignalNameColumnFamily.whileEqualPrefix(
         subscriptionKey,
-        (key, value) -> {
+        key -> {
           signalName.wrapBuffer(key.second().wrappedKey().getBuffer());
           tenantIdKey.wrapBuffer(key.second().tenantKey().getBuffer());
           final var subscription =

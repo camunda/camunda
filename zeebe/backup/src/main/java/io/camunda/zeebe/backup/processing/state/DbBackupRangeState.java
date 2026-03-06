@@ -173,6 +173,6 @@ public final class DbBackupRangeState {
 
   /** Removes all range entries. Used during state reset when switching backup stores. */
   public void clearAll() {
-    rangesColumnFamily.forEach((key, value) -> rangesColumnFamily.deleteExisting(key));
+    rangesColumnFamily.forEachKey(rangesColumnFamily::deleteExisting);
   }
 }

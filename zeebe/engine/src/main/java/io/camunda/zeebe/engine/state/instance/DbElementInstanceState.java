@@ -297,7 +297,8 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
     numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
         flowScopeKeyAndElementId,
-        (key, number) -> {
+        key -> {
+          final var number = numberOfTakenSequenceFlowsColumnFamily.get(key);
           final var newValue = number.getValue() - 1;
           if (newValue > 0) {
             numberOfTakenSequenceFlows.wrapInt(newValue);
@@ -402,7 +403,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
       parentChildColumnFamily.whileEqualPrefix(
           this.parentKey,
-          (key, value) -> {
+          key -> {
             final var childKey = key.second().inner();
             final var childInstance = getInstance(childKey.getValue());
             children.add(childInstance);
@@ -424,7 +425,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     this.parentKey.inner().wrapLong(parentKey);
     parentChildColumnFamily.whileEqualPrefix(
         this.parentKey,
-        (key, ignore) -> {
+        key -> {
           final var childKey = key.second().inner();
           return visitor.apply(childKey.getValue());
         });
@@ -446,7 +447,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     parentChildColumnFamily.whileEqualPrefix(
         this.parentKey,
         compositeKey,
-        (key, value) -> {
+        key -> {
           final DbLong childKey = key.second().inner();
           final ElementInstance childInstance = getInstance(childKey.getValue());
 
@@ -470,14 +471,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     this.flowScopeKey.wrapLong(flowScopeKey);
     this.gatewayElementId.wrapBuffer(gatewayElementId);
 
-    final var count = new MutableInteger(0);
-    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
-        flowScopeKeyAndElementId,
-        (key, number) -> {
-          count.increment();
-        });
-
-    return count.get();
+    return (int) numberOfTakenSequenceFlowsColumnFamily.countEqualPrefix(flowScopeKeyAndElementId);
   }
 
   @Override
@@ -487,7 +481,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     final var count = new MutableInteger(0);
     numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
         this.flowScopeKey,
-        (key, number) -> {
+        key -> {
           count.increment();
         });
 
@@ -503,7 +497,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     final Set<DirectBuffer> takenSequenceFlows = new LinkedHashSet<>();
     numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
         flowScopeKeyAndElementId,
-        (key, number) -> {
+        key -> {
           takenSequenceFlows.add(BufferUtil.cloneBuffer(key.second().getBuffer()));
         });
 
@@ -532,7 +526,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
     processInstanceKeyByProcessDefinitionKeyColumnFamily.whileEqualPrefix(
         this.processDefinitionKey,
-        (key, value) -> {
+        key -> {
           final DbLong processInstanceKey = key.second();
           processInstanceKeys.add(processInstanceKey.getValue());
         });
@@ -547,7 +541,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
     processInstanceKeyByProcessDefinitionKeyColumnFamily.whileEqualPrefix(
         this.processDefinitionKey,
-        (key, value) -> {
+        key -> {
           // A banned instance should not be considered as active
           if (bannedInstances.contains(key.second().getValue())) {
             return true;
@@ -586,7 +580,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     final var exists = new AtomicBoolean(false);
     processInstanceByBusinessIdIndexKeyColumnFamily.whileEqualPrefix(
         businessIdIndexKey,
-        (key, value) -> {
+        key -> {
           if (ignoreWhen.test(key.processInstanceKey())) {
             return true;
           }
@@ -601,10 +595,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     this.flowScopeKey.wrapLong(flowScopeKey);
 
     numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
-        this.flowScopeKey,
-        (key, number) -> {
-          numberOfTakenSequenceFlowsColumnFamily.deleteExisting(key);
-        });
+        this.flowScopeKey, numberOfTakenSequenceFlowsColumnFamily::deleteExisting);
   }
 
   private static class KeyWithTenantId<T extends DbKey> extends DbCompositeKey<T, DbString> {

@@ -341,10 +341,7 @@ public final class DbMessageState implements MutableMessageState {
     bufferedMessagesMetrics.setBufferedMessagesCounter(localMessageDeadlineCount);
 
     correlatedMessageColumnFamily.whileEqualPrefix(
-        messageKey,
-        ((compositeKey, zbNil) -> {
-          correlatedMessageColumnFamily.deleteExisting(compositeKey);
-        }));
+        messageKey, (correlatedMessageColumnFamily::deleteExisting));
   }
 
   @Override
@@ -419,7 +416,7 @@ public final class DbMessageState implements MutableMessageState {
     final var stoppedByVisitor = new MutableBoolean(false);
     deadlineColumnFamily.whileTrue(
         startAtKey,
-        (key, value) -> {
+        key -> {
           boolean shouldContinue = false;
           final long deadlineEntry = key.first().getValue();
           if (deadlineEntry <= timestamp) {
