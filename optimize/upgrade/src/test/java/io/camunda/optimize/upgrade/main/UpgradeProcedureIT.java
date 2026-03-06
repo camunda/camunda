@@ -7,14 +7,12 @@
  */
 package io.camunda.optimize.upgrade.main;
 
-import static io.camunda.optimize.service.metadata.Version.getMajorAndMinor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.vdurmont.semver4j.Semver;
-import io.camunda.optimize.service.metadata.PreviousVersion;
 import io.camunda.optimize.service.metadata.Version;
 import io.camunda.optimize.upgrade.AbstractUpgradeIT;
 import io.camunda.optimize.upgrade.UpgradeStepsIT;
@@ -22,9 +20,9 @@ import io.camunda.optimize.upgrade.es.TaskResponse;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
-import io.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
 import io.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import io.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
+import io.camunda.optimize.upgrade.util.VersionUtil;
 import io.github.netmikey.logunit.api.LogCapturer;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,12 +31,19 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class UpgradeProcedureIT extends AbstractUpgradeIT {
 
+  private static final String PREVIOUS_VERSION_MAJOR_MINOR =
+      VersionUtil.previousMinorVersion(Version.VERSION).orElseThrow();
+  private static final String PREVIOUS_VERSION = PREVIOUS_VERSION_MAJOR_MINOR + ".0";
+
   @RegisterExtension
   protected final LogCapturer logCapturer =
       LogCapturer.create().captureForType(UpgradeProcedure.class);
 
   private final UpgradePlan previousVersionMajorMinorUpgradePlan =
-      new CurrentVersionNoOperationUpgradePlanFactory().createUpgradePlan();
+      UpgradePlanBuilder.createUpgradePlan()
+          .fromVersion(PREVIOUS_VERSION_MAJOR_MINOR)
+          .toVersion(Version.getMajorAndMinor(Version.VERSION) + ".0")
+          .build();
 
   @Test
   public void upgradeBreaksOnUnsupportedExistingSchemaVersion() {
@@ -63,7 +68,7 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
   @Test
   public void upgradeSucceedsOnSchemaVersionOfPreviousVersion() {
     // given
-    setMetadataVersion(PreviousVersion.PREVIOUS_VERSION);
+    setMetadataVersion(PREVIOUS_VERSION);
 
     // when
     assertThatNoException()
@@ -77,7 +82,7 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
   @Test
   public void upgradeSucceedsOnSchemaVersionOfPreviousPatchVersion() {
     // given
-    setMetadataVersion(getMajorAndMinor(PreviousVersion.PREVIOUS_VERSION) + ".1");
+    setMetadataVersion(PREVIOUS_VERSION_MAJOR_MINOR + ".1");
 
     // when
     assertThatNoException()
@@ -142,11 +147,11 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
   @Test
   public void upgradeExceptionIncludesTaskInformationOnFailure() {
     // given
-    setMetadataVersion(PreviousVersion.PREVIOUS_VERSION);
+    setMetadataVersion(PREVIOUS_VERSION);
 
     final UpgradePlan upgradePlan =
         UpgradePlanBuilder.createUpgradePlan()
-            .fromVersion(PreviousVersion.PREVIOUS_VERSION)
+            .fromVersion(PREVIOUS_VERSION)
             .toVersion(Version.VERSION)
             .addUpgradeStep(applyLookupSkip(new CreateIndexStep(testIndexV1)))
             .addUpgradeStep(buildInsertTestIndexDataStep(UpgradeStepsIT.testIndexV1))
