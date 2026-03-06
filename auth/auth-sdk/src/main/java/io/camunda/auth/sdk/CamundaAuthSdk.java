@@ -7,12 +7,13 @@
  */
 package io.camunda.auth.sdk;
 
-import io.camunda.auth.domain.model.GrantType;
-import io.camunda.auth.domain.model.TokenExchangeRequest;
-import io.camunda.auth.domain.model.TokenExchangeResponse;
+import io.camunda.auth.domain.model.AuthorizationGrantRequest;
+import io.camunda.auth.domain.model.AuthorizationGrantResponse;
+import io.camunda.auth.domain.model.TokenExchangeGrantRequest;
+import io.camunda.auth.domain.model.TokenExchangeGrantResponse;
 import io.camunda.auth.domain.model.TokenType;
 import io.camunda.auth.domain.port.inbound.AuthenticationPort;
-import io.camunda.auth.domain.port.inbound.TokenExchangePort;
+import io.camunda.auth.domain.port.inbound.AuthorizationGrantPort;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,11 +31,15 @@ public final class CamundaAuthSdk {
 
   private final AuthenticationFacade authentication;
   private final TokenExchangeFacade tokenExchange;
+  private final AuthorizationGrantFacade authorizationGrant;
 
   CamundaAuthSdk(
-      final AuthenticationFacade authentication, final TokenExchangeFacade tokenExchange) {
+      final AuthenticationFacade authentication,
+      final TokenExchangeFacade tokenExchange,
+      final AuthorizationGrantFacade authorizationGrant) {
     this.authentication = authentication;
     this.tokenExchange = tokenExchange;
+    this.authorizationGrant = authorizationGrant;
   }
 
   public AuthenticationFacade authentication() {
@@ -45,6 +50,10 @@ public final class CamundaAuthSdk {
     return tokenExchange;
   }
 
+  public AuthorizationGrantFacade authorizationGrant() {
+    return authorizationGrant;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -52,7 +61,7 @@ public final class CamundaAuthSdk {
   public static final class Builder {
 
     private AuthenticationPort authenticationPort;
-    private TokenExchangePort tokenExchangePort;
+    private AuthorizationGrantPort authorizationGrantPort;
 
     private Builder() {}
 
@@ -61,8 +70,8 @@ public final class CamundaAuthSdk {
       return this;
     }
 
-    public Builder tokenExchangePort(final TokenExchangePort tokenExchangePort) {
-      this.tokenExchangePort = tokenExchangePort;
+    public Builder authorizationGrantPort(final AuthorizationGrantPort authorizationGrantPort) {
+      this.authorizationGrantPort = authorizationGrantPort;
       return this;
     }
 
@@ -73,11 +82,16 @@ public final class CamundaAuthSdk {
               : new NoOpAuthenticationFacade();
 
       final TokenExchangeFacade exchangeFacade =
-          tokenExchangePort != null
-              ? new DefaultTokenExchangeFacade(tokenExchangePort)
+          authorizationGrantPort != null
+              ? new DefaultTokenExchangeFacade(authorizationGrantPort)
               : new NoOpTokenExchangeFacade();
 
-      return new CamundaAuthSdk(authFacade, exchangeFacade);
+      final AuthorizationGrantFacade grantFacade =
+          authorizationGrantPort != null
+              ? new DefaultAuthorizationGrantFacade(authorizationGrantPort)
+              : new NoOpAuthorizationGrantFacade();
+
+      return new CamundaAuthSdk(authFacade, exchangeFacade, grantFacade);
     }
   }
 
@@ -132,33 +146,50 @@ public final class CamundaAuthSdk {
   }
 
   private static final class DefaultTokenExchangeFacade implements TokenExchangeFacade {
-    private final TokenExchangePort port;
+    private final AuthorizationGrantPort port;
 
-    DefaultTokenExchangeFacade(final TokenExchangePort port) {
+    DefaultTokenExchangeFacade(final AuthorizationGrantPort port) {
       this.port = Objects.requireNonNull(port);
     }
 
     @Override
     public String getOnBehalfOfToken(
         final String subjectToken, final String targetAudience, final Set<String> scopes) {
-      final TokenExchangeRequest request =
-          TokenExchangeRequest.builder()
+      final TokenExchangeGrantRequest request =
+          TokenExchangeGrantRequest.builder()
               .subjectToken(subjectToken)
               .subjectTokenType(TokenType.ACCESS_TOKEN)
-              .grantType(GrantType.TOKEN_EXCHANGE)
               .audience(targetAudience)
               .scopes(scopes)
               .build();
-      return port.exchange(request).accessToken();
+      return port.authorize(request).accessToken();
     }
 
     @Override
-    public TokenExchangeResponse exchangeToken(final TokenExchangeRequest request) {
-      return port.exchange(request);
+    public TokenExchangeGrantResponse exchangeToken(final TokenExchangeGrantRequest request) {
+      return (TokenExchangeGrantResponse) port.authorize(request);
     }
 
     @Override
     public boolean isTokenExchangeSupported() {
+      return true;
+    }
+  }
+
+  private static final class DefaultAuthorizationGrantFacade implements AuthorizationGrantFacade {
+    private final AuthorizationGrantPort port;
+
+    DefaultAuthorizationGrantFacade(final AuthorizationGrantPort port) {
+      this.port = Objects.requireNonNull(port);
+    }
+
+    @Override
+    public AuthorizationGrantResponse authorize(final AuthorizationGrantRequest request) {
+      return port.authorize(request);
+    }
+
+    @Override
+    public boolean isAvailable() {
       return true;
     }
   }
@@ -216,13 +247,26 @@ public final class CamundaAuthSdk {
     }
 
     @Override
-    public TokenExchangeResponse exchangeToken(final TokenExchangeRequest request) {
+    public TokenExchangeGrantResponse exchangeToken(final TokenExchangeGrantRequest request) {
       throw new UnsupportedOperationException(
           "Token exchange is not configured. Enable it via camunda.auth.token-exchange.enabled=true");
     }
 
     @Override
     public boolean isTokenExchangeSupported() {
+      return false;
+    }
+  }
+
+  private static final class NoOpAuthorizationGrantFacade implements AuthorizationGrantFacade {
+    @Override
+    public AuthorizationGrantResponse authorize(final AuthorizationGrantRequest request) {
+      throw new UnsupportedOperationException(
+          "Authorization grants are not configured. Enable via camunda.auth.token-exchange.enabled=true");
+    }
+
+    @Override
+    public boolean isAvailable() {
       return false;
     }
   }

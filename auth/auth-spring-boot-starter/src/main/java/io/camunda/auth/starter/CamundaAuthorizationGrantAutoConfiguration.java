@@ -7,12 +7,12 @@
  */
 package io.camunda.auth.starter;
 
-import io.camunda.auth.domain.port.inbound.TokenExchangePort;
-import io.camunda.auth.domain.port.outbound.TokenExchangeClient;
+import io.camunda.auth.domain.port.inbound.AuthorizationGrantPort;
+import io.camunda.auth.domain.port.outbound.AuthorizationGrantClient;
 import io.camunda.auth.domain.port.outbound.TokenStorePort;
+import io.camunda.auth.domain.service.AuthorizationGrantService;
 import io.camunda.auth.domain.service.DelegationChainValidator;
-import io.camunda.auth.domain.service.TokenExchangeService;
-import io.camunda.auth.spring.SpringSecurityTokenExchangeClient;
+import io.camunda.auth.spring.SpringSecurityAuthorizationGrantClient;
 import io.camunda.auth.starter.config.CamundaAuthProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -23,30 +23,30 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 
 /**
- * Auto-configuration for token exchange, enabled when {@code
+ * Auto-configuration for authorization grants, enabled when {@code
  * camunda.auth.token-exchange.enabled=true}.
  *
  * <p>This configuration leverages Spring Security's built-in {@link OAuth2AuthorizedClientManager}
- * for RFC 8693 token exchange. Token caching is handled by Spring Security's {@code
+ * for all OAuth2 grant types. Token caching is handled by Spring Security's {@code
  * OAuth2AuthorizedClientService} — no additional caching layer is needed.
  */
 @AutoConfiguration(after = CamundaAuthAutoConfiguration.class)
 @ConditionalOnProperty(name = "camunda.auth.token-exchange.enabled", havingValue = "true")
-public class CamundaTokenExchangeAutoConfiguration {
+public class CamundaAuthorizationGrantAutoConfiguration {
 
   /**
-   * Creates a {@link TokenExchangeClient} backed by Spring Security's {@link
+   * Creates an {@link AuthorizationGrantClient} backed by Spring Security's {@link
    * OAuth2AuthorizedClientManager}. This delegates to Spring Security's built-in support for OAuth2
-   * Token Exchange (RFC 8693), JWT Bearer, and other grant types.
+   * Token Exchange (RFC 8693), Client Credentials, JWT Bearer, and Authorization Code grant types.
    */
   @Bean
-  @ConditionalOnMissingBean(TokenExchangeClient.class)
+  @ConditionalOnMissingBean(AuthorizationGrantClient.class)
   @ConditionalOnBean(OAuth2AuthorizedClientManager.class)
-  public SpringSecurityTokenExchangeClient springSecurityTokenExchangeClient(
+  public SpringSecurityAuthorizationGrantClient springSecurityAuthorizationGrantClient(
       final OAuth2AuthorizedClientManager authorizedClientManager,
       final CamundaAuthProperties properties) {
     final String registrationId = properties.getTokenExchange().getClientRegistrationId();
-    return new SpringSecurityTokenExchangeClient(
+    return new SpringSecurityAuthorizationGrantClient(
         authorizedClientManager, registrationId != null ? registrationId : "token-exchange");
   }
 
@@ -58,10 +58,10 @@ public class CamundaTokenExchangeAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public TokenExchangePort tokenExchangePort(
-      final TokenExchangeClient client,
+  public AuthorizationGrantPort authorizationGrantPort(
+      final AuthorizationGrantClient client,
       @Autowired(required = false) final TokenStorePort tokenStorePort,
       final DelegationChainValidator chainValidator) {
-    return new TokenExchangeService(client, tokenStorePort, chainValidator);
+    return new AuthorizationGrantService(client, tokenStorePort, chainValidator);
   }
 }
