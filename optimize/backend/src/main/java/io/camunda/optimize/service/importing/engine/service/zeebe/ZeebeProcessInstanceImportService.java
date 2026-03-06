@@ -83,65 +83,12 @@ public class ZeebeProcessInstanceImportService
       importCompleteCallback.run();
       return;
     }
-
-    final List<ZeebeProcessInstanceRecordDto> filteredRecords =
-        zeebeRecords.stream()
-            .filter(
-                zeebeRecord -> {
-                  final BpmnElementType bpmnElementType =
-                      zeebeRecord.getValue().getBpmnElementType();
-                  return bpmnElementType != null && !TYPES_TO_IGNORE.contains(bpmnElementType);
-                })
-            .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
-            .collect(Collectors.toList());
-
-    final Map<Long, List<ZeebeProcessInstanceRecordDto>> byProcessInstanceKey =
-        filteredRecords.stream()
-            .collect(Collectors.groupingBy(r -> r.getValue().getProcessInstanceKey()));
-
-    // Build process instance DTOs from PROCESS-type records
-    final List<ProcessInstanceDto> processInstances =
-        byProcessInstanceKey.values().stream()
-            .map(this::createProcessInstanceForData)
-            .filter(
-                pi ->
-                    !pi.getFlowNodeInstances().isEmpty()
-                        || pi.getStartDate() != null
-                        || pi.getEndDate() != null)
-            .collect(Collectors.toList());
-
-    // Build flat flow node instance DTOs from non-PROCESS-type records
-    final List<FlatFlowNodeInstanceDto> flowNodeInstances =
-        byProcessInstanceKey.values().stream()
-            .flatMap(records -> createFlatFlowNodeInstancesForData(records).stream())
-            .collect(Collectors.toList());
-
-    // Build flat process instance DTOs (no nested collections) for the flat index
-    final List<FlatProcessInstanceDto> flatProcessInstances =
-        processInstances.stream().map(FlatProcessInstanceDto::from).collect(Collectors.toList());
-
-    LOG.debug(
-        "Processing {} fetched zeebe process instance records: {} process instances, {} flat process instances, {} flow node instances.",
-        zeebeRecords.size(),
-        processInstances.size(),
-        flatProcessInstances.size(),
-        flowNodeInstances.size());
-
-    if (processInstances.isEmpty() && flowNodeInstances.isEmpty()) {
+    final TransformedProcessInstanceData transformed = transformRecords(zeebeRecords);
+    if (transformed.processInstances().isEmpty() && transformed.flowNodeInstances().isEmpty()) {
       importCompleteCallback.run();
       return;
     }
-
-    final ZeebeProcessInstanceImportJob job =
-        new ZeebeProcessInstanceImportJob(
-            processInstanceWriter,
-            flowNodeInstanceWriter,
-            configurationService,
-            importCompleteCallback,
-            databaseClient,
-            ZEEBE_PROCESS_INSTANCE_INDEX_NAME);
-    job.setFlatProcessInstances(flatProcessInstances);
-    job.setFlowNodeInstances(flowNodeInstances);
+    final ZeebeProcessInstanceImportJob job = buildImportJob(transformed, importCompleteCallback);
     databaseImportJobExecutor.executeImportJob(job);
   }
 
@@ -156,6 +103,24 @@ public class ZeebeProcessInstanceImportService
     if (zeebeRecords.isEmpty()) {
       return Optional.empty();
     }
+    final TransformedProcessInstanceData transformed = transformRecords(zeebeRecords);
+    if (transformed.processInstances().isEmpty() && transformed.flowNodeInstances().isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(buildImportJob(transformed, () -> {}));
+  }
+
+  @Override
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
+  }
+
+  /**
+   * Transforms the raw zeebe records into the typed DTOs needed for import. The result holds
+   * process instances, flat process instances, and flat flow node instances.
+   */
+  private TransformedProcessInstanceData transformRecords(
+      final List<ZeebeProcessInstanceRecordDto> zeebeRecords) {
     final List<ZeebeProcessInstanceRecordDto> filteredRecords =
         zeebeRecords.stream()
             .filter(
@@ -184,23 +149,35 @@ public class ZeebeProcessInstanceImportService
             .collect(Collectors.toList());
     final List<FlatProcessInstanceDto> flatProcessInstances =
         processInstances.stream().map(FlatProcessInstanceDto::from).collect(Collectors.toList());
-    if (processInstances.isEmpty() && flowNodeInstances.isEmpty()) {
-      return Optional.empty();
-    }
+    LOG.debug(
+        "Processing {} fetched zeebe process instance records: {} process instances, {} flat process instances, {} flow node instances.",
+        zeebeRecords.size(),
+        processInstances.size(),
+        flatProcessInstances.size(),
+        flowNodeInstances.size());
+    return new TransformedProcessInstanceData(processInstances, flatProcessInstances, flowNodeInstances);
+  }
+
+  private ZeebeProcessInstanceImportJob buildImportJob(
+      final TransformedProcessInstanceData transformed, final Runnable importCompleteCallback) {
     final ZeebeProcessInstanceImportJob job =
         new ZeebeProcessInstanceImportJob(
             processInstanceWriter,
             flowNodeInstanceWriter,
             configurationService,
-            () -> {},
+            importCompleteCallback,
             databaseClient,
             ZEEBE_PROCESS_INSTANCE_INDEX_NAME);
-    job.setFlatProcessInstances(flatProcessInstances);
-    job.setFlowNodeInstances(flowNodeInstances);
-    return Optional.of(job);
+    job.setFlatProcessInstances(transformed.flatProcessInstances());
+    job.setFlowNodeInstances(transformed.flowNodeInstances());
+    return job;
   }
-    return databaseImportJobExecutor;
-  }
+
+  /** Holds the intermediate DTOs produced by record transformation. */
+  private record TransformedProcessInstanceData(
+      List<ProcessInstanceDto> processInstances,
+      List<FlatProcessInstanceDto> flatProcessInstances,
+      List<FlatFlowNodeInstanceDto> flowNodeInstances) {}
 
   private ProcessInstanceDto createProcessInstanceForData(
       final List<ZeebeProcessInstanceRecordDto> recordsForInstance) {
