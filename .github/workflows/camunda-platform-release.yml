@@ -113,7 +113,7 @@ jobs:
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
           vault-url: ${{ secrets.VAULT_ADDR }}
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
           # Overriding the default GITHUB_TOKEN with a GitHub App token in order to workaround
@@ -307,19 +307,6 @@ jobs:
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
           github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
           github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
-      # The GitHub App token generated at the start of this job expires after 1 hour.
-      # Maven prepare + perform can take longer than that, so we generate a fresh token
-      # before pushing. See: https://github.com/camunda/camunda/issues/47369
-      - name: Renew GitHub token for push
-        uses: ./.github/actions/renew-github-token
-        with:
-          vault-url: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
-          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
-          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
-          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
       - name: Push Changes to Release branch
         run: git push ${{ inputs.dryRun && '--dry-run' || '' }} origin "${RELEASE_BRANCH}"
       - name: Cleanup Maven Central GPG Key
@@ -360,7 +347,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
       DOCKER_IMAGE: camunda/zeebe
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -465,7 +452,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/operate
       DOCKER_IMAGE: camunda/operate
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -573,7 +560,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/tasklist
       DOCKER_IMAGE: camunda/tasklist
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -681,7 +668,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
       DOCKER_IMAGE: camunda/camunda
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -812,7 +799,7 @@ jobs:
     # Minor releases take more time since a lot of issues are included in the changelog
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ env.RELEASE_BRANCH }}
           fetch-depth: 0 # To fetch tags as well - necessary for the changelog generation

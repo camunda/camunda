@@ -13,7 +13,6 @@ expires after 1 hour. In long-running jobs (e.g. Maven release), the token may
 expire before `git push`.
 
 A naive `git config --add` to inject a renewed token creates a **second**
-A naive `git config --add` to inject a renewed token creates a **second**
 extraheader entry — one in `.git/config` and the original in the external file —
 causing git to send two `Authorization` headers, which GitHub rejects with
 HTTP 400 `"Duplicate header: Authorization"`.
@@ -29,15 +28,15 @@ header with the renewed token.
 
 ## Inputs
 
-| Name | Required | Default | Description |
-|------|----------|---------|-------------|
-| `vault-url` | Yes | — | Vault server URL |
-| `vault-role-id` | Yes | — | Vault AppRole role ID |
-| `vault-secret-id` | Yes | — | Vault AppRole secret ID |
-| `github-app-id-vault-key` | No | `MONOREPO_RELEASE_APP_ID` | Vault key for the GitHub App ID |
-| `github-app-id-vault-path` | No | `secret/data/products/camunda/ci/camunda` | Vault path for the GitHub App ID |
-| `github-app-private-key-vault-key` | No | `MONOREPO_RELEASE_APP_PRIVATE_KEY` | Vault key for the GitHub App private key |
-| `github-app-private-key-vault-path` | No | `secret/data/products/camunda/ci/camunda` | Vault path for the GitHub App private key |
+|                Name                 | Required |                Description                |
+|-------------------------------------|----------|-------------------------------------------|
+| `vault-url`                         | Yes      | Vault server URL                          |
+| `vault-role-id`                     | Yes      | Vault AppRole role ID                     |
+| `vault-secret-id`                   | Yes      | Vault AppRole secret ID                   |
+| `github-app-id-vault-key`           | Yes      | Vault key for the GitHub App ID           |
+| `github-app-id-vault-path`          | Yes      | Vault path for the GitHub App ID          |
+| `github-app-private-key-vault-key`  | Yes      | Vault key for the GitHub App private key  |
+| `github-app-private-key-vault-path` | Yes      | Vault path for the GitHub App private key |
 
 ## Outputs
 
@@ -65,5 +64,4 @@ header with the renewed token.
   if: ${{ !inputs.dryRun }}
   run: git push origin "${RELEASE_BRANCH}"
 ```
-
 
