@@ -91,6 +91,28 @@ public final class ProcessInstanceServices
       final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    this(
+        brokerClient,
+        securityContextProvider,
+        processInstanceSearchClient,
+        sequenceFlowSearchClient,
+        incidentServices,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter,
+        new RequestRetryHandler(brokerClient, brokerClient.getTopologyManager()));
+  }
+
+  public ProcessInstanceServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ProcessInstanceSearchClient processInstanceSearchClient,
+      final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final IncidentServices incidentServices,
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final RequestRetryHandler requestRetryHandler) {
     super(
         brokerClient,
         securityContextProvider,
@@ -100,7 +122,7 @@ public final class ProcessInstanceServices
     this.processInstanceSearchClient = processInstanceSearchClient;
     this.sequenceFlowSearchClient = sequenceFlowSearchClient;
     this.incidentServices = incidentServices;
-    requestRetryHandler = new RequestRetryHandler(brokerClient, brokerClient.getTopologyManager());
+    this.requestRetryHandler = requestRetryHandler;
     executor = executorProvider.getExecutor();
   }
 
@@ -114,7 +136,8 @@ public final class ProcessInstanceServices
         incidentServices,
         authentication,
         executorProvider,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        requestRetryHandler);
   }
 
   @Override
