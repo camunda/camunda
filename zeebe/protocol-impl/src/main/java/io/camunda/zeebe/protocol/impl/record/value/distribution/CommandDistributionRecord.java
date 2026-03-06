@@ -98,7 +98,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
       new ObjectProperty<>(COMMAND_VALUE_KEY, new UnifiedRecordValue(10));
   private final ObjectProperty<AuthInfo> authInfoProperty =
-      new ObjectProperty<>(AUTH_INFO_KEY, new AuthInfo());
+      new ObjectProperty<>(AUTH_INFO_KEY, AuthInfo.mutable());
   private final MsgPackWriter commandValueWriter = new MsgPackWriter();
   private final MsgPackReader commandValueReader = new MsgPackReader();
 

@@ -189,7 +189,7 @@ final class JsonSerializableToJsonTest {
               final int requestId = 23;
               final int requestStreamId = 1;
 
-              final AuthInfo authInfo = new AuthInfo().setClaims(Map.of("foo", "bar"));
+              final AuthInfo authInfo = AuthInfo.withClaims(Map.of("foo", "bar"));
               final AgentInfo agentInfo = new AgentInfo().setElementId("agent-element");
 
               recordMetadata
@@ -2720,7 +2720,7 @@ final class JsonSerializableToJsonTest {
                   .setValueType(ValueType.DEPLOYMENT)
                   .setIntent(DeploymentIntent.CREATE)
                   .setCommandValue(deploymentRecord)
-                  .setAuthInfo(new AuthInfo().setClaims(Map.of("claim-a", "foo")));
+                  .setAuthInfo(AuthInfo.withClaims(Map.of("claim-a", "foo")));
             },
         """
                 {

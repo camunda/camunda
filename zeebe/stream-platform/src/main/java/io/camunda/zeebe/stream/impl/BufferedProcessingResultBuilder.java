@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.encoding.EmptyAuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
@@ -102,7 +103,8 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
             .valueType(valueType);
 
     metadataDecorators.forEach(m -> m.accept(metadata));
-    metadata.getAuthorization().reset(); // don't expose the authorization data in the response
+    // don't expose the authorization data in the response
+    metadata.authorization(EmptyAuthInfo.getInstance());
 
     final var entry = RecordBatchEntry.createEntry(key, metadata, -1, value);
     processingResponse = new ProcessingResponseImpl(entry, requestId, requestStreamId);

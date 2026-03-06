@@ -124,7 +124,7 @@ public class AdHocSubProcessActivityServicesTest {
 
     // then
     assertThat(result).isEqualTo(expectedResponse);
-    assertThat(requestCaptor.getValue().getAuthorization().getClaims())
+    assertThat(requestCaptor.getValue().getAuthorization().toDecodedMap())
         .containsExactly(entry(USER_TOKEN_CLAIMS, Map.of("claim", "value")));
   }
 
@@ -147,7 +147,7 @@ public class AdHocSubProcessActivityServicesTest {
 
     // then
     assertThat(newServices).isNotSameAs(services);
-    assertThat(requestCaptor.getValue().getAuthorization().getClaims())
+    assertThat(requestCaptor.getValue().getAuthorization().toDecodedMap())
         .containsExactly(entry(USER_TOKEN_CLAIMS, Map.of("newClaim", "newValue")));
   }
 

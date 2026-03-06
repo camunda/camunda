@@ -25,7 +25,6 @@ import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.stream.FakeProcessingResultBuilder;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
@@ -83,11 +82,7 @@ class CommandDistributionBehaviorTest {
 
     valueType = ValueType.DEPLOYMENT;
     intent = DeploymentIntent.CREATE;
-    authInfo =
-        new AuthInfo()
-            .setFormat(AuthDataFormat.JWT)
-            .setAuthData("some-jwt-token")
-            .setClaims(Map.of("a", "b", "c", 3));
+    authInfo = AuthInfo.withJwt("some-jwt-token", Map.of("a", "b", "c", 3));
 
     command =
         new MockTypedRecord<>(
@@ -208,11 +203,7 @@ class CommandDistributionBehaviorTest {
             mockDistributionMetrics);
 
     // given command with auth info
-    final var authInfo =
-        new AuthInfo()
-            .setFormat(AuthDataFormat.JWT)
-            .setAuthData("some-jwt-token")
-            .setClaims(Map.of("a", "b", "c", 3));
+    final var authInfo = AuthInfo.withJwt("some-jwt-token", Map.of("a", "b", "c", 3));
 
     final var key = keyGenerator.nextKey();
     final var command =

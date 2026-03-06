@@ -298,8 +298,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       // have to copy this value for every partition.
       final var commandValue = distributionRecord.getCommandValue();
 
-      final var authInfo = new AuthInfo();
-      authInfo.copyFrom(distributionRecord.getAuthInfo());
+      final var authInfo = AuthInfo.of(distributionRecord.getAuthInfo());
 
       sideEffectWriter.appendSideEffect(
           () -> {

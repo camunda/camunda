@@ -18,12 +18,12 @@ import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.ValueTypes;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class CommandApiRequestReader implements RequestReader {
 
   private UnifiedRecordValue value;
   private final RecordMetadata metadata = new RecordMetadata();
-  private final AuthInfo authInfo = new AuthInfo();
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
   private final ExecuteCommandRequestDecoder commandRequestDecoder =
       new ExecuteCommandRequestDecoder();
@@ -69,8 +69,10 @@ public class CommandApiRequestReader implements RequestReader {
     if (commandRequestDecoder.limit() < buffer.capacity()) {
       final int authOffset =
           commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.authorizationHeaderLength();
-      authInfo.wrap(buffer, authOffset, commandRequestDecoder.authorizationLength());
-      metadata.authorization(authInfo);
+      final int authLength = commandRequestDecoder.authorizationLength();
+      if (authLength > 0) {
+        metadata.authorization(AuthInfo.of(new UnsafeBuffer(buffer, authOffset, authLength)));
+      }
     }
   }
 

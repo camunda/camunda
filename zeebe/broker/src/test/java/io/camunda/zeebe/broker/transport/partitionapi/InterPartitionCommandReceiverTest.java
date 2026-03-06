@@ -232,10 +232,9 @@ final class InterPartitionCommandReceiverTest {
     final var receiverBrokerId = 1;
     final var receiverPartitionId = 7;
 
-    final var authInfo = new AuthInfo();
     final var token = "some-jwt-token";
     final var claims = Map.<String, Object>of("sub", "user-123", "scope", "test");
-    authInfo.setFormat(AuthInfo.AuthDataFormat.JWT).setAuthData(token).setClaims(claims);
+    final var authInfo = AuthInfo.withJwt(token, claims);
 
     final var sentMessage =
         sendCommand(
@@ -295,7 +294,7 @@ final class InterPartitionCommandReceiverTest {
             assertArg(
                 (final LogAppendEntry logEntry) ->
                     assertThat(logEntry.recordMetadata().getAuthorization())
-                        .isEqualTo(new AuthInfo())));
+                        .isEqualTo(AuthInfo.empty())));
   }
 
   private byte[] sendCommand(

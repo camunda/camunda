@@ -30,7 +30,7 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
       new ObjectProperty<>("commandValue", new UnifiedRecordValue(10));
   private final ObjectProperty<AuthInfo> authInfoProperty =
-      new ObjectProperty<>("authInfo", new AuthInfo());
+      new ObjectProperty<>("authInfo", AuthInfo.mutable());
 
   public PersistedCommandDistribution() {
     super(5);

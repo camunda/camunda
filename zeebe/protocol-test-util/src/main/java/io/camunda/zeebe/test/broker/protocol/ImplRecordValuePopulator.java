@@ -49,7 +49,7 @@ final class ImplRecordValuePopulator {
 
     for (final Field field : clazz.getDeclaredFields()) {
       try {
-        if (Modifier.isStatic(field.getModifiers())) {
+        if (Modifier.isStatic(field.getModifiers()) || Modifier.isTransient(field.getModifiers())) {
           continue;
         }
         field.setAccessible(true);

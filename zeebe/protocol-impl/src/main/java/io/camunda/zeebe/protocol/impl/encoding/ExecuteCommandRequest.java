@@ -37,7 +37,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   private long operationReference;
   private ValueType valueType;
   private Intent intent;
-  private final AuthInfo authorization = new AuthInfo();
+  private AuthInfo authorization;
 
   public ExecuteCommandRequest() {
     reset();
@@ -50,7 +50,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     valueType = ValueType.NULL_VAL;
     intent = Intent.UNKNOWN;
     value.wrap(0, 0);
-    authorization.reset();
+    authorization = null;
 
     return this;
   }
@@ -133,12 +133,12 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   }
 
   public ExecuteCommandRequest setAuthorization(final AuthInfo authorization) {
-    this.authorization.copyFrom(authorization);
+    this.authorization = authorization;
     return this;
   }
 
   public ExecuteCommandRequest setAuthorization(final DirectBuffer buffer) {
-    authorization.wrap(buffer);
+    authorization = AuthInfo.of(buffer);
     return this;
   }
 
@@ -171,7 +171,9 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     final int authorizationLength = bodyDecoder.authorizationLength();
     offset += ExecuteCommandRequestDecoder.authorizationHeaderLength();
 
-    authorization.wrap(buffer, offset, authorizationLength);
+    if (authorizationLength > 0) {
+      authorization = AuthInfo.of(new UnsafeBuffer(buffer, offset, authorizationLength));
+    }
     offset += authorizationLength;
 
     bodyDecoder.limit(offset);
@@ -191,7 +193,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         + ExecuteCommandRequestEncoder.valueHeaderLength()
         + value.capacity()
         + ExecuteCommandRequestEncoder.authorizationHeaderLength()
-        + authorization.getLength();
+        + (authorization != null ? authorization.getLength() : 0);
   }
 
   @Override
@@ -204,7 +206,10 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         .valueType(valueType)
         .intent(intent.value())
         .putValue(value, 0, value.capacity())
-        .putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
+        .putAuthorization(
+            authorization != null ? authorization.toDirectBuffer() : new UnsafeBuffer(0, 0),
+            0,
+            authorization != null ? authorization.getLength() : 0);
 
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }

@@ -459,7 +459,9 @@ public final class ProtocolFactory {
   private Object generateProtocolImplRecord(final Class<?> implClass) {
     final Object implInstance;
     try {
-      implInstance = implClass.getDeclaredConstructor().newInstance();
+      final var constructor = implClass.getDeclaredConstructor();
+      constructor.setAccessible(true);
+      implInstance = constructor.newInstance();
     } catch (final NoSuchMethodException e) {
       throw new IllegalArgumentException(
           "Implementation class does not have a no-arg constructor: " + implClass, e);

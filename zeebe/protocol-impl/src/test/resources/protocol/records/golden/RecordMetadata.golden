@@ -8,7 +8,9 @@
 package io.camunda.zeebe.protocol.impl.record;
 
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.EmptyAuthInfo;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
@@ -36,6 +38,14 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   public static final VersionInfo CURRENT_BROKER_VERSION =
       VersionInfo.parse(VersionUtil.getVersion());
 
+  /**
+   * Shared immutable empty sentinel used for serialization when no authorization is set. This
+   * avoids allocating a new AuthInfo on every reset() while preserving a stable wire format: a null
+   * authorization is serialized identically to an empty one. Mutation attempts (wrap/reset) throw
+   * {@link UnsupportedOperationException}.
+   */
+  private static final AuthInfo EMPTY_AUTH = EmptyAuthInfo.getInstance();
+
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final RecordMetadataEncoder encoder = new RecordMetadataEncoder();
@@ -47,9 +57,10 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private long requestId;
   private short intentValue = Intent.NULL_VAL;
   private int requestStreamId;
-  private final AuthInfo authorization = new AuthInfo();
+  private AuthInfo authorization;
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
+  private AgentInfo agent;
 
   // always the current version by default
   private int protocolVersion = Protocol.PROTOCOL_VERSION;
@@ -109,13 +120,16 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
       decoder.skipRejectionReason();
     }
 
-    final int authorizationLength = decoder.authorizationLength();
-    if (authorizationLength > 0) {
-      final DirectBuffer authBuffer = new UnsafeBuffer();
-      decoder.wrapAuthorization(authBuffer);
-      authorization.wrap(authBuffer);
+    authorization = decodeAuthorization(decoder);
+
+    final int agentLength = decoder.agentLength();
+    if (agentLength > 0) {
+      agent = new AgentInfo();
+      final var agentBuffer = new UnsafeBuffer();
+      decoder.wrapAgent(agentBuffer);
+      agent.wrap(agentBuffer);
     } else {
-      decoder.skipAuthorization();
+      decoder.skipAgent();
     }
   }
 
@@ -125,21 +139,14 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + RecordMetadataEncoder.rejectionReasonHeaderLength()
         + rejectionReason.capacity()
         + RecordMetadataEncoder.authorizationHeaderLength()
-        + authorization.getLength();
+        + authorizationOrEmpty().getLength()
+        + RecordMetadataEncoder.agentHeaderLength()
+        + (agent != null ? agent.getLength() : 0);
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
-    headerEncoder.wrap(buffer, offset);
-
-    headerEncoder
-        .blockLength(encoder.sbeBlockLength())
-        .templateId(encoder.sbeTemplateId())
-        .schemaId(encoder.sbeSchemaId())
-        .version(encoder.sbeSchemaVersion());
-
-    offset += headerEncoder.encodedLength();
-    encoder.wrap(buffer, offset);
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    encoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
 
     // working with fixed-length fields
     encoder
@@ -162,7 +169,23 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     // working with variable-length fields
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
-    encoder.putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
+
+    BufferUtil.writeLengthPrefixed(
+        authorizationOrEmpty(),
+        encoder,
+        RecordMetadataEncoder.authorizationHeaderLength(),
+        RecordMetadataEncoder.BYTE_ORDER);
+
+    if (agent != null) {
+      BufferUtil.writeLengthPrefixed(
+          agent,
+          encoder,
+          RecordMetadataEncoder.agentHeaderLength(),
+          RecordMetadataEncoder.BYTE_ORDER);
+    } else {
+      encoder.agent("");
+    }
+    return headerEncoder.encodedLength() + encoder.encodedLength();
   }
 
   public long getRequestId() {
@@ -245,17 +268,51 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public RecordMetadata authorization(final AuthInfo authorization) {
-    this.authorization.copyFrom(authorization);
+    this.authorization = authorization;
     return this;
   }
 
   public RecordMetadata authorization(final DirectBuffer buffer) {
-    authorization.wrap(buffer);
+    authorization = AuthInfo.of(buffer);
     return this;
   }
 
   public AuthInfo getAuthorization() {
-    return authorization;
+    return authorizationOrEmpty();
+  }
+
+  /**
+   * Returns the authorization if set, or the shared empty sentinel. This is used for serialization
+   * so that the wire format is preserved regardless of whether authorization is null internally.
+   */
+  private AuthInfo authorizationOrEmpty() {
+    return authorization != null ? authorization : EMPTY_AUTH;
+  }
+
+  /**
+   * Decodes the authorization field from the SBE decoder. Returns null (avoiding allocation) when
+   * the serialized bytes are identical to the empty sentinel, since {@link #authorizationOrEmpty()}
+   * will substitute the shared instance on read.
+   */
+  private static AuthInfo decodeAuthorization(final RecordMetadataDecoder decoder) {
+    final int length = decoder.authorizationLength();
+    if (length <= 0) {
+      decoder.skipAuthorization();
+      return null;
+    }
+
+    final var buffer = new UnsafeBuffer();
+    decoder.wrapAuthorization(buffer);
+    return AuthInfo.of(buffer);
+  }
+
+  public AgentInfo getAgent() {
+    return agent;
+  }
+
+  public RecordMetadata agent(final AgentInfo agent) {
+    this.agent = agent;
+    return this;
   }
 
   public RecordMetadata brokerVersion(final VersionInfo brokerVersion) {
@@ -304,7 +361,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     intent = null;
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
-    authorization.reset();
+    authorization = null;
+    agent = null;
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;
     operationReference = RecordMetadataEncoder.operationReferenceNullValue();
@@ -322,12 +380,13 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         requestStreamId,
         rejectionType,
         rejectionReason,
-        authorization,
+        authorizationOrEmpty(),
         protocolVersion,
         brokerVersion,
         recordVersion,
         operationReference,
-        batchOperationReference);
+        batchOperationReference,
+        agent);
   }
 
   @Override
@@ -347,7 +406,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && recordType == that.recordType
         && rejectionType == that.rejectionType
         && rejectionReason.equals(that.rejectionReason)
-        && authorization.equals(that.authorization)
+        && authorizationOrEmpty().equals(that.authorizationOrEmpty())
+        && Objects.equals(agent, that.agent)
         && brokerVersion.equals(that.brokerVersion)
         && recordVersion == that.recordVersion
         && operationReference == that.operationReference
@@ -376,7 +436,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
       builder.append(", rejectionReason=").append(BufferUtil.bufferAsString(rejectionReason));
     }
 
-    if (!authorization.isEmpty()) {
+    if (authorization != null && !authorization.isEmpty()) {
       builder.append(", authorization=").append(authorization);
     }
     if (operationReference != RecordMetadataEncoder.operationReferenceNullValue()) {
@@ -384,6 +444,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     }
     if (batchOperationReference != RecordMetadataEncoder.batchOperationReferenceNullValue()) {
       builder.append(", batchOperationReference=").append(batchOperationReference);
+    }
+    if (agent != null) {
+      builder.append(", agent=").append(agent);
     }
 
     builder.append('}');

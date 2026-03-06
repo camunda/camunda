@@ -284,7 +284,7 @@ final class BulkIndexRequestTest {
                       .withValue(
                           new CommandDistributionRecord()
                               .setPartitionId(1)
-                              .setAuthInfo(new AuthInfo().setAuthData("test-data"))));
+                              .setAuthInfo(AuthInfo.withJwt("test-data"))));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
@@ -310,7 +310,7 @@ final class BulkIndexRequestTest {
                       .withValue(
                           new CommandDistributionRecord()
                               .setPartitionId(1)
-                              .setAuthInfo(new AuthInfo().setAuthData("test-data"))));
+                              .setAuthInfo(AuthInfo.withJwt("test-data"))));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 

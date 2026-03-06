@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.EmptyAuthInfo;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
@@ -37,6 +38,14 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   public static final VersionInfo CURRENT_BROKER_VERSION =
       VersionInfo.parse(VersionUtil.getVersion());
 
+  /**
+   * Shared immutable empty sentinel used for serialization when no authorization is set. This
+   * avoids allocating a new AuthInfo on every reset() while preserving a stable wire format: a null
+   * authorization is serialized identically to an empty one. Mutation attempts (wrap/reset) throw
+   * {@link UnsupportedOperationException}.
+   */
+  private static final AuthInfo EMPTY_AUTH = EmptyAuthInfo.getInstance();
+
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final RecordMetadataEncoder encoder = new RecordMetadataEncoder();
@@ -48,7 +57,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private long requestId;
   private short intentValue = Intent.NULL_VAL;
   private int requestStreamId;
-  private final AuthInfo authorization = new AuthInfo();
+  private AuthInfo authorization = EMPTY_AUTH;
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
   private AgentInfo agent;
@@ -111,14 +120,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
       decoder.skipRejectionReason();
     }
 
-    final int authorizationLength = decoder.authorizationLength();
-    if (authorizationLength > 0) {
-      final DirectBuffer authBuffer = new UnsafeBuffer();
-      decoder.wrapAuthorization(authBuffer);
-      authorization.wrap(authBuffer);
-    } else {
-      decoder.skipAuthorization();
-    }
+    authorization = decodeAuthorization(decoder);
 
     final int agentLength = decoder.agentLength();
     if (agentLength > 0) {
@@ -167,6 +169,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     // working with variable-length fields
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
+
     BufferUtil.writeLengthPrefixed(
         authorization,
         encoder,
@@ -265,17 +268,35 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public RecordMetadata authorization(final AuthInfo authorization) {
-    this.authorization.copyFrom(authorization);
+    this.authorization = authorization != null ? authorization : EMPTY_AUTH;
     return this;
   }
 
   public RecordMetadata authorization(final DirectBuffer buffer) {
-    authorization.wrap(buffer);
+    final var parsed = AuthInfo.of(buffer);
+    this.authorization = parsed != null ? parsed : EMPTY_AUTH;
     return this;
   }
 
   public AuthInfo getAuthorization() {
     return authorization;
+  }
+
+  /**
+   * Decodes the authorization field from the SBE decoder. Returns the shared empty sentinel when
+   * the serialized bytes are absent or identical to it (avoiding allocation).
+   */
+  private static AuthInfo decodeAuthorization(final RecordMetadataDecoder decoder) {
+    final int length = decoder.authorizationLength();
+    if (length <= 0) {
+      decoder.skipAuthorization();
+      return EMPTY_AUTH;
+    }
+
+    final var buffer = new UnsafeBuffer();
+    decoder.wrapAuthorization(buffer);
+    final var parsed = AuthInfo.of(buffer);
+    return parsed != null ? parsed : EMPTY_AUTH;
   }
 
   public AgentInfo getAgent() {
@@ -333,7 +354,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     intent = null;
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
-    authorization.reset();
+    authorization = EMPTY_AUTH;
     agent = null;
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;
