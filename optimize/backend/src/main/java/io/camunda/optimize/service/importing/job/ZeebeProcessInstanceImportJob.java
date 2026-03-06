@@ -38,7 +38,6 @@ public class ZeebeProcessInstanceImportJob implements Runnable {
   private final BackoffCalculator backoffCalculator = new BackoffCalculator(1L, 30L);
   private final String sourceExportIndex;
 
-  private List<ProcessInstanceDto> processInstances = List.of();
   private List<FlatProcessInstanceDto> flatProcessInstances = List.of();
   private List<FlatFlowNodeInstanceDto> flowNodeInstances = List.of();
 
@@ -55,10 +54,6 @@ public class ZeebeProcessInstanceImportJob implements Runnable {
     this.importCompleteCallback = importCompleteCallback;
     this.databaseClient = databaseClient;
     this.sourceExportIndex = sourceExportIndex;
-  }
-
-  public void setProcessInstances(final List<ProcessInstanceDto> processInstances) {
-    this.processInstances = processInstances;
   }
 
   public void setFlatProcessInstances(final List<FlatProcessInstanceDto> flatProcessInstances) {
@@ -96,10 +91,7 @@ public class ZeebeProcessInstanceImportJob implements Runnable {
   private void persistEntities() {
     final List<ImportRequestDto> allRequests = new ArrayList<>();
 
-    if (!processInstances.isEmpty()) {
-      allRequests.addAll(
-          processInstanceWriter.generateProcessInstanceImports(
-              processInstances, sourceExportIndex));
+    if (!flatProcessInstances.isEmpty()) {
       // flatProcessInstances is always derived from processInstances and has the same size
       allRequests.addAll(
           processInstanceWriter.generateFlatProcessInstanceImports(flatProcessInstances));

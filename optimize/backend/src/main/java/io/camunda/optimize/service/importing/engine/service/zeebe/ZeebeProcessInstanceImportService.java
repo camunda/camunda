@@ -65,7 +65,7 @@ public class ZeebeProcessInstanceImportService
       final FlowNodeInstanceWriter flowNodeInstanceWriter,
       final int partitionId,
       final DatabaseClient databaseClient) {
-    this.databaseImportJobExecutor =
+    databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.configurationService = configurationService;
     this.processInstanceWriter = processInstanceWriter;
@@ -139,7 +139,6 @@ public class ZeebeProcessInstanceImportService
             importCompleteCallback,
             databaseClient,
             ZEEBE_PROCESS_INSTANCE_INDEX_NAME);
-    job.setProcessInstances(processInstances);
     job.setFlatProcessInstances(flatProcessInstances);
     job.setFlowNodeInstances(flowNodeInstances);
     databaseImportJobExecutor.executeImportJob(job);
