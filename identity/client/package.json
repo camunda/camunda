@@ -54,7 +54,7 @@
     "prettier": "3.6.2",
     "rollup": "4.45.3",
     "rollup-plugin-license": "3.6.0",
-    "rollup-plugin-sbom": "3.0.2",
+    "rollup-plugin-sbom": "3.0.5",
     "sass": "1.89.2",
     "typescript": "5.8.3",
     "vite": "7.0.8",
