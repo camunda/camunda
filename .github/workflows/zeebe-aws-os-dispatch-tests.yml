@@ -3,7 +3,7 @@
 #  - /qa/acceptance-tests
 #  - /search/search-client-opensearch,
 #  - /zeebe/exporters/camunda-exporter,
-#  - /zeebe/exporters/zeebe-opensearch-exporter,
+#  - /zeebe/exporters/opensearch-exporter,
 # type: CI
 # owner: @camunda/core-features, @camunda/data-layer
 name: AWS OpenSearch Manual/Scheduled Run Integration Tests
@@ -31,7 +31,6 @@ jobs:
     name: "[PRE] Cleanup old AWS OpenSearch indices. OS ver.${{ matrix.os_version }}"
     permissions:
       contents: read
-      actions: write
     timeout-minutes: 30
     runs-on: aws-core-8-default
     strategy:
@@ -48,16 +47,18 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           opensearch-version: ${{ matrix.os_version }}
       - name: Python setup
-        if: always()
         uses: actions/setup-python@v6
         with:
           python-version: "3.x"
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install -q --disable-pip-version-check boto3==1.42.50 opensearch-py==3.1.0
       - name: Delete old aws opensearch indices
         env:
           OPENSEARCH_URL: ${{ env.OPENSEARCH_URL }}
           DRY_RUN: "false"
           AGE_HOURS: "2"
-        run: bash .github/scripts/clean-up-aws-opensearch-indices.sh
+        run: python3 .github/scripts/clean-up-aws-opensearch-indices.py
       - name: Observe build status
         if: always()
         continue-on-error: true
