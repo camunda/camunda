@@ -11,7 +11,7 @@ import {formatDate} from 'modules/utils/date';
 import {ProcessInstanceOperations} from './ProcessInstanceOperations';
 import {getProcessDefinitionName} from 'modules/utils/instance';
 import {Link} from 'modules/components/Link';
-import {Locations, Paths} from 'modules/Routes';
+import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeaderNext';
@@ -19,31 +19,27 @@ import {Skeleton} from 'modules/components/InstanceHeaderNext/Skeleton';
 import {VersionTag} from './styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
 import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessInstances';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {getClientConfig} from 'modules/utils/getClientConfig';
+import {useNavigate} from 'react-router-dom';
 
 const headerColumns = [
-  'Process Name',
   'Process Instance Key',
   'Version',
   'Version Tag',
   'Tenant',
   'Start Date',
   'End Date',
-  'Parent Process Instance Key',
-  'Called Process Instances',
+  'Called Instances',
 ] as const;
 
 const skeletonColumns: {
   name: (typeof headerColumns)[number];
   skeletonWidth: string;
 }[] = [
-  {
-    name: 'Process Name',
-    skeletonWidth: '94px',
-  },
   {
     name: 'Process Instance Key',
     skeletonWidth: '136px',
@@ -57,15 +53,7 @@ const skeletonColumns: {
     skeletonWidth: '142px',
   },
   {
-    name: 'End Date',
-    skeletonWidth: '142px',
-  },
-  {
-    name: 'Parent Process Instance Key',
-    skeletonWidth: '142px',
-  },
-  {
-    name: 'Called Process Instances',
+    name: 'Called Instances',
     skeletonWidth: '142px',
   },
 ] as const;
@@ -82,11 +70,11 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
     tenantId,
     startDate,
     endDate,
-    parentProcessInstanceKey,
     state,
     hasIncident,
     processDefinitionId,
   } = processInstance;
+  const navigate = useNavigate();
   const tenantsById = useAvailableTenants();
   const tenantName = tenantsById[tenantId] ?? tenantId;
 
@@ -96,9 +84,18 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const {isPending, data: processInstanceXmlData} = useProcessInstanceXml({
     processDefinitionKey,
   });
+  const incidentsCount = useProcessInstanceIncidentsCount(processInstanceKey, {
+    enabled: hasIncident,
+  });
 
   if (processInstance === null || isPending) {
-    return <Skeleton headerColumns={skeletonColumns} />;
+    return (
+      <Skeleton
+        backButtonLabel="Back"
+        onBackClick={() => navigate(-1)}
+        headerColumns={skeletonColumns}
+      />
+    );
   }
 
   const versionColumnTitle = `View process "${getProcessDefinitionName(
@@ -112,7 +109,10 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   return (
     <InstanceHeader
       state={processInstanceState}
-      hideBottomBorder={hasIncident}
+      instanceName={getProcessDefinitionName(processInstance)}
+      incidentsCount={incidentsCount}
+      backButtonLabel="Back"
+      onBackClick={() => navigate(-1)}
       headerColumns={headerColumns.filter((name) => {
         if (name === 'Tenant') {
           return isMultiTenancyEnabled;
@@ -120,13 +120,12 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
         if (name === 'Version Tag') {
           return hasVersionTag;
         }
+        if (name === 'End Date') {
+          return endDate !== null;
+        }
         return true;
       })}
       bodyColumns={[
-        {
-          title: getProcessDefinitionName(processInstance),
-          content: getProcessDefinitionName(processInstance),
-        },
         {title: processInstanceKey, content: processInstanceKey},
         {
           hideOverflowingContent: false,
@@ -177,40 +176,20 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
             ]
           : []),
         {
-          title: formatDate(startDate) ?? '--',
+          title: formatDate(startDate),
           content: formatDate(startDate),
           dataTestId: 'start-date',
         },
-        {
-          title: formatDate(endDate ?? null) ?? '--',
-          content: formatDate(endDate ?? null),
-          dataTestId: 'end-date',
-        },
-        {
-          title: parentProcessInstanceKey ?? 'None',
-          hideOverflowingContent: false,
-          content: (
-            <>
-              {parentProcessInstanceKey ? (
-                <Link
-                  to={Paths.processInstance(parentProcessInstanceKey)}
-                  title={`View parent instance ${parentProcessInstanceKey}`}
-                  aria-label={`View parent instance ${parentProcessInstanceKey}`}
-                  onClick={() => {
-                    tracking.track({
-                      eventName: 'navigation',
-                      link: 'process-details-parent-details',
-                    });
-                  }}
-                >
-                  {parentProcessInstanceKey}
-                </Link>
-              ) : (
-                'None'
-              )}
-            </>
-          ),
-        },
+        ...(endDate !== null
+          ? [
+              {
+                title: formatDate(endDate),
+                content: formatDate(endDate),
+                dataTestId: 'end-date',
+              },
+            ]
+          : []),
+
         {
           hideOverflowingContent: false,
           content: (

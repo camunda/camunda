@@ -14,16 +14,13 @@ import {
 } from 'modules/testing-library';
 import {getProcessDefinitionName} from 'modules/utils/instance';
 import {ProcessInstanceHeader} from '../index';
-import {
-  mockInstance,
-  mockInstanceWithParentInstance,
-  Wrapper,
-} from './index.setup';
+import {mockInstance, Wrapper} from './index.setup';
 
 import {
   createUser,
   mockCallActivityProcessXML,
   mockProcessXML,
+  searchResult,
 } from 'modules/testUtils';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -34,6 +31,8 @@ import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mo
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockDeleteProcessInstance} from 'modules/mocks/api/v2/processInstances/deleteProcessInstance';
+import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
+import {mockIncidents} from 'App/ProcessInstance/IncidentsWrapper/tests/mocks';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -82,22 +81,62 @@ describe('InstanceHeader', () => {
         }" instances`,
       }),
     ).toHaveTextContent(mockInstance.processDefinitionVersion.toString());
-    expect(screen.getByText(mockInstance.endDate ?? '--')).toBeInTheDocument();
-    expect(screen.getByText('--')).toBeInTheDocument();
     expect(
       screen.getByTestId(`${mockInstance.state}-icon`),
     ).toBeInTheDocument();
-    expect(screen.getByText('Process Name')).toBeInTheDocument();
     expect(screen.getByText('Process Instance Key')).toBeInTheDocument();
     expect(screen.getByText('Version')).toBeInTheDocument();
     expect(screen.getByText('Start Date')).toBeInTheDocument();
-    expect(screen.getByText('End Date')).toBeInTheDocument();
-    expect(screen.getByText('Parent Process Instance Key')).toBeInTheDocument();
-    expect(screen.getByText('Called Process Instances')).toBeInTheDocument();
-    expect(screen.getAllByText('None').length).toBe(2);
+    expect(screen.queryByText('End Date')).not.toBeInTheDocument();
+    expect(screen.getByText('Called Instances')).toBeInTheDocument();
+    expect(screen.getAllByText('None').length).toBe(1);
     expect(
       screen.queryByRole('link', {name: /view all/i}),
     ).not.toBeInTheDocument();
+  });
+
+  it('should render an end date for finished process instances', async () => {
+    const finishedInstance = {
+      ...mockInstance,
+      state: 'COMPLETED',
+      endDate: '2020-06-21 00:00:00',
+    } satisfies typeof mockInstance;
+    mockQueryBatchOperationItems().withSuccess(searchResult([]));
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+
+    render(<ProcessInstanceHeader processInstance={finishedInstance} />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-header-skeleton'),
+    );
+
+    expect(screen.getByText('End Date')).toBeInTheDocument();
+    expect(screen.getByText(finishedInstance.endDate)).toBeInTheDocument();
+  });
+
+  it('should render an incidents count for process instances with incidents', async () => {
+    const finishedInstance = {
+      ...mockInstance,
+      state: 'ACTIVE',
+      hasIncident: true,
+    } satisfies typeof mockInstance;
+    mockSearchIncidentsByProcessInstance(
+      finishedInstance.processInstanceKey,
+    ).withSuccess(mockIncidents);
+    mockQueryBatchOperationItems().withSuccess(searchResult([]));
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+
+    render(<ProcessInstanceHeader processInstance={finishedInstance} />, {
+      wrapper: Wrapper,
+    });
+
+    expect(await screen.findByText('2 Incidents')).toBeInTheDocument();
+    expect(screen.getByTestId(`INCIDENT-icon`)).toBeInTheDocument();
+    expect(
+      screen.getByText(finishedInstance.processDefinitionName),
+    ).toBeInTheDocument();
   });
 
   it('should render "View All" link for call activity process', async () => {
@@ -157,41 +196,6 @@ describe('InstanceHeader', () => {
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
-  });
-
-  it('should render parent Process Instance Key', async () => {
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-    render(
-      <ProcessInstanceHeader
-        processInstance={{
-          ...mockInstance,
-          parentProcessInstanceKey: '8724390842390124',
-        }}
-      />,
-      {
-        wrapper: Wrapper,
-      },
-    );
-
-    await waitForElementToBeRemoved(
-      screen.queryByTestId('instance-header-skeleton'),
-    );
-
-    expect(
-      screen.getByRole('link', {
-        description: `View parent instance ${mockInstanceWithParentInstance.parentProcessInstanceKey}`,
-      }),
-    ).toBeInTheDocument();
   });
 
   it('should show spinner when instance has active operations', async () => {
