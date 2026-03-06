@@ -11,6 +11,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.repository.script.ZeebeProcessInstanceScriptFactory.createProcessInstanceUpdateScript;
+import static io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder.FLAT_PROCESS_INSTANCE_INDEX;
 import static io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder.PROCESS_INSTANCE_INDEX;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.DATA_SOURCE;
@@ -23,6 +24,7 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.P
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.START_DATE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.STATE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.TENANT_ID;
+import static io.camunda.optimize.service.util.InstanceIndexUtil.getFlatProcessInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -160,6 +162,31 @@ public class ProcessInstanceWriter {
                         DATA_SOURCE,
                         TENANT_ID),
                     importItemName))
+        .toList();
+  }
+
+  public List<ImportRequestDto> generateFlatProcessInstanceImports(
+      final List<ProcessInstanceDto> processInstances) {
+    final String importItemName = "flat process instances";
+    LOG.debug("Creating imports for {} [{}].", processInstances.size(), importItemName);
+    indexRepository.createMissingIndices(
+        FLAT_PROCESS_INSTANCE_INDEX,
+        Set.of(PROCESS_INSTANCE_MULTI_ALIAS),
+        processInstances.stream()
+            .map(ProcessInstanceDto::getProcessDefinitionKey)
+            .collect(Collectors.toSet()));
+
+    return processInstances.stream()
+        .map(
+            instance ->
+                ImportRequestDto.builder()
+                    .importName(importItemName)
+                    .type(RequestType.INDEX)
+                    .id(instance.getProcessInstanceId())
+                    .indexName(getFlatProcessInstanceIndexAliasName(instance.getProcessDefinitionKey()))
+                    .source(instance)
+                    .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+                    .build())
         .toList();
   }
 }

@@ -14,6 +14,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinition
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
+import io.camunda.optimize.service.db.schema.index.FlatProcessInstanceIndex;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 
 public final class InstanceIndexUtil {
@@ -57,6 +58,14 @@ public final class InstanceIndexUtil {
       return PROCESS_INSTANCE_MULTI_ALIAS;
     } else {
       return ProcessInstanceIndex.constructIndexName(processDefinitionKey);
+    }
+  }
+
+  public static String getFlatProcessInstanceIndexAliasName(final String processDefinitionKey) {
+    if (processDefinitionKey == null) {
+      return PROCESS_INSTANCE_MULTI_ALIAS;
+    } else {
+      return FlatProcessInstanceIndex.constructIndexName(processDefinitionKey);
     }
   }
 }
