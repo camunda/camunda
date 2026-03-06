@@ -33,6 +33,8 @@ public final class DatabaseConstants {
   public static final String PROCESS_DEFINITION_INDEX_NAME = "process-definition";
   public static final String PROCESS_INSTANCE_MULTI_ALIAS = "process-instance";
   public static final String PROCESS_INSTANCE_INDEX_PREFIX = "process-instance-";
+  public static final String FLAT_INCIDENT_MULTI_ALIAS = "flat-incident";
+  public static final String FLAT_VARIABLE_MULTI_ALIAS = "flat-variable";
   public static final String SINGLE_PROCESS_REPORT_INDEX_NAME = "single-process-report";
   public static final String SINGLE_DECISION_REPORT_INDEX_NAME = "single-decision-report";
   public static final String COMBINED_REPORT_INDEX_NAME = "combined-report";

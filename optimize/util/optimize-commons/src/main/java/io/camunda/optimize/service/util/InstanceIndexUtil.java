@@ -8,6 +8,8 @@
 package io.camunda.optimize.service.util;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
+import static io.camunda.optimize.service.db.DatabaseConstants.FLAT_INCIDENT_MULTI_ALIAS;
+import static io.camunda.optimize.service.db.DatabaseConstants.FLAT_VARIABLE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
 import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
@@ -73,7 +75,7 @@ public final class InstanceIndexUtil {
 
   public static String getFlatIncidentIndexAliasName(final String processDefinitionKey) {
     if (processDefinitionKey == null) {
-      return PROCESS_INSTANCE_MULTI_ALIAS;
+      return FLAT_INCIDENT_MULTI_ALIAS;
     } else {
       return FlatIncidentIndex.constructIndexName(processDefinitionKey);
     }
@@ -81,7 +83,7 @@ public final class InstanceIndexUtil {
 
   public static String getFlatVariableIndexAliasName(final String processDefinitionKey) {
     if (processDefinitionKey == null) {
-      return PROCESS_INSTANCE_MULTI_ALIAS;
+      return FLAT_VARIABLE_MULTI_ALIAS;
     } else {
       return FlatVariableIndex.constructIndexName(processDefinitionKey);
     }

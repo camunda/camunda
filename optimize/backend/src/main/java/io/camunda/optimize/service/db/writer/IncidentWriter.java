@@ -7,8 +7,8 @@
  */
 package io.camunda.optimize.service.db.writer;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.FLAT_INCIDENT_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder.FLAT_INCIDENT_INDEX;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getFlatIncidentIndexAliasName;
 
@@ -39,7 +39,7 @@ public class IncidentWriter {
     LOG.debug("Creating imports for [{}].", importItemName);
     indexRepository.createMissingIndices(
         FLAT_INCIDENT_INDEX,
-        Set.of(PROCESS_INSTANCE_MULTI_ALIAS),
+        Set.of(FLAT_INCIDENT_MULTI_ALIAS),
         processInstances.stream()
             .map(ProcessInstanceDto::getProcessDefinitionKey)
             .collect(Collectors.toSet()));

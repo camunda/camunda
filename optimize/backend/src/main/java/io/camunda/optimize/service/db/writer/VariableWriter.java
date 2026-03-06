@@ -7,8 +7,8 @@
  */
 package io.camunda.optimize.service.db.writer;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.FLAT_VARIABLE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder.FLAT_VARIABLE_INDEX;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getFlatVariableIndexAliasName;
 
@@ -39,7 +39,7 @@ public class VariableWriter {
     LOG.debug("Creating imports for [{}].", importItemName);
     indexRepository.createMissingIndices(
         FLAT_VARIABLE_INDEX,
-        Set.of(PROCESS_INSTANCE_MULTI_ALIAS),
+        Set.of(FLAT_VARIABLE_MULTI_ALIAS),
         processInstances.stream()
             .map(ProcessInstanceDto::getProcessDefinitionKey)
             .collect(Collectors.toSet()));
