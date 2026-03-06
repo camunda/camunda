@@ -1,0 +1,153 @@
+# description: Workflow for end to end tests for Identity only. Tests will use a running instance of Identity for the API
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite/tests/identity
+# type: CI
+# owner: @camunda/identity
+---
+name: Identity E2E Tests
+on:
+  push:
+    branches:
+      - "main"
+      - "stable/**"
+      - "release**"
+    paths:
+      - ".ci/**"
+      - ".github/actions/**"
+      - ".github/workflows/identity-*"
+      - "bom/*"
+      - "distro/**"
+      - "identity/**"
+      - "zeebe/exporters/camunda-exporter/**"
+      - "parent/*"
+      - "pom.xml"
+      - "qa/c8-orchestration-cluster-e2e-test-suite/tests/identity/**"
+  pull_request:
+    paths:
+      - ".ci/**"
+      - ".github/actions/**"
+      - ".github/workflows/identity-*"
+      - "bom/*"
+      - "distro/**"
+      - "identity/**"
+      - "zeebe/exporters/camunda-exporter/**"
+      - "parent/*"
+      - "pom.xml"
+      - "qa/c8-orchestration-cluster-e2e-test-suite/tests/identity/**"
+
+# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
+# Exception for main branch: complete builds for every commit needed for confidenence
+concurrency:
+  cancel-in-progress: true
+  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
+
+permissions:
+  contents: read # for git clone
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.19.12
+        env:
+          discovery.type: single-node
+          cluster.name: docker-cluster
+          bootstrap.memory_lock: true
+          xpack.security.enabled: false
+          ES_JAVA_OPTS: -Xms1024m -Xmx1024m
+        ports:
+          - 9200:9200
+          - 9300:9300
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v6
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
+        with:
+          harbor: true
+          maven-cache-key-modifier: identity-tests
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Build frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./identity/client
+          package-manager: "npm"
+      - name: Install QA Test Suite Dependencies
+        run: npm install
+        working-directory: ./qa/c8-orchestration-cluster-e2e-test-suite
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+        working-directory: ./qa/c8-orchestration-cluster-e2e-test-suite
+      - name: Build backend
+        run: ./mvnw clean install -DskipTests=true -DskipChecks -Dskip.fe.build=true -T1C -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+      - name: Start Identity
+        run: >
+          ./mvnw -q -B spring-boot:start -pl dist
+          -Dspring-boot.run.main-class=io.camunda.application.StandaloneCamunda
+          -Dspring-boot.run.fork=true
+        env:
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME: io.camunda.exporter.CamundaExporter
+          CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL: http://localhost:9200
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL: http://localhost:9200
+          CAMUNDA_TASKLIST_ELASTICSEARCH_URL: http://localhost:9200
+          CAMUNDA_OPERATE_ELASTICSEARCH_URL: http://localhost:9200
+          CAMUNDA_DATABASE_URL: http://localhost:9200
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE: 100
+          ZEEBE_BROKER_BACKPRESSURE_ENABLED: false
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS: false
+          CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_WAITFORIMPORTERS: false
+          SPRING_PROFILES_ACTIVE: consolidated-auth,broker,admin
+          CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: false
+          CAMUNDA_SECURITY_AUTHENTICATION_METHOD: BASIC
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE: elasticsearch
+          CAMUNDA_DATA_SECONDARYSTORAGE_TYPE: elasticsearch
+          CAMUNDA_DATABASE_TYPE: elasticsearch
+          CAMUNDA_TASKLIST_DATABASE: elasticsearch
+          CAMUNDA_OPERATE_DATABASE: elasticsearch
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CREATESCHEMA: true
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_RETENTION_ENABLED: false
+          CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: true
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME: demo
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD: demo
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME: Demo
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL: demo@example.com
+          CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0: demo
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_1_USERNAME: lisa
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_1_PASSWORD: lisa
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_1_NAME: lisa
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_1_EMAIL: lisa@example.com
+          CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_1: lisa
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_2_USERNAME: yuliia
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_2_PASSWORD: yuliia
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_2_NAME: Yuliia
+          CAMUNDA_SECURITY_INITIALIZATION_USERS_2_EMAIL: yuliia@example.com
+          CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_2: yuliia
+      - name: Run tests
+        env:
+          LOCAL_TEST: "false"
+          CORE_APPLICATION_URL: http://localhost:8080
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          ZEEBE_REST_ADDRESS: "http://localhost:8080"
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        run: npm run test -- --project=identity-e2e
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: C8 Orchestration Cluster E2E Test Result
+          path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
+          retention-days: 30
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
