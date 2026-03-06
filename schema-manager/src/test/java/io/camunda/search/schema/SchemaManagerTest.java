@@ -28,11 +28,13 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -335,5 +337,39 @@ class SchemaManagerTest {
     when(searchEngineClient.getDocument(
             metadataIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID))
         .thenReturn(versionDoc);
+  }
+
+  @Nested
+  class DeleteArchivedIndicesTest {
+
+    @Test
+    void shouldDeleteArchivedIndicesNotMatchingLiveIndices() {
+      // given
+      schemaManager =
+          new SchemaManager(
+              searchEngineClient,
+              indexDescriptors,
+              templateDescriptors,
+              config,
+              mock(IndexSchemaValidator.class),
+              "8.8.0",
+              null);
+
+      final var liveIndexName = testTemplateDescriptor.getFullQualifiedName();
+      final var archivedIndexName = liveIndexName + "_2024-01-01";
+      final var dummyMapping =
+          new IndexMapping.Builder().indexName(liveIndexName).dynamic("strict").build();
+      final Map<String, IndexMapping> mappings = new HashMap<>();
+      mappings.put(liveIndexName, dummyMapping);
+      mappings.put(archivedIndexName, dummyMapping);
+      when(searchEngineClient.getMappings(anyString(), any())).thenReturn(mappings);
+
+      // when
+      schemaManager.deleteArchivedIndices();
+
+      // then
+      verify(searchEngineClient, never()).deleteIndex(liveIndexName);
+      verify(searchEngineClient).deleteIndex(archivedIndexName);
+    }
   }
 }
