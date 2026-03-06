@@ -829,7 +829,8 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                       bi ->
                           bi.index(addPrefixesToIndices(requestDto.getIndexName()).get(0))
                               .id(requestDto.getId())
-                              .action(a -> a.doc(requestDto.getDocs()).docAsUpsert(true))
+                              .action(
+                                  a -> a.doc(requestDto.getDocs()).upsert(requestDto.getSource()))
                               .retryOnConflict(requestDto.getRetryNumberOnConflict())));
         } else {
           builder.operations(
