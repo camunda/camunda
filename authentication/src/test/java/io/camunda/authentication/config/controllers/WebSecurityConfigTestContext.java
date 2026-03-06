@@ -14,9 +14,9 @@ import io.camunda.auth.domain.spi.CamundaAuthenticationHolder;
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.auth.domain.support.CamundaAuthenticationDelegatingConverter;
 import io.camunda.auth.domain.support.CamundaAuthenticationDelegatingHolder;
+import io.camunda.auth.spring.holder.HttpSessionBasedAuthenticationHolder;
 import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
 import io.camunda.authentication.handler.AuthFailureHandler;
-import io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.ResourceAccessProvider;
@@ -24,7 +24,7 @@ import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
-import jakarta.servlet.http.HttpServletRequest;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ForkJoinPool;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -37,7 +37,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.context.annotation.RequestScope;
 
 /**
  * Provides beans that the WebSecurityConfig depends on. Implements the beans in a way that they do
@@ -47,11 +46,11 @@ import org.springframework.web.context.annotation.RequestScope;
 public class WebSecurityConfigTestContext {
 
   @Bean
-  @RequestScope
   public CamundaAuthenticationHolder httpSessionBasedAuthenticationHolder(
-      final HttpServletRequest request, final SecurityConfiguration securityConfiguration) {
+      final SecurityConfiguration securityConfiguration) {
     return new HttpSessionBasedAuthenticationHolder(
-        request, securityConfiguration.getAuthentication());
+        Duration.parse(
+            securityConfiguration.getAuthentication().getAuthenticationRefreshInterval()));
   }
 
   /**
