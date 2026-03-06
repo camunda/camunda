@@ -9,10 +9,16 @@ package io.camunda.optimize.service.db.schema.index;
 
 import co.elastic.clients.elasticsearch.indices.IndexSettings.Builder;
 import io.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
+import io.camunda.optimize.service.db.es.schema.index.FlatFlowNodeInstanceIndexES;
+import io.camunda.optimize.service.db.es.schema.index.FlatIncidentIndexES;
 import io.camunda.optimize.service.db.es.schema.index.FlatProcessInstanceIndexES;
+import io.camunda.optimize.service.db.es.schema.index.FlatVariableIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.os.schema.index.DecisionInstanceIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.FlatFlowNodeInstanceIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.FlatIncidentIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.FlatProcessInstanceIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.FlatVariableIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import java.util.function.Function;
@@ -20,7 +26,10 @@ import org.opensearch.client.opensearch.indices.IndexSettings;
 
 public enum IndexMappingCreatorBuilder {
   DECISION_INSTANCE_INDEX(DecisionInstanceIndexES::new, DecisionInstanceIndexOS::new),
+  FLAT_FLOW_NODE_INSTANCE_INDEX(FlatFlowNodeInstanceIndexES::new, FlatFlowNodeInstanceIndexOS::new),
+  FLAT_INCIDENT_INDEX(FlatIncidentIndexES::new, FlatIncidentIndexOS::new),
   FLAT_PROCESS_INSTANCE_INDEX(FlatProcessInstanceIndexES::new, FlatProcessInstanceIndexOS::new),
+  FLAT_VARIABLE_INDEX(FlatVariableIndexES::new, FlatVariableIndexOS::new),
   PROCESS_INSTANCE_INDEX(ProcessInstanceIndexES::new, ProcessInstanceIndexOS::new);
 
   private final Function<
