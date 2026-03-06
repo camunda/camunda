@@ -89,10 +89,10 @@ jobs:
           kubectl config set-context --current --namespace=${{ inputs.name }}
       - name: Execute profiling
         run: >
-          ./load-tests/docs/scripts/executeProfiling.sh ${{ matrix.pod }} ${{ matrix.event }} "${{ inputs.profiler_options }}"
+          ./load-tests/docs/scripts/executeProfiling.sh ${{ matrix.pod }} ${{ matrix.event }} "${{ inputs.database }}" "${{ inputs.profiler_options }}"
       - uses: actions/upload-artifact@v7
         with:
-          name: flamegraph-${{ matrix.event }}-${{ matrix.pod }}
+          name: flamegraph-${{ matrix.event }}-${{ matrix.pod }}-${{ inputs.database }}
           path: ${{ matrix.pod }}*
       - name: Summarize profiling
         if: success()
