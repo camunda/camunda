@@ -419,7 +419,8 @@ public final class ProcessInstanceTokenTest {
     assertThat(incident.getValue().getErrorMessage())
         .isEqualTo(
             "Expected message name to be at most %d characters long (configured max-name-length), but was %d characters."
-                .formatted(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH, tooLongValue.length()));
+                .formatted(
+                    EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH, tooLongValue.length()));
     assertThat(incident.getValue().getElementId()).isEqualTo("catch");
     assertThat(incident.getValue().getElementInstanceKey())
         .isEqualTo(catchEventActivatingRecord.getKey());
@@ -475,7 +476,8 @@ public final class ProcessInstanceTokenTest {
     assertThat(incident.getValue().getErrorMessage())
         .isEqualTo(
             "Expected correlation key to be at most %d characters long (configured max-name-length), but was %d characters."
-                .formatted(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH, tooLongValue.length()));
+                .formatted(
+                    EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH, tooLongValue.length()));
     assertThat(incident.getValue().getElementId()).isEqualTo("catch");
     assertThat(incident.getValue().getElementInstanceKey())
         .isEqualTo(catchEventActivatingRecord.getKey());

@@ -184,5 +184,4 @@ public final class PublishMessageTest {
     assertThat(rejectedCommand.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejectedCommand.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
   }
-
 }
