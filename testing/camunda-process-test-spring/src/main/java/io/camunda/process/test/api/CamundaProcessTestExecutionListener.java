@@ -335,6 +335,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         LOG.debug("Failed to close client, continue.", e);
       }
     }
+    createdClients.clear();
   }
 
   private CamundaProcessTestRuntime buildRuntime(
