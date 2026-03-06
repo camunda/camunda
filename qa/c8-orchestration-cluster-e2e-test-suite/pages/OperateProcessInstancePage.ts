@@ -44,6 +44,7 @@ class OperateProcessInstancePage {
   readonly processInstanceKeyCell: Locator;
   readonly viewAllCalledInstancesLink: Locator;
   readonly viewParentInstanceLink: Locator;
+  readonly variableCellByName: (name: string | RegExp) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -96,6 +97,8 @@ class OperateProcessInstancePage {
     this.viewAllCalledInstancesLink = page.getByRole('link', {
       name: /view all called instances/i,
     });
+    this.variableCellByName = (name) =>
+      this.variablesList.getByRole('cell', {name});
     this.viewParentInstanceLink = this.instanceHeader.getByRole('link', {
       name: /view parent instance/i,
     });
