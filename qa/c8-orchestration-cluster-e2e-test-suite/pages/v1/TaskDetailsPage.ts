@@ -233,6 +233,25 @@ class TaskDetailsPageV1 {
     }
   }
 
+  async assertDetailsHeaderVisible(): Promise<void> {
+    let retryCount = 0;
+    const maxRetries = 2;
+    while (retryCount < maxRetries) {
+      try {
+        await expect(this.detailsHeader).toBeVisible({timeout: 45000});
+        return;
+      } catch {
+        retryCount++;
+        console.log(`Attempt ${retryCount} failed. Retrying...`);
+        await this.page.reload();
+        await sleep(10000);
+      }
+    }
+    throw new Error(
+      `Task details header not visible after ${maxRetries} attempts.`,
+    );
+  }
+
   async priorityAssertion(priority: string): Promise<void> {
     let retryCount = 0;
     const maxRetries = 2;
