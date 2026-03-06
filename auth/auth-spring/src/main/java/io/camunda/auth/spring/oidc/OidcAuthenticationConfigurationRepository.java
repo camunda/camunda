@@ -7,9 +7,9 @@
  */
 package io.camunda.auth.spring.oidc;
 
-import io.camunda.auth.spring.config.AuthenticationConfiguration;
-import io.camunda.auth.spring.config.OidcAuthenticationConfiguration;
-import io.camunda.auth.spring.config.ProvidersConfiguration;
+import io.camunda.auth.domain.config.AuthenticationConfiguration;
+import io.camunda.auth.domain.config.OidcAuthenticationConfiguration;
+import io.camunda.auth.domain.config.ProvidersConfiguration;
 import io.camunda.auth.spring.config.SecurityConfiguration;
 import java.util.HashMap;
 import java.util.Map;

@@ -7,7 +7,7 @@
  */
 package io.camunda.auth.spring.oidc;
 
-import io.camunda.auth.spring.config.OidcAuthenticationConfiguration;
+import io.camunda.auth.domain.config.OidcAuthenticationConfiguration;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;

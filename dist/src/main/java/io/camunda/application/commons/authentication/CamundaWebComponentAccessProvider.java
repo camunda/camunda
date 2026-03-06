@@ -14,6 +14,7 @@ import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.auth.domain.spi.WebComponentAccessProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.ResourceAccessProvider;
+import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 
@@ -56,5 +57,13 @@ public class CamundaWebComponentAccessProvider implements WebComponentAccessProv
     return resourceAccessProvider
         .hasResourceAccessByResourceId(authentication, COMPONENT_ACCESS_AUTHORIZATION, component)
         .allowed();
+  }
+
+  @Override
+  public List<String> getAuthorizedComponents(final CamundaAuthentication authentication) {
+    final var componentAccess =
+        resourceAccessProvider.resolveResourceAccess(
+            authentication, COMPONENT_ACCESS_AUTHORIZATION);
+    return componentAccess.allowed() ? componentAccess.authorization().resourceIds() : List.of();
   }
 }

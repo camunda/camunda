@@ -10,6 +10,7 @@ package io.camunda.application.initializers;
 import static io.camunda.application.Profile.CONSOLIDATED_AUTH;
 import static io.camunda.application.Profile.getWebappProfiles;
 
+import io.camunda.auth.domain.config.AuthenticationConfiguration;
 import io.camunda.spring.utils.DatabaseTypeUtils;
 import java.util.HashMap;
 import java.util.Set;
@@ -32,6 +33,7 @@ public class DefaultAuthenticationInitializer
   public void initialize(final ConfigurableApplicationContext context) {
     final var env = context.getEnvironment();
     bridgeAuthMethodProperty(context);
+    enableAuthSdk(context);
     if (shouldApplyDefaultAuthenticationProfile(env)) {
       env.addActiveProfile(CONSOLIDATED_AUTH.getId());
     }
@@ -39,17 +41,38 @@ public class DefaultAuthenticationInitializer
   }
 
   /**
-   * If the old property {@code camunda.security.authentication.method} is set but the new property
-   * {@code camunda.auth.method} is not, bridge the old value to the new property so the auth
-   * library auto-configurations activate.
+   * Ensures the new property {@code camunda.auth.method} is always set so the auth library
+   * auto-configurations activate. If the old property {@code
+   * camunda.security.authentication.method} is set, bridges its value. Otherwise, sets the default
+   * authentication method.
    */
   private void bridgeAuthMethodProperty(final ConfigurableApplicationContext context) {
     final var env = context.getEnvironment();
-    if (env.getProperty(NEW_AUTH_METHOD) == null && env.getProperty(OLD_AUTH_METHOD) != null) {
-      final var propertyMap = new HashMap<String, Object>();
-      propertyMap.put(NEW_AUTH_METHOD, env.getProperty(OLD_AUTH_METHOD));
-      DefaultPropertiesPropertySource.addOrMerge(propertyMap, env.getPropertySources());
+    if (env.getProperty(NEW_AUTH_METHOD) != null) {
+      return;
     }
+    final var propertyMap = new HashMap<String, Object>();
+    if (env.getProperty(OLD_AUTH_METHOD) != null) {
+      propertyMap.put(NEW_AUTH_METHOD, env.getProperty(OLD_AUTH_METHOD));
+    } else {
+      propertyMap.put(
+          NEW_AUTH_METHOD, AuthenticationConfiguration.DEFAULT_METHOD.name().toLowerCase());
+    }
+    DefaultPropertiesPropertySource.addOrMerge(propertyMap, env.getPropertySources());
+  }
+
+  /**
+   * Activates the auth SDK SPI implementations defined in the dist module so that concrete beans
+   * (e.g. UserProfileProvider, TenantInfoProvider, WebComponentAccessProvider) are registered.
+   */
+  private void enableAuthSdk(final ConfigurableApplicationContext context) {
+    final var env = context.getEnvironment();
+    if (env.getProperty("camunda.auth.sdk.enabled") != null) {
+      return;
+    }
+    final var propertyMap = new HashMap<String, Object>();
+    propertyMap.put("camunda.auth.sdk.enabled", "true");
+    DefaultPropertiesPropertySource.addOrMerge(propertyMap, env.getPropertySources());
   }
 
   private void bridgeSecondaryStorageProperty(final ConfigurableApplicationContext context) {

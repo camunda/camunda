@@ -11,7 +11,7 @@ import static io.camunda.zeebe.engine.processing.identity.authorization.property
 import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_CANDIDATE_GROUPS;
 import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_CANDIDATE_USERS;
 
-import io.camunda.security.auth.MappingRuleMatcher;
+import io.camunda.auth.domain.auth.MappingRuleMatcher;
 import io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties;
 import io.camunda.zeebe.engine.processing.identity.authorization.resolver.ClaimsExtractor;
 import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;

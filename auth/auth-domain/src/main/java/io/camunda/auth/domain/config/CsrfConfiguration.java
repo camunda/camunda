@@ -8,6 +8,9 @@
 package io.camunda.auth.domain.config;
 
 public class CsrfConfiguration {
+  public static final String SESSION_COOKIE_NAME = "camunda-session";
+  public static final String CSRF_TOKEN_HEADER = "X-CSRF-TOKEN";
+
   private boolean enabled = true;
 
   public boolean isEnabled() {

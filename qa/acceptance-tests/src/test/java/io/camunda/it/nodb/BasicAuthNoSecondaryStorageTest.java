@@ -11,8 +11,8 @@ import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NO
 import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.auth.domain.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.auth.domain.model.AuthenticationMethod;
-import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import org.junit.jupiter.api.Test;

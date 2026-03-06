@@ -52,6 +52,7 @@
     <version.archunit>1.4.1</version.archunit>
     <version.wiremock>3.13.2</version.wiremock>
     <version.testcontainers>2.0.3</version.testcontainers>
+    <version.json-path>3.0.0</version.json-path>
 
     <!-- Maven plugins -->
     <version.maven-compiler-plugin>3.14.0</version.maven-compiler-plugin>
@@ -119,6 +120,11 @@
         <groupId>co.elastic.clients</groupId>
         <artifactId>elasticsearch-java</artifactId>
         <version>${version.elasticsearch-java-client}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.jayway.jsonpath</groupId>
+        <artifactId>json-path</artifactId>
+        <version>${version.json-path}</version>
       </dependency>
       <dependency>
         <groupId>com.tngtech.archunit</groupId>

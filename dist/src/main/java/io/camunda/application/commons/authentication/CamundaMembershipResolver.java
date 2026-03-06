@@ -10,6 +10,7 @@ package io.camunda.application.commons.authentication;
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 
+import io.camunda.auth.domain.auth.OidcGroupsLoader;
 import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.auth.domain.model.PrincipalType;
 import io.camunda.auth.domain.spi.MembershipResolver;
@@ -17,7 +18,6 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;

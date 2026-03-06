@@ -17,8 +17,8 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.McpGatewayInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
+import io.camunda.auth.domain.config.AuthenticationConfiguration;
 import io.camunda.auth.domain.model.AuthenticationMethod;
-import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -169,7 +169,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     withBean("camunda", unifiedConfig, Camunda.class)
         .withBean("security-config", securityConfig, CamundaSecurityProperties.class)
         .withProperty(
-            AuthenticationProperties.API_UNPROTECTED,
+            AuthenticationConfiguration.PROPERTY_UNPROTECTED_API,
             securityConfig.getAuthentication().getUnprotectedApi())
         .withProperty(
             "camunda.security.authorizations.enabled",
@@ -203,7 +203,16 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   public TestCamundaApplication withProperty(final String key, final Object value) {
     // Since the security config is not constructed from the properties, we need to manually update
     // it when we override a property.
-    AuthenticationProperties.applyToSecurityConfig(securityConfig, key, value);
+    switch (key) {
+      case AuthenticationConfiguration.PROPERTY_METHOD ->
+          AuthenticationMethod.parse(String.valueOf(value))
+              .ifPresent(securityConfig.getAuthentication()::setMethod);
+      case AuthenticationConfiguration.PROPERTY_UNPROTECTED_API ->
+          securityConfig
+              .getAuthentication()
+              .setUnprotectedApi(Boolean.parseBoolean(String.valueOf(value)));
+      default -> {}
+    }
     return super.withProperty(key, value);
   }
 

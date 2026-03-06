@@ -10,11 +10,14 @@ package io.camunda.application.commons.authentication;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.auth.domain.spi.MembershipResolver;
+import io.camunda.auth.domain.spi.TenantInfoProvider;
+import io.camunda.auth.domain.spi.UserProfileProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.UserServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -47,5 +50,15 @@ public class CamundaAuthSdkConfiguration {
   public MembershipResolver camundaNoDBMembershipResolver(
       final SecurityConfiguration securityConfiguration) {
     return new CamundaNoDBMembershipResolver(securityConfiguration);
+  }
+
+  @Bean
+  public UserProfileProvider camundaUserProfileProvider(final UserServices userServices) {
+    return new CamundaUserProfileProvider(userServices);
+  }
+
+  @Bean
+  public TenantInfoProvider camundaTenantInfoProvider(final TenantServices tenantServices) {
+    return new CamundaTenantInfoProvider(tenantServices);
   }
 }

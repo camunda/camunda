@@ -9,10 +9,9 @@ package io.camunda.gateway.mapping.http.search;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static java.util.Optional.ofNullable;
-import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
-import io.camunda.authentication.entity.CamundaUserDTO;
+import io.camunda.auth.domain.model.CamundaUserInfo;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
@@ -185,7 +184,6 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.entity.ClusterMetadata.AppName;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collections;
@@ -1132,24 +1130,33 @@ public final class SearchQueryResponseMapper {
     return new UserResult().username(user.username()).email(user.email()).name(user.name());
   }
 
-  public static CamundaUserResult toCamundaUser(final CamundaUserDTO camundaUser) {
-    return new CamundaUserResult()
-        .displayName(camundaUser.displayName())
-        .username(camundaUser.username())
-        .email(camundaUser.email())
-        .authorizedComponents(camundaUser.authorizedComponents())
-        .tenants(toTenants(camundaUser.tenants()))
-        .groups(camundaUser.groups())
-        .roles(camundaUser.roles())
-        .salesPlanType(camundaUser.salesPlanType())
-        .c8Links(toCamundaUserResultC8Links(camundaUser.c8Links()))
-        .canLogout(camundaUser.canLogout());
+  @SuppressWarnings("unchecked")
+  public static CamundaUserResult toCamundaUser(final CamundaUserInfo camundaUser) {
+    final var result =
+        new CamundaUserResult()
+            .displayName(camundaUser.displayName())
+            .username(camundaUser.username())
+            .email(camundaUser.email())
+            .authorizedComponents(camundaUser.authorizedComponents())
+            .tenants(toTenantResults(camundaUser.tenants()))
+            .groups(camundaUser.groups())
+            .roles(camundaUser.roles())
+            .canLogout(camundaUser.canLogout());
+    final var metadata = camundaUser.metadata();
+    if (metadata.containsKey("salesPlanType")) {
+      result.salesPlanType((String) metadata.get("salesPlanType"));
+    }
+    if (metadata.containsKey("c8Links")) {
+      result.c8Links((Map<String, String>) metadata.get("c8Links"));
+    }
+    return result;
   }
 
-  private static Map<String, String> toCamundaUserResultC8Links(
-      final Map<AppName, String> c8Links) {
-    return c8Links.entrySet().stream()
-        .collect(toMap(e -> e.getKey().getValue(), Map.Entry::getValue, (v1, v2) -> v1));
+  private static List<TenantResult> toTenantResults(
+      final List<io.camunda.auth.domain.model.TenantInfo> tenants) {
+    return tenants.stream()
+        .map(t -> new TenantResult().tenantId(t.tenantId()).name(t.name()))
+        .toList();
   }
 
   private static List<DecisionInstanceResult> toDecisionInstances(
