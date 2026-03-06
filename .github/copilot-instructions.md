@@ -129,3 +129,11 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `perf`, `refactor`, `style`
 - Force-push `main`
 - Skip formatting checks
 
+## Before Submitting
+
+1. Format code: `./mvnw license:format spotless:apply -T1C`
+2. Build the changed module: `./mvnw install -pl <module> -Dquickly -T1C`
+3. Run module tests: `./mvnw verify -pl <module> -DskipTests=false -Dquickly -T1C`
+4. Verify tests pass (zero failures)
+5. Commit with conventional commit format
+
