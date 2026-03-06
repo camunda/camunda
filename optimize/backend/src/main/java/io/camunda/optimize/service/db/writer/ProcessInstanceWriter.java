@@ -36,6 +36,7 @@ import io.camunda.optimize.dto.optimize.RequestType;
 import io.camunda.optimize.service.db.helper.ImportRequestDtoFactory;
 import io.camunda.optimize.service.db.repository.IndexRepository;
 import io.camunda.optimize.service.db.repository.ProcessInstanceRepository;
+import io.camunda.optimize.service.importing.zeebe.cache.OrdinalCache;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,16 +56,19 @@ public class ProcessInstanceWriter {
   private final ObjectMapper objectMapper;
   private final ImportRequestDtoFactory importRequestDtoFactory;
   private final ProcessInstanceRepository processInstanceRepository;
+  private final OrdinalCache ordinalCache;
 
   public ProcessInstanceWriter(
       final IndexRepository indexRepository,
       final ObjectMapper objectMapper,
       final ImportRequestDtoFactory importRequestDtoFactory,
-      final ProcessInstanceRepository processInstanceRepository) {
+      final ProcessInstanceRepository processInstanceRepository,
+      final OrdinalCache ordinalCache) {
     this.indexRepository = indexRepository;
     this.objectMapper = objectMapper;
     this.importRequestDtoFactory = importRequestDtoFactory;
     this.processInstanceRepository = processInstanceRepository;
+    this.ordinalCache = ordinalCache;
   }
 
   public List<ImportRequestDto> generateProcessInstanceImports(
@@ -186,7 +190,9 @@ public class ProcessInstanceWriter {
   private ImportRequestDto buildFlatProcessInstanceImportRequest(
       final FlatProcessInstanceDto instance, final String importItemName) {
     final String indexName =
-        getFlatProcessInstanceIndexAliasName(instance.getProcessDefinitionKey());
+        getFlatProcessInstanceIndexAliasName(
+            instance.getProcessDefinitionKey(),
+            ordinalCache.getTickString(instance.getOrdinal()));
     if (isNewProcessInstance(instance)) {
       return ImportRequestDto.builder()
           .importName(importItemName)

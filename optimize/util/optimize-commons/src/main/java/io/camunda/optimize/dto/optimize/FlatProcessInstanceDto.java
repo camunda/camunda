@@ -30,6 +30,7 @@ public class FlatProcessInstanceDto implements OptimizeDto {
   private DataSourceDto dataSource;
   private String tenantId;
   private int partition;
+  private int ordinal;
 
   public FlatProcessInstanceDto() {}
 
@@ -53,8 +54,6 @@ public class FlatProcessInstanceDto implements OptimizeDto {
     dto.partition = source.getPartition();
     return dto;
   }
-
-  public String getProcessDefinitionKey() {
     return processDefinitionKey;
   }
 
@@ -150,6 +149,14 @@ public class FlatProcessInstanceDto implements OptimizeDto {
     this.partition = partition;
   }
 
+  public int getOrdinal() {
+    return ordinal;
+  }
+
+  public void setOrdinal(final int ordinal) {
+    this.ordinal = ordinal;
+  }
+
   public static final class Fields {
 
     public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
@@ -164,6 +171,7 @@ public class FlatProcessInstanceDto implements OptimizeDto {
     public static final String DATA_SOURCE = "dataSource";
     public static final String TENANT_ID = "tenantId";
     public static final String PARTITION = "partition";
+    public static final String ORDINAL = "ordinal";
 
     private Fields() {}
   }

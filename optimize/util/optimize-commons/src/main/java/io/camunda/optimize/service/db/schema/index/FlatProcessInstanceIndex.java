@@ -50,6 +50,18 @@ public abstract class FlatProcessInstanceIndex<TBuilder> extends AbstractInstanc
     return FLAT_PROCESS_INSTANCE_INDEX_PREFIX + processInstanceIndexKey.toLowerCase(Locale.ENGLISH);
   }
 
+  /**
+   * Constructs the index name using both the process definition key and the ordinal tick string
+   * (e.g. {@code "20260306-1430"}). The ordinal tick is mandatory.
+   */
+  public static String constructIndexName(
+      final String processInstanceIndexKey, final String ordinalTick) {
+    return FLAT_PROCESS_INSTANCE_INDEX_PREFIX
+        + processInstanceIndexKey.toLowerCase(Locale.ENGLISH)
+        + "-"
+        + ordinalTick;
+  }
+
   @Override
   public String getIndexName() {
     return indexName;

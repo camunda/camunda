@@ -134,21 +134,26 @@ public class ZeebeProcessInstanceImportService
     final Map<Long, List<ZeebeProcessInstanceRecordDto>> byProcessInstanceKey =
         filteredRecords.stream()
             .collect(Collectors.groupingBy(r -> r.getValue().getProcessInstanceKey()));
-    final List<ProcessInstanceDto> processInstances =
+    final List<FlatProcessInstanceDto> flatProcessInstances =
         byProcessInstanceKey.values().stream()
-            .map(this::createProcessInstanceForData)
-            .filter(
-                pi ->
-                    !pi.getFlowNodeInstances().isEmpty()
-                        || pi.getStartDate() != null
-                        || pi.getEndDate() != null)
+            .map(
+                records -> {
+                  final ProcessInstanceDto pi = createProcessInstanceForData(records);
+                  if (!pi.getFlowNodeInstances().isEmpty()
+                      || pi.getStartDate() != null
+                      || pi.getEndDate() != null) {
+                    final FlatProcessInstanceDto flat = FlatProcessInstanceDto.from(pi);
+                    flat.setOrdinal(records.get(0).getValue().getOrdinal());
+                    return flat;
+                  }
+                  return null;
+                })
+            .filter(flat -> flat != null)
             .collect(Collectors.toList());
     final List<FlatFlowNodeInstanceDto> flowNodeInstances =
         byProcessInstanceKey.values().stream()
             .flatMap(records -> createFlatFlowNodeInstancesForData(records).stream())
             .collect(Collectors.toList());
-    final List<FlatProcessInstanceDto> flatProcessInstances =
-        processInstances.stream().map(FlatProcessInstanceDto::from).collect(Collectors.toList());
     LOG.debug(
         "Processing {} fetched process instances, {} flat process instances, {} flow node instances.",
         zeebeRecords.size(),

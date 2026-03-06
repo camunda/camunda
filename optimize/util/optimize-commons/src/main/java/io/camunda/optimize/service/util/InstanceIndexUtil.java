@@ -79,6 +79,19 @@ public final class InstanceIndexUtil {
     }
   }
 
+  /**
+   * Returns the flat process instance index name incorporating the ordinal tick. The ordinal tick
+   * is mandatory; this overload must be used when an ordinal is known.
+   */
+  public static String getFlatProcessInstanceIndexAliasName(
+      final String processDefinitionKey, final String ordinalTick) {
+    if (processDefinitionKey == null) {
+      return PROCESS_INSTANCE_MULTI_ALIAS;
+    } else {
+      return FlatProcessInstanceIndex.constructIndexName(processDefinitionKey, ordinalTick);
+    }
+  }
+
   public static String getFlatFlowNodeInstanceIndexAliasName(final String processDefinitionKey) {
     if (processDefinitionKey == null) {
       return FLAT_FLOW_NODE_INSTANCE_MULTI_ALIAS;
