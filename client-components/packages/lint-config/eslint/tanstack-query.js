@@ -12,12 +12,14 @@ import tanstackPlugin from '@tanstack/eslint-plugin-query';
  * @param {{ browserFiles: string[] }} options
  * @returns {import("eslint").Linter.Config[]}
  */
-export function tanstackQueryConfig({browserFiles}) {
-  return [
-    {
-      files: browserFiles,
-      plugins: {'@tanstack/query': tanstackPlugin},
-      rules: {...tanstackPlugin.configs.recommended.rules},
-    },
-  ];
+function tanstackQueryConfig({browserFiles}) {
+	return [
+		{
+			files: browserFiles,
+			plugins: {'@tanstack/query': tanstackPlugin},
+			rules: {...tanstackPlugin.configs.recommended.rules},
+		},
+	];
 }
+
+export {tanstackQueryConfig};

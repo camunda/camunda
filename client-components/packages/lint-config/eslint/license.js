@@ -12,13 +12,15 @@ import licenseHeaderPlugin from 'eslint-plugin-license-header';
  * @param {{ licenseHeaderPath: string }} options
  * @returns {import("eslint").Linter.Config[]}
  */
-export function licenseConfig({licenseHeaderPath}) {
-  return [
-    {
-      plugins: {'license-header': licenseHeaderPlugin},
-      rules: {
-        'license-header/header': ['error', licenseHeaderPath],
-      },
-    },
-  ];
+function licenseConfig({licenseHeaderPath}) {
+	return [
+		{
+			plugins: {'license-header': licenseHeaderPlugin},
+			rules: {
+				'license-header/header': ['error', licenseHeaderPath],
+			},
+		},
+	];
 }
+
+export {licenseConfig};

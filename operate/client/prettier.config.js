@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import sharedConfig from '@camunda/lint-config/prettier';
+import {config} from '@camunda/lint-config/prettier';
 
 export default {
-  ...sharedConfig,
+  ...config,
 };

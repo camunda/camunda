@@ -14,7 +14,7 @@ import globals from 'globals';
  * @param {{ testFiles: string[] }} options
  * @returns {import("eslint").Linter.Config[]}
  */
-export function testingConfig({testFiles}) {
+function testingConfig({testFiles}) {
 	return [
 		{
 			files: testFiles,
@@ -42,3 +42,5 @@ export function testingConfig({testFiles}) {
 		},
 	];
 }
+
+export {testingConfig};

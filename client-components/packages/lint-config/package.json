@@ -5,12 +5,7 @@
 	"type": "module",
 	"exports": {
 		"./eslint": "./eslint/index.js",
-		"./eslint/base": "./eslint/base.js",
-		"./eslint/react": "./eslint/react.js",
-		"./eslint/typescript": "./eslint/typescript.js",
-		"./eslint/testing": "./eslint/testing.js",
-		"./eslint/license": "./eslint/license.js",
-		"./eslint/tanstack-query": "./eslint/tanstack-query.js",
+		"./eslint/*": "./eslint/*.js",
 		"./prettier": "./prettier/index.js"
 	},
 	"peerDependencies": {

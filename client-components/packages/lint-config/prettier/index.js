@@ -8,9 +8,9 @@
 
 /** @type {import("prettier").Config} */
 const config = {
-  singleQuote: true,
-  bracketSpacing: false,
-  trailingComma: 'all',
+	singleQuote: true,
+	bracketSpacing: false,
+	trailingComma: 'all',
 };
 
-export default config;
+export {config};
