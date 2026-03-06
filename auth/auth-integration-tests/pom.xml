@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda.auth</groupId>
+    <artifactId>camunda-auth-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>camunda-auth-integration-tests</artifactId>
+
+  <name>Camunda Auth Integration Tests</name>
+  <description>Integration tests — end-to-end verification of token exchange flows against real and containerized IdPs.</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-sdk</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-spring-boot-starter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-idp-keycloak</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-idp-azure-ad</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-idp-auth0</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-idp-okta</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-idp-google</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-idp-pingfederate</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-persist-rdbms</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-persist-elasticsearch</artifactId>
+    </dependency>
+
+    <!-- Test dependencies -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+</project>
