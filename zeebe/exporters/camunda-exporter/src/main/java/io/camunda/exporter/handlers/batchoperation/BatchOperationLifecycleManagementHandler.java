@@ -111,22 +111,44 @@ public class BatchOperationLifecycleManagementHandler
     }
   }
 
+  // Painless script that guards against state regression in multi-partition clusters.
+  // - If the incoming state is terminal, it is always applied (terminal states take priority).
+  // - If the incoming state is non-terminal (ACTIVE from RESUMED, or SUSPENDED), it is only
+  //   applied when the current stored state is also non-terminal, preventing a lagging distributed
+  //   event from overwriting a terminal state.
+  // endDate and errors are always updated because they are set alongside the state transition and
+  // are safe to overwrite.
+  static final String CONDITIONAL_STATE_UPDATE_SCRIPT =
+      """
+      def terminalStates = ['COMPLETED', 'PARTIALLY_COMPLETED', 'FAILED', 'CANCELED'];
+      def isNewStateTerminal = terminalStates.contains(params.state);
+      def isCurrentStateTerminal = terminalStates.contains(ctx._source.state);
+      if (isNewStateTerminal || !isCurrentStateTerminal) {
+          ctx._source.state = params.state;
+      }
+      ctx._source.endDate = params.endDate;
+      if (params.containsKey('errors')) {
+          ctx._source.errors = params.errors;
+      }
+      """;
+
   @Override
   public void flush(final BatchOperationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    // Use upsert instead of update to be resilient against cross-partition ordering.
+    // Use upsertWithScript to be resilient against cross-partition ordering.
     // CANCELED, SUSPENDED, and RESUMED events are distributed to all partitions, so each
-    // partition's exporter writes to the same document. If the document does not yet exist
-    // (e.g., the CREATED event from a slow partition hasn't been exported yet), a plain update()
-    // would fail with a document_missing_exception. With upsert: if the document does not exist,
-    // it is created from the entity; if it already exists, only the specified fields are updated.
-    final Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put(BatchOperationTemplate.STATE, entity.getState());
-    updateFields.put(BatchOperationTemplate.END_DATE, entity.getEndDate());
+    // partition's exporter writes to the same document. A conditional Painless script prevents
+    // a lagging non-terminal state (e.g., ACTIVE from RESUMED) from overwriting a terminal state
+    // (e.g., COMPLETED) that was already written by the lead partition's exporter.
+    // If the document does not yet exist, the upsert creates it from the entity.
+    final Map<String, Object> scriptParams = new HashMap<>();
+    scriptParams.put(BatchOperationTemplate.STATE, entity.getState().name());
+    scriptParams.put(BatchOperationTemplate.END_DATE, entity.getEndDate());
     if (entity.getErrors() != null && !entity.getErrors().isEmpty()) {
-      updateFields.put(BatchOperationTemplate.ERRORS, entity.getErrors());
+      scriptParams.put(BatchOperationTemplate.ERRORS, entity.getErrors());
     }
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsertWithScript(
+        indexName, entity.getId(), entity, CONDITIONAL_STATE_UPDATE_SCRIPT, scriptParams);
   }
 
   @Override
