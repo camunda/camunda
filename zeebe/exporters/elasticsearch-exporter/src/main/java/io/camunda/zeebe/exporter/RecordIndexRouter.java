@@ -9,7 +9,6 @@ package io.camunda.zeebe.exporter;
 
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -35,13 +34,12 @@ final class RecordIndexRouter {
 
   /**
    * Returns the name of the index for the given record. This consists of the configured prefix,
-   * followed by the value type, the current broker version, and then the current date.
+   * followed by the current broker version, and then the current date. All records regardless of
+   * value type are stored in the same index.
    */
   String indexFor(final Record<?> record) {
     final Instant timestamp = Instant.ofEpochMilli(record.getTimestamp());
-    return (indexPrefixForValueType(record.getValueType(), record.getBrokerVersion())
-            + INDEX_DELIMITER)
-        + formatter.format(timestamp);
+    return (indexPrefix(record.getBrokerVersion()) + INDEX_DELIMITER) + formatter.format(timestamp);
   }
 
   /** Returns a cluster-unique ID for the record consisting of it's "partitionId-position". */
@@ -50,30 +48,28 @@ final class RecordIndexRouter {
   }
 
   /**
-   * Returns the index template's alias name for the given value type, prefixed by {@link
-   * IndexConfiguration#prefix}, e.g. for {@link ValueType#VARIABLE}, you get
-   * "my-super-prefix-variable".
+   * Returns the index template's alias name for all records, prefixed by {@link
+   * IndexConfiguration#prefix}, e.g. "my-super-prefix".
    */
-  String aliasNameForValueType(final ValueType valueType) {
-    return config.prefix + ALIAS_DELIMITER + valueTypeToString(valueType);
-  }
-
-  /** Returns the index for this value type, minus the current date. */
-  String indexPrefixForValueType(final ValueType valueType, final String version) {
-    return config.prefix
-        + INDEX_DELIMITER
-        + valueTypeToString(valueType)
-        + INDEX_DELIMITER
-        + version;
+  String aliasName() {
+    return config.prefix;
   }
 
   /**
-   * Returns the search pattern for this value type, which consists of the index followed by a
-   * separator and a wildcard, without the date. This allows one to search for this pattern and get
-   * all indices regardless of their date.
+   * Returns the index prefix for the given version, without the date suffix. All records
+   * regardless of value type share this prefix.
    */
-  String searchPatternForValueType(final ValueType valueType, final String version) {
-    return indexPrefixForValueType(valueType, version) + INDEX_DELIMITER + "*";
+  String indexPrefix(final String version) {
+    return config.prefix + INDEX_DELIMITER + version;
+  }
+
+  /**
+   * Returns the search pattern for all records at the given version, which consists of the index
+   * prefix followed by a separator and a wildcard. This allows one to search for this pattern and
+   * get all indices regardless of their date.
+   */
+  String searchPattern(final String version) {
+    return indexPrefix(version) + INDEX_DELIMITER + "*";
   }
 
   /**
@@ -82,9 +78,5 @@ final class RecordIndexRouter {
    */
   String routingFor(final Record<?> record) {
     return String.valueOf(record.getPartitionId());
-  }
-
-  private String valueTypeToString(final ValueType valueType) {
-    return valueType.name().toLowerCase().replace("_", "-");
   }
 }

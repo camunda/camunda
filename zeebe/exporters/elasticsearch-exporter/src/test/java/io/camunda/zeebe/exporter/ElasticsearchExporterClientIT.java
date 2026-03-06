@@ -92,7 +92,7 @@ final class ElasticsearchExporterClientIT {
                     .withBrokerVersion(VersionUtil.getVersionLowerCase()));
     client.index(invalidRecord, new RecordSequence(PARTITION_ID, 1));
     client.putComponentTemplate();
-    client.putIndexTemplate(ValueType.VARIABLE);
+    client.putIndexTemplate(VersionUtil.getVersionLowerCase());
 
     // when/then
     assertThatThrownBy(client::flush)
@@ -104,27 +104,22 @@ final class ElasticsearchExporterClientIT {
   @Test
   void shouldPutIndexTemplate() {
     // given
-    final var valueType = ValueType.VARIABLE;
-    final String indexTemplateName =
-        indexRouter.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
-    final String indexTemplateAlias = indexRouter.aliasNameForValueType(valueType);
+    final String version = VersionUtil.getVersionLowerCase();
+    final String indexTemplateName = indexRouter.indexPrefix(version);
+    final String indexTemplateAlias = indexRouter.aliasName();
     final Template expectedTemplate =
-        templateReader.readIndexTemplate(
-            valueType,
-            indexRouter.searchPatternForValueType(valueType, VersionUtil.getVersionLowerCase()),
-            indexTemplateAlias);
+        templateReader.readIndexTemplate(indexRouter.searchPattern(version), indexTemplateAlias);
 
     // required since all index templates are composed with it
     client.putComponentTemplate();
 
     // when
-    client.putIndexTemplate(valueType);
+    client.putIndexTemplate(version);
 
     // then
-    final var templateItem =
-        testClient.getIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
+    final var templateItem = testClient.getIndexTemplate(version);
     assertThat(templateItem)
-        .as("should have created template for value type %s", valueType)
+        .as("should have created combined index template for version %s", version)
         .isPresent()
         .get()
         .extracting(IndexTemplateItem::name)
@@ -214,8 +209,7 @@ final class ElasticsearchExporterClientIT {
     // given
     final var esClient = testClient.getEsClient();
     final var ownedIndexName =
-        indexRouter.indexPrefixForValueType(ValueType.VARIABLE, VersionUtil.getVersionLowerCase())
-            + "_2024-01-01";
+        indexRouter.indexPrefix(VersionUtil.getVersionLowerCase()) + "_2024-01-01";
     // camunda exporter indexes have a slightly different format
     final var camundaExporterIndexName = config.index.prefix + "-operate-variable-2024-01-01";
     esClient.indices().create(b -> b.index(ownedIndexName));

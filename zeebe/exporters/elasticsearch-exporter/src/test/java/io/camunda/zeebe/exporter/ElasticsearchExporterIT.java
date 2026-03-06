@@ -237,26 +237,21 @@ final class ElasticsearchExporterIT {
     assertThat(response.source()).isEqualTo(record);
   }
 
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
-  void shouldPutIndexTemplate(final ValueType valueType) {
-    // assuming
-    Assumptions.assumeTrue(
-        config.shouldIndexValueType(valueType),
-        "no template is created because the exporter is configured filter out records of this type");
-
+  @Test
+  void shouldPutIndexTemplate() {
     // given
-    final var record = generateRecord(valueType);
-    final var expectedIndexTemplateName =
-        indexRouter.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
+    final var version = VersionUtil.getVersionLowerCase();
+    final var record =
+        factory.generateRecord(r -> r.withBrokerVersion(version));
+    final var expectedIndexTemplateName = indexRouter.indexPrefix(version);
 
-    // when - export a single record to enforce installing all index templatesWrapper
+    // when - export a single record to enforce installing the combined index template
     export(record);
 
     // then
-    final var template = testClient.getIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
+    final var template = testClient.getIndexTemplate(version);
     assertThat(template)
-        .as("should have created index template for value type %s", valueType)
+        .as("should have created the combined index template for version %s", version)
         .isPresent()
         .get()
         .extracting(IndexTemplateItem::name)
@@ -475,9 +470,9 @@ final class ElasticsearchExporterIT {
 
       // then
       final var template =
-          testClient.getIndexTemplate(ValueType.JOB, VersionUtil.getVersionLowerCase());
+          testClient.getIndexTemplate(VersionUtil.getVersionLowerCase());
       assertThat(template)
-          .as("should have created index template for value type %s", ValueType.JOB)
+          .as("should have created combined index template")
           .isPresent()
           .get()
           .extracting(item -> item.indexTemplate().priority())
@@ -495,9 +490,9 @@ final class ElasticsearchExporterIT {
 
       // then
       final var template =
-          testClient.getIndexTemplate(ValueType.JOB, VersionUtil.getVersionLowerCase());
+          testClient.getIndexTemplate(VersionUtil.getVersionLowerCase());
       assertThat(template)
-          .as("should have created index template for value type %s", ValueType.JOB)
+          .as("should have created combined index template")
           .isPresent()
           .get()
           .extracting(item -> item.indexTemplate().priority())

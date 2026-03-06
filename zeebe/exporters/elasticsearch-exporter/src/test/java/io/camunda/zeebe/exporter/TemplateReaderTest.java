@@ -9,7 +9,6 @@ package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.Collections;
 import java.util.Map;
@@ -79,11 +78,10 @@ final class TemplateReaderTest {
   @Test
   void shouldSetNumberOfShardsInIndexTemplate() {
     // given
-    final var valueType = ValueType.VARIABLE;
     config.index.setNumberOfShards(43);
 
     // when
-    final var template = templateReader.readIndexTemplate(valueType, "searchPattern", "alias");
+    final var template = templateReader.readIndexTemplate("searchPattern", "alias");
 
     // then
     assertThat(template.template().settings())
@@ -94,11 +92,10 @@ final class TemplateReaderTest {
   @Test
   void shouldSetNumberOfReplicasInIndexTemplate() {
     // given
-    final var valueType = ValueType.VARIABLE;
     config.index.setNumberOfReplicas(10);
 
     // when
-    final var template = templateReader.readIndexTemplate(valueType, "searchPattern", "alias");
+    final var template = templateReader.readIndexTemplate("searchPattern", "alias");
 
     // then
     assertThat(template.template().settings())
@@ -109,10 +106,9 @@ final class TemplateReaderTest {
   @Test
   void shouldReadIndexTemplate() {
     // given
-    final var valueType = ValueType.VARIABLE;
 
     // when
-    final var template = templateReader.readIndexTemplate(valueType, "searchPattern", "alias");
+    final var template = templateReader.readIndexTemplate("searchPattern", "alias");
 
     // then
     assertThat(template.composedOf())
@@ -132,10 +128,9 @@ final class TemplateReaderTest {
   void shouldReadIndexTemplateWithDifferentPrefix() {
     // given
     config.index.prefix = "foo-bar";
-    final var valueType = ValueType.VARIABLE;
 
     // when
-    final var template = templateReader.readIndexTemplate(valueType, "searchPattern", "alias");
+    final var template = templateReader.readIndexTemplate("searchPattern", "alias");
 
     // then
     assertThat(template.composedOf())
@@ -149,10 +144,9 @@ final class TemplateReaderTest {
     // given
     config.retention.setEnabled(true);
     config.retention.setPolicyName("auto-trash");
-    final var valueType = ValueType.VARIABLE;
 
     // when
-    final var template = templateReader.readIndexTemplate(valueType, "searchPattern", "alias");
+    final var template = templateReader.readIndexTemplate("searchPattern", "alias");
 
     // then
     assertThat(template.template().settings()).containsEntry("index.lifecycle.name", "auto-trash");

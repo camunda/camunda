@@ -15,7 +15,6 @@ import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplate
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
@@ -56,9 +55,9 @@ final class TestClient implements CloseableSilently {
     }
   }
 
-  Optional<IndexTemplateItem> getIndexTemplate(final ValueType valueType, final String version) {
+  Optional<IndexTemplateItem> getIndexTemplate(final String version) {
     try {
-      final var templateName = indexRouter.indexPrefixForValueType(valueType, version);
+      final var templateName = indexRouter.indexPrefix(version);
       final var response = esClient.indices().getIndexTemplate(b -> b.name(templateName));
       return response.indexTemplates().stream().findFirst();
     } catch (final IOException e) {

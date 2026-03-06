@@ -35,8 +35,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ElasticsearchExporterClientTest {
@@ -113,15 +111,13 @@ final class ElasticsearchExporterClientTest {
     assertThat(deletePhase.actions().delete()).isNotNull();
   }
 
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
-  void shouldPutIndexTemplate(final ValueType valueType) throws IOException {
+  @Test
+  void shouldPutIndexTemplate() throws IOException {
     // given
+    final var version = VersionUtil.getVersionLowerCase();
     final var expectedTemplate =
         templateReader.readIndexTemplate(
-            valueType,
-            indexRouter.searchPatternForValueType(valueType, VersionUtil.getVersionLowerCase()),
-            indexRouter.aliasNameForValueType(valueType));
+            indexRouter.searchPattern(version), indexRouter.aliasName());
 
     final var transport = mock(ElasticsearchTransport.class);
     final var putTemplateResponse = PutIndexTemplateResponse.of(b -> b.acknowledged(true));
@@ -138,16 +134,14 @@ final class ElasticsearchExporterClientTest {
             new ElasticsearchMetrics(new SimpleMeterRegistry()));
 
     // when
-    client.putIndexTemplate(valueType);
+    client.putIndexTemplate(version);
 
     // then — verify the request captured by the transport matches the expected template
     final var capturedRequest = requestCaptor.get();
     assertThat(capturedRequest).isNotNull();
     assertThat(capturedRequest.indexPatterns()).isEqualTo(expectedTemplate.patterns());
     assertThat(capturedRequest.composedOf()).isEqualTo(expectedTemplate.composedOf());
-    assertThat(capturedRequest.name())
-        .isEqualTo(
-            indexRouter.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase()));
+    assertThat(capturedRequest.name()).isEqualTo(indexRouter.indexPrefix(version));
   }
 
   @Nested

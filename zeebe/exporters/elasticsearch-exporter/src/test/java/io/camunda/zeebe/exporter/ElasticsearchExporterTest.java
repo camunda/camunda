@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -61,7 +62,7 @@ final class ElasticsearchExporterTest {
 
   @BeforeEach
   void beforeEach() {
-    when(client.putIndexTemplate(any())).thenReturn(true);
+    when(client.putIndexTemplate(anyString())).thenReturn(true);
     when(client.putComponentTemplate()).thenReturn(true);
   }
 
@@ -223,13 +224,11 @@ final class ElasticsearchExporterTest {
       verify(client, never()).putComponentTemplate();
     }
 
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
-    void shouldPutValueTypeTemplate(final ValueType valueType) {
+    @Test
+    void shouldPutIndexTemplate() {
       // given
       config.index.createTemplate = true;
       config.setIncludeEnabledRecords(true);
-      TestSupport.setIndexingForValueType(config.index, valueType, true);
       exporter.configure(context);
       exporter.open(controller);
 
@@ -239,16 +238,14 @@ final class ElasticsearchExporterTest {
       when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
       exporter.export(recordMock);
 
-      // then
-      verify(client, times(1)).putIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
+      // then - a single combined template is created for the broker version, not one per value type
+      verify(client, times(1)).putIndexTemplate(VersionUtil.getVersionLowerCase());
     }
 
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
-    void shouldNotPutValueTypeTemplate(final ValueType valueType) {
+    @Test
+    void shouldNotPutIndexTemplateWhenDisabled() {
       // given
-      config.index.createTemplate = true;
-      TestSupport.setIndexingForValueType(config.index, valueType, false);
+      config.index.createTemplate = false;
       exporter.configure(context);
       exporter.open(controller);
 
@@ -259,7 +256,7 @@ final class ElasticsearchExporterTest {
       exporter.export(recordMock);
 
       // then
-      verify(client, never()).putIndexTemplate(valueType);
+      verify(client, never()).putIndexTemplate(anyString());
     }
 
     @ParameterizedTest(name = "{0} - version: {1}")
@@ -279,7 +276,7 @@ final class ElasticsearchExporterTest {
       when(recordMock.getBrokerVersion()).thenReturn(version);
       exporter.export(recordMock);
 
-      // then
+      // then - schema (and hence the combined template) is created only for required value types
       if (valueType == ValueType.PROCESS_INSTANCE
           || valueType == ValueType.PROCESS
           || valueType == ValueType.VARIABLE
@@ -287,9 +284,9 @@ final class ElasticsearchExporterTest {
           || valueType == ValueType.USER_TASK
           || valueType == ValueType.DEPLOYMENT
           || valueType == ValueType.JOB) {
-        verify(client, times(1)).putIndexTemplate(valueType, version);
+        verify(client, times(1)).putIndexTemplate(version);
       } else {
-        verify(client, never()).putIndexTemplate(any(), any());
+        verify(client, never()).putIndexTemplate(anyString());
       }
     }
   }
