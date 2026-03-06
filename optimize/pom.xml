@@ -301,7 +301,7 @@
             <skipTests>${skip.unit.tests}</skipTests>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <useModulePath>false</useModulePath>
-            <argLine>--add-opens java.base/java.lang=ALL-UNNAMED
+            <argLine>${jvm.module.opens} --add-opens java.base/java.lang=ALL-UNNAMED
               --add-opens java.base/java.util=ALL-UNNAMED</argLine>
             <systemPropertyVariables>
               <database.type>${database.type}</database.type>

@@ -35,7 +35,7 @@
     <maven-profiler-report-directory>${project.build.directory}/profiler</maven-profiler-report-directory>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.23.1</version.agrona>
+    <version.agrona>2.4.0</version.agrona>
     <version.animal-sniffer>1.27</version.animal-sniffer>
     <version.assertj>3.27.7</version.assertj>
     <version.awaitility>4.3.0</version.awaitility>
@@ -268,6 +268,12 @@
     <skipUTs>${skipTests}</skipUTs>
     <skipITs>${skipTests}</skipITs>
     <jacoco.skip>${skipUTs}</jacoco.skip>
+    <!--
+      JVM module opens required across the project:
+      - java.base/java.io: required for NativeFS raw file descriptor access
+      - java.base/jdk.internal.misc: required for agrona's UnsafeApi
+    -->
+    <jvm.module.opens>--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</jvm.module.opens>
 
     <!--
       you can use the following to disable specific check plugins. this can also be used to skip the
@@ -2523,8 +2529,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${plugin.version.surefire}</version>
           <configuration>
-            <!-- Required to access the raw file descriptor from FileDescriptor for NativeFS -->
-            <argLine>--add-opens=java.base/java.io=ALL-UNNAMED</argLine>
+            <argLine>${jvm.module.opens}</argLine>
             <!-- by default, exclude performance and strace tests -->
             <excludedGroups>performance, strace</excludedGroups>
             <failIfNoTests>false</failIfNoTests>
@@ -2563,8 +2568,7 @@
           <artifactId>maven-failsafe-plugin</artifactId>
           <version>${plugin.version.failsafe}</version>
           <configuration>
-            <!-- Required to access the raw file descriptor from FileDescriptor for NativeFS -->
-            <argLine>--add-opens=java.base/java.io=ALL-UNNAMED</argLine>
+            <argLine>${jvm.module.opens}</argLine>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
@@ -2670,6 +2674,7 @@
                 <includePluginDependencies>true</includePluginDependencies>
                 <longClasspath>true</longClasspath>
                 <arguments combine.children="append">
+                  <argument>--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</argument>
                   <argument>-Dsbe.output.dir=${project.build.directory}/generated-sources/sbe</argument>
                   <argument>-Dsbe.java.generate.interfaces=true</argument>
                   <argument>-Dsbe.decode.unknown.enum.values=true</argument>

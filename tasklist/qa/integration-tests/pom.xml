@@ -488,7 +488,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>${surefire.jacoco.args}</argLine>
+          <argLine>${surefire.jacoco.args} ${jvm.module.opens}</argLine>
           <failIfNoTests>true</failIfNoTests>
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
@@ -501,7 +501,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
-          <argLine>${failsafe.jacoco.args}</argLine>
+          <argLine>${failsafe.jacoco.args} ${jvm.module.opens}</argLine>
           <failIfNoTests>true</failIfNoTests>
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
