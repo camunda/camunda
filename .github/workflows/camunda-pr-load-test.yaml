@@ -85,7 +85,7 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
-      benchmark-label: 'Elasticsearch'
+      database: 'elasticsearch'
       cluster: ${{ needs.sanitize-branch-name.outputs.cluster }}
       teleport-join-token: ${{ needs.sanitize-branch-name.outputs.teleport-join-token }}
 
@@ -100,7 +100,7 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name-rdbms }}
-      benchmark-label: 'RDBMS'
+      database: 'rdbms'
       cluster: ${{ needs.sanitize-branch-name.outputs.cluster }}
       teleport-join-token: ${{ needs.sanitize-branch-name.outputs.teleport-join-token }}
 

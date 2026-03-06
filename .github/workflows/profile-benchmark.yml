@@ -10,8 +10,8 @@ on:
         description: 'Name of the load test (Kubernetes namespace) to profile'
         required: true
         type: string
-      benchmark-label:
-        description: 'Human-readable label for the benchmark variant shown in the PR comment header (e.g. "Benchmark" or "Benchmark RDBMS")'
+      database:
+        description: 'Database variant'
         required: true
         type: string
       cluster:
@@ -53,6 +53,7 @@ jobs:
     secrets: inherit
     with:
       name: ${{ inputs.name }}
+      database: ${{ inputs.database }}
       pod: ''
 
   comment-pr:
@@ -74,7 +75,7 @@ jobs:
       - name: Comment PR with profiling results
         uses: actions/github-script@v8
         env:
-          BENCHMARK_LABEL: ${{ inputs.benchmark-label }}
+          DATABASE: ${{ inputs.database }}
         with:
           script: |
             const fs = require('fs');
@@ -91,8 +92,8 @@ jobs:
               run_id: context.runId,
             });
 
-            const benchmarkLabel = process.env.BENCHMARK_LABEL;
-            let comment = `## Profiling Results — ${benchmarkLabel}\n\n`;
+            const database = process.env.DATABASE;
+            let comment = `## Profiling Results — ${database}\n\n`;
             comment += 'The benchmark has been profiled with the following events:\n\n';
             comment += '| Event | Pod | Artifact |\n';
             comment += '|-------|-----|----------|\n';

@@ -16,6 +16,10 @@ on:
         description: 'Optional additional flags for async-profiler (e.g., "-t" for flamegraph format)'
         default: ''
         required: false
+      database:
+        description: 'Database variant'
+        required: true
+        type: string
   workflow_call:
     inputs:
       name:
@@ -31,6 +35,10 @@ on:
         description: 'Optional additional flags for async-profiler (e.g., "-t" for flamegraph format)'
         default: ''
         required: false
+        type: string
+      database:
+        description: 'Database variant'
+        required: true
         type: string
 
 defaults:
@@ -130,10 +138,10 @@ jobs:
           kubectl config set-context --current --namespace=${{ inputs.name }}
       - name: Execute profiling
         run: >
-          ./load-tests/docs/scripts/executeProfiling.sh ${{ inputs.pod }} cpu "${{ inputs.profiler_options }}"
+          ./load-tests/docs/scripts/executeProfiling.sh ${{ inputs.pod }} cpu "${{ inputs.database }}" "${{ inputs.profiler_options }}"
       - uses: actions/upload-artifact@v7
         with:
-          name: flamegraph-cpu-${{ inputs.pod }}
+          name: flamegraph-cpu-${{ inputs.pod }}-${{ inputs.database }}
           path: ${{ inputs.pod }}*
       - name: Summarize profiling
         if: success()
