@@ -61,6 +61,7 @@ jobs:
       - name: Check for merge conflicts
         id: check_conflicts
         run: |
+<<<<<<< HEAD
           MAX_RETRIES=5
           RETRY_DELAY=10
 
@@ -92,6 +93,18 @@ jobs:
               sleep "$RETRY_DELAY"
             fi
           done
+=======
+          # GitHub API provides mergeable status
+          MERGEABLE=$(gh pr view ${{ github.event.pull_request.number }} --json mergeable --jq '.mergeable')
+          
+          if [ "$MERGEABLE" = "CONFLICTING" ]; then
+            echo "❌ Merge conflicts detected - manual resolution required"
+            exit 1
+          fi
+          
+          echo "✅ No merge conflicts"
+      
+>>>>>>> 249e53bf (feat: Add workflow to auto-merge release branches back to stable)
       - name: Validate changes are version bumps only
         id: validate_changes
         run: |
@@ -199,9 +212,12 @@ jobs:
           
           if [ "$RULESET_COUNT" -eq 0 ]; then
             echo "ℹ️  No rulesets configured for repository"
+<<<<<<< HEAD
             echo "⚠️  WARNING: Auto-merge will proceed without validating ruleset-based required status checks"
             echo "⚠️  Note: This does NOT check traditional branch protection rules - only rulesets as only rulesets were defined during implementation"
             echo "⚠️  If branch protection rules exist, they may still be enforced by GitHub during merge"
+=======
+>>>>>>> 249e53bf (feat: Add workflow to auto-merge release branches back to stable)
             echo "Proceeding without required checks validation"
             echo "checks_pattern=" >> "$GITHUB_OUTPUT"
             exit 0
