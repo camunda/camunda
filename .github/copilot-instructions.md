@@ -110,3 +110,22 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `perf`, `refactor`, `style`
 - Never use `git push --force` on the `main` branch; use `--force-with-lease` on feature branches.
 - Follow the commit and PR guidelines in `CONTRIBUTING.md`.
 
+## Boundaries
+
+**Always:**
+- Format before committing (`./mvnw license:format spotless:apply -T1C`)
+- Read the module's README before modifying code
+- Use module-scoped builds (`-pl <module>`)
+- Use conventional commit format
+
+**Ask first:**
+- Modifying shared libraries (`webapps-common/`, `client-components/`, `security/`)
+- Changing public API contracts (REST controllers, gRPC, exported types)
+- Adding new dependencies to `pom.xml` or `package.json`
+
+**Never:**
+- Run full-repo builds for single-module work
+- Commit secrets, tokens, or credentials
+- Force-push `main`
+- Skip formatting checks
+
