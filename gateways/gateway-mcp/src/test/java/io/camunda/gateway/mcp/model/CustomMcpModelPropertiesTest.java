@@ -78,7 +78,8 @@ public class CustomMcpModelPropertiesTest {
                 "startDate",
                 "state",
                 "tags",
-                "variables")),
+                "variables",
+                "businessId")),
         Arguments.argumentSet(
             "VariableFilter",
             VariableFilter.class,
