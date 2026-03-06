@@ -7,6 +7,9 @@
  */
 package io.camunda.search.schema.config;
 
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -22,8 +25,14 @@ public class IndexConfiguration {
   private Map<String, Integer> replicasByIndexName = new HashMap<>();
   private Map<String, Integer> shardsByIndexName = new HashMap<>();
   private Map<String, String> refreshIntervalByIndexName = new HashMap<>();
-
   private Integer variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
+
+  {
+    final int shards = 5;
+    shardsByIndexName.put(ListViewTemplate.INDEX_NAME, shards);
+    shardsByIndexName.put(FlowNodeInstanceTemplate.INDEX_NAME, shards);
+    shardsByIndexName.put(SequenceFlowTemplate.INDEX_NAME, shards);
+  }
 
   public Integer getNumberOfShards() {
     return numberOfShards;
