@@ -57,7 +57,7 @@ function mapFiltersToRequest(
 
   if (ids) {
     request.filter.processInstanceKey = {
-      $in: ids.split(','),
+      $in: ids.split(/[\s,]+/).filter(Boolean),
     };
   }
 
