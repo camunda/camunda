@@ -114,7 +114,9 @@ const test = base.extend<PlaywrightFixtures>({
   },
   mockGetProcessRequest: async ({page}, use) => {
     await use(async (process) => {
-      if (!process) return;
+      if (!process) {
+        return;
+      }
       await page.route(`/v1/internal/processes/${process.id}`, (route) =>
         route.fulfill({
           status: 200,
