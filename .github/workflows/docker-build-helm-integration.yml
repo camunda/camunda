@@ -34,21 +34,6 @@ on:
         description: 'Short name for the deployment'
         type: string
         default: 'kcor'
-  pull_request:
-    paths:
-      - ".github/workflows/docker-build-helm-integration.yml"
-      - "camunda.Dockerfile"
-      - "dist/**"
-      - "zeebe/**"
-      - "operate/**"
-      - "tasklist/**"
-      - "identity/**"
-      - "optimize/**"
-
-# Cancel in-progress runs when a new commit is pushed to the same PR
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled

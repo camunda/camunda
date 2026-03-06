@@ -208,7 +208,15 @@ outputs:
       ${{
         steps.filter-docs.outputs.docs-change == 'true'
       }}
-
+  docker-build-helm-integration:
+    description: Output whether AlwaysGreen Docker Build + Helm integration should run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-alwaysgreen.outputs.docker-build-helm-integration == 'true'
+      }}
 runs:
   using: composite
   steps:
@@ -361,6 +369,23 @@ runs:
           - 'monorepo-docs-site/*'
           - '.github/workflows/docs-build-deploy.yml'
           - '.github/workflows/docs-preview.yml'
+
+  - uses: dorny/paths-filter@v3
+    id: filter-alwaysgreen
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        docker-build-helm-integration:
+          - ".github/workflows/docker-build-helm-integration.yml"
+          - ".github/workflows/ci.yml"
+          - "camunda.Dockerfile"
+          - "dist/**"
+          - "zeebe/**"
+          - "operate/**"
+          - "tasklist/**"
+          - "identity/**"
+          - "optimize/**"
 
   # only works `on: push` and `on: pull_request` GitHub trigger events
   - id: filter-special-branch
