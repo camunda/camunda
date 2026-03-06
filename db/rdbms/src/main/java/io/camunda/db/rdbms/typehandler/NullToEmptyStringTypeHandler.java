@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.typehandler;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -45,9 +47,5 @@ public final class NullToEmptyStringTypeHandler extends BaseTypeHandler<String> 
   public String getNullableResult(final CallableStatement cs, final int columnIndex)
       throws SQLException {
     return nullToEmpty(cs.getString(columnIndex));
-  }
-
-  private static String nullToEmpty(final String value) {
-    return value == null ? "" : value;
   }
 }

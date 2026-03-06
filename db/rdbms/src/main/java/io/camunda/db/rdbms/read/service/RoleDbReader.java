@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.RoleDbQuery;
 import io.camunda.db.rdbms.sql.RoleMapper;
@@ -87,15 +89,6 @@ public class RoleDbReader extends AbstractEntityReader<RoleEntity> implements Ro
         nullToEmpty(model.roleId()),
         nullToEmpty(model.name()),
         model.description());
-  }
-
-  /**
-   * Oracle treats empty strings as NULL. This method converts null values back to empty strings for
-   * fields that are required (non-nullable) in the API specification but may legitimately be empty
-   * (e.g., protobuf default values).
-   */
-  private static String nullToEmpty(final String value) {
-    return value == null ? "" : value;
   }
 
   private boolean shouldReturnEmptyResult(
