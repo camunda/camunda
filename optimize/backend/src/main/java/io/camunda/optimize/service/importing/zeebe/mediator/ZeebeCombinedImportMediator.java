@@ -25,6 +25,7 @@ import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeProcessIn
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeUserTaskImportService;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeVariableImportService;
 import io.camunda.optimize.service.importing.page.PositionBasedImportPage;
+import io.camunda.optimize.service.importing.zeebe.cache.ZeebeImportSlidingWindowCache;
 import io.camunda.optimize.service.importing.zeebe.db.ZeebeRecordFetcher;
 import io.camunda.optimize.service.importing.zeebe.handler.ZeebeRecordImportIndexHandler;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
@@ -70,6 +71,8 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
   private final BackoffCalculator errorBackoffCalculator = new BackoffCalculator(10, 1000);
   /** Single executor shared by all import services for this mediator instance. */
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
+  /** Sliding window cache for combined Zeebe records; drives PreFlattenedDTO production. */
+  private final ZeebeImportSlidingWindowCache slidingWindowCache;
 
   public ZeebeCombinedImportMediator(
       final ZeebeRecordImportIndexHandler importIndexHandler,
@@ -80,7 +83,8 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
       final ZeebeUserTaskImportService userTaskImportService,
       final ObjectMapper objectMapper,
       final ConfigurationService configurationService,
-      final BackoffCalculator idleBackoffCalculator) {
+      final BackoffCalculator idleBackoffCalculator,
+      final ZeebeImportSlidingWindowCache slidingWindowCache) {
     this.importIndexHandler = importIndexHandler;
     this.fetcher = fetcher;
     this.processInstanceImportService = processInstanceImportService;
@@ -90,6 +94,7 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
     this.objectMapper = objectMapper;
     this.configurationService = configurationService;
     this.idleBackoffCalculator = idleBackoffCalculator;
+    this.slidingWindowCache = slidingWindowCache;
     this.databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
   }
@@ -131,6 +136,7 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
   @Override
   public void shutdown() {
     databaseImportJobExecutor.shutdown();
+    slidingWindowCache.shutdown();
   }
 
   @Override
@@ -178,6 +184,9 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
         records.size());
 
     if (!records.isEmpty()) {
+      // Feed records to the sliding window cache for PreFlattenedDTO production
+      slidingWindowCache.acceptGeneric(records);
+
       final ZeebeGenericRecordDto lastRecord = records.get(records.size() - 1);
       final long lastPosition = lastRecord.getPosition();
       final long lastSequence = Optional.ofNullable(lastRecord.getSequence()).orElse(0L);

@@ -23,6 +23,7 @@ import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeIncidentI
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeProcessInstanceImportService;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeUserTaskImportService;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeVariableImportService;
+import io.camunda.optimize.service.importing.zeebe.cache.ZeebeImportSlidingWindowCache;
 import io.camunda.optimize.service.importing.zeebe.db.ZeebeRecordFetcher;
 import io.camunda.optimize.service.importing.zeebe.mediator.ZeebeCombinedImportMediator;
 import io.camunda.optimize.service.util.BackoffCalculator;
@@ -113,6 +114,7 @@ public class ZeebeCombinedImportMediatorFactory extends AbstractZeebeImportMedia
                 configurationService, userTaskWriter, partitionId, databaseClient),
             objectMapper,
             configurationService,
-            new BackoffCalculator(configurationService)));
+            new BackoffCalculator(configurationService),
+            new ZeebeImportSlidingWindowCache(partitionId, "COMBINED")));
   }
 }
