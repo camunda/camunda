@@ -35,6 +35,7 @@ public class ProcessInstanceDto implements OptimizeDto {
   private List<IncidentDto> incidents = new ArrayList<>();
   private DataSourceDto dataSource;
   private String tenantId;
+  private int partition;
 
   protected ProcessInstanceDto(
       final String processDefinitionKey,
@@ -217,6 +218,14 @@ public class ProcessInstanceDto implements OptimizeDto {
     this.tenantId = tenantId;
   }
 
+  public int getPartition() {
+    return partition;
+  }
+
+  public void setPartition(final int partition) {
+    this.partition = partition;
+  }
+
   protected boolean canEqual(final Object other) {
     return other instanceof ProcessInstanceDto;
   }
@@ -331,6 +340,7 @@ public class ProcessInstanceDto implements OptimizeDto {
     public static final String incidents = "incidents";
     public static final String dataSource = "dataSource";
     public static final String tenantId = "tenantId";
+    public static final String partition = "partition";
   }
 
   public abstract static class ProcessInstanceDtoBuilder<

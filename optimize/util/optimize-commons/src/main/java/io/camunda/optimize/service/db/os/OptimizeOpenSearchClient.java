@@ -679,6 +679,18 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
             .build();
       }
       case UPDATE -> {
+        if (requestDto.getDocs() != null) {
+          return new BulkOperation.Builder()
+              .update(
+                  new UpdateOperation.Builder<>()
+                      .id(requestDto.getId())
+                      .index(indexWithPrefix)
+                      .document(requestDto.getDocs())
+                      .docAsUpsert(true)
+                      .retryOnConflict(requestDto.getRetryNumberOnConflict())
+                      .build())
+              .build();
+        }
         return new BulkOperation.Builder()
             .update(
                 new UpdateOperation.Builder<>()

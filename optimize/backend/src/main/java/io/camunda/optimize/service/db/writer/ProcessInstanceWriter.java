@@ -11,6 +11,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.repository.script.ZeebeProcessInstanceScriptFactory.createProcessInstanceUpdateScript;
+import static io.camunda.optimize.service.db.schema.index.FlatProcessInstanceIndex.PARTITION;
 import static io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder.FLAT_PROCESS_INSTANCE_INDEX;
 import static io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder.PROCESS_INSTANCE_INDEX;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
@@ -177,17 +178,49 @@ public class ProcessInstanceWriter {
             .collect(Collectors.toSet()));
 
     return processInstances.stream()
-        .map(
-            instance ->
-                ImportRequestDto.builder()
-                    .importName(importItemName)
-                    .type(RequestType.INDEX)
-                    .id(instance.getProcessInstanceId())
-                    .indexName(
-                        getFlatProcessInstanceIndexAliasName(instance.getProcessDefinitionKey()))
-                    .source(instance)
-                    .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
-                    .build())
+        .map(instance -> buildFlatProcessInstanceImportRequest(instance, importItemName))
         .toList();
+  }
+
+  private ImportRequestDto buildFlatProcessInstanceImportRequest(
+      final ProcessInstanceDto instance, final String importItemName) {
+    final String indexName =
+        getFlatProcessInstanceIndexAliasName(instance.getProcessDefinitionKey());
+    if (isNewProcessInstance(instance)) {
+      return ImportRequestDto.builder()
+          .importName(importItemName)
+          .type(RequestType.INDEX)
+          .id(instance.getProcessInstanceId())
+          .indexName(indexName)
+          .source(instance)
+          .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+          .build();
+    } else {
+      final Map<String, Object> docs = new HashMap<>();
+      if (instance.getState() != null) {
+        docs.put(STATE, instance.getState());
+      }
+      if (instance.getEndDate() != null) {
+        docs.put(END_DATE, instance.getEndDate());
+      }
+      if (instance.getDuration() != null) {
+        docs.put(DURATION, instance.getDuration());
+      }
+      docs.put(PARTITION, instance.getPartition());
+      return ImportRequestDto.builder()
+          .importName(importItemName)
+          .type(RequestType.UPDATE)
+          .id(instance.getProcessInstanceId())
+          .indexName(indexName)
+          .docs(docs)
+          .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+          .build();
+    }
+  }
+
+  private boolean isNewProcessInstance(final ProcessInstanceDto instance) {
+    // A process instance is "new" (requires full INDEX) if it has a start date set,
+    // meaning an ACTIVATING event was present in the current import batch.
+    return instance.getStartDate() != null;
   }
 }

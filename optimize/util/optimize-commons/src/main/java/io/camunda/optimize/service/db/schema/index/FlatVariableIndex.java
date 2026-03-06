@@ -37,6 +37,7 @@ public abstract class FlatVariableIndex<TBuilder> extends AbstractInstanceIndex<
   public static final String VARIABLE_TYPE = SimpleProcessVariableDto.Fields.type;
   public static final String VARIABLE_VALUE = SimpleProcessVariableDto.Fields.value;
   public static final String VARIABLE_VERSION = SimpleProcessVariableDto.Fields.version;
+  public static final String PARTITION = "partition";
 
   private final String indexName;
 
@@ -90,7 +91,8 @@ public abstract class FlatVariableIndex<TBuilder> extends AbstractInstanceIndex<
         .properties(
             VARIABLE_VALUE,
             p -> p.keyword(k -> addValueMultifields(k.ignoreAbove(IGNORE_ABOVE_CHAR_LIMIT))))
-        .properties(VARIABLE_VERSION, p -> p.long_(k -> k));
+        .properties(VARIABLE_VERSION, p -> p.long_(k -> k))
+        .properties(PARTITION, p -> p.integer(k -> k));
   }
 
   protected String getIndexPrefix() {

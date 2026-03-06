@@ -51,6 +51,7 @@ public abstract class FlatFlowNodeInstanceIndex<TBuilder> extends AbstractInstan
   public static final String CANDIDATE_GROUPS = FlowNodeInstanceDto.Fields.candidateGroups;
   public static final String IDLE_DURATION_IN_MS = FlowNodeInstanceDto.Fields.idleDurationInMs;
   public static final String WORK_DURATION_IN_MS = FlowNodeInstanceDto.Fields.workDurationInMs;
+  public static final String PARTITION = "partition";
 
   private final String indexName;
 
@@ -115,7 +116,8 @@ public abstract class FlatFlowNodeInstanceIndex<TBuilder> extends AbstractInstan
         .properties(ASSIGNEE, p -> p.keyword(k -> k))
         .properties(CANDIDATE_GROUPS, p -> p.keyword(k -> k))
         .properties(IDLE_DURATION_IN_MS, p -> p.long_(k -> k))
-        .properties(WORK_DURATION_IN_MS, p -> p.long_(k -> k));
+        .properties(WORK_DURATION_IN_MS, p -> p.long_(k -> k))
+        .properties(PARTITION, p -> p.integer(k -> k));
   }
 
   protected String getIndexPrefix() {

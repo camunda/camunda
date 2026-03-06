@@ -23,11 +23,9 @@ import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.writer.FlowNodeInstanceWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import io.camunda.optimize.service.importing.DatabaseImportJob;
 import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import io.camunda.optimize.service.importing.engine.service.ImportService;
-import io.camunda.optimize.service.importing.job.FlatFlowNodeInstanceDatabaseImportJob;
-import io.camunda.optimize.service.importing.job.ProcessInstanceDatabaseImportJob;
+import io.camunda.optimize.service.importing.job.ZeebeProcessInstanceImportJob;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -37,7 +35,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
@@ -104,6 +101,11 @@ public class ZeebeProcessInstanceImportService
     final List<ProcessInstanceDto> processInstances =
         byProcessInstanceKey.values().stream()
             .map(this::createProcessInstanceForData)
+            .filter(
+                pi ->
+                    !pi.getFlowNodeInstances().isEmpty()
+                        || pi.getStartDate() != null
+                        || pi.getEndDate() != null)
             .collect(Collectors.toList());
 
     // Build flat flow node instance DTOs from non-PROCESS-type records
@@ -118,37 +120,22 @@ public class ZeebeProcessInstanceImportService
         processInstances.size(),
         flowNodeInstances.size());
 
-    // Ensure the callback is invoked exactly once after all submitted jobs complete.
-    int jobCount = 0;
-    if (!processInstances.isEmpty()) {
-      jobCount++;
-    }
-    if (!flowNodeInstances.isEmpty()) {
-      jobCount++;
-    }
-    if (jobCount == 0) {
+    if (processInstances.isEmpty() && flowNodeInstances.isEmpty()) {
       importCompleteCallback.run();
       return;
     }
-    final AtomicInteger remaining = new AtomicInteger(jobCount);
-    final Runnable countingCallback =
-        () -> {
-          if (remaining.decrementAndGet() == 0) {
-            importCompleteCallback.run();
-          }
-        };
 
-    if (!processInstances.isEmpty()) {
-      final DatabaseImportJob<ProcessInstanceDto> processInstanceJob =
-          createProcessInstanceImportJob(processInstances, countingCallback);
-      databaseImportJobExecutor.executeImportJob(processInstanceJob);
-    }
-
-    if (!flowNodeInstances.isEmpty()) {
-      final DatabaseImportJob<FlatFlowNodeInstanceDto> flowNodeJob =
-          createFlowNodeInstanceImportJob(flowNodeInstances, countingCallback);
-      databaseImportJobExecutor.executeImportJob(flowNodeJob);
-    }
+    final ZeebeProcessInstanceImportJob job =
+        new ZeebeProcessInstanceImportJob(
+            processInstanceWriter,
+            flowNodeInstanceWriter,
+            configurationService,
+            importCompleteCallback,
+            databaseClient,
+            ZEEBE_PROCESS_INSTANCE_INDEX_NAME);
+    job.setProcessInstances(processInstances);
+    job.setFlowNodeInstances(flowNodeInstances);
+    databaseImportJobExecutor.executeImportJob(job);
   }
 
   @Override
@@ -180,6 +167,8 @@ public class ZeebeProcessInstanceImportService
     final String processInstanceId = String.valueOf(firstRecordValue.getProcessInstanceKey());
 
     final Map<Long, FlowNodeInstanceDto> flowNodeInstancesByRecordKey = new HashMap<>();
+    final Map<Long, Boolean> hasActivatingByRecordKey = new HashMap<>();
+
     recordsForInstance.stream()
         .filter(
             zeebeRecord ->
@@ -201,20 +190,30 @@ public class ZeebeProcessInstanceImportService
                 flowNodeForKey.setEndDate(zeebeFlowNodeInstanceRecord.getDateForTimestamp());
               } else if (instanceIntent == ELEMENT_ACTIVATING) {
                 flowNodeForKey.setStartDate(zeebeFlowNodeInstanceRecord.getDateForTimestamp());
+                hasActivatingByRecordKey.put(recordKey, true);
               }
               updateDurationIfCompleted(flowNodeForKey);
               flowNodeInstancesByRecordKey.put(recordKey, flowNodeForKey);
             });
 
-    return flowNodeInstancesByRecordKey.values().stream()
+    return flowNodeInstancesByRecordKey.entrySet().stream()
         .map(
-            flowNode ->
-                FlatFlowNodeInstanceDto.fromProcessInstanceAndFlowNode(
-                    processDefinitionKey,
-                    processDefinitionVersion,
-                    processDefinitionId,
-                    processInstanceId,
-                    flowNode))
+            entry -> {
+              final long recordKey = entry.getKey();
+              final FlowNodeInstanceDto flowNode = entry.getValue();
+              final FlatFlowNodeInstanceDto dto =
+                  FlatFlowNodeInstanceDto.fromProcessInstanceAndFlowNode(
+                      processDefinitionKey,
+                      processDefinitionVersion,
+                      processDefinitionId,
+                      processInstanceId,
+                      flowNode);
+              dto.setPartition(partitionId);
+              // If the batch contains an ACTIVATING event for this flow node, treat it as new
+              // (full INDEX); otherwise use UPDATE+docs for completion/termination only.
+              dto.setNew(hasActivatingByRecordKey.getOrDefault(recordKey, false));
+              return dto;
+            })
         .collect(Collectors.toList());
   }
 
@@ -224,6 +223,7 @@ public class ZeebeProcessInstanceImportService
     processInstanceDto.setProcessInstanceId(String.valueOf(data.getProcessInstanceKey()));
     processInstanceDto.setProcessDefinitionId(String.valueOf(data.getProcessDefinitionKey()));
     processInstanceDto.setTenantId(data.getTenantId());
+    processInstanceDto.setPartition(partitionId);
     processInstanceDto.setDataSource(
         new ZeebeDataSourceDto(configurationService.getConfiguredZeebe().getName(), partitionId));
     return processInstanceDto;
@@ -305,28 +305,5 @@ public class ZeebeProcessInstanceImportService
       flowNodeToAdd.setTotalDurationInMs(
           flowNodeToAdd.getStartDate().until(flowNodeToAdd.getEndDate(), ChronoUnit.MILLIS));
     }
-  }
-
-  private DatabaseImportJob<ProcessInstanceDto> createProcessInstanceImportJob(
-      final List<ProcessInstanceDto> processInstances, final Runnable importCompleteCallback) {
-    final ProcessInstanceDatabaseImportJob job =
-        new ProcessInstanceDatabaseImportJob(
-            processInstanceWriter,
-            configurationService,
-            importCompleteCallback,
-            ZEEBE_PROCESS_INSTANCE_INDEX_NAME,
-            databaseClient);
-    job.setEntitiesToImport(processInstances);
-    return job;
-  }
-
-  private DatabaseImportJob<FlatFlowNodeInstanceDto> createFlowNodeInstanceImportJob(
-      final List<FlatFlowNodeInstanceDto> flowNodeInstances,
-      final Runnable importCompleteCallback) {
-    final FlatFlowNodeInstanceDatabaseImportJob job =
-        new FlatFlowNodeInstanceDatabaseImportJob(
-            flowNodeInstanceWriter, configurationService, importCompleteCallback, databaseClient);
-    job.setEntitiesToImport(flowNodeInstances);
-    return job;
   }
 }

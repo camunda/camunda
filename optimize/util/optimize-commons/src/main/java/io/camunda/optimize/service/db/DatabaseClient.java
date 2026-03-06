@@ -146,10 +146,11 @@ public abstract class DatabaseClient implements ConfigurationReloadable {
         }
       }
       case UPDATE -> {
-        if (Objects.isNull(importRequestDto.getScriptData())) {
+        if (Objects.isNull(importRequestDto.getScriptData())
+            && Objects.isNull(importRequestDto.getDocs())) {
           throw new OptimizeRuntimeException(
               generateErrorMessageForValidationImportRequestDto(
-                  RequestType.UPDATE, Fields.scriptData.name()));
+                  RequestType.UPDATE, "scriptData or docs"));
         }
       }
       default -> throw new IllegalStateException("Unexpected value: " + importRequestDto.getType());

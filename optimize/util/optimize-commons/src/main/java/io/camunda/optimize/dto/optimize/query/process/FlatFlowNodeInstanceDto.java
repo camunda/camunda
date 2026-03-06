@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.query.process;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -38,6 +39,8 @@ public class FlatFlowNodeInstanceDto implements OptimizeDto {
   private List<String> candidateGroups;
   private Long idleDurationInMs;
   private Long workDurationInMs;
+  private int partition;
+  @JsonIgnore private boolean isNew;
 
   public FlatFlowNodeInstanceDto() {}
 
@@ -238,5 +241,23 @@ public class FlatFlowNodeInstanceDto implements OptimizeDto {
 
   public void setWorkDurationInMs(final Long workDurationInMs) {
     this.workDurationInMs = workDurationInMs;
+  }
+
+  public int getPartition() {
+    return partition;
+  }
+
+  public void setPartition(final int partition) {
+    this.partition = partition;
+  }
+
+  @JsonIgnore
+  public boolean isNew() {
+    return isNew;
+  }
+
+  @JsonIgnore
+  public void setNew(final boolean isNew) {
+    this.isNew = isNew;
   }
 }

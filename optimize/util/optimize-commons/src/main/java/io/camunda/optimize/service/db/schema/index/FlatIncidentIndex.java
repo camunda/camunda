@@ -44,6 +44,7 @@ public abstract class FlatIncidentIndex<TBuilder> extends AbstractInstanceIndex<
   public static final String DEFINITION_KEY = IncidentDto.Fields.definitionKey;
   public static final String DEFINITION_VERSION = IncidentDto.Fields.definitionVersion;
   public static final String TENANT_ID = IncidentDto.Fields.tenantId;
+  public static final String PARTITION = "partition";
 
   private final String indexName;
 
@@ -101,7 +102,8 @@ public abstract class FlatIncidentIndex<TBuilder> extends AbstractInstanceIndex<
         .properties(INCIDENT_STATUS, p -> p.keyword(k -> k))
         .properties(DEFINITION_KEY, p -> p.keyword(k -> k))
         .properties(DEFINITION_VERSION, p -> p.keyword(k -> k))
-        .properties(TENANT_ID, p -> p.keyword(k -> k));
+        .properties(TENANT_ID, p -> p.keyword(k -> k))
+        .properties(PARTITION, p -> p.integer(k -> k));
   }
 
   protected String getIndexPrefix() {
