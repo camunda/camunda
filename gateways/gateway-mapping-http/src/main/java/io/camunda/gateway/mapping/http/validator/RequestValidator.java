@@ -12,6 +12,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_KEY_FORMAT;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
@@ -34,6 +35,9 @@ public final class RequestValidator {
   /** Compiled pattern for a valid BPMN process definition ID, matching the OpenAPI spec. */
   public static final Pattern PROCESS_DEFINITION_ID_PATTERN =
       Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_\\-.]*$");
+
+  /** Maximum allowed length for a business ID, matching the engine-side constraint. */
+  public static final int MAX_BUSINESS_ID_LENGTH = 256;
 
   public static Optional<ProblemDetail> createProblemDetail(final List<String> violations) {
     String problems = String.join(". ", violations);
@@ -128,6 +132,19 @@ public final class RequestValidator {
       violations.add(
           ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted(
               "processDefinitionId", PROCESS_DEFINITION_ID_PATTERN.pattern()));
+    }
+  }
+
+  /**
+   * Validates that a business ID does not exceed the maximum allowed length.
+   *
+   * @param businessId the business ID to validate (may be null; null is not validated)
+   * @param violations the list to add validation errors to
+   */
+  public static void validateBusinessId(final String businessId, final List<String> violations) {
+    if (businessId != null && businessId.length() > MAX_BUSINESS_ID_LENGTH) {
+      violations.add(
+          ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("businessId", MAX_BUSINESS_ID_LENGTH));
     }
   }
 }
