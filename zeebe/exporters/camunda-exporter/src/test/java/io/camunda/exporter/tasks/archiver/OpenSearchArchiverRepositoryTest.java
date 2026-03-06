@@ -170,6 +170,11 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
   private OpenSearchTransport createOpenSearchTransport() {
     try {
       return ApacheHttpClient5TransportBuilder.builder(HttpHost.create("http://127.0.0.1:1"))
+          .setHttpClientConfigCallback(
+              httpClientBuilder -> {
+                httpClientBuilder.disableContentCompression();
+                return httpClientBuilder;
+              })
           .setMapper(new JacksonJsonpMapper())
           .build();
     } catch (final URISyntaxException e) {

@@ -145,6 +145,12 @@ public class BackupRestoreTest {
     final ApacheHttpClient5TransportBuilder builder =
         ApacheHttpClient5TransportBuilder.builder(host);
 
+    builder.setHttpClientConfigCallback(
+        httpClientBuilder -> {
+          httpClientBuilder.disableContentCompression();
+          return httpClientBuilder;
+        });
+
     final org.opensearch.client.json.jackson.JacksonJsonpMapper jsonpMapper =
         new org.opensearch.client.json.jackson.JacksonJsonpMapper(CommonUtils.OBJECT_MAPPER);
     builder.setMapper(jsonpMapper);
