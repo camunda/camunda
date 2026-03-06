@@ -114,13 +114,19 @@ public class BatchOperationLifecycleManagementHandler
   @Override
   public void flush(final BatchOperationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
+    // Use upsert instead of update to be resilient against cross-partition ordering.
+    // CANCELED, SUSPENDED, and RESUMED events are distributed to all partitions, so each
+    // partition's exporter writes to the same document. If the document does not yet exist
+    // (e.g., the CREATED event from a slow partition hasn't been exported yet), a plain update()
+    // would fail with a document_missing_exception. With upsert: if the document does not exist,
+    // it is created from the entity; if it already exists, only the specified fields are updated.
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(BatchOperationTemplate.STATE, entity.getState());
     updateFields.put(BatchOperationTemplate.END_DATE, entity.getEndDate());
     if (entity.getErrors() != null && !entity.getErrors().isEmpty()) {
       updateFields.put(BatchOperationTemplate.ERRORS, entity.getErrors());
     }
-    batchRequest.update(indexName, entity.getId(), updateFields);
+    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
   }
 
   @Override
