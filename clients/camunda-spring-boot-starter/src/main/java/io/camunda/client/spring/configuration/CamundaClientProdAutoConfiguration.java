@@ -49,6 +49,7 @@ import org.springframework.context.annotation.Bean;
 @ImportAutoConfiguration({
   ExecutorServiceConfiguration.class,
   CamundaActuatorConfiguration.class,
+  MetricsDefaultConfiguration.class,
   JsonMapperConfiguration.class,
   Jackson3JsonMapperConfiguration.class,
   DefaultJsonMapperConfiguration.class,
