@@ -37,6 +37,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -219,21 +220,48 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
     final List<ZeebeUserTaskRecordDto> userTaskRecords =
         filterAndConvert(records, ValueType.USER_TASK, ZeebeUserTaskRecordDto.class);
 
-    // Submit all four services; the callback fires when the last non-empty service completes.
-    // For simplicity, fire the callback immediately after submitting all jobs.
+    // Count how many non-empty services we will submit to, then fire the combined callback
+    // only after all of them have completed.
+    int pendingServices = 0;
     if (!processInstanceRecords.isEmpty()) {
-      processInstanceImportService.executeImport(processInstanceRecords, () -> {});
+      pendingServices++;
     }
     if (!variableRecords.isEmpty()) {
-      variableImportService.executeImport(variableRecords, () -> {});
+      pendingServices++;
     }
     if (!incidentRecords.isEmpty()) {
-      incidentImportService.executeImport(incidentRecords, () -> {});
+      pendingServices++;
     }
     if (!userTaskRecords.isEmpty()) {
-      userTaskImportService.executeImport(userTaskRecords, () -> {});
+      pendingServices++;
     }
-    allServicesCompleteCallback.run();
+
+    if (pendingServices == 0) {
+      allServicesCompleteCallback.run();
+      return;
+    }
+
+    final AtomicInteger remaining =
+        new AtomicInteger(pendingServices);
+    final Runnable serviceCallback =
+        () -> {
+          if (remaining.decrementAndGet() == 0) {
+            allServicesCompleteCallback.run();
+          }
+        };
+
+    if (!processInstanceRecords.isEmpty()) {
+      processInstanceImportService.executeImport(processInstanceRecords, serviceCallback);
+    }
+    if (!variableRecords.isEmpty()) {
+      variableImportService.executeImport(variableRecords, serviceCallback);
+    }
+    if (!incidentRecords.isEmpty()) {
+      incidentImportService.executeImport(incidentRecords, serviceCallback);
+    }
+    if (!userTaskRecords.isEmpty()) {
+      userTaskImportService.executeImport(userTaskRecords, serviceCallback);
+    }
   }
 
   private <T> List<T> filterAndConvert(
@@ -242,7 +270,21 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
       final Class<T> targetClass) {
     return records.stream()
         .filter(r -> valueType.equals(r.getValueType()))
-        .map(r -> objectMapper.convertValue(r, targetClass))
+        .map(
+            r -> {
+              try {
+                return objectMapper.convertValue(r, targetClass);
+              } catch (final Exception e) {
+                LOG.warn(
+                    "Failed to convert generic record (valueType={}, key={}) to {}, skipping: {}",
+                    r.getValueType(),
+                    r.getKey(),
+                    targetClass.getSimpleName(),
+                    e.getMessage());
+                return null;
+              }
+            })
+        .filter(r -> r != null)
         .toList();
   }
 
