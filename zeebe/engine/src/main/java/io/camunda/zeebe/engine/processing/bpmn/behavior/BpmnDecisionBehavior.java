@@ -76,10 +76,15 @@ public final class BpmnDecisionBehavior {
     if (decisionIdOrFailure.isLeft()) {
       return Either.left(decisionIdOrFailure.getLeft());
     }
+    final var versionIdOrFailure = evalVersionIdExpression(element, scopeKey, tenantId);
+    if (versionIdOrFailure.isLeft()) {
+      return Either.left(versionIdOrFailure.getLeft());
+    }
 
     final var decisionId = decisionIdOrFailure.get();
+    final var versionTag = versionIdOrFailure.get();
     final var decisionOrFailure =
-        findCalledDecision(decisionId, element.getBindingType(), element.getVersionTag(), context);
+        findCalledDecision(decisionId, element.getBindingType(), versionTag, context);
     final Either<Failure, ParsedDecisionRequirementsGraph> drgOrFailure =
         decisionOrFailure
             .flatMap(decisionBehavior::findParsedDrgByDecision)
@@ -164,6 +169,11 @@ public final class BpmnDecisionBehavior {
   private Either<Failure, String> evalDecisionIdExpression(
       final ExecutableCalledDecision element, final long scopeKey, final String tenantId) {
     return expressionBehavior.evaluateStringExpression(element.getDecisionId(), scopeKey, tenantId);
+  }
+
+  private Either<Failure, String> evalVersionIdExpression(
+      final ExecutableCalledDecision element, final long scopeKey, final String tenantId) {
+    return expressionBehavior.evaluateStringExpression(element.getVersionTag(), scopeKey, tenantId);
   }
 
   private void writeDecisionEvaluationEvent(
