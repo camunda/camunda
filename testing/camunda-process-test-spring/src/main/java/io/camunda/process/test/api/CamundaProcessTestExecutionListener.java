@@ -96,6 +96,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private CamundaManagementClient camundaManagementClient;
   private CamundaClient client;
   private ZeebeClient zeebeClient;
+  private CamundaClient coverageClient;
 
   public CamundaProcessTestExecutionListener() {
     this(CamundaProcessTestContainerRuntime.newBuilder(), ProcessCoverage.newBuilder(), LOG::info);
@@ -141,7 +142,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     processCoverage =
         processCoverageBuilder
             .testClass(testContext.getTestClass())
-            .dataSource(() -> new CamundaDataSource(camundaProcessTestContext.createClient()))
+            .dataSource(this::getCoverageDataSource)
             .reportDirectory(coverageReportConfiguration.getReportDirectory())
             .excludeProcessDefinitionIds(coverageReportConfiguration.getExcludedProcesses())
             .build();
@@ -240,6 +241,15 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       processCoverage.reportCoverage();
     } catch (final Throwable t) {
       LOG.warn("Failed to report process coverage, skipping.", t);
+    }
+
+    if (coverageClient != null) {
+      try {
+        coverageClient.close();
+      } catch (final Exception e) {
+        LOG.debug("Failed to close coverage client, continue.", e);
+      }
+      coverageClient = null;
     }
 
     runtime.close();
@@ -347,6 +357,13 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private static boolean isTestFailed(final TestContext testContext) {
     return testContext.getTestException() != null;
+  }
+
+  private CamundaDataSource getCoverageDataSource() {
+    if (coverageClient == null) {
+      coverageClient = camundaProcessTestContext.createClient();
+    }
+    return new CamundaDataSource(coverageClient);
   }
 
   @Override
