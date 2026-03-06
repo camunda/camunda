@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.mapper;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.write.domain.CorrelatedMessageSubscriptionDbModel;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 
@@ -15,20 +17,20 @@ public class CorrelatedMessageSubscriptionEntityMapper {
   public static CorrelatedMessageSubscriptionEntity toEntity(
       final CorrelatedMessageSubscriptionDbModel dbModel) {
     return CorrelatedMessageSubscriptionEntity.builder()
-        .correlationKey(dbModel.correlationKey())
+        .correlationKey(nullToEmpty(dbModel.correlationKey()))
         .correlationTime(dbModel.correlationTime())
-        .flowNodeId(dbModel.flowNodeId())
+        .flowNodeId(nullToEmpty(dbModel.flowNodeId()))
         .flowNodeInstanceKey(dbModel.flowNodeInstanceKey())
         .messageKey(dbModel.messageKey())
-        .messageName(dbModel.messageName())
+        .messageName(nullToEmpty(dbModel.messageName()))
         .partitionId(dbModel.partitionId())
-        .processDefinitionId(dbModel.processDefinitionId())
+        .processDefinitionId(nullToEmpty(dbModel.processDefinitionId()))
         .processDefinitionKey(dbModel.processDefinitionKey())
         .processInstanceKey(dbModel.processInstanceKey())
         .rootProcessInstanceKey(dbModel.rootProcessInstanceKey())
         .subscriptionKey(dbModel.subscriptionKey())
         .subscriptionType(dbModel.subscriptionType())
-        .tenantId(dbModel.tenantId())
+        .tenantId(nullToEmpty(dbModel.tenantId()))
         .build();
   }
 }

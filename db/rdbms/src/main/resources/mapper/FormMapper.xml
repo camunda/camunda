@@ -15,9 +15,12 @@
   <resultMap id="searchResultMap" type="io.camunda.search.entities.FormEntity">
     <constructor>
       <idArg column="FORM_KEY" javaType="java.lang.Long"/>
-      <arg column="TENANT_ID" javaType="java.lang.String"/>
-      <arg column="FORM_ID" javaType="java.lang.String"/>
-      <arg column="SCHEMA_XML" javaType="java.lang.String"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="FORM_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="SCHEMA_XML" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="VERSION" javaType="java.lang.Long"/>
     </constructor>
   </resultMap>

@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.TenantDbQuery;
 import io.camunda.db.rdbms.sql.TenantMapper;
@@ -83,7 +85,11 @@ public class TenantDbReader extends AbstractEntityReader<TenantEntity> implement
   }
 
   private TenantEntity map(final TenantDbModel model) {
-    return new TenantEntity(model.tenantKey(), model.tenantId(), model.name(), model.description());
+    return new TenantEntity(
+        model.tenantKey(),
+        nullToEmpty(model.tenantId()),
+        nullToEmpty(model.name()),
+        model.description());
   }
 
   private boolean shouldReturnEmptyResult(

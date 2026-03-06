@@ -364,7 +364,8 @@
     <constructor>
       <idArg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="PROCESS_DEFINITION_NAME" javaType="java.lang.String"/>
       <arg column="PROCESS_DEFINITION_VERSION" javaType="java.lang.Integer"/>
       <arg column="PROCESS_DEFINITION_VERSION_TAG" javaType="java.lang.String"/>
@@ -375,7 +376,8 @@
       <arg column="END_DATE" javaType="java.time.OffsetDateTime" />
       <arg column="STATE" javaType="io.camunda.search.entities.ProcessInstanceEntity$ProcessInstanceState"/>
       <arg column="HAS_INCIDENT" javaType="java.lang.Boolean"/>
-      <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="TREE_PATH" javaType="java.lang.String"/>
       <arg column="BUSINESS_ID" javaType="java.lang.String"/>
     </constructor>

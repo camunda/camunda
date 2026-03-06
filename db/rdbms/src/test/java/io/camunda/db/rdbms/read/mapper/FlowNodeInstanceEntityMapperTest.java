@@ -96,16 +96,20 @@ public class FlowNodeInstanceEntityMapperTest {
     assertThat(entity.flowNodeInstanceKey()).isNotNull();
     assertThat(entity.processInstanceKey()).isNotNull();
     assertThat(entity.processDefinitionKey()).isNotNull();
-    assertThat(entity.processDefinitionId()).isNull();
+    assertThat(entity.processDefinitionId())
+        .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
     assertThat(entity.startDate()).isNull();
     assertThat(entity.endDate()).isNull();
-    assertThat(entity.flowNodeId()).isNull();
-    assertThat(entity.flowNodeName()).isNull();
+    assertThat(entity.flowNodeId())
+        .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
+    assertThat(entity.flowNodeName())
+        .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
     assertThat(entity.treePath()).isNull();
     assertThat(entity.type()).isNotNull();
     assertThat(entity.state()).isNotNull();
     assertThat(entity.incidentKey()).isNotNull();
     assertThat(entity.hasIncident()).isNotNull();
-    assertThat(entity.tenantId()).isNull();
+    assertThat(entity.tenantId())
+        .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
   }
 }

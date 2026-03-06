@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.mapper;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.util.CustomHeaderSerializer;
 import io.camunda.search.entities.UserTaskEntity;
@@ -17,9 +19,9 @@ public class UserTaskEntityMapper {
   public static UserTaskEntity toEntity(final UserTaskDbModel dbModel) {
     return new UserTaskEntity(
         dbModel.userTaskKey(),
-        dbModel.elementId(),
+        nullToEmpty(dbModel.elementId()),
         dbModel.name(),
-        dbModel.processDefinitionId(),
+        nullToEmpty(dbModel.processDefinitionId()),
         null, // filled later from ProcessCache in UserTaskService
         dbModel.creationDate(),
         dbModel.completionDate(),
@@ -30,7 +32,7 @@ public class UserTaskEntityMapper {
         dbModel.processInstanceKey(),
         dbModel.rootProcessInstanceKey(),
         dbModel.elementInstanceKey(),
-        dbModel.tenantId(),
+        nullToEmpty(dbModel.tenantId()),
         dbModel.dueDate(),
         dbModel.followUpDate(),
         dbModel.candidateGroups(),
