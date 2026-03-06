@@ -83,10 +83,13 @@ paths:
         - System
       operationId: getSystemConfiguration
       x-eventually-consistent: false
-      summary: System configuration
+      summary: System configuration (alpha)
       description: |
         Returns the current system configuration. The response is an envelope
         that groups settings by feature area.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       responses:
         "200":
           description: Current system configuration grouped by feature area.
