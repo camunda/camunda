@@ -10,6 +10,7 @@ package io.camunda.optimize.service.util;
 import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.DatabaseConstants.FLAT_FLOW_NODE_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.DatabaseConstants.FLAT_INCIDENT_MULTI_ALIAS;
+import static io.camunda.optimize.service.db.DatabaseConstants.FLAT_USER_TASK_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.DatabaseConstants.FLAT_VARIABLE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 
@@ -20,6 +21,7 @@ import io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex;
 import io.camunda.optimize.service.db.schema.index.FlatFlowNodeInstanceIndex;
 import io.camunda.optimize.service.db.schema.index.FlatIncidentIndex;
 import io.camunda.optimize.service.db.schema.index.FlatProcessInstanceIndex;
+import io.camunda.optimize.service.db.schema.index.FlatUserTaskIndex;
 import io.camunda.optimize.service.db.schema.index.FlatVariableIndex;
 import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 
@@ -88,6 +90,14 @@ public final class InstanceIndexUtil {
       return FLAT_INCIDENT_MULTI_ALIAS;
     } else {
       return FlatIncidentIndex.constructIndexName(processDefinitionKey);
+    }
+  }
+
+  public static String getFlatUserTaskIndexAliasName(final String processDefinitionKey) {
+    if (processDefinitionKey == null) {
+      return FLAT_USER_TASK_MULTI_ALIAS;
+    } else {
+      return FlatUserTaskIndex.constructIndexName(processDefinitionKey);
     }
   }
 
