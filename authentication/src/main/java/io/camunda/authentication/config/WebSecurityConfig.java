@@ -55,7 +55,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -430,6 +432,25 @@ public class WebSecurityConfig {
     if (securityConfiguration.getCsrf().isEnabled()) {
       httpSecurity.addFilterAfter(csrfHeaderFilter(), CsrfFilter.class);
     }
+  }
+
+  @Bean
+  @ConditionalOnBean(AbstractAdminUserCheckFilter.class)
+  public FilterRegistrationBean<AbstractAdminUserCheckFilter> disableAdminFilterAutoRegistration(
+      final AbstractAdminUserCheckFilter filter) {
+    final var reg = new FilterRegistrationBean<>(filter);
+    reg.setEnabled(false);
+    return reg;
+  }
+
+  @Bean
+  @ConditionalOnBean(AbstractWebComponentAuthorizationCheckFilter.class)
+  public FilterRegistrationBean<AbstractWebComponentAuthorizationCheckFilter>
+      disableWebComponentFilterAutoRegistration(
+          AbstractWebComponentAuthorizationCheckFilter filter) {
+    final var reg = new FilterRegistrationBean<>(filter);
+    reg.setEnabled(false);
+    return reg;
   }
 
   @Configuration
