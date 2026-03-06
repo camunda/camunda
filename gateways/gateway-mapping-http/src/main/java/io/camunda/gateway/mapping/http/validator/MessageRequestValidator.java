@@ -44,9 +44,7 @@ public final class MessageRequestValidator {
   }
 
   private static void validateCorrelationKeyLength(
-      final String correlationKey,
-      final int maxNameFieldLength,
-      final List<String> violations) {
+      final String correlationKey, final int maxNameFieldLength, final List<String> violations) {
     if (correlationKey != null && correlationKey.length() > maxNameFieldLength) {
       violations.add(
           ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("correlationKey", maxNameFieldLength));
