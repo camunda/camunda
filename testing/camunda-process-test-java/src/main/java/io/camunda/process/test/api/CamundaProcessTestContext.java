@@ -389,4 +389,23 @@ public interface CamundaProcessTestContext {
    */
   void completeJobOfUserTaskListener(
       final JobSelector jobSelector, final Consumer<CompleteUserTaskJobResultStep1> jobResult);
+
+  /**
+   * Defines a conditional scenario with the given condition. The condition is a {@link Runnable}
+   * that throws an {@link AssertionError} when not satisfied (e.g., a CPT assertion). The scenario
+   * evaluates the condition periodically in the background and fires the associated action when the
+   * condition passes.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * processTestContext
+   *     .when(() -&gt; assertThatUserTask(byTaskName("taskA")).isCreated())
+   *     .then(() -&gt; processTestContext.completeUserTask(byTaskName("taskA")));
+   * </pre>
+   *
+   * @param condition the condition to evaluate
+   * @return the condition step for defining the action
+   */
+  ConditionalScenarioConditionStep when(Runnable condition);
 }
