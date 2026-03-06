@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.exporter.dto.BulkIndexResponse;
 import io.camunda.zeebe.exporter.dto.BulkIndexResponse.Error;
+import io.camunda.zeebe.exporter.dto.GetIndexSettingsResponse;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Actions;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Delete;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.exporter.dto.PutIndexSettingsRequest.Index;
 import io.camunda.zeebe.exporter.dto.PutIndexSettingsRequest.Lifecycle;
 import io.camunda.zeebe.exporter.dto.PutIndexSettingsResponse;
 import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
+import io.camunda.zeebe.exporter.dto.Settings;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -31,7 +33,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer.Sample;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.http.entity.EntityTemplate;
 import org.elasticsearch.client.Request;
@@ -263,6 +267,67 @@ class ElasticsearchClient implements AutoCloseable {
     } catch (final IOException e) {
       throw new ElasticsearchExporterException(
           "Failed to put index lifecycle management policy", e);
+    }
+  }
+
+  public void updatendexLifecycleSettings(
+      final String configuredPolicyName, final String desiredPolicyName) {
+    try {
+      final Set<String> indexPrefixesManagedByExporter =
+          Arrays.stream(ValueType.values())
+              .map(indexRouter::unversionedIndexPrefixForValueType)
+              .collect(Collectors.toSet());
+      System.out.println(indexPrefixesManagedByExporter);
+
+      final var request = new Request("GET", "/" + configuration.index.prefix + "*/_settings");
+      final var response = sendRequest(request, GetIndexSettingsResponse.class);
+      for (final var entry : response.getIndices().entrySet()) {
+        final String indexName = entry.getKey();
+        boolean managedByExporter = false;
+        for (final var prefix : indexPrefixesManagedByExporter) {
+          if (indexName.startsWith(prefix)) {
+            managedByExporter = true;
+            break;
+          }
+        }
+
+        final var lifecycle =
+            Optional.of(entry.getValue())
+                .map(GetIndexSettingsResponse.Index::settings)
+                .map(Settings::index)
+                .map(Settings.Index::lifecycle)
+                .map(Settings.Lifecycle::name)
+                .orElse(null);
+
+        if (managedByExporter) {
+          // TODO check accepted result
+          if (desiredPolicyName == null) {
+            putIndexLifecycleSettings(indexName, null);
+          } else if (!desiredPolicyName.equals(lifecycle)) {
+            System.out.println("Policy not applied to: " + indexName + " applying now");
+            putIndexLifecycleSettings(indexName, desiredPolicyName);
+          }
+        } else {
+          if (configuredPolicyName.equals(lifecycle)) {
+            System.out.println("Policy was applied to: " + indexName + " removing now");
+            putIndexLifecycleSettings(indexName, null);
+          }
+        }
+      }
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException("Failed to update indices lifecycle settings", e);
+    }
+  }
+
+  public boolean putIndexLifecycleSettings(final String indexName, final String policyName) {
+    try {
+      final var request = new Request("PUT", "/" + indexName + "/_settings");
+      final var requestEntity = new PutIndexSettingsRequest(new Index(new Lifecycle(policyName)));
+      request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
+      final var response = sendRequest(request, PutIndexSettingsResponse.class);
+      return response.acknowledged();
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException("Failed to update indices lifecycle settings", e);
     }
   }
 
