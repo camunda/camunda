@@ -84,8 +84,8 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
   public CamundaContainer withMultiTenancy() {
     withEnv(
-        ContainerRuntimeEnvs.CAMUNDA_ENV_MULTITENANCY_ENABLED,
-        MultiTenancyConfiguration.MULTITENANCY_ENABLED)
+            ContainerRuntimeEnvs.CAMUNDA_ENV_MULTITENANCY_ENABLED,
+            MultiTenancyConfiguration.MULTITENANCY_ENABLED)
         .withEnv(
             ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE,
             MultiTenancyConfiguration.ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE)
