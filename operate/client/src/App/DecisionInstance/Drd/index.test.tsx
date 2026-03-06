@@ -59,4 +59,68 @@ describe('<Drd />', () => {
       await screen.findByText('Definitions Name Mock'),
     ).toBeInTheDocument();
   });
+
+  it('should show loading indicator while data is being fetched', async () => {
+    mockFetchDecisionDefinitionXML().withDelay(mockDmnXml);
+
+    render(
+      <Drd
+        decisionEvaluationInstanceKey={
+          invoiceClassification.decisionEvaluationInstanceKey
+        }
+        decisionEvaluationKey={invoiceClassification.decisionEvaluationKey}
+        decisionDefinitionKey={invoiceClassification.decisionDefinitionKey}
+        drdPanelState="minimized"
+        onChangeDrdPanelState={() => void 0}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(screen.getByTestId('drd-loading')).toBeInTheDocument();
+
+    await screen.findByText('Default View mock');
+
+    expect(screen.queryByTestId('drd-loading')).not.toBeInTheDocument();
+  });
+
+  it('should show error message when data fetching fails', async () => {
+    mockFetchDecisionDefinitionXML().withServerError();
+
+    render(
+      <Drd
+        decisionEvaluationInstanceKey={
+          invoiceClassification.decisionEvaluationInstanceKey
+        }
+        decisionEvaluationKey={invoiceClassification.decisionEvaluationKey}
+        decisionDefinitionKey={invoiceClassification.decisionDefinitionKey}
+        drdPanelState="minimized"
+        onChangeDrdPanelState={() => void 0}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(
+      await screen.findByText('Data could not be fetched'),
+    ).toBeInTheDocument();
+  });
+
+  it('should show error message when isError prop is true', async () => {
+    render(
+      <Drd
+        decisionEvaluationInstanceKey={
+          invoiceClassification.decisionEvaluationInstanceKey
+        }
+        decisionEvaluationKey={invoiceClassification.decisionEvaluationKey}
+        decisionDefinitionKey={invoiceClassification.decisionDefinitionKey}
+        drdPanelState="minimized"
+        onChangeDrdPanelState={() => void 0}
+        isError
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(
+      await screen.findByText('Data could not be fetched'),
+    ).toBeInTheDocument();
+  });
 });

@@ -28,7 +28,7 @@ const DecisionInstance: React.FC = () => {
   const {decisionInstanceId = ''} = useParams<{decisionInstanceId: string}>();
   const navigate = useNavigate();
   const [drdPanelState, setDrdPanelState] = useDrdPanelState();
-  const {data, error, isFetchedAfterMount} =
+  const {data, error, isError, isFetchedAfterMount} =
     useDecisionInstance(decisionInstanceId);
 
   useEffect(() => {
@@ -75,6 +75,7 @@ const DecisionInstance: React.FC = () => {
         decisionDefinitionKey={data?.decisionDefinitionKey}
         drdPanelState={drdPanelState}
         onChangeDrdPanelState={setDrdPanelState}
+        isError={isError}
       />
     );
   }
@@ -111,6 +112,7 @@ const DecisionInstance: React.FC = () => {
                   decisionDefinitionKey={data?.decisionDefinitionKey}
                   drdPanelState={drdPanelState}
                   onChangeDrdPanelState={setDrdPanelState}
+                  isError={isError}
                 />
               </DrdPanel>
             ) : null

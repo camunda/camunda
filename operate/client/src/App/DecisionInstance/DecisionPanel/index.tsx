@@ -19,9 +19,11 @@ type DecisionPanelProps = {
 };
 
 const DecisionPanel: React.FC<DecisionPanelProps> = (props) => {
-  const {data: decisionInstance} = useDecisionInstance(
-    props.decisionEvaluationInstanceKey,
-  );
+  const {
+    data: decisionInstance,
+    error: decisionInstanceLoadError,
+    isPending: isInstancePending,
+  } = useDecisionInstance(props.decisionEvaluationInstanceKey);
   const highlightableRules = useMemo(() => {
     if (!decisionInstance?.matchedRules) {
       return [];
@@ -46,13 +48,13 @@ const DecisionPanel: React.FC<DecisionPanelProps> = (props) => {
   });
 
   const getStatus = () => {
-    if (isFetching) {
+    if (isInstancePending || isFetching) {
       return 'loading';
     }
     if (error?.response?.status === HTTP_STATUS_FORBIDDEN) {
       return 'forbidden';
     }
-    if (isError) {
+    if (isError || decisionInstanceLoadError) {
       return 'error';
     }
     return 'content';

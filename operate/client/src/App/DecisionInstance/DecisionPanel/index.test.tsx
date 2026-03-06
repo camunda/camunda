@@ -98,4 +98,17 @@ describe('<DecisionPanel />', () => {
       ),
     ).toBeInTheDocument();
   });
+
+  it('should show error when decision definition xml could not be fetched', async () => {
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
+    mockFetchDecisionDefinitionXML().withServerError();
+
+    render(<DecisionPanel decisionEvaluationInstanceKey="337423841237089" />, {
+      wrapper: Wrapper,
+    });
+
+    expect(
+      await screen.findByText('Data could not be fetched'),
+    ).toBeInTheDocument();
+  });
 });
