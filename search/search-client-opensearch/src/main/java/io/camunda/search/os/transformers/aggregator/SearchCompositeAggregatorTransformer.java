@@ -9,6 +9,8 @@ package io.camunda.search.os.transformers.aggregator;
 
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.aggregator.SearchCompositeAggregator;
+import io.camunda.search.clients.aggregator.SearchDateHistogramAggregator;
+import io.camunda.search.clients.aggregator.SearchDateHistogramAggregator.DateHistogramInterval;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.transformers.query.Cursor;
 import io.camunda.search.os.transformers.OpensearchTransformers;
@@ -20,6 +22,7 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregationSource;
+import org.opensearch.client.opensearch._types.aggregations.CompositeDateHistogramAggregationSource;
 import org.opensearch.client.opensearch._types.aggregations.CompositeTermsAggregationSource.Builder;
 
 public class SearchCompositeAggregatorTransformer
@@ -60,11 +63,27 @@ public class SearchCompositeAggregatorTransformer
                               case final SearchTermsAggregator terms ->
                                   sourceBuilder.terms(
                                       termsBuilder -> buildTerms(terms, termsBuilder));
+                              case final SearchDateHistogramAggregator dateHistogram ->
+                                  sourceBuilder.dateHistogram(
+                                      b -> buildDateHistogram(dateHistogram, b));
                               default ->
                                   throw new IllegalStateException(
                                       "Unsupported aggregator type: " + agg.getClass());
                             })))
         .collect(Collectors.toList());
+  }
+
+  private CompositeDateHistogramAggregationSource.Builder buildDateHistogram(
+      final SearchDateHistogramAggregator dateHistogram,
+      final CompositeDateHistogramAggregationSource.Builder builder) {
+    builder.field(dateHistogram.field());
+    switch (dateHistogram.interval()) {
+      case final DateHistogramInterval.Fixed fixed ->
+          builder.fixedInterval(t -> t.time(fixed.toExpression()));
+      case final DateHistogramInterval.Calendar cal ->
+          builder.calendarInterval(t -> t.time(cal.getExpression()));
+    }
+    return builder;
   }
 
   private Builder buildTerms(final SearchTermsAggregator terms, final Builder termsBuilder) {

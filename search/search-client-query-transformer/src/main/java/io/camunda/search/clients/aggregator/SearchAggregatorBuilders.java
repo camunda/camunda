@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.aggregator;
 
+import io.camunda.search.clients.aggregator.SearchDateHistogramAggregator.DateHistogramInterval;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import java.util.List;
@@ -103,5 +104,14 @@ public final class SearchAggregatorBuilders {
 
   public static SearchCardinalityAggregator cardinality(final String name, final String field) {
     return cardinality().name(name).field(field).build();
+  }
+
+  public static SearchDateHistogramAggregator.Builder dateHistogram() {
+    return new SearchDateHistogramAggregator.Builder();
+  }
+
+  public static SearchDateHistogramAggregator dateHistogram(
+      final String name, final String field, final DateHistogramInterval interval) {
+    return dateHistogram().name(name).field(field).interval(interval).build();
   }
 }
