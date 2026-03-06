@@ -102,8 +102,9 @@ public class JobEntityMapperTest {
 
     // Then
     assertThat(entity.jobKey()).isNotNull();
-    assertThat(entity.type()).isNull();
-    assertThat(entity.worker()).isNull();
+    assertThat(entity.type())
+        .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
+    assertThat(entity.worker()).isEqualTo(""); // worker must be empty string
     assertThat(entity.state()).isNotNull();
     assertThat(entity.kind()).isNotNull();
     assertThat(entity.listenerEventType()).isNotNull();
@@ -116,9 +117,11 @@ public class JobEntityMapperTest {
     assertThat(entity.customHeaders()).isEmpty();
     assertThat(entity.deadline()).isNull();
     assertThat(entity.endTime()).isNull();
-    assertThat(entity.processDefinitionId()).isNull();
+    assertThat(entity.processDefinitionId())
+        .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
     assertThat(entity.elementId()).isNull();
-    assertThat(entity.tenantId()).isNull();
+    assertThat(entity.tenantId())
+        .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
     assertThat(entity.creationTime()).isNotNull();
     assertThat(entity.lastUpdateTime()).isNotNull();
   }

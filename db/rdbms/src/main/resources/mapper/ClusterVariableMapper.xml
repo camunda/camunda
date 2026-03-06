@@ -13,9 +13,12 @@
   <resultMap id="clusterVariableResultMap" type="io.camunda.search.entities.ClusterVariableEntity">
     <constructor>
       <idArg column="CLUSTER_VARIABLE_ID" javaType="java.lang.String"/>
-      <arg column="VAR_NAME" javaType="java.lang.String"/>
-      <arg column="VAR_VALUE" javaType="java.lang.String"/>
-      <arg column="VAR_FULL_VALUE" javaType="java.lang.String"/>
+      <arg column="VAR_NAME" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="VAR_VALUE" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="VAR_FULL_VALUE" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="IS_PREVIEW" javaType="boolean"/>
       <arg column="SCOPE" javaType="io.camunda.search.entities.ClusterVariableScope"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
