@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class SchemaManagerTest {
 
@@ -148,21 +149,21 @@ class SchemaManagerTest {
   // Test data for allowed upgrades
   static Stream<Arguments> allowedUpgradeScenarios() {
     return Stream.of(
-        // Same version - no schema upgrade for release versions
+        // Same version
         Arguments.of("8.8.0", "8.8.0", false, "SameVersion"),
 
-        // Same version with SNAPSHOT - should trigger schema upgrade
-        Arguments.of("8.8.0-SNAPSHOT", "8.8.0-SNAPSHOT", true, "SameVersion"),
+        // Same version with SNAPSHOT
+        Arguments.of("8.8.0-SNAPSHOT", "8.8.0-SNAPSHOT", false, "SameVersion"),
 
-        // Patch upgrades - should trigger schema upgrade
+        // Patch upgrades
         Arguments.of("8.8.0", "8.8.1", true, "PatchUpgrade"),
         Arguments.of("8.8.1", "8.8.3", true, "PatchUpgrade"),
 
-        // Minor upgrades - should trigger schema upgrade
+        // Minor upgrades
         Arguments.of("8.8.0", "8.9.0", true, "MinorUpgrade"),
         Arguments.of("8.8.2", "8.9.1", true, "MinorUpgrade"),
 
-        // First time setup (no previous version) - should trigger schema upgrade
+        // First time setup (no previous version)
         Arguments.of(null, "8.8.0", true, "PreviousVersionUnknown"));
   }
 
@@ -171,7 +172,7 @@ class SchemaManagerTest {
   void shouldAllowCompatibleUpgrades(
       final String previousVersion,
       final String currentVersion,
-      final boolean expectSchemaUpgrade) {
+      final boolean expectSchemaVersionMetadataUpdate) {
 
     // Given
     schemaManager = createSpySchemaManager(currentVersion);
@@ -181,27 +182,34 @@ class SchemaManagerTest {
     schemaManager.startup();
 
     // Then: Should complete without throwing exceptions
-    verifyInvokedOperations(currentVersion, expectSchemaUpgrade);
+    verifyInvokedOperations(currentVersion, true, expectSchemaVersionMetadataUpdate);
   }
 
   private void verifyInvokedOperations(
-      final String currentVersion, final boolean expectSchemaUpgrade) {
+      final String currentVersion,
+      final boolean expectSchemaUpgrade,
+      final boolean expectSchemaVersionMetadataUpdate) {
     if (expectSchemaUpgrade) {
-      // Verify schema upgrade operations were called via searchEngineClient
-      verify(searchEngineClient)
-          .upsertDocument(
-              metadataIndex.getFullQualifiedName(),
-              SCHEMA_VERSION_METADATA_ID,
-              Map.of(
-                  MetadataIndex.ID,
-                  SCHEMA_VERSION_METADATA_ID,
-                  MetadataIndex.VALUE,
-                  currentVersion));
       Stream.of(metadataIndex, testIndexDescriptor, testTemplateDescriptor)
           .forEach(
               indexDescriptor ->
                   verify(searchEngineClient).createIndex(indexDescriptor, config.index()));
       verify(searchEngineClient).createIndexTemplate(testTemplateDescriptor, config.index(), true);
+      if (expectSchemaVersionMetadataUpdate) {
+        // Verify schema upgrade operations were called via searchEngineClient
+        verify(searchEngineClient)
+            .upsertDocument(
+                metadataIndex.getFullQualifiedName(),
+                SCHEMA_VERSION_METADATA_ID,
+                Map.of(
+                    MetadataIndex.ID,
+                    SCHEMA_VERSION_METADATA_ID,
+                    MetadataIndex.VALUE,
+                    currentVersion));
+      } else {
+        // Verify schema version metadata update was skipped
+        verify(searchEngineClient, never()).upsertDocument(anyString(), anyString(), any());
+      }
     } else {
       // Verify schema upgrade was skipped - no upsert should happen for same version
       verify(searchEngineClient, never()).upsertDocument(anyString(), anyString(), any());
@@ -269,7 +277,7 @@ class SchemaManagerTest {
     spySchemaManager.startup();
 
     // Then: Should proceed with schema upgrade despite incompatibility
-    verifyInvokedOperations("9.0.0", true);
+    verifyInvokedOperations("9.0.0", true, true);
   }
 
   @Test
@@ -282,20 +290,22 @@ class SchemaManagerTest {
     spySchemaManager.startup();
 
     // Then: Should proceed with full schema initialization
-    verifyInvokedOperations("8.8.0", true);
+    verifyInvokedOperations("8.8.0", true, true);
   }
 
-  @Test
-  void shouldTriggerSchemaUpgradeForSnapshotVersions() {
-    // Given: Same version but with SNAPSHOT suffix
-    final var spySchemaManager = createSpySchemaManager("8.8.0-SNAPSHOT");
-    mockSchemaVersionInMetadata("8.8.0-SNAPSHOT");
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldHandleSchemaUpgradesForSameVersionsDependingOnConfiguration(final boolean runUpdates) {
+    // Given: Same version
+    final var spySchemaManager = createSpySchemaManager("8.8.0");
+    mockSchemaVersionInMetadata("8.8.0");
+    config.schemaManager().setRunSchemaUpdatesOnSameVersion(runUpdates);
 
     // When
     spySchemaManager.startup();
 
-    // Then: Should trigger schema upgrade for SNAPSHOT versions even when same version
-    verifyInvokedOperations("8.8.0-SNAPSHOT", true);
+    // Then: Should trigger schema upgrade only if configured to do so
+    verifyInvokedOperations("8.8.0", runUpdates, false);
   }
 
   @Test
@@ -313,7 +323,7 @@ class SchemaManagerTest {
     schemaManager.startup();
 
     // Then: Should proceed with full schema initialization including metadata index creation
-    verifyInvokedOperations("8.8.0", true);
+    verifyInvokedOperations("8.8.0", true, true);
   }
 
   private SchemaManager createSpySchemaManager(final String currentVersion) {
