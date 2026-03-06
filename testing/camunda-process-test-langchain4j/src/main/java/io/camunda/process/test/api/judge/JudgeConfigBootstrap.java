@@ -16,22 +16,35 @@
 package io.camunda.process.test.api.judge;
 
 import dev.langchain4j.model.chat.ChatModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JudgeConfigBootstrap implements JudgeConfigBootstrapProvider {
+
+  private static final Logger LOG = LoggerFactory.getLogger(JudgeConfigBootstrap.class);
 
   @Override
   public JudgeConfig bootstrap(final JudgeConfigBootstrapData data) {
     final String provider = data.getProvider();
     if (provider == null || provider.trim().isEmpty()) {
+      LOG.debug("No provider configured, skipping judge config bootstrap");
       return null;
     }
 
-    final ChatModel chatModel = createChatModel(data, provider.trim().toLowerCase());
+    final String normalizedProvider = provider.trim().toLowerCase();
+    LOG.debug("Bootstrapping judge config for provider '{}'", normalizedProvider);
+
+    final ChatModel chatModel = createChatModel(data, normalizedProvider);
     if (chatModel == null) {
+      LOG.debug("Unknown provider '{}', skipping judge config bootstrap", normalizedProvider);
       return null;
     }
 
     final ChatModelAdapter adapter = chatModel::chat;
+    LOG.debug(
+        "Judge config bootstrapped successfully for provider '{}' with threshold {}",
+        normalizedProvider,
+        data.getThreshold());
     return JudgeConfig.of(adapter, data.getThreshold(), data.getCustomPrompt());
   }
 

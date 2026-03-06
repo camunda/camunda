@@ -19,15 +19,23 @@ import static io.camunda.process.test.api.judge.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class OpenAiChatModelBuilder {
+
+  private static final Logger LOG = LoggerFactory.getLogger(OpenAiChatModelBuilder.class);
 
   private OpenAiChatModelBuilder() {}
 
   static ChatModel build(final JudgeConfigBootstrapData data) {
+    LOG.debug("Building OpenAI chat model");
+
     final String model = require(data.getModel(), "model", "openai");
     final String apiKey = require(data.getApiKey(), "apiKey", "openai");
 
-    return OpenAiChatModel.builder().apiKey(apiKey).modelName(model).build();
+    final ChatModel chatModel = OpenAiChatModel.builder().apiKey(apiKey).modelName(model).build();
+    LOG.debug("Successfully built OpenAI chat model with model '{}'", model);
+    return chatModel;
   }
 }

@@ -20,6 +20,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.langchain4j.model.chat.ChatModel;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class OpenAiCompatibleChatModelBuilderTest {
 
@@ -40,13 +43,16 @@ class OpenAiCompatibleChatModelBuilderTest {
     assertThat(chatModel).isNotNull();
   }
 
-  @Test
-  void shouldBuildChatModelWithoutApiKey() {
-    // given
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {"  "})
+  void shouldBuildChatModelWithoutApiKey(final String apiKey) {
+    // given — null or blank apiKey is treated as absent
     final JudgeConfigBootstrapData data =
         JudgeConfigBootstrapData.builder()
             .baseUrl("http://localhost:11434/v1")
             .model("llama3")
+            .apiKey(apiKey)
             .build();
 
     // when
@@ -56,11 +62,13 @@ class OpenAiCompatibleChatModelBuilderTest {
     assertThat(chatModel).isNotNull();
   }
 
-  @Test
-  void shouldThrowWhenBaseUrlMissing() {
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {"  "})
+  void shouldThrowWhenBaseUrlMissingOrBlank(final String baseUrl) {
     // given
     final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder().model("llama3").build();
+        JudgeConfigBootstrapData.builder().baseUrl(baseUrl).model("llama3").build();
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleChatModelBuilder.build(data))
@@ -69,40 +77,21 @@ class OpenAiCompatibleChatModelBuilderTest {
         .hasMessageContaining("openai-compatible");
   }
 
-  @Test
-  void shouldThrowWhenModelMissing() {
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {"  "})
+  void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
     final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder().baseUrl("http://localhost:11434/v1").build();
+        JudgeConfigBootstrapData.builder()
+            .baseUrl("http://localhost:11434/v1")
+            .model(model)
+            .build();
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleChatModelBuilder.build(data))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("model")
         .hasMessageContaining("openai-compatible");
-  }
-
-  @Test
-  void shouldThrowWhenBaseUrlBlank() {
-    // given
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder().baseUrl("  ").model("llama3").build();
-
-    // when / then
-    assertThatThrownBy(() -> OpenAiCompatibleChatModelBuilder.build(data))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("baseUrl");
-  }
-
-  @Test
-  void shouldThrowWhenModelBlank() {
-    // given
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder().baseUrl("http://localhost:11434/v1").model("").build();
-
-    // when / then
-    assertThatThrownBy(() -> OpenAiCompatibleChatModelBuilder.build(data))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("model");
   }
 }
