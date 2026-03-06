@@ -47,6 +47,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFER_REST_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.REST_ADDRESS_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_CLIENT_SIDE_LOAD_BALANCING_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR;
 import static io.camunda.client.impl.util.ClientPropertiesValidationUtils.checkIfUriIsAbsolute;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
@@ -138,6 +139,7 @@ public final class CamundaClientBuilderImpl
   private ExecutorService jobHandlingExecutor;
   private boolean ownsJobHandlingExecutor;
   private boolean useDefaultRetryPolicy;
+  private boolean useClientSideLoadBalancing;
   private int maxHttpConnections = DEFAULT_MAX_HTTP_CONNECTIONS;
   private JobExceptionHandler jobExceptionHandler = DEFAULT_JOB_EXCEPTION_HANDLER;
 
@@ -306,6 +308,11 @@ public final class CamundaClientBuilderImpl
     return maxHttpConnections;
   }
 
+  @Override
+  public boolean useClientSideLoadBalancing() {
+    return useClientSideLoadBalancing;
+  }
+
   private void gatewayAddress(final String gatewayAddress) {
     // we apply the legacy behaviour here, the plaintext parameter can still be changed as the
     // plaintext is checked AFTER the gateway address
@@ -463,6 +470,12 @@ public final class CamundaClientBuilderImpl
         value -> useDefaultRetryPolicy(Boolean.parseBoolean(value)),
         USE_DEFAULT_RETRY_POLICY,
         LegacyZeebeClientProperties.USE_DEFAULT_RETRY_POLICY);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        value -> useClientSideLoadBalancing(Boolean.parseBoolean(value)),
+        io.camunda.client.ClientProperties.USE_CLIENT_SIDE_LOAD_BALANCING,
+        LegacyZeebeClientProperties.USE_CLIENT_SIDE_LOAD_BALANCING);
 
     return this;
   }
@@ -661,6 +674,12 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder useClientSideLoadBalancing(final boolean useClientSideLoadBalancing) {
+    this.useClientSideLoadBalancing = useClientSideLoadBalancing;
+    return this;
+  }
+
+  @Override
   public CamundaClientBuilder defaultJobWorkerExceptionHandler(
       final JobExceptionHandler jobExceptionHandler) {
     this.jobExceptionHandler = jobExceptionHandler;
@@ -737,6 +756,10 @@ public final class CamundaClientBuilderImpl
         value -> useDefaultRetryPolicy(Boolean.parseBoolean(value)),
         USE_DEFAULT_RETRY_POLICY_VAR,
         LegacyZeebeClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR);
+    applyEnvironmentValueIfNotNull(
+        value -> useClientSideLoadBalancing(Boolean.parseBoolean(value)),
+        USE_CLIENT_SIDE_LOAD_BALANCING_VAR,
+        LegacyZeebeClientEnvironmentVariables.USE_CLIENT_SIDE_LOAD_BALANCING_VAR);
   }
 
   @Override
@@ -763,6 +786,7 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.appendProperty(sb, "ownsJobHandlingExecutor", ownsJobHandlingExecutor);
     BuilderUtils.appendProperty(sb, "streamEnabled", streamEnabled);
     BuilderUtils.appendProperty(sb, "preferRestOverGrpc", preferRestOverGrpc);
+    BuilderUtils.appendProperty(sb, "useClientSideLoadBalancing", useClientSideLoadBalancing);
 
     return sb.toString();
   }

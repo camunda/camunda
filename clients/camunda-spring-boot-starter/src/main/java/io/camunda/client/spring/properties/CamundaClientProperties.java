@@ -115,6 +115,12 @@ public class CamundaClientProperties {
   /** The maximum number of concurrent HTTP connections the client can open. */
   private int maxHttpConnections = DEFAULT_MAX_HTTP_CONNECTIONS;
 
+  /**
+   * If enabled, the client will use DNS-based name resolution and round-robin load balancing for
+   * gRPC connections.
+   */
+  private boolean useClientSideLoadBalancing;
+
   public CamundaClientCloudProperties getCloud() {
     return cloud;
   }
@@ -275,6 +281,14 @@ public class CamundaClientProperties {
 
   public void setMaxHttpConnections(final int maxHttpConnections) {
     this.maxHttpConnections = maxHttpConnections;
+  }
+
+  public boolean isUseClientSideLoadBalancing() {
+    return useClientSideLoadBalancing;
+  }
+
+  public void setUseClientSideLoadBalancing(final boolean useClientSideLoadBalancing) {
+    this.useClientSideLoadBalancing = useClientSideLoadBalancing;
   }
 
   @Override

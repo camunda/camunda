@@ -231,6 +231,11 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   }
 
   @Override
+  public boolean useClientSideLoadBalancing() {
+    return camundaClientProperties.isUseClientSideLoadBalancing();
+  }
+
+  @Override
   public String toString() {
     return "SpringCamundaClientConfiguration{"
         + "camundaClientProperties="
