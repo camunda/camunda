@@ -58,7 +58,12 @@ jobs:
           SERVER_BRANCH="${{ inputs.server_branch }}"
           TEST_BRANCH="${{ inputs.test_branch }}"
 
-          if [[ -n "$SERVER_BRANCH" && -n "$TEST_BRANCH" ]]; then
+          if [[ -n "$SERVER_BRANCH" || -n "$TEST_BRANCH" ]]; then
+            # Manual trigger: require both inputs to avoid surprising fallback behavior
+            if [[ -z "$SERVER_BRANCH" || -z "$TEST_BRANCH" ]]; then
+              echo "::error::Both 'server_branch' and 'test_branch' must be provided for manual dispatch. Got server_branch='$SERVER_BRANCH', test_branch='$TEST_BRANCH'."
+              exit 1
+            fi
             echo "Manual trigger: Testing Server=$SERVER_BRANCH with Tests=$TEST_BRANCH"
             SERVER_IMAGE=$(resolve_image "$SERVER_BRANCH")
             echo "Resolved server image: $SERVER_IMAGE"
@@ -162,20 +167,16 @@ jobs:
           echo "Checking if services are up..."
           ready=false
           for i in {1..90}; do
-            tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
-            operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
-            identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
-
-            if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" && "$identity_status" != "Failed" ]]; then
-              echo "Services are ready!"
+            # Use curl -sf to fail on non-2xx HTTP responses (e.g. 404, 503).
+            # Probe /v2/topology with basic auth as a reliable readiness signal:
+            # it only returns 200 once the broker and gateway are fully operational.
+            if curl -sf -u demo:demo -m 5 http://localhost:8080/v2/topology > /dev/null 2>&1; then
+              echo "Camunda is ready! (topology endpoint returned 200)"
               ready=true
               break
             fi
 
             echo "Waiting for services... ($i/90)"
-            echo "Response from Tasklist: $tasklist_status"
-            echo "Response from Operate: $operate_status"
-            echo "Response from Identity: $identity_status"
             sleep 10
           done
 
@@ -259,6 +260,7 @@ jobs:
         with:
           name: json-report-forward-compat-server-${{ steps.sanitize.outputs.safe_server }}-tests-${{ steps.sanitize.outputs.safe_test }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
+          if-no-files-found: ignore
           retention-days: 60
 
       - name: Upload HTML report on failure
@@ -267,6 +269,7 @@ jobs:
         with:
           name: html-report-forward-compat-server-${{ steps.sanitize.outputs.safe_server }}-tests-${{ steps.sanitize.outputs.safe_test }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
+          if-no-files-found: ignore
           retention-days: 10
 
       - name: Observe build status
@@ -286,8 +289,11 @@ jobs:
      timeout-minutes: 5
      needs: [prepare-matrix, forward-compatibility-api-tests]
      if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
-     permissions: {}
+     permissions:
+       contents: read
      steps:
+       - uses: actions/checkout@v6
+
        - name: Notify failure
          uses: slackapi/slack-github-action@v2.1.1
          if: env.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
@@ -315,3 +321,13 @@ jobs:
                  }
                ]
              }
+
+       - name: Observe build status
+         if: always()
+         continue-on-error: true
+         uses: ./.github/actions/observe-build-status
+         with:
+           build_status: ${{ job.status }}
+           secret_vault_address: ${{ secrets.VAULT_ADDR }}
+           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
