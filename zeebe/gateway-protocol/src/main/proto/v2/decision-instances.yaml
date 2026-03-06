@@ -290,6 +290,7 @@ components:
         - decisionDefinitionKey
         - decisionDefinitionName
         - decisionDefinitionType
+        - decisionDefinitionVersion
         - decisionEvaluationInstanceKey
         - decisionEvaluationKey
         - elementInstanceKey
