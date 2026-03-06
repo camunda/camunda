@@ -17,9 +17,9 @@ public class UserTaskEntityMapper {
   public static UserTaskEntity toEntity(final UserTaskDbModel dbModel) {
     return new UserTaskEntity(
         dbModel.userTaskKey(),
-        dbModel.elementId(),
+        nullToEmpty(dbModel.elementId()),
         dbModel.name(),
-        dbModel.processDefinitionId(),
+        nullToEmpty(dbModel.processDefinitionId()),
         null, // filled later from ProcessCache in UserTaskService
         dbModel.creationDate(),
         dbModel.completionDate(),
@@ -30,7 +30,7 @@ public class UserTaskEntityMapper {
         dbModel.processInstanceKey(),
         dbModel.rootProcessInstanceKey(),
         dbModel.elementInstanceKey(),
-        dbModel.tenantId(),
+        nullToEmpty(dbModel.tenantId()),
         dbModel.dueDate(),
         dbModel.followUpDate(),
         dbModel.candidateGroups(),
@@ -40,5 +40,14 @@ public class UserTaskEntityMapper {
         CustomHeaderSerializer.deserialize(dbModel.serializedCustomHeaders()),
         dbModel.priority(),
         dbModel.tags());
+  }
+
+  /**
+   * Oracle treats empty strings as NULL. This method converts null values back to empty strings for
+   * fields that are required (non-nullable) in the API specification but may legitimately be empty
+   * (e.g., protobuf default values).
+   */
+  private static String nullToEmpty(final String value) {
+    return value == null ? "" : value;
   }
 }

@@ -16,17 +16,26 @@ public class MessageSubscriptionEntityMapper {
       final MessageSubscriptionDbModel messageSubscriptionDbModel) {
     return MessageSubscriptionEntity.builder()
         .messageSubscriptionKey(messageSubscriptionDbModel.messageSubscriptionKey())
-        .processDefinitionId(messageSubscriptionDbModel.processDefinitionId())
+        .processDefinitionId(nullToEmpty(messageSubscriptionDbModel.processDefinitionId()))
         .processDefinitionKey(messageSubscriptionDbModel.processDefinitionKey())
         .processInstanceKey(messageSubscriptionDbModel.processInstanceKey())
         .rootProcessInstanceKey(messageSubscriptionDbModel.rootProcessInstanceKey())
-        .flowNodeId(messageSubscriptionDbModel.flowNodeId())
+        .flowNodeId(nullToEmpty(messageSubscriptionDbModel.flowNodeId()))
         .flowNodeInstanceKey(messageSubscriptionDbModel.flowNodeInstanceKey())
         .messageSubscriptionState(messageSubscriptionDbModel.messageSubscriptionState())
         .dateTime(messageSubscriptionDbModel.dateTime())
-        .messageName(messageSubscriptionDbModel.messageName())
-        .correlationKey(messageSubscriptionDbModel.correlationKey())
-        .tenantId(messageSubscriptionDbModel.tenantId())
+        .messageName(nullToEmpty(messageSubscriptionDbModel.messageName()))
+        .correlationKey(nullToEmpty(messageSubscriptionDbModel.correlationKey()))
+        .tenantId(nullToEmpty(messageSubscriptionDbModel.tenantId()))
         .build();
+  }
+
+  /**
+   * Oracle treats empty strings as NULL. This method converts null values back to empty strings for
+   * fields that are required (non-nullable) in the API specification but may legitimately be empty
+   * (e.g., protobuf default values).
+   */
+  private static String nullToEmpty(final String value) {
+    return value == null ? "" : value;
   }
 }

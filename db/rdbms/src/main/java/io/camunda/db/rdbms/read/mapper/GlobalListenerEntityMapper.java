@@ -17,13 +17,22 @@ public class GlobalListenerEntityMapper {
     }
     return new GlobalListenerEntity(
         dbModel.id(),
-        dbModel.listenerId(),
-        dbModel.type(),
+        nullToEmpty(dbModel.listenerId()),
+        nullToEmpty(dbModel.type()),
         dbModel.eventTypes(),
         dbModel.retries(),
         dbModel.afterNonGlobal(),
         dbModel.priority(),
         dbModel.source(),
         dbModel.listenerType());
+  }
+
+  /**
+   * Oracle treats empty strings as NULL. This method converts null values back to empty strings for
+   * fields that are required (non-nullable) in the API specification but may legitimately be empty
+   * (e.g., protobuf default values).
+   */
+  private static String nullToEmpty(final String value) {
+    return value == null ? "" : value;
   }
 }

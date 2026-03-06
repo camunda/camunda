@@ -20,15 +20,24 @@ public class FlowNodeInstanceEntityMapper {
         dbModel.processDefinitionKey(),
         dbModel.startDate(),
         dbModel.endDate(),
-        dbModel.flowNodeId(),
-        dbModel.flowNodeName(),
+        nullToEmpty(dbModel.flowNodeId()),
+        nullToEmpty(dbModel.flowNodeName()),
         dbModel.treePath(),
         dbModel.type(),
         dbModel.state(),
         dbModel.hasIncident(),
         dbModel.incidentKey(),
-        dbModel.processDefinitionId(),
-        dbModel.tenantId(),
+        nullToEmpty(dbModel.processDefinitionId()),
+        nullToEmpty(dbModel.tenantId()),
         dbModel.partitionId());
+  }
+
+  /**
+   * Oracle treats empty strings as NULL. This method converts null values back to empty strings for
+   * fields that are required (non-nullable) in the API specification but may legitimately be empty
+   * (e.g., protobuf default values).
+   */
+  private static String nullToEmpty(final String value) {
+    return value == null ? "" : value;
   }
 }

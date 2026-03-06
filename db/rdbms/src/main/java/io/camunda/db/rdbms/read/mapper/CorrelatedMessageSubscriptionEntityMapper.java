@@ -15,20 +15,29 @@ public class CorrelatedMessageSubscriptionEntityMapper {
   public static CorrelatedMessageSubscriptionEntity toEntity(
       final CorrelatedMessageSubscriptionDbModel dbModel) {
     return CorrelatedMessageSubscriptionEntity.builder()
-        .correlationKey(dbModel.correlationKey())
+        .correlationKey(nullToEmpty(dbModel.correlationKey()))
         .correlationTime(dbModel.correlationTime())
-        .flowNodeId(dbModel.flowNodeId())
+        .flowNodeId(nullToEmpty(dbModel.flowNodeId()))
         .flowNodeInstanceKey(dbModel.flowNodeInstanceKey())
         .messageKey(dbModel.messageKey())
-        .messageName(dbModel.messageName())
+        .messageName(nullToEmpty(dbModel.messageName()))
         .partitionId(dbModel.partitionId())
-        .processDefinitionId(dbModel.processDefinitionId())
+        .processDefinitionId(nullToEmpty(dbModel.processDefinitionId()))
         .processDefinitionKey(dbModel.processDefinitionKey())
         .processInstanceKey(dbModel.processInstanceKey())
         .rootProcessInstanceKey(dbModel.rootProcessInstanceKey())
         .subscriptionKey(dbModel.subscriptionKey())
         .subscriptionType(dbModel.subscriptionType())
-        .tenantId(dbModel.tenantId())
+        .tenantId(nullToEmpty(dbModel.tenantId()))
         .build();
+  }
+
+  /**
+   * Oracle treats empty strings as NULL. This method converts null values back to empty strings for
+   * fields that are required (non-nullable) in the API specification but may legitimately be empty
+   * (e.g., correlationKey for message start event subscriptions).
+   */
+  private static String nullToEmpty(final String value) {
+    return value == null ? "" : value;
   }
 }

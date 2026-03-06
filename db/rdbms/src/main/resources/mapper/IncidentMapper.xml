@@ -160,17 +160,21 @@
     <constructor>
       <idArg column="INCIDENT_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="ERROR_TYPE" javaType="io.camunda.search.entities.IncidentEntity$ErrorType"/>
-      <arg column="ERROR_MESSAGE" javaType="java.lang.String"/>
-      <arg column="FLOW_NODE_ID" javaType="java.lang.String"/>
+      <arg column="ERROR_MESSAGE" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="FLOW_NODE_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="CREATION_DATE" javaType="java.time.OffsetDateTime" />
       <arg column="STATE" javaType="io.camunda.search.entities.IncidentEntity$IncidentState"/>
       <arg column="JOB_KEY" javaType="java.lang.Long"/>
-      <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
     </constructor>
 
   </resultMap>

@@ -83,7 +83,20 @@ public class TenantDbReader extends AbstractEntityReader<TenantEntity> implement
   }
 
   private TenantEntity map(final TenantDbModel model) {
-    return new TenantEntity(model.tenantKey(), model.tenantId(), model.name(), model.description());
+    return new TenantEntity(
+        model.tenantKey(),
+        nullToEmpty(model.tenantId()),
+        nullToEmpty(model.name()),
+        model.description());
+  }
+
+  /**
+   * Oracle treats empty strings as NULL. This method converts null values back to empty strings for
+   * fields that are required (non-nullable) in the API specification but may legitimately be empty
+   * (e.g., protobuf default values).
+   */
+  private static String nullToEmpty(final String value) {
+    return value == null ? "" : value;
   }
 
   private boolean shouldReturnEmptyResult(
