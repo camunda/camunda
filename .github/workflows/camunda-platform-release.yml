@@ -227,6 +227,7 @@ jobs:
           export TAG_REVISION
           echo "tagRevision=${TAG_REVISION}" >> "$GITHUB_OUTPUT"
           popd
+<<<<<<< HEAD
       - name: Update Optimize parent to development version
         run: |
           # After release process completes, update Optimize parent to nextDevelopmentVersion
@@ -246,6 +247,11 @@ jobs:
           echo "Updated parent version to: ${new_version}"
       - name: Debug Optimize Versions after updating to development version
         if: ${{ inputs.dryRun }}
+=======
+
+      - name: Debug Optimize Versions
+        if: ${{ inputs.includeOptimize && inputs.dryRun }}
+>>>>>>> 5d550f8a (fix: revert token-renewal logic)
         run: |
           echo "=== Optimize Version Information ==="
           echo "Optimize project.version:"
