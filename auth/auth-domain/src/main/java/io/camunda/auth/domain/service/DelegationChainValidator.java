@@ -7,7 +7,7 @@
  */
 package io.camunda.auth.domain.service;
 
-import io.camunda.auth.domain.exception.TokenExchangeException;
+import io.camunda.auth.domain.exception.AuthorizationGrantException;
 
 /**
  * Validates the delegation chain depth of a token exchange. Parses the JWT {@code act} claim to
@@ -41,12 +41,12 @@ public class DelegationChainValidator {
    * to count the nesting depth of {@code act} claims.
    *
    * @param subjectToken the JWT subject token
-   * @throws TokenExchangeException.DelegationChainTooDeep if the chain is too deep
+   * @throws AuthorizationGrantException.DelegationChainTooDeep if the chain is too deep
    */
   public void validate(final String subjectToken) {
     final int depth = countActClaimDepth(subjectToken);
     if (depth >= maxDepth) {
-      throw new TokenExchangeException.DelegationChainTooDeep(maxDepth, depth + 1);
+      throw new AuthorizationGrantException.DelegationChainTooDeep(maxDepth, depth + 1);
     }
   }
 

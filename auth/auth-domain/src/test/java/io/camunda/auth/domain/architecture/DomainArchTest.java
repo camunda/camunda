@@ -122,7 +122,7 @@ final class DomainArchTest {
   // --- Model constraints: records and enums only ---
 
   @Test
-  void modelClassesMustBeRecordsOrEnums() {
+  void modelClassesMustBeRecordsOrEnumsOrSealedInterfaces() {
     classes()
         .that()
         .resideInAPackage("io.camunda.auth.domain.model..")
@@ -132,7 +132,11 @@ final class DomainArchTest {
         .beRecords()
         .orShould()
         .beEnums()
-        .because("domain model types must be records (immutable value objects) or enums")
+        .orShould()
+        .beInterfaces()
+        .because(
+            "domain model types must be records (immutable value objects), enums, "
+                + "or sealed interfaces (composable type hierarchies)")
         .check(domainClasses);
   }
 

@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.auth.domain.exception.TokenExchangeException;
+import io.camunda.auth.domain.exception.AuthorizationGrantException;
 import java.util.Base64;
 import org.junit.jupiter.api.Test;
 
@@ -47,7 +47,7 @@ class DelegationChainValidatorTest {
 
     // when/then
     assertThatThrownBy(() -> validator.validate(jwt))
-        .isInstanceOf(TokenExchangeException.DelegationChainTooDeep.class)
+        .isInstanceOf(AuthorizationGrantException.DelegationChainTooDeep.class)
         .hasMessageContaining("exceeds maximum");
   }
 

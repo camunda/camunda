@@ -15,35 +15,41 @@ import java.util.Set;
 /**
  * Represents an OAuth2 Token Exchange request as defined by RFC 8693.
  *
+ * <p>The {@link #grantType()} is always {@link GrantType#TOKEN_EXCHANGE} — it is fixed by this
+ * subtype rather than being a record component, preventing invalid combinations.
+ *
  * @param subjectToken the security token representing the identity of the party on behalf of whom
  *     the request is being made
  * @param subjectTokenType the type of the subject token
  * @param actorToken an optional security token representing the identity of the acting party
  * @param actorTokenType the type of the actor token (required if actorToken is present)
- * @param grantType the grant type to use for the exchange
  * @param audience the logical name or URI of the target service
  * @param scopes the requested scopes for the exchanged token
  * @param resource the resource URI (RFC 8707)
  * @param additionalParameters IdP-specific additional parameters
  */
-public record TokenExchangeRequest(
+public record TokenExchangeGrantRequest(
     String subjectToken,
     TokenType subjectTokenType,
     String actorToken,
     TokenType actorTokenType,
-    GrantType grantType,
     String audience,
     Set<String> scopes,
     String resource,
-    Map<String, String> additionalParameters) {
+    Map<String, String> additionalParameters)
+    implements AuthorizationGrantRequest {
 
-  public TokenExchangeRequest {
+  public TokenExchangeGrantRequest {
     Objects.requireNonNull(subjectToken, "subjectToken must not be null");
     Objects.requireNonNull(subjectTokenType, "subjectTokenType must not be null");
-    Objects.requireNonNull(grantType, "grantType must not be null");
     scopes = scopes != null ? Set.copyOf(scopes) : Set.of();
     additionalParameters =
         additionalParameters != null ? Collections.unmodifiableMap(additionalParameters) : Map.of();
+  }
+
+  @Override
+  public GrantType grantType() {
+    return GrantType.TOKEN_EXCHANGE;
   }
 
   public static Builder builder() {
@@ -55,7 +61,6 @@ public record TokenExchangeRequest(
     private TokenType subjectTokenType = TokenType.ACCESS_TOKEN;
     private String actorToken;
     private TokenType actorTokenType;
-    private GrantType grantType = GrantType.TOKEN_EXCHANGE;
     private String audience;
     private Set<String> scopes;
     private String resource;
@@ -83,11 +88,6 @@ public record TokenExchangeRequest(
       return this;
     }
 
-    public Builder grantType(final GrantType grantType) {
-      this.grantType = grantType;
-      return this;
-    }
-
     public Builder audience(final String audience) {
       this.audience = audience;
       return this;
@@ -108,13 +108,12 @@ public record TokenExchangeRequest(
       return this;
     }
 
-    public TokenExchangeRequest build() {
-      return new TokenExchangeRequest(
+    public TokenExchangeGrantRequest build() {
+      return new TokenExchangeGrantRequest(
           subjectToken,
           subjectTokenType,
           actorToken,
           actorTokenType,
-          grantType,
           audience,
           scopes,
           resource,
