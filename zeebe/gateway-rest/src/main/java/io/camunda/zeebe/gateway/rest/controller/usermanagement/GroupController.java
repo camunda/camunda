@@ -11,7 +11,7 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
-import io.camunda.authentication.ConditionalOnCamundaGroupsEnabled;
+import io.camunda.auth.starter.condition.ConditionalOnCamundaGroupsEnabled;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.GroupMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;

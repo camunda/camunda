@@ -38,6 +38,8 @@ public class OidcAuthenticationConfiguration {
   private List<String> resource;
   private String clientAuthenticationMethod = "client_secret_basic";
   private Duration clockSkew = DEFAULT_CLOCK_SKEW;
+  private AuthorizeRequestConfiguration authorizeRequest = new AuthorizeRequestConfiguration();
+  private AssertionConfiguration assertion = new AssertionConfiguration();
   private boolean idpLogoutEnabled = true;
   private boolean userInfoEnabled = true;
 
@@ -236,6 +238,22 @@ public class OidcAuthenticationConfiguration {
 
   public void setUserInfoEnabled(final boolean userInfoEnabled) {
     this.userInfoEnabled = userInfoEnabled;
+  }
+
+  public AuthorizeRequestConfiguration getAuthorizeRequest() {
+    return authorizeRequest;
+  }
+
+  public void setAuthorizeRequest(final AuthorizeRequestConfiguration authorizeRequest) {
+    this.authorizeRequest = authorizeRequest;
+  }
+
+  public AssertionConfiguration getAssertion() {
+    return assertion;
+  }
+
+  public void setAssertion(final AssertionConfiguration assertion) {
+    this.assertion = assertion;
   }
 
   public boolean isSet() {

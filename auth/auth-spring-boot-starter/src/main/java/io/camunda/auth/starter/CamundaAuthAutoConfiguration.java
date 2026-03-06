@@ -21,6 +21,7 @@ import io.camunda.auth.spring.converter.NoOpMembershipResolver;
 import io.camunda.auth.spring.converter.OidcTokenAuthenticationConverter;
 import io.camunda.auth.spring.converter.TokenClaimsConverter;
 import io.camunda.auth.spring.converter.UnprotectedCamundaAuthenticationConverter;
+import io.camunda.auth.spring.handler.AuthFailureHandler;
 import io.camunda.auth.spring.holder.HttpSessionBasedAuthenticationHolder;
 import io.camunda.auth.spring.holder.RequestContextBasedAuthenticationHolder;
 import io.camunda.auth.starter.config.CamundaAuthProperties;
@@ -38,8 +39,15 @@ import org.springframework.security.core.Authentication;
  * chain, and membership resolver.
  */
 @AutoConfiguration
+@ConditionalOnProperty(name = "camunda.auth.method")
 @EnableConfigurationProperties(CamundaAuthProperties.class)
 public class CamundaAuthAutoConfiguration {
+
+  @Bean
+  @ConditionalOnMissingBean
+  public AuthFailureHandler authFailureHandler() {
+    return new AuthFailureHandler();
+  }
 
   @Bean
   @ConditionalOnMissingBean

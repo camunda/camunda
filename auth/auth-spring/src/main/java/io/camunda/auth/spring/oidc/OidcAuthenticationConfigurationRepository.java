@@ -37,4 +37,14 @@ public class OidcAuthenticationConfigurationRepository {
   public Map<String, OidcAuthenticationConfiguration> getOidcAuthenticationConfigurations() {
     return Map.copyOf(configurations);
   }
+
+  public OidcAuthenticationConfiguration getOidcAuthenticationConfigurationById(
+      final String registrationId) {
+    final OidcAuthenticationConfiguration config = configurations.get(registrationId);
+    if (config == null) {
+      throw new IllegalArgumentException(
+          "No OIDC configuration found for registration ID: " + registrationId);
+    }
+    return config;
+  }
 }

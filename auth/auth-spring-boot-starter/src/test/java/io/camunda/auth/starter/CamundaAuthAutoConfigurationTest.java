@@ -25,7 +25,8 @@ class CamundaAuthAutoConfigurationTest {
 
   private final ApplicationContextRunner contextRunner =
       new ApplicationContextRunner()
-          .withConfiguration(AutoConfigurations.of(CamundaAuthAutoConfiguration.class));
+          .withConfiguration(AutoConfigurations.of(CamundaAuthAutoConfiguration.class))
+          .withPropertyValues("camunda.auth.method=oidc");
 
   @Test
   void shouldCreateDefaultBeans() {

@@ -8,6 +8,7 @@
 package io.camunda.auth.starter.config;
 
 import java.util.Map;
+import java.util.Set;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -25,6 +26,8 @@ public class CamundaAuthProperties {
   /** Authentication method: "oidc" or "basic". Defaults to "oidc". */
   private String method = "oidc";
 
+  @NestedConfigurationProperty private final BasicAuthProperties basic = new BasicAuthProperties();
+
   @NestedConfigurationProperty private final OidcProperties oidc = new OidcProperties();
 
   @NestedConfigurationProperty
@@ -37,6 +40,8 @@ public class CamundaAuthProperties {
   @NestedConfigurationProperty
   private final PersistenceProperties persistence = new PersistenceProperties();
 
+  @NestedConfigurationProperty private final SecurityProperties security = new SecurityProperties();
+
   private boolean unprotectedApi = false;
 
   public String getMethod() {
@@ -45,6 +50,10 @@ public class CamundaAuthProperties {
 
   public void setMethod(final String method) {
     this.method = method;
+  }
+
+  public BasicAuthProperties getBasic() {
+    return basic;
   }
 
   public OidcProperties getOidc() {
@@ -67,12 +76,29 @@ public class CamundaAuthProperties {
     return persistence;
   }
 
+  public SecurityProperties getSecurity() {
+    return security;
+  }
+
   public boolean isUnprotectedApi() {
     return unprotectedApi;
   }
 
   public void setUnprotectedApi(final boolean unprotectedApi) {
     this.unprotectedApi = unprotectedApi;
+  }
+
+  public static class BasicAuthProperties {
+    /** Whether secondary storage (database) is available. Required for basic auth. */
+    private boolean secondaryStorageAvailable = false;
+
+    public boolean isSecondaryStorageAvailable() {
+      return secondaryStorageAvailable;
+    }
+
+    public void setSecondaryStorageAvailable(final boolean secondaryStorageAvailable) {
+      this.secondaryStorageAvailable = secondaryStorageAvailable;
+    }
   }
 
   /** Camunda-specific OIDC claim mapping properties. */
@@ -251,6 +277,111 @@ public class CamundaAuthProperties {
 
     public void setIndexPrefix(final String indexPrefix) {
       this.indexPrefix = indexPrefix;
+    }
+  }
+
+  public static class SecurityProperties {
+    private Set<String> unprotectedPaths =
+        Set.of(
+            "/error",
+            "/actuator/**",
+            "/ready",
+            "/health",
+            "/startup",
+            "/post-logout",
+            "/swagger/**",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/favicon.ico");
+
+    private Set<String> apiPaths = Set.of("/api/**", "/v1/**", "/v2/**", "/mcp/**");
+
+    private Set<String> unprotectedApiPaths =
+        Set.of("/v2/license", "/v2/setup/user", "/v2/status", "/v1/external/process/**");
+
+    private Set<String> webappPaths =
+        Set.of("/login/**", "/logout", "/", "/sso-callback/**", "/oauth2/authorization/**");
+
+    private boolean webappEnabled = false;
+
+    private boolean csrfEnabled = true;
+
+    private String csrfTokenName = "X-CSRF-TOKEN";
+
+    private String sessionCookie = "camunda-session";
+
+    private boolean idpLogoutEnabled = true;
+
+    public Set<String> getUnprotectedPaths() {
+      return unprotectedPaths;
+    }
+
+    public void setUnprotectedPaths(final Set<String> unprotectedPaths) {
+      this.unprotectedPaths = unprotectedPaths;
+    }
+
+    public Set<String> getApiPaths() {
+      return apiPaths;
+    }
+
+    public void setApiPaths(final Set<String> apiPaths) {
+      this.apiPaths = apiPaths;
+    }
+
+    public Set<String> getUnprotectedApiPaths() {
+      return unprotectedApiPaths;
+    }
+
+    public void setUnprotectedApiPaths(final Set<String> unprotectedApiPaths) {
+      this.unprotectedApiPaths = unprotectedApiPaths;
+    }
+
+    public Set<String> getWebappPaths() {
+      return webappPaths;
+    }
+
+    public void setWebappPaths(final Set<String> webappPaths) {
+      this.webappPaths = webappPaths;
+    }
+
+    public boolean isWebappEnabled() {
+      return webappEnabled;
+    }
+
+    public void setWebappEnabled(final boolean webappEnabled) {
+      this.webappEnabled = webappEnabled;
+    }
+
+    public boolean isCsrfEnabled() {
+      return csrfEnabled;
+    }
+
+    public void setCsrfEnabled(final boolean csrfEnabled) {
+      this.csrfEnabled = csrfEnabled;
+    }
+
+    public String getCsrfTokenName() {
+      return csrfTokenName;
+    }
+
+    public void setCsrfTokenName(final String csrfTokenName) {
+      this.csrfTokenName = csrfTokenName;
+    }
+
+    public String getSessionCookie() {
+      return sessionCookie;
+    }
+
+    public void setSessionCookie(final String sessionCookie) {
+      this.sessionCookie = sessionCookie;
+    }
+
+    public boolean isIdpLogoutEnabled() {
+      return idpLogoutEnabled;
+    }
+
+    public void setIdpLogoutEnabled(final boolean idpLogoutEnabled) {
+      this.idpLogoutEnabled = idpLogoutEnabled;
     }
   }
 }
