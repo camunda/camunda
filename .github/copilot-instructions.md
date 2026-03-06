@@ -44,11 +44,11 @@ All builds use the Maven wrapper (`./mvnw`). Use `-T1C` for parallel module buil
 ### Module-scoped builds (preferred)
 
 ```bash
-# Build a single module
-./mvnw install -pl <module> -Dquickly -T1C
-
-# Build a module and its dependencies
+# Build a module and its dependencies (recommended for monorepo work)
 ./mvnw install -pl <module> -am -Dquickly -T1C
+
+# Build only a single module (requires dependencies to be already installed and unchanged)
+./mvnw install -pl <module> -Dquickly -T1C
 
 # Run a single test class in a module
 ./mvnw verify -pl <module> -Dtest=MyTestClass -DskipTests=false -DskipITs -Dquickly
@@ -88,7 +88,7 @@ Note: `-Dquickly` skips tests, checks, and Optimize. Add `-DskipTests=false` to 
 
 - Prefix test methods with `should` (e.g., `shouldRejectInvalidInput`).
 - Structure tests with `// given`, `// when`, `// then` comments.
-- Use AssertJ for assertions. Never use JUnit or Hamcrest assertions.
+- Prefer AssertJ for assertions. Avoid introducing new JUnit or Hamcrest assertions unless the surrounding test already uses them.
 - Use [Awaitility](http://www.awaitility.org/) for async waiting. Never use `Thread.sleep`.
 - Use JUnit 5. Migrate JUnit 4 tests when modifying them.
 - Detailed guide: `docs/testing.md` and `docs/testing/`.
@@ -149,8 +149,8 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 ## Before Submitting
 
 1. Format code: `./mvnw license:format spotless:apply -T1C`
-2. Build the changed module: `./mvnw install -pl <module> -Dquickly -T1C`
-3. Run module tests: `./mvnw verify -pl <module> -DskipTests=false -DskipITs -Dquickly -T1C` (add `-DskipUTs` instead of `-DskipITs` for integration tests only)
+2. Build the changed module: `./mvnw install -pl <module> -am -Dquickly -T1C`
+3. Run module tests: `./mvnw verify -pl <module> -am -DskipTests=false -DskipITs -Dquickly -T1C` (add `-DskipUTs` instead of `-DskipITs` for integration tests only)
 4. Verify tests pass (zero failures)
 5. Commit with conventional commit format
 

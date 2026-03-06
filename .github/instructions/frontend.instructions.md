@@ -1,5 +1,5 @@
 ---
-applyTo: "operate/client/**,tasklist/client/**,identity/client/**,optimize/client/**,client-components/**"
+applyTo: "operate/client/**,tasklist/client/**,identity/client/**,optimize/client/**"
 ---
 
 # Frontend Development Conventions
@@ -45,7 +45,7 @@ Note: Identity has minimal unit test setup (`test:unit` script is a no-op).
 ```bash
 yarn install          # Install dependencies
 yarn build            # Build for production
-yarn test             # Run unit tests
+yarn test:ci          # Run unit tests (CI/non-interactive)
 yarn start            # Start dev server
 ```
 
