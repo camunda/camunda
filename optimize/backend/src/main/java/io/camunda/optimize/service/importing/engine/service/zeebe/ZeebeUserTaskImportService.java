@@ -79,6 +79,24 @@ public class ZeebeUserTaskImportService implements ImportService<ZeebeUserTaskRe
     }
   }
 
+  /**
+   * Creates (but does not execute) a {@link DatabaseImportJob} for the given records.
+   *
+   * @return an {@link Optional} containing the prepared import job, or empty if there are no
+   *     relevant records to import.
+   */
+  public Optional<DatabaseImportJob<FlatUserTaskDto>> createImportJob(
+      final List<ZeebeUserTaskRecordDto> zeebeRecords) {
+    if (zeebeRecords.isEmpty()) {
+      return Optional.empty();
+    }
+    final List<FlatUserTaskDto> flatUserTasks = filterAndMapZeebeRecordsToFlatUserTasks(zeebeRecords);
+    if (flatUserTasks.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(createDatabaseImportJob(flatUserTasks, () -> {}));
+  }
+
   @Override
   public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
     return databaseImportJobExecutor;

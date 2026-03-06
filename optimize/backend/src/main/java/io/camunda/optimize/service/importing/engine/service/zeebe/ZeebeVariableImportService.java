@@ -93,6 +93,24 @@ public class ZeebeVariableImportService implements ImportService<ZeebeVariableRe
     }
   }
 
+  /**
+   * Creates (but does not execute) a {@link DatabaseImportJob} for the given records.
+   *
+   * @return an {@link Optional} containing the prepared import job, or empty if there are no
+   *     relevant records to import.
+   */
+  public Optional<DatabaseImportJob<FlatVariableDto>> createImportJob(
+      final List<ZeebeVariableRecordDto> zeebeRecords) {
+    if (zeebeRecords.isEmpty()) {
+      return Optional.empty();
+    }
+    final List<FlatVariableDto> flatVariables = filterAndMapZeebeRecordsToFlatVariables(zeebeRecords);
+    if (flatVariables.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(createDatabaseImportJob(flatVariables, () -> {}));
+  }
+
   @Override
   public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
     return databaseImportJobExecutor;

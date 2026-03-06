@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -144,8 +145,60 @@ public class ZeebeProcessInstanceImportService
     databaseImportJobExecutor.executeImportJob(job);
   }
 
-  @Override
-  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+  /**
+   * Creates (but does not execute) a {@link ZeebeProcessInstanceImportJob} for the given records.
+   *
+   * @return an {@link Optional} containing the prepared import job, or empty if there are no
+   *     relevant records to import.
+   */
+  public Optional<ZeebeProcessInstanceImportJob> createImportJob(
+      final List<ZeebeProcessInstanceRecordDto> zeebeRecords) {
+    if (zeebeRecords.isEmpty()) {
+      return Optional.empty();
+    }
+    final List<ZeebeProcessInstanceRecordDto> filteredRecords =
+        zeebeRecords.stream()
+            .filter(
+                zeebeRecord -> {
+                  final BpmnElementType bpmnElementType =
+                      zeebeRecord.getValue().getBpmnElementType();
+                  return bpmnElementType != null && !TYPES_TO_IGNORE.contains(bpmnElementType);
+                })
+            .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
+            .collect(Collectors.toList());
+    final Map<Long, List<ZeebeProcessInstanceRecordDto>> byProcessInstanceKey =
+        filteredRecords.stream()
+            .collect(Collectors.groupingBy(r -> r.getValue().getProcessInstanceKey()));
+    final List<ProcessInstanceDto> processInstances =
+        byProcessInstanceKey.values().stream()
+            .map(this::createProcessInstanceForData)
+            .filter(
+                pi ->
+                    !pi.getFlowNodeInstances().isEmpty()
+                        || pi.getStartDate() != null
+                        || pi.getEndDate() != null)
+            .collect(Collectors.toList());
+    final List<FlatFlowNodeInstanceDto> flowNodeInstances =
+        byProcessInstanceKey.values().stream()
+            .flatMap(records -> createFlatFlowNodeInstancesForData(records).stream())
+            .collect(Collectors.toList());
+    final List<FlatProcessInstanceDto> flatProcessInstances =
+        processInstances.stream().map(FlatProcessInstanceDto::from).collect(Collectors.toList());
+    if (processInstances.isEmpty() && flowNodeInstances.isEmpty()) {
+      return Optional.empty();
+    }
+    final ZeebeProcessInstanceImportJob job =
+        new ZeebeProcessInstanceImportJob(
+            processInstanceWriter,
+            flowNodeInstanceWriter,
+            configurationService,
+            () -> {},
+            databaseClient,
+            ZEEBE_PROCESS_INSTANCE_INDEX_NAME);
+    job.setFlatProcessInstances(flatProcessInstances);
+    job.setFlowNodeInstances(flowNodeInstances);
+    return Optional.of(job);
+  }
     return databaseImportJobExecutor;
   }
 

@@ -17,6 +17,8 @@ import io.camunda.optimize.dto.zeebe.incident.ZeebeIncidentRecordDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import io.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
 import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
+import io.camunda.optimize.service.importing.DatabaseImportJob;
+import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.mediator.MediatorRank;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeIncidentImportService;
@@ -34,6 +36,7 @@ import io.micrometer.core.instrument.Timer;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -66,6 +69,8 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
   private final ConfigurationService configurationService;
   private final BackoffCalculator idleBackoffCalculator;
   private final BackoffCalculator errorBackoffCalculator = new BackoffCalculator(10, 1000);
+  /** Single executor shared by all import services for this mediator instance. */
+  private final DatabaseImportJobExecutor databaseImportJobExecutor;
 
   public ZeebeCombinedImportMediator(
       final ZeebeRecordImportIndexHandler importIndexHandler,
@@ -86,6 +91,8 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
     this.objectMapper = objectMapper;
     this.configurationService = configurationService;
     this.idleBackoffCalculator = idleBackoffCalculator;
+    this.databaseImportJobExecutor =
+        new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
   }
 
   @Override
@@ -119,18 +126,12 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
 
   @Override
   public boolean hasPendingImportJobs() {
-    return processInstanceImportService.hasPendingImportJobs()
-        || variableImportService.hasPendingImportJobs()
-        || incidentImportService.hasPendingImportJobs()
-        || userTaskImportService.hasPendingImportJobs();
+    return databaseImportJobExecutor.isActive();
   }
 
   @Override
   public void shutdown() {
-    processInstanceImportService.shutdown();
-    variableImportService.shutdown();
-    incidentImportService.shutdown();
-    userTaskImportService.shutdown();
+    databaseImportJobExecutor.shutdown();
   }
 
   @Override
@@ -220,48 +221,44 @@ public class ZeebeCombinedImportMediator implements ImportMediator {
     final List<ZeebeUserTaskRecordDto> userTaskRecords =
         filterAndConvert(records, ValueType.USER_TASK, ZeebeUserTaskRecordDto.class);
 
-    // Count how many non-empty services we will submit to, then fire the combined callback
-    // only after all of them have completed.
-    int pendingServices = 0;
-    if (!processInstanceRecords.isEmpty()) {
-      pendingServices++;
-    }
-    if (!variableRecords.isEmpty()) {
-      pendingServices++;
-    }
-    if (!incidentRecords.isEmpty()) {
-      pendingServices++;
-    }
-    if (!userTaskRecords.isEmpty()) {
-      pendingServices++;
-    }
+    // Ask each service to create its import job (transformation only, no execution)
+    final List<DatabaseImportJob<?>> jobs = new ArrayList<>();
+    processInstanceImportService.createImportJob(processInstanceRecords).ifPresent(jobs::add);
+    variableImportService.createImportJob(variableRecords).ifPresent(jobs::add);
+    incidentImportService.createImportJob(incidentRecords).ifPresent(jobs::add);
+    userTaskImportService.createImportJob(userTaskRecords).ifPresent(jobs::add);
 
-    if (pendingServices == 0) {
+    if (jobs.isEmpty()) {
       allServicesCompleteCallback.run();
       return;
     }
 
-    final AtomicInteger remaining =
-        new AtomicInteger(pendingServices);
-    final Runnable serviceCallback =
-        () -> {
-          if (remaining.decrementAndGet() == 0) {
-            allServicesCompleteCallback.run();
-          }
-        };
+    // Submit all collected jobs to the single executor; invoke the page-level callback once all
+    // jobs have completed.
+    final AtomicInteger remaining = new AtomicInteger(jobs.size());
+    for (final DatabaseImportJob<?> job : jobs) {
+      databaseImportJobExecutor.executeImportJob(
+          wrapWithCallback(
+              job,
+              () -> {
+                if (remaining.decrementAndGet() == 0) {
+                  allServicesCompleteCallback.run();
+                }
+              }));
+    }
+  }
 
-    if (!processInstanceRecords.isEmpty()) {
-      processInstanceImportService.executeImport(processInstanceRecords, serviceCallback);
-    }
-    if (!variableRecords.isEmpty()) {
-      variableImportService.executeImport(variableRecords, serviceCallback);
-    }
-    if (!incidentRecords.isEmpty()) {
-      incidentImportService.executeImport(incidentRecords, serviceCallback);
-    }
-    if (!userTaskRecords.isEmpty()) {
-      userTaskImportService.executeImport(userTaskRecords, serviceCallback);
-    }
+  /**
+   * Wraps a {@link DatabaseImportJob} in a {@link Runnable} that runs the job and then invokes the
+   * given callback. This is needed because {@link DatabaseImportJob} stores its callback at
+   * construction time, but here the callback is a per-batch counter lambda created by the mediator.
+   */
+  private Runnable wrapWithCallback(
+      final DatabaseImportJob<?> job, final Runnable completionCallback) {
+    return () -> {
+      job.run();
+      completionCallback.run();
+    };
   }
 
   private <T> List<T> filterAndConvert(

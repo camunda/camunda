@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -65,6 +66,26 @@ public class ZeebeIncidentImportService implements ImportService<ZeebeIncidentRe
           createDatabaseImportJob(flatIncidents, importCompleteCallback);
       databaseImportJobExecutor.executeImportJob(importJob);
     }
+  }
+
+  /**
+   * Creates (but does not execute) a {@link DatabaseImportJob} for the given records. The mediator
+   * is responsible for submitting the returned job to its own {@link DatabaseImportJobExecutor}.
+   *
+   * @return an {@link Optional} containing the prepared import job, or empty if there are no
+   *     relevant records to import.
+   */
+  public Optional<DatabaseImportJob<FlatIncidentDto>> createImportJob(
+      final List<ZeebeIncidentRecordDto> zeebeRecords) {
+    if (zeebeRecords.isEmpty()) {
+      return Optional.empty();
+    }
+    final List<FlatIncidentDto> flatIncidents =
+        filterAndMapZeebeRecordsToFlatIncidents(zeebeRecords);
+    if (flatIncidents.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(createDatabaseImportJob(flatIncidents, () -> {}));
   }
 
   @Override
