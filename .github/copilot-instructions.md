@@ -160,3 +160,11 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `perf`, `refactor`, `style`
 4. Verify tests pass (zero failures)
 5. Commit with conventional commit format
 
+## Scoped Instructions
+
+Additional instruction files are auto-loaded when you edit matching paths:
+
+- CI/workflow files (`*.yml` in `.github/`) → `.github/instructions/ci-workflows.instructions.md`
+- Frontend code (`client/` directories) → `.github/instructions/frontend.instructions.md`
+- MCP gateway (`gateways/mcp/`) → `.github/instructions/gateway-mcp-tools.instructions.md`
+
