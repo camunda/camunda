@@ -19,15 +19,24 @@ import static io.camunda.process.test.api.judge.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.anthropic.AnthropicChatModel;
 import dev.langchain4j.model.chat.ChatModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class AnthropicChatModelBuilder {
+
+  private static final Logger LOG = LoggerFactory.getLogger(AnthropicChatModelBuilder.class);
 
   private AnthropicChatModelBuilder() {}
 
   static ChatModel build(final JudgeConfigBootstrapData data) {
+    LOG.debug("Building Anthropic chat model");
+
     final String model = require(data.getModel(), "model", "anthropic");
     final String apiKey = require(data.getApiKey(), "apiKey", "anthropic");
 
-    return AnthropicChatModel.builder().apiKey(apiKey).modelName(model).build();
+    final ChatModel chatModel =
+        AnthropicChatModel.builder().apiKey(apiKey).modelName(model).build();
+    LOG.debug("Successfully built Anthropic chat model with model '{}'", model);
+    return chatModel;
   }
 }
