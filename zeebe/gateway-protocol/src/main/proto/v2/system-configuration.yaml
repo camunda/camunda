@@ -6,6 +6,7 @@ paths:
       tags:
         - System
       operationId: getJobMetricsConfiguration
+      x-eventually-consistent: true
       summary: Job metrics configuration
       description: |
         Returns the current configuration for job metrics collection and export.
