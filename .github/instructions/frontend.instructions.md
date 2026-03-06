@@ -9,7 +9,7 @@ The webapps (Operate, Tasklist, Identity, Optimize) each have a separate fronten
 
 ## Tech Stack
 
-- React, TypeScript, Vite, Carbon Design System (`@carbon/react`)
+- React 18, TypeScript 5, Vite 5, Carbon Design System v11 (`@carbon/react`)
 - Testing: Vitest (Operate, Tasklist), react-scripts (Optimize legacy)
 - Linting: ESLint, Prettier; Tasklist also uses Stylelint
 - E2E: Playwright (Operate, Tasklist)
