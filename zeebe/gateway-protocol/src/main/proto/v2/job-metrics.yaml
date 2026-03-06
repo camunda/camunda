@@ -114,6 +114,39 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
+  /jobs/statistics/time-series:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Job
+      operationId: getJobTimeSeriesStatistics
+      summary: Get time-series metrics for a job type
+      description: |
+        Returns a list of time-bucketed metrics ordered ascending by time.
+        The `from` and `to` fields select the time window of interest.
+        Each item in the response corresponds to one time bucket of the requested resolution.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobTimeSeriesStatisticsQuery'
+      responses:
+        "200":
+          description: The job time-series statistics result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobTimeSeriesStatisticsQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
 ## Schema definitions
 
 components:
@@ -308,3 +341,84 @@ components:
           $ref: '#/components/schemas/StatusMetric'
         failed:
           $ref: '#/components/schemas/StatusMetric'
+
+    JobTimeSeriesStatisticsQuery:
+      description: Job time-series statistics query.
+      type: object
+      required:
+        - filter
+      properties:
+        filter:
+          $ref: '#/components/schemas/JobTimeSeriesStatisticsFilter'
+        page:
+          description: Search cursor pagination.
+          allOf:
+            - $ref: 'search-models.yaml#/components/schemas/CursorForwardPagination'
+
+    JobTimeSeriesStatisticsFilter:
+      description: Job time-series statistics search filter.
+      type: object
+      required:
+        - from
+        - to
+        - jobType
+      properties:
+        from:
+          description: |
+            Start of the time window to filter metrics. ISO 8601 date-time format.
+          type: string
+          format: date-time
+          example: "2024-07-28T15:51:28.071Z"
+        to:
+          description: |
+            End of the time window to filter metrics. ISO 8601 date-time format.
+          type: string
+          format: date-time
+          example: "2024-07-29T15:51:28.071Z"
+        jobType:
+          description: Job type to return time-series metrics for.
+          type: string
+          example: "fetch-customer-data"
+        resolution:
+          description: |
+            Time bucket resolution as an ISO 8601 duration (for example `PT1M` for 1 minute,
+            `PT1H` for 1 hour). If omitted, the server chooses a sensible default.
+          type: string
+          example: "PT1M"
+
+    JobTimeSeriesStatisticsQueryResult:
+      description: Job time-series statistics query result.
+      type: object
+      required:
+        - items
+        - page
+      allOf:
+        - $ref: "search-models.yaml#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The list of time-bucketed statistics items, ordered ascending by time.
+          type: array
+          items:
+            $ref: '#/components/schemas/JobTimeSeriesStatisticsItem'
+
+    JobTimeSeriesStatisticsItem:
+      description: Aggregated job metrics for a single time bucket.
+      type: object
+      required:
+        - time
+        - created
+        - completed
+        - failed
+      properties:
+        time:
+          description: ISO 8601 timestamp representing the start of this time bucket.
+          type: string
+          format: date-time
+          example: "2024-07-29T15:51:00.000Z"
+        created:
+          $ref: '#/components/schemas/StatusMetric'
+        completed:
+          $ref: '#/components/schemas/StatusMetric'
+        failed:
+          $ref: '#/components/schemas/StatusMetric'
+

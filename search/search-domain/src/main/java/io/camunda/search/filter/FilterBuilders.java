@@ -367,6 +367,17 @@ public final class FilterBuilders {
     return fn.apply(jobWorkerStatistics()).build();
   }
 
+  public static JobTimeSeriesStatisticsFilter.Builder jobTimeSeriesStatistics() {
+    return new JobTimeSeriesStatisticsFilter.Builder();
+  }
+
+  public static JobTimeSeriesStatisticsFilter jobTimeSeriesStatistics(
+      final Function<
+              JobTimeSeriesStatisticsFilter.Builder, ObjectBuilder<JobTimeSeriesStatisticsFilter>>
+          fn) {
+    return fn.apply(jobTimeSeriesStatistics()).build();
+  }
+
   public static GlobalListenerFilter.Builder globalListener() {
     return new GlobalListenerFilter.Builder();
   }

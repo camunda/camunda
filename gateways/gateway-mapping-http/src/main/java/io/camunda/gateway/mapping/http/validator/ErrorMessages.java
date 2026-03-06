@@ -11,6 +11,8 @@ public final class ErrorMessages {
 
   public static final String ERROR_MESSAGE_DATE_PARSING =
       "The provided %s '%s' cannot be parsed as a date according to RFC 3339, section 5.6";
+  public static final String ERROR_MESSAGE_DURATION_PARSING =
+      "The provided %s '%s' cannot be parsed as a duration according to ISO 8601 (e.g. PT1M, PT1H)";
   public static final String ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET =
       """
       No update data provided. Provide at least an "action" or a non-null value \
