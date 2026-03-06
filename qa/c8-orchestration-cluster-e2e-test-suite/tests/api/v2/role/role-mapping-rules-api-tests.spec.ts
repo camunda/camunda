@@ -14,9 +14,9 @@ import {
   assertNotFoundRequest,
   assertConflictRequest,
   assertPaginatedRequest,
-  assertRequiredFields,
   assertEqualsForKeys,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   assignRolesToMappingRules,
@@ -166,6 +166,14 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
           buildUrl('/roles/{roleId}/mapping-rules/search', p),
           {headers: jsonHeaders(), data: {}},
         );
+        await validateResponse(
+          {
+            path: '/roles/{roleId}/mapping-rules/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         await assertPaginatedRequest(res, {
           totalItemsEqualTo: 0,
           itemsLengthEqualTo: 0,
@@ -234,17 +242,24 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
         buildUrl('/roles/{roleId}/mapping-rules/search', p),
         {headers: jsonHeaders(), data: {}},
       );
+      await validateResponse(
+        {
+          path: '/roles/{roleId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 2,
         totalItemsEqualTo: 2,
       });
       const json = await res.json();
+      
       const matchingItem1 = json.items.find(
         (it: {mappingRuleId: string}) => it.mappingRuleId === mappingRule1,
       );
-
       expect(matchingItem1).toBeDefined();
-      assertRequiredFields(matchingItem1, mappingRuleRequiredFields);
       assertEqualsForKeys(
         matchingItem1,
         MAPPING_RULE_EXPECTED_BODY_USING_STATE('roleId2', state, 1),
@@ -255,7 +270,6 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
         (it: {mappingRuleId: string}) => it.mappingRuleId === mappingRule2,
       );
       expect(matchingItem2).toBeDefined();
-      assertRequiredFields(matchingItem2, mappingRuleRequiredFields);
       assertEqualsForKeys(
         matchingItem2,
         MAPPING_RULE_EXPECTED_BODY_USING_STATE('roleId2', state, 2),
@@ -279,13 +293,20 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
         buildUrl('/roles/{roleId}/mapping-rules/search', p),
         {headers: jsonHeaders(), data: filterBody},
       );
+      await validateResponse(
+        {
+          path: '/roles/{roleId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
       });
       const json = await res.json();
       const item = json.items[0];
-      assertRequiredFields(item, mappingRuleRequiredFields);
       assertEqualsForKeys(
         item,
         MAPPING_RULE_EXPECTED_BODY_USING_STATE('roleId2', state, 1),
@@ -307,13 +328,20 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
         buildUrl('/roles/{roleId}/mapping-rules/search', p),
         {headers: jsonHeaders(), data: filterBody},
       );
+      await validateResponse(
+        {
+          path: '/roles/{roleId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
       });
       const json = await res.json();
       const item = json.items[0];
-      assertRequiredFields(item, mappingRuleRequiredFields);
       assertEqualsForKeys(
         item,
         MAPPING_RULE_EXPECTED_BODY_USING_STATE('roleId2', state, 2),
@@ -338,13 +366,20 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
         buildUrl('/roles/{roleId}/mapping-rules/search', p),
         {headers: jsonHeaders(), data: filterBody},
       );
+      await validateResponse(
+        {
+          path: '/roles/{roleId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
       });
       const json = await res.json();
       const item = json.items[0];
-      assertRequiredFields(item, mappingRuleRequiredFields);
       assertEqualsForKeys(
         item,
         MAPPING_RULE_EXPECTED_BODY_USING_STATE('roleId2', state, 2),
@@ -368,6 +403,14 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
         buildUrl('/roles/{roleId}/mapping-rules/search', p),
         {headers: jsonHeaders(), data: body},
       );
+      await validateResponse(
+        {
+          path: '/roles/{roleId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 0,
         totalItemsEqualTo: 0,
@@ -386,6 +429,14 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
       const res = await request.post(
         buildUrl('/roles/{roleId}/mapping-rules/search', p),
         {headers: jsonHeaders(), data: {}},
+      );
+      await validateResponse(
+        {
+          path: '/roles/{roleId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
       );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 0,
@@ -408,6 +459,14 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
     const res = await request.post(
       buildUrl('/roles/{roleId}/mapping-rules/search', p),
       {headers: jsonHeaders(), data: {}},
+    );
+    await validateResponse(
+      {
+        path: '/roles/{roleId}/mapping-rules/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
     );
     await assertPaginatedRequest(res, {
       itemsLengthEqualTo: 0,

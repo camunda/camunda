@@ -15,8 +15,9 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {createInstances, deploy} from '../../../../utils/zeebeClient';
-import {validateResponseShape} from '../../../../json-body-assertions';
+import {validateResponse, validateResponseShape} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
+import path from 'path';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Create Process Instance Batch to Cancel Tests', () => {
@@ -72,6 +73,14 @@ test.describe.parallel('Create Process Instance Batch to Cancel Tests', () => {
           },
         );
         await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/process-instances/cancellation',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
         validateResponseShape(
           {

@@ -10,7 +10,6 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   defaultHeaders,
   assertEqualsForKeys,
   assertUnauthorizedRequest,
@@ -19,6 +18,7 @@ import {
   assertNotFoundRequest,
   assertForbiddenRequest,
 } from '../../../utils/http';
+import {validateResponse} from '../../../json-body-assertions';
 import {
   CREATE_DOC_INVALID_REQUEST,
   CREATE_DOCUMENT_LINK_REQUEST,
@@ -27,9 +27,12 @@ import {
   CREATE_TXT_DOC_RESPONSE_BODY,
   CREATE_TXT_DOC_RESPONSE_WITH_METADATA,
   CREATE_TXT_DOCUMENT_REQUEST,
+<<<<<<< HEAD
   documentFileContent,
   documentRequiredFields,
   multipleDocumentsRequiredFields,
+=======
+>>>>>>> 90660708 (test: remove assertRequiredFields calls)
 } from '../../../utils/beans/requestBeans';
 import {
   defaultAssertionOptions,
@@ -61,8 +64,15 @@ test.describe.parallel('Document API Tests', () => {
       });
 
       expect(res.status()).toBe(201);
+      await validateResponse(
+        {
+          path: '/documents',
+          method: 'POST',
+          status: '201',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, documentRequiredFields);
       state[`documentId${nth}`] = json.documentId;
       state[`contentHash${nth}`] = json.contentHash;
       state[`storeId${nth}`] = json.storeId;
@@ -147,8 +157,15 @@ test.describe.parallel('Document API Tests', () => {
     });
 
     expect(res.status()).toBe(201);
+    await validateResponse(
+      {
+        path: '/documents',
+        method: 'POST',
+        status: '201',
+      },
+      res,
+    );
     const json = await res.json();
-    assertRequiredFields(json, documentRequiredFields);
     assertEqualsForKeys(json, expectedPostBody, responseKeys);
   });
 
@@ -167,8 +184,15 @@ test.describe.parallel('Document API Tests', () => {
     );
 
     expect(res.status()).toBe(201);
+    await validateResponse(
+      {
+        path: '/documents',
+        method: 'POST',
+        status: '201',
+      },
+      res,
+    );
     const json = await res.json();
-    assertRequiredFields(json, documentRequiredFields);
     assertEqualsForKeys(json, expectedPostBody, responseKeys);
     expect(json.documentId).toBe(uniqueId);
     expect(json.storeId).toBe(storeId);
@@ -194,8 +218,15 @@ test.describe.parallel('Document API Tests', () => {
     });
 
     expect(res.status()).toBe(201);
+    await validateResponse(
+      {
+        path: '/documents',
+        method: 'POST',
+        status: '201',
+      },
+      res,
+    );
     const json = await res.json();
-    assertRequiredFields(json, documentRequiredFields);
     assertEqualsForKeys(json, expectedPostBody, responseKeys);
   });
 
@@ -328,8 +359,15 @@ test.describe.parallel('Document API Tests', () => {
       });
 
       expect(res.status()).toBe(201);
+      await validateResponse(
+        {
+          path: '/documents/batch',
+          method: 'POST',
+          status: '201',
+        },
+        res,
+      );
       json = await res.json();
-      assertRequiredFields(json, multipleDocumentsRequiredFields);
       expect(json['createdDocuments']).toHaveLength(2);
       expect(json['failedDocuments']).toHaveLength(0);
     });

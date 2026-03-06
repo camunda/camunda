@@ -16,6 +16,7 @@ import {
   assertPaginatedRequest,
   assertStatusCode,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {
   defaultAssertionOptions,
   generateUniqueId,
@@ -149,6 +150,14 @@ test.describe.parallel('Tenant Users API Tests', () => {
         buildUrl('/tenants/{tenantId}/users/search', p),
         {headers: jsonHeaders(), data: {}},
       );
+      await validateResponse(
+        {
+          path: '/tenants/{tenantId}/users/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         totalItemsEqualTo: 3,
         itemsLengthEqualTo: 3,
@@ -177,6 +186,14 @@ test.describe.parallel('Tenant Users API Tests', () => {
       {headers: jsonHeaders(), data: {}},
     );
 
+    await validateResponse(
+      {
+        path: '/tenants/{tenantId}/users/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     await assertPaginatedRequest(res, {
       totalItemsEqualTo: 0,
       itemsLengthEqualTo: 0,
@@ -206,6 +223,14 @@ test.describe.parallel('Tenant Users API Tests', () => {
         const res = await request.post(
           buildUrl('/tenants/{tenantId}/users/search', p),
           {headers: jsonHeaders(), data: {}},
+        );
+        await validateResponse(
+          {
+            path: '/tenants/{tenantId}/users/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
         );
         await assertPaginatedRequest(res, {
           totalItemsEqualTo: 0,
