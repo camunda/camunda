@@ -286,6 +286,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       final Instant startTime = Instant.now();
 
       camundaManagementClient.purgeCluster();
+      camundaManagementClient.awaitClusterReadiness();
+
       final Instant endTime = Instant.now();
       final Duration duration = Duration.between(startTime, endTime);
       LOG.debug("Runtime data deleted in {}", duration);
