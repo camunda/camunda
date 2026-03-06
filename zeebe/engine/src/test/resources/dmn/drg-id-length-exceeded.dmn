@@ -5,7 +5,7 @@
   xmlns:biodi="http://bpmn.io/schema/dmn/biodi/2.0"
   xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/"
   xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
-  id="this_is_an_extreme_and_very_long_id_for_a_decision_requirements_graph" name="force_users" namespace="http://camunda.org/schema/1.0/dmn"
+  id="this_is_an_extremely_creative_and_very_long_id_for_a_decision_but_it_is_worth_it_because_we_need_it_for_a_test" name="force_users" namespace="http://camunda.org/schema/1.0/dmn"
   exporter="Camunda Modeler" exporterVersion="4.12.0">
   <decision id="jedi_or_sith" name="Jedi or Sith">
     <extensionElements>
