@@ -10,7 +10,7 @@ The webapps (Operate, Tasklist, Identity, Optimize) each have a separate fronten
 ## Tech Stack
 
 - React, TypeScript, Vite, Carbon Design System (`@carbon/react`)
-- Testing: Vitest (Operate, Tasklist, Identity), react-scripts (Optimize legacy)
+- Testing: Vitest (Operate, Tasklist), react-scripts (Optimize legacy)
 - Linting: ESLint, Prettier; Tasklist also uses Stylelint
 - E2E: Playwright (Operate, Tasklist)
 - Package manager: npm (Operate, Tasklist, Identity), Yarn (Optimize)
@@ -19,7 +19,7 @@ The webapps (Operate, Tasklist, Identity, Optimize) each have a separate fronten
 
 Run these from the respective `client/` directory.
 
-### Operate, Tasklist, Identity (npm)
+### Operate, Tasklist (npm)
 
 ```bash
 npm ci                # Install dependencies
@@ -28,6 +28,17 @@ npm run test          # Run unit tests
 npm run lint          # Lint (ESLint + TypeScript check)
 npm run start         # Start dev server
 ```
+
+### Identity (npm)
+
+```bash
+npm ci                # Install dependencies
+npm run build         # Build for production
+npm run lint          # Lint (ESLint + TypeScript check)
+npm run dev           # Start dev server
+```
+
+Note: Identity has minimal unit test setup (`test:unit` script is a no-op).
 
 ### Optimize (Yarn)
 
