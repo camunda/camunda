@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.system;
 
 import io.camunda.gateway.protocol.model.JobMetricsConfigurationResponse;
+import io.camunda.gateway.protocol.model.SystemConfigurationResponse;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
@@ -25,10 +26,10 @@ public class SystemConfigurationController {
     this.gatewayRestConfiguration = gatewayRestConfiguration;
   }
 
-  @CamundaGetMapping(path = "/job-metrics")
-  public ResponseEntity<JobMetricsConfigurationResponse> getJobMetricsConfiguration() {
+  @CamundaGetMapping
+  public ResponseEntity<SystemConfigurationResponse> getSystemConfiguration() {
     final JobMetricsConfiguration jobMetricsCfg = gatewayRestConfiguration.getJobMetrics();
-    final var response =
+    final var jobMetricsResponse =
         new JobMetricsConfigurationResponse()
             .enabled(jobMetricsCfg.isEnabled())
             .exportInterval(jobMetricsCfg.getExportInterval().toString())
@@ -36,6 +37,7 @@ public class SystemConfigurationController {
             .maxJobTypeLength(jobMetricsCfg.getMaxJobTypeLength())
             .maxTenantIdLength(jobMetricsCfg.getMaxTenantIdLength())
             .maxUniqueKeys(jobMetricsCfg.getMaxUniqueKeys());
+    final var response = new SystemConfigurationResponse().jobMetrics(jobMetricsResponse);
     return ResponseEntity.ok(response);
   }
 }
