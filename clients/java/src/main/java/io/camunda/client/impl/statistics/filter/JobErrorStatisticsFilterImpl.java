@@ -16,38 +16,50 @@
 package io.camunda.client.impl.statistics.filter;
 
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.api.statistics.filter.JobTypeStatisticsFilter;
+import io.camunda.client.api.statistics.filter.JobErrorStatisticsFilter;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import java.util.function.Consumer;
 
-public class JobTypeStatisticsFilterImpl
+public class JobErrorStatisticsFilterImpl
     extends TypedSearchRequestPropertyProvider<
-        io.camunda.client.protocol.rest.JobTypeStatisticsFilter>
-    implements JobTypeStatisticsFilter {
+        io.camunda.client.protocol.rest.JobErrorStatisticsFilter>
+    implements JobErrorStatisticsFilter {
 
-  private final io.camunda.client.protocol.rest.JobTypeStatisticsFilter filter;
+  private final io.camunda.client.protocol.rest.JobErrorStatisticsFilter filter;
 
-  public JobTypeStatisticsFilterImpl() {
-    filter = new io.camunda.client.protocol.rest.JobTypeStatisticsFilter();
+  public JobErrorStatisticsFilterImpl() {
+    filter = new io.camunda.client.protocol.rest.JobErrorStatisticsFilter();
   }
 
   @Override
-  public JobTypeStatisticsFilter jobType(final String jobType) {
-    jobType(b -> b.eq(jobType));
-    return this;
+  public JobErrorStatisticsFilter errorCode(final String errorCode) {
+    return errorCode(b -> b.eq(errorCode));
   }
 
   @Override
-  public JobTypeStatisticsFilter jobType(final Consumer<StringProperty> fn) {
+  public JobErrorStatisticsFilter errorCode(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setJobType(provideSearchRequestProperty(property));
+    filter.setErrorCode(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
-  protected io.camunda.client.protocol.rest.JobTypeStatisticsFilter getSearchRequestProperty() {
+  public JobErrorStatisticsFilter errorMessage(final String errorMessage) {
+    return errorMessage(b -> b.eq(errorMessage));
+  }
+
+  @Override
+  public JobErrorStatisticsFilter errorMessage(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setErrorMessage(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  protected io.camunda.client.protocol.rest.JobErrorStatisticsFilter getSearchRequestProperty() {
     return filter;
   }
 }
