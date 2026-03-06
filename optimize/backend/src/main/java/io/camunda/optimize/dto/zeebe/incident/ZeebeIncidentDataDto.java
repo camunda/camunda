@@ -28,6 +28,7 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
   private ErrorType errorType;
   private long variableScopeKey;
   private String tenantId;
+  private int ordinal;
 
   public ZeebeIncidentDataDto() {}
 
@@ -56,18 +57,13 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
   }
 
   @Override
-  public String getBpmnProcessId() {
-    return bpmnProcessId;
+  public long getProcessInstanceKey() {
+    return processInstanceKey;
   }
 
   @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKey;
-  }
-
-  @Override
-  public long getProcessInstanceKey() {
-    return processInstanceKey;
   }
 
   @Override
@@ -78,6 +74,11 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
   @Override
   public long getElementInstanceKey() {
     return elementInstanceKey;
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
   }
 
   @Override
@@ -113,12 +114,25 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
     return -1L; // Not used in Optimize
   }
 
+  @Override
+  public int getOrdinal() {
+    return ordinal;
+  }
+
+  public void setOrdinal(final int ordinal) {
+    this.ordinal = ordinal;
+  }
+
   public void setVariableScopeKey(final long variableScopeKey) {
     this.variableScopeKey = variableScopeKey;
   }
 
   public void setJobKey(final long jobKey) {
     this.jobKey = jobKey;
+  }
+
+  public void setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
   }
 
   public void setElementInstanceKey(final long elementInstanceKey) {
@@ -129,16 +143,12 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
     this.elementId = elementId;
   }
 
-  public void setProcessInstanceKey(final long processInstanceKey) {
-    this.processInstanceKey = processInstanceKey;
-  }
-
   public void setProcessDefinitionKey(final long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
   }
 
-  public void setBpmnProcessId(final String bpmnProcessId) {
-    this.bpmnProcessId = bpmnProcessId;
+  public void setProcessInstanceKey(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
   }
 
   public void setErrorMessage(final String errorMessage) {

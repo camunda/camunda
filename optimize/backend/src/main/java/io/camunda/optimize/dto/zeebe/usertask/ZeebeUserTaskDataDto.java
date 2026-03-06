@@ -41,6 +41,7 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
   private Map<String, String> customHeaders;
   private long creationTimestamp;
   private Set<String> tags;
+  private int ordinal;
 
   public ZeebeUserTaskDataDto() {}
 
@@ -156,6 +157,15 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
     return -1L; // not used in Optimize
   }
 
+  @Override
+  public int getOrdinal() {
+    return ordinal;
+  }
+
+  public void setOrdinal(final int ordinal) {
+    this.ordinal = ordinal;
+  }
+
   public void setTags(final Set<String> tags) {
     this.tags = tags;
   }
@@ -260,6 +270,32 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(
+        userTaskKey,
+        assignee,
+        candidateGroupsList,
+        candidateUsersList,
+        dueDate,
+        elementId,
+        elementInstanceKey,
+        bpmnProcessId,
+        processDefinitionVersion,
+        processDefinitionKey,
+        processInstanceKey,
+        tenantId,
+        changedAttributes,
+        variables,
+        followUpDate,
+        formKey,
+        action,
+        externalFormReference,
+        customHeaders,
+        creationTimestamp,
+        tags);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (o == null || getClass() != o.getClass()) {
       return false;
@@ -286,32 +322,6 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
         && Objects.equals(externalFormReference, that.externalFormReference)
         && Objects.equals(customHeaders, that.customHeaders)
         && Objects.equals(tags, that.tags);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        userTaskKey,
-        assignee,
-        candidateGroupsList,
-        candidateUsersList,
-        dueDate,
-        elementId,
-        elementInstanceKey,
-        bpmnProcessId,
-        processDefinitionVersion,
-        processDefinitionKey,
-        processInstanceKey,
-        tenantId,
-        changedAttributes,
-        variables,
-        followUpDate,
-        formKey,
-        action,
-        externalFormReference,
-        customHeaders,
-        creationTimestamp,
-        tags);
   }
 
   @Override

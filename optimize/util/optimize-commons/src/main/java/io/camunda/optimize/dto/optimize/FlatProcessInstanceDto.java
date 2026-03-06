@@ -152,18 +152,18 @@ public class FlatProcessInstanceDto implements OptimizeDto {
 
   public static final class Fields {
 
-    public static final String processDefinitionKey = "processDefinitionKey";
-    public static final String processDefinitionVersion = "processDefinitionVersion";
-    public static final String processDefinitionId = "processDefinitionId";
-    public static final String processInstanceId = "processInstanceId";
-    public static final String businessKey = "businessKey";
-    public static final String startDate = "startDate";
-    public static final String endDate = "endDate";
-    public static final String duration = "duration";
-    public static final String state = "state";
-    public static final String dataSource = "dataSource";
-    public static final String tenantId = "tenantId";
-    public static final String partition = "partition";
+    public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
+    public static final String PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
+    public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
+    public static final String PROCESS_INSTANCE_ID = "processInstanceId";
+    public static final String BUSINESS_KEY = "businessKey";
+    public static final String START_DATE = "startDate";
+    public static final String END_DATE = "endDate";
+    public static final String DURATION = "duration";
+    public static final String STATE = "state";
+    public static final String DATA_SOURCE = "dataSource";
+    public static final String TENANT_ID = "tenantId";
+    public static final String PARTITION = "partition";
 
     private Fields() {}
   }
