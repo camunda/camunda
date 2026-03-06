@@ -90,7 +90,8 @@ class ResponseValidationSpringMvcIntegrationTest {
                 final String detailStr = (String) detail;
                 org.assertj.core.api.Assertions.assertThat(detailStr)
                     .contains("licenseType")
-                    .contains("must not be null");
+                    .contains("must not be null")
+                    .contains("(was: null)");
               });
     }
 
@@ -113,7 +114,8 @@ class ResponseValidationSpringMvcIntegrationTest {
                 org.assertj.core.api.Assertions.assertThat(detailStr)
                     .contains("validLicense")
                     .contains("licenseType")
-                    .contains("isCommercial");
+                    .contains("isCommercial")
+                    .contains("(was: null)");
               });
     }
 
