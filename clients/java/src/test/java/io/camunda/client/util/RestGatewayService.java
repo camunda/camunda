@@ -39,6 +39,7 @@ import io.camunda.client.protocol.rest.EvaluateConditionalResult;
 import io.camunda.client.protocol.rest.EvaluateDecisionResult;
 import io.camunda.client.protocol.rest.ExpressionEvaluationResult;
 import io.camunda.client.protocol.rest.FormResult;
+import io.camunda.client.protocol.rest.GlobalJobStatisticsQueryResult;
 import io.camunda.client.protocol.rest.GroupCreateResult;
 import io.camunda.client.protocol.rest.GroupResult;
 import io.camunda.client.protocol.rest.GroupUpdateResult;
@@ -46,6 +47,9 @@ import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByDefini
 import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByErrorQueryResult;
 import io.camunda.client.protocol.rest.IncidentResult;
 import io.camunda.client.protocol.rest.JobActivationResult;
+import io.camunda.client.protocol.rest.JobTimeSeriesStatisticsQueryResult;
+import io.camunda.client.protocol.rest.JobTypeStatisticsQueryResult;
+import io.camunda.client.protocol.rest.JobWorkerStatisticsQueryResult;
 import io.camunda.client.protocol.rest.MappingRuleCreateResult;
 import io.camunda.client.protocol.rest.MappingRuleResult;
 import io.camunda.client.protocol.rest.MappingRuleUpdateResult;
@@ -479,24 +483,27 @@ public class RestGatewayService {
     registerPost(RestGatewayPaths.getIncidentProcessInstanceStatisticsByDefinitionUrl(), response);
   }
 
-  public void onGlobalJobStatisticsRequest(
-      final io.camunda.client.protocol.rest.GlobalJobStatisticsQueryResult response) {
+  public void onGlobalJobStatisticsRequest(final GlobalJobStatisticsQueryResult response) {
     register(
         WireMock.get(WireMock.urlPathEqualTo(RestGatewayPaths.getGlobalJobStatisticsUrl())),
         response);
   }
 
-  public void onJobTypeStatisticsRequest(
-      final io.camunda.client.protocol.rest.JobTypeStatisticsQueryResult response) {
+  public void onJobTypeStatisticsRequest(final JobTypeStatisticsQueryResult response) {
     register(
         WireMock.post(WireMock.urlPathEqualTo(RestGatewayPaths.getJobTypeStatisticsUrl())),
         response);
   }
 
-  public void onJobWorkerStatisticsRequest(
-      final io.camunda.client.protocol.rest.JobWorkerStatisticsQueryResult response) {
+  public void onJobWorkerStatisticsRequest(final JobWorkerStatisticsQueryResult response) {
     register(
         WireMock.post(WireMock.urlPathEqualTo(RestGatewayPaths.getJobWorkerStatisticsUrl())),
+        response);
+  }
+
+  public void onJobTimeSeriesStatisticsRequest(final JobTimeSeriesStatisticsQueryResult response) {
+    register(
+        WireMock.post(WireMock.urlPathEqualTo(RestGatewayPaths.getJobTimeSeriesStatisticsUrl())),
         response);
   }
 
