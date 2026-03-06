@@ -48,7 +48,7 @@ public class UserTaskWriter {
 
     final Set<String> combinedKeys =
         userTasks.stream()
-            .map(t -> combinedKey(t.getProcessDefinitionKey(), t.getOrdinal()))
+            .map(t -> ordinalCache.combinedIndexKey(t.getProcessDefinitionKey(), t.getOrdinal()))
             .collect(Collectors.toSet());
     indexRepository.createMissingIndices(
         FLAT_USER_TASK_INDEX, Set.of(FLAT_USER_TASK_MULTI_ALIAS), combinedKeys);
@@ -62,8 +62,7 @@ public class UserTaskWriter {
       final FlatUserTaskDto userTask, final String importItemName) {
     final String indexName =
         getFlatUserTaskIndexAliasName(
-            userTask.getProcessDefinitionKey(),
-            ordinalCache.getTickString(userTask.getOrdinal()));
+            userTask.getProcessDefinitionKey(), ordinalCache.getTickString(userTask.getOrdinal()));
     if (userTask.isNew()) {
       return ImportRequestDto.builder()
           .importName(importItemName)
@@ -99,9 +98,5 @@ public class UserTaskWriter {
           .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
           .build();
     }
-  }
-
-  private String combinedKey(final String processDefinitionKey, final int ordinal) {
-    return processDefinitionKey + "-" + ordinalCache.getTickString(ordinal);
   }
 }

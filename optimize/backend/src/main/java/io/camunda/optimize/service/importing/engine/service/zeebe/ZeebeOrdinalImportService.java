@@ -72,7 +72,15 @@ public class ZeebeOrdinalImportService {
       if (rawOrdinal == null) {
         continue;
       }
-      final int ordinalValue = toInt(rawOrdinal);
+      final int ordinalValue;
+      try {
+        ordinalValue = toInt(rawOrdinal);
+      } catch (final IllegalArgumentException e) {
+        LOG.warn(
+            "Skipping ORDINAL/TICKED record with unexpected ordinal value type: {}",
+            e.getMessage());
+        continue;
+      }
       final long timestampMs = record.getTimestamp();
       final OffsetDateTime dateTime =
           OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestampMs), ZoneId.systemDefault());
@@ -98,6 +106,8 @@ public class ZeebeOrdinalImportService {
     if (value instanceof final Number n) {
       return n.intValue();
     }
-    return 0;
+    throw new IllegalArgumentException(
+        "Cannot convert ordinal value to int: unexpected type "
+            + (value == null ? "null" : value.getClass().getName()));
   }
 }

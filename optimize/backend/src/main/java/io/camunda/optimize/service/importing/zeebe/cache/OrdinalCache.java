@@ -24,9 +24,9 @@ import org.springframework.stereotype.Component;
  * OrdinalRepository}. Thereafter, new entries are added by {@link ZeebeOrdinalImportService} as
  * ORDINAL records arrive.
  *
- * <p>The formatted tick string (e.g. {@code "20260306-1430"}) derived from the ordinal timestamp
- * is used as a suffix in flat index names to form a combined key:
- * {@code <processDefinitionKey>-<yyyyMMdd-HHmm>}.
+ * <p>The formatted tick string (e.g. {@code "20260306-1430"}) derived from the ordinal timestamp is
+ * used as a suffix in flat index names to form a combined key: {@code
+ * <processDefinitionKey>-<yyyyMMdd-HHmm>}.
  */
 @Component
 public class OrdinalCache {
@@ -48,7 +48,8 @@ public class OrdinalCache {
   public void loadFromDatabase() {
     final var loaded = ordinalRepository.loadAllOrdinals();
     cache.putAll(loaded);
-    LOG.info("OrdinalCache: loaded {} ordinal entries from Elasticsearch on startup.", loaded.size());
+    LOG.info(
+        "OrdinalCache: loaded {} ordinal entries from Elasticsearch on startup.", loaded.size());
   }
 
   /**
@@ -89,5 +90,18 @@ public class OrdinalCache {
   /** Returns the current number of ordinal entries held in memory. */
   public int size() {
     return cache.size();
+  }
+
+  /**
+   * Returns the combined index key used as the suffix when creating per-ordinal flat indices: the
+   * process definition key joined with the ordinal tick string by a dash, e.g. {@code
+   * "myprocess-20260306-1430"}.
+   *
+   * @param processDefinitionKey the BPMN process ID
+   * @param ordinal the ordinal value
+   * @throws IllegalArgumentException if the ordinal value is not in the cache
+   */
+  public String combinedIndexKey(final String processDefinitionKey, final int ordinal) {
+    return processDefinitionKey + "-" + getTickString(ordinal);
   }
 }

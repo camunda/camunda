@@ -41,7 +41,7 @@ public class VariableWriter {
 
     final Set<String> combinedKeys =
         variables.stream()
-            .map(v -> combinedKey(v.getProcessDefinitionKey(), v.getOrdinal()))
+            .map(v -> ordinalCache.combinedIndexKey(v.getProcessDefinitionKey(), v.getOrdinal()))
             .collect(Collectors.toSet());
     indexRepository.createMissingIndices(
         FLAT_VARIABLE_INDEX, Set.of(FLAT_VARIABLE_MULTI_ALIAS), combinedKeys);
@@ -61,9 +61,5 @@ public class VariableWriter {
                     .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
                     .build())
         .toList();
-  }
-
-  private String combinedKey(final String processDefinitionKey, final int ordinal) {
-    return processDefinitionKey + "-" + ordinalCache.getTickString(ordinal);
   }
 }

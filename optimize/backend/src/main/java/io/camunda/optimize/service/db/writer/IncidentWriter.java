@@ -42,7 +42,7 @@ public class IncidentWriter {
     // Compute combined index keys (processDefinitionKey-ordinalTick) for index creation.
     final Set<String> combinedKeys =
         incidents.stream()
-            .map(i -> combinedKey(i.getProcessDefinitionKey(), i.getOrdinal()))
+            .map(i -> ordinalCache.combinedIndexKey(i.getProcessDefinitionKey(), i.getOrdinal()))
             .collect(Collectors.toSet());
     indexRepository.createMissingIndices(
         FLAT_INCIDENT_INDEX, Set.of(FLAT_INCIDENT_MULTI_ALIAS), combinedKeys);
@@ -62,9 +62,5 @@ public class IncidentWriter {
                     .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
                     .build())
         .toList();
-  }
-
-  private String combinedKey(final String processDefinitionKey, final int ordinal) {
-    return processDefinitionKey + "-" + ordinalCache.getTickString(ordinal);
   }
 }

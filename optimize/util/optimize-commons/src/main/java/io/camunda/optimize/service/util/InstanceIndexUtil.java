@@ -88,8 +88,8 @@ public final class InstanceIndexUtil {
   }
 
   /**
-   * Returns the flat flow-node-instance index alias name composed of the process definition key
-   * and the ordinal tick string (e.g. {@code "20260306-1430"}). Both components are mandatory.
+   * Returns the flat flow-node-instance index alias name composed of the process definition key and
+   * the ordinal tick string (e.g. {@code "20260306-1430"}). Both components are mandatory.
    */
   public static String getFlatFlowNodeInstanceIndexAliasName(
       final String processDefinitionKey, final String ordinalTick) {

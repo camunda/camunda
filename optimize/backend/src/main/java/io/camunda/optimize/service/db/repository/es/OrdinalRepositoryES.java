@@ -9,19 +9,16 @@ package io.camunda.optimize.service.db.repository.es;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.ORDINAL_INDEX_NAME;
-import static io.camunda.optimize.service.db.schema.index.OrdinalIndex.ORDINAL;
-import static io.camunda.optimize.service.db.schema.index.OrdinalIndex.TIMESTAMP_MS;
 
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.OrdinalDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
+import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
 import io.camunda.optimize.service.db.repository.OrdinalRepository;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -52,19 +49,12 @@ public class OrdinalRepositoryES implements OrdinalRepository {
               b ->
                   b.optimizeIndex(esClient, ORDINAL_INDEX_NAME)
                       .query(q -> q.matchAll(m -> m))
-                      .size(LIST_FETCH_LIMIT)
-                      .source(s -> s.filter(f -> f.includes(ORDINAL, TIMESTAMP_MS))));
+                      .size(LIST_FETCH_LIMIT));
       final SearchResponse<OrdinalDto> response = esClient.search(searchRequest, OrdinalDto.class);
-      for (final Hit<OrdinalDto> hit : response.hits().hits()) {
-        final OrdinalDto doc = hit.source();
-        if (doc != null) {
-          result.put(doc.getOrdinal(), doc.getTimestampMs());
-        }
-      }
-    } catch (final IOException e) {
-      LOG.warn("Could not load ordinals from Elasticsearch on startup: {}", e.getMessage());
-    } catch (final Exception e) {
-      // Index may not exist yet on the very first startup
+      ElasticsearchReaderUtil.mapHits(response.hits(), OrdinalDto.class, objectMapper)
+          .forEach(doc -> result.put(doc.getOrdinal(), doc.getTimestampMs()));
+    } catch (final IOException | RuntimeException e) {
+      // Index may not exist yet on the very first startup — treat as non-critical
       LOG.debug("Ordinal index not available on startup (may not exist yet): {}", e.getMessage());
     }
     return result;

@@ -16,8 +16,8 @@ import java.util.Map;
 public interface OrdinalRepository {
 
   /**
-   * Returns a map of ordinal value (int) to epoch-millis timestamp for every document stored in
-   * the ordinal index.
+   * Returns a map of ordinal value (int) to epoch-millis timestamp for every document stored in the
+   * ordinal index.
    */
   Map<Integer, Long> loadAllOrdinals();
 }

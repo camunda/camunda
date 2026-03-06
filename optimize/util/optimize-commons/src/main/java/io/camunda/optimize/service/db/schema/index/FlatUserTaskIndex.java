@@ -73,8 +73,7 @@ public abstract class FlatUserTaskIndex<TBuilder> extends AbstractInstanceIndex<
    * Constructs the index name using both the process definition key and the ordinal tick string
    * (e.g. {@code "20260306-1430"}). The ordinal tick is mandatory.
    */
-  public static String constructIndexName(
-      final String userTaskIndexKey, final String ordinalTick) {
+  public static String constructIndexName(final String userTaskIndexKey, final String ordinalTick) {
     return FLAT_USER_TASK_INDEX_PREFIX
         + userTaskIndexKey.toLowerCase(Locale.ENGLISH)
         + "-"

@@ -22,8 +22,8 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 /**
- * Writer that generates bulk index requests for {@link OrdinalDto} documents so they can be
- * flushed to the {@code ordinal} index.
+ * Writer that generates bulk index requests for {@link OrdinalDto} documents so they can be flushed
+ * to the {@code ordinal} index.
  */
 @Component
 public class OrdinalWriter {

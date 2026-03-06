@@ -43,28 +43,3 @@ public abstract class OrdinalIndex<TBuilder> extends DefaultIndexMappingCreator<
         .properties(DATE_TIME, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)));
   }
 }
-
-
-  public static final int VERSION = 1;
-  public static final String ORDINAL = "ordinal";
-  public static final String TIMESTAMP_MS = "timestampMs";
-  public static final String DATE_TIME = "dateTime";
-
-  @Override
-  public String getIndexName() {
-    return ORDINAL_INDEX_NAME;
-  }
-
-  @Override
-  public int getVersion() {
-    return VERSION;
-  }
-
-  @Override
-  public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
-    return builder
-        .properties(ORDINAL, p -> p.integer(k -> k))
-        .properties(TIMESTAMP_MS, p -> p.long_(k -> k))
-        .properties(DATE_TIME, p -> p.date(k -> k.format(OPTIMIZE_DATE_FORMAT)));
-  }
-}
