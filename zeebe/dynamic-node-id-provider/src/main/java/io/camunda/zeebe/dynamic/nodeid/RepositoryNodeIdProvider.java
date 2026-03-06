@@ -229,14 +229,21 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     NodeIdRepository.StoredLease storedLease = null;
     while (currentLease == null) {
       if (i % availableLeaseCount == 0 && i > 0) {
-        // Refresh available lease count - a scale operation might have added new leases
-        final var refreshedCount = nodeIdRepository.getAvailableLeaseCount();
-        if (refreshedCount > availableLeaseCount) {
-          LOG.debug(
-              "Available lease count increased from {} to {} (likely due to scale operation)",
+        try {
+          // Refresh available lease count - a scale operation might have added new leases
+          final var refreshedCount = nodeIdRepository.getAvailableLeaseCount();
+          if (refreshedCount > availableLeaseCount) {
+            LOG.debug(
+                "Available lease count increased from {} to {} (likely due to scale operation)",
+                availableLeaseCount,
+                refreshedCount);
+            availableLeaseCount = refreshedCount;
+          }
+        } catch (final Exception e) {
+          LOG.warn(
+              "Failed to refresh available lease count, using previous value: {}",
               availableLeaseCount,
-              refreshedCount);
-          availableLeaseCount = refreshedCount;
+              e);
         }
 
         // wait a bit before retrying on all leases again.
@@ -252,8 +259,12 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
         }
       }
       final var nodeId = i++ % availableLeaseCount;
-      storedLease = nodeIdRepository.getLease(nodeId);
-      currentLease = tryAcquireInitialLease(storedLease);
+      try {
+        storedLease = nodeIdRepository.getLease(nodeId);
+        currentLease = tryAcquireInitialLease(storedLease);
+      } catch (final Exception e) {
+        LOG.warn("Failed to acquire initial lease for nodeId {}: {}", nodeId, e.getMessage());
+      }
     }
     if (currentLease != null) {
       LOG.info(
