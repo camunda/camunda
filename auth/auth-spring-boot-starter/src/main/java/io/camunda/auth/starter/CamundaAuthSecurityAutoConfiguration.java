@@ -8,11 +8,11 @@
 package io.camunda.auth.starter;
 
 import io.camunda.auth.spring.filter.OAuth2RefreshTokenFilter;
-import io.camunda.auth.spring.handler.AuthFailureHandler;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.config.observation.SecurityObservationSettings;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 
@@ -26,14 +26,8 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
  * chains.
  */
 @AutoConfiguration(after = CamundaAuthAutoConfiguration.class)
-@ConditionalOnProperty(name = "camunda.auth.method", havingValue = "oidc", matchIfMissing = true)
+@ConditionalOnProperty(name = "camunda.auth.method", havingValue = "oidc")
 public class CamundaAuthSecurityAutoConfiguration {
-
-  @Bean
-  @ConditionalOnMissingBean
-  public AuthFailureHandler authFailureHandler() {
-    return new AuthFailureHandler();
-  }
 
   @Bean
   @ConditionalOnMissingBean
@@ -41,5 +35,11 @@ public class CamundaAuthSecurityAutoConfiguration {
       final OAuth2AuthorizedClientRepository authorizedClientRepository,
       final OAuth2AuthorizedClientManager authorizedClientManager) {
     return new OAuth2RefreshTokenFilter(authorizedClientRepository, authorizedClientManager);
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public SecurityObservationSettings defaultSecurityObservations() {
+    return SecurityObservationSettings.withDefaults().build();
   }
 }

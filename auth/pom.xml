@@ -46,6 +46,7 @@
     <version.spring-boot>4.0.3</version.spring-boot>
 
     <!-- Third-party libraries -->
+    <version.nimbus-jose-jwt>10.8</version.nimbus-jose-jwt>
     <version.elasticsearch-java-client>8.19.12</version.elasticsearch-java-client>
     <version.mybatis-spring-boot-starter>4.0.1</version.mybatis-spring-boot-starter>
     <version.archunit>1.4.1</version.archunit>
@@ -104,6 +105,11 @@
       </dependency>
 
       <!-- Third-party (not managed by Spring Boot BOM) -->
+      <dependency>
+        <groupId>com.nimbusds</groupId>
+        <artifactId>nimbus-jose-jwt</artifactId>
+        <version>${version.nimbus-jose-jwt}</version>
+      </dependency>
       <dependency>
         <groupId>org.mybatis.spring.boot</groupId>
         <artifactId>mybatis-spring-boot-starter</artifactId>

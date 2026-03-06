@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
-import io.camunda.authentication.ConditionalOnInternalUserManagement;
+import io.camunda.auth.starter.condition.ConditionalOnInternalUserManagement;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.UserMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
