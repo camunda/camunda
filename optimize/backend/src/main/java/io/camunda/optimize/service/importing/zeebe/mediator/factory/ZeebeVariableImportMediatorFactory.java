@@ -16,6 +16,7 @@ import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeVariableImportService;
+import io.camunda.optimize.service.importing.zeebe.cache.ZeebeImportSlidingWindowCache;
 import io.camunda.optimize.service.importing.zeebe.db.ZeebeVariableFetcher;
 import io.camunda.optimize.service.importing.zeebe.mediator.ZeebeVariableImportMediator;
 import io.camunda.optimize.service.util.BackoffCalculator;
@@ -54,13 +55,13 @@ public class ZeebeVariableImportMediatorFactory extends AbstractZeebeImportMedia
 
   @Override
   public List<ImportMediator> createMediators(final ZeebeDataSourceDto zeebeDataSourceDto) {
+    final int partitionId = zeebeDataSourceDto.getPartitionId();
     return Collections.singletonList(
         new ZeebeVariableImportMediator(
-            importIndexHandlerRegistry.getZeebeVariableImportIndexHandler(
-                zeebeDataSourceDto.getPartitionId()),
+            importIndexHandlerRegistry.getZeebeVariableImportIndexHandler(partitionId),
             beanFactory.getBean(
                 ZeebeVariableFetcher.class,
-                zeebeDataSourceDto.getPartitionId(),
+                partitionId,
                 databaseClient,
                 objectMapper,
                 configurationService),
@@ -72,6 +73,7 @@ public class ZeebeVariableImportMediatorFactory extends AbstractZeebeImportMedia
                 objectVariableService,
                 databaseClient),
             configurationService,
-            new BackoffCalculator(configurationService)));
+            new BackoffCalculator(configurationService),
+            new ZeebeImportSlidingWindowCache(partitionId, "VARIABLE")));
   }
 }

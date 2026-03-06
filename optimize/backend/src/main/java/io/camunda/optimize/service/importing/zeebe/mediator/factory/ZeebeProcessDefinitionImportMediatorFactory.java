@@ -14,6 +14,7 @@ import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeProcessDefinitionImportService;
+import io.camunda.optimize.service.importing.zeebe.cache.ZeebeImportSlidingWindowCache;
 import io.camunda.optimize.service.importing.zeebe.db.ZeebeProcessDefinitionFetcher;
 import io.camunda.optimize.service.importing.zeebe.mediator.ZeebeProcessDefinitionImportMediator;
 import io.camunda.optimize.service.util.BackoffCalculator;
@@ -47,22 +48,20 @@ public class ZeebeProcessDefinitionImportMediatorFactory
 
   @Override
   public List<ImportMediator> createMediators(final ZeebeDataSourceDto zeebeDataSourceDto) {
+    final int partitionId = zeebeDataSourceDto.getPartitionId();
     return Collections.singletonList(
         new ZeebeProcessDefinitionImportMediator(
-            importIndexHandlerRegistry.getZeebeProcessDefinitionImportIndexHandler(
-                zeebeDataSourceDto.getPartitionId()),
+            importIndexHandlerRegistry.getZeebeProcessDefinitionImportIndexHandler(partitionId),
             beanFactory.getBean(
                 ZeebeProcessDefinitionFetcher.class,
-                zeebeDataSourceDto.getPartitionId(),
+                partitionId,
                 databaseClient,
                 objectMapper,
                 configurationService),
             new ZeebeProcessDefinitionImportService(
-                configurationService,
-                processDefinitionWriter,
-                zeebeDataSourceDto.getPartitionId(),
-                databaseClient),
+                configurationService, processDefinitionWriter, partitionId, databaseClient),
             configurationService,
-            new BackoffCalculator(configurationService)));
+            new BackoffCalculator(configurationService),
+            new ZeebeImportSlidingWindowCache(partitionId, "PROCESS_DEFINITION")));
   }
 }

@@ -14,6 +14,7 @@ import io.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
 import io.camunda.optimize.service.importing.PositionBasedImportMediator;
 import io.camunda.optimize.service.importing.engine.mediator.MediatorRank;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeUserTaskImportService;
+import io.camunda.optimize.service.importing.zeebe.cache.ZeebeImportSlidingWindowCache;
 import io.camunda.optimize.service.importing.zeebe.db.ZeebeUserTaskFetcher;
 import io.camunda.optimize.service.importing.zeebe.handler.ZeebeUserTaskImportIndexHandler;
 import io.camunda.optimize.service.util.BackoffCalculator;
@@ -31,12 +32,14 @@ public class ZeebeUserTaskImportMediator
       final ZeebeUserTaskFetcher zeebeUserTaskFetcher,
       final ZeebeUserTaskImportService importService,
       final ConfigurationService configurationService,
-      final BackoffCalculator idleBackoffCalculator) {
+      final BackoffCalculator idleBackoffCalculator,
+      final ZeebeImportSlidingWindowCache slidingWindowCache) {
     this.importIndexHandler = importIndexHandler;
     this.zeebeUserTaskFetcher = zeebeUserTaskFetcher;
     this.importService = importService;
     this.configurationService = configurationService;
     this.idleBackoffCalculator = idleBackoffCalculator;
+    this.slidingWindowCache = slidingWindowCache;
   }
 
   @Override

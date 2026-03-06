@@ -15,6 +15,7 @@ import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeUserTaskImportService;
+import io.camunda.optimize.service.importing.zeebe.cache.ZeebeImportSlidingWindowCache;
 import io.camunda.optimize.service.importing.zeebe.db.ZeebeUserTaskFetcher;
 import io.camunda.optimize.service.importing.zeebe.mediator.ZeebeUserTaskImportMediator;
 import io.camunda.optimize.service.util.BackoffCalculator;
@@ -50,23 +51,24 @@ public class ZeebeUserTaskImportMediatorFactory extends AbstractZeebeImportMedia
 
   @Override
   public List<ImportMediator> createMediators(final ZeebeDataSourceDto dataSourceDto) {
+    final int partitionId = dataSourceDto.getPartitionId();
     return Collections.singletonList(
         new ZeebeUserTaskImportMediator(
-            importIndexHandlerRegistry.getZeebeUserTaskImportIndexHandler(
-                dataSourceDto.getPartitionId()),
+            importIndexHandlerRegistry.getZeebeUserTaskImportIndexHandler(partitionId),
             beanFactory.getBean(
                 ZeebeUserTaskFetcher.class,
-                dataSourceDto.getPartitionId(),
+                partitionId,
                 databaseClient,
                 objectMapper,
                 configurationService),
             new ZeebeUserTaskImportService(
                 configurationService,
                 zeebeProcessInstanceWriter,
-                dataSourceDto.getPartitionId(),
+                partitionId,
                 processDefinitionReader,
                 databaseClient),
             configurationService,
-            new BackoffCalculator(configurationService)));
+            new BackoffCalculator(configurationService),
+            new ZeebeImportSlidingWindowCache(partitionId, "USER_TASK")));
   }
 }
