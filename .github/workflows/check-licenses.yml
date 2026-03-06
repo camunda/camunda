@@ -77,6 +77,7 @@ jobs:
     - name: Setup fossa-cli
       uses: camunda/infra-global-github-actions/fossa/setup@ddce99387a10a4d578e4d7d8e6c6626dcd3d8fd3
     - name: Adjust pom.xml files for FOSSA
+<<<<<<< HEAD
       if: matrix.project.name == 'single-app'
       run: |
         # The bom/pom.xml must be the actual root, otherwise, FOSSA won't detect the hierarchy correctly
@@ -90,6 +91,11 @@ jobs:
         yq -i \
           'del(.project.modules.module[] | select(. == "bom" or . == "parent"))' \
           pom.xml
+=======
+      if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
+      uses: ./.github/actions/adjust-pom-for-license-analysis
+
+>>>>>>> b1698a35 (ci: add dependency cycle check to unified CI workflow)
     - name: Analyze project
       uses: camunda/infra-global-github-actions/fossa/analyze@ddce99387a10a4d578e4d7d8e6c6626dcd3d8fd3
       with:
