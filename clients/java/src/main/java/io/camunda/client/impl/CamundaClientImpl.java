@@ -191,6 +191,7 @@ import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.GlobalJobStatisticsRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByErrorRequest;
+import io.camunda.client.api.statistics.request.JobErrorStatisticsRequest;
 import io.camunda.client.api.statistics.request.JobTimeSeriesStatisticsRequest;
 import io.camunda.client.api.statistics.request.JobTypeStatisticsRequest;
 import io.camunda.client.api.statistics.request.JobWorkerStatisticsRequest;
@@ -367,6 +368,7 @@ import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
 import io.camunda.client.impl.statistics.request.GlobalJobStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequestImpl;
 import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsByErrorRequestImpl;
+import io.camunda.client.impl.statistics.request.JobErrorStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.JobTimeSeriesStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.JobTypeStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.JobWorkerStatisticsRequestImpl;
@@ -959,6 +961,12 @@ public final class CamundaClientImpl implements CamundaClient {
       final OffsetDateTime from, final OffsetDateTime to, final String jobType) {
     return new JobTimeSeriesStatisticsRequestImpl(
         httpClient, config.getJsonMapper(), from, to, jobType);
+  }
+
+  @Override
+  public JobErrorStatisticsRequest newJobErrorStatisticsRequest(
+      final OffsetDateTime from, final OffsetDateTime to, final String jobType) {
+    return new JobErrorStatisticsRequestImpl(httpClient, config.getJsonMapper(), from, to, jobType);
   }
 
   @Override

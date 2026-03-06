@@ -18,14 +18,14 @@ package io.camunda.client.api.statistics.request;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.request.TypedFilterableRequest;
 import io.camunda.client.api.search.request.TypedPageableRequest;
-import io.camunda.client.api.statistics.filter.JobTypeStatisticsFilter;
-import io.camunda.client.api.statistics.response.JobTypeStatistics;
+import io.camunda.client.api.statistics.filter.JobErrorStatisticsFilter;
+import io.camunda.client.api.statistics.response.JobErrorStatistics;
 
 /**
- * Request to query job statistics grouped by job type. Allows filtering by time range, job type
- * patterns, and supports pagination.
+ * Request to query per-error job metrics for a specific job type. Supports optional errorCode /
+ * errorMessage filters and pagination.
  */
-public interface JobTypeStatisticsRequest
-    extends FinalCommandStep<JobTypeStatistics>,
-        TypedPageableRequest<JobTypeStatisticsRequest>,
-        TypedFilterableRequest<JobTypeStatisticsFilter, JobTypeStatisticsRequest> {}
+public interface JobErrorStatisticsRequest
+    extends FinalCommandStep<JobErrorStatistics>,
+        TypedPageableRequest<JobErrorStatisticsRequest>,
+        TypedFilterableRequest<JobErrorStatisticsFilter, JobErrorStatisticsRequest> {}

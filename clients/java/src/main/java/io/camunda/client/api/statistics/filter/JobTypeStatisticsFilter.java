@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.filter;
+package io.camunda.client.api.statistics.filter;
 
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
+import io.camunda.client.api.statistics.request.StatisticsRequest.StatisticsRequestFilter;
 import java.util.function.Consumer;
 
 /** Filter for job type statistics queries. */
-public interface JobTypeStatisticsFilter extends SearchRequestFilter {
+public interface JobTypeStatisticsFilter extends StatisticsRequestFilter {
 
   /**
    * Filter by exact job type match.

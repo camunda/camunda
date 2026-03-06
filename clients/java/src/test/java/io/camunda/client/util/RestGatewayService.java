@@ -47,6 +47,7 @@ import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByDefini
 import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByErrorQueryResult;
 import io.camunda.client.protocol.rest.IncidentResult;
 import io.camunda.client.protocol.rest.JobActivationResult;
+import io.camunda.client.protocol.rest.JobErrorStatisticsQueryResult;
 import io.camunda.client.protocol.rest.JobTimeSeriesStatisticsQueryResult;
 import io.camunda.client.protocol.rest.JobTypeStatisticsQueryResult;
 import io.camunda.client.protocol.rest.JobWorkerStatisticsQueryResult;
@@ -504,6 +505,12 @@ public class RestGatewayService {
   public void onJobTimeSeriesStatisticsRequest(final JobTimeSeriesStatisticsQueryResult response) {
     register(
         WireMock.post(WireMock.urlPathEqualTo(RestGatewayPaths.getJobTimeSeriesStatisticsUrl())),
+        response);
+  }
+
+  public void onJobErrorStatisticsRequest(final JobErrorStatisticsQueryResult response) {
+    register(
+        WireMock.post(WireMock.urlPathEqualTo(RestGatewayPaths.getJobErrorStatisticsUrl())),
         response);
   }
 

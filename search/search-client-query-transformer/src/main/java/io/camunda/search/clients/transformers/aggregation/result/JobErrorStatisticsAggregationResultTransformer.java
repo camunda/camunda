@@ -8,6 +8,8 @@
 package io.camunda.search.clients.transformers.aggregation.result;
 
 import static io.camunda.search.aggregation.JobErrorStatisticsAggregation.AGGREGATION_BY_ERROR;
+import static io.camunda.search.aggregation.JobErrorStatisticsAggregation.AGGREGATION_SOURCE_NAME_ERROR_CODE;
+import static io.camunda.search.aggregation.JobErrorStatisticsAggregation.AGGREGATION_SOURCE_NAME_ERROR_MESSAGE;
 import static io.camunda.search.aggregation.JobErrorStatisticsAggregation.AGGREGATION_WORKERS;
 
 import io.camunda.search.aggregation.result.JobErrorStatisticsAggregationResult;
@@ -43,10 +45,15 @@ public class JobErrorStatisticsAggregationResultTransformer
                     return null;
                   }
 
-                  // Composite key is "errorCode__errorMessage"
-                  final String[] parts = SearchCompositeAggregator.splitKey(compositeKey, 2);
-                  final String errorCode = parts[0];
-                  final String errorMessage = parts.length > 1 ? parts[1] : null;
+                  // Composite key is sorted alphabetically by source name, so errorCode is always
+                  // first and errorMessage second (if present)
+                  final var parts =
+                      SearchCompositeAggregator.splitKeyValues(
+                          compositeKey,
+                          AGGREGATION_SOURCE_NAME_ERROR_CODE,
+                          AGGREGATION_SOURCE_NAME_ERROR_MESSAGE);
+                  final String errorCode = parts.get(AGGREGATION_SOURCE_NAME_ERROR_CODE);
+                  final String errorMessage = parts.get(AGGREGATION_SOURCE_NAME_ERROR_MESSAGE);
 
                   final int workers = extractCardinality(agg.aggregations());
 
