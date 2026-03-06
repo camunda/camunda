@@ -25,6 +25,7 @@ import io.camunda.search.sort.SortOrder;
 import io.camunda.security.reader.ResourceAccessChecks;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -62,8 +63,15 @@ abstract class AbstractEntityReader<T> {
     final var builder = new DbQuerySorting.Builder<T>();
     final var discriminatorColumnList = new ArrayList<>(Arrays.asList(discriminatorColumns));
 
+    final var usedFields = new HashSet<String>();
+
     for (final FieldSorting fieldSorting : sortOption.getFieldSortings()) {
-      final var column = getSearchColumn(fieldSorting.field());
+      final String fieldName = fieldSorting.field();
+      if (!usedFields.add(fieldName)) {
+        continue; // skip duplicate field sorting
+      }
+
+      final var column = getSearchColumn(fieldName);
 
       // remove the column from the discriminator list to not sort double
       discriminatorColumnList.remove(column);
