@@ -92,7 +92,7 @@ jobs:
           ./load-tests/docs/scripts/executeProfiling.sh ${{ matrix.pod }} ${{ matrix.event }} "${{ inputs.database }}" "${{ inputs.profiler_options }}"
       - uses: actions/upload-artifact@v7
         with:
-          name: flamegraph-${{ matrix.event }}-${{ matrix.pod }}-${{ inputs.database }}
+          name: flamegraph-${{ inputs.database }}-${{ matrix.event }}-${{ matrix.pod }}
           path: ${{ matrix.pod }}*
       - name: Summarize profiling
         if: success()
@@ -141,7 +141,7 @@ jobs:
           ./load-tests/docs/scripts/executeProfiling.sh ${{ inputs.pod }} cpu "${{ inputs.database }}" "${{ inputs.profiler_options }}"
       - uses: actions/upload-artifact@v7
         with:
-          name: flamegraph-cpu-${{ inputs.pod }}-${{ inputs.database }}
+          name: flamegraph-${{ inputs.database }}-cpu-${{ inputs.pod }}
           path: ${{ inputs.pod }}*
       - name: Summarize profiling
         if: success()
