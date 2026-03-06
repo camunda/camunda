@@ -48,7 +48,7 @@ public class MigrateConditionalEventSubprocessTest {
                         "sub1",
                         s ->
                             s.startEvent("start1")
-                                .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                                .condition(c -> c.condition("=x > 10"))
                                 .serviceTask("A", t -> t.zeebeJobType("task1"))
                                 .endEvent())
                     .startEvent("start")
@@ -61,7 +61,7 @@ public class MigrateConditionalEventSubprocessTest {
                         "sub2",
                         s ->
                             s.startEvent("start2")
-                                .condition(c -> c.condition("=x > 999").zeebeVariableNames("x"))
+                                .condition(c -> c.condition("=x > 999"))
                                 .serviceTask("B", t -> t.zeebeJobType("task2"))
                                 .endEvent())
                     .startEvent("start")
@@ -142,7 +142,7 @@ public class MigrateConditionalEventSubprocessTest {
                         "sub1",
                         s ->
                             s.startEvent("start1")
-                                .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                                .condition(c -> c.condition("=x > 10"))
                                 .interrupting(false)
                                 .serviceTask("A", t -> t.zeebeJobType("task1"))
                                 .endEvent())
@@ -156,7 +156,7 @@ public class MigrateConditionalEventSubprocessTest {
                         "sub2",
                         s ->
                             s.startEvent("start2")
-                                .condition(c -> c.condition("=x > 999").zeebeVariableNames("x"))
+                                .condition(c -> c.condition("=x > 999"))
                                 .interrupting(false)
                                 .serviceTask("B", t -> t.zeebeJobType("task2"))
                                 .endEvent())
@@ -229,10 +229,7 @@ public class MigrateConditionalEventSubprocessTest {
                         s ->
                             s.startEvent("start1")
                                 .condition(
-                                    c ->
-                                        c.condition("=x > 10")
-                                            .zeebeVariableNames("x")
-                                            .zeebeVariableEvents("create"))
+                                    c -> c.condition("=x > 10").zeebeVariableEvents("create"))
                                 .userTask("subUserTask1")
                                 .endEvent())
                     .startEvent("start")
@@ -246,10 +243,7 @@ public class MigrateConditionalEventSubprocessTest {
                         s ->
                             s.startEvent("start2")
                                 .condition(
-                                    c ->
-                                        c.condition("=y > 10")
-                                            .zeebeVariableNames("y")
-                                            .zeebeVariableEvents("update"))
+                                    c -> c.condition("=y > 10").zeebeVariableEvents("update"))
                                 .userTask("subUserTask2")
                                 .endEvent())
                     .startEvent("start")
@@ -327,7 +321,7 @@ public class MigrateConditionalEventSubprocessTest {
                         "sub",
                         s ->
                             s.startEvent("start1")
-                                .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                                .condition(c -> c.condition("=x > 10"))
                                 .serviceTask("A", t -> t.zeebeJobType("task"))
                                 .endEvent())
                     .startEvent("start")
@@ -406,7 +400,7 @@ public class MigrateConditionalEventSubprocessTest {
                         "sub1",
                         s ->
                             s.startEvent("start1")
-                                .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                                .condition(c -> c.condition("=x > 10"))
                                 .userTask("eventSubprocessUserTask")
                                 .endEvent())
                     .startEvent("start")
@@ -490,7 +484,7 @@ public class MigrateConditionalEventSubprocessTest {
                         "sub1",
                         s ->
                             s.startEvent("start1")
-                                .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                                .condition(c -> c.condition("=x > 10"))
                                 .serviceTask("A", t -> t.zeebeJobType("task1"))
                                 .endEvent())
                     .startEvent("start")
@@ -503,7 +497,7 @@ public class MigrateConditionalEventSubprocessTest {
                         "sub2",
                         s ->
                             s.startEvent("start2")
-                                .condition(c -> c.condition("=y > 10").zeebeVariableNames("y"))
+                                .condition(c -> c.condition("=y > 10"))
                                 .userTask("eventSubprocessUserTask")
                                 .endEvent())
                     .startEvent("start")
@@ -581,7 +575,7 @@ public class MigrateConditionalEventSubprocessTest {
                         "sub1",
                         s ->
                             s.startEvent("start1")
-                                .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                                .condition(c -> c.condition("=x > 10"))
                                 .endEvent())
                     .startEvent("start")
                     .userTask("userTask1")
@@ -593,7 +587,7 @@ public class MigrateConditionalEventSubprocessTest {
                         "sub2",
                         s ->
                             s.startEvent("start2")
-                                .condition(c -> c.condition("=x > 999").zeebeVariableNames("x"))
+                                .condition(c -> c.condition("=x > 999"))
                                 .endEvent())
                     .startEvent("start")
                     .userTask("userTask2")

@@ -21,7 +21,7 @@
       <bpmn:outgoing>Flow_0eq7v3k</bpmn:outgoing>
       <bpmn:conditionalEventDefinition id="ConditionalEventDefinition_1rp6yz6">
         <bpmn:extensionElements>
-          <zeebe:conditionalFilter variableNames="var1" variableEvents="create, update" />
+          <zeebe:conditionalFilter variableEvents="create, update" />
         </bpmn:extensionElements>
         <bpmn:condition xsi:type="bpmn:tFormalExpression">=test</bpmn:condition>
       </bpmn:conditionalEventDefinition>

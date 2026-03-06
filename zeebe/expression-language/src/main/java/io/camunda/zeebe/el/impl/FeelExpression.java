@@ -9,6 +9,7 @@ package io.camunda.zeebe.el.impl;
 
 import io.camunda.zeebe.el.Expression;
 import java.util.Optional;
+import java.util.Set;
 import org.camunda.feel.syntaxtree.Exp;
 import org.camunda.feel.syntaxtree.ParsedExpression;
 import org.camunda.feel.syntaxtree.PathExpression;
@@ -30,6 +31,22 @@ public final class FeelExpression implements Expression {
   @Override
   public Optional<String> getVariableName() {
     return extractVariableName(expression.expression());
+  }
+
+  /**
+   * Returns all top-level variable names referenced by this FEEL expression, derived by walking the
+   * parsed FEEL AST. For path expressions like {@code x.y}, only the root variable {@code x} is
+   * returned.
+   *
+   * <p>Note: exact dependency tracking for nested variables (e.g. {@code x.y > 10}) is not
+   * supported. The subscription is placed on the root variable {@code x}, meaning any change to any
+   * nested property under {@code x} will trigger re-evaluation.
+   *
+   * @return a set of distinct top-level variable names referenced by the expression
+   */
+  @Override
+  public Set<String> getVariableNames() {
+    return expression.getVariableNames();
   }
 
   @Override
