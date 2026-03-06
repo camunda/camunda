@@ -2,11 +2,8 @@ import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.regex.*;
 import java.util.stream.*;
-import javax.xml.parsers.*;
-import org.w3c.dom.*;
 
 /**
  * Test File Inventory Script
