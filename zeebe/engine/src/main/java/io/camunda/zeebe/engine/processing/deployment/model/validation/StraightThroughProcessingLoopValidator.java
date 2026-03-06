@@ -11,8 +11,10 @@ import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableIntermediateThrowEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableScriptTask;
@@ -66,6 +68,9 @@ public final class StraightThroughProcessingLoopValidator {
     STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(BpmnElementType.CALL_ACTIVITY, NOOP_VALIDATOR);
     STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(
         BpmnElementType.INTERMEDIATE_THROW_EVENT, NOOP_VALIDATOR);
+    STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(
+        BpmnElementType.INTERMEDIATE_CATCH_EVENT,
+        StraightThroughProcessingLoopValidator::isLinkCatchEvent);
     STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(
         BpmnElementType.SCRIPT_TASK,
         StraightThroughProcessingLoopValidator::isScriptTaskStraightThrough);
@@ -266,20 +271,35 @@ public final class StraightThroughProcessingLoopValidator {
         final var multiInstance = (ExecutableMultiInstanceBody) element;
         return List.of(multiInstance.getInnerActivity());
       }
-      default -> {
-        final var outgoingFlows = element.getOutgoing();
-        if (!outgoingFlows.isEmpty()) {
-          return outgoingFlows.stream().map(ExecutableSequenceFlow::getTarget).toList();
-        } else {
-          // This allows us to keep detecting when we reach an end event or an implicit end event
-          final var flowScope = element.getFlowScope();
-          if (flowScope instanceof ExecutableFlowNode) {
-            return ((ExecutableFlowNode) flowScope)
-                .getOutgoing().stream().map(ExecutableSequenceFlow::getTarget).toList();
-          } else {
-            return Collections.emptyList();
+      case INTERMEDIATE_THROW_EVENT -> {
+        final var throwEvent = (ExecutableIntermediateThrowEvent) element;
+        if (throwEvent.isLinkThrowEvent()) {
+          final var link = throwEvent.getLink();
+          if (link != null && link.getCatchEventElement() != null) {
+            return List.of(link.getCatchEventElement());
           }
+          return Collections.emptyList();
         }
+        return getNextElements(element);
+      }
+      default -> {
+        return getNextElements(element);
+      }
+    }
+  }
+
+  private static List<? extends ExecutableFlowNode> getNextElements(
+      final ExecutableFlowNode element) {
+    final var outgoingFlows = element.getOutgoing();
+    if (!outgoingFlows.isEmpty()) {
+      return outgoingFlows.stream().map(ExecutableSequenceFlow::getTarget).toList();
+    } else {
+      final var flowScope = element.getFlowScope();
+      if (flowScope instanceof ExecutableFlowNode) {
+        return ((ExecutableFlowNode) flowScope)
+            .getOutgoing().stream().map(ExecutableSequenceFlow::getTarget).toList();
+      } else {
+        return Collections.emptyList();
       }
     }
   }
@@ -350,5 +370,10 @@ public final class StraightThroughProcessingLoopValidator {
     // If a script task is handled by a job worker is it not straight-through.
     final var scriptTask = (ExecutableScriptTask) element;
     return scriptTask.getJobWorkerProperties() == null;
+  }
+
+  private static boolean isLinkCatchEvent(final ExecutableFlowNode element) {
+    final var catchEvent = (ExecutableCatchEventElement) element;
+    return catchEvent.isLink();
   }
 }
