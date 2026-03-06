@@ -17,18 +17,16 @@ import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.converter.OidcTokenAuthenticationConverter;
 import io.camunda.authentication.converter.OidcUserAuthenticationConverter;
 import io.camunda.authentication.converter.TokenClaimsConverter;
-import io.camunda.authentication.converter.UsernamePasswordAuthenticationTokenConverter;
 import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
-import io.camunda.authentication.filters.AdminUserCheckFilter;
+import io.camunda.authentication.filters.AbstractAdminUserCheckFilter;
+import io.camunda.authentication.filters.AbstractWebComponentAuthorizationCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
-import io.camunda.authentication.filters.WebComponentAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.LoggingAuthenticationFailureHandler;
 import io.camunda.authentication.handler.OAuth2AuthenticationExceptionHandler;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
@@ -37,10 +35,6 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
 import io.camunda.security.entity.AuthenticationMethod;
-import io.camunda.security.reader.ResourceAccessProvider;
-import io.camunda.service.GroupServices;
-import io.camunda.service.RoleServices;
-import io.camunda.service.TenantServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.micrometer.common.KeyValues;
@@ -61,7 +55,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -438,6 +434,25 @@ public class WebSecurityConfig {
     }
   }
 
+  @Bean
+  @ConditionalOnBean(AbstractAdminUserCheckFilter.class)
+  public FilterRegistrationBean<AbstractAdminUserCheckFilter> disableAdminFilterAutoRegistration(
+      final AbstractAdminUserCheckFilter filter) {
+    final var reg = new FilterRegistrationBean<>(filter);
+    reg.setEnabled(false);
+    return reg;
+  }
+
+  @Bean
+  @ConditionalOnBean(AbstractWebComponentAuthorizationCheckFilter.class)
+  public FilterRegistrationBean<AbstractWebComponentAuthorizationCheckFilter>
+      disableWebComponentFilterAutoRegistration(
+          AbstractWebComponentAuthorizationCheckFilter filter) {
+    final var reg = new FilterRegistrationBean<>(filter);
+    reg.setEnabled(false);
+    return reg;
+  }
+
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
   @ConditionalOnSecondaryStorageEnabled
@@ -470,15 +485,6 @@ public class WebSecurityConfig {
           .map(Map::values)
           .map(values -> values.stream().anyMatch(OidcAuthenticationConfiguration::isSet))
           .orElse(false);
-    }
-
-    @Bean
-    public CamundaAuthenticationConverter<Authentication> usernamePasswordAuthenticationConverter(
-        final RoleServices roleServices,
-        final GroupServices groupServices,
-        final TenantServices tenantServices) {
-      return new UsernamePasswordAuthenticationTokenConverter(
-          roleServices, groupServices, tenantServices);
     }
 
     @Bean
@@ -536,10 +542,9 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final SecurityConfiguration securityConfiguration,
-        final CamundaAuthenticationProvider authenticationProvider,
-        final ResourceAccessProvider resourceAccessProvider,
-        final RoleServices roleServices,
-        final CookieCsrfTokenRepository csrfTokenRepository)
+        final CookieCsrfTokenRepository csrfTokenRepository,
+        final AbstractWebComponentAuthorizationCheckFilter webComponentAuthFilter,
+        final AbstractAdminUserCheckFilter adminUserCheckFilter)
         throws Exception {
       LOG.info("Web Applications Login/Logout is setup.");
       final var filterChainBuilder =
@@ -580,13 +585,8 @@ public class WebSecurityConfig {
                       exceptionHandling
                           .authenticationEntryPoint(authFailureHandler)
                           .accessDeniedHandler(authFailureHandler))
-              .addFilterAfter(
-                  new WebComponentAuthorizationCheckFilter(
-                      securityConfiguration, authenticationProvider, resourceAccessProvider),
-                  AuthorizationFilter.class)
-              .addFilterBefore(
-                  new AdminUserCheckFilter(securityConfiguration, roleServices),
-                  AuthorizationFilter.class);
+              .addFilterAfter(webComponentAuthFilter, AuthorizationFilter.class)
+              .addFilterBefore(adminUserCheckFilter, AuthorizationFilter.class);
 
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
@@ -945,14 +945,13 @@ public class WebSecurityConfig {
         final OidcAuthenticationConfigurationRepository oidcProviderRepository,
         final JwtDecoder jwtDecoder,
         final SecurityConfiguration securityConfiguration,
-        final CamundaAuthenticationProvider authenticationProvider,
-        final ResourceAccessProvider resourceAccessProvider,
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OAuth2AuthorizedClientManager authorizedClientManager,
         final OidcTokenEndpointCustomizer tokenEndpointCustomizer,
         final LogoutSuccessHandler logoutSuccessHandler,
-        final OidcUserService oidcUserService)
+        final OidcUserService oidcUserService,
+        final AbstractWebComponentAuthorizationCheckFilter webComponentAuthFilter)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
@@ -1011,10 +1010,7 @@ public class WebSecurityConfig {
                           .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN)
                           .invalidateHttpSession(true)
                           .logoutSuccessHandler(logoutSuccessHandler))
-              .addFilterAfter(
-                  new WebComponentAuthorizationCheckFilter(
-                      securityConfiguration, authenticationProvider, resourceAccessProvider),
-                  AuthorizationFilter.class);
+              .addFilterAfter(webComponentAuthFilter, AuthorizationFilter.class);
 
       applyOauth2RefreshTokenFilter(
           httpSecurity, authorizedClientRepository, authorizedClientManager);

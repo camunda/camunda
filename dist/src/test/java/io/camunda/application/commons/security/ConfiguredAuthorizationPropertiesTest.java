@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @SpringBootTest(
@@ -131,7 +130,6 @@ class ConfiguredAuthorizationPropertiesTest {
     assertThat(auth.hasResourcePropertyName()).isFalse();
   }
 
-  @Configuration
   @Import({CamundaSecurityConfiguration.class})
   static class TestConfig {}
 }

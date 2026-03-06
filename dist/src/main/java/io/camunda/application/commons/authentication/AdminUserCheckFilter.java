@@ -5,8 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication.filters;
+package io.camunda.application.commons.authentication;
 
+import io.camunda.authentication.filters.AbstractAdminUserCheckFilter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.RoleServices;
@@ -21,9 +22,8 @@ import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.filter.OncePerRequestFilter;
 
-public class AdminUserCheckFilter extends OncePerRequestFilter {
+public class AdminUserCheckFilter extends AbstractAdminUserCheckFilter {
 
   public static final String ADMIN_ROLE_ID = DefaultRole.ADMIN.getId();
   public static final String USER_MEMBERS = "users";

@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller.authentication;
 
 import static io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper.toCamundaUser;
 
-import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.gateway.protocol.model.CamundaUserResult;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;

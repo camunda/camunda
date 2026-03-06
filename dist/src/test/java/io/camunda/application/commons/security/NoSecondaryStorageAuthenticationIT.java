@@ -9,6 +9,7 @@ package io.camunda.application.commons.security;
 
 import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
 import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -27,7 +28,6 @@ import org.springframework.beans.BeanInstantiationException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * Integration test for authentication behavior in no-database mode. This test validates that the
@@ -43,7 +43,7 @@ public class NoSecondaryStorageAuthenticationIT {
     context
         .getEnvironment()
         .getSystemProperties()
-        .put(PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE);
+        .put(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE);
     context
         .getEnvironment()
         .getSystemProperties()
@@ -93,7 +93,6 @@ public class NoSecondaryStorageAuthenticationIT {
     context.close();
   }
 
-  @Configuration
   static class TestOidcAuthConfiguration {
     @Bean
     public SecurityConfiguration securityConfiguration() {

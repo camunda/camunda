@@ -10,8 +10,6 @@ package io.camunda.authentication;
 import static io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder.LAST_REFRESH_ATTR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.TestApiController;
@@ -20,7 +18,6 @@ import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.service.RoleServices;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -47,17 +44,13 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 public class SessionAuthenticationRefreshTest {
 
-  abstract class BaseTest {
+  abstract static class BaseTest {
     @Autowired MockMvcTester mockMvcTester;
     Duration refreshInterval;
-    @MockitoBean RoleServices roleServices;
     @Autowired private SecurityConfiguration securityConfiguration;
 
     @BeforeEach
     public void setup() {
-      when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(roleServices);
-      when(roleServices.hasMembersOfType(any(), any())).thenReturn(true);
       refreshInterval =
           Duration.parse(
               securityConfiguration.getAuthentication().getAuthenticationRefreshInterval());
@@ -93,8 +86,8 @@ public class SessionAuthenticationRefreshTest {
 
       assertThat(testResult).hasStatusOk();
       final Instant lastRefreshTime = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
-      assertThat(lastRefreshTime).isNotNull();
       assertThat(lastRefreshTime)
+          .isNotNull()
           .isCloseTo(Instant.now(), within(refreshInterval.toMillis(), ChronoUnit.MILLIS));
       // verify(httpSessionBasedAuthenticationHolder, never()).set(any());
     }
@@ -142,13 +135,14 @@ public class SessionAuthenticationRefreshTest {
     void shouldOnlyRefreshOnceWhenMultipleConcurrentRequests() throws Exception {
       final MockHttpSession session = new MockHttpSession();
       setSessionRefreshAttribute(session, refreshInterval.multipliedBy(2));
+      final Instant oldRefreshTime = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
 
       final var result = getSendMultipleRequest(session, mockMvcTester);
 
       assertThat(result.successfulRequests().get()).isEqualTo(result.threads().length);
       // verify(httpSessionBasedAuthenticationHolder, times(1)).set(any());
       final Instant newRefreshTime = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
-      assertThat(newRefreshTime).isAfter(Instant.now().minusMillis(refreshInterval.toMillis()));
+      assertThat(newRefreshTime).isAfter(oldRefreshTime);
     }
 
     private void setupAuthentication(final MockHttpSession session) {
@@ -156,6 +150,7 @@ public class SessionAuthenticationRefreshTest {
       final var testAuthentication = new TestingAuthenticationToken(mockAuthentication, null);
       testAuthentication.setAuthenticated(true);
       final var securityContext = SecurityContextHolder.createEmptyContext();
+      SecurityContextHolder.setContext(securityContext);
       securityContext.setAuthentication(testAuthentication);
       session.setAttribute(
           HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
@@ -184,10 +179,10 @@ public class SessionAuthenticationRefreshTest {
         final MockHttpSession session, final MockMvcTester mockMvcTester)
         throws InterruptedException {
       final AtomicInteger successfulRequests = new AtomicInteger(0);
-      setupAuthentication(session);
       final Runnable requestTask =
           () -> {
             try {
+              setupAuthentication(session);
               final MvcTestResult testResult =
                   mockMvcTester
                       .get()
