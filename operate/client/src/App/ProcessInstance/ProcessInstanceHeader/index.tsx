@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import isNil from 'lodash/isNil';
+import {isNil, isEmpty} from 'lodash';
 import {formatDate} from 'modules/utils/date';
 import {ProcessInstanceOperations} from './ProcessInstanceOperations';
 import {getProcessDefinitionName} from 'modules/utils/instance';
@@ -16,7 +16,7 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeader';
 import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
-import {VersionTag} from './styled';
+import {VersionTag, ProcessTags} from './styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessInstances';
@@ -29,6 +29,7 @@ const headerColumns = [
   'Process Instance Key',
   'Version',
   'Version Tag',
+  'Tags',
   'Tenant',
   'Start Date',
   'End Date',
@@ -87,6 +88,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
     hasIncident,
     processDefinitionId,
   } = processInstance;
+  const tags = (processInstance as ProcessInstance & {tags?: string[]}).tags;
   const tenantsById = useAvailableTenants();
   const tenantName = tenantsById[tenantId] ?? tenantId;
 
@@ -107,6 +109,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
     isMultiTenancyEnabled ? ` - ${tenantName}` : ''
   }`;
   const hasVersionTag = !isNil(processDefinitionVersionTag);
+  const hasTags = !isNil(tags) && !isEmpty(tags);
   const processInstanceState = hasIncident ? 'INCIDENT' : state;
 
   return (
@@ -119,6 +122,9 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
         }
         if (name === 'Version Tag') {
           return hasVersionTag;
+        }
+        if (name === 'Tags') {
+          return hasTags;
         }
         return true;
       })}
@@ -165,6 +171,22 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
                     {processDefinitionVersionTag}
                   </VersionTag>
                 ),
+              },
+            ]
+          : []),
+        ...(hasTags
+          ? [
+              {
+                title: tags.join(', '),
+                content: tags.map((tag: string, index: number) => (
+                  <ProcessTags
+                    key={`${tag}-${index}`}
+                    size="sm"
+                    type="cool-gray"
+                  >
+                    {tag}
+                  </ProcessTags>
+                )),
               },
             ]
           : []),
