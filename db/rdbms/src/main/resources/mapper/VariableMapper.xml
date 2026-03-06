@@ -133,8 +133,7 @@
         typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="VAR_VALUE" javaType="java.lang.String"
         typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
-      <arg column="VAR_FULL_VALUE" javaType="java.lang.String"
-        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="VAR_FULL_VALUE" javaType="java.lang.String"/>
       <arg column="IS_PREVIEW" javaType="java.lang.Boolean"/>
       <arg column="SCOPE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
