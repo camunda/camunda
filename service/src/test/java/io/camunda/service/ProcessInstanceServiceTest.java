@@ -251,6 +251,49 @@ public final class ProcessInstanceServiceTest {
               eq(java.time.Duration.ofMillis(600_000L)));
     }
 
+    @Test
+    void shouldPreserveRoundRobinDispatchStrategyAcrossWithAuthenticationCalls() {
+      // given - the services instance has a RequestRetryHandler with round-robin strategy
+      final var triedPartitions = new ArrayList<Integer>();
+      final var mockResponse = new ProcessInstanceCreationRecord();
+
+      when(brokerClient.sendRequest(any(BrokerCreateProcessInstanceRequest.class)))
+          .thenAnswer(
+              invocation -> {
+                final var brokerRequest =
+                    invocation.getArgument(0, BrokerCreateProcessInstanceRequest.class);
+                triedPartitions.add(brokerRequest.getPartitionId());
+                return CompletableFuture.completedFuture(new BrokerResponse<>(mockResponse));
+              });
+
+      // when - calling withAuthentication multiple times and creating instances
+      final var auth1 = authentication("token1");
+      final var auth2 = authentication("token2");
+      final var auth3 = authentication("token3");
+
+      services
+          .withAuthentication(auth1)
+          .createProcessInstance(createProcessInstanceRequest())
+          .join();
+      services
+          .withAuthentication(auth2)
+          .createProcessInstance(createProcessInstanceRequest())
+          .join();
+      services
+          .withAuthentication(auth3)
+          .createProcessInstance(createProcessInstanceRequest())
+          .join();
+
+      // then - the round robin strategy should distribute requests across different partitions
+      // With 3 partitions and round-robin, we expect different partitions to be used
+      assertThat(triedPartitions).hasSize(3);
+      assertThat(triedPartitions).doesNotHaveDuplicates();
+    }
+
+    private Authentication authentication(final String token1) {
+      return new Authentication.Builder().token(token1).build();
+    }
+
     private ProcessInstanceServices.ProcessInstanceCreateRequest createProcessInstanceRequest() {
       return new ProcessInstanceServices.ProcessInstanceCreateRequest(
           123L, // processDefinitionKey
