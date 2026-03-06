@@ -119,7 +119,7 @@ Uses [Conventional Commits](https://www.conventionalcommits.org/). Max 120 chars
 <type>: <description>
 ```
 
-Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `perf`, `refactor`, `style`, `test`
+Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`, `revert`, `style`, `test`
 
 ## Pull Request Conventions
 
