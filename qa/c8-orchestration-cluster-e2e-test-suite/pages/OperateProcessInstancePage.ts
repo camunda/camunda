@@ -205,6 +205,14 @@ class OperateProcessInstancePage {
     }
     throw new Error(`Active icon not visible after ${maxRetries} attempts.`);
   }
+
+  getDiagramElement(elementId: string): Locator {
+    return this.diagram.locator(`[data-element-id="${elementId}"]`);
+  }
+
+  async clickDiagramElement(elementId: string): Promise<void> {
+    await this.getDiagramElement(elementId).click();
+  }
 }
 
 export {OperateProcessInstancePage};
