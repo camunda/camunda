@@ -13,14 +13,14 @@ import io.camunda.auth.domain.spi.CamundaAuthenticationHolder;
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.auth.domain.support.CamundaAuthenticationDelegatingConverter;
 import io.camunda.auth.domain.support.CamundaAuthenticationDelegatingHolder;
-import io.camunda.authentication.ConditionalOnUnprotectedApi;
-import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
-import io.camunda.authentication.converter.UnprotectedCamundaAuthenticationConverter;
-import io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder;
-import io.camunda.authentication.holder.RequestContextBasedAuthenticationHolder;
+import io.camunda.auth.spring.DefaultCamundaAuthenticationProvider;
+import io.camunda.auth.spring.converter.UnprotectedCamundaAuthenticationConverter;
+import io.camunda.auth.spring.holder.HttpSessionBasedAuthenticationHolder;
+import io.camunda.auth.spring.holder.RequestContextBasedAuthenticationHolder;
 import io.camunda.security.configuration.SecurityConfiguration;
-import jakarta.servlet.http.HttpServletRequest;
+import java.time.Duration;
 import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -32,22 +32,24 @@ import org.springframework.security.core.Authentication;
 public class CamundaAuthenticationConfiguration {
 
   @Bean
-  @ConditionalOnUnprotectedApi
+  @ConditionalOnProperty(
+      name = "camunda.security.authentication.unprotected-api",
+      havingValue = "true")
   public CamundaAuthenticationConverter<Authentication> unprotectedAuthenticationConverter() {
     return new UnprotectedCamundaAuthenticationConverter();
   }
 
   @Bean
-  public CamundaAuthenticationHolder requestContextBasedAuthenticationHolder(
-      final HttpServletRequest request) {
-    return new RequestContextBasedAuthenticationHolder(request);
+  public CamundaAuthenticationHolder requestContextBasedAuthenticationHolder() {
+    return new RequestContextBasedAuthenticationHolder();
   }
 
   @Bean
   public CamundaAuthenticationHolder httpSessionBasedAuthenticationHolder(
-      final HttpServletRequest request, final SecurityConfiguration securityConfiguration) {
+      final SecurityConfiguration securityConfiguration) {
     return new HttpSessionBasedAuthenticationHolder(
-        request, securityConfiguration.getAuthentication());
+        Duration.parse(
+            securityConfiguration.getAuthentication().getAuthenticationRefreshInterval()));
   }
 
   @Bean

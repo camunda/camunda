@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication.converter;
+package io.camunda.auth.spring.converter;
 
 import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.auth.domain.spi.CamundaAuthenticationConverter;
@@ -17,9 +17,6 @@ public class UnprotectedCamundaAuthenticationConverter
 
   @Override
   public boolean supports(final Authentication authentication) {
-    // 1) apiProtection == false and consolidated-auth profile used => authentication == null
-    // 2) apiProtection == false and no auth profile used => authentication ==
-    // AnonymousAuthenticationToken
     return authentication == null || authentication instanceof AnonymousAuthenticationToken;
   }
 
