@@ -116,6 +116,11 @@ final class BackupRangeTrackingIT {
                                       .isGreaterThanOrEqualTo(range.getStart().getCheckpointId());
                                 });
                         assertThat(range.getEnd()).isNotEqualTo(range.getStart());
+                        assertThat(range.getStart().getCheckpointTimestamp())
+                            .describedAs(
+                                "Start and end timestamps must differ because they are"
+                                    + " distinct backups taken at different times")
+                            .isNotEqualTo(range.getEnd().getCheckpointTimestamp());
                       });
             });
   }
