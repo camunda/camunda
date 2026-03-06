@@ -29,7 +29,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Manages conditional scenario registration, evaluation, and lifecycle. */
+/**
+ * Background engine that evaluates conditional scenarios and fires their actions.
+ *
+ * <p>Scenarios are registered via the fluent {@link #when(Runnable)} API. A background thread polls
+ * all registered conditions periodically; when a condition passes (i.e. the runnable completes
+ * without throwing), the associated action is executed.
+ *
+ * <p>Lifecycle is managed by the test framework through {@link #start}, {@link #stop}, and {@link
+ * #reset}:
+ *
+ * <ul>
+ *   <li>{@code start} — called before each test; snapshots the persistent scenario count and begins
+ *       polling.
+ *   <li>{@code stop} — called after each test; stops polling, removes scenarios added during the
+ *       test, and rewinds action pointers for persistent scenarios.
+ *   <li>{@code reset} — called after the test class; stops polling and clears all scenarios.
+ * </ul>
+ */
 public class ConditionalScenarioEngine {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ConditionalScenarioEngine.class);
@@ -43,6 +60,15 @@ public class ConditionalScenarioEngine {
   private volatile ScheduledFuture<?> pollingTask;
   private int persistentScenarioCount;
 
+  /**
+   * Registers a new conditional scenario. The condition is evaluated periodically on a background
+   * thread; when it completes without throwing, the associated action (defined via the returned
+   * step) is fired.
+   *
+   * @param condition a runnable that throws to signal the condition is not met
+   * @return the next step for defining the action
+   * @throws IllegalArgumentException if condition is null
+   */
   public ConditionalScenarioConditionStep when(final Runnable condition) {
     if (condition == null) {
       throw new IllegalArgumentException("Condition must not be null");
@@ -52,6 +78,14 @@ public class ConditionalScenarioEngine {
     return new ConditionStepImpl(scenario);
   }
 
+  /**
+   * Activates the engine for a test. Snapshots the current scenario count as the persistent
+   * boundary (scenarios registered before this call survive across tests), sets the context
+   * initializer for thread-local propagation, and begins polling if scenarios exist.
+   *
+   * @param contextInitializer a runnable executed at the start of each polling cycle to initialize
+   *     thread-local state (e.g. {@code CamundaAssert.DATA_SOURCE}) on the engine thread
+   */
   public void start(final Runnable contextInitializer) {
     persistentScenarioCount = scenarios.size();
     this.contextInitializer = contextInitializer;
@@ -60,6 +94,11 @@ public class ConditionalScenarioEngine {
     }
   }
 
+  /**
+   * Deactivates the engine after a test. Stops the polling thread, removes scenarios added since
+   * the last {@link #start} call (transient scenarios), and rewinds the action pointers of
+   * persistent scenarios so they fire from the beginning in the next test.
+   */
   public void stop() {
     stopPolling();
     if (scenarios.size() > persistentScenarioCount) {
@@ -70,6 +109,7 @@ public class ConditionalScenarioEngine {
     }
   }
 
+  /** Fully tears down the engine. Stops polling and removes all scenarios. */
   public void reset() {
     stopPolling();
     scenarios.clear();
