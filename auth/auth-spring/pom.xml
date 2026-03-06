@@ -27,10 +27,6 @@
       <artifactId>camunda-auth-domain</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.camunda.auth</groupId>
-      <artifactId>camunda-auth-token-exchange</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-security</artifactId>
     </dependency>

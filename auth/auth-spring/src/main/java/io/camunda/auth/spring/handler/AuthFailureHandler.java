@@ -26,8 +26,8 @@ public class AuthFailureHandler
     implements AuthenticationFailureHandler, AccessDeniedHandler, AuthenticationEntryPoint {
 
   private static final Logger LOG = LoggerFactory.getLogger(AuthFailureHandler.class);
-  private final com.fasterxml.jackson.databind.ObjectMapper objectMapper =
-      new com.fasterxml.jackson.databind.ObjectMapper();
+  private final tools.jackson.databind.ObjectMapper objectMapper =
+      new tools.jackson.databind.ObjectMapper();
 
   @Override
   public void onAuthenticationFailure(

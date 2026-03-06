@@ -7,7 +7,6 @@
  */
 package io.camunda.auth.starter.config;
 
-import java.time.Duration;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -110,8 +109,6 @@ public class CamundaAuthProperties {
      */
     private String clientRegistrationId = "token-exchange";
 
-    @NestedConfigurationProperty private final CacheProperties cache = new CacheProperties();
-
     public boolean isEnabled() {
       return enabled;
     }
@@ -126,49 +123,6 @@ public class CamundaAuthProperties {
 
     public void setClientRegistrationId(final String clientRegistrationId) {
       this.clientRegistrationId = clientRegistrationId;
-    }
-
-    public CacheProperties getCache() {
-      return cache;
-    }
-  }
-
-  public static class CacheProperties {
-    private boolean enabled = true;
-    private int maxSize = 1000;
-    private Duration ttl = Duration.ofMinutes(5);
-    private int evictionBufferSeconds = 60;
-
-    public boolean isEnabled() {
-      return enabled;
-    }
-
-    public void setEnabled(final boolean enabled) {
-      this.enabled = enabled;
-    }
-
-    public int getMaxSize() {
-      return maxSize;
-    }
-
-    public void setMaxSize(final int maxSize) {
-      this.maxSize = maxSize;
-    }
-
-    public Duration getTtl() {
-      return ttl;
-    }
-
-    public void setTtl(final Duration ttl) {
-      this.ttl = ttl;
-    }
-
-    public int getEvictionBufferSeconds() {
-      return evictionBufferSeconds;
-    }
-
-    public void setEvictionBufferSeconds(final int evictionBufferSeconds) {
-      this.evictionBufferSeconds = evictionBufferSeconds;
     }
   }
 

@@ -32,13 +32,6 @@ public interface TokenExchangeFacade {
    */
   TokenExchangeResponse exchangeToken(TokenExchangeRequest request);
 
-  /**
-   * Evicts all cached tokens for the given subject principal.
-   *
-   * @param subjectId the subject principal ID
-   */
-  void evictCachedTokensForSubject(String subjectId);
-
-  /** Returns whether the configured IdP supports token exchange. */
+  /** Returns whether token exchange is supported. */
   boolean isTokenExchangeSupported();
 }

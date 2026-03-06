@@ -13,7 +13,6 @@ import io.camunda.auth.domain.model.TokenExchangeResponse;
 import io.camunda.auth.domain.model.TokenType;
 import io.camunda.auth.domain.port.inbound.AuthenticationPort;
 import io.camunda.auth.domain.port.inbound.TokenExchangePort;
-import io.camunda.auth.domain.port.outbound.TokenCachePort;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -54,7 +53,6 @@ public final class CamundaAuthSdk {
 
     private AuthenticationPort authenticationPort;
     private TokenExchangePort tokenExchangePort;
-    private TokenCachePort tokenCachePort;
 
     private Builder() {}
 
@@ -68,11 +66,6 @@ public final class CamundaAuthSdk {
       return this;
     }
 
-    public Builder tokenCachePort(final TokenCachePort tokenCachePort) {
-      this.tokenCachePort = tokenCachePort;
-      return this;
-    }
-
     public CamundaAuthSdk build() {
       final AuthenticationFacade authFacade =
           authenticationPort != null
@@ -81,7 +74,7 @@ public final class CamundaAuthSdk {
 
       final TokenExchangeFacade exchangeFacade =
           tokenExchangePort != null
-              ? new DefaultTokenExchangeFacade(tokenExchangePort, tokenCachePort)
+              ? new DefaultTokenExchangeFacade(tokenExchangePort)
               : new NoOpTokenExchangeFacade();
 
       return new CamundaAuthSdk(authFacade, exchangeFacade);
@@ -140,11 +133,9 @@ public final class CamundaAuthSdk {
 
   private static final class DefaultTokenExchangeFacade implements TokenExchangeFacade {
     private final TokenExchangePort port;
-    private final TokenCachePort cachePort;
 
-    DefaultTokenExchangeFacade(final TokenExchangePort port, final TokenCachePort cachePort) {
+    DefaultTokenExchangeFacade(final TokenExchangePort port) {
       this.port = Objects.requireNonNull(port);
-      this.cachePort = cachePort;
     }
 
     @Override
@@ -164,13 +155,6 @@ public final class CamundaAuthSdk {
     @Override
     public TokenExchangeResponse exchangeToken(final TokenExchangeRequest request) {
       return port.exchange(request);
-    }
-
-    @Override
-    public void evictCachedTokensForSubject(final String subjectId) {
-      if (cachePort != null) {
-        cachePort.evictBySubject(subjectId);
-      }
     }
 
     @Override
@@ -236,9 +220,6 @@ public final class CamundaAuthSdk {
       throw new UnsupportedOperationException(
           "Token exchange is not configured. Enable it via camunda.auth.token-exchange.enabled=true");
     }
-
-    @Override
-    public void evictCachedTokensForSubject(final String subjectId) {}
 
     @Override
     public boolean isTokenExchangeSupported() {

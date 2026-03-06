@@ -27,10 +27,6 @@
       <artifactId>camunda-auth-domain</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.camunda.auth</groupId>
-      <artifactId>camunda-auth-token-exchange</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
@@ -54,6 +50,16 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.tngtech.archunit</groupId>
+      <artifactId>archunit-junit5-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.tngtech.archunit</groupId>
+      <artifactId>archunit-junit5-engine</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
