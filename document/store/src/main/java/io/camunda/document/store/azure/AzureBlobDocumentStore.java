@@ -16,6 +16,8 @@ import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.models.UserDelegationKey;
 import com.azure.storage.blob.sas.BlobSasPermission;
 import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentContent;
 import io.camunda.document.api.DocumentCreationRequest;
 import io.camunda.document.api.DocumentError;
@@ -62,6 +64,7 @@ public class AzureBlobDocumentStore implements DocumentStore {
   private final String containerPath;
   private final BlobContainerClient containerClient;
   private final BlobServiceClient serviceClient;
+  private final ObjectMapper objectMapper = new ObjectMapper();
   private final ExecutorService executor;
 
   public AzureBlobDocumentStore(
@@ -274,8 +277,7 @@ public class AzureBlobDocumentStore implements DocumentStore {
         sasUrl = blobClient.getBlobUrl() + "?" + sasToken;
       }
 
-      return Either.right(
-          new DocumentLink(sasUrl, OffsetDateTime.now().plus(Duration.ofMillis(durationInMillis))));
+      return Either.right(new DocumentLink(sasUrl, expiryTime));
     } catch (final BlobStorageException e) {
       return Either.left(mapBlobStorageError(documentId, e));
     } catch (final Exception e) {
@@ -330,7 +332,8 @@ public class AzureBlobDocumentStore implements DocumentStore {
   }
 
   private Map<String, String> toBlobMetadata(
-      final DocumentMetadataModel metadata, final String fileName, final String contentHash) {
+      final DocumentMetadataModel metadata, final String fileName, final String contentHash)
+      throws JsonProcessingException {
     if (metadata == null) {
       return Collections.emptyMap();
     }
@@ -344,10 +347,12 @@ public class AzureBlobDocumentStore implements DocumentStore {
 
     metadataMap.put(CONTENT_HASH_METADATA_KEY, contentHash);
 
-    if (metadata.customProperties() != null) {
-      metadata
-          .customProperties()
-          .forEach((key, value) -> metadataMap.put(key, String.valueOf(value)));
+    if (metadata.customProperties() != null && !metadata.customProperties().isEmpty()) {
+      for (final var key : metadata.customProperties().keySet()) {
+        final var value = metadata.customProperties().get(key);
+        final var valueAsString = objectMapper.writeValueAsString(value);
+        metadataMap.put(key, valueAsString);
+      }
     }
 
     putIfPresent(METADATA_PROCESS_DEFINITION_ID, metadata.processDefinitionId(), metadataMap);
