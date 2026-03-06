@@ -579,4 +579,96 @@ public class StraightThroughProcessingLoopValidationTest {
         .describedAs("Allow deployments of loops that aren't straight-through processed")
         .isNotNegative();
   }
+
+  @Test
+  public void shouldRejectDeploymentWithLinkEventLoop() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final var rejectedDeployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .task("task")
+                    .intermediateThrowEvent("throw")
+                    .link("link")
+                    .moveToProcess(processId)
+                    .linkCatchEvent("catch")
+                    .link("link")
+                    .connectTo("task")
+                    .done())
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains(String.format("Process: %s", processId))
+        .contains(GENERIC_REJECTION_MESSAGE + "task > throw > catch > task");
+  }
+
+  @Test
+  public void shouldDeployProcessWithLinkEventNotFormingALoop() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .task("task1")
+                    .intermediateThrowEvent("throw")
+                    .link("linkA")
+                    .moveToProcess(processId)
+                    .linkCatchEvent("catch")
+                    .link("linkA")
+                    .manualTask()
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    // then
+    assertThat(deployment.getKey())
+        .describedAs("Allow deployments of link events that don't form a loop")
+        .isNotNegative();
+  }
+
+  @Test
+  public void shouldDeployProcessWithLinkEventWithNonStraightThroughTaskInBetween() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("task")
+                    .intermediateThrowEvent("throw")
+                    .link("link")
+                    .moveToProcess(processId)
+                    .linkCatchEvent("catch")
+                    .link("link")
+                    .connectTo("task")
+                    .done())
+            .deploy();
+
+    // then
+    assertThat(deployment.getKey())
+        .describedAs(
+            "Allow deployments of link events that don't form a straight-through processing loop")
+        .isNotNegative();
+  }
 }
