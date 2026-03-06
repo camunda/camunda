@@ -39,7 +39,7 @@ class ConditionalScenarioEngineTest {
 
   @AfterEach
   void tearDown() {
-    engine.reset();
+    engine.stop();
   }
 
   // --- Input validation ---
@@ -185,18 +185,18 @@ class ConditionalScenarioEngineTest {
   }
 
   @Test
-  void shouldStopScenariosOnReset() throws InterruptedException {
+  void shouldStopScenariosOnStop() throws InterruptedException {
     final AtomicInteger actionCount = new AtomicInteger(0);
 
     engine.when(() -> {}).then(actionCount::incrementAndGet);
 
     Awaitility.await().untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(1));
 
-    engine.reset();
-    final int countAfterReset = actionCount.get();
+    engine.stop();
+    final int countAfterStop = actionCount.get();
 
     Thread.sleep(200);
 
-    assertThat(actionCount.get()).isEqualTo(countAfterReset);
+    assertThat(actionCount.get()).isEqualTo(countAfterStop);
   }
 }

@@ -253,8 +253,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       return;
     }
 
-    // fully reset conditional scenario engine
-    conditionalScenarioEngine.reset();
+    // fully stop conditional scenario engine
+    conditionalScenarioEngine.stop();
 
     try {
       processCoverage.reportCoverage();

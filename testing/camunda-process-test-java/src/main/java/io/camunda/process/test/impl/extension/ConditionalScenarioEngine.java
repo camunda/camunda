@@ -35,28 +35,26 @@ import org.slf4j.LoggerFactory;
  * all registered conditions periodically; when a condition passes (i.e. the runnable completes
  * without throwing), the associated action is executed.
  *
- * <p>Lifecycle is managed by the test framework through {@link #start}, {@link #stop}, and {@link
- * #reset}:
+ * <p>All scenarios are ephemeral — they are cleared after each test. Lifecycle is managed by the
+ * test framework through {@link #start} and {@link #stop}:
  *
  * <ul>
- *   <li>{@code start} — called before each test; snapshots the persistent scenario count and begins
- *       polling.
- *   <li>{@code stop} — called after each test; stops polling, removes scenarios added during the
- *       test, and rewinds action pointers for persistent scenarios.
- *   <li>{@code reset} — called after the test class; stops polling and clears all scenarios.
+ *   <li>{@code start} — called before each test; sets the context initializer for thread-local
+ *       propagation.
+ *   <li>{@code stop} — called after each test; stops polling and clears all scenarios.
  * </ul>
  */
 public class ConditionalScenarioEngine {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ConditionalScenarioEngine.class);
   private static final long POLL_INTERVAL_MS = 50;
+  private static final long SHUTDOWN_TIMEOUT_SECONDS = 10;
   private static final Duration CONDITION_PROBE_TIMEOUT = Duration.ZERO;
   private static final Duration CONDITION_PROBE_INTERVAL = Duration.ZERO;
 
   private final CopyOnWriteArrayList<Scenario> scenarios = new CopyOnWriteArrayList<>();
   private volatile Runnable contextInitializer;
   private volatile ScheduledExecutorService executor;
-  private int persistentScenarioCount;
 
   /**
    * Registers a new conditional scenario. The condition is evaluated periodically on a background
@@ -77,38 +75,17 @@ public class ConditionalScenarioEngine {
   }
 
   /**
-   * Activates the engine for a test. Snapshots the current scenario count as the persistent
-   * boundary (scenarios registered before this call survive across tests), sets the context
-   * initializer for thread-local propagation, and begins polling if scenarios exist.
+   * Activates the engine for a test. Sets the context initializer for thread-local propagation.
    *
    * @param contextInitializer a runnable executed at the start of each polling cycle to initialize
    *     thread-local state (e.g. {@code CamundaAssert.DATA_SOURCE}) on the engine thread
    */
   public void start(final Runnable contextInitializer) {
-    persistentScenarioCount = scenarios.size();
     this.contextInitializer = contextInitializer;
-    if (!scenarios.isEmpty()) {
-      ensurePolling();
-    }
   }
 
-  /**
-   * Deactivates the engine after a test. Stops the polling thread, removes scenarios added since
-   * the last {@link #start} call (transient scenarios), and rewinds the action pointers of
-   * persistent scenarios so they fire from the beginning in the next test.
-   */
+  /** Deactivates the engine after a test. Stops polling and clears all scenarios. */
   public void stop() {
-    stopPolling();
-    if (scenarios.size() > persistentScenarioCount) {
-      scenarios.subList(persistentScenarioCount, scenarios.size()).clear();
-    }
-    for (final Scenario scenario : scenarios) {
-      scenario.resetActionPointer();
-    }
-  }
-
-  /** Fully tears down the engine. Stops polling and removes all scenarios. */
-  public void reset() {
     stopPolling();
     scenarios.clear();
   }
@@ -117,7 +94,7 @@ public class ConditionalScenarioEngine {
     if (executor != null) {
       executor.shutdown();
       try {
-        executor.awaitTermination(10, TimeUnit.SECONDS);
+        executor.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS);
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
       }
@@ -191,18 +168,17 @@ public class ConditionalScenarioEngine {
       if (actions.isEmpty()) {
         return;
       }
-      final int idx = actionIndex.get();
-      final Runnable action = actions.get(Math.min(idx, actions.size() - 1));
+      final Runnable action = actions.get(clampToLastAction(actionIndex.get()));
       try {
         action.run();
       } catch (final Throwable t) {
         LOGGER.warn("Conditional scenario action threw an exception", t);
       }
-      actionIndex.getAndUpdate(i -> Math.min(i + 1, actions.size() - 1));
+      actionIndex.getAndUpdate(i -> clampToLastAction(i + 1));
     }
 
-    void resetActionPointer() {
-      actionIndex.set(0);
+    private int clampToLastAction(final int index) {
+      return Math.min(index, actions.size() - 1);
     }
   }
 
