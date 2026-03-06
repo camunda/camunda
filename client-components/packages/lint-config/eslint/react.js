@@ -13,23 +13,22 @@ import reactRefreshPlugin from 'eslint-plugin-react-refresh';
  * @param {{ browserFiles: string[], testFiles: string[] }} options
  * @returns {import("eslint").Linter.Config[]}
  */
-export function reactConfig({browserFiles, testFiles}) {
-  return [
-    {
-      files: browserFiles,
-      plugins: {'react-hooks': reactHooksPlugin},
-      rules: {...reactHooksPlugin.configs.recommended.rules},
-    },
-    {
-      files: browserFiles,
-      ignores: testFiles,
-      plugins: {'react-refresh': reactRefreshPlugin},
-      rules: {
-        'react-refresh/only-export-components': [
-          'error',
-          {allowConstantExport: true},
-        ],
-      },
-    },
-  ];
+function reactConfig({browserFiles, testFiles}) {
+	return [
+		{
+			files: browserFiles,
+			plugins: {'react-hooks': reactHooksPlugin},
+			rules: {...reactHooksPlugin.configs.recommended.rules},
+		},
+		{
+			files: browserFiles,
+			ignores: testFiles,
+			plugins: {'react-refresh': reactRefreshPlugin},
+			rules: {
+				'react-refresh/only-export-components': ['error', {allowConstantExport: true}],
+			},
+		},
+	];
 }
+
+export {reactConfig};

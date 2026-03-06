@@ -23,7 +23,7 @@ import globals from 'globals';
  * }} options
  * @returns {import("eslint").Linter.Config[]}
  */
-export function typescriptConfig({browserFiles, testFiles, nodeFiles, tsconfigRootDir, tsProjects}) {
+function typescriptConfig({browserFiles, testFiles, nodeFiles, tsconfigRootDir, tsProjects}) {
 	return [
 		{
 			files: nodeFiles,
@@ -97,3 +97,5 @@ export function typescriptConfig({browserFiles, testFiles, nodeFiles, tsconfigRo
 		},
 	];
 }
+
+export {typescriptConfig};

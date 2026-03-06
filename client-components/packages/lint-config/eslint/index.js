@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {default as baseConfig} from './base.js';
+export {baseConfig} from './base.js';
 export {typescriptConfig} from './typescript.js';
 export {reactConfig} from './react.js';
 export {testingConfig} from './testing.js';
