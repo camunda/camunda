@@ -16,6 +16,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Test;
 
@@ -129,5 +130,48 @@ public class UserTaskEntityMapperTest {
     assertThat(entity.dueDate()).isNull();
     assertThat(entity.followUpDate()).isNull();
     assertThat(entity.tags()).isNotNull().isEmpty();
+  }
+
+  @Test
+  public void testToEntityWithNullStringValues() {
+    // Given
+    final UserTaskDbModel dbModel =
+        new Builder()
+            .userTaskKey(1L)
+            .elementId(null)
+            .processDefinitionId(null)
+            .creationDate(OffsetDateTime.now())
+            .completionDate(null)
+            .assignee(null)
+            .state(UserTaskDbModel.UserTaskState.CREATED)
+            .formKey(1L)
+            .processDefinitionKey(1L)
+            .processInstanceKey(1L)
+            .rootProcessInstanceKey(1L)
+            .elementInstanceKey(1L)
+            .tenantId(null)
+            .dueDate(null)
+            .followUpDate(null)
+            .candidateGroups(List.of())
+            .candidateUsers(List.of())
+            .externalFormReference(null)
+            .processDefinitionVersion(1)
+            .customHeaders(Map.of())
+            .priority(1)
+            .tags(Set.of())
+            .build();
+
+    // When
+    final UserTaskEntity entity = UserTaskEntityMapper.toEntity(dbModel);
+
+    // Then
+    assertThat(entity.elementId())
+        .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
+    assertThat(entity.processDefinitionId())
+        .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
+    assertThat(entity.tenantId())
+        .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
+    assertThat(entity.assignee()).isNull();
+    assertThat(entity.completionDate()).isNull();
   }
 }

@@ -43,4 +43,43 @@ public class CorrelatedMessageSubscriptionEntityMapperTest {
     // Then
     assertThat(entity).usingRecursiveComparison().isEqualTo(model);
   }
+
+  @Test
+  public void testToEntityWithNullValues() {
+    // Given
+    final var model =
+        new CorrelatedMessageSubscriptionDbModel.Builder()
+            .correlationKey(null)
+            .correlationTime(null)
+            .messageKey(123L)
+            .messageName(null)
+            .flowNodeId(null)
+            .flowNodeInstanceKey(456L)
+            .partitionId(4)
+            .processDefinitionId(null)
+            .processDefinitionKey(789L)
+            .processInstanceKey(1011L)
+            .rootProcessInstanceKey(2022L)
+            .subscriptionKey(321L)
+            .subscriptionType(MessageSubscriptionType.PROCESS_EVENT)
+            .tenantId(null)
+            .build();
+
+    // When
+    final var entity = CorrelatedMessageSubscriptionEntityMapper.toEntity(model);
+
+    // Then
+    assertThat(entity.correlationKey())
+        .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
+    assertThat(entity.correlationTime()).isNull();
+    assertThat(entity.messageKey()).isNotNull();
+    assertThat(entity.messageName())
+        .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
+    assertThat(entity.flowNodeId())
+        .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
+    assertThat(entity.processDefinitionId())
+        .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
+    assertThat(entity.tenantId())
+        .isEqualTo(""); // Oracle treats empty strings as NULL, mapper converts back to ""
+  }
 }
