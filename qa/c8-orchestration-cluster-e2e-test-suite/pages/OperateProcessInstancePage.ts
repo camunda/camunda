@@ -74,7 +74,14 @@ class OperateProcessInstancePage {
   readonly viewAllChildProcessesLink: Locator;
   readonly instanceHeaderSkeleton: Locator;
   readonly viewAllCalledInstancesLink: Locator;
+  readonly metadataPopover: Locator;
+  readonly incidentSection: Locator;
+  readonly rootCauseProcessName: Locator;
+  readonly rootCauseProcessId: Locator;
+  readonly incidentErrorType: Locator;
   readonly viewParentInstanceLink: Locator;
+  readonly incidentErrorIndicators: Locator;
+  readonly incidentErrorMessage: Locator;
   readonly incidentIconsInHistory: Locator;
   readonly modifyDialog: Locator;
   readonly modifyDialogContinueButton: Locator;
@@ -223,6 +230,15 @@ class OperateProcessInstancePage {
     this.executionCountToggleLabel = this.page.locator(
       '#toggle-execution-count_label',
     );
+    this.incidentErrorIndicators = page.locator(
+      '[data-testid="incident-error-indicator"]',
+    );
+    this.metadataPopover = page.getByTestId('popover');
+    this.incidentErrorType = this.metadataPopover
+      .getByText('Type')
+      .locator('xpath=following-sibling::*[1]');
+    this.incidentErrorMessage = this.metadataPopover.locator('text=/error/i');
+    this.incidentSection = page.getByText('IncidentView');
     this.variableValueCellLocator = (name: string) =>
       this.variablesList
         .getByTestId(`variable-${name}`)
@@ -296,10 +312,6 @@ class OperateProcessInstancePage {
 
   async connectorResultVariableName(name: string): Promise<Locator> {
     return this.page.getByTestId(name);
-  }
-
-  async connectorResultVariableValue(variableName: string): Promise<Locator> {
-    return this.page.getByTestId(variableName).locator('td').last();
   }
 
   private async waitForIconWithRetry(
@@ -721,6 +733,74 @@ class OperateProcessInstancePage {
   async clickViewParentInstance(): Promise<void> {
     await this.viewParentInstanceLink.click();
   }
+  async countIncidentErrorIndicators(): Promise<number> {
+    return await this.incidentErrorIndicators.count();
+  }
+
+  async clickOnElementInDiagram(elementId: string): Promise<void> {
+    await this.clickDiagramElement(elementId);
+  }
+
+  async clickIncidentsBanner(): Promise<void> {
+    await this.incidentsBanner.click({force: true});
+  }
+
+  async closeIncidentsPanel(): Promise<void> {
+    await expect(this.incidentsBanner).toContainText(/hide/i, {
+      timeout: 10000,
+    });
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await this.incidentsBanner.scrollIntoViewIfNeeded();
+      await this.incidentsBanner.click({force: true});
+
+      try {
+        await expect(this.incidentsBanner).toContainText(/view/i, {
+          timeout: 3000,
+        });
+        return;
+      } catch {
+        try {
+          await expect(this.incidentsViewHeader).toBeHidden({timeout: 3000});
+          return;
+        } catch {
+          await sleep(500);
+        }
+      }
+    }
+
+    await expect(this.incidentsBanner).toContainText(/view/i, {
+      timeout: 10000,
+    });
+  }
+
+  async getIncidentCount(): Promise<number> {
+    const headingText = await this.incidentsViewHeader.textContent();
+    if (!headingText) {
+      return 0;
+    }
+    // Extract number from text like "Incidents   -   4 results"
+    const match = headingText.match(/(\d+)\s+results?/i);
+    return match ? parseInt(match[1], 10) : 0;
+  }
+
+  async verifyIncidentCount(expectedCount: number): Promise<void> {
+    const actualCount = await this.getIncidentCount();
+    expect(actualCount).toBe(expectedCount);
+  }
+  getCalledProcessLink(processName: string): Locator {
+    return this.page.getByRole('link', {name: processName});
+  }
+  async clickOnRootCauseProcessName(): Promise<void> {
+    await this.rootCauseProcessName.isVisible();
+    await this.rootCauseProcessId.click();
+  }
+
+  async clickCalledProcessLink(processName: string): Promise<void> {
+    await this.getCalledProcessLink(processName).click();
+  }
+  getIncidentErrorMessageByText(errorText: string): Locator {
+    return this.metadataPopover.getByText(errorText);
   async getAllIncidentIconsAmountInHistory(): Promise<number> {
     return await this.incidentIconsInHistory.count();
   }
