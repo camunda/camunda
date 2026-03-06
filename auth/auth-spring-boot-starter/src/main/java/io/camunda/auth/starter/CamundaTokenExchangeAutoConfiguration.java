@@ -52,8 +52,7 @@ public class CamundaTokenExchangeAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public DelegationChainValidator delegationChainValidator(
-      final CamundaAuthProperties properties) {
+  public DelegationChainValidator delegationChainValidator(final CamundaAuthProperties properties) {
     return new DelegationChainValidator(properties.getObo().getMaxDelegationChainDepth());
   }
 

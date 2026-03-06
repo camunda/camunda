@@ -5,30 +5,35 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.auth.spring.converter;
+package io.camunda.auth.domain.support;
 
 import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.auth.domain.spi.CamundaAuthenticationConverter;
 import java.util.List;
-import org.springframework.security.core.Authentication;
 
-public class DelegatingAuthenticationConverter
-    implements CamundaAuthenticationConverter<Authentication> {
+/**
+ * Delegating {@link CamundaAuthenticationConverter} that delegates to the first converter in the
+ * chain that supports a given authentication object.
+ *
+ * @param <T> the type of authentication object to convert
+ */
+public class CamundaAuthenticationDelegatingConverter<T>
+    implements CamundaAuthenticationConverter<T> {
 
-  private final List<CamundaAuthenticationConverter<Authentication>> converters;
+  private final List<CamundaAuthenticationConverter<T>> converters;
 
-  public DelegatingAuthenticationConverter(
-      final List<CamundaAuthenticationConverter<Authentication>> converters) {
+  public CamundaAuthenticationDelegatingConverter(
+      final List<CamundaAuthenticationConverter<T>> converters) {
     this.converters = List.copyOf(converters);
   }
 
   @Override
-  public boolean supports(final Authentication authentication) {
+  public boolean supports(final T authentication) {
     return converters.stream().anyMatch(c -> c.supports(authentication));
   }
 
   @Override
-  public CamundaAuthentication convert(final Authentication authentication) {
+  public CamundaAuthentication convert(final T authentication) {
     return converters.stream()
         .filter(c -> c.supports(authentication))
         .findFirst()

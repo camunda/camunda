@@ -32,8 +32,7 @@ class DelegationChainValidatorTest {
   void shouldAcceptTokenWithSingleActClaim() {
     // given
     final String jwt =
-        createJwt(
-            "{\"sub\":\"user-1\",\"act\":{\"sub\":\"service-a\"},\"aud\":\"service-b\"}");
+        createJwt("{\"sub\":\"user-1\",\"act\":{\"sub\":\"service-a\"},\"aud\":\"service-b\"}");
 
     // when/then
     assertThatNoException().isThrownBy(() -> validator.validate(jwt));
@@ -85,11 +84,8 @@ class DelegationChainValidatorTest {
 
   private String createJwt(final String payload) {
     final String header =
-        Base64.getUrlEncoder()
-            .withoutPadding()
-            .encodeToString("{\"alg\":\"RS256\"}".getBytes());
-    final String body =
-        Base64.getUrlEncoder().withoutPadding().encodeToString(payload.getBytes());
+        Base64.getUrlEncoder().withoutPadding().encodeToString("{\"alg\":\"RS256\"}".getBytes());
+    final String body = Base64.getUrlEncoder().withoutPadding().encodeToString(payload.getBytes());
     return header + "." + body + ".signature";
   }
 }

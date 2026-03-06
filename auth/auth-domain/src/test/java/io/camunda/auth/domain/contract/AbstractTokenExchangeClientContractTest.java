@@ -73,7 +73,6 @@ public abstract class AbstractTokenExchangeClientContractTest {
             .build();
 
     // when/then
-    assertThatThrownBy(() -> client.exchange(request))
-        .isInstanceOf(TokenExchangeException.class);
+    assertThatThrownBy(() -> client.exchange(request)).isInstanceOf(TokenExchangeException.class);
   }
 }

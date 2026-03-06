@@ -14,9 +14,9 @@ import static io.camunda.application.Profile.STANDALONE;
 import static io.camunda.application.Profile.TASKLIST;
 import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
 
+import io.camunda.auth.domain.model.AuthenticationMethod;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.configuration.helpers.WebappsHelper;
-import io.camunda.security.entity.AuthenticationMethod;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;

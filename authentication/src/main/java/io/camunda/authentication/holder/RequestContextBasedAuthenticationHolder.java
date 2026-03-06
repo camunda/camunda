@@ -10,7 +10,7 @@ package io.camunda.authentication.holder;
 import static org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST;
 
 import io.camunda.auth.domain.model.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationHolder;
+import io.camunda.auth.domain.spi.CamundaAuthenticationHolder;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 

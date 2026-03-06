@@ -11,6 +11,7 @@ import static io.camunda.security.configuration.InitializationConfiguration.DEFA
 import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.auth.domain.model.AuthenticationMethod;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.configuration.Api;
@@ -20,7 +21,6 @@ import io.camunda.configuration.Data;
 import io.camunda.configuration.Monitoring;
 import io.camunda.configuration.Processing;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Optional;
 import java.util.function.Consumer;

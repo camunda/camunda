@@ -7,7 +7,7 @@
  */
 package io.camunda.security.configuration;
 
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.auth.domain.model.AuthenticationMethod;
 
 public class AuthenticationConfiguration {
   public static final AuthenticationMethod DEFAULT_METHOD = AuthenticationMethod.BASIC;

@@ -8,16 +8,16 @@
 package io.camunda.application.commons.authentication;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
+import io.camunda.auth.domain.spi.CamundaAuthenticationConverter;
+import io.camunda.auth.domain.spi.CamundaAuthenticationHolder;
+import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
+import io.camunda.auth.domain.support.CamundaAuthenticationDelegatingConverter;
+import io.camunda.auth.domain.support.CamundaAuthenticationDelegatingHolder;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
-import io.camunda.authentication.converter.CamundaAuthenticationDelegatingConverter;
 import io.camunda.authentication.converter.UnprotectedCamundaAuthenticationConverter;
-import io.camunda.authentication.holder.CamundaAuthenticationDelegatingHolder;
 import io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder;
 import io.camunda.authentication.holder.RequestContextBasedAuthenticationHolder;
-import io.camunda.security.auth.CamundaAuthenticationConverter;
-import io.camunda.security.auth.CamundaAuthenticationHolder;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -56,6 +56,6 @@ public class CamundaAuthenticationConfiguration {
       final List<CamundaAuthenticationConverter<Authentication>> converters) {
     return new DefaultCamundaAuthenticationProvider(
         new CamundaAuthenticationDelegatingHolder(holders),
-        new CamundaAuthenticationDelegatingConverter(converters));
+        new CamundaAuthenticationDelegatingConverter<>(converters));
   }
 }

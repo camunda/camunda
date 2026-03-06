@@ -11,8 +11,8 @@ import static io.camunda.tasklist.webapp.mapper.TaskMapper.TASK_DESCRIPTION;
 import static java.util.Objects.requireNonNullElse;
 
 import io.camunda.auth.domain.model.CamundaAuthentication;
+import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.search.query.GroupQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.property.TasklistProperties;

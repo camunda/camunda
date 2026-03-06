@@ -10,7 +10,7 @@ package io.camunda.authentication.holder;
 import static java.time.temporal.ChronoUnit.MILLIS;
 
 import io.camunda.auth.domain.model.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationHolder;
+import io.camunda.auth.domain.spi.CamundaAuthenticationHolder;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;

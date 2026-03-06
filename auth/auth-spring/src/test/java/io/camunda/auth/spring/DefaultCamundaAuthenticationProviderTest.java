@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.auth.domain.spi.CamundaAuthenticationConverter;
-import io.camunda.auth.spring.holder.CamundaAuthenticationHolder;
+import io.camunda.auth.domain.spi.CamundaAuthenticationHolder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

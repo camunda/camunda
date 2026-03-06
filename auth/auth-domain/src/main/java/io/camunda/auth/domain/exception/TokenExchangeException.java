@@ -61,11 +61,7 @@ public sealed class TokenExchangeException extends RuntimeException
     private final int actualDepth;
 
     public DelegationChainTooDeep(final int maxDepth, final int actualDepth) {
-      super(
-          "Delegation chain depth "
-              + actualDepth
-              + " exceeds maximum allowed depth "
-              + maxDepth);
+      super("Delegation chain depth " + actualDepth + " exceeds maximum allowed depth " + maxDepth);
       this.maxDepth = maxDepth;
       this.actualDepth = actualDepth;
     }
