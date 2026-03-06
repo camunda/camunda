@@ -174,7 +174,7 @@ docker build \
   --tag camunda/zeebe:local \
   --build-arg DISTBALL='dist/target/camunda-zeebe*.tar.gz' \
   --target app \
-  --file ./camunda.Dockerfile
+  --file ./camunda.Dockerfile \
   .
 ```
 
@@ -186,7 +186,7 @@ docker build \
   --build-arg DISTBALL='dist/target/camunda-zeebe*.tar.gz' \
   --build-arg BASE='public' \
   --target app \
-  --file ./camunda.Dockerfile
+  --file ./camunda.Dockerfile \
   .
 ```
 
