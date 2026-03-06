@@ -41,7 +41,7 @@
     <version.awaitility>4.3.0</version.awaitility>
     <version.bouncycastle>1.83</version.bouncycastle>
     <version.camunda>7.24.0</version.camunda>
-    <version.camunda-license-check>2.10.0</version.camunda-license-check>
+    <version.camunda-license-check>2.11.2</version.camunda-license-check>
     <version.checkstyle>13.3.0</version.checkstyle>
     <version.commons-beanutils>1.11.0</version.commons-beanutils>
     <version.commons-lang>3.20.0</version.commons-lang>
