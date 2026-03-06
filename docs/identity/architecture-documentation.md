@@ -1,87 +1,104 @@
-# Orchestration Cluster Identity
 
-> **Status**: Draft
-> **Scope**: Cluster‑internal
-> **Out of scope**: **Management Identity** (Web Modeler, Console, Optimize) except where explicitly mentioned.
+# Identity Module (Orchestration Cluster Identity)
 
----
-
-## 1. Introduction and Goals
-
-The **Identity module** is the **cluster‑embedded authentication and authorization service** for a Camunda 8 Orchestration Cluster. It provides:
-
-- **Unified access management** for all cluster components (**Zeebe, Operate, Tasklist, Orchestration Cluster REST/gRPC APIs**).
-- **Flexible authentication**:
-  - **OIDC** with external IdPs (Entra ID, Okta, Keycloak, Auth0, …)
-  - **Basic authentication** and **no‑auth** for local/self‑managed scenarios.
-- **Fine‑grained, resource‑based authorizations** across runtime resources (e.g. `PROCESS_DEFINITION`, `PROCESS_INSTANCE`, `USER_TASK`, decisions).
-- **Cluster‑local multi‑tenancy** (tenants per cluster in Self‑Managed).
-- **Embedded storage** using Zeebe’s primary log and secondary search storage (Elasticsearch/RDBMS), avoiding a dedicated identity DB in the common case.
-
-**Goals**
-
-1. Provide a **single, consistent identity surface per Orchestration Cluster**, independent of Management Identity.
-2. Enable **least‑privilege, resource‑level authorization** for both UI and API interactions.
-3. Support **enterprise IdP integration via OIDC** for both human SSO and M2M/API clients.
-4. Work identically (semantics) across **SaaS and Self‑Managed**, with cluster‑level roles and groups in both.
+> Status: Draft
+> Scope: Cluster‑internal Orchestration Cluster Identity.
+> Out of scope: Management Identity (Web Modeler, Console, Optimize) except where explicitly mentioned.
 
 ---
 
-## 2. Requirements Overview
+## 1. Introduction and goals
 
-High‑level (non‑exhaustive):
+The Identity module is the cluster‑embedded authentication and authorization service for a Camunda 8 Orchestration Cluster. It provides:
 
-- **R1 – Cluster‑scoped access control**
-  - Identity must control access to Zeebe, Operate, Tasklist, and Orchestration Cluster APIs per cluster.
-- **R2 – External IdP integration**
-  - Support OIDC with multiple enterprise IdPs; allow mapping of token claims to users, groups, roles, tenants, authorizations.
-- **R3 – Multi‑tenancy (Self‑Managed)**
-  - Tenants must be created, assigned and enforced at the Orchestration Cluster level; Management Identity must no longer be SoT for tenants.
-- **R4 – Migration from Management Identity**
-  - Provide tooling and mappings to migrate users, groups, roles, tenants, mapping rules and resource authorizations from Management Identity.
-- **R5 – Fine‑grained Authorizations**
-  - Support RBAC and resource‑based permissions that can be evaluated uniformly across UIs and APIs.
+- Unified access management for all cluster components: Zeebe, Operate, Tasklist, Orchestration Cluster REST/gRPC APIs.
+- Flexible authentication:
+  - OIDC with external IdPs (Entra ID, Okta, Keycloak, Auth0, …)
+  - Basic authentication and no‑auth for local and simple Self‑Managed setups.
+- Fine‑grained, resource‑based authorizations across runtime resources (for example, `PROCESS_DEFINITION`, `PROCESS_INSTANCE`, `USER_TASK`).
+- Cluster‑local multi‑tenancy in Self‑Managed deployments.
+- Embedded storage using Zeebe’s primary log and secondary search storage (Elasticsearch/RDBMS), so there is no dedicated identity database for the common case.
+
+Goals:
+
+1. Provide a single identity surface per Orchestration Cluster that is independent of Management Identity.
+2. Enable least‑privilege, resource‑level authorization for both UI and API interactions.
+3. Support enterprise IdP integration via OIDC for human SSO and machine‑to‑machine access.
+4. Align semantics across SaaS and Self‑Managed, with cluster‑level roles and groups in both.
 
 ---
 
-## 3. Quality Goals
+## 2. Requirements overview
 
-- **Q1 – Security**
-  - Strong, auditable AuthN/AuthZ; OIDC‑based SSO recommended for production.
-- **Q2 – Consistency**
-  - Same authorization semantics for UI and API access; same model across SaaS and Self‑Managed.
-- **Q3 – Operability**
-  - Minimal extra infrastructure; observability hooks for authentication and authorization flows.
-- **Q4 – Extensibility**
-  - Other teams can introduce new resource types/permissions without Identity team changes.
+Selected high‑level requirements (non‑exhaustive):
+
+- R1 – Cluster‑scoped access control
+  Identity controls access to Zeebe, Operate, Tasklist and Orchestration Cluster APIs per cluster.
+
+- R2 – External IdP integration
+  OIDC integration with enterprise IdPs; mapping of token claims to users, groups, roles, tenants and authorizations.
+
+- R3 – Multi‑tenancy (Self‑Managed)
+  Tenants created, assigned and enforced at Orchestration Cluster level. Management Identity is no longer source of truth for runtime tenants.
+
+- R4 – Migration from Management Identity
+  Tooling and mappings to migrate users, groups, roles, tenants, mapping rules and resource authorizations from Management Identity.
+
+- R5 – Fine‑grained authorizations
+  Resource‑based permissions evaluated uniformly across UIs and APIs.
+
+---
+
+## 3. Quality goals
+
+- Q1 – Security
+  Strong, auditable authentication and authorization; OIDC‑based SSO recommended for production.
+
+- Q2 – Consistency
+  Same authorization semantics for UI and API; same conceptual model in SaaS and Self‑Managed.
+
+- Q3 – Operability
+  Minimal extra infrastructure; suitable hooks for observing authentication and authorization flows.
+
+- Q4 – Extensibility
+  Other teams can introduce new resource or permission types while reusing the shared RBAC framework.
 
 ---
 
 ## 4. Stakeholders
 
-- **Product & Architecture**: Identity PM, Orchestration Cluster architects, Hub team.
-- **Implementation Teams**:
-  - Orchestration Cluster Engine / Zeebe
+- Product and architecture: Identity PM, Orchestration Cluster architects, Hub team.
+- Implementation teams:
+  - Orchestration Cluster engine / Zeebe
   - Operate, Tasklist, REST API teams
-  - Identity team (cluster Identity & Management Identity)
-- **Ops & SRE**: SaaS operations, Self‑Managed customers’ platform teams.
-- **Customers**: Platform owners, security/identity teams, app developers.
+  - Identity team (cluster Identity and Management Identity)
+- Operations and SRE: SaaS operations, Self‑Managed platform teams.
+- Customers: platform owners, security/identity teams, application developers.
 
 ---
 
-## 5. Architecture Constraints
+## 5. Architecture constraints
 
-- **Embedded in Orchestration Cluster**: Identity is shipped as part of the unified Orchestration Cluster artifact (JAR/Container).
-- **Spring Security based**: Authentication logic is built on Spring Security, configured via Camunda‑specific properties (e.g. `CAMUNDA_SECURITY_*`).
-- **Multi‑protocol Auth**: Support for **Basic** and **OIDC**, with OIDC being the recommended production mode.
-- **Shared RBAC framework**: Authorization checks must use the shared RBAC framework and behaviors (e.g. `AuthorizationCheckBehavior`) owned by Identity team but extensible by feature teams.
-- **No Management Identity dependency for runtime**: Engine/UI runtime (cluster) cannot depend on Management Identity; that component is reserved for Web Modeler/Console/Optimize and Self‑Managed only.
+- Embedded in Orchestration Cluster
+  Identity is shipped as part of the Orchestration Cluster artifact (JAR/container).
+
+- Based on Spring Security
+  Authentication logic builds on Spring Security, configured via `CAMUNDA_SECURITY_*` and related properties.
+
+- Multi‑protocol authentication
+  Support for Basic and OIDC, with OIDC as the recommended method for production.
+
+- Shared RBAC framework
+  Authorization checks use the shared framework and behaviors (for example `AuthorizationCheckBehavior`), owned by the Identity team but extensible by feature teams.
+
+- No Management Identity dependency for runtime
+  Engine and runtime UIs cannot depend on Management Identity. That component is reserved for Web Modeler, Console and Optimize in Self‑Managed.
 
 ---
 
-## 6. Context and Scope
+## 6. Context and scope
 
-### 6.1 Business Context
+### 6.1 Business context
 
 ```mermaid
 ---
@@ -101,7 +118,7 @@ flowchart LR
   IDP -->|"OIDC SSO / tokens"| SAAS_OR_SM
 ```
 
-**Entities**
+Entities:
 
 | Entity          | Description                                                                                 |
 |-----------------|---------------------------------------------------------------------------------------------|
@@ -111,7 +128,7 @@ flowchart LR
 | Management Identity | Access control for Web Modeler, Console, Optimize in Self‑Managed only. |
 | Enterprise IdP  | Customer’s IdP providing SSO and tokens via OIDC/SAML.                                     |
 
-### 6.2 Technical Context
+### 6.2 Technical context
 
 ```mermaid
 ---
@@ -119,24 +136,24 @@ title: Identity - Technical Context
 ---
 flowchart LR
   subgraph USERS["Clients"]
-    HU[Human users\n(Browser)]
-    SRV[Service accounts /\njob workers / custom services]
+    HU["Human users (browser)"]
+    SRV["Service accounts / job workers / custom services"]
   end
 
-  IDP[("OIDC IdP\n(Entra ID, Okta, Keycloak, ...)")]
+  IDP["OIDC IdP (Entra ID, Okta, Keycloak, ...)"]
 
   subgraph CLUSTER["Orchestration Cluster"]
     subgraph IDENTITY["Orchestration Cluster Identity"]
-      AUTH[Authentication\n(Basic / OIDC)]
-      AUTHZ[Authorization Engine\n(RBAC + resource-based)]
-      ADMINUI[Admin UI\n(Identity / Admin)]
+      AUTH["Authentication (Basic / OIDC via Spring Security)"]
+      AUTHZ["Authorization Engine (RBAC + resource-based)"]
+      ADMINUI["Admin UI (Identity / Admin)"]
     end
 
     subgraph RUNTIME["Cluster Components"]
-      ZB[Zeebe Engine]
-      OP[Operate]
-      TL[Tasklist]
-      API[REST / gRPC APIs]
+      ZB["Zeebe Engine"]
+      OP["Operate"]
+      TL["Tasklist"]
+      API["REST / gRPC APIs"]
     end
   end
 
@@ -144,12 +161,12 @@ flowchart LR
   HU -->|"Browser / UI"| TL
   HU -->|"Admin UI"| ADMINUI
 
-  SRV -->|"Client Credentials"| API
+  SRV -->|"Client credentials"| API
 
-  IDP -->|"OIDC tokens\n(users & clients)"| AUTH
+  IDP -->|"OIDC tokens (users & clients)"| AUTH
 
   AUTH --> AUTHZ
-  ADMINUI -->|"Manage users, groups,\nroles, tenants, authz"| IDENTITY
+  ADMINUI -->|"Manage users, groups, roles, tenants, authorizations"| IDENTITY
 
   OP -->|"AuthZ check"| AUTHZ
   TL -->|"AuthZ check"| AUTHZ
@@ -160,40 +177,40 @@ flowchart LR
   AUTHZ -->|"policies in engine"| ZB
 ```
 
-**Entities**
+Entities:
 
 | Entity         | Description                                                                                                          |
 |----------------|----------------------------------------------------------------------------------------------------------------------|
-| Human users    | Log into UIs via browser, obtain OIDC session/token, and operate on processes/tasks. |
-| Service accounts / workers | Non‑interactive clients calling REST/gRPC APIs using Client Credentials Flow.                 |
-| OIDC IdP       | External IdP for users and clients; source of identity, attributes and group claims.     |
+| Human users    | Log into UIs via browser, obtain OIDC session/token, and operate on processes and tasks. |
+| Service accounts / workers | Non‑interactive clients calling REST/gRPC APIs using client credentials.                 |
+| OIDC IdP       | External IdP; source of identity, attributes and group claims.                        |
 | Orchestration Cluster Identity | AuthN/AuthZ and identity entity store embedded into cluster.           |
-| Cluster components | Runtime components enforcing Identity decisions for all user/client operations.                      |
+| Cluster components | Runtime components enforcing Identity decisions for user and client operations.                      |
 
 ---
 
-## 7. Solution Strategy
+## 7. Solution strategy
 
-- **Cluster‑embedded identity service**
-  - Ship Identity inside Orchestration Cluster to reduce operational footprint and latency; Identity is now the **SoT for runtime IAM** instead of Management Identity.
+- Cluster‑embedded identity service
+  Identity runs inside the Orchestration Cluster and is the source of truth for runtime IAM instead of Management Identity.
 
-- **Multi‑protocol authentication**
-  - Support **Basic** for simple Self‑Managed setups and local development; **OIDC** for production with SSO, MFA, and centralized user lifecycle.
+- Multi‑protocol authentication
+  Basic for simple Self‑Managed setups and development; OIDC for production with SSO, MFA and centralized user lifecycle.
 
-- **Resource‑based authorization**
-  - Use fine‑grained authorizations per resource type + action (e.g. `PROCESS_DEFINITION:READ`, `USER_TASK:ASSIGN`) to support complex least‑privilege scenarios across UIs and APIs.
+- Resource‑based authorization
+  Fine‑grained authorizations per resource type and action (for example `PROCESS_DEFINITION:READ`, `USER_TASK:ASSIGN`) across UIs and APIs.
 
-- **Cluster‑local tenant model**
-  - Manage tenants directly in Identity per cluster, decoupling runtime tenancy from Management Identity; Management Identity tenants remain only for Optimize in Self‑Managed.
+- Cluster‑local tenant model
+  Tenants managed directly in Identity per cluster; Management Identity tenants remain only for Optimize in Self‑Managed.
 
-- **Extensible RBAC library**
-  - Provide shared helpers and engine behaviors so feature teams can introduce new resource/permission types without Identity team changes in the hot path.
+- Extensible RBAC library
+  Shared helpers and engine behaviors so feature teams can introduce new resource/permission types.
 
 ---
 
-## 8. Building Block View
+## 8. Building block view
 
-### 8.1 Whitebox Overall System
+### 8.1 Whitebox overall system
 
 ```mermaid
 ---
@@ -237,7 +254,7 @@ flowchart TD
   APP -->|"UI call\n(with token)"| AUTH
 
   AUTH --> AUTHZ
-  ADMINUI -->|"CRUD Identities\n& policies"| ENT
+  ADMINUI -->|"CRUD identities\nand policies"| ENT
 
   ENT --> PSTORE
   ENT --> SSTORE
@@ -248,99 +265,112 @@ flowchart TD
   AUTHZ -->|"policies"| CMD
 ```
 
-**Building blocks**
+Building blocks:
 
 | Entity            | Description                                                                                                           |
 |-------------------|-----------------------------------------------------------------------------------------------------------------------|
-| REST / gRPC Gateway | Ingress for client APIs; forwards authenticated calls into engine & services.                                      |
-| Operate, Tasklist | Web UIs; rely on Identity for both login and resource‑level authorization.            |
-| Zeebe Engine      | Processes commands; consults authorization helpers (e.g. when starting instances on behalf of a user/client). |
-| Identity Admin UI | Web UI embedded in cluster for managing users, groups, roles, tenants, clients, authorizations. |
+| REST / gRPC gateway | Ingress for client APIs; forwards authenticated calls into engine and services.                                    |
+| Operate, Tasklist | Web UIs; rely on Identity for login and resource‑level authorization.                  |
+| Zeebe engine      | Processes commands; uses authorization helpers when executing operations on behalf of a user or client. |
+| Identity Admin UI | Web UI embedded in cluster for managing users, groups, roles, tenants, clients and authorizations. |
 | Authentication    | Spring Security configuration for Basic and OIDC, including token validation and session handling. |
-| Authorization Engine | RBAC framework and resource‑based checks used by engine and search layer.     |
-| Identity Entities | Domain model for all identity data (users, groups, roles, tenants, mapping rules, authorizations, clients). |
-| Primary/Secondary Storage | Persistent representation of identity entities in Zeebe log and search DB (ES / RDBMS). |
+| Authorization engine | RBAC framework and resource‑based checks used by engine and service layer.     |
+| Identity entities | Domain model for users, groups, roles, tenants, mapping rules, authorizations, clients. |
+| Primary / secondary storage | Persistent representation of identity entities in Zeebe log and search database. |
 
 ---
 
-## 9. Component View
+## 9. Component view
 
-### 9.1 Component: Orchestration Cluster Identity
+### 9.1 Orchestration Cluster Identity
 
-**Responsibilities**
+Responsibilities:
 
-- Act as **single source of truth** for runtime identity & access in an Orchestration Cluster.
-- Provide **Admin UI and APIs** to manage identity entities.
-- Perform **authentication** for web UIs and machine APIs.
-- Execute **authorization checks** for all cluster components via a shared RBAC engine.
+- Source of truth for runtime identity and access in an Orchestration Cluster.
+- Admin UI and API for managing identity entities.
+- Authentication for web UIs and machine APIs.
+- Authorization checks for all cluster components via the shared RBAC engine.
 
-**Key sub‑components**
+Key sub‑components:
 
-- **Admin UI / Orchestration Cluster Admin (8.9+)**
-  - Allows administrators to manage users, groups, roles, tenants, mapping rules, authorizations.
-  - In 8.9, UI branding changes from “Identity” to “Admin”, while identity concepts remain the same.
+- Admin UI / Orchestration Cluster Admin (8.9+)
+  Provides management for users, groups, roles, tenants, mapping rules and authorizations.
 
-- **Authentication**
-  - **Basic**: credentials stored and validated inside Identity; suitable for local and simple Self‑Managed setups.
-  - **OIDC**: delegates login to external IdP; mapping rules assign incoming principals to roles, groups, tenants, authorizations.
+- Authentication
+  Basic: credentials stored and validated inside Identity; suitable for local and simple Self‑Managed setups.
+  OIDC: login delegated to external IdP; mapping rules assign principals to roles, groups, tenants and authorizations.
 
-- **Identity Entities**
-  - **Users, Groups, Roles**: core principal/grouping model; roles bundle permissions.
-  - **Authorizations**: resource‑based permissions; connect principals (user/group/role/client) to resource types & actions.
-  - **Tenants**: isolate data and access within a cluster (Self‑Managed); stored and enforced in cluster Identity.
-  - **Clients**: represent technical clients (M2M) mapped from IdP client registrations.
-  - **Mapping Rules**: connect IdP claims to groups/roles/tenants/authorizations.
+- Identity entities
+  Users, groups, roles: core principal and grouping model; roles bundle permissions.
+  Authorizations: resource‑based permissions connecting principals to resource types and actions.
+  Tenants: data and access isolation within a cluster (Self‑Managed).
+  Clients: represent technical clients (M2M) mapped from IdP client registrations.
+  Mapping rules: link IdP claims to groups, roles, tenants and authorizations.
 
-- **Authorization Engine**
-  - Shared framework enabling resource & permission type definitions per feature team.
-  - Integrated with Zeebe engine, REST gateway and service layer to enforce checks consistently.
+- Authorization engine
+  Shared framework that allows other teams to define resource and permission types and use them consistently.
+  Integrated with Zeebe engine, REST gateway and services.
 
-### 9.2 Interactions with External IdP
+### 9.2 Interactions with external IdP
 
-- **User login**
-  1. Browser navigates to cluster UI.
-  2. Identity redirects to IdP (if OIDC).
-  3. IdP authenticates user, returns ID/Access token to cluster.
-  4. Identity extracts username, group/attribute claims and applies mapping rules.
-  5. Authorization engine evaluates authorizations to decide what UI and data are accessible.
+User login (OIDC):
 
-- **Machine‑to‑machine (M2M)**
-  1. Worker / service gets JWT via OAuth2 Client Credentials from IdP.
-  2. Sends token with REST/gRPC call to Orchestration Cluster.
-  3. Identity validates token, maps client to Identity client entity and applicable roles/authorizations.
-  4. Authorization engine checks permissions for the requested API operation.
+1. Browser navigates to cluster UI.
+2. Identity redirects to IdP for login.
+3. IdP authenticates user and returns ID/access token.
+4. Identity extracts username and group/attribute claims and applies mapping rules.
+5. Authorization engine evaluates authorizations to decide which UI and data are accessible.
+
+Machine‑to‑machine (M2M):
+
+1. Worker or service acquires JWT via OAuth2 client credentials from IdP.
+2. Sends token with REST/gRPC call to Orchestration Cluster.
+3. Identity validates token and maps client to Identity client entity and roles/authorizations.
+4. Authorization engine checks permissions for the requested operation.
 
 ---
 
-## 10. Architecture Decisions (Selection)
+## 10. Architecture decisions (selection)
 
-### ADR‑ID‑1: **Use Cluster‑Embedded Identity instead of external Identity component**
+### ADR‑ID‑1: Cluster‑embedded Identity instead of external component
 
-- **Status**: Accepted
-- **Context**: Pre‑8.8, runtime components depended on Management Identity + Keycloak + Postgres, increasing operational overhead and coupling.
-- **Decision**: Embed Identity directly in Orchestration Cluster, making it the SoT for runtime IAM.
-- **Consequences**:
-  - Fewer moving parts for runtime; easier HA and DR.
-  - Runtime access no longer broken when Management Identity or Keycloak is down.
-  - Migration complexity from Management Identity (handled by migration tooling).
+Status: accepted
 
-### ADR‑ID‑2: **Recommend OIDC as default production authentication**
+Context: Before 8.8, runtime components depended on Management Identity + Keycloak + Postgres, which increased operational overhead and coupling.
 
-- **Status**: Accepted
-- **Context**: Basic authentication is simple but lacks MFA, SSO, account lockout and enterprise policy enforcement.
-- **Decision**: Position OIDC as the recommended method for production in both SaaS and Self‑Managed.
-- **Consequences**:
-  - Stronger security and better UX (SSO, MFA).
-  - Requires customers to have or adopt an OIDC‑capable IdP.
+Decision: Embed Identity directly in Orchestration Cluster and treat it as source of truth for runtime IAM.
 
-### ADR‑ID‑3: **Resource‑based Authorization Model**
+Consequences:
 
-- **Status**: Accepted
-- **Context**: Previous Management Identity model did not provide sufficient granularity across all runtime resources; Tasklist/Operate had separate access controls.
-- **Decision**: Introduce flexible, resource‑based authorizations in Identity; migrate Management Identity permissions to new model.
-- **Consequences**:
-  - Consistent authorization semantics across UIs/APIs and resources.
-  - More migration work but better long‑term model.
+- Fewer moving parts for runtime; easier high availability and disaster recovery.
+- Runtime access does not depend on Management Identity availability.
+- Additional migration complexity, handled by migration tooling.
+
+### ADR‑ID‑2: OIDC as default production authentication
+
+Status: accepted
+
+Context: Basic authentication is simple but does not provide MFA, SSO, account lockout or password policies.
+
+Decision: Recommend OIDC as the default authentication method for production (SaaS and Self‑Managed).
+
+Consequences:
+
+- Better security and user experience through SSO and MFA.
+- Requires customers to operate or adopt an OIDC‑capable IdP.
+
+### ADR‑ID‑3: Resource‑based authorization model
+
+Status: accepted
+
+Context: The previous Management Identity model did not provide sufficient granularity for all runtime resources; Tasklist and Operate had separate access controls.
+
+Decision: Introduce flexible, resource‑based authorizations in Identity and migrate Management Identity permissions to this new model.
+
+Consequences:
+
+- Consistent authorization semantics across UIs, APIs and resource types.
+- Additional migration work, but a clearer long‑term model.
 
 ---
 
@@ -348,17 +378,15 @@ flowchart TD
 
 | Term                      | Definition                                                                                         |
 |---------------------------|----------------------------------------------------------------------------------------------------|
-| **Orchestration Cluster** | Unified Camunda 8 runtime: Zeebe, Operate, Tasklist, Identity, REST/gRPC APIs.   |
-| **Orchestration Cluster Identity** | Cluster‑embedded identity service for AuthN/AuthZ and identity entities. |
-| **Orchestration Cluster Admin** | UI surface for cluster Identity (new name in 8.9); hosts Identity features. |
-| **Management Identity**   | Standalone identity app (Self‑Managed) for Web Modeler, Console, Optimize. |
-| **Tenant**                | Logical partition of data and access within a cluster (runtime multi‑tenancy). |
-| **Authorization**         | Permission linking principal to resource type and action (e.g. `READ`, `UPDATE`). |
-| **Mapping Rule**          | Rule mapping IdP claims (groups, attributes) to Identity entities (groups, roles, tenants, authz). |
+| Orchestration Cluster     | Unified Camunda 8 runtime: Zeebe, Operate, Tasklist, Identity, REST/gRPC APIs.   |
+| Orchestration Cluster Identity | Cluster‑embedded identity service for authentication, authorization and identity entities. |
+| Orchestration Cluster Admin | UI surface for cluster Identity (new name in 8.9); hosts identity features. |
+| Management Identity       | Standalone identity app (Self‑Managed) for Web Modeler, Console and Optimize. |
+| Tenant                    | Logical partition of data and access within a cluster (runtime multi‑tenancy). |
+| Authorization             | Permission linking a principal to a resource type and action (for example READ, UPDATE, DELETE). |
+| Mapping rule              | Rule mapping IdP claims (groups, attributes) to identity entities such as groups, roles, tenants, authorizations. |
 
----
-
-> **Note**: Management Identity remains in use for Self‑Managed Web Modeler/Console/Optimize only and is **not** part of the Orchestration Cluster in SaaS deployments.
+Note: Management Identity remains in use for Self‑Managed Web Modeler, Console and Optimize only and is not part of the Orchestration Cluster in SaaS deployments.
 
 
 ---
