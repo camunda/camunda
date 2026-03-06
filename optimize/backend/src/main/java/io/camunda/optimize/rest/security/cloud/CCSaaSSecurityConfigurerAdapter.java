@@ -8,6 +8,8 @@
 package io.camunda.optimize.rest.security.cloud;
 
 import static io.camunda.optimize.OptimizeTomcatConfig.EXTERNAL_SUB_PATH;
+import static io.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
+import static io.camunda.optimize.rest.AuthenticationRestService.LOGOUT;
 import static io.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
@@ -158,6 +160,11 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
                       .requestMatchers(
                           PathPatternRequestMatcher.withDefaults()
                               .matcher(createApiPath(READYZ_PATH)))
+                      .permitAll()
+                      // logout must work even when the session token has already expired
+                      .requestMatchers(
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(createApiPath(AUTHENTICATION_PATH + LOGOUT)))
                       .permitAll()
                       // public share resources
                       .requestMatchers(
