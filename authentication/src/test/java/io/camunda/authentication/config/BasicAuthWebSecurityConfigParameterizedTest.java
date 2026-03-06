@@ -9,9 +9,7 @@ package io.camunda.authentication.config;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.authentication.filters.AbstractAdminUserCheckFilter;
-import io.camunda.authentication.filters.NoOpAdminUserCheckFilter;
+import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -24,10 +22,7 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
-import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
+import org.springframework.context.annotation.Import;
 
 @TestInstance(Lifecycle.PER_CLASS)
 public class BasicAuthWebSecurityConfigParameterizedTest {
@@ -101,26 +96,6 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
 
   @AutoConfigureMockMvc
   @AutoConfigureWebMvc
-  @ComponentScan(
-      basePackages = {"io.camunda.authentication"},
-      excludeFilters = {
-        @ComponentScan.Filter(type = FilterType.REGEX, pattern = ".*Controller"),
-        @ComponentScan.Filter(type = FilterType.REGEX, pattern = ".*OidcFlowTestContext")
-      })
-  public static class TestApplication {
-    @Bean
-    public ObjectMapper objectMapper() {
-      return new ObjectMapper();
-    }
-
-    @Bean
-    public HandlerMappingIntrospector mvcHandlerMappingIntrospector() {
-      return new HandlerMappingIntrospector();
-    }
-
-    @Bean
-    public AbstractAdminUserCheckFilter adminUserCheckFilter() {
-      return new NoOpAdminUserCheckFilter();
-    }
-  }
+  @Import({WebSecurityConfig.class, WebSecurityConfigTestContext.class})
+  public static class TestApplication {}
 }
