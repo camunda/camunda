@@ -287,7 +287,7 @@ jobs:
         name: Build Camunda Platform
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild -P\!include-optimize
+          maven-extra-args: -PskipFrontendBuild ${{ inputs.enable-optimize == false && '-P\!include-optimize' || '' }}
       - uses: ./.github/actions/build-platform-docker
         name: Build Camunda Docker Image
         with:
@@ -327,11 +327,11 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - run: ./mvnw -B -D skipTests -D skipChecks -P\!include-optimize -pl load-tests/load-tester -am install
+      - run: ./mvnw -B -D skipTests -D skipChecks ${{ inputs.enable-optimize == false && '-P\!include-optimize' || '' }} -pl load-tests/load-tester -am install
       - name: Build Starter Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/starter:${{ needs.calculate-image-tag.outputs.image-tag }}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P starter ${{ inputs.enable-optimize == false && '-P\!include-optimize' || '' }} -D image="${{ env.IMAGE_REPOSITORY }}/starter:${{ needs.calculate-image-tag.outputs.image-tag }}"
       - name: Build Worker Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P worker ${{ inputs.enable-optimize == false && '-P\!include-optimize' || '' }} -D image="${{ env.IMAGE_REPOSITORY }}/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -407,7 +407,7 @@ jobs:
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
             enable_optimize=${{ inputs.enable-optimize }} \
-            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }} --set orchestration.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'team-zeebe/camunda' }} --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.platform-helm-values }}" \
+            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }} --set orchestration.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'team-zeebe/camunda' }} --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.enable-optimize && format('--set optimize.image.tag={0}', needs.calculate-image-tag.outputs.image-tag) || '' }} ${{ inputs.platform-helm-values }}" \
             additional_load_test_configuration="$load_test_config"
       - name: Summarize platform deployment
         if: success()
