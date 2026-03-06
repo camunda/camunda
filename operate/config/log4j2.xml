@@ -14,7 +14,7 @@
   <Loggers>
     <Logger name="io.camunda.operate" level="info" />
     <Root level="info">
-      <AppenderRef ref="${env:OPERATE_LOG_APPENDER:-Console}"/>
+      <AppenderRef ref="${env:CAMUNDA_LOG_APPENDER:-${env:OPERATE_LOG_APPENDER:-Console}}"/>
     </Root>
   </Loggers>
 </Configuration>
