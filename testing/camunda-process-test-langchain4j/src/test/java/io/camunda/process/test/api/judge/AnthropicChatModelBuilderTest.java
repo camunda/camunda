@@ -20,6 +20,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.langchain4j.model.chat.ChatModel;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class AnthropicChatModelBuilderTest {
 
@@ -39,11 +42,16 @@ class AnthropicChatModelBuilderTest {
     assertThat(chatModel).isNotNull();
   }
 
-  @Test
-  void shouldThrowWhenApiKeyMissing() {
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {"  "})
+  void shouldThrowWhenApiKeyMissingOrBlank(final String apiKey) {
     // given
     final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder().model("claude-3-5-sonnet-20241022").build();
+        JudgeConfigBootstrapData.builder()
+            .apiKey(apiKey)
+            .model("claude-3-5-sonnet-20241022")
+            .build();
 
     // when / then
     assertThatThrownBy(() -> AnthropicChatModelBuilder.build(data))
@@ -52,40 +60,18 @@ class AnthropicChatModelBuilderTest {
         .hasMessageContaining("anthropic");
   }
 
-  @Test
-  void shouldThrowWhenModelMissing() {
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {"  "})
+  void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
     final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder().apiKey("test-api-key").build();
+        JudgeConfigBootstrapData.builder().apiKey("test-api-key").model(model).build();
 
     // when / then
     assertThatThrownBy(() -> AnthropicChatModelBuilder.build(data))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("model")
         .hasMessageContaining("anthropic");
-  }
-
-  @Test
-  void shouldThrowWhenApiKeyBlank() {
-    // given
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder().apiKey("  ").model("claude-3-5-sonnet-20241022").build();
-
-    // when / then
-    assertThatThrownBy(() -> AnthropicChatModelBuilder.build(data))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("apiKey");
-  }
-
-  @Test
-  void shouldThrowWhenModelBlank() {
-    // given
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder().apiKey("test-api-key").model("").build();
-
-    // when / then
-    assertThatThrownBy(() -> AnthropicChatModelBuilder.build(data))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("model");
   }
 }

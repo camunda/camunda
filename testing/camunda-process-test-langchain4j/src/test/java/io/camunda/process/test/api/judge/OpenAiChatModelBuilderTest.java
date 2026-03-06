@@ -20,6 +20,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.langchain4j.model.chat.ChatModel;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class OpenAiChatModelBuilderTest {
 
@@ -36,11 +39,13 @@ class OpenAiChatModelBuilderTest {
     assertThat(chatModel).isNotNull();
   }
 
-  @Test
-  void shouldThrowWhenApiKeyMissing() {
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {"  "})
+  void shouldThrowWhenApiKeyMissingOrBlank(final String apiKey) {
     // given
     final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder().model("gpt-4o").build();
+        JudgeConfigBootstrapData.builder().apiKey(apiKey).model("gpt-4o").build();
 
     // when / then
     assertThatThrownBy(() -> OpenAiChatModelBuilder.build(data))
@@ -49,40 +54,18 @@ class OpenAiChatModelBuilderTest {
         .hasMessageContaining("openai");
   }
 
-  @Test
-  void shouldThrowWhenModelMissing() {
+  @ParameterizedTest
+  @NullAndEmptySource
+  @ValueSource(strings = {"  "})
+  void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
     final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder().apiKey("test-api-key").build();
+        JudgeConfigBootstrapData.builder().apiKey("test-api-key").model(model).build();
 
     // when / then
     assertThatThrownBy(() -> OpenAiChatModelBuilder.build(data))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("model")
         .hasMessageContaining("openai");
-  }
-
-  @Test
-  void shouldThrowWhenApiKeyBlank() {
-    // given
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder().apiKey("  ").model("gpt-4o").build();
-
-    // when / then
-    assertThatThrownBy(() -> OpenAiChatModelBuilder.build(data))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("apiKey");
-  }
-
-  @Test
-  void shouldThrowWhenModelBlank() {
-    // given
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder().apiKey("test-api-key").model("").build();
-
-    // when / then
-    assertThatThrownBy(() -> OpenAiChatModelBuilder.build(data))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("model");
   }
 }

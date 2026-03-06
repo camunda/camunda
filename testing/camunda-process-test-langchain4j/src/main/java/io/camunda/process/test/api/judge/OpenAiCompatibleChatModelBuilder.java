@@ -15,27 +15,41 @@
  */
 package io.camunda.process.test.api.judge;
 
+import static io.camunda.process.test.api.judge.ModelBuilderSupport.hasText;
 import static io.camunda.process.test.api.judge.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class OpenAiCompatibleChatModelBuilder {
+
+  private static final Logger LOG = LoggerFactory.getLogger(OpenAiCompatibleChatModelBuilder.class);
 
   private OpenAiCompatibleChatModelBuilder() {}
 
   static ChatModel build(final JudgeConfigBootstrapData data) {
+    LOG.debug("Building OpenAI-compatible chat model");
+
     final String model = require(data.getModel(), "model", "openai-compatible");
     final String baseUrl = require(data.getBaseUrl(), "baseUrl", "openai-compatible");
-    final String apiKey = data.getApiKey();
 
     final OpenAiChatModel.OpenAiChatModelBuilder builder =
         OpenAiChatModel.builder().baseUrl(baseUrl).modelName(model);
 
-    if (apiKey != null) {
-      builder.apiKey(apiKey);
+    if (hasText(data.getApiKey())) {
+      LOG.debug("Using configured API key");
+      builder.apiKey(data.getApiKey().trim());
+    } else {
+      LOG.debug("No API key configured, building without authentication");
     }
 
-    return builder.build();
+    final ChatModel chatModel = builder.build();
+    LOG.debug(
+        "Successfully built OpenAI-compatible chat model with baseUrl '{}' and model '{}'",
+        baseUrl,
+        model);
+    return chatModel;
   }
 }

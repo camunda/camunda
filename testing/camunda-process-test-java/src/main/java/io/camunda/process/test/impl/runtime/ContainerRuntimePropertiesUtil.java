@@ -59,7 +59,6 @@ public final class ContainerRuntimePropertiesUtil {
   private final JudgeProperties judgeProperties;
   private final CamundaProcessTestClientProperties camundaProcessTestClientProperties;
 
-  private final Properties rawProperties;
   private final CamundaProcessTestRuntimeMode runtimeMode;
   private final boolean multiTenancyEnabled;
 
@@ -68,7 +67,6 @@ public final class ContainerRuntimePropertiesUtil {
   public ContainerRuntimePropertiesUtil(
       final Properties properties, final GitPropertiesUtil gitProperties) {
 
-    rawProperties = properties;
     final VersionedPropertiesUtil versionedPropsReader = new VersionedPropertiesUtil(gitProperties);
 
     elasticsearchVersion =
@@ -264,11 +262,5 @@ public final class ContainerRuntimePropertiesUtil {
 
   public JudgeProperties getJudgeProperties() {
     return judgeProperties;
-  }
-
-  public Properties getRawProperties() {
-    final Properties copy = new Properties();
-    copy.putAll(rawProperties);
-    return copy;
   }
 }

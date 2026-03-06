@@ -19,6 +19,10 @@ final class ModelBuilderSupport {
 
   private ModelBuilderSupport() {}
 
+  static boolean hasText(final String value) {
+    return value != null && !value.trim().isEmpty();
+  }
+
   static String require(final String value, final String fieldName, final String provider) {
     if (value == null || value.trim().isEmpty()) {
       throw new IllegalStateException(
