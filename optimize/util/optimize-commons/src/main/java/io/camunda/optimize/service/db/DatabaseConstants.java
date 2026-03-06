@@ -59,6 +59,11 @@ public final class DatabaseConstants {
   public static final String ZEEBE_VARIABLE_INDEX_NAME = "variable";
   public static final String ZEEBE_INCIDENT_INDEX_NAME = "incident";
   public static final String ZEEBE_USER_TASK_INDEX_NAME = "user-task";
+  /**
+   * Combined index alias used by the refactored Elasticsearch exporter, which stores all value
+   * types in one index. The alias equals the configured Zeebe name (no type suffix).
+   */
+  public static final String ZEEBE_RECORD_INDEX_NAME = "";
   public static final String VARIABLE_UPDATE_INSTANCE_INDEX_NAME = "variable-update-instance";
   public static final String BUSINESS_KEY_INDEX_NAME = "business-key";
   public static final String SETTINGS_INDEX_NAME = "settings";

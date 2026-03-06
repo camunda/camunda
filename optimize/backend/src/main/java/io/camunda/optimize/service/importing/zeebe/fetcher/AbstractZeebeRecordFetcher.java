@@ -80,7 +80,12 @@ public abstract class AbstractZeebeRecordFetcher<T> {
   }
 
   protected String getIndexAlias() {
-    return configurationService.getConfiguredZeebe().getName() + "-" + getBaseIndexName();
+    final String baseIndexName = getBaseIndexName();
+    if (baseIndexName == null || baseIndexName.isEmpty()) {
+      // Combined index: alias == just the configured zeebe name (no type suffix)
+      return configurationService.getConfiguredZeebe().getName();
+    }
+    return configurationService.getConfiguredZeebe().getName() + "-" + baseIndexName;
   }
 
   protected ZeebeImportConfiguration getZeebeImportConfig() {
