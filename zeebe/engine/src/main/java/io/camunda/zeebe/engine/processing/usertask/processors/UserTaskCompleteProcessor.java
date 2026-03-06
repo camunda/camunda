@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableNameLengthValidator;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -47,13 +48,15 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
   private final UserTaskCommandPreconditionValidator commandChecker;
   private final AsyncRequestBehavior asyncRequestBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final int maxVariableNameLength;
 
   public UserTaskCompleteProcessor(
       final ProcessingState state,
       final EventHandle eventHandle,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final int maxVariableNameLength) {
     elementInstanceState = state.getElementInstanceState();
     asyncRequestState = state.getAsyncRequestState();
     this.eventHandle = eventHandle;
@@ -68,6 +71,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
             authCheckBehavior);
     this.asyncRequestBehavior = asyncRequestBehavior;
     this.authCheckBehavior = authCheckBehavior;
+    this.maxVariableNameLength = maxVariableNameLength;
   }
 
   @Override
@@ -77,7 +81,12 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
         .checkUserTaskExists(command)
         .flatMap(userTask -> enrichCommandForRejection(command, userTask))
         .flatMap(userTask -> checkAuthorization(command, userTask))
-        .flatMap(userTask -> commandChecker.checkLifecycleState(command, userTask));
+        .flatMap(userTask -> commandChecker.checkLifecycleState(command, userTask))
+        .flatMap(
+            userTask ->
+                VariableNameLengthValidator.validateVariableNameLength(
+                        command.getValue().getVariablesBuffer(), maxVariableNameLength)
+                    .map(ignored -> userTask));
   }
 
   @Override

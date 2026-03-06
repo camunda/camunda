@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableNameLengthValidator;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
@@ -50,6 +51,7 @@ public final class MessageCorrelationCorrelateProcessor
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final int maxVariableNameLength;
 
   public MessageCorrelationCorrelateProcessor(
       final Writers writers,
@@ -61,12 +63,14 @@ public final class MessageCorrelationCorrelateProcessor
       final MessageState messageState,
       final MessageSubscriptionState messageSubscriptionState,
       final SubscriptionCommandSender commandSender,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final int maxVariableNameLength) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
     this.authCheckBehavior = authCheckBehavior;
+    this.maxVariableNameLength = maxVariableNameLength;
     final var eventHandle =
         new EventHandle(
             keyGenerator,
@@ -99,6 +103,16 @@ public final class MessageCorrelationCorrelateProcessor
         responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
         return;
       }
+    }
+
+    final var variableNameLengthValidation =
+        VariableNameLengthValidator.validateVariableNameLength(
+            messageCorrelationRecord.getVariablesBuffer(), maxVariableNameLength);
+    if (variableNameLengthValidation.isLeft()) {
+      final var rejection = variableNameLengthValidation.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      return;
     }
 
     final long messageKey = keyGenerator.nextKey();

@@ -10,11 +10,13 @@ package io.camunda.zeebe.engine.processing.message;
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -60,6 +62,31 @@ public final class CorrelateMessageTest {
                 .getValue())
         .hasName(MESSAGE_NAME)
         .hasCorrelationKey(CORRELATION_KEY);
+  }
+
+  @Test
+  public void shouldRejectWhenVariableNameExceedsDefaultMaxLength() {
+    // given
+    final String variableName = "x".repeat(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1);
+
+    // when
+    final var rejectedRecord =
+        engine
+            .messageCorrelation()
+            .withCorrelationKey(CORRELATION_KEY)
+            .withName(MESSAGE_NAME)
+            .withVariables(asMsgPack(variableName, "bar"))
+            .expectRejection()
+            .correlate();
+
+    // then
+    Assertions.assertThat(rejectedRecord).hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedRecord.getRejectionReason())
+        .contains(
+            "Expected variable names to be no longer than "
+                + EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH
+                + " characters")
+        .contains("length " + (EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1));
   }
 
   @Test

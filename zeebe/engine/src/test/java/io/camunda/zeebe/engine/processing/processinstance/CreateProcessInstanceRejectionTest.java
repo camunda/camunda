@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
@@ -236,6 +237,40 @@ public class CreateProcessInstanceRejectionTest {
                 .getFirst())
         .hasIntent(ProcessInstanceCreationIntent.CREATE)
         .hasRejectionType(RejectionType.EXCEEDED_BATCH_RECORD_SIZE);
+  }
+
+  @Test
+  public void shouldRejectCommandIfVariableNameExceedsDefaultMaxLength() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
+        .deploy();
+
+    final String variableName = "x".repeat(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1);
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withVariable(variableName, "value")
+        .expectRejection()
+        .create();
+
+    final var rejectionRecord =
+        RecordingExporter.processInstanceCreationRecords()
+            .withBpmnProcessId(PROCESS_ID)
+            .onlyCommandRejections()
+            .getFirst();
+
+    // then
+    assertThat(rejectionRecord).hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    Assertions.assertThat(rejectionRecord.getRejectionReason())
+        .contains(
+            "Expected variable names to be no longer than "
+                + EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH
+                + " characters")
+        .contains("length " + (EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1));
   }
 
   @Test

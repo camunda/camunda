@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.processing.variable.VariableNameLengthValidator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
@@ -126,6 +127,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
   private final EventHandle eventHandle;
   private final ProcessingState processState;
   private final VariableBehavior variableBehavior;
+  private final int maxVariableNameLength;
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -138,7 +140,8 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
       final JobProcessingMetrics jobMetrics,
       final EventHandle eventHandle,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final VariableBehavior variableBehavior) {
+      final VariableBehavior variableBehavior,
+      final int maxVariableNameLength) {
     processState = state;
     userTaskState = state.getUserTaskState();
     jobState = state.getJobState();
@@ -166,6 +169,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     this.jobMetrics = jobMetrics;
     this.eventHandle = eventHandle;
     this.variableBehavior = variableBehavior;
+    this.maxVariableNameLength = maxVariableNameLength;
   }
 
   @Override
@@ -176,12 +180,20 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     preconditionChecker
         .check(state, record)
         .flatMap(job -> checkAuthorization(record, job))
+        .flatMap(job -> validateVariableNames(record, job))
         .ifRightOrLeft(
             job -> completeJob(record, job, session),
             rejection -> {
               rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
             });
+  }
+
+  private Either<Rejection, JobRecord> validateVariableNames(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    return VariableNameLengthValidator.validateVariableNameLength(
+            command.getValue().getVariablesBuffer(), maxVariableNameLength)
+        .map(ignored -> job);
   }
 
   private void completeJob(
