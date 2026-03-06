@@ -7,9 +7,15 @@
  */
 package io.camunda.search.schema.config;
 
+import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public class IndexConfiguration {
   public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
@@ -24,6 +30,18 @@ public class IndexConfiguration {
   private Map<String, String> refreshIntervalByIndexName = new HashMap<>();
 
   private Integer variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
+
+  {
+    final int shards =
+        Optional.ofNullable(System.getenv("BIG_INDEX_NUMBEROFSHARDS"))
+            .map(Integer::parseInt)
+            .orElse(1);
+    shardsByIndexName.put(ListViewTemplate.INDEX_NAME, shards);
+    shardsByIndexName.put(FlowNodeInstanceTemplate.INDEX_NAME, shards);
+    shardsByIndexName.put(SequenceFlowTemplate.INDEX_NAME, shards);
+    shardsByIndexName.put(AuditLogTemplate.INDEX_NAME, shards);
+    shardsByIndexName.put(TaskTemplate.INDEX_NAME, shards);
+  }
 
   public Integer getNumberOfShards() {
     return numberOfShards;
