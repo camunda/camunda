@@ -8,9 +8,9 @@
 package io.camunda.authentication;
 
 import io.camunda.auth.domain.model.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationConverter;
-import io.camunda.security.auth.CamundaAuthenticationHolder;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.auth.domain.spi.CamundaAuthenticationConverter;
+import io.camunda.auth.domain.spi.CamundaAuthenticationHolder;
+import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -7,9 +7,9 @@
  */
 package io.camunda.authentication;
 
+import io.camunda.auth.domain.model.AuthenticationMethod;
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.security.configuration.AuthenticationConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

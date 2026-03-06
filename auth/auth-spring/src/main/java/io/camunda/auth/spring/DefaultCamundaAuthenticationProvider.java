@@ -9,8 +9,8 @@ package io.camunda.auth.spring;
 
 import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.auth.domain.spi.CamundaAuthenticationConverter;
+import io.camunda.auth.domain.spi.CamundaAuthenticationHolder;
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
-import io.camunda.auth.spring.holder.CamundaAuthenticationHolder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 

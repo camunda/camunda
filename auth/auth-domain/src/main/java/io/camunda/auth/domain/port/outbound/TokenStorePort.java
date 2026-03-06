@@ -38,6 +38,5 @@ public interface TokenStorePort {
    * @param to the end of the time range
    * @return the list of matching records
    */
-  List<TokenMetadata> findBySubjectPrincipalId(
-      String subjectPrincipalId, Instant from, Instant to);
+  List<TokenMetadata> findBySubjectPrincipalId(String subjectPrincipalId, Instant from, Instant to);
 }

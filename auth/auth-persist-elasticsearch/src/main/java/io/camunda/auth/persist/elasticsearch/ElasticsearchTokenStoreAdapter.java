@@ -27,8 +27,7 @@ import org.slf4j.LoggerFactory;
 /** Elasticsearch-backed implementation of {@link TokenStorePort}. */
 public class ElasticsearchTokenStoreAdapter implements TokenStorePort {
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(ElasticsearchTokenStoreAdapter.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchTokenStoreAdapter.class);
 
   private static final String DEFAULT_INDEX_NAME = "camunda-auth-token-exchange-audit";
 
@@ -39,8 +38,7 @@ public class ElasticsearchTokenStoreAdapter implements TokenStorePort {
     this(client, DEFAULT_INDEX_NAME);
   }
 
-  public ElasticsearchTokenStoreAdapter(
-      final ElasticsearchClient client, final String indexName) {
+  public ElasticsearchTokenStoreAdapter(final ElasticsearchClient client, final String indexName) {
     this.client = client;
     this.indexName = indexName;
   }
@@ -57,8 +55,7 @@ public class ElasticsearchTokenStoreAdapter implements TokenStorePort {
           request -> request.index(indexName).id(metadata.exchangeId()).document(document));
     } catch (final ElasticsearchException e) {
       throw new RuntimeException(
-          "Failed to index token exchange audit document with exchangeId="
-              + metadata.exchangeId(),
+          "Failed to index token exchange audit document with exchangeId=" + metadata.exchangeId(),
           e);
     } catch (final IOException e) {
       throw new RuntimeException(
@@ -77,8 +74,7 @@ public class ElasticsearchTokenStoreAdapter implements TokenStorePort {
     try {
       final GetResponse<ElasticsearchTokenDocument> response =
           client.get(
-              request -> request.index(indexName).id(exchangeId),
-              ElasticsearchTokenDocument.class);
+              request -> request.index(indexName).id(exchangeId), ElasticsearchTokenDocument.class);
       if (response.found() && response.source() != null) {
         return Optional.of(response.source().toDomain());
       }
@@ -113,23 +109,16 @@ public class ElasticsearchTokenStoreAdapter implements TokenStorePort {
                           r.untyped(
                               u ->
                                   u.field("exchangeTime")
-                                      .gte(
-                                          co.elastic.clients.json.JsonData.of(
-                                              from.toEpochMilli()))
+                                      .gte(co.elastic.clients.json.JsonData.of(from.toEpochMilli()))
                                       .lte(
                                           co.elastic.clients.json.JsonData.of(
                                               to.toEpochMilli())))));
 
-      final BoolQuery boolQuery =
-          BoolQuery.of(b -> b.filter(subjectQuery).filter(rangeQuery));
+      final BoolQuery boolQuery = BoolQuery.of(b -> b.filter(subjectQuery).filter(rangeQuery));
 
       final SearchResponse<ElasticsearchTokenDocument> response =
           client.search(
-              request ->
-                  request
-                      .index(indexName)
-                      .query(q -> q.bool(boolQuery))
-                      .size(10_000),
+              request -> request.index(indexName).query(q -> q.bool(boolQuery)).size(10_000),
               ElasticsearchTokenDocument.class);
 
       return response.hits().hits().stream()

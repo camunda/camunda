@@ -8,7 +8,7 @@
 package io.camunda.authentication.converter;
 
 import io.camunda.auth.domain.model.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationConverter;
+import io.camunda.auth.domain.spi.CamundaAuthenticationConverter;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 

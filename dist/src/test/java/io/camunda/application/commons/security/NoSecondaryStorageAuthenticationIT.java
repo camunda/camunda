@@ -12,6 +12,7 @@ import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABAS
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.auth.domain.model.AuthenticationMethod;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.converter.TokenClaimsConverter;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
@@ -19,7 +20,6 @@ import io.camunda.authentication.service.NoDBMembershipService;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

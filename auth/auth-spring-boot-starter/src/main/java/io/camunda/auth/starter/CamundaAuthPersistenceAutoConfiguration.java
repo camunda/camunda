@@ -9,7 +9,6 @@ package io.camunda.auth.starter;
 
 import io.camunda.auth.domain.port.outbound.TokenStorePort;
 import io.camunda.auth.domain.store.CompositeTokenStore;
-import io.camunda.auth.starter.config.CamundaAuthProperties;
 import java.util.List;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;

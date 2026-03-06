@@ -43,9 +43,7 @@ public record TokenExchangeRequest(
     Objects.requireNonNull(grantType, "grantType must not be null");
     scopes = scopes != null ? Set.copyOf(scopes) : Set.of();
     additionalParameters =
-        additionalParameters != null
-            ? Collections.unmodifiableMap(additionalParameters)
-            : Map.of();
+        additionalParameters != null ? Collections.unmodifiableMap(additionalParameters) : Map.of();
   }
 
   public static Builder builder() {

@@ -12,12 +12,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
+import io.camunda.auth.domain.model.AuthenticationMethod;
 import io.camunda.qa.util.auth.ClientDefinition;
 import io.camunda.qa.util.auth.TestClient;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;

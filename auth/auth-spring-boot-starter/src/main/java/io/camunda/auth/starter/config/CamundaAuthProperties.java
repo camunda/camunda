@@ -157,8 +157,7 @@ public class CamundaAuthProperties {
   }
 
   public static class PersistenceProperties {
-    @NestedConfigurationProperty
-    private final RdbmsProperties rdbms = new RdbmsProperties();
+    @NestedConfigurationProperty private final RdbmsProperties rdbms = new RdbmsProperties();
 
     @NestedConfigurationProperty
     private final ElasticsearchPersistenceProperties elasticsearch =

@@ -70,9 +70,7 @@ final class DomainArchTest {
         .should()
         .dependOnClassesThat()
         .resideInAnyPackage(
-            "com.fasterxml.jackson.core..",
-            "com.fasterxml.jackson.databind..",
-            "tools.jackson..")
+            "com.fasterxml.jackson.core..", "com.fasterxml.jackson.databind..", "tools.jackson..")
         .because(
             "the domain module must not depend on Jackson runtime — "
                 + "only pure metadata annotations (jackson-annotations) are allowed")

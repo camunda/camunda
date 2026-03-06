@@ -20,8 +20,8 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Represents the authentication context for a user or client in Camunda, including their username or
- * client ID, group memberships, roles, tenants, mapping rules, and associated claims.
+ * Represents the authentication context for a user or client in Camunda, including their username
+ * or client ID, group memberships, roles, tenants, mapping rules, and associated claims.
  *
  * <p>Either {@code authenticatedUsername} or {@code authenticatedClientId} must be set, but not
  * both, unless the authentication represents an anonymous user in which case both can be null.

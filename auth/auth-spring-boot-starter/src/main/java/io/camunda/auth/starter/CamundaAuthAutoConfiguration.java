@@ -9,17 +9,17 @@ package io.camunda.auth.starter;
 
 import io.camunda.auth.domain.port.inbound.AuthenticationPort;
 import io.camunda.auth.domain.spi.CamundaAuthenticationConverter;
+import io.camunda.auth.domain.spi.CamundaAuthenticationHolder;
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.auth.domain.spi.MembershipResolver;
+import io.camunda.auth.domain.support.CamundaAuthenticationDelegatingConverter;
+import io.camunda.auth.domain.support.CamundaAuthenticationDelegatingHolder;
 import io.camunda.auth.spring.DefaultCamundaAuthenticationProvider;
 import io.camunda.auth.spring.SpringAuthenticationAdapter;
 import io.camunda.auth.spring.SpringOidcTokenExchangeConverter;
-import io.camunda.auth.spring.converter.DelegatingAuthenticationConverter;
 import io.camunda.auth.spring.converter.NoOpMembershipResolver;
 import io.camunda.auth.spring.converter.OidcTokenAuthenticationConverter;
 import io.camunda.auth.spring.converter.TokenClaimsConverter;
-import io.camunda.auth.spring.holder.CamundaAuthenticationDelegatingHolder;
-import io.camunda.auth.spring.holder.CamundaAuthenticationHolder;
 import io.camunda.auth.spring.holder.RequestContextBasedAuthenticationHolder;
 import io.camunda.auth.starter.config.CamundaAuthProperties;
 import java.util.List;
@@ -78,9 +78,9 @@ public class CamundaAuthAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(CamundaAuthenticationConverter.class)
-  public DelegatingAuthenticationConverter delegatingAuthenticationConverter(
+  public CamundaAuthenticationDelegatingConverter<Authentication> delegatingAuthenticationConverter(
       final OidcTokenAuthenticationConverter oidcConverter) {
-    return new DelegatingAuthenticationConverter(
+    return new CamundaAuthenticationDelegatingConverter<>(
         List.of((CamundaAuthenticationConverter<Authentication>) oidcConverter));
   }
 
@@ -95,7 +95,7 @@ public class CamundaAuthAutoConfiguration {
   @ConditionalOnMissingBean
   public CamundaAuthenticationProvider camundaAuthenticationProvider(
       final CamundaAuthenticationHolder holder,
-      final DelegatingAuthenticationConverter converter) {
+      final CamundaAuthenticationConverter<Authentication> converter) {
     return new DefaultCamundaAuthenticationProvider(holder, converter);
   }
 }

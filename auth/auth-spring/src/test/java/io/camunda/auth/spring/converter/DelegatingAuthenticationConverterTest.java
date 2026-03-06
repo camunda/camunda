@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.auth.domain.spi.CamundaAuthenticationConverter;
+import io.camunda.auth.domain.support.CamundaAuthenticationDelegatingConverter;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,7 +38,8 @@ class DelegatingAuthenticationConverterTest {
     when(converter2.supports(auth)).thenReturn(true);
     when(converter2.convert(auth)).thenReturn(expected);
 
-    final var delegating = new DelegatingAuthenticationConverter(List.of(converter1, converter2));
+    final var delegating =
+        new CamundaAuthenticationDelegatingConverter<>(List.of(converter1, converter2));
 
     // when
     final CamundaAuthentication result = delegating.convert(auth);
@@ -53,7 +55,8 @@ class DelegatingAuthenticationConverterTest {
     when(converter1.supports(auth)).thenReturn(false);
     when(converter2.supports(auth)).thenReturn(true);
 
-    final var delegating = new DelegatingAuthenticationConverter(List.of(converter1, converter2));
+    final var delegating =
+        new CamundaAuthenticationDelegatingConverter<>(List.of(converter1, converter2));
 
     // then
     assertThat(delegating.supports(auth)).isTrue();
@@ -66,7 +69,8 @@ class DelegatingAuthenticationConverterTest {
     when(converter1.supports(auth)).thenReturn(false);
     when(converter2.supports(auth)).thenReturn(false);
 
-    final var delegating = new DelegatingAuthenticationConverter(List.of(converter1, converter2));
+    final var delegating =
+        new CamundaAuthenticationDelegatingConverter<>(List.of(converter1, converter2));
 
     // then
     assertThat(delegating.supports(auth)).isFalse();
@@ -79,7 +83,8 @@ class DelegatingAuthenticationConverterTest {
     when(converter1.supports(auth)).thenReturn(false);
     when(converter2.supports(auth)).thenReturn(false);
 
-    final var delegating = new DelegatingAuthenticationConverter(List.of(converter1, converter2));
+    final var delegating =
+        new CamundaAuthenticationDelegatingConverter<>(List.of(converter1, converter2));
 
     // when/then
     assertThatThrownBy(() -> delegating.convert(auth))

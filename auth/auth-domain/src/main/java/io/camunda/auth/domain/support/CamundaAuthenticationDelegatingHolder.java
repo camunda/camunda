@@ -5,11 +5,17 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.auth.spring.holder;
+package io.camunda.auth.domain.support;
 
 import io.camunda.auth.domain.model.CamundaAuthentication;
+import io.camunda.auth.domain.spi.CamundaAuthenticationHolder;
 import java.util.List;
 
+/**
+ * Delegating {@link CamundaAuthenticationHolder} responsible to delegate to a matching {@link
+ * CamundaAuthenticationHolder} to set and get a {@link CamundaAuthentication}. If no matching
+ * {@link CamundaAuthenticationHolder} is found, it results in a noop, and no exception is thrown.
+ */
 public class CamundaAuthenticationDelegatingHolder implements CamundaAuthenticationHolder {
 
   private final List<CamundaAuthenticationHolder> holders;
