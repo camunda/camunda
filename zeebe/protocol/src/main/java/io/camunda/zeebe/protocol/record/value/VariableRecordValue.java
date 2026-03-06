@@ -66,6 +66,12 @@ public interface VariableRecordValue
   }
 
   /**
+   * @return the BPMN process id this process instance belongs to.
+   */
+  @Override
+  String getBpmnProcessId();
+
+  /**
    * Returns the key of the root process instance in the hierarchy. For variables in top-level
    * process instances, this is equal to {@link #getProcessInstanceKey()}. For variables in child
    * process instances (created via call activities), this is the key of the topmost parent process
@@ -73,14 +79,7 @@ public interface VariableRecordValue
    *
    * @return the key of the root process instance, or {@code -1} if not set
    */
-  @Override
   long getRootProcessInstanceKey();
-
-  /**
-   * @return the BPMN process id this process instance belongs to.
-   */
-  @Override
-  String getBpmnProcessId();
 
   /**
    * @return the source of the variable operation, e.g. {@code VariableOperationType.API} if the
