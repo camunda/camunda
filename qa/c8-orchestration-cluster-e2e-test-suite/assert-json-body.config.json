@@ -1,8 +1,8 @@
 {
   "extract": {
-    "repo": "https://github.com/camunda/camunda-orchestration-cluster-api",
-    "specPath": "specification/rest-api.yaml",
-    "ref": "main",
+    "repo": "https://github.com/camunda/camunda",
+    "specPath": "zeebe/gateway-protocol/src/main/proto/rest-api.yaml",
+    "ref": "stable/8.8",
     "outputDir": "json-body-assertions",
     "preserveCheckout": false,
     "dryRun": false,

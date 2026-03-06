@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "sourceRepo": "https://github.com/camunda/camunda-orchestration-cluster-api",
-    "commit": "8fe19877bb473c834b44b52dafb33e9b5ec235bd",
-    "generatedAt": "2026-03-04T15:03:27.555Z",
-    "specPath": "specification/rest-api.yaml",
-    "specSha256": "7188475166fbd9cd87acad67d2fd70bbcae111618f032214ae61dfdfa1c61c17"
+    "sourceRepo": "https://github.com/camunda/camunda",
+    "commit": "4a9387e557d532f18cc2aef991d4200b1ffb0728",
+    "generatedAt": "2026-03-06T14:11:56.210Z",
+    "specPath": "zeebe/gateway-protocol/src/main/proto/rest-api.yaml",
+    "specSha256": "da784944251407898959f8480da72c40d0c14330fc4625a8a9014b330dcbe633"
   },
   "responses": [
     {
@@ -385,6 +385,10 @@
                   "type": "string"
                 },
                 {
+                  "name": "hasFailedWithRetriesLeft",
+                  "type": "boolean"
+                },
+                {
                   "name": "jobKey",
                   "type": "string"
                 },
@@ -491,10 +495,6 @@
                   "name": "errorMessage",
                   "type": "string",
                   "nullable": true
-                },
-                {
-                  "name": "hasFailedWithRetriesLeft",
-                  "type": "boolean"
                 },
                 {
                   "name": "isDenied",
@@ -1076,7 +1076,7 @@
           },
           {
             "name": "schema",
-            "type": "object"
+            "type": "string"
           },
           {
             "name": "tenantId",
@@ -1557,7 +1557,7 @@
           },
           {
             "name": "schema",
-            "type": "object"
+            "type": "string"
           },
           {
             "name": "tenantId",
