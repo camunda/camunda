@@ -104,15 +104,9 @@ public final class ExporterMetrics {
 
   public void initializeExporterState(final ExporterPhase state) {
     switch (state) {
-      case PAUSED:
-        setExporterPaused();
-        break;
-      case SOFT_PAUSED:
-        setExporterSoftPaused();
-        break;
-      default:
-        setExporterActive();
-        break;
+      case PAUSED -> setExporterPaused();
+      case SOFT_PAUSED -> setExporterSoftPaused();
+      default -> setExporterActive();
     }
 
     final ExtendedMeterDocumentation meterDoc = ExporterMetricsDoc.EXPORTER_STATE;

@@ -58,20 +58,11 @@ public final class StreamProcessorMetrics {
 
   public void initializeProcessorPhase(final Phase phase) {
     switch (phase) {
-      case INITIAL:
-        setStreamProcessorInitial();
-        break;
-      case REPLAY:
-        setStreamProcessorReplay();
-        break;
-      case PROCESSING:
-        setStreamProcessorProcessing();
-        break;
-      case PAUSED:
-        setStreamProcessorPaused();
-        break;
-      default:
-        setStreamProcessorFailed();
+      case INITIAL -> setStreamProcessorInitial();
+      case REPLAY -> setStreamProcessorReplay();
+      case PROCESSING -> setStreamProcessorProcessing();
+      case PAUSED -> setStreamProcessorPaused();
+      default -> setStreamProcessorFailed();
     }
   }
 

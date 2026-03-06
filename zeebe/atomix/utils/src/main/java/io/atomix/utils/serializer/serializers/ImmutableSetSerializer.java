@@ -43,17 +43,16 @@ public class ImmutableSetSerializer extends Serializer<ImmutableSet<?>> {
   public ImmutableSet<?> read(
       final Kryo kryo, final Input input, final Class<? extends ImmutableSet<?>> type) {
     final int size = input.readInt();
-    switch (size) {
-      case 0:
-        return ImmutableSet.of();
-      case 1:
-        return ImmutableSet.of(kryo.readClassAndObject(input));
-      default:
+    return switch (size) {
+      case 0 -> ImmutableSet.of();
+      case 1 -> ImmutableSet.of(kryo.readClassAndObject(input));
+      default -> {
         final Object[] elms = new Object[size];
         for (int i = 0; i < size; ++i) {
           elms[i] = kryo.readClassAndObject(input);
         }
-        return ImmutableSet.copyOf(elms);
-    }
+        yield ImmutableSet.copyOf(elms);
+      }
+    };
   }
 }

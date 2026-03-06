@@ -115,70 +115,38 @@ public enum MsgPackFormat {
     if (isFixedMap(b)) {
       return FIXMAP;
     }
-    switch (b) {
-      case MsgPackCodes.NIL:
-        return NIL;
-      case MsgPackCodes.FALSE:
-      case MsgPackCodes.TRUE:
-        return BOOLEAN;
-      case MsgPackCodes.BIN8:
-        return BIN8;
-      case MsgPackCodes.BIN16:
-        return BIN16;
-      case MsgPackCodes.BIN32:
-        return BIN32;
-      case MsgPackCodes.EXT8:
-        return EXT8;
-      case MsgPackCodes.EXT16:
-        return EXT16;
-      case MsgPackCodes.EXT32:
-        return EXT32;
-      case MsgPackCodes.FLOAT32:
-        return FLOAT32;
-      case MsgPackCodes.FLOAT64:
-        return FLOAT64;
-      case MsgPackCodes.UINT8:
-        return UINT8;
-      case MsgPackCodes.UINT16:
-        return UINT16;
-      case MsgPackCodes.UINT32:
-        return UINT32;
-      case MsgPackCodes.UINT64:
-        return UINT64;
-      case MsgPackCodes.INT8:
-        return INT8;
-      case MsgPackCodes.INT16:
-        return INT16;
-      case MsgPackCodes.INT32:
-        return INT32;
-      case MsgPackCodes.INT64:
-        return INT64;
-      case MsgPackCodes.FIXEXT1:
-        return FIXEXT1;
-      case MsgPackCodes.FIXEXT2:
-        return FIXEXT2;
-      case MsgPackCodes.FIXEXT4:
-        return FIXEXT4;
-      case MsgPackCodes.FIXEXT8:
-        return FIXEXT8;
-      case MsgPackCodes.FIXEXT16:
-        return FIXEXT16;
-      case MsgPackCodes.STR8:
-        return STR8;
-      case MsgPackCodes.STR16:
-        return STR16;
-      case MsgPackCodes.STR32:
-        return STR32;
-      case MsgPackCodes.ARRAY16:
-        return ARRAY16;
-      case MsgPackCodes.ARRAY32:
-        return ARRAY32;
-      case MsgPackCodes.MAP16:
-        return MAP16;
-      case MsgPackCodes.MAP32:
-        return MAP32;
-      default:
-        return NEVER_USED;
-    }
+    return switch (b) {
+      case MsgPackCodes.NIL -> NIL;
+      case MsgPackCodes.FALSE, MsgPackCodes.TRUE -> BOOLEAN;
+      case MsgPackCodes.BIN8 -> BIN8;
+      case MsgPackCodes.BIN16 -> BIN16;
+      case MsgPackCodes.BIN32 -> BIN32;
+      case MsgPackCodes.EXT8 -> EXT8;
+      case MsgPackCodes.EXT16 -> EXT16;
+      case MsgPackCodes.EXT32 -> EXT32;
+      case MsgPackCodes.FLOAT32 -> FLOAT32;
+      case MsgPackCodes.FLOAT64 -> FLOAT64;
+      case MsgPackCodes.UINT8 -> UINT8;
+      case MsgPackCodes.UINT16 -> UINT16;
+      case MsgPackCodes.UINT32 -> UINT32;
+      case MsgPackCodes.UINT64 -> UINT64;
+      case MsgPackCodes.INT8 -> INT8;
+      case MsgPackCodes.INT16 -> INT16;
+      case MsgPackCodes.INT32 -> INT32;
+      case MsgPackCodes.INT64 -> INT64;
+      case MsgPackCodes.FIXEXT1 -> FIXEXT1;
+      case MsgPackCodes.FIXEXT2 -> FIXEXT2;
+      case MsgPackCodes.FIXEXT4 -> FIXEXT4;
+      case MsgPackCodes.FIXEXT8 -> FIXEXT8;
+      case MsgPackCodes.FIXEXT16 -> FIXEXT16;
+      case MsgPackCodes.STR8 -> STR8;
+      case MsgPackCodes.STR16 -> STR16;
+      case MsgPackCodes.STR32 -> STR32;
+      case MsgPackCodes.ARRAY16 -> ARRAY16;
+      case MsgPackCodes.ARRAY32 -> ARRAY32;
+      case MsgPackCodes.MAP16 -> MAP16;
+      case MsgPackCodes.MAP32 -> MAP32;
+      default -> NEVER_USED;
+    };
   }
 }

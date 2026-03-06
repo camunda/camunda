@@ -277,26 +277,13 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   private void updateAttribute(final String attributeName, final UserTaskRecord record) {
     switch (attributeName) {
-      case ASSIGNEE:
-        setAssignee(record.getAssigneeBuffer());
-        break;
-      case CANDIDATE_GROUPS:
-        setCandidateGroupsList(record.getCandidateGroupsList());
-        break;
-      case CANDIDATE_USERS:
-        setCandidateUsersList(record.getCandidateUsersList());
-        break;
-      case DUE_DATE:
-        dueDateProp.setValue(record.getDueDateBuffer());
-        break;
-      case FOLLOW_UP_DATE:
-        followUpDateProp.setValue(record.getFollowUpDateBuffer());
-        break;
-      case PRIORITY:
-        priorityProp.setValue(record.getPriority());
-        break;
-      default:
-        break;
+      case ASSIGNEE -> setAssignee(record.getAssigneeBuffer());
+      case CANDIDATE_GROUPS -> setCandidateGroupsList(record.getCandidateGroupsList());
+      case CANDIDATE_USERS -> setCandidateUsersList(record.getCandidateUsersList());
+      case DUE_DATE -> dueDateProp.setValue(record.getDueDateBuffer());
+      case FOLLOW_UP_DATE -> followUpDateProp.setValue(record.getFollowUpDateBuffer());
+      case PRIORITY -> priorityProp.setValue(record.getPriority());
+      default -> {}
     }
   }
 

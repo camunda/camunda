@@ -58,22 +58,13 @@ public class JobRecurAfterBackoffProcessor implements TypedRecordProcessor<JobRe
 
       jobActivationBehavior.publishWork(jobKey, recurredJob);
     } else {
-      final String textState;
-
-      switch (state) {
-        case ACTIVATABLE:
-          textState = "it is already activable";
-          break;
-        case ACTIVATED:
-          textState = "it is already activated";
-          break;
-        case ERROR_THROWN:
-          textState = "it is in error state";
-          break;
-        default:
-          textState = "no such job was found";
-          break;
-      }
+      final String textState =
+          switch (state) {
+            case ACTIVATABLE -> "it is already activable";
+            case ACTIVATED -> "it is already activated";
+            case ERROR_THROWN -> "it is in error state";
+            default -> "no such job was found";
+          };
 
       final String errorMesage = String.format(NOT_FAILED_JOB_MESSAGE, jobKey, textState);
       rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, errorMesage);

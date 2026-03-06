@@ -853,14 +853,9 @@ public class SwimMembershipProtocol
    */
   private void handleDiscoveryEvent(final NodeDiscoveryEvent event) {
     switch (event.type()) {
-      case JOIN:
-        handleJoinEvent(event.subject());
-        break;
-      case LEAVE:
-        handleLeaveEvent(event.subject());
-        break;
-      default:
-        throw new AssertionError();
+      case JOIN -> handleJoinEvent(event.subject());
+      case LEAVE -> handleLeaveEvent(event.subject());
+      default -> throw new AssertionError();
     }
   }
 

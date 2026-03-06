@@ -65,18 +65,15 @@ public final class MsgPackReader {
       mapSize = headerByte & (byte) 0x0F;
     } else {
       switch (headerByte) {
-        case MAP16:
+        case MAP16 -> {
           mapSize = buffer.getShort(offset, BYTE_ORDER) & 0xffff;
           offset += SIZE_OF_SHORT;
-          break;
-
-        case MAP32:
+        }
+        case MAP32 -> {
           mapSize = (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
           offset += SIZE_OF_INT;
-          break;
-
-        default:
-          throw exceptionOnUnknownHeader("map", headerByte);
+        }
+        default -> throw exceptionOnUnknownHeader("map", headerByte);
       }
     }
 
@@ -93,18 +90,15 @@ public final class MsgPackReader {
       mapSize = headerByte & (byte) 0x0F;
     } else {
       switch (headerByte) {
-        case ARRAY16:
+        case ARRAY16 -> {
           mapSize = buffer.getShort(offset, BYTE_ORDER) & 0xffff;
           offset += SIZE_OF_SHORT;
-          break;
-
-        case ARRAY32:
+        }
+        case ARRAY32 -> {
           mapSize = (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
           offset += SIZE_OF_INT;
-          break;
-
-        default:
-          throw exceptionOnUnknownHeader("array", headerByte);
+        }
+        default -> throw exceptionOnUnknownHeader("array", headerByte);
       }
     }
 
@@ -121,23 +115,19 @@ public final class MsgPackReader {
       stringLength = headerByte & (byte) 0x1F;
     } else {
       switch (headerByte) {
-        case STR8:
+        case STR8 -> {
           stringLength = buffer.getByte(offset) & 0xff;
           ++offset;
-          break;
-
-        case STR16:
+        }
+        case STR16 -> {
           stringLength = buffer.getShort(offset, BYTE_ORDER) & 0xffff;
           offset += SIZE_OF_SHORT;
-          break;
-
-        case STR32:
+        }
+        case STR32 -> {
           stringLength = (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
           offset += SIZE_OF_INT;
-          break;
-
-        default:
-          throw exceptionOnUnknownHeader("string", headerByte);
+        }
+        default -> throw exceptionOnUnknownHeader("string", headerByte);
       }
     }
     return stringLength;
@@ -150,23 +140,19 @@ public final class MsgPackReader {
     ++offset;
 
     switch (headerByte) {
-      case BIN8:
+      case BIN8 -> {
         length = buffer.getByte(offset) & 0xff;
         ++offset;
-        break;
-
-      case BIN16:
+      }
+      case BIN16 -> {
         length = buffer.getShort(offset, BYTE_ORDER) & 0xffff;
         offset += SIZE_OF_SHORT;
-        break;
-
-      case BIN32:
+      }
+      case BIN32 -> {
         length = (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
         offset += SIZE_OF_INT;
-        break;
-
-      default:
-        throw exceptionOnUnknownHeader("binary", headerByte);
+      }
+      default -> throw exceptionOnUnknownHeader("binary", headerByte);
     }
 
     return length;
@@ -187,48 +173,39 @@ public final class MsgPackReader {
       val = headerByte;
     } else {
       switch (headerByte) {
-        case UINT8:
+        case UINT8 -> {
           val = buffer.getByte(offset) & 0xffL;
           ++offset;
-          break;
-
-        case UINT16:
+        }
+        case UINT16 -> {
           val = buffer.getShort(offset, BYTE_ORDER) & 0xffffL;
           offset += 2;
-          break;
-
-        case UINT32:
+        }
+        case UINT32 -> {
           val = buffer.getInt(offset, BYTE_ORDER) & 0xffff_ffffL;
           offset += 4;
-          break;
-
-        case UINT64:
+        }
+        case UINT64 -> {
           val = ensurePositive(buffer.getLong(offset, BYTE_ORDER));
           offset += 8;
-          break;
-
-        case INT8:
+        }
+        case INT8 -> {
           val = buffer.getByte(offset);
           ++offset;
-          break;
-
-        case INT16:
+        }
+        case INT16 -> {
           val = buffer.getShort(offset, BYTE_ORDER);
           offset += 2;
-          break;
-
-        case INT32:
+        }
+        case INT32 -> {
           val = buffer.getInt(offset, BYTE_ORDER);
           offset += 4;
-          break;
-
-        case INT64:
+        }
+        case INT64 -> {
           val = buffer.getLong(offset, BYTE_ORDER);
           offset += 8;
-          break;
-
-        default:
-          throw exceptionOnUnknownHeader("long", headerByte);
+        }
+        default -> throw exceptionOnUnknownHeader("long", headerByte);
       }
     }
 
@@ -246,16 +223,15 @@ public final class MsgPackReader {
     final double value;
 
     switch (headerByte) {
-      case FLOAT32:
+      case FLOAT32 -> {
         value = buffer.getFloat(offset, BYTE_ORDER);
         offset += 4;
-        break;
-      case FLOAT64:
+      }
+      case FLOAT64 -> {
         value = buffer.getDouble(offset, BYTE_ORDER);
         offset += 8;
-        break;
-      default:
-        throw exceptionOnUnknownHeader("float", headerByte);
+      }
+      default -> throw exceptionOnUnknownHeader("float", headerByte);
     }
 
     return value;
@@ -277,47 +253,45 @@ public final class MsgPackReader {
     final MsgPackFormat format = MsgPackFormat.valueOf(b);
 
     switch (format.type) {
-      case INTEGER:
+      case INTEGER -> {
         token.setType(MsgPackType.INTEGER);
         token.setValue(readInteger());
-        break;
-      case FLOAT:
+      }
+      case FLOAT -> {
         token.setType(MsgPackType.FLOAT);
         token.setValue(readFloat());
-        break;
-      case BOOLEAN:
+      }
+      case BOOLEAN -> {
         token.setType(MsgPackType.BOOLEAN);
         token.setValue(readBoolean());
-        break;
-      case MAP:
+      }
+      case MAP -> {
         token.setType(MsgPackType.MAP);
         token.setMapHeader(readMapHeader());
-        break;
-      case ARRAY:
+      }
+      case ARRAY -> {
         token.setType(MsgPackType.ARRAY);
         token.setArrayHeader(readArrayHeader());
-        break;
-      case NIL:
+      }
+      case NIL -> {
         token.setType(MsgPackType.NIL);
         skipValue();
-        break;
-      case BINARY:
+      }
+      case BINARY -> {
         token.setType(MsgPackType.BINARY);
         final int binaryLength = readBinaryLength();
         token.setValue(buffer, offset, binaryLength);
         skipBytes(binaryLength);
-        break;
-      case STRING:
+      }
+      case STRING -> {
         token.setType(MsgPackType.STRING);
         final int stringLength = readStringLength();
         token.setValue(buffer, offset, stringLength);
         skipBytes(stringLength);
-        break;
-      case EXTENSION:
-      case NEVER_USED:
-      default:
-        throw new MsgpackReaderException(
-            String.format("Unknown token format '%s'", format.getType().name()));
+      }
+      default ->
+          throw new MsgpackReaderException(
+              String.format("Unknown token format '%s'", format.getType().name()));
     }
 
     return token;
@@ -343,102 +317,51 @@ public final class MsgPackReader {
       final MsgPackFormat f = MsgPackFormat.valueOf(b);
 
       switch (f) {
-        case POSFIXINT:
-        case NEGFIXINT:
-        case BOOLEAN:
-        case NIL:
-          break;
-        case FIXMAP:
-          {
-            final int mapLen = b & 0x0f;
-            count += mapLen * 2L;
-            break;
-          }
-        case FIXARRAY:
-          {
-            final int arrayLen = b & 0x0f;
-            count += arrayLen;
-            break;
-          }
-        case FIXSTR:
-          {
-            final int strLen = b & 0x1f;
-            offset += strLen;
-            break;
-          }
-        case INT8:
-        case UINT8:
-          ++offset;
-          break;
-        case INT16:
-        case UINT16:
-          offset += 2;
-          break;
-        case INT32:
-        case UINT32:
-        case FLOAT32:
-          offset += 4;
-          break;
-        case INT64:
-        case UINT64:
-        case FLOAT64:
-          offset += 8;
-          break;
-        case BIN8:
-        case STR8:
-          offset += 1 + Byte.toUnsignedInt(buffer.getByte(offset));
-          break;
-        case BIN16:
-        case STR16:
-          offset += 2 + Short.toUnsignedInt(buffer.getShort(offset, BYTE_ORDER));
-          break;
-        case BIN32:
-        case STR32:
-          offset += 4 + (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
-          break;
-        case FIXEXT1:
-          offset += 2;
-          break;
-        case FIXEXT2:
-          offset += 3;
-          break;
-        case FIXEXT4:
-          offset += 5;
-          break;
-        case FIXEXT8:
-          offset += 9;
-          break;
-        case FIXEXT16:
-          offset += 17;
-          break;
-        case EXT8:
-          offset += 1 + 1 + Byte.toUnsignedInt(buffer.getByte(offset));
-          break;
-        case EXT16:
-          offset += 1 + 2 + Short.toUnsignedInt(buffer.getShort(offset, BYTE_ORDER));
-          break;
-        case EXT32:
-          offset += 1 + 4 + (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
-          break;
-        case ARRAY16:
+        case POSFIXINT, NEGFIXINT, BOOLEAN, NIL -> {}
+        case FIXMAP -> {
+          final int mapLen = b & 0x0f;
+          count += mapLen * 2L;
+        }
+        case FIXARRAY -> {
+          final int arrayLen = b & 0x0f;
+          count += arrayLen;
+        }
+        case FIXSTR -> {
+          final int strLen = b & 0x1f;
+          offset += strLen;
+        }
+        case INT8, UINT8 -> ++offset;
+        case INT16, UINT16 -> offset += 2;
+        case INT32, UINT32, FLOAT32 -> offset += 4;
+        case INT64, UINT64, FLOAT64 -> offset += 8;
+        case BIN8, STR8 -> offset += 1 + Byte.toUnsignedInt(buffer.getByte(offset));
+        case BIN16, STR16 -> offset += 2 + Short.toUnsignedInt(buffer.getShort(offset, BYTE_ORDER));
+        case BIN32, STR32 -> offset += 4 + (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
+        case FIXEXT1 -> offset += 2;
+        case FIXEXT2 -> offset += 3;
+        case FIXEXT4 -> offset += 5;
+        case FIXEXT8 -> offset += 9;
+        case FIXEXT16 -> offset += 17;
+        case EXT8 -> offset += 1 + 1 + Byte.toUnsignedInt(buffer.getByte(offset));
+        case EXT16 -> offset += 1 + 2 + Short.toUnsignedInt(buffer.getShort(offset, BYTE_ORDER));
+        case EXT32 -> offset += 1 + 4 + (int) ensurePositive(buffer.getInt(offset, BYTE_ORDER));
+        case ARRAY16 -> {
           count += Short.toUnsignedInt(buffer.getShort(offset, BYTE_ORDER));
           offset += 2;
-          break;
-        case ARRAY32:
+        }
+        case ARRAY32 -> {
           count += ensurePositive(buffer.getInt(offset, BYTE_ORDER));
           offset += 4;
-          break;
-        case MAP16:
+        }
+        case MAP16 -> {
           count += Short.toUnsignedInt(buffer.getShort(offset, BYTE_ORDER)) * 2L;
           offset += 2;
-          break;
-        case MAP32:
+        }
+        case MAP32 -> {
           count += ensurePositive(buffer.getInt(offset, BYTE_ORDER)) * 2L;
           offset += 4;
-          break;
-        case NEVER_USED:
-        default:
-          throw new MsgpackReaderException("Encountered 0xC1 \"NEVER_USED\" byte");
+        }
+        default -> throw new MsgpackReaderException("Encountered 0xC1 \"NEVER_USED\" byte");
       }
 
       count--;

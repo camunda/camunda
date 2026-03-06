@@ -125,7 +125,7 @@ public class ActorTask {
       currentJob.execute(runner);
 
       switch (currentJob.schedulingState) {
-        case TERMINATED:
+        case TERMINATED -> {
           final ActorJob terminatedJob = currentJob;
           currentJob = fastLaneJobs.poll();
 
@@ -140,18 +140,13 @@ public class ActorTask {
           } else {
             runner.recycleJob(terminatedJob);
           }
-
-          break;
-
-        case QUEUED:
-          // the task is experiencing backpressure: do not retry it right now, instead re-enqueue
-          // the actor task.
-          // this allows other tasks which may be needed to unblock the backpressure to run
-          resubmit = true;
-          break;
-
-        default:
-          break;
+        }
+        case QUEUED ->
+            // the task is experiencing backpressure: do not retry it right now, instead re-enqueue
+            // the actor task.
+            // this allows other tasks which may be needed to unblock the backpressure to run
+            resubmit = true;
+        default -> {}
       }
 
       if (shouldYield) {
@@ -172,45 +167,35 @@ public class ActorTask {
     boolean resubmit = false;
 
     if (allPhaseSubscriptionsTriggered()) {
-      switch (lifecyclePhase) {
-        case STARTING:
-          lifecyclePhase = ActorLifecyclePhase.STARTED;
-          submitStartedJob();
-          startingFuture.completeWith(jobStartingTaskFuture);
-          resubmit = true;
-          break;
-
-        case CLOSING:
-          lifecyclePhase = ActorLifecyclePhase.CLOSED;
-          submitClosedJob();
-          resubmit = true;
-          break;
-
-        case STARTED:
-          resubmit = tryWait();
-          break;
-
-        case CLOSE_REQUESTED:
-          lifecyclePhase = ActorLifecyclePhase.CLOSING;
-          submitClosingJob();
-          resubmit = true;
-          break;
-
-        case CLOSED:
-          onClosed();
-          closeFuture.completeWith(jobClosingTaskFuture);
-          resubmit = false;
-          break;
-
-        case FAILED:
-          onClosed();
-          resubmit = false;
-          break;
-
-        default:
-          throw new IllegalStateException(
-              "Unexpected actor lifecycle phase " + lifecyclePhase.name());
-      }
+      resubmit =
+          switch (lifecyclePhase) {
+            case STARTING -> {
+              lifecyclePhase = ActorLifecyclePhase.STARTED;
+              submitStartedJob();
+              startingFuture.completeWith(jobStartingTaskFuture);
+              yield true;
+            }
+            case CLOSING -> {
+              lifecyclePhase = ActorLifecyclePhase.CLOSED;
+              submitClosedJob();
+              yield true;
+            }
+            case STARTED -> tryWait();
+            case CLOSE_REQUESTED -> {
+              lifecyclePhase = ActorLifecyclePhase.CLOSING;
+              submitClosingJob();
+              yield true;
+            }
+            case CLOSED -> {
+              onClosed();
+              closeFuture.completeWith(jobClosingTaskFuture);
+              yield false;
+            }
+            case FAILED -> {
+              onClosed();
+              yield false;
+            }
+          };
     } else {
       if (lifecyclePhase != ActorLifecyclePhase.CLOSED) {
         resubmit = tryWait();

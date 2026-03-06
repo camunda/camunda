@@ -20,32 +20,21 @@ import io.atomix.raft.cluster.RaftMember;
 public class SerializerUtil {
 
   static MemberType getSBEType(final RaftMember.Type type) {
-    switch (type) {
-      case ACTIVE:
-        return MemberType.ACTIVE;
-      case PASSIVE:
-        return MemberType.PASSIVE;
-      case INACTIVE:
-        return MemberType.INACTIVE;
-      case PROMOTABLE:
-        return MemberType.PROMOTABLE;
-      default:
-        throw new IllegalStateException("Unexpected member type");
-    }
+    return switch (type) {
+      case ACTIVE -> MemberType.ACTIVE;
+      case PASSIVE -> MemberType.PASSIVE;
+      case INACTIVE -> MemberType.INACTIVE;
+      case PROMOTABLE -> MemberType.PROMOTABLE;
+    };
   }
 
   static RaftMember.Type getRaftMemberType(final MemberType type) {
-    switch (type) {
-      case ACTIVE:
-        return RaftMember.Type.ACTIVE;
-      case PASSIVE:
-        return RaftMember.Type.PASSIVE;
-      case INACTIVE:
-        return RaftMember.Type.INACTIVE;
-      case PROMOTABLE:
-        return RaftMember.Type.PROMOTABLE;
-      default:
-        throw new IllegalStateException("Unexpected member type " + type);
-    }
+    return switch (type) {
+      case ACTIVE -> RaftMember.Type.ACTIVE;
+      case PASSIVE -> RaftMember.Type.PASSIVE;
+      case INACTIVE -> RaftMember.Type.INACTIVE;
+      case PROMOTABLE -> RaftMember.Type.PROMOTABLE;
+      default -> throw new IllegalStateException("Unexpected member type " + type);
+    };
   }
 }

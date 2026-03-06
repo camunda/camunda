@@ -63,25 +63,17 @@ public class SearchEngineConnectPropertiesOverride {
     final SecondaryStorageDatabase database;
 
     switch (secondaryStorage.getType()) {
-      case elasticsearch:
-        {
-          database = secondaryStorage.getElasticsearch();
-          populateFromDocumentBasedSecondaryStorageDatabase(
-              (DocumentBasedSecondaryStorageDatabase) database, override);
-          break;
-        }
-      case rdbms:
-        {
-          database = secondaryStorage.getRdbms();
-          break;
-        }
-      default:
-        {
-          database = secondaryStorage.getOpensearch();
-          populateFromDocumentBasedSecondaryStorageDatabase(
-              (DocumentBasedSecondaryStorageDatabase) database, override);
-          break;
-        }
+      case elasticsearch -> {
+        database = secondaryStorage.getElasticsearch();
+        populateFromDocumentBasedSecondaryStorageDatabase(
+            (DocumentBasedSecondaryStorageDatabase) database, override);
+      }
+      case rdbms -> database = secondaryStorage.getRdbms();
+      default -> {
+        database = secondaryStorage.getOpensearch();
+        populateFromDocumentBasedSecondaryStorageDatabase(
+            (DocumentBasedSecondaryStorageDatabase) database, override);
+      }
     }
 
     override.setType(secondaryStorage.getType().name());

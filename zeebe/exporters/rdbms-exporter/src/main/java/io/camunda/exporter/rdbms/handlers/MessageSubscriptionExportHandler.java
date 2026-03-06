@@ -44,16 +44,15 @@ public class MessageSubscriptionExportHandler
   @Override
   public void export(final Record<ProcessMessageSubscriptionRecordValue> record) {
     switch (record.getIntent()) {
-      case ProcessMessageSubscriptionIntent.CREATED:
-        messageSubscriptionWriter.create(map(record));
-        break;
+      case ProcessMessageSubscriptionIntent.CREATED ->
+          messageSubscriptionWriter.create(map(record));
       case ProcessMessageSubscriptionIntent.CORRELATED,
-      ProcessMessageSubscriptionIntent.DELETED,
-      ProcessMessageSubscriptionIntent.MIGRATED:
-        messageSubscriptionWriter.update(map(record));
-        break;
-      default:
+          ProcessMessageSubscriptionIntent.DELETED,
+          ProcessMessageSubscriptionIntent.MIGRATED ->
+          messageSubscriptionWriter.update(map(record));
+      default -> {
         // do nothing
+      }
     }
   }
 
