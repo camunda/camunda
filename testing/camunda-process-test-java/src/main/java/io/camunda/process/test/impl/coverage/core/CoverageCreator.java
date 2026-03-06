@@ -28,6 +28,7 @@ import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -40,6 +41,11 @@ import java.util.stream.Collectors;
  * reports for process instances and aggregate multiple coverage reports into consolidated results.
  */
 public class CoverageCreator {
+
+  private static final EnumSet<ElementInstanceType> EXCLUDED_ELEMENT_TYPES =
+      EnumSet.of(
+          ElementInstanceType.PROCESS, ElementInstanceType.AD_HOC_SUB_PROCESS_INNER_INSTANCE);
+
   /**
    * Creates a coverage report for a single process instance.
    *
@@ -60,7 +66,7 @@ public class CoverageCreator {
         dataSource
             .findElementInstancesByProcessInstanceKey(processInstance.getProcessInstanceKey())
             .stream()
-            .filter(node -> node.getType() != ElementInstanceType.PROCESS)
+            .filter(elementInstance -> !EXCLUDED_ELEMENT_TYPES.contains(elementInstance.getType()))
             .collect(Collectors.toList());
 
     final List<String> takenElements =
