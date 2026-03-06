@@ -9,13 +9,14 @@ package io.camunda.db.rdbms.read.mapper;
 
 import io.camunda.db.rdbms.write.domain.CorrelatedMessageSubscriptionDbModel;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
+import java.util.Optional;
 
 public class CorrelatedMessageSubscriptionEntityMapper {
 
   public static CorrelatedMessageSubscriptionEntity toEntity(
       final CorrelatedMessageSubscriptionDbModel dbModel) {
     return CorrelatedMessageSubscriptionEntity.builder()
-        .correlationKey(dbModel.correlationKey())
+        .correlationKey(Optional.ofNullable(dbModel.correlationKey()).orElse(""))
         .correlationTime(dbModel.correlationTime())
         .flowNodeId(dbModel.flowNodeId())
         .flowNodeInstanceKey(dbModel.flowNodeInstanceKey())
