@@ -17,7 +17,7 @@ public class DocumentBasedHistory {
 
   public static final Duration DEFAULT_HISTORY_MAX_DELAY_BETWEEN_RUNS = Duration.ofMillis(60000);
   private static final Duration DEFAULT_HISTORY_DELAY_BETWEEN_RUNS = Duration.ofMillis(2000);
-  private static final boolean DEFAULT_HISTORY_PROCESS_INSTANCE_ENABLED = true;
+  private static final boolean DEFAULT_HISTORY_PROCESS_INSTANCE_ENABLED = false;
   private static final ProcessInstanceRetentionMode
       DEFAULT_HISTORY_PROCESS_INSTANCE_RETENTION_MODE = ProcessInstanceRetentionMode.PI_HIERARCHY;
   private static final String DEFAULT_HISTORY_POLICY_NAME = "camunda-retention-policy";
