@@ -52,6 +52,14 @@ class OperateProcessesPage {
   readonly resultsText: Locator;
   readonly viewParentInstanceLink: Locator;
   readonly calledInstanceCell: Locator;
+  readonly singleOperationSpinner: Locator;
+  readonly selectAllRowsCheckbox: Locator;
+  readonly retryButton: Locator;
+  readonly cancelButton: Locator;
+  readonly applyButton: Locator;
+  readonly resultsCount: Locator;
+  readonly scheduledOperationsIcons: Locator;
+  readonly processInstanceLinkByKey: (processInstanceKey: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -155,6 +163,19 @@ class OperateProcessesPage {
       .getByTestId('data-list')
       .getByTestId('cell-processInstanceKey')
       .first();
+    this.singleOperationSpinner = page.getByTestId('operation-spinner');
+    this.selectAllRowsCheckbox = page.getByRole('columnheader', {
+      name: 'Select all rows',
+    });
+    this.retryButton = page.getByRole('button', {name: 'Retry', exact: true});
+    this.cancelButton = page.getByRole('button', {name: 'Cancel', exact: true});
+    this.applyButton = page.getByRole('button', {name: 'Apply'});
+    this.resultsCount = page.getByText(/\d+ results?/);
+    this.scheduledOperationsIcons = page.getByTitle(
+      /has scheduled operations/i,
+    );
+    this.processInstanceLinkByKey = (processInstanceKey: string) =>
+      page.getByRole('link', {name: processInstanceKey});
   }
 
   async filterByProcessName(name: string): Promise<void> {
@@ -387,6 +408,42 @@ class OperateProcessesPage {
 
   async clickViewParentInstanceFromList(): Promise<void> {
     await this.viewParentInstanceLink.click();
+  }
+
+  getInstanceRow(index: number): Locator {
+    return this.dataList.getByRole('row').nth(index);
+  }
+
+  getCanceledIcon(processInstanceKey: string): Locator {
+    return this.page.getByTestId(`CANCELED-icon-${processInstanceKey}`);
+  }
+
+  getRetryInstanceButton(processInstanceKey: string): Locator {
+    return this.page.getByRole('button', {
+      name: `Retry Instance ${processInstanceKey}`,
+    });
+  }
+
+  getCancelInstanceButton(processInstanceKey: string): Locator {
+    return this.page.getByRole('button', {
+      name: `Cancel Instance ${processInstanceKey}`,
+    });
+  }
+
+  async clickRetryInstanceButton(processInstanceKey: string): Promise<void> {
+    const button = this.getRetryInstanceButton(processInstanceKey);
+    try {
+      await button.click({timeout: 30000});
+    } catch {
+      await button.scrollIntoViewIfNeeded({timeout: 60000});
+      await button.click({timeout: 60000});
+    }
+  }
+
+  async clickCancelInstanceButton(processInstanceKey: string): Promise<void> {
+    const button = this.getCancelInstanceButton(processInstanceKey);
+    await button.scrollIntoViewIfNeeded({timeout: 30000});
+    await button.click({timeout: 30000});
   }
 }
 

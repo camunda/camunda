@@ -130,4 +130,23 @@ export class OperateOperationPanelPage {
       .filter({hasText: operationId});
     await operationEntryById.click();
   }
+
+  getRetryOperationEntry(successCount: number): Locator {
+    return this.getAllOperationEntries()
+      .filter({hasText: 'Retry'})
+      .filter({hasText: `${successCount} success`})
+      .first();
+  }
+
+  getCancelOperationEntry(successCount: number): Locator {
+    return this.getAllOperationEntries()
+      .filter({hasText: 'Cancel'})
+      .filter({hasText: `${successCount} success`});
+  }
+
+  async clickOperationLink(operationEntry: Locator): Promise<void> {
+    await OperateOperationPanelPage.getOperationID(operationEntry)
+      .first()
+      .click({timeout: 30000});
+  }
 }
