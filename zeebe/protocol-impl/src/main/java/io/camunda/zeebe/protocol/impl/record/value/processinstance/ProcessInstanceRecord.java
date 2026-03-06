@@ -59,6 +59,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final StringValue ROOT_PROCESS_INSTANCE_KEY =
       new StringValue("rootProcessInstanceKey");
   public static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  public static final StringValue ORDINAL_KEY = new StringValue("ordinal");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
@@ -99,8 +100,10 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
 
+  private final IntegerProperty ordinalProp = new IntegerProperty(ORDINAL_KEY, 0);
+
   public ProcessInstanceRecord() {
-    super(17);
+    super(18);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -117,7 +120,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(callingElementPathProp)
         .declareProperty(tagsProp)
         .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(businessIdProp);
+        .declareProperty(businessIdProp)
+        .declareProperty(ordinalProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -134,6 +138,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     tenantIdProp.setValue(record.getTenantId());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
     businessIdProp.setValue(record.getBusinessId());
+    ordinalProp.setValue(record.getOrdinal());
   }
 
   @JsonIgnore
@@ -299,6 +304,16 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setBusinessId(final DirectBuffer businessId) {
     businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  @Override
+  public int getOrdinal() {
+    return ordinalProp.getValue();
+  }
+
+  public ProcessInstanceRecord setOrdinal(final int ordinal) {
+    ordinalProp.setValue(ordinal);
     return this;
   }
 

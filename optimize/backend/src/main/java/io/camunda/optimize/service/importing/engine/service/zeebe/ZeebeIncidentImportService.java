@@ -7,17 +7,17 @@
  */
 package io.camunda.optimize.service.importing.engine.service.zeebe;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;
-
-import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import io.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
+import io.camunda.optimize.dto.optimize.persistence.incident.FlatIncidentDto;
 import io.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus;
 import io.camunda.optimize.dto.optimize.persistence.incident.IncidentType;
 import io.camunda.optimize.dto.zeebe.incident.ZeebeIncidentDataDto;
 import io.camunda.optimize.dto.zeebe.incident.ZeebeIncidentRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
-import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
+import io.camunda.optimize.service.db.writer.IncidentWriter;
+import io.camunda.optimize.service.importing.DatabaseImportJob;
+import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import io.camunda.optimize.service.importing.engine.service.ImportService;
+import io.camunda.optimize.service.importing.job.FlatIncidentDatabaseImportJob;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import java.time.Instant;
@@ -28,37 +28,74 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
-public class ZeebeIncidentImportService
-    extends ZeebeProcessInstanceSubEntityImportService<ZeebeIncidentRecordDto> {
+public class ZeebeIncidentImportService implements ImportService<ZeebeIncidentRecordDto> {
 
   private static final Set<IncidentIntent> INTENTS_TO_IMPORT =
       Set.of(IncidentIntent.CREATED, IncidentIntent.RESOLVED);
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ZeebeIncidentImportService.class);
 
+  private final DatabaseImportJobExecutor databaseImportJobExecutor;
+  private final IncidentWriter incidentWriter;
+  private final ConfigurationService configurationService;
+  private final DatabaseClient databaseClient;
+
   public ZeebeIncidentImportService(
       final ConfigurationService configurationService,
-      final ProcessInstanceWriter processInstanceWriter,
-      final int partitionId,
-      final ProcessDefinitionReader processDefinitionReader,
+      final IncidentWriter incidentWriter,
       final DatabaseClient databaseClient) {
-    super(
-        configurationService,
-        processInstanceWriter,
-        partitionId,
-        processDefinitionReader,
-        databaseClient,
-        ZEEBE_INCIDENT_INDEX_NAME);
+    this.databaseImportJobExecutor =
+        new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
+    this.incidentWriter = incidentWriter;
+    this.configurationService = configurationService;
+    this.databaseClient = databaseClient;
   }
 
   @Override
-  protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
+  public void executeImport(
+      final List<ZeebeIncidentRecordDto> zeebeRecords, final Runnable importCompleteCallback) {
+    if (!zeebeRecords.isEmpty()) {
+      final List<FlatIncidentDto> flatIncidents =
+          filterAndMapZeebeRecordsToFlatIncidents(zeebeRecords);
+      final DatabaseImportJob<FlatIncidentDto> importJob =
+          createDatabaseImportJob(flatIncidents, importCompleteCallback);
+      databaseImportJobExecutor.executeImportJob(importJob);
+    }
+  }
+
+  /**
+   * Creates (but does not execute) a {@link DatabaseImportJob} for the given records. The mediator
+   * is responsible for submitting the returned job to its own {@link DatabaseImportJobExecutor}.
+   *
+   * @return an {@link Optional} containing the prepared import job, or empty if there are no
+   *     relevant records to import.
+   */
+  public Optional<DatabaseImportJob<FlatIncidentDto>> createImportJob(
       final List<ZeebeIncidentRecordDto> zeebeRecords) {
-    final List<ProcessInstanceDto> optimizeDtos =
+    if (zeebeRecords.isEmpty()) {
+      return Optional.empty();
+    }
+    final List<FlatIncidentDto> flatIncidents =
+        filterAndMapZeebeRecordsToFlatIncidents(zeebeRecords);
+    if (flatIncidents.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(createDatabaseImportJob(flatIncidents, () -> {}));
+  }
+
+  @Override
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
+  }
+
+  private List<FlatIncidentDto> filterAndMapZeebeRecordsToFlatIncidents(
+      final List<ZeebeIncidentRecordDto> zeebeRecords) {
+    final List<FlatIncidentDto> flatIncidents =
         zeebeRecords.stream()
             .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
             .collect(
@@ -66,74 +103,88 @@ public class ZeebeIncidentImportService
                     zeebeRecord -> zeebeRecord.getValue().getProcessInstanceKey()))
             .values()
             .stream()
-            .map(this::createProcessInstanceForData)
+            .flatMap(
+                recordsForInstance -> createFlatIncidentsForInstance(recordsForInstance).stream())
             .collect(Collectors.toList());
     LOG.debug(
         "Processing {} fetched zeebe incident records, of which {} are relevant to Optimize and will be imported.",
         zeebeRecords.size(),
-        optimizeDtos.size());
-    return optimizeDtos;
+        flatIncidents.size());
+    return flatIncidents;
   }
 
-  private ProcessInstanceDto createProcessInstanceForData(
+  private List<FlatIncidentDto> createFlatIncidentsForInstance(
       final List<ZeebeIncidentRecordDto> recordsForInstance) {
     final ZeebeIncidentDataDto firstRecordValue = recordsForInstance.get(0).getValue();
-    final ProcessInstanceDto instanceToAdd =
-        createSkeletonProcessInstance(
-            firstRecordValue.getBpmnProcessId(),
-            firstRecordValue.getProcessInstanceKey(),
-            firstRecordValue.getProcessDefinitionKey(),
-            firstRecordValue.getTenantId());
-    return updateIncidents(instanceToAdd, recordsForInstance);
-  }
-
-  private ProcessInstanceDto updateIncidents(
-      final ProcessInstanceDto instanceToAdd,
-      final List<ZeebeIncidentRecordDto> recordsForInstance) {
-    final Map<Long, IncidentDto> incidentsByRecordKey = new HashMap<>();
+    final String processDefinitionKey = firstRecordValue.getBpmnProcessId();
+    final String processDefinitionId = String.valueOf(firstRecordValue.getProcessDefinitionKey());
+    final String processInstanceId = String.valueOf(firstRecordValue.getProcessInstanceKey());
+    final Map<Long, FlatIncidentDto> incidentsByRecordKey = new HashMap<>();
     recordsForInstance.forEach(
-        incident -> {
-          final long recordKey = incident.getKey();
-          final IncidentDto incidentForKey =
-              incidentsByRecordKey.getOrDefault(recordKey, createSkeletonIncident(incident));
-          if (incident.getIntent() == IncidentIntent.CREATED
-              && incidentForKey.getIncidentStatus() != IncidentStatus.RESOLVED) {
-            incidentForKey.setIncidentStatus(IncidentStatus.OPEN);
-            incidentForKey.setCreateTime(dateForTimestamp(incident));
-          } else if (incident.getIntent() == IncidentIntent.RESOLVED) {
-            incidentForKey.setIncidentStatus(IncidentStatus.RESOLVED);
-            incidentForKey.setEndTime(dateForTimestamp(incident));
+        incidentRecord -> {
+          final long recordKey = incidentRecord.getKey();
+          final FlatIncidentDto flatIncident =
+              incidentsByRecordKey.getOrDefault(
+                  recordKey,
+                  createSkeletonFlatIncident(
+                      incidentRecord,
+                      processDefinitionKey,
+                      processDefinitionId,
+                      processInstanceId));
+          if (incidentRecord.getIntent() == IncidentIntent.CREATED
+              && flatIncident.getIncidentStatus() != IncidentStatus.RESOLVED) {
+            flatIncident.setIncidentStatus(IncidentStatus.OPEN);
+            flatIncident.setCreateTime(dateForTimestamp(incidentRecord));
+          } else if (incidentRecord.getIntent() == IncidentIntent.RESOLVED) {
+            flatIncident.setIncidentStatus(IncidentStatus.RESOLVED);
+            flatIncident.setEndTime(dateForTimestamp(incidentRecord));
           }
-          updateDurationIfMissing(incidentForKey);
-          incidentsByRecordKey.put(recordKey, incidentForKey);
+          updateDurationIfMissing(flatIncident);
+          incidentsByRecordKey.put(recordKey, flatIncident);
         });
-    instanceToAdd.setIncidents(new ArrayList<>(incidentsByRecordKey.values()));
-    return instanceToAdd;
+    return new ArrayList<>(incidentsByRecordKey.values());
   }
 
-  private void updateDurationIfMissing(final IncidentDto incidentDto) {
-    if (incidentDto.getDurationInMs() == null
-        && incidentDto.getCreateTime() != null
-        && incidentDto.getEndTime() != null) {
-      incidentDto.setDurationInMs(
-          incidentDto.getCreateTime().until(incidentDto.getEndTime(), ChronoUnit.MILLIS));
+  private FlatIncidentDto createSkeletonFlatIncident(
+      final ZeebeIncidentRecordDto record,
+      final String processDefinitionKey,
+      final String processDefinitionId,
+      final String processInstanceId) {
+    final ZeebeIncidentDataDto data = record.getValue();
+    final FlatIncidentDto flatIncident = new FlatIncidentDto();
+    flatIncident.setId(String.valueOf(record.getKey()));
+    flatIncident.setProcessDefinitionKey(processDefinitionKey);
+    flatIncident.setProcessDefinitionId(processDefinitionId);
+    flatIncident.setProcessInstanceId(processInstanceId);
+    flatIncident.setIncidentType(IncidentType.valueOfId(data.getErrorType().toString()));
+    flatIncident.setActivityId(String.valueOf(data.getElementInstanceKey()));
+    flatIncident.setIncidentMessage(data.getErrorMessage());
+    flatIncident.setDefinitionKey(data.getBpmnProcessId());
+    flatIncident.setTenantId(data.getTenantId());
+    flatIncident.setOrdinal(data.getOrdinal());
+    return flatIncident;
+  }
+
+  private void updateDurationIfMissing(final FlatIncidentDto flatIncident) {
+    if (flatIncident.getDurationInMs() == null
+        && flatIncident.getCreateTime() != null
+        && flatIncident.getEndTime() != null) {
+      flatIncident.setDurationInMs(
+          flatIncident.getCreateTime().until(flatIncident.getEndTime(), ChronoUnit.MILLIS));
     }
-  }
-
-  private IncidentDto createSkeletonIncident(final ZeebeIncidentRecordDto zeebeIncidentRecordDto) {
-    final ZeebeIncidentDataDto incidentDataDto = zeebeIncidentRecordDto.getValue();
-    final IncidentDto incidentDto = new IncidentDto();
-    incidentDto.setId(String.valueOf(zeebeIncidentRecordDto.getKey()));
-    incidentDto.setDefinitionKey(zeebeIncidentRecordDto.getValue().getBpmnProcessId());
-    incidentDto.setIncidentType(IncidentType.valueOfId(incidentDataDto.getErrorType().toString()));
-    incidentDto.setActivityId(String.valueOf(incidentDataDto.getElementInstanceKey()));
-    incidentDto.setIncidentMessage(incidentDataDto.getErrorMessage());
-    incidentDto.setTenantId(incidentDataDto.getTenantId());
-    return incidentDto;
   }
 
   private OffsetDateTime dateForTimestamp(final ZeebeIncidentRecordDto zeebeRecord) {
     return OffsetDateTime.ofInstant(
         Instant.ofEpochMilli(zeebeRecord.getTimestamp()), ZoneId.systemDefault());
+  }
+
+  private DatabaseImportJob<FlatIncidentDto> createDatabaseImportJob(
+      final List<FlatIncidentDto> flatIncidents, final Runnable importCompleteCallback) {
+    final FlatIncidentDatabaseImportJob importJob =
+        new FlatIncidentDatabaseImportJob(
+            incidentWriter, configurationService, importCompleteCallback, databaseClient);
+    importJob.setEntitiesToImport(flatIncidents);
+    return importJob;
   }
 }

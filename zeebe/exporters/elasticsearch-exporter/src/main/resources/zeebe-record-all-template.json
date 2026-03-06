@@ -1,0 +1,157 @@
+{
+  "index_patterns": [
+    "zeebe-record_*"
+  ],
+  "composed_of": ["zeebe-record"],
+  "priority": 20,
+  "version": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.queries.cache.enabled": false
+    },
+    "aliases": {
+      "zeebe-record": {}
+    },
+    "mappings": {
+      "properties": {
+        "value": {
+          "dynamic": false,
+          "properties": {
+            "bpmnProcessId": {
+              "type": "keyword"
+            },
+            "processDefinitionKey": {
+              "type": "long"
+            },
+            "processInstanceKey": {
+              "type": "long"
+            },
+            "elementId": {
+              "type": "keyword"
+            },
+            "elementInstanceKey": {
+              "type": "long"
+            },
+            "tenantId": {
+              "type": "keyword"
+            },
+            "rootProcessInstanceKey": {
+              "type": "long"
+            },
+            "version": {
+              "type": "integer"
+            },
+            "flowScopeKey": {
+              "type": "long"
+            },
+            "bpmnElementType": {
+              "type": "keyword"
+            },
+            "bpmnEventType": {
+              "type": "keyword"
+            },
+            "parentProcessInstanceKey": {
+              "type": "long"
+            },
+            "parentElementInstanceKey": {
+              "type": "long"
+            },
+            "elementInstancePath": {
+              "enabled": false
+            },
+            "processDefinitionPath": {
+              "enabled": false
+            },
+            "callingElementPath": {
+              "enabled": false
+            },
+            "tags": {
+              "type": "keyword"
+            },
+            "businessId": {
+              "type": "keyword"
+            },
+            "name": {
+              "type": "keyword"
+            },
+            "value": {
+              "type": "keyword",
+              "ignore_above": 8191
+            },
+            "scopeKey": {
+              "type": "long"
+            },
+            "source": {
+              "enabled": false
+            },
+            "userTaskKey": {
+              "type": "long"
+            },
+            "assignee": {
+              "type": "keyword"
+            },
+            "candidateGroupsList": {
+              "type": "text"
+            },
+            "candidateUsersList": {
+              "type": "text"
+            },
+            "changedAttributes": {
+              "type": "text"
+            },
+            "dueDate": {
+              "type": "keyword"
+            },
+            "followUpDate": {
+              "type": "keyword"
+            },
+            "formKey": {
+              "type": "long"
+            },
+            "action": {
+              "type": "text"
+            },
+            "externalFormReference": {
+              "type": "keyword"
+            },
+            "creationTimestamp": {
+              "type": "long"
+            },
+            "processDefinitionVersion": {
+              "type": "integer"
+            },
+            "variables": {
+              "enabled": false
+            },
+            "customHeaders": {
+              "enabled": false
+            },
+            "priority": {
+              "type": "integer"
+            },
+            "deniedReason": {
+              "type": "text"
+            },
+            "listenersConfigKey": {
+              "type": "long"
+            },
+            "errorType": {
+              "type": "keyword"
+            },
+            "errorMessage": {
+              "type": "text"
+            },
+            "jobKey": {
+              "type": "long"
+            },
+            "variableScopeKey": {
+              "type": "long"
+            }
+          }
+        }
+      }
+    }
+  }
+}

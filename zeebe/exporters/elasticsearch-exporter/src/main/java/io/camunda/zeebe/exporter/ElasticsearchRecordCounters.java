@@ -8,43 +8,38 @@
 package io.camunda.zeebe.exporter;
 
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.ValueType;
-import java.util.EnumMap;
-import java.util.Map;
 
+/**
+ * Maintains a single global counter for all records regardless of value type. In the combined Zeebe
+ * index all value types are stored together, so the sequence counter must reflect the global
+ * ordering across all record types rather than per-type ordering.
+ *
+ * @see <a href="https://github.com/camunda/camunda/issues/10568">Related issue</a>
+ */
 public final class ElasticsearchRecordCounters {
 
   private static final long INITIAL_RECORD_COUNTER = 0L;
 
-  /**
-   * Stores a counter per value type. The counter is used to create a sequence for a given record.
-   */
-  private final Map<ValueType, Long> recordCountersByValueType;
+  /** A single counter incremented for every record, regardless of its value type. */
+  private long recordCounter;
 
   public ElasticsearchRecordCounters() {
-    recordCountersByValueType = new EnumMap<>(ValueType.class);
+    recordCounter = INITIAL_RECORD_COUNTER;
   }
 
-  public ElasticsearchRecordCounters(final Map<ValueType, Long> recordCounters) {
-    recordCountersByValueType = new EnumMap<>(recordCounters);
+  public ElasticsearchRecordCounters(final long recordCounter) {
+    this.recordCounter = recordCounter;
   }
 
   public RecordSequence getNextRecordSequence(final Record<?> record) {
-    final var valueType = record.getValueType();
-    final long recordCounter =
-        recordCountersByValueType.getOrDefault(valueType, INITIAL_RECORD_COUNTER);
-
-    final long nextCounter = recordCounter + 1;
-    return new RecordSequence(record.getPartitionId(), nextCounter);
+    return new RecordSequence(record.getPartitionId(), recordCounter + 1);
   }
 
   public void updateRecordCounters(final Record<?> record, final RecordSequence recordSequence) {
-    final var valueType = record.getValueType();
-    final var counter = recordSequence.counter();
-    recordCountersByValueType.put(valueType, counter);
+    recordCounter = recordSequence.counter();
   }
 
-  public Map<ValueType, Long> getRecordCounters() {
-    return recordCountersByValueType;
+  public long getRecordCounter() {
+    return recordCounter;
   }
 }

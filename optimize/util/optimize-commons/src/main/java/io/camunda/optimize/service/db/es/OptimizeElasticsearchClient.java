@@ -821,7 +821,18 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                           bi.index(addPrefixesToIndices(requestDto.getIndexName()).get(0))
                               .id(requestDto.getId())
                               .document(requestDto.getSource())));
-      case UPDATE ->
+      case UPDATE -> {
+        if (requestDto.getDocs() != null) {
+          builder.operations(
+              bb ->
+                  bb.update(
+                      bi ->
+                          bi.index(addPrefixesToIndices(requestDto.getIndexName()).get(0))
+                              .id(requestDto.getId())
+                              .action(
+                                  a -> a.doc(requestDto.getDocs()).upsert(requestDto.getSource()))
+                              .retryOnConflict(requestDto.getRetryNumberOnConflict())));
+        } else {
           builder.operations(
               bb ->
                   bb.update(
@@ -836,6 +847,8 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
                                                   requestDto.getScriptData().scriptString(),
                                                   requestDto.getScriptData().params())))
                               .retryOnConflict(requestDto.getRetryNumberOnConflict())));
+        }
+      }
       default -> throw new IllegalStateException("Unexpected value: " + requestDto.getType());
     }
   }

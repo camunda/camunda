@@ -107,6 +107,7 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
   public static final String INCIDENT_DEFINITION_KEY = IncidentDto.Fields.definitionKey;
   public static final String INCIDENT_DEFINITION_VERSION = IncidentDto.Fields.definitionVersion;
   public static final String INCIDENT_TENANT_ID = IncidentDto.Fields.tenantId;
+  public static final String PARTITION = ProcessInstanceDto.Fields.partition;
   private final String indexName;
 
   protected ProcessInstanceIndex(final String processInstanceIndexKey) {
@@ -150,6 +151,7 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
   public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
     return builder
         .properties(PROCESS_DEFINITION_KEY, p -> p.keyword(k -> k))
+        .properties(PARTITION, p -> p.integer(k -> k))
         .properties(PROCESS_DEFINITION_VERSION, p -> p.keyword(k -> k))
         .properties(PROCESS_DEFINITION_ID, p -> p.keyword(k -> k))
         .properties(PROCESS_INSTANCE_ID, p -> p.keyword(k -> k))

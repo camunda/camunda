@@ -37,6 +37,7 @@ public abstract class FlatProcessInstanceIndex<TBuilder> extends AbstractInstanc
   public static final String STATE = ProcessInstanceDto.Fields.state;
   public static final String DATA_SOURCE = ProcessInstanceDto.Fields.dataSource;
   public static final String TENANT_ID = ProcessInstanceDto.Fields.tenantId;
+  public static final String PARTITION = ProcessInstanceDto.Fields.partition;
 
   private final String indexName;
 
@@ -47,6 +48,18 @@ public abstract class FlatProcessInstanceIndex<TBuilder> extends AbstractInstanc
 
   public static String constructIndexName(final String processInstanceIndexKey) {
     return FLAT_PROCESS_INSTANCE_INDEX_PREFIX + processInstanceIndexKey.toLowerCase(Locale.ENGLISH);
+  }
+
+  /**
+   * Constructs the index name using both the process definition key and the ordinal tick string
+   * (e.g. {@code "20260306-1430"}). The ordinal tick is mandatory.
+   */
+  public static String constructIndexName(
+      final String processInstanceIndexKey, final String ordinalTick) {
+    return FLAT_PROCESS_INSTANCE_INDEX_PREFIX
+        + processInstanceIndexKey.toLowerCase(Locale.ENGLISH)
+        + "-"
+        + ordinalTick;
   }
 
   @Override
@@ -89,7 +102,8 @@ public abstract class FlatProcessInstanceIndex<TBuilder> extends AbstractInstanc
         .properties(DURATION, p -> p.long_(k -> k))
         .properties(DATA_SOURCE, p -> p.object(k -> k.dynamic(DynamicMapping.True)))
         .properties(TENANT_ID, p -> p.keyword(k -> k))
-        .properties(STATE, p -> p.keyword(k -> k));
+        .properties(STATE, p -> p.keyword(k -> k))
+        .properties(PARTITION, p -> p.integer(k -> k));
   }
 
   protected String getIndexPrefix() {

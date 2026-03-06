@@ -30,6 +30,7 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
   private String elementId;
   private long processInstanceKey;
   private String tenantId;
+  private int ordinal;
 
   private final BpmnEventType bpmnEventType;
   private final List<List<Long>> elementInstancePath;
@@ -130,6 +131,15 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
   @Override
   public String getBusinessId() {
     return ""; // not used in Optimize
+  }
+
+  @Override
+  public int getOrdinal() {
+    return ordinal;
+  }
+
+  public void setOrdinal(final int ordinal) {
+    this.ordinal = ordinal;
   }
 
   public void setParentElementInstanceKey(final long parentElementInstanceKey) {

@@ -10,7 +10,6 @@ package io.camunda.zeebe.exporter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.exporter.dto.Template.MutableCopyBuilder;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,7 +20,7 @@ import java.util.Map;
 @SuppressWarnings("ClassCanBeRecord") // not semantically a data class
 final class TemplateReader {
   @SuppressWarnings("java:S1075") // not an actual URI
-  private static final String INDEX_TEMPLATE_FILENAME_PATTERN = "/zeebe-record-%s-template.json";
+  private static final String ZEEBE_RECORD_ALL_TEMPLATE_JSON = "/zeebe-record-all-template.json";
 
   private static final String ZEEBE_RECORD_TEMPLATE_JSON = "/zeebe-record-template.json";
   private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -38,13 +37,12 @@ final class TemplateReader {
   }
 
   /**
-   * Reads the index template for the given value type from the resources, and replaces the alias
-   * and search patterns with the given ones. Additionally, will update the composed_of to match the
-   * configured index prefix.
+   * Reads the combined index template for all value types from the resources, and replaces the
+   * alias and search patterns with the given ones. Additionally, will update the composed_of to
+   * match the configured index prefix.
    */
-  Template readIndexTemplate(
-      final ValueType valueType, final String searchPattern, final String aliasName) {
-    final Template template = readTemplate(findResourceForTemplate(valueType));
+  Template readIndexTemplate(final String searchPattern, final String aliasName) {
+    final Template template = readTemplate(ZEEBE_RECORD_ALL_TEMPLATE_JSON);
 
     // update prefix in template in case it was changed in configuration
     return MutableCopyBuilder.copyOf(template)
@@ -59,14 +57,6 @@ final class TemplateReader {
             })
         .withPriority(Long.valueOf(config.index.getTemplatePriority()))
         .build();
-  }
-
-  private String findResourceForTemplate(final ValueType valueType) {
-    return String.format(INDEX_TEMPLATE_FILENAME_PATTERN, valueTypeToString(valueType));
-  }
-
-  private String valueTypeToString(final ValueType valueType) {
-    return valueType.name().toLowerCase().replace("_", "-");
   }
 
   private Template readTemplate(final String resourcePath) {

@@ -13,6 +13,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import io.camunda.optimize.OptimizeMetrics;
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.service.importing.engine.service.ImportService;
+import io.camunda.optimize.service.importing.zeebe.cache.ZeebeImportSlidingWindowCache;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -35,6 +36,7 @@ public abstract class PositionBasedImportMediator<
   protected BackoffCalculator idleBackoffCalculator;
   protected T importIndexHandler;
   protected ImportService<DTO> importService;
+  protected ZeebeImportSlidingWindowCache slidingWindowCache;
   private final BackoffCalculator errorBackoffCalculator = new BackoffCalculator(10, 1000);
 
   @Override
@@ -74,6 +76,9 @@ public abstract class PositionBasedImportMediator<
   @Override
   public void shutdown() {
     importService.shutdown();
+    if (slidingWindowCache != null) {
+      slidingWindowCache.shutdown();
+    }
   }
 
   public T getImportIndexHandler() {
@@ -132,6 +137,11 @@ public abstract class PositionBasedImportMediator<
                 endTime.toInstant().toEpochMilli() - startTime.toInstant().toEpochMilli();
             final Timer indexingDurationTimer = getIndexingDurationTimer();
             indexingDurationTimer.record(took, MILLISECONDS);
+
+            // Feed the written records to the per-partition sliding window cache
+            if (slidingWindowCache != null) {
+              slidingWindowCache.accept(entitiesNextPage);
+            }
 
             importIndexHandler.updateLastPersistedEntityPositionAndSequence(
                 currentPageLastEntityPosition, currentPageLastEntitySequence);

@@ -208,4 +208,14 @@ public interface ProcessInstanceRecordValue
    * @since 8.9
    */
   String getBusinessId();
+
+  /**
+   * Returns the ordinal value captured at the time this process instance was created. The ordinal
+   * is a monotonically incrementing counter that is advanced every minute, allowing the creation
+   * time of a process instance to be derived at minute-level precision.
+   *
+   * @return the ordinal value at process instance creation time, or {@code 0} if not set
+   * @since 8.10
+   */
+  int getOrdinal();
 }

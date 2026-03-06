@@ -12,13 +12,19 @@ import io.camunda.optimize.service.db.es.schema.index.DecisionInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.FlatFlowNodeInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.FlatIncidentIndexES;
 import io.camunda.optimize.service.db.es.schema.index.FlatProcessInstanceIndexES;
+import io.camunda.optimize.service.db.es.schema.index.FlatUserTaskIndexES;
 import io.camunda.optimize.service.db.es.schema.index.FlatVariableIndexES;
+import io.camunda.optimize.service.db.es.schema.index.OrdinalIndexES;
+import io.camunda.optimize.service.db.es.schema.index.PreFlattenedIndexES;
 import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.os.schema.index.DecisionInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.FlatFlowNodeInstanceIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.FlatIncidentIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.FlatProcessInstanceIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.FlatUserTaskIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.FlatVariableIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.OrdinalIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.PreFlattenedIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessInstanceIndexOS;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import java.util.function.Function;
@@ -29,7 +35,10 @@ public enum IndexMappingCreatorBuilder {
   FLAT_FLOW_NODE_INSTANCE_INDEX(FlatFlowNodeInstanceIndexES::new, FlatFlowNodeInstanceIndexOS::new),
   FLAT_INCIDENT_INDEX(FlatIncidentIndexES::new, FlatIncidentIndexOS::new),
   FLAT_PROCESS_INSTANCE_INDEX(FlatProcessInstanceIndexES::new, FlatProcessInstanceIndexOS::new),
+  FLAT_USER_TASK_INDEX(FlatUserTaskIndexES::new, FlatUserTaskIndexOS::new),
   FLAT_VARIABLE_INDEX(FlatVariableIndexES::new, FlatVariableIndexOS::new),
+  ORDINAL_INDEX(s -> new OrdinalIndexES(), s -> new OrdinalIndexOS()),
+  PRE_FLATTENED_INDEX(PreFlattenedIndexES::new, PreFlattenedIndexOS::new),
   PROCESS_INSTANCE_INDEX(ProcessInstanceIndexES::new, ProcessInstanceIndexOS::new);
 
   private final Function<

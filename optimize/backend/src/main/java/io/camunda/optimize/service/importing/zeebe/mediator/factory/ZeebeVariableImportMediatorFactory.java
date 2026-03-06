@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
-import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
+import io.camunda.optimize.service.db.writer.VariableWriter;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.service.ObjectVariableService;
@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ZeebeVariableImportMediatorFactory extends AbstractZeebeImportMediatorFactory {
 
-  private final ProcessInstanceWriter zeebeProcessInstanceWriter;
+  private final VariableWriter variableWriter;
   private final ProcessDefinitionReader processDefinitionReader;
   private final ObjectVariableService objectVariableService;
 
@@ -36,7 +36,7 @@ public class ZeebeVariableImportMediatorFactory extends AbstractZeebeImportMedia
       final BeanFactory beanFactory,
       final ImportIndexHandlerRegistry importIndexHandlerRegistry,
       final ConfigurationService configurationService,
-      final ProcessInstanceWriter zeebeProcessInstanceWriter,
+      final VariableWriter variableWriter,
       final ObjectMapper objectMapper,
       final DatabaseClient databaseClient,
       final ProcessDefinitionReader processDefinitionReader,
@@ -47,32 +47,32 @@ public class ZeebeVariableImportMediatorFactory extends AbstractZeebeImportMedia
         configurationService,
         objectMapper,
         databaseClient);
-    this.zeebeProcessInstanceWriter = zeebeProcessInstanceWriter;
+    this.variableWriter = variableWriter;
     this.processDefinitionReader = processDefinitionReader;
     this.objectVariableService = objectVariableService;
   }
 
   @Override
   public List<ImportMediator> createMediators(final ZeebeDataSourceDto zeebeDataSourceDto) {
+    final int partitionId = zeebeDataSourceDto.getPartitionId();
     return Collections.singletonList(
         new ZeebeVariableImportMediator(
-            importIndexHandlerRegistry.getZeebeVariableImportIndexHandler(
-                zeebeDataSourceDto.getPartitionId()),
+            importIndexHandlerRegistry.getZeebeVariableImportIndexHandler(partitionId),
             beanFactory.getBean(
                 ZeebeVariableFetcher.class,
-                zeebeDataSourceDto.getPartitionId(),
+                partitionId,
                 databaseClient,
                 objectMapper,
                 configurationService),
             new ZeebeVariableImportService(
                 configurationService,
-                zeebeProcessInstanceWriter,
-                zeebeDataSourceDto.getPartitionId(),
+                variableWriter,
                 new ObjectMapper(),
                 processDefinitionReader,
                 objectVariableService,
                 databaseClient),
             configurationService,
-            new BackoffCalculator(configurationService)));
+            new BackoffCalculator(configurationService),
+            null));
   }
 }

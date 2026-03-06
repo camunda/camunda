@@ -15,6 +15,7 @@ import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import io.camunda.optimize.service.importing.PositionBasedImportMediator;
 import io.camunda.optimize.service.importing.engine.mediator.MediatorRank;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeVariableImportService;
+import io.camunda.optimize.service.importing.zeebe.cache.ZeebeImportSlidingWindowCache;
 import io.camunda.optimize.service.importing.zeebe.db.ZeebeVariableFetcher;
 import io.camunda.optimize.service.importing.zeebe.handler.ZeebeVariableImportIndexHandler;
 import io.camunda.optimize.service.util.BackoffCalculator;
@@ -31,12 +32,14 @@ public class ZeebeVariableImportMediator
       final ZeebeVariableFetcher zeebeVariableFetcher,
       final ZeebeVariableImportService importService,
       final ConfigurationService configurationService,
-      final BackoffCalculator idleBackoffCalculator) {
+      final BackoffCalculator idleBackoffCalculator,
+      final ZeebeImportSlidingWindowCache slidingWindowCache) {
     this.importIndexHandler = importIndexHandler;
     this.zeebeVariableFetcher = zeebeVariableFetcher;
     this.importService = importService;
     this.configurationService = configurationService;
     this.idleBackoffCalculator = idleBackoffCalculator;
+    this.slidingWindowCache = slidingWindowCache;
   }
 
   @Override

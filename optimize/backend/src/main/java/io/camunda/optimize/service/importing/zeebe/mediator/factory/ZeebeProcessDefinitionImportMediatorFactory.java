@@ -47,22 +47,20 @@ public class ZeebeProcessDefinitionImportMediatorFactory
 
   @Override
   public List<ImportMediator> createMediators(final ZeebeDataSourceDto zeebeDataSourceDto) {
+    final int partitionId = zeebeDataSourceDto.getPartitionId();
     return Collections.singletonList(
         new ZeebeProcessDefinitionImportMediator(
-            importIndexHandlerRegistry.getZeebeProcessDefinitionImportIndexHandler(
-                zeebeDataSourceDto.getPartitionId()),
+            importIndexHandlerRegistry.getZeebeProcessDefinitionImportIndexHandler(partitionId),
             beanFactory.getBean(
                 ZeebeProcessDefinitionFetcher.class,
-                zeebeDataSourceDto.getPartitionId(),
+                partitionId,
                 databaseClient,
                 objectMapper,
                 configurationService),
             new ZeebeProcessDefinitionImportService(
-                configurationService,
-                processDefinitionWriter,
-                zeebeDataSourceDto.getPartitionId(),
-                databaseClient),
+                configurationService, processDefinitionWriter, partitionId, databaseClient),
             configurationService,
-            new BackoffCalculator(configurationService)));
+            new BackoffCalculator(configurationService),
+            null));
   }
 }

@@ -278,7 +278,8 @@ public final class BpmnProcessors {
             processingState.getBannedInstanceState(),
             authCheckBehavior,
             bpmnBehaviors,
-            config.isBusinessIdUniquenessEnabled());
+            config.isBusinessIdUniquenessEnabled(),
+            processingState.getOrdinalState());
     final ProcessInstanceCreationCreateProcessor createProcessor =
         new ProcessInstanceCreationCreateProcessor(
             keyGenerator, writers, metrics, processInstanceCreationHelper);

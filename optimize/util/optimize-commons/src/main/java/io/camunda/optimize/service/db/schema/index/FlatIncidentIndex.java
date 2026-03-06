@@ -44,6 +44,7 @@ public abstract class FlatIncidentIndex<TBuilder> extends AbstractInstanceIndex<
   public static final String DEFINITION_KEY = IncidentDto.Fields.definitionKey;
   public static final String DEFINITION_VERSION = IncidentDto.Fields.definitionVersion;
   public static final String TENANT_ID = IncidentDto.Fields.tenantId;
+  public static final String PARTITION = "partition";
 
   private final String indexName;
 
@@ -54,6 +55,17 @@ public abstract class FlatIncidentIndex<TBuilder> extends AbstractInstanceIndex<
 
   public static String constructIndexName(final String incidentIndexKey) {
     return FLAT_INCIDENT_INDEX_PREFIX + incidentIndexKey.toLowerCase(Locale.ENGLISH);
+  }
+
+  /**
+   * Constructs the index name using both the process definition key and the ordinal tick string
+   * (e.g. {@code "20260306-1430"}). The ordinal tick is mandatory.
+   */
+  public static String constructIndexName(final String incidentIndexKey, final String ordinalTick) {
+    return FLAT_INCIDENT_INDEX_PREFIX
+        + incidentIndexKey.toLowerCase(Locale.ENGLISH)
+        + "-"
+        + ordinalTick;
   }
 
   @Override
@@ -101,7 +113,8 @@ public abstract class FlatIncidentIndex<TBuilder> extends AbstractInstanceIndex<
         .properties(INCIDENT_STATUS, p -> p.keyword(k -> k))
         .properties(DEFINITION_KEY, p -> p.keyword(k -> k))
         .properties(DEFINITION_VERSION, p -> p.keyword(k -> k))
-        .properties(TENANT_ID, p -> p.keyword(k -> k));
+        .properties(TENANT_ID, p -> p.keyword(k -> k))
+        .properties(PARTITION, p -> p.integer(k -> k));
   }
 
   protected String getIndexPrefix() {

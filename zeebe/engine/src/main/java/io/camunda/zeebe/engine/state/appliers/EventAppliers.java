@@ -55,6 +55,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.OrdinalIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -161,7 +162,12 @@ public final class EventAppliers implements EventApplier {
     registerExpressionEvaluationEventAppliers();
     registerGlobalListenersEventAppliers(state);
     registerJobMetricsBatchEventAppliers(state);
+    registerOrdinalAppliers(state);
     return this;
+  }
+
+  private void registerOrdinalAppliers(final MutableProcessingState state) {
+    register(OrdinalIntent.TICKED, new OrdinalTickedApplier(state.getOrdinalState()));
   }
 
   private void registerJobMetricsBatchEventAppliers(final MutableProcessingState state) {

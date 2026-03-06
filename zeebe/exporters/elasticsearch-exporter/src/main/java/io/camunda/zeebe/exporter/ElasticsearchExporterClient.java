@@ -18,7 +18,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer.Sample;
@@ -151,22 +150,16 @@ class ElasticsearchExporterClient implements AutoCloseable {
   }
 
   /**
-   * Creates an index template for the given value type, read from the resources.
+   * Creates a single index template covering all value types for the given broker version, read
+   * from the resources.
    *
    * @return true if request was acknowledged
    */
-  public boolean putIndexTemplate(final ValueType valueType) {
-    return putIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
-  }
-
-  public boolean putIndexTemplate(final ValueType valueType, final String version) {
-    final String templateName = indexRouter.indexPrefixForValueType(valueType, version);
+  public boolean putIndexTemplate(final String version) {
+    final String templateName = indexRouter.indexPrefix(version);
     final Template template =
         templateReader.readIndexTemplate(
-            valueType,
-            indexRouter.searchPatternForValueType(valueType, version),
-            indexRouter.aliasNameForValueType(valueType));
-
+            indexRouter.searchPattern(version), indexRouter.aliasName());
     return putIndexTemplate(templateName, template);
   }
 

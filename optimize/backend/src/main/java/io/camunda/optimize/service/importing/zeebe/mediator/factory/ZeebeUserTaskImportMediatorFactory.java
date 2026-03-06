@@ -10,8 +10,7 @@ package io.camunda.optimize.service.importing.zeebe.mediator.factory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
-import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
+import io.camunda.optimize.service.db.writer.UserTaskWriter;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeUserTaskImportService;
@@ -27,15 +26,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class ZeebeUserTaskImportMediatorFactory extends AbstractZeebeImportMediatorFactory {
 
-  private final ProcessInstanceWriter zeebeProcessInstanceWriter;
-  private final ProcessDefinitionReader processDefinitionReader;
+  private final UserTaskWriter userTaskWriter;
 
   public ZeebeUserTaskImportMediatorFactory(
       final BeanFactory beanFactory,
       final ImportIndexHandlerRegistry importIndexHandlerRegistry,
       final ConfigurationService configurationService,
-      final ProcessInstanceWriter zeebeProcessInstanceWriter,
-      final ProcessDefinitionReader processDefinitionReader,
+      final UserTaskWriter userTaskWriter,
       final ObjectMapper objectMapper,
       final DatabaseClient databaseClient) {
     super(
@@ -44,29 +41,25 @@ public class ZeebeUserTaskImportMediatorFactory extends AbstractZeebeImportMedia
         configurationService,
         objectMapper,
         databaseClient);
-    this.zeebeProcessInstanceWriter = zeebeProcessInstanceWriter;
-    this.processDefinitionReader = processDefinitionReader;
+    this.userTaskWriter = userTaskWriter;
   }
 
   @Override
   public List<ImportMediator> createMediators(final ZeebeDataSourceDto dataSourceDto) {
+    final int partitionId = dataSourceDto.getPartitionId();
     return Collections.singletonList(
         new ZeebeUserTaskImportMediator(
-            importIndexHandlerRegistry.getZeebeUserTaskImportIndexHandler(
-                dataSourceDto.getPartitionId()),
+            importIndexHandlerRegistry.getZeebeUserTaskImportIndexHandler(partitionId),
             beanFactory.getBean(
                 ZeebeUserTaskFetcher.class,
-                dataSourceDto.getPartitionId(),
+                partitionId,
                 databaseClient,
                 objectMapper,
                 configurationService),
             new ZeebeUserTaskImportService(
-                configurationService,
-                zeebeProcessInstanceWriter,
-                dataSourceDto.getPartitionId(),
-                processDefinitionReader,
-                databaseClient),
+                configurationService, userTaskWriter, partitionId, databaseClient),
             configurationService,
-            new BackoffCalculator(configurationService)));
+            new BackoffCalculator(configurationService),
+            null));
   }
 }

@@ -12,7 +12,7 @@ import java.util.Objects;
 public class ZeebeConfigDto implements SchedulerConfig {
 
   private String name;
-  private int partitionCount;
+  private int partitionCount = 3;
 
   public ZeebeConfigDto(final String name, final int partitionCount) {
     this.name = name;

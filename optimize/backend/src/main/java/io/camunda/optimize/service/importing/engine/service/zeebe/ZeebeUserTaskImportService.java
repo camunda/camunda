@@ -9,21 +9,21 @@ package io.camunda.optimize.service.importing.engine.service.zeebe;
 
 import static io.camunda.optimize.dto.optimize.importing.UserTaskIdentityOperationType.CLAIM_OPERATION_TYPE;
 import static io.camunda.optimize.dto.optimize.importing.UserTaskIdentityOperationType.UNCLAIM_OPERATION_TYPE;
-import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_USER_TASK_INDEX_NAME;
-import static io.camunda.optimize.service.util.importing.ZeebeConstants.FLOW_NODE_TYPE_USER_TASK;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CANCELED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CREATING;
 
-import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
-import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
+import io.camunda.optimize.dto.optimize.query.process.FlatUserTaskDto;
 import io.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskDataDto;
 import io.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
-import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
+import io.camunda.optimize.service.db.writer.UserTaskWriter;
+import io.camunda.optimize.service.importing.DatabaseImportJob;
+import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import io.camunda.optimize.service.importing.engine.service.ImportService;
+import io.camunda.optimize.service.importing.job.FlatUserTaskDatabaseImportJob;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.netty.util.internal.StringUtil;
@@ -40,33 +40,71 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
-public class ZeebeUserTaskImportService
-    extends ZeebeProcessInstanceSubEntityImportService<ZeebeUserTaskRecordDto> {
+public class ZeebeUserTaskImportService implements ImportService<ZeebeUserTaskRecordDto> {
 
   public static final Set<UserTaskIntent> INTENTS_TO_IMPORT =
       Set.of(CREATING, ASSIGNED, COMPLETED, CANCELED);
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ZeebeUserTaskImportService.class);
 
+  private final DatabaseImportJobExecutor databaseImportJobExecutor;
+  private final ConfigurationService configurationService;
+  private final UserTaskWriter userTaskWriter;
+  private final DatabaseClient databaseClient;
+  private final int partitionId;
+
   public ZeebeUserTaskImportService(
       final ConfigurationService configurationService,
-      final ProcessInstanceWriter processInstanceWriter,
+      final UserTaskWriter userTaskWriter,
       final int partitionId,
-      final ProcessDefinitionReader processDefinitionReader,
       final DatabaseClient databaseClient) {
-    super(
-        configurationService,
-        processInstanceWriter,
-        partitionId,
-        processDefinitionReader,
-        databaseClient,
-        ZEEBE_USER_TASK_INDEX_NAME);
+    this.databaseImportJobExecutor =
+        new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
+    this.configurationService = configurationService;
+    this.userTaskWriter = userTaskWriter;
+    this.partitionId = partitionId;
+    this.databaseClient = databaseClient;
   }
 
   @Override
-  List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
+  public void executeImport(
+      final List<ZeebeUserTaskRecordDto> zeebeRecords, final Runnable importCompleteCallback) {
+    if (!zeebeRecords.isEmpty()) {
+      final List<FlatUserTaskDto> flatUserTasks =
+          filterAndMapZeebeRecordsToFlatUserTasks(zeebeRecords);
+      final DatabaseImportJob<FlatUserTaskDto> importJob =
+          createDatabaseImportJob(flatUserTasks, importCompleteCallback);
+      databaseImportJobExecutor.executeImportJob(importJob);
+    }
+  }
+
+  /**
+   * Creates (but does not execute) a {@link DatabaseImportJob} for the given records.
+   *
+   * @return an {@link Optional} containing the prepared import job, or empty if there are no
+   *     relevant records to import.
+   */
+  public Optional<DatabaseImportJob<FlatUserTaskDto>> createImportJob(
+      final List<ZeebeUserTaskRecordDto> zeebeRecords) {
+    if (zeebeRecords.isEmpty()) {
+      return Optional.empty();
+    }
+    final List<FlatUserTaskDto> flatUserTasks =
+        filterAndMapZeebeRecordsToFlatUserTasks(zeebeRecords);
+    if (flatUserTasks.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(createDatabaseImportJob(flatUserTasks, () -> {}));
+  }
+
+  @Override
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
+  }
+
+  private List<FlatUserTaskDto> filterAndMapZeebeRecordsToFlatUserTasks(
       final List<ZeebeUserTaskRecordDto> userTaskRecords) {
-    final List<ProcessInstanceDto> optimizeDtos =
+    final List<FlatUserTaskDto> flatUserTasks =
         userTaskRecords.stream()
             .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
             .collect(
@@ -74,205 +112,202 @@ public class ZeebeUserTaskImportService
                     zeebeRecord -> zeebeRecord.getValue().getProcessInstanceKey()))
             .values()
             .stream()
-            .map(this::createProcessInstanceForData)
-            .toList();
+            .flatMap(records -> createFlatUserTasksForInstance(records).stream())
+            .collect(Collectors.toList());
     LOG.debug(
         "Processing {} fetched zeebe userTask records, of which {} are relevant to Optimize and will be imported.",
         userTaskRecords.size(),
-        optimizeDtos.size());
-    return optimizeDtos;
+        flatUserTasks.size());
+    return flatUserTasks;
   }
 
-  private ProcessInstanceDto createProcessInstanceForData(
+  private List<FlatUserTaskDto> createFlatUserTasksForInstance(
       final List<ZeebeUserTaskRecordDto> userTaskRecordsForInstance) {
     final ZeebeUserTaskDataDto firstRecordValue = userTaskRecordsForInstance.get(0).getValue();
-    final ProcessInstanceDto instanceToAdd =
-        createSkeletonProcessInstance(
-            firstRecordValue.getBpmnProcessId(),
-            firstRecordValue.getProcessInstanceKey(),
-            firstRecordValue.getProcessDefinitionKey(),
-            firstRecordValue.getTenantId());
-    updateUserTaskData(instanceToAdd, userTaskRecordsForInstance);
-    return instanceToAdd;
-  }
+    final String processDefinitionKey = firstRecordValue.getBpmnProcessId();
+    final String processDefinitionVersion =
+        String.valueOf(firstRecordValue.getProcessDefinitionVersion());
+    final String processDefinitionId = String.valueOf(firstRecordValue.getProcessDefinitionKey());
+    final String processInstanceId = String.valueOf(firstRecordValue.getProcessInstanceKey());
 
-  private void updateUserTaskData(
-      final ProcessInstanceDto instanceToAdd,
-      final List<ZeebeUserTaskRecordDto> userTaskRecordsForInstance) {
-    final Map<Long, FlowNodeInstanceDto> userTaskInstancesByKey = new HashMap<>();
+    // Track intermediate state per user task record key
+    final Map<Long, FlatUserTaskDto> userTasksByKey = new HashMap<>();
+    // Track assignee operations per key for duration calculations
+    final Map<Long, List<AssigneeOperationDto>> assigneeOpsByKey = new HashMap<>();
+
     userTaskRecordsForInstance.forEach(
-        zeebeUserTaskInstanceRecord -> {
-          final long recordKey = zeebeUserTaskInstanceRecord.getKey();
-          final FlowNodeInstanceDto userTaskForKey =
-              userTaskInstancesByKey.getOrDefault(
+        zeebeRecord -> {
+          final long recordKey = zeebeRecord.getKey();
+          final ZeebeUserTaskDataDto recordValue = zeebeRecord.getValue();
+          final FlatUserTaskDto userTaskDto =
+              userTasksByKey.computeIfAbsent(
                   recordKey,
-                  createSkeletonUserTaskInstance(zeebeUserTaskInstanceRecord.getValue()));
-          final UserTaskIntent userTaskRecordIntent = zeebeUserTaskInstanceRecord.getIntent();
-          if (userTaskRecordIntent == CREATING) {
-            userTaskForKey.setStartDate(zeebeUserTaskInstanceRecord.getDateForTimestamp());
-            if (!StringUtil.isNullOrEmpty(zeebeUserTaskInstanceRecord.getValue().getAssignee())) {
-              updateUserTaskAssigneeOperations(zeebeUserTaskInstanceRecord, userTaskForKey);
+                  k ->
+                      createSkeletonFlatUserTask(
+                          processDefinitionKey,
+                          processDefinitionVersion,
+                          processDefinitionId,
+                          processInstanceId,
+                          recordValue));
+          final List<AssigneeOperationDto> assigneeOps =
+              assigneeOpsByKey.computeIfAbsent(recordKey, k -> new ArrayList<>());
+
+          final UserTaskIntent intent = zeebeRecord.getIntent();
+          if (intent == CREATING) {
+            userTaskDto.setStartDate(zeebeRecord.getDateForTimestamp());
+            userTaskDto.setNew(true);
+            if (!StringUtil.isNullOrEmpty(recordValue.getAssignee())) {
+              addAssigneeOperation(zeebeRecord, assigneeOps);
             }
-          } else if (userTaskRecordIntent == COMPLETED) {
-            userTaskForKey.setEndDate(zeebeUserTaskInstanceRecord.getDateForTimestamp());
-          } else if (userTaskRecordIntent == CANCELED) {
-            userTaskForKey.setCanceled(true);
-            userTaskForKey.setEndDate(zeebeUserTaskInstanceRecord.getDateForTimestamp());
-          } else if (userTaskRecordIntent == ASSIGNED) {
-            updateUserTaskAssigneeOperations(zeebeUserTaskInstanceRecord, userTaskForKey);
+          } else if (intent == COMPLETED) {
+            userTaskDto.setEndDate(zeebeRecord.getDateForTimestamp());
+          } else if (intent == CANCELED) {
+            userTaskDto.setCanceled(true);
+            userTaskDto.setEndDate(zeebeRecord.getDateForTimestamp());
+          } else if (intent == ASSIGNED) {
+            addAssigneeOperation(zeebeRecord, assigneeOps);
           }
-          userTaskForKey.setAssignee(parseAssignee(zeebeUserTaskInstanceRecord.getValue()));
-          userTaskForKey.setDueDate(zeebeUserTaskInstanceRecord.getValue().getDateForDueDate());
-          userTaskInstancesByKey.put(recordKey, userTaskForKey);
+          userTaskDto.setAssignee(parseAssignee(recordValue));
+          userTaskDto.setDueDate(recordValue.getDateForDueDate());
         });
-    userTaskInstancesByKey.values().forEach(this::updateUserTaskDurations);
-    instanceToAdd.setFlowNodeInstances(new ArrayList<>(userTaskInstancesByKey.values()));
+
+    // Post-process: calculate durations
+    userTasksByKey.forEach(
+        (key, dto) -> {
+          updateTotalDuration(dto);
+          updateIdleAndWorkDuration(dto, assigneeOpsByKey.getOrDefault(key, List.of()));
+        });
+
+    return new ArrayList<>(userTasksByKey.values());
   }
 
-  private FlowNodeInstanceDto createSkeletonUserTaskInstance(
+  private FlatUserTaskDto createSkeletonFlatUserTask(
+      final String processDefinitionKey,
+      final String processDefinitionVersion,
+      final String processDefinitionId,
+      final String processInstanceId,
       final ZeebeUserTaskDataDto userTaskData) {
-    final FlowNodeInstanceDto flowNodeInstanceDto = new FlowNodeInstanceDto();
-    flowNodeInstanceDto.setFlowNodeInstanceId(String.valueOf(userTaskData.getElementInstanceKey()));
-    flowNodeInstanceDto.setFlowNodeId(userTaskData.getElementId());
-    flowNodeInstanceDto.setFlowNodeType(FLOW_NODE_TYPE_USER_TASK);
-    flowNodeInstanceDto.setProcessInstanceId(String.valueOf(userTaskData.getProcessInstanceKey()));
-    flowNodeInstanceDto.setCanceled(false);
-    flowNodeInstanceDto.setDefinitionKey(userTaskData.getBpmnProcessId());
-    flowNodeInstanceDto.setDefinitionVersion(
-        String.valueOf(userTaskData.getProcessDefinitionVersion()));
-    flowNodeInstanceDto.setTenantId(userTaskData.getTenantId());
-    flowNodeInstanceDto.setUserTaskInstanceId(String.valueOf(userTaskData.getUserTaskKey()));
-    return flowNodeInstanceDto;
+    final FlatUserTaskDto dto = new FlatUserTaskDto();
+    dto.setProcessDefinitionKey(processDefinitionKey);
+    dto.setProcessDefinitionVersion(processDefinitionVersion);
+    dto.setProcessDefinitionId(processDefinitionId);
+    dto.setProcessInstanceId(processInstanceId);
+    dto.setFlowNodeInstanceId(String.valueOf(userTaskData.getElementInstanceKey()));
+    dto.setFlowNodeId(userTaskData.getElementId());
+    dto.setUserTaskInstanceId(String.valueOf(userTaskData.getUserTaskKey()));
+    dto.setDefinitionKey(userTaskData.getBpmnProcessId());
+    dto.setDefinitionVersion(String.valueOf(userTaskData.getProcessDefinitionVersion()));
+    dto.setTenantId(userTaskData.getTenantId());
+    dto.setCanceled(false);
+    dto.setPartition(partitionId);
+    dto.setOrdinal(userTaskData.getOrdinal());
+    return dto;
   }
 
-  private void updateUserTaskDurations(final FlowNodeInstanceDto userTaskToAdd) {
-    if (userTaskToAdd.getStartDate() != null && userTaskToAdd.getEndDate() != null) {
-      userTaskToAdd.setTotalDurationInMs(
-          userTaskToAdd.getStartDate().until(userTaskToAdd.getEndDate(), ChronoUnit.MILLIS));
+  private void updateTotalDuration(final FlatUserTaskDto dto) {
+    if (dto.getStartDate() != null && dto.getEndDate() != null) {
+      dto.setTotalDurationInMs(dto.getStartDate().until(dto.getEndDate(), ChronoUnit.MILLIS));
+    }
+  }
+
+  private void updateIdleAndWorkDuration(
+      final FlatUserTaskDto dto, final List<AssigneeOperationDto> assigneeOps) {
+    if (dto.getStartDate() == null) {
+      return;
+    }
+    if (dto.getEndDate() == null && assigneeOps.isEmpty()) {
+      return;
     }
 
-    // Only recalculate durations of userTasks which are completed or have assignee operations
-    if (userTaskToAdd.getStartDate() != null
-        && (userTaskToAdd.getEndDate() != null
-            || !userTaskToAdd.getAssigneeOperations().isEmpty())) {
+    long totalIdleTimeInMs = 0;
+    long totalWorkTimeInMs = 0;
+    boolean workTimeHasChanged = false;
+    boolean idleTimeHasChanged = false;
 
-      long totalIdleTimeInMs = 0;
-      long totalWorkTimeInMs = 0;
-      boolean workTimeHasChanged = false;
-      boolean idleTimeHasChanged = false;
+    if (!assigneeOps.isEmpty()) {
+      final List<OffsetDateTime> allUnclaimTimestamps =
+          assigneeOps.stream()
+              .filter(op -> UNCLAIM_OPERATION_TYPE.toString().equals(op.getOperationType()))
+              .map(AssigneeOperationDto::getTimestamp)
+              .collect(Collectors.toList());
+      allUnclaimTimestamps.add(dto.getStartDate());
+      Optional.ofNullable(dto.getEndDate()).ifPresent(allUnclaimTimestamps::add);
+      allUnclaimTimestamps.sort(Comparator.naturalOrder());
 
-      if (!userTaskToAdd.getAssigneeOperations().isEmpty()) {
-        // Collect all timestamps of unclaim operations, counting the startDate as the first and the
-        // endDate as the last unclaim
-        final List<OffsetDateTime> allUnclaimTimestamps =
-            userTaskToAdd.getAssigneeOperations().stream()
-                .filter(
-                    operation ->
-                        UNCLAIM_OPERATION_TYPE.toString().equals(operation.getOperationType()))
-                .map(AssigneeOperationDto::getTimestamp)
-                .collect(Collectors.toList());
-        allUnclaimTimestamps.add(userTaskToAdd.getStartDate());
-        Optional.ofNullable(userTaskToAdd.getEndDate()).ifPresent(allUnclaimTimestamps::add);
-        allUnclaimTimestamps.sort(Comparator.naturalOrder());
+      final List<OffsetDateTime> allClaimTimestamps =
+          assigneeOps.stream()
+              .filter(op -> CLAIM_OPERATION_TYPE.toString().equals(op.getOperationType()))
+              .map(AssigneeOperationDto::getTimestamp)
+              .sorted(Comparator.naturalOrder())
+              .toList();
 
-        // Collect all timestamps of claim operations
-        final List<OffsetDateTime> allClaimTimestamps =
-            userTaskToAdd.getAssigneeOperations().stream()
-                .filter(
-                    operation ->
-                        CLAIM_OPERATION_TYPE.toString().equals(operation.getOperationType()))
-                .map(AssigneeOperationDto::getTimestamp)
-                .sorted(Comparator.naturalOrder())
-                .toList();
-
-        // Calculate idle time, which is the sum of differences between claim and unclaim timestamp
-        // pairs, ie (claim_n -
-        // unclaim_n)
-        // Note there will always be at least one unclaim (startDate)
-        for (int i = 0; i < allUnclaimTimestamps.size() && i < allClaimTimestamps.size(); i++) {
-          final OffsetDateTime unclaimDate = allUnclaimTimestamps.get(i);
-          final OffsetDateTime claimDate = allClaimTimestamps.get(i);
-          totalIdleTimeInMs += Duration.between(unclaimDate, claimDate).toMillis();
-          idleTimeHasChanged = true;
-        }
-
-        // Calculate work time, which is the sum of differences between unclaim and previous claim
-        // timestamp pairs, ie
-        // (unclaim_n+1 - claim_n)
-        // Note the startDate is the first unclaim, so can be disregarded for this calculation
-        for (int i = 0; i < allUnclaimTimestamps.size() - 1 && i < allClaimTimestamps.size(); i++) {
-          final OffsetDateTime claimDate = allClaimTimestamps.get(i);
-          final OffsetDateTime unclaimDate = allUnclaimTimestamps.get(i + 1);
-          totalWorkTimeInMs += Duration.between(claimDate, unclaimDate).toMillis();
-          workTimeHasChanged = true;
-        }
-
-        // Edge case: task was unclaimed and then completed without claim (== there are 2 more
-        // unclaims than claims)
-        // --> add time between end and last "real" unclaim as idle time
-        if (allUnclaimTimestamps.size() - allClaimTimestamps.size() == 2) {
-          final OffsetDateTime lastUnclaim =
-              allUnclaimTimestamps.get(allUnclaimTimestamps.size() - 1);
-          final OffsetDateTime secondToLastUnclaim =
-              allUnclaimTimestamps.get(allUnclaimTimestamps.size() - 2);
-          totalIdleTimeInMs += Duration.between(lastUnclaim, secondToLastUnclaim).toMillis();
-          idleTimeHasChanged = true;
-        }
-      }
-
-      // Edge case: no assignee operations exist but task was finished (task was completed or
-      // canceled without claim)
-      else if (userTaskToAdd.getTotalDurationInMs() != null) {
-        if (Boolean.TRUE.equals(userTaskToAdd.getCanceled())) {
-          // Task was cancelled --> assumed to have been idle the entire time
-          totalIdleTimeInMs = userTaskToAdd.getTotalDurationInMs();
-          totalWorkTimeInMs = 0;
-        } else {
-          // Task was not canceled --> assumed to have been worked on the entire time (presumably
-          // programmatically)
-          totalIdleTimeInMs = 0;
-          totalWorkTimeInMs = userTaskToAdd.getTotalDurationInMs();
-        }
-        workTimeHasChanged = true;
+      for (int i = 0; i < allUnclaimTimestamps.size() && i < allClaimTimestamps.size(); i++) {
+        totalIdleTimeInMs +=
+            Duration.between(allUnclaimTimestamps.get(i), allClaimTimestamps.get(i)).toMillis();
         idleTimeHasChanged = true;
       }
 
-      // Set work and idle time if they have been calculated. Otherwise, leave fields null.
-      if (idleTimeHasChanged) {
-        userTaskToAdd.setIdleDurationInMs(totalIdleTimeInMs);
+      for (int i = 0; i < allUnclaimTimestamps.size() - 1 && i < allClaimTimestamps.size(); i++) {
+        totalWorkTimeInMs +=
+            Duration.between(allClaimTimestamps.get(i), allUnclaimTimestamps.get(i + 1)).toMillis();
+        workTimeHasChanged = true;
       }
-      if (workTimeHasChanged) {
-        userTaskToAdd.setWorkDurationInMs(totalWorkTimeInMs);
+
+      if (allUnclaimTimestamps.size() - allClaimTimestamps.size() == 2) {
+        final OffsetDateTime lastUnclaim =
+            allUnclaimTimestamps.get(allUnclaimTimestamps.size() - 1);
+        final OffsetDateTime secondToLastUnclaim =
+            allUnclaimTimestamps.get(allUnclaimTimestamps.size() - 2);
+        totalIdleTimeInMs += Duration.between(lastUnclaim, secondToLastUnclaim).toMillis();
+        idleTimeHasChanged = true;
       }
+    } else if (dto.getTotalDurationInMs() != null) {
+      if (Boolean.TRUE.equals(dto.getCanceled())) {
+        totalIdleTimeInMs = dto.getTotalDurationInMs();
+        totalWorkTimeInMs = 0;
+      } else {
+        totalIdleTimeInMs = 0;
+        totalWorkTimeInMs = dto.getTotalDurationInMs();
+      }
+      workTimeHasChanged = true;
+      idleTimeHasChanged = true;
+    }
+
+    if (idleTimeHasChanged) {
+      dto.setIdleDurationInMs(totalIdleTimeInMs);
+    }
+    if (workTimeHasChanged) {
+      dto.setWorkDurationInMs(totalWorkTimeInMs);
     }
   }
 
-  private void updateUserTaskAssigneeOperations(
-      final ZeebeUserTaskRecordDto zeebeUserTaskRecord, final FlowNodeInstanceDto flowNodeToAdd) {
-    final List<AssigneeOperationDto> assigneeOperations = flowNodeToAdd.getAssigneeOperations();
-    final AssigneeOperationDto newAssigneeOperation =
-        createAssigneeOperationDto(zeebeUserTaskRecord);
-    if (!assigneeOperations.contains(newAssigneeOperation)) {
-      assigneeOperations.add(newAssigneeOperation);
-    }
-  }
-
-  private AssigneeOperationDto createAssigneeOperationDto(
-      final ZeebeUserTaskRecordDto zeebeUserTaskRecord) {
-    final AssigneeOperationDto assigneeOperationDto = new AssigneeOperationDto();
-    assigneeOperationDto.setId(String.valueOf(zeebeUserTaskRecord.getKey()));
-    assigneeOperationDto.setUserId(parseAssignee(zeebeUserTaskRecord.getValue()));
-    assigneeOperationDto.setOperationType(
-        StringUtil.isNullOrEmpty(zeebeUserTaskRecord.getValue().getAssignee())
+  private void addAssigneeOperation(
+      final ZeebeUserTaskRecordDto zeebeRecord, final List<AssigneeOperationDto> assigneeOps) {
+    final AssigneeOperationDto op = new AssigneeOperationDto();
+    op.setId(String.valueOf(zeebeRecord.getKey()));
+    op.setUserId(parseAssignee(zeebeRecord.getValue()));
+    op.setOperationType(
+        StringUtil.isNullOrEmpty(zeebeRecord.getValue().getAssignee())
             ? UNCLAIM_OPERATION_TYPE.toString()
             : CLAIM_OPERATION_TYPE.toString());
-    assigneeOperationDto.setTimestamp(zeebeUserTaskRecord.getDateForTimestamp());
-    return assigneeOperationDto;
+    op.setTimestamp(zeebeRecord.getDateForTimestamp());
+    if (!assigneeOps.contains(op)) {
+      assigneeOps.add(op);
+    }
   }
 
   private String parseAssignee(final ZeebeUserTaskDataDto zeebeUserTaskData) {
     return StringUtil.isNullOrEmpty(zeebeUserTaskData.getAssignee())
         ? null
         : zeebeUserTaskData.getAssignee();
+  }
+
+  private DatabaseImportJob<FlatUserTaskDto> createDatabaseImportJob(
+      final List<FlatUserTaskDto> flatUserTasks, final Runnable importCompleteCallback) {
+    final FlatUserTaskDatabaseImportJob importJob =
+        new FlatUserTaskDatabaseImportJob(
+            userTaskWriter, configurationService, importCompleteCallback, databaseClient);
+    importJob.setEntitiesToImport(flatUserTasks);
+    return importJob;
   }
 }

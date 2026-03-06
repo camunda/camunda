@@ -15,6 +15,7 @@ import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import io.camunda.optimize.service.importing.PositionBasedImportMediator;
 import io.camunda.optimize.service.importing.engine.mediator.MediatorRank;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeProcessInstanceImportService;
+import io.camunda.optimize.service.importing.zeebe.cache.ZeebeImportSlidingWindowCache;
 import io.camunda.optimize.service.importing.zeebe.db.ZeebeProcessInstanceFetcher;
 import io.camunda.optimize.service.importing.zeebe.handler.ZeebeProcessInstanceImportIndexHandler;
 import io.camunda.optimize.service.util.BackoffCalculator;
@@ -37,12 +38,14 @@ public class ZeebeProcessInstanceImportMediator
       final ZeebeProcessInstanceFetcher zeebeProcessInstanceFetcher,
       final ZeebeProcessInstanceImportService importService,
       final ConfigurationService configurationService,
-      final BackoffCalculator idleBackoffCalculator) {
+      final BackoffCalculator idleBackoffCalculator,
+      final ZeebeImportSlidingWindowCache slidingWindowCache) {
     this.importIndexHandler = importIndexHandler;
     this.zeebeProcessInstanceFetcher = zeebeProcessInstanceFetcher;
     this.importService = importService;
     this.configurationService = configurationService;
     this.idleBackoffCalculator = idleBackoffCalculator;
+    this.slidingWindowCache = slidingWindowCache;
   }
 
   @Override

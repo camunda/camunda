@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.OrdinalState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
@@ -69,6 +70,7 @@ public class ProcessInstanceCreationHelper {
   private final boolean businessIdUniquenessEnabled;
   private final ElementInstanceState elementInstanceState;
   private final BannedInstanceState bannedInstanceState;
+  private final OrdinalState ordinalState;
 
   public ProcessInstanceCreationHelper(
       final ProcessState processState,
@@ -76,7 +78,8 @@ public class ProcessInstanceCreationHelper {
       final BannedInstanceState bannedInstanceState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final BpmnBehaviors bpmnBehaviors,
-      final boolean businessIdUniquenessEnabled) {
+      final boolean businessIdUniquenessEnabled,
+      final OrdinalState ordinalState) {
     this.processState = processState;
     this.elementInstanceState = elementInstanceState;
     this.bannedInstanceState = bannedInstanceState;
@@ -84,6 +87,7 @@ public class ProcessInstanceCreationHelper {
     variableBehavior = bpmnBehaviors.variableBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
+    this.ordinalState = ordinalState;
   }
 
   public Either<Rejection, DeployedProcess> findRelevantProcess(
@@ -120,7 +124,8 @@ public class ProcessInstanceCreationHelper {
         .setFlowScopeKey(-1)
         .setTenantId(process.getTenantId())
         .setTags(tags)
-        .setBusinessId(businessId);
+        .setBusinessId(businessId)
+        .setOrdinal(ordinalState.getCurrentOrdinal());
   }
 
   private Either<Rejection, DeployedProcess> getProcess(

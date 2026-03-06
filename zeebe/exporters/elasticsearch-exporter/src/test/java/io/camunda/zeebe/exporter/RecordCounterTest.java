@@ -27,8 +27,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -60,8 +59,7 @@ public class RecordCounterTest {
     exporter.configure(context);
     exporter.open(controller);
     final Record mockRecord = mock(Record.class);
-    final var valueType = ValueType.PROCESS_INSTANCE;
-    when(mockRecord.getValueType()).thenReturn(valueType);
+    when(mockRecord.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
     // when a new record is exported
@@ -70,12 +68,11 @@ public class RecordCounterTest {
     exporter.export(mockRecord);
 
     // then the record counter should be 1
-    final var counters = readMetadata();
-    assertThat(counters)
+    assertThat(readMetadataCounter())
         .describedAs("The counter is stored in the metadata")
-        .isNotEmpty()
+        .isPresent()
         .describedAs("The record counter should be 1 as only exported 1 record")
-        .containsEntry(valueType, 1L);
+        .hasValue(1L);
   }
 
   @Test
@@ -84,8 +81,7 @@ public class RecordCounterTest {
     exporter.configure(context);
     exporter.open(controller);
     final Record mockRecord = mock(Record.class);
-    final var valueType = ValueType.PROCESS_INSTANCE;
-    when(mockRecord.getValueType()).thenReturn(valueType);
+    when(mockRecord.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
     // when a new record is exported, but the flush fails
@@ -95,9 +91,10 @@ public class RecordCounterTest {
     assertThatThrownBy(() -> exporter.export(mockRecord))
         .isInstanceOf(ElasticsearchExporterException.class);
 
-    // then the record counter should be empty
-    final var counters = readMetadata();
-    assertThat(counters).describedAs("The counter is not stored in the metadata").isEmpty();
+    // then the record counter should be empty (not persisted)
+    assertThat(readMetadataCounter())
+        .describedAs("The counter is not stored in the metadata")
+        .isEmpty();
   }
 
   @Test
@@ -106,8 +103,7 @@ public class RecordCounterTest {
     exporter.configure(context);
     exporter.open(controller);
     final Record mockRecord = mock(Record.class);
-    final var valueType = ValueType.PROCESS_INSTANCE;
-    when(mockRecord.getValueType()).thenReturn(valueType);
+    when(mockRecord.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
     // when a new record is exported, but the flush fails
@@ -118,12 +114,11 @@ public class RecordCounterTest {
     exporter.close();
 
     // then the record counter should be 1
-    final var counters = readMetadata();
-    assertThat(counters)
+    assertThat(readMetadataCounter())
         .describedAs("The counter is stored in the metadata")
-        .isNotEmpty()
+        .isPresent()
         .describedAs("The record counter should be 1 as only exported 1 record")
-        .containsEntry(valueType, 1L);
+        .hasValue(1L);
   }
 
   @Test
@@ -132,8 +127,7 @@ public class RecordCounterTest {
     exporter.configure(context);
     exporter.open(controller);
     final Record mockRecord = mock(Record.class);
-    final var valueType = ValueType.PROCESS_INSTANCE;
-    when(mockRecord.getValueType()).thenReturn(valueType);
+    when(mockRecord.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
     // when a new record is exported, but the flush fails
@@ -144,9 +138,10 @@ public class RecordCounterTest {
     // the close() method is used to simulate the asynchronous flush
     exporter.close();
 
-    // then the record counter should be empty
-    final var counters = readMetadata();
-    assertThat(counters).describedAs("The counter is not stored in the metadata").isEmpty();
+    // then the record counter should be empty (not persisted)
+    assertThat(readMetadataCounter())
+        .describedAs("The counter is not stored in the metadata")
+        .isEmpty();
   }
 
   @RegressionTest("https://github.com/camunda/camunda/issues/24192")
@@ -155,8 +150,7 @@ public class RecordCounterTest {
     exporter.configure(context);
     exporter.open(controller);
     final Record mockRecord = mock(Record.class);
-    final var valueType = ValueType.PROCESS_INSTANCE;
-    when(mockRecord.getValueType()).thenReturn(valueType);
+    when(mockRecord.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
     // when a new record is exported, but the synchronous flush fails
@@ -172,13 +166,12 @@ public class RecordCounterTest {
     exporter.close();
 
     // then the record counter should be 1
-    final var counters = readMetadata();
-    assertThat(counters)
+    assertThat(readMetadataCounter())
         .describedAs("The counter is stored in the metadata")
-        .isNotEmpty()
+        .isPresent()
         .describedAs(
             "The record counter should be 1, as we have exported the record asynchronously")
-        .containsEntry(valueType, 1L);
+        .hasValue(1L);
   }
 
   @Test
@@ -187,8 +180,7 @@ public class RecordCounterTest {
     exporter.configure(context);
     exporter.open(controller);
     final Record mockRecord = mock(Record.class);
-    final var valueType = ValueType.PROCESS_INSTANCE;
-    when(mockRecord.getValueType()).thenReturn(valueType);
+    when(mockRecord.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(mockRecord.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
     // when a new record is exported, but the synchronous flush fails
@@ -206,12 +198,11 @@ public class RecordCounterTest {
     exporter.export(mockRecord);
 
     // then the record counter should be 1
-    final var counters = readMetadata();
-    assertThat(counters)
+    assertThat(readMetadataCounter())
         .describedAs("The counter is stored in the metadata")
-        .isNotEmpty()
+        .isPresent()
         .describedAs("The record counter should be 1, as we have exported the same record twice")
-        .containsEntry(valueType, 1L);
+        .hasValue(1L);
   }
 
   @Test
@@ -221,9 +212,8 @@ public class RecordCounterTest {
     exporter.open(controller);
     final Record mockRecord1 = mock(Record.class);
     final Record mockRecord2 = mock(Record.class);
-    final var valueType = ValueType.PROCESS_INSTANCE;
-    when(mockRecord1.getValueType()).thenReturn(valueType);
-    when(mockRecord2.getValueType()).thenReturn(valueType);
+    when(mockRecord1.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+    when(mockRecord2.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
     when(mockRecord1.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
     when(mockRecord2.getBrokerVersion()).thenReturn(VersionUtil.getVersionLowerCase());
 
@@ -237,12 +227,11 @@ public class RecordCounterTest {
     exporter.export(mockRecord2);
 
     // then the record counter should be 2
-    final var counters = readMetadata();
-    assertThat(counters)
+    assertThat(readMetadataCounter())
         .describedAs("The counter is stored in the metadata")
-        .isNotEmpty()
+        .isPresent()
         .describedAs("The record counter should be 2, as we have exported the two records")
-        .containsEntry(valueType, 2L);
+        .hasValue(2L);
   }
 
   @Test
@@ -269,7 +258,7 @@ public class RecordCounterTest {
         .containsExactly(1L);
   }
 
-  private Map<ValueType, Long> readMetadata() {
+  private Optional<Long> readMetadataCounter() {
     return controller
         .readMetadata()
         .map(
@@ -281,7 +270,7 @@ public class RecordCounterTest {
                 return null;
               }
             })
-        .map(ElasticsearchExporterMetadata::getRecordCountersByValueType)
-        .orElse(Collections.emptyMap());
+        .filter(metadata -> metadata != null)
+        .map(ElasticsearchExporterMetadata::getRecordCounter);
   }
 }

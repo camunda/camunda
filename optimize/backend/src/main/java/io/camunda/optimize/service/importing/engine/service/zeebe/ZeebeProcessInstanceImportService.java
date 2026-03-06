@@ -12,31 +12,36 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
+import io.camunda.optimize.dto.optimize.FlatProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
+import io.camunda.optimize.dto.optimize.query.process.FlatFlowNodeInstanceDto;
 import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
 import io.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
+import io.camunda.optimize.service.db.writer.FlowNodeInstanceWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.optimize.service.importing.DatabaseImportJobExecutor;
+import io.camunda.optimize.service.importing.engine.service.ImportService;
+import io.camunda.optimize.service.importing.job.ZeebeProcessInstanceImportJob;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public class ZeebeProcessInstanceImportService
-    extends ZeebeProcessInstanceSubEntityImportService<ZeebeProcessInstanceRecordDto> {
+    implements ImportService<ZeebeProcessInstanceRecordDto> {
 
   public static final Set<ProcessInstanceIntent> INTENTS_TO_IMPORT =
       Set.of(
@@ -48,68 +53,239 @@ public class ZeebeProcessInstanceImportService
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ZeebeProcessInstanceImportService.class);
 
+  private final DatabaseImportJobExecutor databaseImportJobExecutor;
+  private final ConfigurationService configurationService;
+  private final ProcessInstanceWriter processInstanceWriter;
+  private final FlowNodeInstanceWriter flowNodeInstanceWriter;
+  private final DatabaseClient databaseClient;
+  private final int partitionId;
+
   public ZeebeProcessInstanceImportService(
       final ConfigurationService configurationService,
       final ProcessInstanceWriter processInstanceWriter,
+      final FlowNodeInstanceWriter flowNodeInstanceWriter,
       final int partitionId,
-      final ProcessDefinitionReader processDefinitionReader,
       final DatabaseClient databaseClient) {
-    super(
-        configurationService,
-        processInstanceWriter,
-        partitionId,
-        processDefinitionReader,
-        databaseClient,
-        ZEEBE_PROCESS_INSTANCE_INDEX_NAME);
+    databaseImportJobExecutor =
+        new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
+    this.configurationService = configurationService;
+    this.processInstanceWriter = processInstanceWriter;
+    this.flowNodeInstanceWriter = flowNodeInstanceWriter;
+    this.partitionId = partitionId;
+    this.databaseClient = databaseClient;
   }
 
   @Override
-  protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
+  public void executeImport(
+      final List<ZeebeProcessInstanceRecordDto> zeebeRecords,
+      final Runnable importCompleteCallback) {
+    if (zeebeRecords.isEmpty()) {
+      importCompleteCallback.run();
+      return;
+    }
+    final TransformedProcessInstanceData transformed = transformRecords(zeebeRecords);
+    if (transformed.flatProcessInstances().isEmpty() && transformed.flowNodeInstances().isEmpty()) {
+      importCompleteCallback.run();
+      return;
+    }
+    final ZeebeProcessInstanceImportJob job = buildImportJob(transformed, importCompleteCallback);
+    databaseImportJobExecutor.executeImportJob(job);
+  }
+
+  @Override
+  public DatabaseImportJobExecutor getDatabaseImportJobExecutor() {
+    return databaseImportJobExecutor;
+  }
+
+  /**
+   * Creates (but does not execute) a {@link ZeebeProcessInstanceImportJob} for the given records.
+   *
+   * @return an {@link Optional} containing the prepared import job, or empty if there are no
+   *     relevant records to import.
+   */
+  public Optional<ZeebeProcessInstanceImportJob> createImportJob(
       final List<ZeebeProcessInstanceRecordDto> zeebeRecords) {
-    final List<ProcessInstanceDto> optimizeDtos =
-        new ArrayList<>(
-            zeebeRecords.stream()
-                .filter(
-                    zeebeRecord -> {
-                      final BpmnElementType bpmnElementType =
-                          zeebeRecord.getValue().getBpmnElementType();
-                      return bpmnElementType != null && !TYPES_TO_IGNORE.contains(bpmnElementType);
-                    })
-                .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
-                .collect(
-                    Collectors.groupingBy(
-                        zeebeRecord -> zeebeRecord.getValue().getProcessInstanceKey(),
-                        Collectors.mapping(
-                            Function.identity(),
-                            Collectors.collectingAndThen(
-                                Collectors.toList(), this::createProcessInstanceForData))))
-                .values());
+    if (zeebeRecords.isEmpty()) {
+      return Optional.empty();
+    }
+    final TransformedProcessInstanceData transformed = transformRecords(zeebeRecords);
+    if (transformed.flatProcessInstances().isEmpty() && transformed.flowNodeInstances().isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(buildImportJob(transformed, () -> {}));
+  }
+
+  /**
+   * Transforms the raw zeebe records into the typed DTOs needed for import. The result holds
+   * process instances, flat process instances, and flat flow node instances.
+   */
+  private TransformedProcessInstanceData transformRecords(
+      final List<ZeebeProcessInstanceRecordDto> zeebeRecords) {
+    final List<ZeebeProcessInstanceRecordDto> filteredRecords =
+        zeebeRecords.stream()
+            .filter(
+                zeebeRecord -> {
+                  final BpmnElementType bpmnElementType =
+                      zeebeRecord.getValue().getBpmnElementType();
+                  return bpmnElementType != null && !TYPES_TO_IGNORE.contains(bpmnElementType);
+                })
+            .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
+            .collect(Collectors.toList());
+    final Map<Long, List<ZeebeProcessInstanceRecordDto>> byProcessInstanceKey =
+        filteredRecords.stream()
+            .collect(Collectors.groupingBy(r -> r.getValue().getProcessInstanceKey()));
+    final List<FlatProcessInstanceDto> flatProcessInstances =
+        byProcessInstanceKey.values().stream()
+            .map(
+                records -> {
+                  final ProcessInstanceDto pi = createProcessInstanceForData(records);
+                  if (!pi.getFlowNodeInstances().isEmpty()
+                      || pi.getStartDate() != null
+                      || pi.getEndDate() != null) {
+                    final FlatProcessInstanceDto flat = FlatProcessInstanceDto.from(pi);
+                    flat.setOrdinal(records.get(0).getValue().getOrdinal());
+                    return flat;
+                  }
+                  return null;
+                })
+            .filter(flat -> flat != null)
+            .collect(Collectors.toList());
+    final List<FlatFlowNodeInstanceDto> flowNodeInstances =
+        byProcessInstanceKey.values().stream()
+            .flatMap(records -> createFlatFlowNodeInstancesForData(records).stream())
+            .collect(Collectors.toList());
     LOG.debug(
-        "Processing {} fetched zeebe process instance records, of which {} are relevant to Optimize and will be imported.",
+        "Processing {} fetched process instances, {} flat process instances, {} flow node instances.",
         zeebeRecords.size(),
-        optimizeDtos.size());
-    return optimizeDtos;
+        flatProcessInstances.size(),
+        flowNodeInstances.size());
+    return new TransformedProcessInstanceData(flatProcessInstances, flowNodeInstances);
+  }
+
+  private ZeebeProcessInstanceImportJob buildImportJob(
+      final TransformedProcessInstanceData transformed, final Runnable importCompleteCallback) {
+    final ZeebeProcessInstanceImportJob job =
+        new ZeebeProcessInstanceImportJob(
+            processInstanceWriter,
+            flowNodeInstanceWriter,
+            configurationService,
+            importCompleteCallback,
+            databaseClient,
+            ZEEBE_PROCESS_INSTANCE_INDEX_NAME);
+    job.setFlatProcessInstances(transformed.flatProcessInstances());
+    job.setFlowNodeInstances(transformed.flowNodeInstances());
+    return job;
   }
 
   private ProcessInstanceDto createProcessInstanceForData(
       final List<ZeebeProcessInstanceRecordDto> recordsForInstance) {
-    // All instances in the list should have the same process data, so we can simply take the first
-    // entry
     final ZeebeProcessInstanceRecordDto firstRecord = recordsForInstance.get(0);
     final ZeebeProcessInstanceDataDto firstRecordValue = firstRecord.getValue();
-    final ProcessInstanceDto instanceToAdd =
-        createSkeletonProcessInstance(
-            firstRecordValue.getBpmnProcessId(),
-            firstRecordValue.getProcessInstanceKey(),
-            firstRecordValue.getProcessDefinitionKey(),
-            firstRecordValue.getTenantId());
+    final ProcessInstanceDto instanceToAdd = createSkeletonProcessInstance(firstRecordValue);
     instanceToAdd.setProcessDefinitionVersion(String.valueOf(firstRecordValue.getVersion()));
     instanceToAdd.setIncidents(Collections.emptyList());
     instanceToAdd.setVariables(Collections.emptyList());
-
+    // Flow node instances are stored separately in the flat flow node instance index;
+    // the process instance document does not embed them.
+    instanceToAdd.setFlowNodeInstances(Collections.emptyList());
     updateProcessStateAndDateProperties(instanceToAdd, recordsForInstance);
-    updateFlowNodeEventsForProcess(instanceToAdd, recordsForInstance);
     return instanceToAdd;
+  }
+
+  private List<FlatFlowNodeInstanceDto> createFlatFlowNodeInstancesForData(
+      final List<ZeebeProcessInstanceRecordDto> recordsForInstance) {
+    final ZeebeProcessInstanceDataDto firstRecordValue = recordsForInstance.get(0).getValue();
+    final String processDefinitionKey = firstRecordValue.getBpmnProcessId();
+    final String processDefinitionVersion = String.valueOf(firstRecordValue.getVersion());
+    final String processDefinitionId = String.valueOf(firstRecordValue.getProcessDefinitionKey());
+    final String processInstanceId = String.valueOf(firstRecordValue.getProcessInstanceKey());
+    final int ordinal = firstRecordValue.getOrdinal();
+
+    final Map<Long, FlowNodeInstanceDto> flowNodeInstancesByRecordKey = new HashMap<>();
+    final Map<Long, Boolean> hasActivatingByRecordKey = new HashMap<>();
+
+    recordsForInstance.stream()
+        .filter(
+            zeebeRecord ->
+                zeebeRecord.getValue().getBpmnElementType().getElementTypeName().isPresent())
+        .filter(
+            zeebeRecord ->
+                !BpmnElementType.PROCESS.equals(zeebeRecord.getValue().getBpmnElementType()))
+        .forEach(
+            zeebeFlowNodeInstanceRecord -> {
+              final long recordKey = zeebeFlowNodeInstanceRecord.getKey();
+              final FlowNodeInstanceDto flowNodeForKey =
+                  flowNodeInstancesByRecordKey.getOrDefault(
+                      recordKey, createSkeletonFlowNodeInstance(zeebeFlowNodeInstanceRecord));
+              final ProcessInstanceIntent instanceIntent = zeebeFlowNodeInstanceRecord.getIntent();
+              if (instanceIntent == ELEMENT_COMPLETED) {
+                flowNodeForKey.setEndDate(zeebeFlowNodeInstanceRecord.getDateForTimestamp());
+              } else if (instanceIntent == ELEMENT_TERMINATED) {
+                flowNodeForKey.setCanceled(true);
+                flowNodeForKey.setEndDate(zeebeFlowNodeInstanceRecord.getDateForTimestamp());
+              } else if (instanceIntent == ELEMENT_ACTIVATING) {
+                flowNodeForKey.setStartDate(zeebeFlowNodeInstanceRecord.getDateForTimestamp());
+                hasActivatingByRecordKey.put(recordKey, true);
+              }
+              updateDurationIfCompleted(flowNodeForKey);
+              flowNodeInstancesByRecordKey.put(recordKey, flowNodeForKey);
+            });
+
+    return flowNodeInstancesByRecordKey.entrySet().stream()
+        .map(
+            entry -> {
+              final long recordKey = entry.getKey();
+              final FlowNodeInstanceDto flowNode = entry.getValue();
+              final FlatFlowNodeInstanceDto dto =
+                  FlatFlowNodeInstanceDto.fromProcessInstanceAndFlowNode(
+                      processDefinitionKey,
+                      processDefinitionVersion,
+                      processDefinitionId,
+                      processInstanceId,
+                      flowNode);
+              dto.setPartition(partitionId);
+              dto.setOrdinal(ordinal);
+              // If the batch contains an ACTIVATING event for this flow node, treat it as new
+              // (full INDEX); otherwise use UPDATE+docs for completion/termination only.
+              dto.setNew(hasActivatingByRecordKey.getOrDefault(recordKey, false));
+              return dto;
+            })
+        .collect(Collectors.toList());
+  }
+
+  private ProcessInstanceDto createSkeletonProcessInstance(final ZeebeProcessInstanceDataDto data) {
+    final ProcessInstanceDto processInstanceDto = new ProcessInstanceDto();
+    processInstanceDto.setProcessDefinitionKey(data.getBpmnProcessId());
+    processInstanceDto.setProcessInstanceId(String.valueOf(data.getProcessInstanceKey()));
+    processInstanceDto.setProcessDefinitionId(String.valueOf(data.getProcessDefinitionKey()));
+    processInstanceDto.setTenantId(data.getTenantId());
+    processInstanceDto.setPartition(partitionId);
+    processInstanceDto.setDataSource(
+        new ZeebeDataSourceDto(configurationService.getConfiguredZeebe().getName(), partitionId));
+    return processInstanceDto;
+  }
+
+  private FlowNodeInstanceDto createSkeletonFlowNodeInstance(
+      final ZeebeProcessInstanceRecordDto zeebeProcessInstanceRecordDto) {
+    final ZeebeProcessInstanceDataDto zeebeInstanceRecord =
+        zeebeProcessInstanceRecordDto.getValue();
+    final FlowNodeInstanceDto flowNodeInstanceDto =
+        new FlowNodeInstanceDto(
+            zeebeInstanceRecord.getBpmnProcessId(),
+            String.valueOf(zeebeInstanceRecord.getVersion()),
+            zeebeInstanceRecord.getTenantId(),
+            String.valueOf(zeebeInstanceRecord.getProcessInstanceKey()),
+            zeebeInstanceRecord.getElementId(),
+            zeebeInstanceRecord
+                .getBpmnElementType()
+                .getElementTypeName()
+                .orElseThrow(
+                    () ->
+                        new OptimizeRuntimeException(
+                            "Cannot create flow node instances for records without element types")),
+            String.valueOf(zeebeProcessInstanceRecordDto.getKey()));
+    flowNodeInstanceDto.setCanceled(false);
+    return flowNodeInstanceDto;
   }
 
   private void updateProcessStateAndDateProperties(
@@ -145,61 +321,6 @@ public class ZeebeProcessInstanceImportService
             });
   }
 
-  private void updateFlowNodeEventsForProcess(
-      final ProcessInstanceDto instanceToAdd,
-      final List<ZeebeProcessInstanceRecordDto> recordsForInstance) {
-    final Map<Long, FlowNodeInstanceDto> flowNodeInstancesByRecordKey = new HashMap<>();
-    recordsForInstance.stream()
-        .filter(
-            zeebeRecord ->
-                zeebeRecord.getValue().getBpmnElementType().getElementTypeName().isPresent())
-        .filter(
-            zeebeRecord ->
-                !BpmnElementType.PROCESS.equals(zeebeRecord.getValue().getBpmnElementType()))
-        .forEach(
-            zeebeFlowNodeInstanceRecord -> {
-              final long recordKey = zeebeFlowNodeInstanceRecord.getKey();
-              final FlowNodeInstanceDto flowNodeForKey =
-                  flowNodeInstancesByRecordKey.getOrDefault(
-                      recordKey, createSkeletonFlowNodeInstance(zeebeFlowNodeInstanceRecord));
-              final ProcessInstanceIntent instanceIntent = zeebeFlowNodeInstanceRecord.getIntent();
-              if (instanceIntent == ELEMENT_COMPLETED) {
-                flowNodeForKey.setEndDate(zeebeFlowNodeInstanceRecord.getDateForTimestamp());
-              } else if (instanceIntent == ELEMENT_TERMINATED) {
-                flowNodeForKey.setCanceled(true);
-                flowNodeForKey.setEndDate(zeebeFlowNodeInstanceRecord.getDateForTimestamp());
-              } else if (instanceIntent == ELEMENT_ACTIVATING) {
-                flowNodeForKey.setStartDate(zeebeFlowNodeInstanceRecord.getDateForTimestamp());
-              }
-              updateDurationIfCompleted(flowNodeForKey);
-              flowNodeInstancesByRecordKey.put(recordKey, flowNodeForKey);
-            });
-    instanceToAdd.setFlowNodeInstances(new ArrayList<>(flowNodeInstancesByRecordKey.values()));
-  }
-
-  private FlowNodeInstanceDto createSkeletonFlowNodeInstance(
-      final ZeebeProcessInstanceRecordDto zeebeProcessInstanceRecordDto) {
-    final ZeebeProcessInstanceDataDto zeebeInstanceRecord =
-        zeebeProcessInstanceRecordDto.getValue();
-    final FlowNodeInstanceDto flowNodeInstanceDto =
-        new FlowNodeInstanceDto(
-            String.valueOf(zeebeInstanceRecord.getBpmnProcessId()),
-            String.valueOf(zeebeInstanceRecord.getVersion()),
-            zeebeInstanceRecord.getTenantId(),
-            String.valueOf(zeebeInstanceRecord.getProcessInstanceKey()),
-            zeebeInstanceRecord.getElementId(),
-            zeebeInstanceRecord
-                .getBpmnElementType()
-                .getElementTypeName()
-                .orElseThrow(
-                    () ->
-                        new OptimizeRuntimeException(
-                            "Cannot create flow node instances for records without element types")),
-            String.valueOf(zeebeProcessInstanceRecordDto.getKey()));
-    flowNodeInstanceDto.setCanceled(false);
-    return flowNodeInstanceDto;
-  }
-
   private void updateStateIfValidTransition(
       final ProcessInstanceDto instance, final String targetState) {
     if (instance.getState() == null
@@ -221,4 +342,9 @@ public class ZeebeProcessInstanceImportService
           flowNodeToAdd.getStartDate().until(flowNodeToAdd.getEndDate(), ChronoUnit.MILLIS));
     }
   }
+
+  /** Holds the intermediate DTOs produced by record transformation. */
+  private record TransformedProcessInstanceData(
+      List<FlatProcessInstanceDto> flatProcessInstances,
+      List<FlatFlowNodeInstanceDto> flowNodeInstances) {}
 }

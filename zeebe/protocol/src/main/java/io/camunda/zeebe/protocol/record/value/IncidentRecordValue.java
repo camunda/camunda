@@ -120,4 +120,13 @@ public interface IncidentRecordValue
    * @return the key of the root process instance, or {@code -1} if not set
    */
   long getRootProcessInstanceKey();
+
+  /**
+   * Returns the ordinal captured at the time the process instance hosting this incident was
+   * created.
+   *
+   * @return the ordinal, or {@code 0} if not set
+   * @since 8.10
+   */
+  int getOrdinal();
 }

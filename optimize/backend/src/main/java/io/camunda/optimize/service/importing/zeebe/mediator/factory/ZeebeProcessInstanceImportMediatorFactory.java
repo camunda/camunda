@@ -10,7 +10,7 @@ package io.camunda.optimize.service.importing.zeebe.mediator.factory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.service.db.DatabaseClient;
-import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
+import io.camunda.optimize.service.db.writer.FlowNodeInstanceWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
@@ -28,14 +28,14 @@ import org.springframework.stereotype.Component;
 public class ZeebeProcessInstanceImportMediatorFactory extends AbstractZeebeImportMediatorFactory {
 
   private final ProcessInstanceWriter zeebeProcessInstanceWriter;
-  private final ProcessDefinitionReader processDefinitionReader;
+  private final FlowNodeInstanceWriter flowNodeInstanceWriter;
 
   public ZeebeProcessInstanceImportMediatorFactory(
       final BeanFactory beanFactory,
       final ImportIndexHandlerRegistry importIndexHandlerRegistry,
       final ConfigurationService configurationService,
       final ProcessInstanceWriter zeebeProcessInstanceWriter,
-      final ProcessDefinitionReader processDefinitionReader,
+      final FlowNodeInstanceWriter flowNodeInstanceWriter,
       final ObjectMapper objectMapper,
       final DatabaseClient databaseClient) {
     super(
@@ -45,28 +45,29 @@ public class ZeebeProcessInstanceImportMediatorFactory extends AbstractZeebeImpo
         objectMapper,
         databaseClient);
     this.zeebeProcessInstanceWriter = zeebeProcessInstanceWriter;
-    this.processDefinitionReader = processDefinitionReader;
+    this.flowNodeInstanceWriter = flowNodeInstanceWriter;
   }
 
   @Override
   public List<ImportMediator> createMediators(final ZeebeDataSourceDto zeebeDataSourceDto) {
+    final int partitionId = zeebeDataSourceDto.getPartitionId();
     return Collections.singletonList(
         new ZeebeProcessInstanceImportMediator(
-            importIndexHandlerRegistry.getZeebeProcessInstanceImportIndexHandler(
-                zeebeDataSourceDto.getPartitionId()),
+            importIndexHandlerRegistry.getZeebeProcessInstanceImportIndexHandler(partitionId),
             beanFactory.getBean(
                 ZeebeProcessInstanceFetcher.class,
-                zeebeDataSourceDto.getPartitionId(),
+                partitionId,
                 databaseClient,
                 objectMapper,
                 configurationService),
             new ZeebeProcessInstanceImportService(
                 configurationService,
                 zeebeProcessInstanceWriter,
-                zeebeDataSourceDto.getPartitionId(),
-                processDefinitionReader,
+                flowNodeInstanceWriter,
+                partitionId,
                 databaseClient),
             configurationService,
-            new BackoffCalculator(configurationService)));
+            new BackoffCalculator(configurationService),
+            null));
   }
 }

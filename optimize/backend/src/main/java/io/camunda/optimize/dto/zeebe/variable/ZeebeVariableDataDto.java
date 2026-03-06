@@ -23,6 +23,7 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
   private long processDefinitionKey;
   private String bpmnProcessId;
   private String tenantId;
+  private int ordinal;
 
   public ZeebeVariableDataDto() {}
 
@@ -83,6 +84,15 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
   @Override
   public VariableSourceValue getSource() {
     return null; // not used in Optimize
+  }
+
+  @Override
+  public int getOrdinal() {
+    return ordinal;
+  }
+
+  public void setOrdinal(final int ordinal) {
+    this.ordinal = ordinal;
   }
 
   public void setBpmnProcessId(final String bpmnProcessId) {

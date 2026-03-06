@@ -37,11 +37,10 @@ final class RecordIndexRouterTest {
     // given
     config.prefix = "foo-bar";
     final var timestamp = Instant.parse("2022-04-01T00:00:00Z");
-    final var valueType = ValueType.VARIABLE;
     final var record =
         recordFactory.generateRecord(
             b ->
-                b.withValueType(valueType)
+                b.withValueType(ValueType.VARIABLE)
                     .withTimestamp(timestamp.toEpochMilli())
                     .withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
@@ -49,8 +48,7 @@ final class RecordIndexRouterTest {
     final var index = router.indexFor(record);
 
     // then
-    assertThat(index)
-        .isEqualTo("foo-bar_variable_" + VersionUtil.getVersionLowerCase() + "_2022-04-01");
+    assertThat(index).isEqualTo("foo-bar_" + VersionUtil.getVersionLowerCase() + "_2022-04-01");
   }
 
   @Test
@@ -60,11 +58,10 @@ final class RecordIndexRouterTest {
     config.indexSuffixDatePattern = "yyyy-MM-dd_HH";
     final var router = new RecordIndexRouter(config);
     final var timestamp = Instant.parse("2022-04-01T13:00:00Z");
-    final var valueType = ValueType.VARIABLE;
     final var record =
         recordFactory.generateRecord(
             b ->
-                b.withValueType(valueType)
+                b.withValueType(ValueType.VARIABLE)
                     .withTimestamp(timestamp.toEpochMilli())
                     .withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
@@ -72,8 +69,34 @@ final class RecordIndexRouterTest {
     final var index = router.indexFor(record);
 
     // then
-    assertThat(index)
-        .isEqualTo("foo-bar_variable_" + VersionUtil.getVersionLowerCase() + "_2022-04-01_13");
+    assertThat(index).isEqualTo("foo-bar_" + VersionUtil.getVersionLowerCase() + "_2022-04-01_13");
+  }
+
+  @Test
+  void shouldReturnSameIndexForDifferentValueTypes() {
+    // given - two records with different value types but the same timestamp and version
+    config.prefix = "foo-bar";
+    final var timestamp = Instant.parse("2022-04-01T00:00:00Z");
+    final var version = VersionUtil.getVersionLowerCase();
+    final var variableRecord =
+        recordFactory.generateRecord(
+            b ->
+                b.withValueType(ValueType.VARIABLE)
+                    .withTimestamp(timestamp.toEpochMilli())
+                    .withBrokerVersion(version));
+    final var incidentRecord =
+        recordFactory.generateRecord(
+            b ->
+                b.withValueType(ValueType.INCIDENT)
+                    .withTimestamp(timestamp.toEpochMilli())
+                    .withBrokerVersion(version));
+
+    // when
+    final var variableIndex = router.indexFor(variableRecord);
+    final var incidentIndex = router.indexFor(incidentRecord);
+
+    // then - both records land in the same index regardless of value type
+    assertThat(variableIndex).isEqualTo(incidentIndex);
   }
 
   @Test
@@ -100,60 +123,40 @@ final class RecordIndexRouterTest {
   }
 
   @Test
-  void shouldReturnIndexPrefixForValueType() {
+  void shouldReturnIndexPrefix() {
     // given
     config.prefix = "foo-bar";
-    final var valueType = ValueType.PROCESS;
 
     // when
-    final var prefix = router.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
+    final var prefix = router.indexPrefix(VersionUtil.getVersionLowerCase());
 
     // then
-    assertThat(prefix).isEqualTo("foo-bar_process_" + VersionUtil.getVersionLowerCase());
+    assertThat(prefix).isEqualTo("foo-bar_" + VersionUtil.getVersionLowerCase());
   }
 
   @Test
-  void shouldReturnIndexPrefixForValueTypeWithUnderscores() {
+  void shouldReturnSearchPattern() {
     // given
     config.prefix = "foo-bar";
-    final var valueType = ValueType.PROCESS_MESSAGE_SUBSCRIPTION;
-
-    // when
-    final var prefix = router.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
-
-    // then
-    assertThat(prefix)
-        .isEqualTo("foo-bar_process-message-subscription_" + VersionUtil.getVersionLowerCase());
-  }
-
-  @Test
-  void shouldReturnSearchPatternForValueTypeWithUnderscores() {
-    // given
-    config.prefix = "foo-bar";
-    final var valueType = ValueType.PROCESS_MESSAGE_SUBSCRIPTION;
-
-    // when
-    final var prefix =
-        router.searchPatternForValueType(valueType, VersionUtil.getVersionLowerCase());
-
-    // then
-    assertThat(prefix)
-        .isEqualTo(
-            "foo-bar_process-message-subscription_" + VersionUtil.getVersionLowerCase() + "_*");
-  }
-
-  @Test
-  void shouldReturnSearchPatternForValueType() {
-    // given
-    config.prefix = "foo-bar";
-    final var valueType = ValueType.PROCESS;
     final var version = "8.6.0";
 
     // when
-    final var prefix = router.searchPatternForValueType(valueType, version);
+    final var pattern = router.searchPattern(version);
 
     // then
-    assertThat(prefix).isEqualTo("foo-bar_process_" + version + "_*");
+    assertThat(pattern).isEqualTo("foo-bar_" + version + "_*");
+  }
+
+  @Test
+  void shouldReturnAliasName() {
+    // given
+    config.prefix = "foo-bar";
+
+    // when
+    final var alias = router.aliasName();
+
+    // then
+    assertThat(alias).isEqualTo("foo-bar");
   }
 
   @Test

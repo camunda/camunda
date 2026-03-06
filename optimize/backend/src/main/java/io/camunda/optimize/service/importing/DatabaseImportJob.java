@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.importing;
 
+import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.util.BackoffCalculator;
@@ -69,6 +70,10 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
       logger.debug("Import job with no new entities, import bulk execution is skipped.");
     }
     importCompleteCallback.run();
+  }
+
+  public List<ImportRequestDto> getImportRequests() {
+    return List.of();
   }
 
   protected abstract void persistEntities(List<OPT> newOptimizeEntities) throws Exception;

@@ -16,6 +16,7 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.filter.DefaultRecordFilter;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
@@ -82,9 +83,7 @@ public class ElasticsearchExporter implements Exporter {
           controller
               .readMetadata()
               .map(this::deserializeExporterMetadata)
-              .map(ElasticsearchExporterMetadata::getRecordCountersByValueType)
-              .filter(counters -> !counters.isEmpty())
-              .map(ElasticsearchRecordCounters::new)
+              .map(this::toRecordCounters)
               .orElse(new ElasticsearchRecordCounters());
 
       scheduleDelayedFlush();
@@ -239,7 +238,7 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   private void updateLastExportedPosition() {
-    exporterMetadata.setRecordCountersByValueType(recordCounters.getRecordCounters());
+    exporterMetadata.setRecordCounter(recordCounters.getRecordCounter());
     final var serializeExporterMetadata = serializeExporterMetadata(exporterMetadata);
     controller.updateLastExportedRecordPosition(lastPosition, serializeExporterMetadata);
   }
@@ -261,6 +260,28 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   /**
+   * Converts deserialized metadata to an {@link ElasticsearchRecordCounters} instance.
+   *
+   * <p>If the metadata contains the new single {@code recordCounter} field (value > 0), it is used
+   * directly. Otherwise, the legacy per-value-type counters are migrated by taking the maximum
+   * counter value across all types.
+   */
+  private ElasticsearchRecordCounters toRecordCounters(
+      final ElasticsearchExporterMetadata metadata) {
+    final long counter = metadata.getRecordCounter();
+    if (counter > 0) {
+      return new ElasticsearchRecordCounters(counter);
+    }
+    // migration path: derive a single counter from the old per-value-type map
+    final long migratedCounter =
+        metadata.getRecordCountersByValueType().values().stream()
+            .mapToLong(Long::longValue)
+            .max()
+            .orElse(0L);
+    return new ElasticsearchRecordCounters(migratedCounter);
+  }
+
+  /**
    * Determine whether a record should be exported or not. For Camunda 8.8 we require Optimize
    * records to be exported, or if the configuration explicitly enables the export of all records
    * {@link ElasticsearchExporterConfiguration#getIsIncludeEnabledRecords()}. For past versions, we
@@ -272,7 +293,8 @@ public class ElasticsearchExporter implements Exporter {
   private boolean shouldExportRecord(final Record<?> record) {
     final var recordVersion = getVersion(record.getBrokerVersion());
     if (configuration.getIsIncludeEnabledRecords()
-        || (recordVersion.major() == 8 && recordVersion.minor() < 8)) {
+        || (recordVersion.major() == 8 && recordVersion.minor() < 8)
+        || record.getValueType() == ValueType.ORDINAL) {
       return true;
     }
     return configuration.shouldIndexRequiredValueType(record.getValueType());

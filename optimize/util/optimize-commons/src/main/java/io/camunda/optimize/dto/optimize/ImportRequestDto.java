@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize;
 
 import io.camunda.optimize.service.db.schema.ScriptData;
+import java.util.Map;
 import java.util.Objects;
 
 public class ImportRequestDto {
@@ -19,6 +20,7 @@ public class ImportRequestDto {
   private Object source;
   private RequestType type;
   private int retryNumberOnConflict;
+  private Map<String, Object> docs;
 
   ImportRequestDto(
       final String importName,
@@ -27,7 +29,8 @@ public class ImportRequestDto {
       final String id,
       final Object source,
       final RequestType type,
-      final int retryNumberOnConflict) {
+      final int retryNumberOnConflict,
+      final Map<String, Object> docs) {
     this.importName = importName;
     this.indexName = indexName;
     this.scriptData = scriptData;
@@ -35,6 +38,7 @@ public class ImportRequestDto {
     this.source = source;
     this.type = type;
     this.retryNumberOnConflict = retryNumberOnConflict;
+    this.docs = docs;
   }
 
   public String getImportName() {
@@ -93,6 +97,14 @@ public class ImportRequestDto {
     this.retryNumberOnConflict = retryNumberOnConflict;
   }
 
+  public Map<String, Object> getDocs() {
+    return docs;
+  }
+
+  public void setDocs(final Map<String, Object> docs) {
+    this.docs = docs;
+  }
+
   protected boolean canEqual(final Object other) {
     return other instanceof ImportRequestDto;
   }
@@ -136,6 +148,8 @@ public class ImportRequestDto {
         + getType()
         + ", retryNumberOnConflict="
         + getRetryNumberOnConflict()
+        + ", docs="
+        + getDocs()
         + ")";
   }
 
@@ -152,6 +166,7 @@ public class ImportRequestDto {
     private Object source;
     private RequestType type;
     private int retryNumberOnConflict;
+    private Map<String, Object> docs;
 
     ImportRequestDtoBuilder() {}
 
@@ -190,9 +205,14 @@ public class ImportRequestDto {
       return this;
     }
 
+    public ImportRequestDtoBuilder docs(final Map<String, Object> docs) {
+      this.docs = docs;
+      return this;
+    }
+
     public ImportRequestDto build() {
       return new ImportRequestDto(
-          importName, indexName, scriptData, id, source, type, retryNumberOnConflict);
+          importName, indexName, scriptData, id, source, type, retryNumberOnConflict, docs);
     }
 
     @Override
@@ -211,6 +231,8 @@ public class ImportRequestDto {
           + type
           + ", retryNumberOnConflict="
           + retryNumberOnConflict
+          + ", docs="
+          + docs
           + ")";
     }
   }
@@ -222,6 +244,7 @@ public class ImportRequestDto {
     id,
     source,
     type,
-    retryNumberOnConflict
+    retryNumberOnConflict,
+    docs
   }
 }

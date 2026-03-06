@@ -81,7 +81,8 @@ public final class BpmnIncidentBehavior {
         .setTenantId(context.getTenantId())
         .setElementInstancePath(treePathProperties.elementInstancePath())
         .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
-        .setCallingElementPath(treePathProperties.callingElementPath());
+        .setCallingElementPath(treePathProperties.callingElementPath())
+        .setOrdinal(getProcessInstanceOrdinal(context.getProcessInstanceKey()));
 
     final var key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, IncidentIntent.CREATED, incidentRecord);
@@ -95,5 +96,10 @@ public final class BpmnIncidentBehavior {
     incidentState.forExistingProcessIncident(
         elementInstanceKey,
         (record, key) -> stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, record));
+  }
+
+  private int getProcessInstanceOrdinal(final long processInstanceKey) {
+    final var instance = elementInstanceState.getInstance(processInstanceKey);
+    return instance != null && instance.getValue() != null ? instance.getValue().getOrdinal() : 0;
   }
 }

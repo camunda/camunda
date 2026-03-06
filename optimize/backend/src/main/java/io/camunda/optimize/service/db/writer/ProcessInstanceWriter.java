@@ -11,6 +11,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_INSTANCE_MULTI_ALIAS;
 import static io.camunda.optimize.service.db.repository.script.ZeebeProcessInstanceScriptFactory.createProcessInstanceUpdateScript;
+import static io.camunda.optimize.service.db.schema.index.FlatProcessInstanceIndex.PARTITION;
 import static io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder.FLAT_PROCESS_INSTANCE_INDEX;
 import static io.camunda.optimize.service.db.schema.index.IndexMappingCreatorBuilder.PROCESS_INSTANCE_INDEX;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
@@ -28,12 +29,14 @@ import static io.camunda.optimize.service.util.InstanceIndexUtil.getFlatProcessI
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.optimize.dto.optimize.FlatProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.RequestType;
 import io.camunda.optimize.service.db.helper.ImportRequestDtoFactory;
 import io.camunda.optimize.service.db.repository.IndexRepository;
 import io.camunda.optimize.service.db.repository.ProcessInstanceRepository;
+import io.camunda.optimize.service.importing.zeebe.cache.OrdinalCache;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,16 +56,19 @@ public class ProcessInstanceWriter {
   private final ObjectMapper objectMapper;
   private final ImportRequestDtoFactory importRequestDtoFactory;
   private final ProcessInstanceRepository processInstanceRepository;
+  private final OrdinalCache ordinalCache;
 
   public ProcessInstanceWriter(
       final IndexRepository indexRepository,
       final ObjectMapper objectMapper,
       final ImportRequestDtoFactory importRequestDtoFactory,
-      final ProcessInstanceRepository processInstanceRepository) {
+      final ProcessInstanceRepository processInstanceRepository,
+      final OrdinalCache ordinalCache) {
     this.indexRepository = indexRepository;
     this.objectMapper = objectMapper;
     this.importRequestDtoFactory = importRequestDtoFactory;
     this.processInstanceRepository = processInstanceRepository;
+    this.ordinalCache = ordinalCache;
   }
 
   public List<ImportRequestDto> generateProcessInstanceImports(
@@ -166,27 +172,62 @@ public class ProcessInstanceWriter {
   }
 
   public List<ImportRequestDto> generateFlatProcessInstanceImports(
-      final List<ProcessInstanceDto> processInstances) {
+      final List<FlatProcessInstanceDto> processInstances) {
     final String importItemName = "flat process instances";
     LOG.debug("Creating imports for {} [{}].", processInstances.size(), importItemName);
     indexRepository.createMissingIndices(
         FLAT_PROCESS_INSTANCE_INDEX,
         Set.of(PROCESS_INSTANCE_MULTI_ALIAS),
         processInstances.stream()
-            .map(ProcessInstanceDto::getProcessDefinitionKey)
+            .map(FlatProcessInstanceDto::getProcessDefinitionKey)
             .collect(Collectors.toSet()));
 
     return processInstances.stream()
-        .map(
-            instance ->
-                ImportRequestDto.builder()
-                    .importName(importItemName)
-                    .type(RequestType.INDEX)
-                    .id(instance.getProcessInstanceId())
-                    .indexName(getFlatProcessInstanceIndexAliasName(instance.getProcessDefinitionKey()))
-                    .source(instance)
-                    .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
-                    .build())
+        .map(instance -> buildFlatProcessInstanceImportRequest(instance, importItemName))
         .toList();
+  }
+
+  private ImportRequestDto buildFlatProcessInstanceImportRequest(
+      final FlatProcessInstanceDto instance, final String importItemName) {
+    final String indexName =
+        getFlatProcessInstanceIndexAliasName(
+            instance.getProcessDefinitionKey(),
+            ordinalCache.getTickString(instance.getOrdinal()));
+    if (isNewProcessInstance(instance)) {
+      return ImportRequestDto.builder()
+          .importName(importItemName)
+          .type(RequestType.INDEX)
+          .id(instance.getProcessInstanceId())
+          .indexName(indexName)
+          .source(instance)
+          .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+          .build();
+    } else {
+      final Map<String, Object> docs = new HashMap<>();
+      if (instance.getState() != null) {
+        docs.put(STATE, instance.getState());
+      }
+      if (instance.getEndDate() != null) {
+        docs.put(END_DATE, instance.getEndDate());
+      }
+      if (instance.getDuration() != null) {
+        docs.put(DURATION, instance.getDuration());
+      }
+      docs.put(PARTITION, instance.getPartition());
+      return ImportRequestDto.builder()
+          .importName(importItemName)
+          .type(RequestType.UPDATE)
+          .id(instance.getProcessInstanceId())
+          .indexName(indexName)
+          .docs(docs)
+          .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+          .build();
+    }
+  }
+
+  private boolean isNewProcessInstance(final FlatProcessInstanceDto instance) {
+    // A process instance is "new" (requires full INDEX) if it has a start date set,
+    // meaning an ACTIVATING event was present in the current import batch.
+    return instance.getStartDate() != null;
   }
 }

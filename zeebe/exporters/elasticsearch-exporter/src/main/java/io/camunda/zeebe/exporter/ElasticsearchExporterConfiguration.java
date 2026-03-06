@@ -120,6 +120,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
       case CONDITIONAL_EVALUATION -> index.conditionalEvaluation;
       case GLOBAL_LISTENER_BATCH -> index.globalListenerBatch;
       case GLOBAL_LISTENER -> index.globalListener;
+      case ORDINAL -> index.ordinal;
       default -> false;
     };
   }
@@ -250,6 +251,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
 
     public boolean globalListenerBatch = true;
     public boolean globalListener = true;
+    public boolean ordinal = true;
 
     // index settings
     private Integer numberOfShards = null;

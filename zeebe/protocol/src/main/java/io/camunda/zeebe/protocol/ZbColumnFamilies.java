@@ -273,7 +273,10 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
 
   // backup range tracking
   CHECKPOINTS(140, PARTITION_LOCAL),
-  BACKUP_RANGES(141, PARTITION_LOCAL);
+  BACKUP_RANGES(141, PARTITION_LOCAL),
+
+  // ordinal state – stores the current ordinal value and its associated timestamp
+  ORDINAL(142, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

@@ -51,6 +51,7 @@ public abstract class FlatFlowNodeInstanceIndex<TBuilder> extends AbstractInstan
   public static final String CANDIDATE_GROUPS = FlowNodeInstanceDto.Fields.candidateGroups;
   public static final String IDLE_DURATION_IN_MS = FlowNodeInstanceDto.Fields.idleDurationInMs;
   public static final String WORK_DURATION_IN_MS = FlowNodeInstanceDto.Fields.workDurationInMs;
+  public static final String PARTITION = "partition";
 
   private final String indexName;
 
@@ -62,6 +63,18 @@ public abstract class FlatFlowNodeInstanceIndex<TBuilder> extends AbstractInstan
   public static String constructIndexName(final String flowNodeInstanceIndexKey) {
     return FLAT_FLOW_NODE_INSTANCE_INDEX_PREFIX
         + flowNodeInstanceIndexKey.toLowerCase(Locale.ENGLISH);
+  }
+
+  /**
+   * Constructs the index name using both the process definition key and the ordinal tick string
+   * (e.g. {@code "20260306-1430"}). The ordinal tick is mandatory.
+   */
+  public static String constructIndexName(
+      final String flowNodeInstanceIndexKey, final String ordinalTick) {
+    return FLAT_FLOW_NODE_INSTANCE_INDEX_PREFIX
+        + flowNodeInstanceIndexKey.toLowerCase(Locale.ENGLISH)
+        + "-"
+        + ordinalTick;
   }
 
   @Override
@@ -115,7 +128,8 @@ public abstract class FlatFlowNodeInstanceIndex<TBuilder> extends AbstractInstan
         .properties(ASSIGNEE, p -> p.keyword(k -> k))
         .properties(CANDIDATE_GROUPS, p -> p.keyword(k -> k))
         .properties(IDLE_DURATION_IN_MS, p -> p.long_(k -> k))
-        .properties(WORK_DURATION_IN_MS, p -> p.long_(k -> k));
+        .properties(WORK_DURATION_IN_MS, p -> p.long_(k -> k))
+        .properties(PARTITION, p -> p.integer(k -> k));
   }
 
   protected String getIndexPrefix() {
