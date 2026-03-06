@@ -15,11 +15,20 @@ public class SequenceFlowEntityMapper {
   public static SequenceFlowEntity toEntity(final SequenceFlowDbModel dbModel) {
     return new SequenceFlowEntity(
         dbModel.sequenceFlowId(),
-        dbModel.flowNodeId(),
+        nullToEmpty(dbModel.flowNodeId()),
         dbModel.processInstanceKey(),
         dbModel.rootProcessInstanceKey(),
         dbModel.processDefinitionKey(),
-        dbModel.processDefinitionId(),
-        dbModel.tenantId());
+        nullToEmpty(dbModel.processDefinitionId()),
+        nullToEmpty(dbModel.tenantId()));
+  }
+
+  /**
+   * Oracle treats empty strings as NULL. This method converts null values back to empty strings for
+   * fields that are required (non-nullable) in the API specification but may legitimately be empty
+   * (e.g., protobuf default values).
+   */
+  private static String nullToEmpty(final String value) {
+    return value == null ? "" : value;
   }
 }

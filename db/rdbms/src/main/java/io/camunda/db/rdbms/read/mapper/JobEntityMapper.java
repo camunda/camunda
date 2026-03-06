@@ -18,8 +18,13 @@ public class JobEntityMapper {
   public static JobEntity toEntity(final JobDbModel jobDbModel) {
     return new JobEntity.Builder()
         .jobKey(jobDbModel.jobKey())
+<<<<<<< HEAD
         .type(jobDbModel.type())
         .worker(jobDbModel.worker())
+=======
+        .type(nullToEmpty(jobDbModel.type()))
+        .worker(nullToEmpty(jobDbModel.worker()))
+>>>>>>> 5fb455c8483 (fix: handle Oracle empty-string-to-NULL for required RDBMS fields)
         .state(JobState.valueOf(jobDbModel.state().name()))
         .kind(JobKind.valueOf(jobDbModel.kind().name()))
         .listenerEventType(ListenerEventType.valueOf(jobDbModel.listenerEventType().name()))
@@ -32,15 +37,24 @@ public class JobEntityMapper {
         .customHeaders(jobDbModel.customHeaders())
         .deadline(jobDbModel.deadline())
         .endTime(jobDbModel.endTime())
-        .processDefinitionId(jobDbModel.processDefinitionId())
+        .processDefinitionId(nullToEmpty(jobDbModel.processDefinitionId()))
         .processDefinitionKey(jobDbModel.processDefinitionKey())
         .processInstanceKey(jobDbModel.processInstanceKey())
         .rootProcessInstanceKey(jobDbModel.rootProcessInstanceKey())
         .elementId(jobDbModel.elementId())
         .elementInstanceKey(jobDbModel.elementInstanceKey())
-        .tenantId(jobDbModel.tenantId())
+        .tenantId(nullToEmpty(jobDbModel.tenantId()))
         .creationTime(jobDbModel.creationTime())
         .lastUpdateTime(jobDbModel.lastUpdateTime())
         .build();
+  }
+
+  /**
+   * Oracle treats empty strings as NULL. This method converts null values back to empty strings for
+   * fields that are required (non-nullable) in the API specification but may legitimately be empty
+   * (e.g., protobuf default values).
+   */
+  private static String nullToEmpty(final String value) {
+    return value == null ? "" : value;
   }
 }
