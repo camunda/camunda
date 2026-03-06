@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.mapper;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.write.domain.CorrelatedMessageSubscriptionDbModel;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 
@@ -30,14 +32,5 @@ public class CorrelatedMessageSubscriptionEntityMapper {
         .subscriptionType(dbModel.subscriptionType())
         .tenantId(nullToEmpty(dbModel.tenantId()))
         .build();
-  }
-
-  /**
-   * Oracle treats empty strings as NULL. This method converts null values back to empty strings for
-   * fields that are required (non-nullable) in the API specification but may legitimately be empty
-   * (e.g., correlationKey for message start event subscriptions).
-   */
-  private static String nullToEmpty(final String value) {
-    return value == null ? "" : value;
   }
 }
