@@ -113,6 +113,18 @@ public interface LogStorage {
      *     entry that was committed.
      */
     default void onCommit(final long index, final long highestPosition) {}
+
+    /**
+     * Called when an error occurred while replicating or committing an entry, typically when an
+     * append operation was pending when shutting down the server or stepping down as leader.
+     *
+     * @param index the index of the entry that should have been committed
+     * @param highestPosition the highest position of the records within the entry that failed to
+     *     commit
+     * @param error the error that occurred
+     */
+    default void onCommitError(
+        final long index, final long highestPosition, final Throwable error) {}
   }
 
   /**

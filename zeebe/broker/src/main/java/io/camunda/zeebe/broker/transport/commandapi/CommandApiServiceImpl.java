@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.transport.commandapi;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
+import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.broker.transport.queryapi.QueryApiRequestHandler;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -106,6 +107,15 @@ public final class CommandApiServiceImpl extends Actor
           serverTransport.subscribe(partitionId, RequestType.QUERY, queryHandler);
           commandHandler.addPartition(partitionId, logStreamWriter);
           serverTransport.subscribe(partitionId, RequestType.COMMAND, commandHandler);
+
+          logStream
+              .getFlowControl()
+              .setCommitErrorHandler(
+                  (requestId, requestStreamId, error) -> {
+                    new ErrorResponseWriter(serverTransport)
+                        .partitionLeaderMismatch(partitionId)
+                        .tryWriteResponse(requestStreamId, requestId);
+                  });
         });
   }
 
