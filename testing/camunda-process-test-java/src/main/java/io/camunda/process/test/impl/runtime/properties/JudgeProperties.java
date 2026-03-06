@@ -70,6 +70,16 @@ public class JudgeProperties {
         getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_CREDENTIALS_SECRET_KEY);
   }
 
+  public boolean isExplicitlyConfigured() {
+    return Double.compare(threshold, DEFAULT_THRESHOLD) != 0
+        || hasText(customPrompt)
+        || hasText(chatModelProvider);
+  }
+
+  private boolean hasText(final String text) {
+    return text != null && !text.trim().isEmpty();
+  }
+
   public double getThreshold() {
     return threshold;
   }
