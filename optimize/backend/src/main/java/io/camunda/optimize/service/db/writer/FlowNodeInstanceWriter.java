@@ -19,6 +19,7 @@ import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.RequestType;
 import io.camunda.optimize.dto.optimize.query.process.FlatFlowNodeInstanceDto;
 import io.camunda.optimize.service.db.repository.IndexRepository;
+import io.camunda.optimize.service.importing.zeebe.cache.OrdinalCache;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,9 +33,12 @@ public class FlowNodeInstanceWriter {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(FlowNodeInstanceWriter.class);
   private final IndexRepository indexRepository;
+  private final OrdinalCache ordinalCache;
 
-  public FlowNodeInstanceWriter(final IndexRepository indexRepository) {
+  public FlowNodeInstanceWriter(
+      final IndexRepository indexRepository, final OrdinalCache ordinalCache) {
     this.indexRepository = indexRepository;
+    this.ordinalCache = ordinalCache;
   }
 
   public List<ImportRequestDto> generateFlatFlowNodeInstanceImports(
@@ -56,7 +60,9 @@ public class FlowNodeInstanceWriter {
   private ImportRequestDto buildImportRequest(
       final FlatFlowNodeInstanceDto flowNodeInstance, final String importItemName) {
     final String indexName =
-        getFlatFlowNodeInstanceIndexAliasName(flowNodeInstance.getProcessDefinitionKey());
+        getFlatFlowNodeInstanceIndexAliasName(
+            flowNodeInstance.getProcessDefinitionKey(),
+            ordinalCache.getTickString(flowNodeInstance.getOrdinal()));
     if (flowNodeInstance.isNew()) {
       return ImportRequestDto.builder()
           .importName(importItemName)

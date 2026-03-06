@@ -40,6 +40,7 @@ public class FlatFlowNodeInstanceDto implements OptimizeDto {
   private Long idleDurationInMs;
   private Long workDurationInMs;
   private int partition;
+  private int ordinal;
   @JsonIgnore private boolean isNew;
 
   public FlatFlowNodeInstanceDto() {}
@@ -249,6 +250,14 @@ public class FlatFlowNodeInstanceDto implements OptimizeDto {
 
   public void setPartition(final int partition) {
     this.partition = partition;
+  }
+
+  public int getOrdinal() {
+    return ordinal;
+  }
+
+  public void setOrdinal(final int ordinal) {
+    this.ordinal = ordinal;
   }
 
   @JsonIgnore

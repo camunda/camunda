@@ -199,6 +199,7 @@ public class ZeebeProcessInstanceImportService
     final String processDefinitionVersion = String.valueOf(firstRecordValue.getVersion());
     final String processDefinitionId = String.valueOf(firstRecordValue.getProcessDefinitionKey());
     final String processInstanceId = String.valueOf(firstRecordValue.getProcessInstanceKey());
+    final int ordinal = firstRecordValue.getOrdinal();
 
     final Map<Long, FlowNodeInstanceDto> flowNodeInstancesByRecordKey = new HashMap<>();
     final Map<Long, Boolean> hasActivatingByRecordKey = new HashMap<>();
@@ -243,6 +244,7 @@ public class ZeebeProcessInstanceImportService
                       processInstanceId,
                       flowNode);
               dto.setPartition(partitionId);
+              dto.setOrdinal(ordinal);
               // If the batch contains an ACTIVATING event for this flow node, treat it as new
               // (full INDEX); otherwise use UPDATE+docs for completion/termination only.
               dto.setNew(hasActivatingByRecordKey.getOrDefault(recordKey, false));
