@@ -135,11 +135,7 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 
 ## Boundaries
 
-**Always:**
-- Format before committing (`./mvnw license:format spotless:apply -T1C`)
-- Read the module's README before modifying code
-- Use module-scoped builds (`-pl <module>`)
-- Use conventional commit format
+**Always** follow the "Before Submitting" checklist below.
 
 **Ask first:**
 - Modifying shared libraries (`webapps-common/`, `client-components/`, `security/`)
@@ -166,5 +162,5 @@ Additional instruction files are auto-loaded when you edit matching paths:
 
 - CI/workflow files (`*.yml` in `.github/`) → `.github/instructions/ci-workflows.instructions.md`
 - Frontend code (`client/` directories) → `.github/instructions/frontend.instructions.md`
-- MCP gateway (`gateways/mcp/`) → `.github/instructions/gateway-mcp-tools.instructions.md`
+- MCP gateway (`gateways/gateway-mcp/`) → `.github/instructions/gateway-mcp-tools.instructions.md`
 
