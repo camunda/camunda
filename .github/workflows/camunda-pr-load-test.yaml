@@ -28,6 +28,7 @@ jobs:
     permissions: {}
     outputs:
       sanitized-name: c8-${{ steps.sanitize.outputs.branch_name }}
+      sanitized-name-rdbms: c8-${{ steps.sanitize.outputs.branch_name }}-rdbms
     steps:
       - id: sanitize
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
@@ -66,120 +67,36 @@ jobs:
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
-      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name-rdbms }}
       ref: ${{ github.event.pull_request.head.ref }}
       scenario: 'max'
       secondary-storage-type: 'postgresql'
 
-  await-benchmark:
-    name: Await Benchmark
-    needs: [sanitize-branch-name,create-benchmark, create-benchmark-rdbms]
+  profile-and-comment:
+    name: Profile and Comment
+    needs: [sanitize-branch-name, create-benchmark]
     if: >
       always() &&
-      !(github.event.action == 'unlabeled' && (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms')) &&
-      (needs.create-benchmark.result == 'success' || needs.create-benchmark-rdbms.result == 'success')
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions: {}
-    steps:
-      - name: Wait for load test to stabilize
-        run: sleep 900  # 15 minutes
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
-  run-profiling:
-    name: Run Profiling
-    needs: [sanitize-branch-name, await-benchmark]
-    if: >
-      always() &&
-      !(github.event.action == 'unlabeled' && (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms')) &&
-      needs.await-benchmark.result == 'success'
-    uses: ./.github/workflows/profile-load-test.yml
+      !(github.event.action == 'unlabeled' && github.event.label.name == 'benchmark') &&
+      needs.create-benchmark.result == 'success'
+    uses: ./.github/workflows/profile-benchmark.yml
     secrets: inherit
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
-      pod: ''
+      benchmark-label: 'Elasticsearch'
 
-  comment-pr:
-    name: Comment on PR with profiling results
-    needs: [sanitize-branch-name, run-profiling]
+  profile-and-comment-rdbms:
+    name: Profile and Comment RDBMS
+    needs: [sanitize-branch-name, create-benchmark-rdbms]
     if: >
       always() &&
-      !(github.event.action == 'unlabeled' && (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms')) &&
-      needs.run-profiling.result == 'success'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: 'read'
-      pull-requests: 'write'
-    steps:
-      - uses: actions/download-artifact@v8
-        with:
-          path: artifacts
-      - name: Comment PR with profiling results
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const fs = require('fs');
-            const path = require('path');
-
-            // List all downloaded artifacts
-            const artifactPath = 'artifacts';
-            const artifacts = fs.readdirSync(artifactPath);
-
-            // Get artifact IDs from GitHub API
-            const { data: workflowArtifacts } = await github.rest.actions.listWorkflowRunArtifacts({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: context.runId,
-            });
-
-            let comment = '## Profiling Results\n\n';
-            comment += 'The benchmark has been profiled with the following events:\n\n';
-            comment += '| Event | Pod | Artifact |\n';
-            comment += '|-------|-----|----------|\n';
-
-            artifacts.forEach(artifact => {
-              const match = artifact.match(/flamegraph-(\w+)-(\w+-\d+)/);
-              if (match) {
-                const event = match[1];
-                const pod = match[2];
-
-                // Find the artifact ID for this artifact name
-                const artifactInfo = workflowArtifacts.artifacts.find(a => a.name === artifact);
-                if (artifactInfo) {
-                  const downloadUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${artifactInfo.id}`;
-                  comment += `| ${event} | ${pod} | [Download](${downloadUrl}) |\n`;
-                } else {
-                  comment += `| ${event} | ${pod} | N/A |\n`;
-                }
-              }
-            });
-
-            comment += '\n📊 [View all artifacts and workflow summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n';
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      !(github.event.action == 'unlabeled' && github.event.label.name == 'benchmark-rdbms') &&
+      needs.create-benchmark-rdbms.result == 'success'
+    uses: ./.github/workflows/profile-benchmark.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name-rdbms }}
+      benchmark-label: 'RDBMS'
 
   delete-benchmark:
     name: Benchmark Cleanup
@@ -209,7 +126,8 @@ jobs:
 
       - name: Delete benchmarks
         run: |
-          kubectl delete ns "${{ needs.sanitize-branch-name.outputs.sanitized-name }}"
+          kubectl delete ns "${{ needs.sanitize-branch-name.outputs.sanitized-name }}" --ignore-not-found
+          kubectl delete ns "${{ needs.sanitize-branch-name.outputs.sanitized-name-rdbms }}" --ignore-not-found
       - name: Observe build status
         if: always()
         continue-on-error: true
