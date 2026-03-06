@@ -104,3 +104,49 @@ jobs:
       cluster: ${{ needs.sanitize-branch-name.outputs.cluster }}
       teleport-join-token: ${{ needs.sanitize-branch-name.outputs.teleport-join-token }}
 
+  delete-benchmark:
+    name: Benchmark Cleanup
+    needs: sanitize-branch-name
+    if: >
+      (github.event.action == 'unlabeled' && (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms')) ||
+      (github.event.action == 'closed' && (contains(github.event.pull_request.labels.*.name, 'benchmark') || contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Set up Teleport
+        uses: teleport-actions/setup@v1
+        with:
+          version: 17.2.2
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@v2
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ needs.sanitize-branch-name.outputs.teleport-join-token }}
+          kubernetes-cluster: ${{ needs.sanitize-branch-name.outputs.cluster }}
+      - name: Delete benchmark namespace
+        if: >
+          github.event.action == 'closed' ||
+          (github.event.action == 'unlabeled' && github.event.label.name == 'benchmark')
+        run: |
+          kubectl delete ns "${{ needs.sanitize-branch-name.outputs.sanitized-name }}" --ignore-not-found
+      - name: Delete RDBMS benchmark namespace
+        if: >
+          github.event.action == 'closed' ||
+          (github.event.action == 'unlabeled' && github.event.label.name == 'benchmark-rdbms')
+        run: |
+          kubectl delete ns "${{ needs.sanitize-branch-name.outputs.sanitized-name-rdbms }}" --ignore-not-found
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
