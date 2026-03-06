@@ -128,6 +128,7 @@ public class RestGatewayPaths {
       REST_API_PATH + "/jobs/statistics/by-workers";
   private static final String URL_JOB_TIME_SERIES_STATISTICS =
       REST_API_PATH + "/jobs/statistics/time-series";
+  private static final String URL_JOB_ERROR_STATISTICS = REST_API_PATH + "/jobs/statistics/errors";
 
   /**
    * @return the topology request URL
@@ -474,6 +475,10 @@ public class RestGatewayPaths {
 
   public static String getJobTimeSeriesStatisticsUrl() {
     return URL_JOB_TIME_SERIES_STATISTICS;
+  }
+
+  public static String getJobErrorStatisticsUrl() {
+    return URL_JOB_ERROR_STATISTICS;
   }
 
   public static String getResourceDeletionUrl(final long resourceKey) {
