@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.identity.authorization;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import io.camunda.security.auth.MappingRuleMatcher;
+import io.camunda.auth.domain.auth.MappingRuleMatcher;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;

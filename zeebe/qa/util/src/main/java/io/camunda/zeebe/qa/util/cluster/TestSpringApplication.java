@@ -14,8 +14,8 @@ import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
+import io.camunda.auth.domain.config.AuthenticationConfiguration;
 import io.camunda.auth.domain.model.AuthenticationMethod;
-import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer.Bean;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -170,7 +170,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   public T withBasicAuth() {
-    withProperty(AuthenticationProperties.METHOD, AuthenticationMethod.BASIC.name());
+    withProperty(AuthenticationConfiguration.PROPERTY_METHOD, AuthenticationMethod.BASIC.name());
     withAdditionalProfile(Profile.CONSOLIDATED_AUTH);
     return self();
   }
@@ -182,11 +182,11 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   public T withAuthenticationMethod(final AuthenticationMethod authenticationMethod) {
     return withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
-        .withProperty(AuthenticationProperties.METHOD, authenticationMethod.name());
+        .withProperty(AuthenticationConfiguration.PROPERTY_METHOD, authenticationMethod.name());
   }
 
   protected T withUnauthenticatedAccess(final boolean unprotectedApi) {
-    return withProperty(AuthenticationProperties.API_UNPROTECTED, unprotectedApi);
+    return withProperty(AuthenticationConfiguration.PROPERTY_UNPROTECTED_API, unprotectedApi);
   }
 
   public final T withUnauthenticatedAccess() {
@@ -221,12 +221,14 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   public final Optional<AuthenticationMethod> apiAuthenticationMethod() {
-    if (property(AuthenticationProperties.API_UNPROTECTED, Boolean.class, true)) {
+    if (property(AuthenticationConfiguration.PROPERTY_UNPROTECTED_API, Boolean.class, true)) {
       return Optional.empty();
     } else {
       return AuthenticationMethod.parse(
           property(
-              AuthenticationProperties.METHOD, String.class, AuthenticationMethod.BASIC.name()));
+              AuthenticationConfiguration.PROPERTY_METHOD,
+              String.class,
+              AuthenticationMethod.BASIC.name()));
     }
   }
 

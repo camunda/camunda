@@ -7,6 +7,7 @@
  */
 package io.camunda.security.configuration;
 
+import io.camunda.auth.domain.config.AuthenticationConfiguration;
 import io.camunda.auth.domain.model.AuthenticationMethod;
 
 public class SecurityConfigurations {

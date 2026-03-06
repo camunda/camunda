@@ -7,23 +7,20 @@
  */
 package io.camunda.application.commons.security;
 
-import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
-import static io.camunda.spring.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.application.commons.authentication.CamundaNoDBMembershipResolver;
+import io.camunda.auth.domain.config.AuthenticationConfiguration;
+import io.camunda.auth.domain.config.OidcAuthenticationConfiguration;
+import io.camunda.auth.domain.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.auth.domain.model.AuthenticationMethod;
-import io.camunda.authentication.config.WebSecurityConfig;
-import io.camunda.authentication.converter.TokenClaimsConverter;
-import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
-import io.camunda.authentication.service.NoDBMembershipService;
-import io.camunda.security.configuration.AuthenticationConfiguration;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.auth.spring.converter.TokenClaimsConverter;
+import io.camunda.auth.starter.CamundaBasicAuthNoDbAutoConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.BeanInstantiationException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -38,24 +35,14 @@ public class NoSecondaryStorageAuthenticationIT {
 
   @Test
   void shouldFailFastWhenBasicAuthenticationConfiguredInNoDbMode() {
-    // given - application context with no secondary storage and basic auth
+    // given - application context with basic auth and no secondary storage
     final var context = new AnnotationConfigApplicationContext();
-    context
-        .getEnvironment()
-        .getSystemProperties()
-        .put(PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE);
-    context
-        .getEnvironment()
-        .getSystemProperties()
-        .put("camunda.security.authentication.method", "basic");
+    context.getEnvironment().getSystemProperties().put("camunda.auth.method", "basic");
+    context.register(CamundaBasicAuthNoDbAutoConfiguration.class);
 
-    // when - trying to start application with basic auth in no-db mode
-    context.register(WebSecurityConfig.BasicAuthenticationNoDbConfiguration.class);
-
-    // then - should fail fast with clear error message
+    // when/then - should fail fast with clear error message
     assertThatThrownBy(context::refresh)
         .isInstanceOf(BeanCreationException.class)
-        .hasCauseInstanceOf(BeanInstantiationException.class)
         .hasRootCauseInstanceOf(BasicAuthenticationNotSupportedException.class);
   }
 
@@ -63,24 +50,17 @@ public class NoSecondaryStorageAuthenticationIT {
   void shouldAllowOidcAuthenticationInNoDbModeWithLimitedFunctionality() {
     // given - application context with no secondary storage and OIDC auth
     final var context = new AnnotationConfigApplicationContext();
-    context.getEnvironment().getSystemProperties().put(PROPERTY_CAMUNDA_DATABASE_TYPE, "none");
-    context
-        .getEnvironment()
-        .getSystemProperties()
-        .put("camunda.security.authentication.method", "oidc");
-
-    // when - starting application with OIDC auth in no-db mode
     context.register(TestOidcAuthConfiguration.class);
     context.refresh();
 
     // then - should have the no-db OIDC service implementation
-    final var oidcService = context.getBean(TokenClaimsConverter.class);
-    assertThat(oidcService).isNotNull();
+    final var tokenClaimsConverter = context.getBean(TokenClaimsConverter.class);
+    assertThat(tokenClaimsConverter).isNotNull();
 
     // and - the service should work with limited functionality
     final Map<String, Object> claims =
         Map.of("preferred_username", "testuser", "groups", List.of("group1", "group2"));
-    final var camundaAuthentication = oidcService.convert(claims);
+    final var camundaAuthentication = tokenClaimsConverter.convert(claims);
 
     assertThat(camundaAuthentication.authenticatedUsername()).isEqualTo("testuser");
     assertThat(camundaAuthentication.authenticatedGroupIds())
@@ -110,16 +90,21 @@ public class NoSecondaryStorageAuthenticationIT {
     }
 
     @Bean
-    public NoDBMembershipService noDBMembershipService(
+    public CamundaNoDBMembershipResolver noDBMembershipResolver(
         final SecurityConfiguration securityConfiguration) {
-      return new NoDBMembershipService(securityConfiguration);
+      return new CamundaNoDBMembershipResolver(securityConfiguration);
     }
 
     @Bean
-    public TokenClaimsConverter camundaOAuthPrincipalServiceNoDb(
+    public TokenClaimsConverter tokenClaimsConverter(
         final SecurityConfiguration securityConfiguration,
-        final NoDBMembershipService noDBMembershipService) {
-      return new TokenClaimsConverter(securityConfiguration, noDBMembershipService);
+        final CamundaNoDBMembershipResolver noDBMembershipResolver) {
+      final var oidcConfig = securityConfiguration.getAuthentication().getOidc();
+      return new TokenClaimsConverter(
+          oidcConfig.getUsernameClaim(),
+          oidcConfig.getClientIdClaim(),
+          oidcConfig.isPreferUsernameClaim(),
+          noDBMembershipResolver);
     }
   }
 }

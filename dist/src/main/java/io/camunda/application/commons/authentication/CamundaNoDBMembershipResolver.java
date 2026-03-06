@@ -7,10 +7,10 @@
  */
 package io.camunda.application.commons.authentication;
 
+import io.camunda.auth.domain.auth.OidcGroupsLoader;
 import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.auth.domain.model.PrincipalType;
 import io.camunda.auth.domain.spi.MembershipResolver;
-import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.Collections;
 import java.util.HashSet;

@@ -7,7 +7,7 @@
  */
 package io.camunda.auth.spring.oidc;
 
-import io.camunda.auth.spring.config.OidcAuthenticationConfiguration;
+import io.camunda.auth.domain.config.OidcAuthenticationConfiguration;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import java.util.Optional;

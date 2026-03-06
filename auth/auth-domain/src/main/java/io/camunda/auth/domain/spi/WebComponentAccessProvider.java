@@ -8,6 +8,7 @@
 package io.camunda.auth.domain.spi;
 
 import io.camunda.auth.domain.model.CamundaAuthentication;
+import java.util.List;
 
 /** Abstracts authorization checking for web component access. */
 public interface WebComponentAccessProvider {
@@ -16,4 +17,7 @@ public interface WebComponentAccessProvider {
 
   /** Returns true if the given authentication has access to the specified web component. */
   boolean hasAccessToComponent(CamundaAuthentication authentication, String component);
+
+  /** Returns the list of authorized component IDs for the given authentication. */
+  List<String> getAuthorizedComponents(CamundaAuthentication authentication);
 }
