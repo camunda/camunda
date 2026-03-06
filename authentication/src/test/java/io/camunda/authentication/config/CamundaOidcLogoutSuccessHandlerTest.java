@@ -9,12 +9,17 @@ package io.camunda.authentication.config;
 
 import static java.time.Instant.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.session.WebSessionRepository;
 import jakarta.servlet.http.HttpSession;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,11 +44,18 @@ public class CamundaOidcLogoutSuccessHandlerTest {
 
   private static final String ALLOWED_REFERER = "https://camunda.com/component/ui/page";
   @Mock ClientRegistrationRepository clientRegistrationRepository;
-  private CamundaOidcLogoutSuccessHandler handler;
+  @Mock WebSessionRepository webSessionRepository;
+  private CamundaOidcLogoutSuccessHandler handlerWithWebSessionRepo;
+  private CamundaOidcLogoutSuccessHandler handlerWithoutWebSessionRepo;
 
   @BeforeEach
   void setUp() {
-    handler = new CamundaOidcLogoutSuccessHandler(clientRegistrationRepository);
+    handlerWithWebSessionRepo =
+        new CamundaOidcLogoutSuccessHandler(
+            clientRegistrationRepository, Optional.of(webSessionRepository));
+
+    handlerWithoutWebSessionRepo =
+        new CamundaOidcLogoutSuccessHandler(clientRegistrationRepository, Optional.empty());
   }
 
   @Test
@@ -62,7 +74,8 @@ public class CamundaOidcLogoutSuccessHandlerTest {
     when(clientRegistrationRepository.findByRegistrationId("client")).thenReturn(registration);
 
     // then
-    final String targetUrl = handler.determineTargetUrl(request, response, authentication);
+    final String targetUrl =
+        handlerWithoutWebSessionRepo.determineTargetUrl(request, response, authentication);
     assertThat(session.getAttribute("postLogoutRedirect")).isNull();
     assertThat(targetUrl).contains("logout_hint=user@camunda.com");
   }
@@ -81,7 +94,8 @@ public class CamundaOidcLogoutSuccessHandlerTest {
         .thenReturn(clientRegistration());
 
     // then
-    final String targetUrl = handler.determineTargetUrl(request, response, authentication);
+    final String targetUrl =
+        handlerWithoutWebSessionRepo.determineTargetUrl(request, response, authentication);
     assertThat(session.getAttribute("postLogoutRedirect")).isEqualTo(ALLOWED_REFERER);
     assertThat(targetUrl).contains("logout_hint=user@camunda.com");
   }
@@ -98,7 +112,8 @@ public class CamundaOidcLogoutSuccessHandlerTest {
     when(clientRegistrationRepository.findByRegistrationId("client")).thenReturn(null);
 
     // then
-    final String targetUrl = handler.determineTargetUrl(request, response, authentication);
+    final String targetUrl =
+        handlerWithoutWebSessionRepo.determineTargetUrl(request, response, authentication);
     assertThat(session.getAttribute("postLogoutRedirect")).isEqualTo(ALLOWED_REFERER);
     assertThat(targetUrl).doesNotContain("logout_hint=");
   }
@@ -114,7 +129,8 @@ public class CamundaOidcLogoutSuccessHandlerTest {
     // when
     when(clientRegistrationRepository.findByRegistrationId("client"))
         .thenReturn(clientRegistration());
-    final String targetUrl = handler.determineTargetUrl(request, response, authentication);
+    final String targetUrl =
+        handlerWithoutWebSessionRepo.determineTargetUrl(request, response, authentication);
 
     // then
     assertThat(session.getAttribute("postLogoutRedirect")).isEqualTo(ALLOWED_REFERER);
@@ -130,7 +146,8 @@ public class CamundaOidcLogoutSuccessHandlerTest {
     final HttpSession session = request.getSession(true);
 
     // when
-    final String targetUrl = handler.determineTargetUrl(request, response, nonOauthAuth);
+    final String targetUrl =
+        handlerWithoutWebSessionRepo.determineTargetUrl(request, response, nonOauthAuth);
 
     // then
     assertThat(session.getAttribute("postLogoutRedirect")).isEqualTo(ALLOWED_REFERER);
@@ -146,11 +163,48 @@ public class CamundaOidcLogoutSuccessHandlerTest {
     final HttpSession session = request.getSession(true);
 
     // when
-    final String targetUrl = handler.determineTargetUrl(request, response, authentication);
+    final String targetUrl =
+        handlerWithoutWebSessionRepo.determineTargetUrl(request, response, authentication);
 
     // then
     assertThat(session.getAttribute("postLogoutRedirect")).isEqualTo(ALLOWED_REFERER);
     assertThat(targetUrl).doesNotContain("logout_hint=");
+  }
+
+  @Test
+  void shouldDeletePersistentSessionOnLogoutSuccessWhenRepositoryPresent() throws Exception {
+    // given
+    final MockHttpServletRequest request = buildMockHttpServletRequestWithReferer(ALLOWED_REFERER);
+    final MockHttpServletResponse response = new MockHttpServletResponse();
+    final OAuth2AuthenticationToken authentication = createAuthentication("user@camunda.com");
+    final HttpSession session = request.getSession(true);
+    final String sessionId = session.getId();
+
+    when(clientRegistrationRepository.findByRegistrationId("client"))
+        .thenReturn(clientRegistration());
+
+    // when
+    handlerWithWebSessionRepo.onLogoutSuccess(request, response, authentication);
+
+    // then
+    verify(webSessionRepository).deleteById(sessionId);
+  }
+
+  @Test
+  void shouldNotDeletePersistentSessionWhenRepositoryNotPresent() throws Exception {
+    // given
+    final MockHttpServletRequest request = buildMockHttpServletRequestWithReferer(ALLOWED_REFERER);
+    final MockHttpServletResponse response = new MockHttpServletResponse();
+    final OAuth2AuthenticationToken authentication = createAuthentication("user@camunda.com");
+
+    when(clientRegistrationRepository.findByRegistrationId("client"))
+        .thenReturn(clientRegistration());
+
+    // when
+    handlerWithoutWebSessionRepo.onLogoutSuccess(request, response, authentication);
+
+    // then
+    verify(webSessionRepository, never()).deleteById(anyString());
   }
 
   private static MockHttpServletRequest buildMockHttpServletRequestWithReferer(

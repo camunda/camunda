@@ -27,6 +27,7 @@ import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.LoggingAuthenticationFailureHandler;
 import io.camunda.authentication.handler.OAuth2AuthenticationExceptionHandler;
 import io.camunda.authentication.service.MembershipService;
+import io.camunda.authentication.session.WebSessionRepository;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.AuthenticationConfiguration;
@@ -923,13 +924,14 @@ public class WebSecurityConfig {
     public LogoutSuccessHandler oidcLogoutSuccessHandler(
         final WebappRedirectStrategy redirectStrategy,
         final ClientRegistrationRepository repository,
-        final SecurityConfiguration config) {
+        final SecurityConfiguration config,
+        final Optional<WebSessionRepository> webSessionRepository) {
       final var oidcConfig = config.getAuthentication().getOidc();
       if (!oidcConfig.isIdpLogoutEnabled()) {
         return new NoContentResponseHandler();
       }
 
-      final var handler = new CamundaOidcLogoutSuccessHandler(repository);
+      final var handler = new CamundaOidcLogoutSuccessHandler(repository, webSessionRepository);
       handler.setPostLogoutRedirectUri("{baseUrl}/post-logout");
       handler.setRedirectStrategy(redirectStrategy);
       return handler;
@@ -1009,7 +1011,7 @@ public class WebSecurityConfig {
                       logout
                           .logoutUrl(LOGOUT_URL)
                           .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN)
-                          .invalidateHttpSession(true)
+                          //                          .invalidateHttpSession(true)
                           .logoutSuccessHandler(logoutSuccessHandler))
               .addFilterAfter(
                   new WebComponentAuthorizationCheckFilter(

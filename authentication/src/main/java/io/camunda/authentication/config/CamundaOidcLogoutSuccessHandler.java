@@ -10,9 +10,14 @@ package io.camunda.authentication.config;
 import static io.camunda.authentication.controller.PostLogoutController.POST_LOGOUT_REDIRECT_ATTRIBUTE;
 import static io.camunda.authentication.utils.RequestValidationUtils.isAllowedRedirect;
 
+import io.camunda.authentication.session.WebSessionRepository;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import java.io.IOException;
 import java.util.Objects;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -39,11 +44,39 @@ public class CamundaOidcLogoutSuccessHandler extends OidcClientInitiatedLogoutSu
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaOidcLogoutSuccessHandler.class);
   private final ClientRegistrationRepository clientRegistrationRepository;
+  private final Optional<WebSessionRepository> webSessionRepository;
 
   public CamundaOidcLogoutSuccessHandler(
-      final ClientRegistrationRepository clientRegistrationRepository) {
+      final ClientRegistrationRepository clientRegistrationRepository,
+      final Optional<WebSessionRepository> webSessionRepository) {
     super(clientRegistrationRepository);
     this.clientRegistrationRepository = clientRegistrationRepository;
+    this.webSessionRepository = webSessionRepository;
+  }
+
+  @Override
+  public void onLogoutSuccess(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final Authentication authentication)
+      throws IOException, ServletException {
+
+    final HttpSession session = request.getSession(false);
+    if (session != null) {
+      final String sessionId = session.getId();
+      if (sessionId != null && !sessionId.isBlank()) {
+        webSessionRepository.ifPresent(
+            repo -> {
+              try {
+                repo.deleteById(sessionId);
+              } catch (final Exception e) {
+                LOG.warn("Failed to delete persistent web session {} on logout.", sessionId, e);
+              }
+            });
+      }
+      session.invalidate();
+    }
+    super.onLogoutSuccess(request, response, authentication);
   }
 
   @Override
