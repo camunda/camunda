@@ -36,7 +36,7 @@ header with the renewed token.
 | `github-app-id-vault-key`           | Yes      | Vault key for the GitHub App ID           |
 | `github-app-id-vault-path`          | Yes      | Vault path for the GitHub App ID          |
 | `github-app-private-key-vault-key`  | Yes      | Vault key for the GitHub App private key  |
-| `github-app-private-key-vault-path` | Yes      | Vault path for the GitHub App private key 
+| `github-app-private-key-vault-path` | Yes      | Vault path for the GitHub App private key |
 
 ## Outputs
 
@@ -64,3 +64,4 @@ header with the renewed token.
   if: ${{ !inputs.dryRun }}
   run: git push origin "${RELEASE_BRANCH}"
 ```
+
