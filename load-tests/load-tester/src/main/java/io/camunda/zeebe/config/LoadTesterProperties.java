@@ -8,75 +8,19 @@
 package io.camunda.zeebe.config;
 
 import java.time.Duration;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-public class AppCfg {
+@ConfigurationProperties(prefix = "load-tester")
+public class LoadTesterProperties {
 
-  private String brokerUrl;
-  private String brokerRestUrl;
-  private boolean preferRest;
-  private int monitoringPort;
-  private StarterCfg starter;
-  private WorkerCfg worker;
-  private AuthCfg auth;
   private boolean monitorDataAvailability = true;
   private Duration monitorDataAvailabilityInterval = Duration.ofMillis(250);
   private boolean performReadBenchmarks = false;
 
-  public String getBrokerUrl() {
-    return brokerUrl;
-  }
+  @NestedConfigurationProperty private StarterProperties starter = new StarterProperties();
 
-  public void setBrokerUrl(final String brokerUrl) {
-    this.brokerUrl = brokerUrl;
-  }
-
-  public String getBrokerRestUrl() {
-    return brokerRestUrl;
-  }
-
-  public void setBrokerRestUrl(final String brokerRestUrl) {
-    this.brokerRestUrl = brokerRestUrl;
-  }
-
-  public boolean isPreferRest() {
-    return preferRest;
-  }
-
-  public void setPreferRest(final boolean preferRest) {
-    this.preferRest = preferRest;
-  }
-
-  public StarterCfg getStarter() {
-    return starter;
-  }
-
-  public void setStarter(final StarterCfg starter) {
-    this.starter = starter;
-  }
-
-  public WorkerCfg getWorker() {
-    return worker;
-  }
-
-  public void setWorker(final WorkerCfg worker) {
-    this.worker = worker;
-  }
-
-  public int getMonitoringPort() {
-    return monitoringPort;
-  }
-
-  public void setMonitoringPort(final int monitoringPort) {
-    this.monitoringPort = monitoringPort;
-  }
-
-  public AuthCfg getAuth() {
-    return auth;
-  }
-
-  public void setAuth(final AuthCfg auth) {
-    this.auth = auth;
-  }
+  @NestedConfigurationProperty private WorkerProperties worker = new WorkerProperties();
 
   public boolean isMonitorDataAvailability() {
     return monitorDataAvailability;
@@ -100,5 +44,21 @@ public class AppCfg {
 
   public void setPerformReadBenchmarks(final boolean performReadBenchmarks) {
     this.performReadBenchmarks = performReadBenchmarks;
+  }
+
+  public StarterProperties getStarter() {
+    return starter;
+  }
+
+  public void setStarter(final StarterProperties starter) {
+    this.starter = starter;
+  }
+
+  public WorkerProperties getWorker() {
+    return worker;
+  }
+
+  public void setWorker(final WorkerProperties worker) {
+    this.worker = worker;
   }
 }
