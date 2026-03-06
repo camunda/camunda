@@ -89,7 +89,7 @@ test.beforeAll(async () => {
     parentProcessInstanceKeys,
   };
 
-  await sleep(2000);
+  await sleep(21000);
 });
 
 test.describe('Child Process Instance Migration', () => {
