@@ -10,8 +10,13 @@
       <PatternLayout pattern="${LOG_PATTERN}"/>
     </Console>
     <Console name="Stackdriver" target="SYSTEM_OUT" follow="true">
-      <StackdriverLayout serviceName="${log.stackdriver.serviceName}"
-        serviceVersion="${log.stackdriver.serviceVersion}" />
+      <JsonTemplateLayout eventTemplateUri="classpath:logging/StackdriverLayout.json"/>
+    </Console>
+    <Console name="JsonConsole" target="SYSTEM_OUT" follow="true">
+      <JsonLayout compact="true" eventEol="true" properties="true" stacktraceAsString="true">
+        <KeyValuePair key="service" value="${log.stackdriver.serviceName}"/>
+        <KeyValuePair key="version" value="${log.stackdriver.serviceVersion}"/>
+      </JsonLayout>
     </Console>
   </Appenders>
   <Loggers>

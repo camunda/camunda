@@ -4,6 +4,10 @@ zeebe:
   log:
     level: debug
   broker:
+    gateway:
+      security:
+        authentication:
+          mode: none
     cluster:
       partitionsCount: 2
     backpressure:
@@ -45,8 +49,16 @@ zeebe:
             processInstanceModification: false
             bulkSize: 1
 camunda:
+  database:
+    url: "${DATABASE_URL:http://elasticsearch}:${DATABASE_PORT:9200}"
   data:
     secondary-storage:
       type: elasticsearch
       elasticsearch:
         url: "${DATABASE_URL:http://elasticsearch}:${DATABASE_PORT:9200}"
+  security:
+    authentication:
+      method: basic
+      unprotected-api: true
+    authorizations:
+      enabled: false
