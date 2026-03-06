@@ -7,17 +7,16 @@
  */
 package io.camunda.auth.spring;
 
-import io.camunda.auth.domain.model.GrantType;
-import io.camunda.auth.domain.model.TokenExchangeRequest;
+import io.camunda.auth.domain.model.TokenExchangeGrantRequest;
 import io.camunda.auth.domain.model.TokenType;
 import java.util.Set;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 /**
- * Converts Spring Security authentication objects to domain {@link TokenExchangeRequest} objects.
- * This is used as a bridge between Spring Security's authentication model and the auth-domain's
- * token exchange model.
+ * Converts Spring Security authentication objects to domain {@link TokenExchangeGrantRequest}
+ * objects. This is used as a bridge between Spring Security's authentication model and the
+ * auth-domain's token exchange model.
  */
 public class SpringOidcTokenExchangeConverter {
 
@@ -29,7 +28,7 @@ public class SpringOidcTokenExchangeConverter {
    * @param scopes the requested scopes
    * @return the domain token exchange request
    */
-  public TokenExchangeRequest convert(
+  public TokenExchangeGrantRequest convert(
       final JwtAuthenticationToken authentication,
       final String targetAudience,
       final Set<String> scopes) {
@@ -45,12 +44,11 @@ public class SpringOidcTokenExchangeConverter {
    * @param scopes the requested scopes
    * @return the domain token exchange request
    */
-  public TokenExchangeRequest convert(
+  public TokenExchangeGrantRequest convert(
       final String tokenValue, final String targetAudience, final Set<String> scopes) {
-    return TokenExchangeRequest.builder()
+    return TokenExchangeGrantRequest.builder()
         .subjectToken(tokenValue)
         .subjectTokenType(TokenType.ACCESS_TOKEN)
-        .grantType(GrantType.TOKEN_EXCHANGE)
         .audience(targetAudience)
         .scopes(scopes)
         .build();

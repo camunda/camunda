@@ -7,24 +7,24 @@
  */
 package io.camunda.auth.domain.exception;
 
-/** Base exception for token exchange failures. */
-public sealed class TokenExchangeException extends RuntimeException
-    permits TokenExchangeException.InvalidGrant,
-        TokenExchangeException.InvalidTarget,
-        TokenExchangeException.UnsupportedTokenType,
-        TokenExchangeException.IdpUnavailable,
-        TokenExchangeException.DelegationChainTooDeep {
+/** Base exception for authorization grant failures (token exchange, client credentials, etc.). */
+public sealed class AuthorizationGrantException extends RuntimeException
+    permits AuthorizationGrantException.InvalidGrant,
+        AuthorizationGrantException.InvalidTarget,
+        AuthorizationGrantException.UnsupportedTokenType,
+        AuthorizationGrantException.IdpUnavailable,
+        AuthorizationGrantException.DelegationChainTooDeep {
 
-  public TokenExchangeException(final String message) {
+  public AuthorizationGrantException(final String message) {
     super(message);
   }
 
-  public TokenExchangeException(final String message, final Throwable cause) {
+  public AuthorizationGrantException(final String message, final Throwable cause) {
     super(message, cause);
   }
 
   /** The subject token or grant is invalid (e.g., expired, revoked, wrong type). */
-  public static final class InvalidGrant extends TokenExchangeException {
+  public static final class InvalidGrant extends AuthorizationGrantException {
     public InvalidGrant(final String message) {
       super(message);
     }
@@ -35,28 +35,28 @@ public sealed class TokenExchangeException extends RuntimeException
   }
 
   /** The requested target audience or resource is not valid or not allowed. */
-  public static final class InvalidTarget extends TokenExchangeException {
+  public static final class InvalidTarget extends AuthorizationGrantException {
     public InvalidTarget(final String message) {
       super(message);
     }
   }
 
   /** The requested or provided token type is not supported. */
-  public static final class UnsupportedTokenType extends TokenExchangeException {
+  public static final class UnsupportedTokenType extends AuthorizationGrantException {
     public UnsupportedTokenType(final String message) {
       super(message);
     }
   }
 
   /** The identity provider is not reachable or returned an unexpected error. */
-  public static final class IdpUnavailable extends TokenExchangeException {
+  public static final class IdpUnavailable extends AuthorizationGrantException {
     public IdpUnavailable(final String message, final Throwable cause) {
       super(message, cause);
     }
   }
 
   /** The delegation chain exceeds the configured maximum depth. */
-  public static final class DelegationChainTooDeep extends TokenExchangeException {
+  public static final class DelegationChainTooDeep extends AuthorizationGrantException {
     private final int maxDepth;
     private final int actualDepth;
 

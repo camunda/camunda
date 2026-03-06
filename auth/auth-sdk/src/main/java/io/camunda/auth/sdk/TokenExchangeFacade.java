@@ -7,8 +7,8 @@
  */
 package io.camunda.auth.sdk;
 
-import io.camunda.auth.domain.model.TokenExchangeRequest;
-import io.camunda.auth.domain.model.TokenExchangeResponse;
+import io.camunda.auth.domain.model.TokenExchangeGrantRequest;
+import io.camunda.auth.domain.model.TokenExchangeGrantResponse;
 import java.util.Set;
 
 /** Public interface for token exchange operations. */
@@ -30,7 +30,7 @@ public interface TokenExchangeFacade {
    * @param request the token exchange request
    * @return the full token exchange response
    */
-  TokenExchangeResponse exchangeToken(TokenExchangeRequest request);
+  TokenExchangeGrantResponse exchangeToken(TokenExchangeGrantRequest request);
 
   /** Returns whether token exchange is supported. */
   boolean isTokenExchangeSupported();

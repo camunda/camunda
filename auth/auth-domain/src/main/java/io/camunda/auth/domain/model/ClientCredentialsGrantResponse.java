@@ -12,34 +12,26 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Represents the response from an OAuth2 Token Exchange as defined by RFC 8693 Section 2.2.
+ * Represents the response from an OAuth2 Client Credentials grant as defined by RFC 6749 Section
+ * 4.4.3.
+ *
+ * <p>Contains only the base response fields — Client Credentials grants do not return additional
+ * grant-type-specific fields.
  *
  * @param accessToken the security token issued by the authorization server
- * @param issuedTokenType the type of the issued token
  * @param tokenType the token type (typically "Bearer")
  * @param expiresIn the lifetime in seconds of the access token
  * @param scope the scopes associated with the issued token
- * @param refreshToken an optional refresh token
  * @param issuedAt the time the token was issued
  */
-public record TokenExchangeResponse(
-    String accessToken,
-    TokenType issuedTokenType,
-    String tokenType,
-    long expiresIn,
-    Set<String> scope,
-    String refreshToken,
-    Instant issuedAt) {
+public record ClientCredentialsGrantResponse(
+    String accessToken, String tokenType, long expiresIn, Set<String> scope, Instant issuedAt)
+    implements AuthorizationGrantResponse {
 
-  public TokenExchangeResponse {
+  public ClientCredentialsGrantResponse {
     Objects.requireNonNull(accessToken, "accessToken must not be null");
-    Objects.requireNonNull(issuedTokenType, "issuedTokenType must not be null");
     scope = scope != null ? Set.copyOf(scope) : Set.of();
     issuedAt = issuedAt != null ? issuedAt : Instant.now();
-  }
-
-  public boolean isExpired() {
-    return Instant.now().isAfter(issuedAt.plusSeconds(expiresIn));
   }
 
   public static Builder builder() {
@@ -48,22 +40,15 @@ public record TokenExchangeResponse(
 
   public static final class Builder {
     private String accessToken;
-    private TokenType issuedTokenType = TokenType.ACCESS_TOKEN;
     private String tokenType = "Bearer";
     private long expiresIn;
     private Set<String> scope;
-    private String refreshToken;
     private Instant issuedAt;
 
     private Builder() {}
 
     public Builder accessToken(final String accessToken) {
       this.accessToken = accessToken;
-      return this;
-    }
-
-    public Builder issuedTokenType(final TokenType issuedTokenType) {
-      this.issuedTokenType = issuedTokenType;
       return this;
     }
 
@@ -82,19 +67,13 @@ public record TokenExchangeResponse(
       return this;
     }
 
-    public Builder refreshToken(final String refreshToken) {
-      this.refreshToken = refreshToken;
-      return this;
-    }
-
     public Builder issuedAt(final Instant issuedAt) {
       this.issuedAt = issuedAt;
       return this;
     }
 
-    public TokenExchangeResponse build() {
-      return new TokenExchangeResponse(
-          accessToken, issuedTokenType, tokenType, expiresIn, scope, refreshToken, issuedAt);
+    public ClientCredentialsGrantResponse build() {
+      return new ClientCredentialsGrantResponse(accessToken, tokenType, expiresIn, scope, issuedAt);
     }
   }
 }
