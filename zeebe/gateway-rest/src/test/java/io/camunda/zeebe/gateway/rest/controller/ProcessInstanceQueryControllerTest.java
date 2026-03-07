@@ -1125,4 +1125,83 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
     verify(processInstanceServices)
         .searchIncidents(123L, new IncidentQuery.Builder().filter(filter).build());
   }
+
+  @Test
+  void shouldInvalidateProcessInstancesSearchQueryWithNegativeLimit() {
+    // given
+    final var request =
+        """
+            {
+                "page": {
+                    "limit": -1
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "The value for page.limit is '-1' but must be a positive number.",
+                  "instance": "%s"
+                }""",
+            PROCESS_INSTANCES_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
+  }
+
+  @Test
+  void shouldInvalidateProcessInstancesSearchQueryWithNegativeFromAndLimit() {
+    // given
+    final var request =
+        """
+            {
+                "page": {
+                    "from": -1,
+                    "limit": -1
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "The value for page.limit is '-1' but must be a positive number. The value for page.from is '-1' but must be a non-negative number.",
+                  "instance": "%s"
+                }""",
+            PROCESS_INSTANCES_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
+  }
 }
