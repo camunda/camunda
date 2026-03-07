@@ -38,6 +38,7 @@ import {IdentityRolesPage} from '@pages/IdentityRolesPage';
 import {IdentityTenantsPage} from '@pages/IdentityTenantsPage';
 import {IdentityRolesDetailsPage} from '@pages/IdentityRolesDetailsPage';
 import {OperateOperationsDetailsPage} from '@pages/OperateOperationsDetailsPage';
+import {OperateOperationsLogPage} from '@pages/OperateOperationsLogPage';
 
 import {sleep} from 'utils/sleep';
 
@@ -61,6 +62,7 @@ type PlaywrightFixtures = {
   operateProcessModificationModePage: OperateProcessModificationModePage;
   operateProcessInstanceViewModificationModePage: OperateProcessInstanceViewModificationModePage;
   operateOperationsDetailsPage: OperateOperationsDetailsPage;
+  operateOperationsLogPage: OperateOperationsLogPage;
   taskDetailsPage: TaskDetailsPage;
   tasklistHeader: TasklistHeader;
   tasklistProcessesPage: TasklistProcessesPage;
@@ -130,6 +132,9 @@ const test = base.extend<PlaywrightFixtures>({
   },
   operateOperationsDetailsPage: async ({page}, use) => {
     await use(new OperateOperationsDetailsPage(page));
+  },
+  operateOperationsLogPage: async ({page}, use) => {
+    await use(new OperateOperationsLogPage(page));
   },
   taskDetailsPage: async ({page}, use) => {
     await use(new TaskDetailsPage(page));
