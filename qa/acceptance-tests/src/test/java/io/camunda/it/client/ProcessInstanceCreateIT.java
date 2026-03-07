@@ -245,4 +245,36 @@ public class ProcessInstanceCreateIT {
         .hasMessageContaining("businessId")
         .hasMessageContaining("256");
   }
+
+  @Test
+  void shouldCreateProcessInstanceWithRuntimeInstructions() {
+    // given - deploy a process with a manual task to use with terminate instruction
+    final var processWithTask =
+        Bpmn.createExecutableProcess("processWithTask")
+            .startEvent()
+            .manualTask("task1")
+            .endEvent()
+            .done();
+
+    final var deployedProcess =
+        deployProcessAndWaitForIt(camundaClient, processWithTask, "processWithTask.bpmn");
+
+    // when - create instance with runtimeInstructions to terminate after the task
+    final var processInstanceCreation =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId("processWithTask")
+            .latestVersion()
+            .terminateAfterElement("task1")
+            .send()
+            .join();
+
+    // then
+    assertThat(processInstanceCreation).isNotNull();
+    assertThat(processInstanceCreation.getProcessInstanceKey()).isNotNull();
+    assertThat(processInstanceCreation.getBpmnProcessId())
+        .isEqualTo(deployedProcess.getBpmnProcessId());
+    assertThat(processInstanceCreation.getProcessDefinitionKey())
+        .isEqualTo(deployedProcess.getProcessDefinitionKey());
+  }
 }
