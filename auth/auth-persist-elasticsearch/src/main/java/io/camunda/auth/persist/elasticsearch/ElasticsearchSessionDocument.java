@@ -43,8 +43,7 @@ public record ElasticsearchSessionDocument(
           data.attributes().entrySet().stream()
               .collect(
                   Collectors.toMap(
-                      Map.Entry::getKey,
-                      e -> Base64.getEncoder().encodeToString(e.getValue())));
+                      Map.Entry::getKey, e -> Base64.getEncoder().encodeToString(e.getValue())));
     }
     return new ElasticsearchSessionDocument(
         data.id(),

@@ -63,8 +63,7 @@ public class ElasticsearchAuthorizationWriteAdapter implements AuthorizationWrit
     LOG.debug(
         "Deleting authorization by authorizationKey={} from index={}", authorizationKey, indexName);
     try {
-      client.delete(
-          request -> request.index(indexName).id(String.valueOf(authorizationKey)));
+      client.delete(request -> request.index(indexName).id(String.valueOf(authorizationKey)));
     } catch (final ElasticsearchException e) {
       LOG.warn(
           "Failed to delete authorization with authorizationKey={}: {}",
@@ -72,8 +71,10 @@ public class ElasticsearchAuthorizationWriteAdapter implements AuthorizationWrit
           e.getMessage());
     } catch (final IOException e) {
       throw new RuntimeException(
-          "I/O error deleting authorization with authorizationKey=" + authorizationKey
-              + " from index=" + indexName,
+          "I/O error deleting authorization with authorizationKey="
+              + authorizationKey
+              + " from index="
+              + indexName,
           e);
     }
   }

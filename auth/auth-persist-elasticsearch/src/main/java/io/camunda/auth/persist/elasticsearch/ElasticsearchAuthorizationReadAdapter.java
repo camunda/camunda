@@ -50,20 +50,14 @@ public class ElasticsearchAuthorizationReadAdapter implements AuthorizationReadP
         ownerType,
         indexName);
     try {
-      final Query ownerIdQuery =
-          Query.of(q -> q.term(t -> t.field("ownerId").value(ownerId)));
+      final Query ownerIdQuery = Query.of(q -> q.term(t -> t.field("ownerId").value(ownerId)));
       final Query ownerTypeQuery =
           Query.of(q -> q.term(t -> t.field("ownerType").value(ownerType)));
-      final BoolQuery boolQuery =
-          BoolQuery.of(b -> b.filter(ownerIdQuery).filter(ownerTypeQuery));
+      final BoolQuery boolQuery = BoolQuery.of(b -> b.filter(ownerIdQuery).filter(ownerTypeQuery));
 
       final SearchResponse<AuthorizationRecord> response =
           client.search(
-              request ->
-                  request
-                      .index(indexName)
-                      .query(q -> q.bool(boolQuery))
-                      .size(10_000),
+              request -> request.index(indexName).query(q -> q.bool(boolQuery)).size(10_000),
               AuthorizationRecord.class);
 
       return response.hits().hits().stream()
@@ -72,13 +66,21 @@ public class ElasticsearchAuthorizationReadAdapter implements AuthorizationReadP
           .collect(Collectors.toList());
     } catch (final ElasticsearchException e) {
       throw new RuntimeException(
-          "Failed to search authorizations for ownerId=" + ownerId
-              + ", ownerType=" + ownerType + " in index=" + indexName,
+          "Failed to search authorizations for ownerId="
+              + ownerId
+              + ", ownerType="
+              + ownerType
+              + " in index="
+              + indexName,
           e);
     } catch (final IOException e) {
       throw new RuntimeException(
-          "I/O error searching authorizations for ownerId=" + ownerId
-              + ", ownerType=" + ownerType + " in index=" + indexName,
+          "I/O error searching authorizations for ownerId="
+              + ownerId
+              + ", ownerType="
+              + ownerType
+              + " in index="
+              + indexName,
           e);
     }
   }
@@ -93,8 +95,7 @@ public class ElasticsearchAuthorizationReadAdapter implements AuthorizationReadP
         resourceType,
         indexName);
     try {
-      final Query ownerIdQuery =
-          Query.of(q -> q.term(t -> t.field("ownerId").value(ownerId)));
+      final Query ownerIdQuery = Query.of(q -> q.term(t -> t.field("ownerId").value(ownerId)));
       final Query ownerTypeQuery =
           Query.of(q -> q.term(t -> t.field("ownerType").value(ownerType)));
       final Query resourceTypeQuery =
@@ -105,11 +106,7 @@ public class ElasticsearchAuthorizationReadAdapter implements AuthorizationReadP
 
       final SearchResponse<AuthorizationRecord> response =
           client.search(
-              request ->
-                  request
-                      .index(indexName)
-                      .query(q -> q.bool(boolQuery))
-                      .size(10_000),
+              request -> request.index(indexName).query(q -> q.bool(boolQuery)).size(10_000),
               AuthorizationRecord.class);
 
       return response.hits().hits().stream()
@@ -118,15 +115,25 @@ public class ElasticsearchAuthorizationReadAdapter implements AuthorizationReadP
           .collect(Collectors.toList());
     } catch (final ElasticsearchException e) {
       throw new RuntimeException(
-          "Failed to search authorizations for ownerId=" + ownerId
-              + ", ownerType=" + ownerType
-              + ", resourceType=" + resourceType + " in index=" + indexName,
+          "Failed to search authorizations for ownerId="
+              + ownerId
+              + ", ownerType="
+              + ownerType
+              + ", resourceType="
+              + resourceType
+              + " in index="
+              + indexName,
           e);
     } catch (final IOException e) {
       throw new RuntimeException(
-          "I/O error searching authorizations for ownerId=" + ownerId
-              + ", ownerType=" + ownerType
-              + ", resourceType=" + resourceType + " in index=" + indexName,
+          "I/O error searching authorizations for ownerId="
+              + ownerId
+              + ", ownerType="
+              + ownerType
+              + ", resourceType="
+              + resourceType
+              + " in index="
+              + indexName,
           e);
     }
   }

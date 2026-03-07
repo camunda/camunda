@@ -34,9 +34,7 @@ public class ElasticsearchTenantWriteAdapter implements TenantWritePort {
   }
 
   public ElasticsearchTenantWriteAdapter(
-      final ElasticsearchClient client,
-      final String indexName,
-      final String memberIndexName) {
+      final ElasticsearchClient client, final String indexName, final String memberIndexName) {
     this.client = client;
     this.indexName = indexName;
     this.memberIndexName = memberIndexName;
@@ -46,14 +44,11 @@ public class ElasticsearchTenantWriteAdapter implements TenantWritePort {
   public void save(final AuthTenant tenant) {
     LOG.debug("Indexing tenant with tenantId={} into index={}", tenant.tenantId(), indexName);
     try {
-      client.index(
-          request -> request.index(indexName).id(tenant.tenantId()).document(tenant));
+      client.index(request -> request.index(indexName).id(tenant.tenantId()).document(tenant));
     } catch (final ElasticsearchException e) {
-      throw new RuntimeException(
-          "Failed to index tenant with tenantId=" + tenant.tenantId(), e);
+      throw new RuntimeException("Failed to index tenant with tenantId=" + tenant.tenantId(), e);
     } catch (final IOException e) {
-      throw new RuntimeException(
-          "I/O error indexing tenant with tenantId=" + tenant.tenantId(), e);
+      throw new RuntimeException("I/O error indexing tenant with tenantId=" + tenant.tenantId(), e);
     }
   }
 
@@ -71,8 +66,7 @@ public class ElasticsearchTenantWriteAdapter implements TenantWritePort {
   }
 
   @Override
-  public void addMember(
-      final String tenantId, final String memberId, final MemberType memberType) {
+  public void addMember(final String tenantId, final String memberId, final MemberType memberType) {
     final String docId = tenantId + "_" + memberId;
     LOG.debug(
         "Adding member memberId={} memberType={} to tenant tenantId={} in index={}",
@@ -83,8 +77,7 @@ public class ElasticsearchTenantWriteAdapter implements TenantWritePort {
     try {
       final Map<String, String> document =
           Map.of("tenantId", tenantId, "memberId", memberId, "memberType", memberType.name());
-      client.index(
-          request -> request.index(memberIndexName).id(docId).document(document));
+      client.index(request -> request.index(memberIndexName).id(docId).document(document));
     } catch (final ElasticsearchException e) {
       throw new RuntimeException(
           "Failed to add member memberId=" + memberId + " to tenant tenantId=" + tenantId, e);

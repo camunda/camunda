@@ -13,7 +13,10 @@ import io.camunda.auth.domain.model.MemberType;
 /** Write port for group persistence. Only available in standalone persistence mode. */
 public interface GroupWritePort {
   void save(AuthGroup group);
+
   void deleteById(String groupId);
+
   void addMember(String groupId, String memberId, MemberType memberType);
+
   void removeMember(String groupId, String memberId, MemberType memberType);
 }

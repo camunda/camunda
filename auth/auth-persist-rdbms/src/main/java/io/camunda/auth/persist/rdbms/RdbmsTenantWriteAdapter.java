@@ -41,8 +41,7 @@ public class RdbmsTenantWriteAdapter implements TenantWritePort {
   }
 
   @Override
-  public void addMember(
-      final String tenantId, final String memberId, final MemberType memberType) {
+  public void addMember(final String tenantId, final String memberId, final MemberType memberType) {
     LOG.debug(
         "Adding member memberId={} memberType={} to tenant tenantId={}",
         memberId,

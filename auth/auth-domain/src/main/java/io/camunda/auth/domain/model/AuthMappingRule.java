@@ -10,12 +10,9 @@ package io.camunda.auth.domain.model;
 import io.camunda.auth.domain.auth.MappingRuleMatcher;
 
 /**
- * An OIDC claim-to-identity mapping rule. When a JWT claim matches the rule's
- * claimName/claimValue, the associated roles/groups/tenants are assigned to the principal.
+ * An OIDC claim-to-identity mapping rule. When a JWT claim matches the rule's claimName/claimValue,
+ * the associated roles/groups/tenants are assigned to the principal.
  */
 public record AuthMappingRule(
-    long mappingRuleKey,
-    String mappingRuleId,
-    String claimName,
-    String claimValue,
-    String name) implements MappingRuleMatcher.MappingRule {}
+    long mappingRuleKey, String mappingRuleId, String claimName, String claimValue, String name)
+    implements MappingRuleMatcher.MappingRule {}

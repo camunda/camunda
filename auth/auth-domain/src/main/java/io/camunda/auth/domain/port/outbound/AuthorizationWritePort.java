@@ -12,5 +12,6 @@ import io.camunda.auth.domain.model.AuthorizationRecord;
 /** Write port for authorization persistence. Only available in standalone persistence mode. */
 public interface AuthorizationWritePort {
   void save(AuthorizationRecord record);
+
   void deleteByKey(long authorizationKey);
 }

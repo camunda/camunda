@@ -8,9 +8,4 @@
 package io.camunda.auth.domain.model;
 
 /** A user identity for authentication and authorization. */
-public record AuthUser(
-    long userKey,
-    String username,
-    String name,
-    String email,
-    String password) {}
+public record AuthUser(long userKey, String username, String name, String email, String password) {}

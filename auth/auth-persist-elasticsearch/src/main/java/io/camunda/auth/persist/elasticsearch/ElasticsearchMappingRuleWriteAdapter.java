@@ -61,8 +61,7 @@ public class ElasticsearchMappingRuleWriteAdapter implements MappingRuleWritePor
     try {
       client.delete(request -> request.index(indexName).id(mappingRuleId));
     } catch (final ElasticsearchException e) {
-      LOG.warn(
-          "Failed to delete mapping rule with id={}: {}", mappingRuleId, e.getMessage());
+      LOG.warn("Failed to delete mapping rule with id={}: {}", mappingRuleId, e.getMessage());
     } catch (final IOException e) {
       throw new RuntimeException(
           "I/O error deleting mapping rule with id=" + mappingRuleId + " from index=" + indexName,

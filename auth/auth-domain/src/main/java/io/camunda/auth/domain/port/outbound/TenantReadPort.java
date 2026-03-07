@@ -15,5 +15,6 @@ import java.util.Optional;
 /** Read-only port for tenant lookups. */
 public interface TenantReadPort {
   Optional<AuthTenant> findById(String tenantId);
+
   List<AuthTenant> findByMember(String memberId, MemberType memberType);
 }

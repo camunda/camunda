@@ -33,8 +33,7 @@ public class ElasticsearchUserReadAdapter implements UserReadPort {
     this(client, DEFAULT_INDEX_NAME);
   }
 
-  public ElasticsearchUserReadAdapter(
-      final ElasticsearchClient client, final String indexName) {
+  public ElasticsearchUserReadAdapter(final ElasticsearchClient client, final String indexName) {
     this.client = client;
     this.indexName = indexName;
   }

@@ -13,5 +13,6 @@ import java.util.Optional;
 /** Read-only port for user lookups. Always available regardless of persistence mode. */
 public interface UserReadPort {
   Optional<AuthUser> findByUsername(String username);
+
   Optional<AuthUser> findByKey(long userKey);
 }

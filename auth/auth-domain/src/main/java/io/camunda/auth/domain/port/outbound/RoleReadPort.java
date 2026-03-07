@@ -15,5 +15,6 @@ import java.util.Optional;
 /** Read-only port for role lookups. */
 public interface RoleReadPort {
   Optional<AuthRole> findById(String roleId);
+
   List<AuthRole> findByMember(String memberId, MemberType memberType);
 }

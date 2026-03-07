@@ -69,7 +69,6 @@ public interface RoleMapper {
   void insertMember(MembershipEntity entity);
 
   @Delete(
-      "DELETE FROM AUTH_ROLE_MEMBER "
-          + "WHERE ROLE_ID = #{entityId} AND MEMBER_ID = #{memberId}")
+      "DELETE FROM AUTH_ROLE_MEMBER " + "WHERE ROLE_ID = #{entityId} AND MEMBER_ID = #{memberId}")
   void deleteMember(MembershipEntity entity);
 }

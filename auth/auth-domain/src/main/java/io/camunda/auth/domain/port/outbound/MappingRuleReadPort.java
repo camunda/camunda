@@ -14,5 +14,6 @@ import java.util.Optional;
 /** Read-only port for mapping rule lookups. */
 public interface MappingRuleReadPort {
   Optional<AuthMappingRule> findById(String mappingRuleId);
+
   List<AuthMappingRule> findAll();
 }
