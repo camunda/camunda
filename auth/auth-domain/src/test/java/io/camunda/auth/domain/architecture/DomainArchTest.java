@@ -80,42 +80,14 @@ final class DomainArchTest {
   // --- Hexagonal architecture: layering ---
 
   @Test
-  void portsMustNotDependOnServices() {
-    noClasses()
-        .that()
-        .resideInAnyPackage("io.camunda.auth.domain.port..")
-        .should()
-        .dependOnClassesThat()
-        .resideInAnyPackage("io.camunda.auth.domain.service..")
-        .because("ports (interfaces) must not depend on service implementations")
-        .check(domainClasses);
-  }
-
-  @Test
-  void modelsMustNotDependOnPortsOrServices() {
+  void modelsMustNotDependOnPortsOrSPIs() {
     noClasses()
         .that()
         .resideInAPackage("io.camunda.auth.domain.model..")
         .should()
         .dependOnClassesThat()
-        .resideInAnyPackage(
-            "io.camunda.auth.domain.port..",
-            "io.camunda.auth.domain.service..",
-            "io.camunda.auth.domain.spi..",
-            "io.camunda.auth.domain.store..")
-        .because("models are pure data — they must not depend on ports, services, or SPIs")
-        .check(domainClasses);
-  }
-
-  @Test
-  void spisMustNotDependOnServices() {
-    noClasses()
-        .that()
-        .resideInAPackage("io.camunda.auth.domain.spi..")
-        .should()
-        .dependOnClassesThat()
-        .resideInAnyPackage("io.camunda.auth.domain.service..")
-        .because("SPIs (extension points) must not depend on service implementations")
+        .resideInAnyPackage("io.camunda.auth.domain.port..", "io.camunda.auth.domain.spi..")
+        .because("models are pure data — they must not depend on ports or SPIs")
         .check(domainClasses);
   }
 

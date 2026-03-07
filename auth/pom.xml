@@ -31,7 +31,6 @@
     <module>auth-persist-elasticsearch</module>
     <module>auth-spring</module>
     <module>auth-spring-boot-starter</module>
-    <module>auth-sdk</module>
   </modules>
 
   <properties>
@@ -97,11 +96,6 @@
       <dependency>
         <groupId>io.camunda.auth</groupId>
         <artifactId>camunda-auth-spring-boot-starter</artifactId>
-        <version>${camunda-auth.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.camunda.auth</groupId>
-        <artifactId>camunda-auth-sdk</artifactId>
         <version>${camunda-auth.version}</version>
       </dependency>
 

@@ -14,11 +14,7 @@ import java.util.Set;
  * Base type for all OAuth2 authorization grant responses. Each grant type defines a permitted
  * subtype carrying grant-type-specific fields (e.g., {@code issuedTokenType} for token exchange).
  */
-public sealed interface AuthorizationGrantResponse
-    permits TokenExchangeGrantResponse,
-        ClientCredentialsGrantResponse,
-        JwtBearerGrantResponse,
-        AuthorizationCodeGrantResponse {
+public sealed interface AuthorizationGrantResponse permits TokenExchangeGrantResponse {
 
   /** The security token issued by the authorization server. */
   String accessToken();

@@ -21,16 +21,18 @@ import io.camunda.service.UserServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Registers {@link MembershipResolver} beans for the auth SDK, gated by the {@code
- * camunda.auth.sdk.enabled} feature flag. When enabled, these resolvers replace the starter's
- * default {@code NoOpMembershipResolver} via {@code @ConditionalOnMissingBean}.
+ * Registers consumer-specific SPI implementations for the auth library. These replace the starter's
+ * defaults (e.g., {@code NoOpMembershipResolver}) via {@code @ConditionalOnMissingBean} because
+ * they are defined before auto-configuration runs.
  */
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "camunda.auth.sdk.enabled", havingValue = "true")
+@ConditionalOnProperty(name = "camunda.auth.method")
 @ConditionalOnAnyHttpGatewayEnabled
+@ComponentScan(basePackages = {"io.camunda.service.validation"})
 public class CamundaAuthSdkConfiguration {
 
   @Bean

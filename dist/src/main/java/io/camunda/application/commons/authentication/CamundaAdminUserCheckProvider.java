@@ -20,7 +20,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "camunda.auth.sdk.enabled", havingValue = "true")
+@ConditionalOnProperty(name = "camunda.auth.method")
 @ConditionalOnAnyHttpGatewayEnabled
 public class CamundaAdminUserCheckProvider implements AdminUserCheckProvider {
 
