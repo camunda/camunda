@@ -7,7 +7,6 @@
  */
 package io.camunda.auth.starter.config;
 
-import java.util.Map;
 import java.util.Set;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -170,8 +169,6 @@ public class CamundaAuthProperties {
 
   public static class OboProperties {
     private boolean enabled = false;
-    private int maxDelegationChainDepth = 2;
-    private Map<String, String> targetAudiences = Map.of();
 
     public boolean isEnabled() {
       return enabled;
@@ -179,22 +176,6 @@ public class CamundaAuthProperties {
 
     public void setEnabled(final boolean enabled) {
       this.enabled = enabled;
-    }
-
-    public int getMaxDelegationChainDepth() {
-      return maxDelegationChainDepth;
-    }
-
-    public void setMaxDelegationChainDepth(final int maxDelegationChainDepth) {
-      this.maxDelegationChainDepth = maxDelegationChainDepth;
-    }
-
-    public Map<String, String> getTargetAudiences() {
-      return targetAudiences;
-    }
-
-    public void setTargetAudiences(final Map<String, String> targetAudiences) {
-      this.targetAudiences = targetAudiences;
     }
   }
 

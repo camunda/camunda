@@ -13,12 +13,16 @@ import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Adapter that bridges the auth library's SessionPersistencePort SPI to the existing
  * PersistentWebSessionClient from the search module.
  */
 public class SessionPersistenceAdapter implements SessionPersistencePort {
+
+  private static final Logger LOG = LoggerFactory.getLogger(SessionPersistenceAdapter.class);
 
   private final PersistentWebSessionClient client;
 
@@ -48,6 +52,21 @@ public class SessionPersistenceAdapter implements SessionPersistencePort {
     return Optional.ofNullable(client.getAllPersistentWebSessions().items())
         .map(entities -> entities.stream().map(SessionPersistenceAdapter::toSessionData).toList())
         .orElse(List.of());
+  }
+
+  /**
+   * Falls back to the default findAll + filter approach because the underlying {@link
+   * PersistentWebSessionClient} does not support native expiry deletion.
+   */
+  @Override
+  public void deleteExpired() {
+    LOG.debug("Deleting expired sessions via findAll fallback");
+    final long now = System.currentTimeMillis();
+    findAll().stream()
+        .filter(
+            session ->
+                session.lastAccessedTime() + (session.maxInactiveIntervalInSeconds() * 1000) < now)
+        .forEach(session -> deleteById(session.id()));
   }
 
   private static SessionData toSessionData(final PersistentWebSessionEntity entity) {

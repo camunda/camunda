@@ -74,19 +74,7 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
   }
 
   public void deleteExpiredWebSessions() {
-    Optional.ofNullable(sessionPersistencePort.findAll())
-        .ifPresent(sessionDataList -> sessionDataList.forEach(this::deleteSessionDataIfExpired));
-  }
-
-  private void deleteSessionDataIfExpired(final SessionData sessionData) {
-    toWebSession(sessionData)
-        .ifPresentOrElse(this::deleteWebSessionIfExpired, () -> deleteById(sessionData.id()));
-  }
-
-  private void deleteWebSessionIfExpired(final WebSession webSession) {
-    if (webSession.shouldBeDeleted()) {
-      deleteById(webSession.getId());
-    }
+    sessionPersistencePort.deleteExpired();
   }
 
   private void saveWebSessionIfChanged(final WebSession webSession) {

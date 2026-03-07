@@ -68,4 +68,9 @@ public interface WebSessionMapper {
 
   @Delete("DELETE FROM AUTH_WEB_SESSION WHERE SESSION_ID = #{sessionId}")
   void deleteById(@Param("sessionId") String sessionId);
+
+  @Delete(
+      "DELETE FROM AUTH_WEB_SESSION"
+          + " WHERE LAST_ACCESSED_TIME + (MAX_INACTIVE_INTERVAL_IN_SECONDS * 1000) < #{currentTimeMillis}")
+  void deleteExpired(@Param("currentTimeMillis") long currentTimeMillis);
 }

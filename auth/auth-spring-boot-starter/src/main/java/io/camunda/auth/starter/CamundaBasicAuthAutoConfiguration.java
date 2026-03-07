@@ -10,8 +10,8 @@ package io.camunda.auth.starter;
 import io.camunda.auth.domain.model.AuthenticationMethod;
 import io.camunda.auth.domain.spi.BasicAuthMembershipResolver;
 import io.camunda.auth.spring.SecurityFilterChainCustomizer;
+import io.camunda.auth.spring.SecurityFilterChainHelper;
 import io.camunda.auth.spring.converter.UsernamePasswordAuthenticationTokenConverter;
-import io.camunda.auth.spring.filter.CsrfProtectionRequestMatcher;
 import io.camunda.auth.spring.handler.AuthFailureHandler;
 import io.camunda.auth.starter.condition.ConditionalOnAuthenticationMethod;
 import io.camunda.auth.starter.condition.ConditionalOnProtectedApi;
@@ -31,9 +31,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
-import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 
 /**
  * Auto-configuration for basic authentication filter chains. Requires secondary storage (database)
@@ -152,13 +149,19 @@ public class CamundaBasicAuthAutoConfiguration {
 
     // CSRF
     if (securityProps.isCsrfEnabled()) {
-      configureCsrf(http, securityProps);
+      SecurityFilterChainHelper.configureCsrf(
+          http,
+          securityProps.getCsrfTokenName(),
+          securityProps.getUnprotectedPaths(),
+          securityProps.getUnprotectedApiPaths(),
+          "/login",
+          "/logout");
     } else {
       http.csrf(csrf -> csrf.disable());
     }
 
     // Secure headers
-    setupSecureHeaders(http);
+    SecurityFilterChainHelper.setupSecureHeaders(http);
 
     // Authorization
     http.authorizeHttpRequests(auth -> auth.anyRequest().authenticated());
@@ -191,43 +194,5 @@ public class CamundaBasicAuthAutoConfiguration {
             eh -> eh.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.NOT_FOUND)))
         .csrf(csrf -> csrf.disable())
         .build();
-  }
-
-  private void configureCsrf(
-      final HttpSecurity http, final CamundaAuthProperties.SecurityProperties securityProps)
-      throws Exception {
-    final var csrfTokenName = securityProps.getCsrfTokenName();
-    final var csrfMatcher =
-        new CsrfProtectionRequestMatcher(
-            securityProps.getUnprotectedPaths(),
-            securityProps.getUnprotectedApiPaths(),
-            "/login",
-            "/logout");
-
-    final CookieCsrfTokenRepository csrfTokenRepository =
-        CookieCsrfTokenRepository.withHttpOnlyFalse();
-    csrfTokenRepository.setCookieName(csrfTokenName);
-    csrfTokenRepository.setHeaderName(csrfTokenName);
-
-    final CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
-
-    http.csrf(
-        csrf ->
-            csrf.csrfTokenRepository(csrfTokenRepository)
-                .csrfTokenRequestHandler(requestHandler)
-                .requireCsrfProtectionMatcher(csrfMatcher));
-  }
-
-  private void setupSecureHeaders(final HttpSecurity http) throws Exception {
-    http.headers(
-        headers ->
-            headers
-                .httpStrictTransportSecurity(
-                    hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(63072000))
-                .xssProtection(
-                    xss ->
-                        xss.headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
-                .contentTypeOptions(cto -> {})
-                .frameOptions(frame -> frame.sameOrigin()));
   }
 }
