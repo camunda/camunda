@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
-import static io.camunda.zeebe.exporter.opensearch.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
+import static io.camunda.zeebe.exporter.opensearch.SearchDBExtension.PROP_TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -151,7 +152,7 @@ public class OpensearchClientIT {
 
   @Test
   @DisabledIfSystemProperty(
-      named = TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      named = PROP_TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "AWS OS IT runners currently support only STS-based authentication")
   void shouldAuthenticateWithBasicAuth() {
@@ -182,6 +183,7 @@ public class OpensearchClientIT {
 
     // when
     SEARCH_DB.client().createIndexStateManagementPolicy();
+    waitForIndexStateManagementPolicy();
 
     // then
     final var maybePolicy = SEARCH_DB.client().maybeGetIndexStateManagementPolicy();
@@ -209,6 +211,7 @@ public class OpensearchClientIT {
     final var camundaExporterIndexName = config.index.prefix + "-operate-variable-2024-01-01";
 
     SEARCH_DB.client().createIndexStateManagementPolicy();
+    waitForIndexStateManagementPolicy();
 
     final var osClient = SEARCH_DB.testClient().getOsClient();
     osClient.indices().create(b -> b.index(ownedIndexName));
@@ -240,6 +243,7 @@ public class OpensearchClientIT {
             + "_2024-01-01";
 
     SEARCH_DB.client().createIndexStateManagementPolicy();
+    waitForIndexStateManagementPolicy();
 
     final var osClient = SEARCH_DB.testClient().getOsClient();
     osClient.indices().create(b -> b.index(ownedIndexName));
@@ -277,6 +281,14 @@ public class OpensearchClientIT {
 
     assertThat(actualComponentTemplate.settings().get("index"))
         .isEqualTo(putComponentTemplateRequest.template().settings().index());
+  }
+
+  private void waitForIndexStateManagementPolicy() {
+    Awaitility.await()
+        .pollInterval(Duration.ofSeconds(1))
+        .atMost(SEARCH_DB.dataAvailabilityTimeout())
+        .untilAsserted(
+            () -> assertThat(SEARCH_DB.client().maybeGetIndexStateManagementPolicy()).isPresent());
   }
 
   private void assertIndexTemplate(

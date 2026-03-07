@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import java.time.Duration;
 import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -80,13 +81,21 @@ public abstract class SearchDBExtension implements BeforeAllCallback, AfterAllCa
   public static final String TEST_INTEGRATION_OPENSEARCH_AWS_URL =
       "test.integration.opensearch.aws.url";
 
+  public static final String TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT =
+      "test.integration.opensearch.aws.timeout.seconds";
+
   public static SearchDBExtension create() {
     final var openSearchAwsInstanceUrl =
         Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL)).orElse("");
     if (openSearchAwsInstanceUrl.isEmpty()) {
       return new ContainerizedSearchDBExtension();
     } else {
-      return new AWSSearchDBExtension(openSearchAwsInstanceUrl);
+      final Duration dataAvailabilityTimeout =
+          Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT))
+              .map(val -> Duration.ofSeconds(Long.parseLong(val)))
+              .orElse(Duration.ofSeconds(60));
+
+      return new AWSSearchDBExtension(openSearchAwsInstanceUrl, dataAvailabilityTimeout);
     }
   }
 
@@ -118,4 +127,11 @@ public abstract class SearchDBExtension implements BeforeAllCallback, AfterAllCa
   public boolean isAws() {
     return false;
   }
+
+  /**
+   * @return timeout for waiting for data availability in the search database. Mainly used in tests
+   *     with AWS OpenSearch as it may take some time until data is available for search after
+   *     indexing.
+   */
+  public abstract Duration dataAvailabilityTimeout();
 }
