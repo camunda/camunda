@@ -28,7 +28,6 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -46,7 +45,11 @@ class MultiIssuerJwtValidationTest {
 
   @RegisterExtension
   static WireMockExtension wireMock =
-      WireMockExtension.newInstance().options(com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig().dynamicPort()).build();
+      WireMockExtension.newInstance()
+          .options(
+              com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig()
+                  .dynamicPort())
+          .build();
 
   private static RSAKey issuer1Key;
   private static RSAKey issuer2Key;
@@ -211,12 +214,13 @@ class MultiIssuerJwtValidationTest {
                     .withBody(jwkSet.toString())));
   }
 
-  private JwtDecoder createMultiIssuerDecoder(
-      final String issuer1Uri, final String issuer2Uri) {
-    final var reg1 = createClientRegistration("provider1", issuer1Uri,
-        wireMock.baseUrl() + "/issuer1/.well-known/jwks.json");
-    final var reg2 = createClientRegistration("provider2", issuer2Uri,
-        wireMock.baseUrl() + "/issuer2/.well-known/jwks.json");
+  private JwtDecoder createMultiIssuerDecoder(final String issuer1Uri, final String issuer2Uri) {
+    final var reg1 =
+        createClientRegistration(
+            "provider1", issuer1Uri, wireMock.baseUrl() + "/issuer1/.well-known/jwks.json");
+    final var reg2 =
+        createClientRegistration(
+            "provider2", issuer2Uri, wireMock.baseUrl() + "/issuer2/.well-known/jwks.json");
 
     final var keySelectorFactory = new JWSKeySelectorFactory();
     final var oidcConfigRepo = createEmptyOidcConfigRepo();
@@ -229,8 +233,9 @@ class MultiIssuerJwtValidationTest {
 
   private JwtDecoder createSingleIssuerDecoderWithAdditionalJwkSetUris(
       final String issuerUri, final String additionalJwkSetUri) {
-    final var reg = createClientRegistration("provider1", issuerUri,
-        wireMock.baseUrl() + "/issuer1/.well-known/jwks.json");
+    final var reg =
+        createClientRegistration(
+            "provider1", issuerUri, wireMock.baseUrl() + "/issuer1/.well-known/jwks.json");
 
     final var keySelectorFactory = new JWSKeySelectorFactory();
     final var oidcConfigRepo = createEmptyOidcConfigRepo();
@@ -255,8 +260,8 @@ class MultiIssuerJwtValidationTest {
         .build();
   }
 
-  private String createSignedJwt(
-      final RSAKey rsaKey, final String issuer, final String subject) throws Exception {
+  private String createSignedJwt(final RSAKey rsaKey, final String issuer, final String subject)
+      throws Exception {
     final var now = Instant.now();
     final var claimsSet =
         new JWTClaimsSet.Builder()

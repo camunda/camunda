@@ -8,8 +8,6 @@
 package io.camunda.auth.spring;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.List;
@@ -148,9 +146,7 @@ class SpringAuthenticationAdapterTest {
   @Test
   void shouldReturnGroupIdsFromJwt() {
     // given
-    final Jwt jwt =
-        createJwt(
-            Map.of("sub", "user", "groups", List.of("admin", "developers")));
+    final Jwt jwt = createJwt(Map.of("sub", "user", "groups", List.of("admin", "developers")));
     setJwtAuthentication(jwt);
 
     // when
@@ -176,8 +172,7 @@ class SpringAuthenticationAdapterTest {
   @Test
   void shouldReturnRoleIdsFromJwt() {
     // given
-    final Jwt jwt =
-        createJwt(Map.of("sub", "user", "roles", List.of("viewer", "editor")));
+    final Jwt jwt = createJwt(Map.of("sub", "user", "roles", List.of("viewer", "editor")));
     setJwtAuthentication(jwt);
 
     // when
@@ -190,8 +185,7 @@ class SpringAuthenticationAdapterTest {
   @Test
   void shouldReturnTenantIdsFromJwt() {
     // given
-    final Jwt jwt =
-        createJwt(Map.of("sub", "user", "tenants", List.of("tenant-a", "tenant-b")));
+    final Jwt jwt = createJwt(Map.of("sub", "user", "tenants", List.of("tenant-a", "tenant-b")));
     setJwtAuthentication(jwt);
 
     // when
@@ -250,7 +244,10 @@ class SpringAuthenticationAdapterTest {
     final Jwt jwt = createJwt(Map.of("sub", "user"));
     final var auth =
         new JwtAuthenticationToken(
-            jwt, List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_USER")));
+            jwt,
+            List.of(
+                new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                    "ROLE_USER")));
     SecurityContextHolder.getContext().setAuthentication(auth);
 
     // when

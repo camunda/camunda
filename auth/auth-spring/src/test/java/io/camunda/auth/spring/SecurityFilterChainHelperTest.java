@@ -62,9 +62,7 @@ class SecurityFilterChainHelperTest {
     // then
     final boolean hasCsrfFilter =
         chain.getFilters().stream().anyMatch(f -> f instanceof CsrfFilter);
-    assertThat(hasCsrfFilter)
-        .as("SecurityFilterChain should contain a CsrfFilter")
-        .isTrue();
+    assertThat(hasCsrfFilter).as("SecurityFilterChain should contain a CsrfFilter").isTrue();
   }
 
   @Test
@@ -187,8 +185,7 @@ class SecurityFilterChainHelperTest {
     final SecurityFilterChain chain = http.build();
 
     // then — both filters present
-    final boolean hasCsrf =
-        chain.getFilters().stream().anyMatch(f -> f instanceof CsrfFilter);
+    final boolean hasCsrf = chain.getFilters().stream().anyMatch(f -> f instanceof CsrfFilter);
     final boolean hasHeaders =
         chain.getFilters().stream().anyMatch(f -> f instanceof HeaderWriterFilter);
     assertThat(hasCsrf).isTrue();
@@ -208,10 +205,8 @@ class SecurityFilterChainHelperTest {
     final ObjectPostProcessor<Object> objectPostProcessor = noopObjectPostProcessor();
     final var authManagerBuilder = new AuthenticationManagerBuilder(objectPostProcessor);
 
-    final var http =
-        new HttpSecurity(objectPostProcessor, authManagerBuilder, Map.of());
-    http.setSharedObject(
-        org.springframework.context.ApplicationContext.class, applicationContext);
+    final var http = new HttpSecurity(objectPostProcessor, authManagerBuilder, Map.of());
+    http.setSharedObject(org.springframework.context.ApplicationContext.class, applicationContext);
     return http;
   }
 

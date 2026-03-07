@@ -42,8 +42,8 @@ import org.springframework.security.oauth2.jwt.JwtException;
 
 /**
  * Integration test for {@link OidcAccessTokenDecoderFactory}. Tests the factory methods for
- * creating single-issuer and multi-issuer JWT decoders, including token type validation, expiration,
- * and audience validation.
+ * creating single-issuer and multi-issuer JWT decoders, including token type validation,
+ * expiration, and audience validation.
  */
 class OidcAccessTokenDecoderFactoryTest {
 
@@ -125,8 +125,7 @@ class OidcAccessTokenDecoderFactoryTest {
     final JwtDecoder decoder =
         createSingleIssuerDecoder(
             issuerUri, wireMock.baseUrl() + "/issuer/.well-known/jwks.json", null);
-    final String token =
-        createSignedJwt(issuerUri, "user-at-jwt", new JOSEObjectType("at+jwt"));
+    final String token = createSignedJwt(issuerUri, "user-at-jwt", new JOSEObjectType("at+jwt"));
 
     // when
     final var jwt = decoder.decode(token);
@@ -381,13 +380,9 @@ class OidcAccessTokenDecoderFactoryTest {
     return signJwt(claimsSet, type);
   }
 
-  private String signJwt(final JWTClaimsSet claimsSet, final JOSEObjectType type)
-      throws Exception {
+  private String signJwt(final JWTClaimsSet claimsSet, final JOSEObjectType type) throws Exception {
     final var header =
-        new JWSHeader.Builder(JWSAlgorithm.RS256)
-            .keyID(rsaKey.getKeyID())
-            .type(type)
-            .build();
+        new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.getKeyID()).type(type).build();
     final var signedJwt = new SignedJWT(header, claimsSet);
     signedJwt.sign(new RSASSASigner(rsaKey));
     return signedJwt.serialize();
