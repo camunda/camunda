@@ -52,6 +52,8 @@
     <version.wiremock>3.13.2</version.wiremock>
     <version.testcontainers>2.0.3</version.testcontainers>
     <version.json-path>3.0.0</version.json-path>
+    <version.tc-keycloak>4.1.1</version.tc-keycloak>
+    <version.keycloak-client>26.0.8</version.keycloak-client>
 
     <!-- Maven plugins -->
     <version.maven-compiler-plugin>3.14.0</version.maven-compiler-plugin>
@@ -160,6 +162,16 @@
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers-elasticsearch</artifactId>
         <version>${version.testcontainers}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.dasniko</groupId>
+        <artifactId>testcontainers-keycloak</artifactId>
+        <version>${version.tc-keycloak}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.keycloak</groupId>
+        <artifactId>keycloak-admin-client</artifactId>
+        <version>${version.keycloak-client}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
