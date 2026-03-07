@@ -16,9 +16,9 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 /**
  * Integration-style test for the fail-fast behavior when Basic Authentication is configured without
- * secondary storage. Ported from monorepo tests:
- * - qa/acceptance-tests/.../BasicAuthNoSecondaryStorageTest
- * - dist/.../NoSecondaryStorageAuthenticationIT
+ * secondary storage. Ported from monorepo tests: -
+ * qa/acceptance-tests/.../BasicAuthNoSecondaryStorageTest -
+ * dist/.../NoSecondaryStorageAuthenticationIT
  *
  * <p>Supplements the existing {@link CamundaBasicAuthNoDbAutoConfigurationTest} with additional
  * scenarios: default-method behavior, fail-fast message validation, and multiple property
@@ -30,8 +30,7 @@ class CamundaBasicAuthNoDbFailFastTest {
       new ApplicationContextRunner()
           .withConfiguration(
               AutoConfigurations.of(
-                  CamundaAuthAutoConfiguration.class,
-                  CamundaBasicAuthNoDbAutoConfiguration.class));
+                  CamundaAuthAutoConfiguration.class, CamundaBasicAuthNoDbAutoConfiguration.class));
 
   @Test
   void shouldFailFastWithBasicAuthAndNoSecondaryStorageProperty() {
@@ -52,8 +51,7 @@ class CamundaBasicAuthNoDbFailFastTest {
   void shouldFailFastWithBasicAuthAndExplicitlyDisabledStorage() {
     contextRunner
         .withPropertyValues(
-            "camunda.auth.method=basic",
-            "camunda.auth.basic.secondary-storage-available=false")
+            "camunda.auth.method=basic", "camunda.auth.basic.secondary-storage-available=false")
         .run(
             context -> {
               assertThat(context).hasFailed();
@@ -72,7 +70,8 @@ class CamundaBasicAuthNoDbFailFastTest {
               assertThat(context).hasFailed();
               // Navigate the cause chain to find the BasicAuthenticationNotSupportedException
               Throwable cause = context.getStartupFailure();
-              while (cause != null && !(cause instanceof BasicAuthenticationNotSupportedException)) {
+              while (cause != null
+                  && !(cause instanceof BasicAuthenticationNotSupportedException)) {
                 cause = cause.getCause();
               }
               assertThat(cause)
@@ -88,13 +87,11 @@ class CamundaBasicAuthNoDbFailFastTest {
   void shouldSucceedWithBasicAuthAndSecondaryStorageAvailable() {
     contextRunner
         .withPropertyValues(
-            "camunda.auth.method=basic",
-            "camunda.auth.basic.secondary-storage-available=true")
+            "camunda.auth.method=basic", "camunda.auth.basic.secondary-storage-available=true")
         .run(
             context -> {
               assertThat(context).hasNotFailed();
-              assertThat(context)
-                  .doesNotHaveBean(CamundaBasicAuthNoDbAutoConfiguration.class);
+              assertThat(context).doesNotHaveBean(CamundaBasicAuthNoDbAutoConfiguration.class);
             });
   }
 
@@ -106,8 +103,7 @@ class CamundaBasicAuthNoDbFailFastTest {
         .run(
             context -> {
               assertThat(context).hasNotFailed();
-              assertThat(context)
-                  .doesNotHaveBean(CamundaBasicAuthNoDbAutoConfiguration.class);
+              assertThat(context).doesNotHaveBean(CamundaBasicAuthNoDbAutoConfiguration.class);
             });
   }
 
@@ -118,13 +114,11 @@ class CamundaBasicAuthNoDbFailFastTest {
     new ApplicationContextRunner()
         .withConfiguration(
             AutoConfigurations.of(
-                CamundaAuthAutoConfiguration.class,
-                CamundaBasicAuthNoDbAutoConfiguration.class))
+                CamundaAuthAutoConfiguration.class, CamundaBasicAuthNoDbAutoConfiguration.class))
         .run(
             context -> {
               assertThat(context).hasNotFailed();
-              assertThat(context)
-                  .doesNotHaveBean(CamundaBasicAuthNoDbAutoConfiguration.class);
+              assertThat(context).doesNotHaveBean(CamundaBasicAuthNoDbAutoConfiguration.class);
             });
   }
 
@@ -147,13 +141,11 @@ class CamundaBasicAuthNoDbFailFastTest {
     // Even when secondary storage is explicitly disabled, OIDC should still work
     contextRunner
         .withPropertyValues(
-            "camunda.auth.method=oidc",
-            "camunda.auth.basic.secondary-storage-available=false")
+            "camunda.auth.method=oidc", "camunda.auth.basic.secondary-storage-available=false")
         .run(
             context -> {
               assertThat(context).hasNotFailed();
-              assertThat(context)
-                  .doesNotHaveBean(CamundaBasicAuthNoDbAutoConfiguration.class);
+              assertThat(context).doesNotHaveBean(CamundaBasicAuthNoDbAutoConfiguration.class);
             });
   }
 }
