@@ -5,6 +5,9 @@
 # The values are optimized for running the load tests with a Camunda cluster on GKE.
 #
 # This is a YAML-formatted file.
+# Per default we run with the Orchestration Cluster, Optimize, Elasticsearch as secondary storage
+# and Identity Keycloak as identity provider, but you can easily switch to other configurations by
+# changing the values in this file or by overriding them via the command line when installing the chart.
 
 ########################################################################################
 ################################################### Global cluster configuration
@@ -28,43 +31,37 @@ global:
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
     pullSecrets:
       - name: harbor-registry
-  # By default, we run without Identity
+  # Identity authentication is enabled for Optimize
   identity:
     auth:
-      enabled: false
+      enabled: true
+      optimize:
+        clientId: optimize
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-optimize-client-token
 
 identity:
-  enabled: false
-  nodeSelector:
-    component: benchmark-n2-standard-4
-  tolerations:
-    - key: nodepool
-      operator: Equal
-      value: n2-standard-4
-      effect: NoSchedule
-
-identityKeycloak:
-  enabled: false
-  nodeSelector:
-    component: benchmark-n2-standard-4
-  tolerations:
-    - key: nodepool
-      operator: Equal
-      value: n2-standard-4
-      effect: NoSchedule
+  enabled: true
+  firstUser:
+    secret:
+      existingSecret: camunda-credentials
+      existingSecretKey: identity-firstuser-password
 
 optimize:
-  enabled: false
-  nodeSelector:
-    component: benchmark-n2-standard-4
-  tolerations:
-    - key: nodepool
-      operator: Equal
-      value: n2-standard-4
-      effect: NoSchedule
+  enabled: true
+
+identityKeycloak:
+  enabled: true
 
 connectors:
-  enabled: false
+  enabled: true
+  security:
+    authentication:
+      oidc:
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: connectors-security-authentication-oidc-secret
 
 webModeler:
   enabled: false
@@ -78,9 +75,17 @@ postgresql:
 orchestration:
   security:
     authentication:
-      unprotectedApi: true
+      unprotectedApi: false
+      oidc:
+        secret:
+          ## @param orchestration.security.authentication.oidc.secret.existingSecret can be used to reference an existing Kubernetes Secret containing the client secret.
+          existingSecret: camunda-credentials
+          ## @param orchestration.security.authentication.oidc.secret.existingSecretKey defines the key within the existing secret object.
+          existingSecretKey: orchestration-security-authentication-oidc-secret
+
     authorizations:
       enabled: false
+
   # For simplicity of the deployment, we override the names to camunda
   # This means we will have pods like: camunda-0, camunda-1, camunda-2
   fullnameOverride: camunda
@@ -256,16 +261,16 @@ elasticsearch:
     heapSize: 3g
     persistence:
       ## @param elasticsearch.master.persistence.size
-      size: 128Gi
+      size: 512Gi
       storageClass: "ssd"
       accessModes: ["ReadWriteOnce"]
     resources:
       requests:
-        cpu: 3
-        memory: 3Gi
+        cpu: 7000m
+        memory: 8Gi
       limits:
-        cpu: 3
-        memory: 6Gi
+        cpu: 7000m
+        memory: 8Gi
     nodeSelector:
       component: benchmark-n2-standard-4
     tolerations:
