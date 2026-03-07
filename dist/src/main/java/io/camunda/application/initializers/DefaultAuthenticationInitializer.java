@@ -33,11 +33,12 @@ public class DefaultAuthenticationInitializer
   public void initialize(final ConfigurableApplicationContext context) {
     final var env = context.getEnvironment();
     bridgeAuthMethodProperty(context);
-    enableAuthSdk(context);
     if (shouldApplyDefaultAuthenticationProfile(env)) {
       env.addActiveProfile(CONSOLIDATED_AUTH.getId());
     }
     bridgeSecondaryStorageProperty(context);
+    bridgePersistenceProperties(context);
+    bridgeAuthenticationProperties(context);
   }
 
   /**
@@ -61,20 +62,6 @@ public class DefaultAuthenticationInitializer
     DefaultPropertiesPropertySource.addOrMerge(propertyMap, env.getPropertySources());
   }
 
-  /**
-   * Activates the auth SDK SPI implementations defined in the dist module so that concrete beans
-   * (e.g. UserProfileProvider, TenantInfoProvider, WebComponentAccessProvider) are registered.
-   */
-  private void enableAuthSdk(final ConfigurableApplicationContext context) {
-    final var env = context.getEnvironment();
-    if (env.getProperty("camunda.auth.sdk.enabled") != null) {
-      return;
-    }
-    final var propertyMap = new HashMap<String, Object>();
-    propertyMap.put("camunda.auth.sdk.enabled", "true");
-    DefaultPropertiesPropertySource.addOrMerge(propertyMap, env.getPropertySources());
-  }
-
   private void bridgeSecondaryStorageProperty(final ConfigurableApplicationContext context) {
     final var env = context.getEnvironment();
     final var propertyMap = new HashMap<String, Object>();
@@ -82,6 +69,69 @@ public class DefaultAuthenticationInitializer
         "camunda.auth.basic.secondary-storage-available",
         String.valueOf(DatabaseTypeUtils.isSecondaryStorageEnabled(env)));
     DefaultPropertiesPropertySource.addOrMerge(propertyMap, env.getPropertySources());
+  }
+
+  /**
+   * Bridges the monorepo's secondary storage type to the auth library's persistence properties.
+   *
+   * <p>Maps {@code camunda.data.secondary-storage.type} (elasticsearch|rdbms) to {@code
+   * camunda.auth.persistence.type} and sets {@code camunda.auth.persistence.mode=external} because
+   * the Orchestration Cluster uses Zeebe as the source of truth for identity data — the auth
+   * library only reads from secondary storage.
+   */
+  private void bridgePersistenceProperties(final ConfigurableApplicationContext context) {
+    final var env = context.getEnvironment();
+    if (env.getProperty("camunda.auth.persistence.type") != null) {
+      return;
+    }
+    final var propertyMap = new HashMap<String, Object>();
+    final var storageType = DatabaseTypeUtils.getDatabaseTypeOrDefault(env);
+    propertyMap.put("camunda.auth.persistence.type", storageType);
+    propertyMap.put("camunda.auth.persistence.mode", "external");
+    DefaultPropertiesPropertySource.addOrMerge(propertyMap, env.getPropertySources());
+  }
+
+  /**
+   * Bridges legacy authentication-specific properties to the auth library's property namespace so
+   * that auto-configuration beans activate correctly without manual bean wiring.
+   *
+   * <ul>
+   *   <li>{@code camunda.security.authentication.unprotected-api} → {@code
+   *       camunda.auth.unprotected-api}
+   *   <li>{@code camunda.security.authentication.authenticationRefreshInterval} → {@code
+   *       camunda.auth.session.refresh-interval}
+   *   <li>Enables session holder when a webapp profile is active: {@code
+   *       camunda.auth.session.enabled=true}
+   * </ul>
+   */
+  private void bridgeAuthenticationProperties(final ConfigurableApplicationContext context) {
+    final var env = context.getEnvironment();
+    final var propertyMap = new HashMap<String, Object>();
+
+    // Bridge unprotected-api flag
+    final var oldUnprotected = env.getProperty("camunda.security.authentication.unprotected-api");
+    if (oldUnprotected != null && env.getProperty("camunda.auth.unprotected-api") == null) {
+      propertyMap.put("camunda.auth.unprotected-api", oldUnprotected);
+    }
+
+    // Bridge session refresh interval
+    final var oldRefresh =
+        env.getProperty("camunda.security.authentication.authenticationRefreshInterval");
+    if (oldRefresh != null && env.getProperty("camunda.auth.session.refresh-interval") == null) {
+      propertyMap.put("camunda.auth.session.refresh-interval", oldRefresh);
+    }
+
+    // Enable session holder when a webapp profile is active
+    if (env.getProperty("camunda.auth.session.enabled") == null) {
+      final Set<String> activeProfiles = Set.of(env.getActiveProfiles());
+      if (webappProfileIsPresent(activeProfiles)) {
+        propertyMap.put("camunda.auth.session.enabled", "true");
+      }
+    }
+
+    if (!propertyMap.isEmpty()) {
+      DefaultPropertiesPropertySource.addOrMerge(propertyMap, env.getPropertySources());
+    }
   }
 
   protected boolean shouldApplyDefaultAuthenticationProfile(final Environment environment) {

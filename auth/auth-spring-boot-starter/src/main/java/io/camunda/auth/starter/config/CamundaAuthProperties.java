@@ -199,11 +199,45 @@ public class CamundaAuthProperties {
   }
 
   public static class PersistenceProperties {
+    /**
+     * Storage backend: "elasticsearch" or "rdbms". Determines which persistence adapters are
+     * activated.
+     */
+    private String type;
+
+    /**
+     * Persistence mode: "standalone" or "external".
+     *
+     * <p>"standalone" — the library owns all reads AND writes. The persistence store is the source
+     * of truth. Suitable for deployments without an external system populating the storage (e.g.,
+     * Camunda Hub).
+     *
+     * <p>"external" — an external system populates the storage (e.g., Zeebe exporters). The library
+     * only reads. Write port beans are not created.
+     */
+    private String mode = "standalone";
+
     @NestedConfigurationProperty private final RdbmsProperties rdbms = new RdbmsProperties();
 
     @NestedConfigurationProperty
     private final ElasticsearchPersistenceProperties elasticsearch =
         new ElasticsearchPersistenceProperties();
+
+    public String getType() {
+      return type;
+    }
+
+    public void setType(final String type) {
+      this.type = type;
+    }
+
+    public String getMode() {
+      return mode;
+    }
+
+    public void setMode(final String mode) {
+      this.mode = mode;
+    }
 
     public RdbmsProperties getRdbms() {
       return rdbms;

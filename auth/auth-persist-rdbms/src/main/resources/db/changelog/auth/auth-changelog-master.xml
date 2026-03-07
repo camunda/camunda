@@ -13,5 +13,7 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
   <include file="db/changelog/auth/changesets/1.0.0-token-exchange-audit.xml"/>
+  <include file="db/changelog/auth/changesets/1.0.0-web-session.xml"/>
+  <include file="db/changelog/auth/changesets/1.0.0-identity-tables.xml"/>
 
 </databaseChangeLog>

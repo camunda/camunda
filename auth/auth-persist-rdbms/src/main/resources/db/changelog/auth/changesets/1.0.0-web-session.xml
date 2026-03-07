@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <changeSet id="1.0.0-create-auth-web-session" author="camunda-auth-sdk">
+    <createTable tableName="AUTH_WEB_SESSION">
+      <column name="SESSION_ID" type="VARCHAR(255)">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="CREATION_TIME" type="BIGINT"/>
+      <column name="LAST_ACCESSED_TIME" type="BIGINT"/>
+      <column name="MAX_INACTIVE_INTERVAL_IN_SECONDS" type="BIGINT"/>
+      <column name="ATTRIBUTES" type="CLOB"/>
+    </createTable>
+  </changeSet>
+
+</databaseChangeLog>

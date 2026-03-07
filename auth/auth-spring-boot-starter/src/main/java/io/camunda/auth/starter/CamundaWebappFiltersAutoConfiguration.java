@@ -7,12 +7,14 @@
  */
 package io.camunda.auth.starter;
 
+import io.camunda.auth.domain.model.AuthenticationMethod;
 import io.camunda.auth.domain.spi.AdminUserCheckProvider;
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.auth.domain.spi.WebComponentAccessProvider;
 import io.camunda.auth.spring.SecurityFilterChainCustomizer;
 import io.camunda.auth.spring.filter.AdminUserCheckFilter;
 import io.camunda.auth.spring.filter.WebComponentAuthorizationCheckFilter;
+import io.camunda.auth.starter.condition.ConditionalOnAuthenticationMethod;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,6 +30,7 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
 public class CamundaWebappFiltersAutoConfiguration {
 
   @Bean
+  @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
   @ConditionalOnBean(AdminUserCheckProvider.class)
   public SecurityFilterChainCustomizer adminUserCheckCustomizer(
       final AdminUserCheckProvider adminUserCheckProvider) {

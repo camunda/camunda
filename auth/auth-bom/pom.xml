@@ -49,11 +49,6 @@
         <artifactId>camunda-auth-spring-boot-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
-      <dependency>
-        <groupId>io.camunda.auth</groupId>
-        <artifactId>camunda-auth-sdk</artifactId>
-        <version>${project.version}</version>
-      </dependency>
     </dependencies>
   </dependencyManagement>
 

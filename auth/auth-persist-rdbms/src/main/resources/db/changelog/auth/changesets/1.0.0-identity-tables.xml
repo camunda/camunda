@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!-- AUTH_USER -->
+  <changeSet id="1.0.0-create-auth-user" author="camunda-auth-sdk">
+    <createTable tableName="AUTH_USER">
+      <column name="USER_KEY" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="USERNAME" type="VARCHAR(255)">
+        <constraints unique="true" nullable="false"/>
+      </column>
+      <column name="NAME" type="VARCHAR(255)"/>
+      <column name="EMAIL" type="VARCHAR(255)"/>
+      <column name="PASSWORD" type="VARCHAR(255)"/>
+    </createTable>
+
+    <createIndex tableName="AUTH_USER" indexName="IDX_AUTH_USER_USERNAME">
+      <column name="USERNAME"/>
+    </createIndex>
+  </changeSet>
+
+  <!-- AUTH_ROLE -->
+  <changeSet id="1.0.0-create-auth-role" author="camunda-auth-sdk">
+    <createTable tableName="AUTH_ROLE">
+      <column name="ROLE_KEY" type="BIGINT"/>
+      <column name="ROLE_ID" type="VARCHAR(255)">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="NAME" type="VARCHAR(255)"/>
+      <column name="DESCRIPTION" type="VARCHAR(1024)"/>
+    </createTable>
+  </changeSet>
+
+  <!-- AUTH_ROLE_MEMBER -->
+  <changeSet id="1.0.0-create-auth-role-member" author="camunda-auth-sdk">
+    <createTable tableName="AUTH_ROLE_MEMBER">
+      <column name="ROLE_ID" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="MEMBER_ID" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="MEMBER_TYPE" type="VARCHAR(50)">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+
+    <addPrimaryKey tableName="AUTH_ROLE_MEMBER" columnNames="ROLE_ID, MEMBER_ID"
+        constraintName="PK_AUTH_ROLE_MEMBER"/>
+
+    <createIndex tableName="AUTH_ROLE_MEMBER" indexName="IDX_AUTH_ROLE_MEMBER_MEMBER_ID">
+      <column name="MEMBER_ID"/>
+    </createIndex>
+  </changeSet>
+
+  <!-- AUTH_TENANT -->
+  <changeSet id="1.0.0-create-auth-tenant" author="camunda-auth-sdk">
+    <createTable tableName="AUTH_TENANT">
+      <column name="TENANT_KEY" type="BIGINT"/>
+      <column name="TENANT_ID" type="VARCHAR(255)">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="NAME" type="VARCHAR(255)"/>
+      <column name="DESCRIPTION" type="VARCHAR(1024)"/>
+    </createTable>
+  </changeSet>
+
+  <!-- AUTH_TENANT_MEMBER -->
+  <changeSet id="1.0.0-create-auth-tenant-member" author="camunda-auth-sdk">
+    <createTable tableName="AUTH_TENANT_MEMBER">
+      <column name="TENANT_ID" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="MEMBER_ID" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="MEMBER_TYPE" type="VARCHAR(50)">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+
+    <addPrimaryKey tableName="AUTH_TENANT_MEMBER" columnNames="TENANT_ID, MEMBER_ID"
+        constraintName="PK_AUTH_TENANT_MEMBER"/>
+
+    <createIndex tableName="AUTH_TENANT_MEMBER" indexName="IDX_AUTH_TENANT_MEMBER_MEMBER_ID">
+      <column name="MEMBER_ID"/>
+    </createIndex>
+  </changeSet>
+
+  <!-- AUTH_GROUP -->
+  <changeSet id="1.0.0-create-auth-group" author="camunda-auth-sdk">
+    <createTable tableName="AUTH_GROUP">
+      <column name="GROUP_KEY" type="BIGINT"/>
+      <column name="GROUP_ID" type="VARCHAR(255)">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="NAME" type="VARCHAR(255)"/>
+      <column name="DESCRIPTION" type="VARCHAR(1024)"/>
+    </createTable>
+  </changeSet>
+
+  <!-- AUTH_GROUP_MEMBER -->
+  <changeSet id="1.0.0-create-auth-group-member" author="camunda-auth-sdk">
+    <createTable tableName="AUTH_GROUP_MEMBER">
+      <column name="GROUP_ID" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="MEMBER_ID" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="MEMBER_TYPE" type="VARCHAR(50)">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+
+    <addPrimaryKey tableName="AUTH_GROUP_MEMBER" columnNames="GROUP_ID, MEMBER_ID"
+        constraintName="PK_AUTH_GROUP_MEMBER"/>
+
+    <createIndex tableName="AUTH_GROUP_MEMBER" indexName="IDX_AUTH_GROUP_MEMBER_MEMBER_ID">
+      <column name="MEMBER_ID"/>
+    </createIndex>
+  </changeSet>
+
+  <!-- AUTH_MAPPING_RULE -->
+  <changeSet id="1.0.0-create-auth-mapping-rule" author="camunda-auth-sdk">
+    <createTable tableName="AUTH_MAPPING_RULE">
+      <column name="MAPPING_RULE_KEY" type="BIGINT"/>
+      <column name="MAPPING_RULE_ID" type="VARCHAR(255)">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="CLAIM_NAME" type="VARCHAR(255)"/>
+      <column name="CLAIM_VALUE" type="VARCHAR(255)"/>
+      <column name="NAME" type="VARCHAR(255)"/>
+    </createTable>
+  </changeSet>
+
+  <!-- AUTH_AUTHORIZATION -->
+  <changeSet id="1.0.0-create-auth-authorization" author="camunda-auth-sdk">
+    <createTable tableName="AUTH_AUTHORIZATION">
+      <column name="AUTHORIZATION_KEY" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="OWNER_ID" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="OWNER_TYPE" type="VARCHAR(50)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="RESOURCE_TYPE" type="VARCHAR(100)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="RESOURCE_ID" type="VARCHAR(255)"/>
+      <column name="PERMISSION_TYPES" type="VARCHAR(1024)"/>
+    </createTable>
+
+    <createIndex tableName="AUTH_AUTHORIZATION" indexName="IDX_AUTH_AUTHORIZATION_OWNER">
+      <column name="OWNER_ID"/>
+      <column name="OWNER_TYPE"/>
+    </createIndex>
+  </changeSet>
+
+</databaseChangeLog>

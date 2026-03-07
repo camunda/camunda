@@ -12,7 +12,6 @@ A standalone, publishable Spring Security enhancement library — zero Camunda r
 | `camunda-auth-domain`                | `auth-domain`                | Pure domain core — models, ports, SPIs, services (zero framework deps) |
 | `camunda-auth-spring`                | `auth-spring`                | Spring Security integration layer (converters, filters, adapters)      |
 | `camunda-auth-spring-boot-starter`   | `auth-spring-boot-starter`   | Auto-configuration for Spring Boot apps                                |
-| `camunda-auth-sdk`                   | `auth-sdk`                   | Framework-agnostic public facade (`CamundaAuthSdk`)                    |
 | `camunda-auth-persist-rdbms`         | `auth-persist-rdbms`         | RDBMS audit persistence adapter (MyBatis + Liquibase)                  |
 | `camunda-auth-persist-elasticsearch` | `auth-persist-elasticsearch` | Elasticsearch audit persistence adapter                                |
 
@@ -156,26 +155,26 @@ The library follows **hexagonal architecture** (ports & adapters). The domain co
 ┌─────────────────────────────────────────────────────────────────┐
 │  Consumers (your application)                                   │
 │  SecurityFilterChain, Controllers, Services                     │
-└────────────┬───────────────────────────────────┬────────────────┘
-             │                                   │
-             ▼                                   ▼
-┌────────────────────────┐         ┌──────────────────────────────┐
-│  auth-sdk              │         │  auth-spring-boot-starter    │
-│  CamundaAuthSdk        │         │  Auto-configuration          │
-│  AuthenticationFacade  │         │  CamundaAuthProperties       │
-│  TokenExchangeFacade   │         └──────────────┬───────────────┘
-└────────────┬───────────┘                        │
-             │                                    ▼
-             │                   ┌────────────────────────────────┐
-             │                   │  auth-spring                   │
-             │                   │  SpringAuthenticationAdapter   │
-             │                   │  TokenClaimsConverter          │
-             │                   │  OnBehalfOfTokenRelayFilter    │
-             │                   │  OAuth2RefreshTokenFilter      │
-             │                   │  AuthFailureHandler            │
-             │                   └──────────────┬─────────────────┘
-             │                                  │
-             ▼                                  ▼
+└────────────────────────────────┬────────────────────────────────┘
+                                 │
+                                 ▼
+                   ┌──────────────────────────────┐
+                   │  auth-spring-boot-starter    │
+                   │  Auto-configuration          │
+                   │  CamundaAuthProperties       │
+                   └──────────────┬───────────────┘
+                                  │
+                                  ▼
+                   ┌────────────────────────────────┐
+                   │  auth-spring                   │
+                   │  SpringAuthenticationAdapter   │
+                   │  TokenClaimsConverter          │
+                   │  OnBehalfOfTokenRelayFilter    │
+                   │  OAuth2RefreshTokenFilter      │
+                   │  AuthFailureHandler            │
+                   └──────────────┬─────────────────┘
+                                  │
+                                  ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │  auth-domain  (pure Java, no framework dependencies)            │
 │                                                                 │
@@ -259,30 +258,6 @@ Provides the current `CamundaAuthentication` for the request context.
 Performs the actual token exchange against the IdP. The default `SpringSecurityTokenExchangeClient` delegates to Spring Security's `OAuth2AuthorizedClientManager`.
 
 **Interface:** `io.camunda.auth.domain.port.outbound.TokenExchangeClient`
-
-## SDK Usage (Non-Spring)
-
-For framework-agnostic usage, use the `CamundaAuthSdk` builder directly:
-
-```java
-CamundaAuthSdk sdk = CamundaAuthSdk.builder()
-    .authenticationPort(myAuthPort)      // implements AuthenticationPort
-    .tokenExchangePort(myExchangePort)   // implements TokenExchangePort
-    .build();
-
-// Query authentication context
-Optional<String> username = sdk.authentication().getCurrentUsername();
-boolean authed = sdk.authentication().isAuthenticated();
-List<String> groups = sdk.authentication().getCurrentGroupIds();
-
-// Perform token exchange
-if (sdk.tokenExchange().isTokenExchangeSupported()) {
-  String oboToken = sdk.tokenExchange()
-      .getOnBehalfOfToken(subjectToken, "target-service", Set.of("read", "write"));
-}
-```
-
-Both ports are optional — omitted ports result in no-op facades that return empty values (authentication) or throw `UnsupportedOperationException` (token exchange).
 
 ## Token Exchange
 

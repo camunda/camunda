@@ -339,6 +339,16 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-persist-elasticsearch</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-persist-rdbms</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-elasticsearch</artifactId>
     </dependency>

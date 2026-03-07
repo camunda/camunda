@@ -17,11 +17,7 @@ import java.util.Set;
  * <p>Common fields shared by all grant types are declared here; grant-type-specific fields live in
  * the concrete subtypes.
  */
-public sealed interface AuthorizationGrantRequest
-    permits TokenExchangeGrantRequest,
-        ClientCredentialsGrantRequest,
-        JwtBearerGrantRequest,
-        AuthorizationCodeGrantRequest {
+public sealed interface AuthorizationGrantRequest permits TokenExchangeGrantRequest {
 
   /** The OAuth2 grant type for this request. */
   GrantType grantType();

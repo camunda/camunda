@@ -24,10 +24,6 @@
   <dependencies>
     <dependency>
       <groupId>io.camunda.auth</groupId>
-      <artifactId>camunda-auth-sdk</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda.auth</groupId>
       <artifactId>camunda-auth-spring-boot-starter</artifactId>
     </dependency>
     <dependency>
