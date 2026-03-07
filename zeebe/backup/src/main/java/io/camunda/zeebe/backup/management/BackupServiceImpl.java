@@ -302,11 +302,13 @@ final class BackupServiceImpl {
               backupStore
                   .list(
                       new BackupIdentifierWildcardImpl(
-                          Optional.empty(),
-                          Optional.of(partitionId),
-                          CheckpointPattern.of(lastCheckpointId)))
+                          Optional.empty(), Optional.of(partitionId), CheckpointPattern.any()))
                   .thenAcceptAsync(
-                      backups -> backups.forEach(b -> failInProgressBackup(b, executor)), executor)
+                      backups ->
+                          backups.stream()
+                              .filter(b -> b.id().checkpointId() <= lastCheckpointId)
+                              .forEach(b -> failInProgressBackup(b, executor)),
+                      executor)
                   .exceptionallyAsync(
                       failure -> {
                         LOG.warn("Failed to list backups that should be marked as failed", failure);
