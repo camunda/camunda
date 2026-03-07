@@ -165,6 +165,25 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  codeowners-check:
+    name: "Lint / Codeowners"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/codeowners-check
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   java-checks:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "Java Checks"
@@ -1426,6 +1445,7 @@ jobs:
       - archunit-tests
       - build-platform-frontend
       - client-components
+      - codeowners-check
       - commitlint
       - database-integration-tests
       - dependency-cycle-check

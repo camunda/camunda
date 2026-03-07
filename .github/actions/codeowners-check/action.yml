@@ -1,0 +1,36 @@
+---
+name: Check codeowners
+
+# owner: @camunda/orchestration-cluster
+
+description: Checks that all files in the repository have an owner defined in .codeowners
+
+inputs:
+  version:
+    description: 'Version of codeowners-cli to install (e.g. v1.9.0)'
+    required: false
+    default: 'v1.9.0'
+
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/codeowners-setup-cli
+      with:
+        version: ${{ inputs.version }}
+    - name: Check for unowned files
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        unowned="$(codeowners-cli unowned --root ./)"
+
+        if [[ -n "${unowned}" ]]; then
+          echo "::error::The following files have no owner in .codeowners:"
+          echo "${unowned}"
+          echo ""
+          echo "Please add ownership rules for these files in .codeowners"
+          exit 1
+        fi
+
+        echo "All files have owners."
+
