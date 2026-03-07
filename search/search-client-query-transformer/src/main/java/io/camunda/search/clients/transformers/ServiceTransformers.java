@@ -121,6 +121,7 @@ import io.camunda.search.clients.transformers.filter.GlobalListenerFilterTransfo
 import io.camunda.search.clients.transformers.filter.GroupFilterTransformer;
 import io.camunda.search.clients.transformers.filter.GroupMemberFilterTransformer;
 import io.camunda.search.clients.transformers.filter.IncidentFilterTransformer;
+import io.camunda.search.clients.transformers.filter.JobErrorStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.JobFilterTransformer;
 import io.camunda.search.clients.transformers.filter.JobTimeSeriesStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.JobTypeStatisticsFilterTransformer;
@@ -194,6 +195,7 @@ import io.camunda.search.filter.GlobalListenerFilter;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.filter.GroupMemberFilter;
 import io.camunda.search.filter.IncidentFilter;
+import io.camunda.search.filter.JobErrorStatisticsFilter;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.JobTimeSeriesStatisticsFilter;
 import io.camunda.search.filter.JobTypeStatisticsFilter;
@@ -633,6 +635,9 @@ public final class ServiceTransformers {
         SequenceFlowFilter.class,
         new SequenceFlowFilterTransformer(indexDescriptors.get(SequenceFlowTemplate.class)));
     mappers.put(JobFilter.class, new JobFilterTransformer(indexDescriptors.get(JobTemplate.class)));
+    mappers.put(
+        JobErrorStatisticsFilter.class,
+        new JobErrorStatisticsFilterTransformer(indexDescriptors.get(JobTemplate.class)));
     mappers.put(
         MessageSubscriptionFilter.class,
         new MessageSubscriptionFilterTransformer(

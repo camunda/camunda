@@ -147,6 +147,37 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
+  /jobs/statistics/errors:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Job
+      operationId: getJobErrorStatistics
+      summary: Get error metrics for a job type
+      description: |
+        Returns aggregated metrics per error for the given jobType.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobErrorStatisticsQuery'
+      responses:
+        "200":
+          description: The job error statistics result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobErrorStatisticsQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
 ## Schema definitions
 
 components:
@@ -422,3 +453,85 @@ components:
         failed:
           $ref: '#/components/schemas/StatusMetric'
 
+    JobErrorStatisticsQuery:
+      description: Job error statistics query.
+      type: object
+      required:
+        - filter
+      properties:
+        filter:
+          $ref: '#/components/schemas/JobErrorStatisticsFilter'
+        page:
+          description: Search cursor pagination.
+          allOf:
+            - $ref: 'search-models.yaml#/components/schemas/CursorForwardPagination'
+
+    JobErrorStatisticsFilter:
+      description: Job error statistics search filter.
+      type: object
+      required:
+        - from
+        - to
+        - jobType
+      properties:
+        from:
+          description: |
+            Start of the time window to filter metrics. ISO 8601 date-time format.
+          type: string
+          format: date-time
+          example: "2024-07-28T15:51:28.071Z"
+        to:
+          description: |
+            End of the time window to filter metrics. ISO 8601 date-time format.
+          type: string
+          format: date-time
+          example: "2024-07-29T15:51:28.071Z"
+        jobType:
+          description: Job type to return error metrics for.
+          type: string
+          example: "fetch-customer-data"
+        errorCode:
+          description: Optional error code filter with advanced search capabilities.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        errorMessage:
+          description: Optional error message filter with advanced search capabilities.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+
+    JobErrorStatisticsQueryResult:
+      description: Job error statistics query result.
+      type: object
+      required:
+        - items
+        - page
+      allOf:
+        - $ref: "search-models.yaml#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The list of per-error statistics items.
+          type: array
+          items:
+            $ref: '#/components/schemas/JobErrorStatisticsItem'
+
+    JobErrorStatisticsItem:
+      description: Aggregated error metrics for a single error type and message combination.
+      type: object
+      required:
+        - errorCode
+        - errorMessage
+        - workers
+      properties:
+        errorCode:
+          description: The error code identifier.
+          type: string
+          example: "UNHANDLED_ERROR_EVENT"
+        errorMessage:
+          description: The error message.
+          type: string
+          example: "An unexpected error occurred."
+        workers:
+          description: Number of distinct workers that encountered this error.
+          type: integer
+          format: int32
+          example: 15

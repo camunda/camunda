@@ -53,6 +53,7 @@ import io.camunda.search.filter.GlobalJobStatisticsFilter;
 import io.camunda.search.filter.GlobalListenerFilter;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.filter.IncidentFilter;
+import io.camunda.search.filter.JobErrorStatisticsFilter;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.JobTimeSeriesStatisticsFilter;
 import io.camunda.search.filter.JobTypeStatisticsFilter;
@@ -501,6 +502,40 @@ public class SearchQueryFilterMapper {
 
     final var resolution = validateDuration(filter.getResolution(), "resolution", validationErrors);
     Optional.ofNullable(resolution).ifPresent(builder::resolution);
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
+  public static Either<List<String>, JobErrorStatisticsFilter> toJobErrorStatisticsFilter(
+      final io.camunda.gateway.protocol.model.JobErrorStatisticsFilter filter) {
+    final var builder = FilterBuilders.jobErrorStatistics();
+    final List<String> validationErrors = new ArrayList<>();
+
+    if (filter == null) {
+      validationErrors.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter"));
+      return Either.<List<String>, JobErrorStatisticsFilter>left(validationErrors);
+    }
+
+    final var from = validateDate(filter.getFrom(), "from", validationErrors);
+    Optional.ofNullable(from).ifPresent(builder::from);
+
+    final var to = validateDate(filter.getTo(), "to", validationErrors);
+    Optional.ofNullable(to).ifPresent(builder::to);
+
+    if (filter.getJobType() == null || filter.getJobType().isBlank()) {
+      validationErrors.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobType"));
+    } else {
+      builder.jobType(filter.getJobType());
+    }
+
+    Optional.ofNullable(filter.getErrorCode())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::errorCodeOperations);
+    Optional.ofNullable(filter.getErrorMessage())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::errorMessageOperations);
 
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

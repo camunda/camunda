@@ -72,6 +72,8 @@ import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByErro
 import io.camunda.gateway.protocol.model.IncidentResult;
 import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
+import io.camunda.gateway.protocol.model.JobErrorStatisticsItem;
+import io.camunda.gateway.protocol.model.JobErrorStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobKindEnum;
 import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.JobSearchQueryResult;
@@ -161,6 +163,7 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.entities.JobEntity;
+import io.camunda.search.entities.JobErrorStatisticsEntity;
 import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
@@ -1631,6 +1634,29 @@ public final class SearchQueryResponseMapper {
         .created(toStatusMetric(entity.created()))
         .completed(toStatusMetric(entity.completed()))
         .failed(toStatusMetric(entity.failed()));
+  }
+
+  public static JobErrorStatisticsQueryResult toJobErrorStatisticsQueryResult(
+      final SearchQueryResult<JobErrorStatisticsEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new JobErrorStatisticsQueryResult()
+        .page(page)
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toJobErrorStatisticsItem)
+                .toList());
+  }
+
+  private static JobErrorStatisticsItem toJobErrorStatisticsItem(
+      final JobErrorStatisticsEntity entity) {
+    if (entity == null) {
+      return new JobErrorStatisticsItem();
+    }
+
+    return new JobErrorStatisticsItem()
+        .errorCode(entity.errorCode())
+        .errorMessage(entity.errorMessage())
+        .workers(entity.workers());
   }
 
   private static StatusMetric toStatusMetric(final GlobalJobStatisticsEntity.StatusMetric metric) {
