@@ -102,7 +102,6 @@ public class HttpClientFactory {
         gatewayAddress,
         defaultRequestConfig,
         config.getMaxMessageSize(),
-        TimeValue.ofSeconds(15),
         credentialsProvider);
   }
 

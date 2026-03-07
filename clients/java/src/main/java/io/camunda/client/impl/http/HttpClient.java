@@ -39,9 +39,6 @@ import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.nio.AsyncEntityConsumer;
 import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.net.URIBuilder;
-import org.apache.hc.core5.util.TimeValue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Thin abstraction layer on top of Apache's HTTP client to wire up the expected Orchestration
@@ -49,8 +46,6 @@ import org.slf4j.LoggerFactory;
  * io.camunda.client.protocol.rest.ProblemDetail}, content type is always JSON, etc.
  */
 public final class HttpClient implements AutoCloseable {
-  private static final Logger LOGGER = LoggerFactory.getLogger(HttpClient.class);
-
   private static final int MAX_RETRY_ATTEMPTS = 2;
 
   private final CloseableHttpAsyncClient client;
@@ -58,7 +53,6 @@ public final class HttpClient implements AutoCloseable {
   private final URI address;
   private final RequestConfig defaultRequestConfig;
   private final int maxMessageSize;
-  private final TimeValue shutdownTimeout;
   private final CredentialsProvider credentialsProvider;
 
   public HttpClient(
@@ -67,14 +61,12 @@ public final class HttpClient implements AutoCloseable {
       final URI address,
       final RequestConfig defaultRequestConfig,
       final int maxMessageSize,
-      final TimeValue shutdownTimeout,
       final CredentialsProvider credentialsProvider) {
     this.client = client;
     this.jsonMapper = jsonMapper;
     this.address = address;
     this.defaultRequestConfig = defaultRequestConfig;
     this.maxMessageSize = maxMessageSize;
-    this.shutdownTimeout = shutdownTimeout;
     this.credentialsProvider = credentialsProvider;
   }
 
@@ -84,16 +76,14 @@ public final class HttpClient implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
-    client.close(CloseMode.GRACEFUL);
-    try {
-      client.awaitShutdown(shutdownTimeout);
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
-      LOGGER.warn(
-          "Expected to await HTTP client shutdown, but was interrupted; client may not be "
-              + "completely shut down",
-          e);
-    }
+    // Initiate shutdown first, then close immediately to avoid the 5-second
+    // internal grace period of Apache HC5's IO reactor (see
+    // AbstractSingleCoreIOReactor.close(CloseMode.GRACEFUL)).
+    // Initiating shutdown signals the reactor to stop accepting new I/O
+    // and begin closing connections; IMMEDIATE close then completes teardown
+    // without blocking.
+    client.initiateShutdown();
+    client.close(CloseMode.IMMEDIATE);
   }
 
   /**

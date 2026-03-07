@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.process.test.impl.client.clock.CamundaAddClockRequestDto;
 import io.camunda.process.test.impl.client.clock.CamundaClockResponseDto;
+import io.camunda.process.test.impl.client.purge.MinimalBrokerInfoDto;
 import io.camunda.process.test.impl.client.purge.MinimalPlannedOperationsResponseDto;
 import io.camunda.process.test.impl.client.purge.MinimalTopologyResponseDto;
 import java.io.IOException;
@@ -174,6 +175,48 @@ public final class CamundaManagementClient {
       return sendRequest(purgeRequest, MinimalPlannedOperationsResponseDto.class);
     } catch (final IOException e) {
       throw new RuntimeException("Failed to initiate cluster purge", e);
+    }
+  }
+
+  /**
+   * Waits until the cluster reports all partitions as healthy. This is useful after a purge
+   * operation to ensure the cluster is fully operational before starting new test workers.
+   *
+   * @throws RuntimeException if the cluster does not become healthy within 30 seconds
+   */
+  public void awaitClusterReadiness() {
+    awaitClusterReadiness(Duration.ofSeconds(30));
+  }
+
+  /**
+   * Waits until the cluster reports all partitions as healthy.
+   *
+   * @param timeout maximum time to wait for cluster readiness
+   * @throws RuntimeException if the cluster does not become healthy within the timeout
+   */
+  public void awaitClusterReadiness(final Duration timeout) {
+    try {
+      Awaitility.await()
+          .pollInterval(Duration.ofMillis(250))
+          .atMost(timeout)
+          .until(this::isClusterHealthy);
+    } catch (final ConditionTimeoutException e) {
+      throw new RuntimeException("Cluster did not become healthy after purge, timeout expired.", e);
+    }
+  }
+
+  private boolean isClusterHealthy() {
+    final HttpGet request = new HttpGet(camundaRestApi + TOPOLOGY_ENDPOINT);
+
+    try {
+      final MinimalTopologyResponseDto topology =
+          sendRequest(request, MinimalTopologyResponseDto.class);
+
+      return topology.getBrokers() != null
+          && !topology.getBrokers().isEmpty()
+          && topology.getBrokers().stream().allMatch(MinimalBrokerInfoDto::areAllPartitionsHealthy);
+    } catch (final IOException e) {
+      return false;
     }
   }
 

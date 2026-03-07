@@ -108,10 +108,12 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     this.metrics = metrics;
 
     claimableJobPoller = new AtomicReference<>(jobPoller);
-    this.pollInterval = initialPollInterval;
+    // Use zero delay for the first poll so workers start activating jobs immediately
+    this.pollInterval = 0;
 
     openStream();
     schedulePoll();
+    this.pollInterval = initialPollInterval;
   }
 
   private void openStream() {

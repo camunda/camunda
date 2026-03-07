@@ -39,7 +39,6 @@ import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.nio.AsyncEntityConsumer;
 import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.net.URIBuilder;
-import org.apache.hc.core5.util.TimeValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +58,6 @@ public final class HttpClient implements AutoCloseable {
   private final URI address;
   private final RequestConfig defaultRequestConfig;
   private final int maxMessageSize;
-  private final TimeValue shutdownTimeout;
   private final CredentialsProvider credentialsProvider;
 
   public HttpClient(
@@ -68,14 +66,12 @@ public final class HttpClient implements AutoCloseable {
       final URI address,
       final RequestConfig defaultRequestConfig,
       final int maxMessageSize,
-      final TimeValue shutdownTimeout,
       final CredentialsProvider credentialsProvider) {
     this.client = client;
     this.jsonMapper = jsonMapper;
     this.address = address;
     this.defaultRequestConfig = defaultRequestConfig;
     this.maxMessageSize = maxMessageSize;
-    this.shutdownTimeout = shutdownTimeout;
     this.credentialsProvider = credentialsProvider;
   }
 
@@ -85,16 +81,8 @@ public final class HttpClient implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
-    client.close(CloseMode.GRACEFUL);
-    try {
-      client.awaitShutdown(shutdownTimeout);
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
-      LOGGER.warn(
-          "Expected to await HTTP client shutdown, but was interrupted; client may not be "
-              + "completely shut down",
-          e);
-    }
+    client.initiateShutdown();
+    client.close(CloseMode.IMMEDIATE);
   }
 
   /**
