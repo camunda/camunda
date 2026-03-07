@@ -894,6 +894,13 @@ public final class SearchQueryRequestMapper {
       return Either.right(null);
     }
 
+    final List<String> violations = new ArrayList<>();
+    validatePageAttributes(requestedPage, violations);
+
+    if (!violations.isEmpty()) {
+      return Either.left(violations);
+    }
+
     return switch (requestedPage) {
       case final CursorBackwardPagination req -> Either.right(innerToSearchQueryPage(req));
       case final CursorForwardPagination req -> Either.right(innerToSearchQueryPage(req));
@@ -901,6 +908,33 @@ public final class SearchQueryRequestMapper {
       case final LimitPagination req -> Either.right(innerToSearchQueryPage(req));
       default -> Either.left(List.of(ERROR_SEARCH_UNKNOWN_PAGE_TYPE));
     };
+  }
+
+  private static void validatePageAttributes(
+      final SearchQueryPageRequest requestedPage, final List<String> violations) {
+    final Integer limit =
+        switch (requestedPage) {
+          case final CursorBackwardPagination req -> req.getLimit();
+          case final CursorForwardPagination req -> req.getLimit();
+          case final OffsetPagination req -> req.getLimit();
+          case final LimitPagination req -> req.getLimit();
+          default -> null;
+        };
+
+    if (limit != null && limit < 1) {
+      violations.add(
+          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+              "page.limit", limit, "a positive number"));
+    }
+
+    if (requestedPage instanceof final OffsetPagination req) {
+      final Integer from = req.getFrom();
+      if (from != null && from < 0) {
+        violations.add(
+            ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+                "page.from", from, "a non-negative number"));
+      }
+    }
   }
 
   private static SearchQueryPage innerToSearchQueryPage(
