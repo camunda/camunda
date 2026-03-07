@@ -16,6 +16,9 @@
 package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -27,6 +30,8 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.properties.CamundaClientProperties;
+import io.camunda.process.test.api.judge.ChatModelAdapter;
+import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
@@ -57,6 +62,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.TestContext;
 
@@ -123,17 +129,29 @@ public class ExecutionListenerTest {
 
     when(processCoverageBuilder.build()).thenReturn(processCoverage);
     when(testContext.getApplicationContext()).thenReturn(applicationContext);
-    when(applicationContext.getBean(CamundaClientProxy.class)).thenReturn(camundaClientProxy);
-    when(applicationContext.getBean(ZeebeClientProxy.class)).thenReturn(zeebeClientProxy);
-    when(applicationContext.getBean(JsonMapper.class)).thenReturn(null);
-    when(applicationContext.getBean(io.camunda.zeebe.client.api.JsonMapper.class)).thenReturn(null);
-    when(applicationContext.getBean(CamundaProcessTestContextProxy.class))
+    lenient()
+        .when(applicationContext.getBean(CamundaClientProxy.class))
+        .thenReturn(camundaClientProxy);
+    lenient().when(applicationContext.getBean(ZeebeClientProxy.class)).thenReturn(zeebeClientProxy);
+    lenient().when(applicationContext.getBean(JsonMapper.class)).thenReturn(null);
+    lenient()
+        .when(applicationContext.getBean(io.camunda.zeebe.client.api.JsonMapper.class))
+        .thenReturn(null);
+    lenient()
+        .when(applicationContext.getBean(CamundaProcessTestContextProxy.class))
         .thenReturn(camundaProcessTestContextProxy);
-    when(applicationContext.getBean(TestCaseRunnerProxy.class)).thenReturn(testCaseRunnerProxy);
-    when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
+    lenient()
+        .when(applicationContext.getBean(TestCaseRunnerProxy.class))
+        .thenReturn(testCaseRunnerProxy);
+    lenient()
+        .when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
         .thenReturn(new CamundaProcessTestRuntimeConfiguration());
-    when(applicationContext.getBean(CamundaClientProperties.class))
+    lenient()
+        .when(applicationContext.getBean(CamundaClientProperties.class))
         .thenReturn(camundaClientProperties);
+    lenient()
+        .when(applicationContext.getBean(ChatModelAdapter.class))
+        .thenThrow(new NoSuchBeanDefinitionException(ChatModelAdapter.class));
   }
 
   @Test
@@ -454,6 +472,118 @@ public class ExecutionListenerTest {
     // then
     verify(processCoverageBuilder).reportDirectory(reportDirectory);
     verify(processCoverageBuilder).excludeProcessDefinitionIds(excludedProcesses);
+  }
+
+  @Test
+  void shouldNotInitializeJudgeConfigWhenNothingConfigured() {
+    // given
+    final CamundaProcessTestExecutionListener listener =
+        new CamundaProcessTestExecutionListener(
+            camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+    // when
+    listener.beforeTestClass(testContext);
+
+    // then
+    assertThat(CamundaAssert.getJudgeConfig()).isNull();
+  }
+
+  @Test
+  void shouldInitializeJudgeConfigFromBean() {
+    // given
+    final ChatModelAdapter adapter = mock(ChatModelAdapter.class);
+    doReturn(adapter).when(applicationContext).getBean(ChatModelAdapter.class);
+
+    final CamundaProcessTestRuntimeConfiguration configuration =
+        new CamundaProcessTestRuntimeConfiguration();
+    configuration.getJudge().setThreshold(0.8);
+    configuration.getJudge().setCustomPrompt("Custom evaluation criteria");
+    when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
+        .thenReturn(configuration);
+
+    final CamundaProcessTestExecutionListener listener =
+        new CamundaProcessTestExecutionListener(
+            camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+    // when
+    listener.beforeTestClass(testContext);
+
+    // then
+    final JudgeConfig judgeConfig = CamundaAssert.getJudgeConfig();
+    assertThat(judgeConfig).isNotNull();
+    assertThat(judgeConfig.getChatModel()).isSameAs(adapter);
+    assertThat(judgeConfig.getThreshold()).isEqualTo(0.8);
+    assertThat(judgeConfig.getCustomPrompt()).isEqualTo("Custom evaluation criteria");
+  }
+
+  @Test
+  void shouldInitializeJudgeConfigFromBeanWithDefaultThreshold() {
+    // given
+    final ChatModelAdapter adapter = mock(ChatModelAdapter.class);
+    doReturn(adapter).when(applicationContext).getBean(ChatModelAdapter.class);
+
+    final CamundaProcessTestRuntimeConfiguration configuration =
+        new CamundaProcessTestRuntimeConfiguration();
+    configuration.getJudge().getChatModel().setProvider("openai");
+    when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
+        .thenReturn(configuration);
+
+    final CamundaProcessTestExecutionListener listener =
+        new CamundaProcessTestExecutionListener(
+            camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+    // when
+    listener.beforeTestClass(testContext);
+
+    // then
+    final JudgeConfig judgeConfig = CamundaAssert.getJudgeConfig();
+    assertThat(judgeConfig).isNotNull();
+    assertThat(judgeConfig.getChatModel()).isSameAs(adapter);
+    assertThat(judgeConfig.getThreshold()).isEqualTo(0.5);
+    assertThat(judgeConfig.getCustomPrompt()).isNull();
+  }
+
+  @Test
+  void shouldInitializeJudgeConfigViaSpiWhenNoBeanAvailable() {
+    // given
+    final CamundaProcessTestRuntimeConfiguration configuration =
+        new CamundaProcessTestRuntimeConfiguration();
+    configuration.getJudge().getChatModel().setProvider("openai");
+    configuration.getJudge().getChatModel().setModel("gpt-4o");
+    configuration.getJudge().getChatModel().setApiKey("sk-test");
+    when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
+        .thenReturn(configuration);
+
+    final CamundaProcessTestExecutionListener listener =
+        new CamundaProcessTestExecutionListener(
+            camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+    // when
+    listener.beforeTestClass(testContext);
+
+    // then
+    final JudgeConfig judgeConfig = CamundaAssert.getJudgeConfig();
+    assertThat(judgeConfig).isNotNull();
+    assertThat(judgeConfig.getChatModel()).isNotNull();
+    assertThat(judgeConfig.getThreshold()).isEqualTo(0.5);
+  }
+
+  @Test
+  void shouldThrowWhenJudgeThresholdConfiguredButNoBeanAndNoSpi() {
+    // given
+    final CamundaProcessTestRuntimeConfiguration configuration =
+        new CamundaProcessTestRuntimeConfiguration();
+    configuration.getJudge().setThreshold(0.7);
+    when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
+        .thenReturn(configuration);
+
+    final CamundaProcessTestExecutionListener listener =
+        new CamundaProcessTestExecutionListener(
+            camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+    // when / then
+    assertThatThrownBy(() -> listener.beforeTestClass(testContext))
+        .isInstanceOf(IllegalStateException.class);
   }
 
   private void setManagementClientDummy(final CamundaProcessTestExecutionListener listener) {

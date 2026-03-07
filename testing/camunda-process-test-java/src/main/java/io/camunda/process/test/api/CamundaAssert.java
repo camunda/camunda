@@ -29,6 +29,7 @@ import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskAssert;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
+import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.DecisionInstanceAssertj;
 import io.camunda.process.test.impl.assertions.ProcessInstanceAssertj;
@@ -91,6 +92,8 @@ public class CamundaAssert {
 
   private static CamundaAssertJsonMapper jsonMapper =
       new CamundaAssertJsonMapper(DEFAULT_JSON_MAPPER);
+
+  private static final ThreadLocal<JudgeConfig> JUDGE_CONFIG = new ThreadLocal<>();
 
   static {
     setAssertionTimeout(DEFAULT_ASSERTION_TIMEOUT);
@@ -163,6 +166,24 @@ public class CamundaAssert {
   @Deprecated
   public static void setJsonMapper(final io.camunda.zeebe.client.api.JsonMapper jsonMapper) {
     CamundaAssert.jsonMapper = new CamundaAssertJsonMapper(jsonMapper);
+  }
+
+  static JudgeConfig getJudgeConfig() {
+    return JUDGE_CONFIG.get();
+  }
+
+  /**
+   * Configures the judge for LLM-as-a-judge assertions.
+   *
+   * @param judgeConfig the judge configuration, or null to disable judge assertions
+   * @see JudgeConfig
+   */
+  public static void setJudgeConfig(final JudgeConfig judgeConfig) {
+    if (judgeConfig == null) {
+      JUDGE_CONFIG.remove();
+    } else {
+      JUDGE_CONFIG.set(judgeConfig);
+    }
   }
 
   // ======== Assertions ========
@@ -256,7 +277,12 @@ public class CamundaAssert {
   public static ProcessInstanceAssert assertThatProcessInstance(
       final ProcessInstanceSelector processInstanceSelector) {
     return new ProcessInstanceAssertj(
-        getDataSource(), awaitBehavior, jsonMapper, processInstanceSelector, elementSelector);
+        getDataSource(),
+        awaitBehavior,
+        jsonMapper,
+        processInstanceSelector,
+        elementSelector,
+        JUDGE_CONFIG.get());
   }
 
   /**
@@ -274,7 +300,12 @@ public class CamundaAssert {
   private static ProcessInstanceAssertj createProcessInstanceAssertj(
       final long processInstanceKey) {
     return new ProcessInstanceAssertj(
-        getDataSource(), awaitBehavior, jsonMapper, processInstanceKey, elementSelector);
+        getDataSource(),
+        awaitBehavior,
+        jsonMapper,
+        processInstanceKey,
+        elementSelector,
+        JUDGE_CONFIG.get());
   }
 
   /**
@@ -368,5 +399,6 @@ public class CamundaAssert {
    */
   static void reset() {
     CamundaAssert.DATA_SOURCE.remove();
+    CamundaAssert.JUDGE_CONFIG.remove();
   }
 }

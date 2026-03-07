@@ -21,13 +21,11 @@ import static org.assertj.core.api.Assertions.fail;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.response.ElementInstance;
-import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper.JsonMappingException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -38,16 +36,13 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.ThrowingConsumer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
-
-  private static final Logger LOG = LoggerFactory.getLogger(VariableAssertj.class);
 
   private final CamundaDataSource dataSource;
   private final CamundaAssertAwaitBehavior awaitBehavior;
   private final CamundaAssertJsonMapper jsonMapper;
+  private final VariableFetcher variableFetcher;
 
   public VariableAssertj(
       final CamundaDataSource dataSource,
@@ -58,6 +53,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     this.dataSource = dataSource;
     this.awaitBehavior = awaitBehavior;
     this.jsonMapper = jsonMapper;
+    this.variableFetcher = new VariableFetcher(dataSource);
   }
 
   public void hasLocalVariableNames(
@@ -71,13 +67,14 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         instance ->
             hasVariableNames(
                 () ->
-                    getLocalProcessInstanceVariables(
+                    variableFetcher.getLocalProcessInstanceVariables(
                         processInstanceKey, instance.getElementInstanceKey()),
                 variableNames));
   }
 
   public void hasVariableNames(final long processInstanceKey, final String... variableNames) {
-    hasVariableNames(() -> getGlobalProcessInstanceVariables(processInstanceKey), variableNames);
+    hasVariableNames(
+        () -> variableFetcher.getGlobalProcessInstanceVariables(processInstanceKey), variableNames);
   }
 
   private void hasVariableNames(
@@ -116,7 +113,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                 variableName,
                 variableValue,
                 () ->
-                    getLocalProcessInstanceVariables(
+                    variableFetcher.getLocalProcessInstanceVariables(
                         processInstanceKey, instance.getElementInstanceKey())));
   }
 
@@ -124,7 +121,9 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final long processInstanceKey, final String variableName, final Object variableValue) {
 
     hasVariable(
-        variableName, variableValue, () -> getGlobalProcessInstanceVariables(processInstanceKey));
+        variableName,
+        variableValue,
+        () -> variableFetcher.getGlobalProcessInstanceVariables(processInstanceKey));
   }
 
   private void hasVariable(
@@ -168,7 +167,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                 variableValueType,
                 requirement,
                 () ->
-                    getLocalProcessInstanceVariables(
+                    variableFetcher.getLocalProcessInstanceVariables(
                         processInstanceKey, instance.getElementInstanceKey())));
   }
 
@@ -182,7 +181,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         variableName,
         variableValueType,
         requirement,
-        () -> getGlobalProcessInstanceVariables(processInstanceKey));
+        () -> variableFetcher.getGlobalProcessInstanceVariables(processInstanceKey));
   }
 
   private <T> void hasVariableSatisfies(
@@ -241,14 +240,16 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
             hasVariables(
                 expectedVariables,
                 () ->
-                    getLocalProcessInstanceVariables(
+                    variableFetcher.getLocalProcessInstanceVariables(
                         processInstanceKey, instance.getElementInstanceKey())));
   }
 
   public void hasVariables(
       final long processInstanceKey, final Map<String, Object> expectedVariables) {
 
-    hasVariables(expectedVariables, () -> getGlobalProcessInstanceVariables(processInstanceKey));
+    hasVariables(
+        expectedVariables,
+        () -> variableFetcher.getGlobalProcessInstanceVariables(processInstanceKey));
   }
 
   private void hasVariables(
@@ -322,61 +323,5 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final Consumer<ElementInstanceFilter> filter,
       final Consumer<List<ElementInstance>> assertion) {
     awaitBehavior.untilAsserted(() -> dataSource.findElementInstances(filter), assertion);
-  }
-
-  private Map<String, String> getLocalProcessInstanceVariables(
-      final long processInstanceKey, final long elementInstanceKey) {
-
-    final List<Variable> variables =
-        dataSource.findVariables(
-            filter -> filter.processInstanceKey(processInstanceKey).scopeKey(elementInstanceKey));
-
-    return toMap(ensureVariablesAreNotTruncated(variables));
-  }
-
-  private Map<String, String> getGlobalProcessInstanceVariables(final long processInstanceKey) {
-    final List<Variable> variables =
-        dataSource.findGlobalVariablesByProcessInstanceKey(processInstanceKey);
-
-    return toMap(ensureVariablesAreNotTruncated(variables));
-  }
-
-  private List<Variable> ensureVariablesAreNotTruncated(final List<Variable> variablesToCheck) {
-    return variablesToCheck.stream()
-        .map(
-            variable -> {
-              if (variable.isTruncated()) {
-                return fetchCompleteVariableByKey(variable);
-              } else {
-                return variable;
-              }
-            })
-        .collect(Collectors.toList());
-  }
-
-  private Variable fetchCompleteVariableByKey(final Variable variable) {
-    try {
-
-      return dataSource.getVariable(variable.getVariableKey());
-    } catch (final Throwable t) {
-
-      final String expandVariableException =
-          String.format(
-              "Unable to fetch complete variable data for truncated variable [name: %s]. Will attempt to "
-                  + "complete the assertion based on the truncated value which may lead to errors.",
-              variable.getName());
-      LOG.warn(expandVariableException, t);
-
-      return variable;
-    }
-  }
-
-  private Map<String, String> toMap(final List<Variable> variables) {
-    return variables.stream()
-        // We're deliberately switching from the Collectors.toMap collector to a custom
-        // implementation because it's allowed to have Camunda Variables with null values
-        // However, the toMap collector does not allow null values and would throw an exception.
-        // See this Stack Overflow issue for more context: https://stackoverflow.com/a/24634007
-        .collect(HashMap::new, (m, v) -> m.put(v.getName(), v.getValue()), HashMap::putAll);
   }
 }
