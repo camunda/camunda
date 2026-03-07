@@ -365,6 +365,8 @@ paths:
   # System endpoints
   /system/usage-metrics:
     $ref: 'system.yaml#/paths/~1system~1usage-metrics'
+  /system/configuration:
+    $ref: 'system.yaml#/paths/~1system~1configuration'
 
   # Tenant endpoints
   /tenants:
