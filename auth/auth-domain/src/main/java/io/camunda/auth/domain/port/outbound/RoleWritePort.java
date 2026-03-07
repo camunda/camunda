@@ -13,7 +13,10 @@ import io.camunda.auth.domain.model.MemberType;
 /** Write port for role persistence. Only available in standalone persistence mode. */
 public interface RoleWritePort {
   void save(AuthRole role);
+
   void deleteById(String roleId);
+
   void addMember(String roleId, String memberId, MemberType memberType);
+
   void removeMember(String roleId, String memberId, MemberType memberType);
 }

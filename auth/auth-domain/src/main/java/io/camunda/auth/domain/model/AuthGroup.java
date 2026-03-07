@@ -8,8 +8,4 @@
 package io.camunda.auth.domain.model;
 
 /** A group that can contain users and be assigned roles/tenants. */
-public record AuthGroup(
-    long groupKey,
-    String groupId,
-    String name,
-    String description) {}
+public record AuthGroup(long groupKey, String groupId, String name, String description) {}

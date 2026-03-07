@@ -13,7 +13,10 @@ import io.camunda.auth.domain.model.MemberType;
 /** Write port for tenant persistence. Only available in standalone persistence mode. */
 public interface TenantWritePort {
   void save(AuthTenant tenant);
+
   void deleteById(String tenantId);
+
   void addMember(String tenantId, String memberId, MemberType memberType);
+
   void removeMember(String tenantId, String memberId, MemberType memberType);
 }

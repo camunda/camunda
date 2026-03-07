@@ -11,7 +11,6 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch.core.GetResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.auth.domain.model.AuthRole;
@@ -43,9 +42,7 @@ public class ElasticsearchRoleReadAdapter implements RoleReadPort {
   }
 
   public ElasticsearchRoleReadAdapter(
-      final ElasticsearchClient client,
-      final String indexName,
-      final String memberIndexName) {
+      final ElasticsearchClient client, final String indexName, final String memberIndexName) {
     this.client = client;
     this.indexName = indexName;
     this.memberIndexName = memberIndexName;
@@ -85,8 +82,7 @@ public class ElasticsearchRoleReadAdapter implements RoleReadPort {
         memberIndexName);
     try {
       // Step 1: find membership documents matching memberId and memberType
-      final Query memberIdQuery =
-          Query.of(q -> q.term(t -> t.field("memberId").value(memberId)));
+      final Query memberIdQuery = Query.of(q -> q.term(t -> t.field("memberId").value(memberId)));
       final Query memberTypeQuery =
           Query.of(q -> q.term(t -> t.field("memberType").value(memberType.name())));
       final BoolQuery boolQuery =
@@ -94,11 +90,7 @@ public class ElasticsearchRoleReadAdapter implements RoleReadPort {
 
       final SearchResponse<Map> memberResponse =
           client.search(
-              request ->
-                  request
-                      .index(memberIndexName)
-                      .query(q -> q.bool(boolQuery))
-                      .size(10_000),
+              request -> request.index(memberIndexName).query(q -> q.bool(boolQuery)).size(10_000),
               Map.class);
 
       final List<String> roleIds =
@@ -119,11 +111,20 @@ public class ElasticsearchRoleReadAdapter implements RoleReadPort {
               request ->
                   request
                       .index(indexName)
-                      .query(q -> q.terms(t -> t.field("roleId")
-                          .terms(v -> v.value(
-                              roleIds.stream()
-                                  .map(co.elastic.clients.elasticsearch._types.FieldValue::of)
-                                  .collect(Collectors.toList())))))
+                      .query(
+                          q ->
+                              q.terms(
+                                  t ->
+                                      t.field("roleId")
+                                          .terms(
+                                              v ->
+                                                  v.value(
+                                                      roleIds.stream()
+                                                          .map(
+                                                              co.elastic.clients.elasticsearch
+                                                                      ._types.FieldValue
+                                                                  ::of)
+                                                          .collect(Collectors.toList())))))
                       .size(roleIds.size()),
               AuthRole.class);
 

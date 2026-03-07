@@ -42,9 +42,7 @@ public class ElasticsearchGroupReadAdapter implements GroupReadPort {
   }
 
   public ElasticsearchGroupReadAdapter(
-      final ElasticsearchClient client,
-      final String indexName,
-      final String memberIndexName) {
+      final ElasticsearchClient client, final String indexName, final String memberIndexName) {
     this.client = client;
     this.indexName = indexName;
     this.memberIndexName = memberIndexName;
@@ -84,8 +82,7 @@ public class ElasticsearchGroupReadAdapter implements GroupReadPort {
         memberIndexName);
     try {
       // Step 1: find membership documents matching memberId and memberType
-      final Query memberIdQuery =
-          Query.of(q -> q.term(t -> t.field("memberId").value(memberId)));
+      final Query memberIdQuery = Query.of(q -> q.term(t -> t.field("memberId").value(memberId)));
       final Query memberTypeQuery =
           Query.of(q -> q.term(t -> t.field("memberType").value(memberType.name())));
       final BoolQuery boolQuery =
@@ -93,11 +90,7 @@ public class ElasticsearchGroupReadAdapter implements GroupReadPort {
 
       final SearchResponse<Map> memberResponse =
           client.search(
-              request ->
-                  request
-                      .index(memberIndexName)
-                      .query(q -> q.bool(boolQuery))
-                      .size(10_000),
+              request -> request.index(memberIndexName).query(q -> q.bool(boolQuery)).size(10_000),
               Map.class);
 
       final List<String> groupIds =
@@ -118,11 +111,20 @@ public class ElasticsearchGroupReadAdapter implements GroupReadPort {
               request ->
                   request
                       .index(indexName)
-                      .query(q -> q.terms(t -> t.field("groupId")
-                          .terms(v -> v.value(
-                              groupIds.stream()
-                                  .map(co.elastic.clients.elasticsearch._types.FieldValue::of)
-                                  .collect(Collectors.toList())))))
+                      .query(
+                          q ->
+                              q.terms(
+                                  t ->
+                                      t.field("groupId")
+                                          .terms(
+                                              v ->
+                                                  v.value(
+                                                      groupIds.stream()
+                                                          .map(
+                                                              co.elastic.clients.elasticsearch
+                                                                      ._types.FieldValue
+                                                                  ::of)
+                                                          .collect(Collectors.toList())))))
                       .size(groupIds.size()),
               AuthGroup.class);
 
@@ -135,8 +137,7 @@ public class ElasticsearchGroupReadAdapter implements GroupReadPort {
           "Failed to search groups for memberId=" + memberId + ", memberType=" + memberType, e);
     } catch (final IOException e) {
       throw new RuntimeException(
-          "I/O error searching groups for memberId=" + memberId + ", memberType=" + memberType,
-          e);
+          "I/O error searching groups for memberId=" + memberId + ", memberType=" + memberType, e);
     }
   }
 }

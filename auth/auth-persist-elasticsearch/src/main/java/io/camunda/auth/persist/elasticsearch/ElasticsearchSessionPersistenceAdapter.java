@@ -66,14 +66,11 @@ public class ElasticsearchSessionPersistenceAdapter implements SessionPersistenc
     try {
       final ElasticsearchSessionDocument document =
           ElasticsearchSessionDocument.fromDomain(sessionData);
-      client.index(
-          request -> request.index(indexName).id(sessionData.id()).document(document));
+      client.index(request -> request.index(indexName).id(sessionData.id()).document(document));
     } catch (final ElasticsearchException e) {
-      throw new RuntimeException(
-          "Failed to index session with id=" + sessionData.id(), e);
+      throw new RuntimeException("Failed to index session with id=" + sessionData.id(), e);
     } catch (final IOException e) {
-      throw new RuntimeException(
-          "I/O error indexing session with id=" + sessionData.id(), e);
+      throw new RuntimeException("I/O error indexing session with id=" + sessionData.id(), e);
     }
   }
 
@@ -95,8 +92,7 @@ public class ElasticsearchSessionPersistenceAdapter implements SessionPersistenc
     try {
       final SearchResponse<ElasticsearchSessionDocument> response =
           client.search(
-              request ->
-                  request.index(indexName).query(q -> q.matchAll(m -> m)).size(10_000),
+              request -> request.index(indexName).query(q -> q.matchAll(m -> m)).size(10_000),
               ElasticsearchSessionDocument.class);
       return response.hits().hits().stream()
           .map(Hit::source)

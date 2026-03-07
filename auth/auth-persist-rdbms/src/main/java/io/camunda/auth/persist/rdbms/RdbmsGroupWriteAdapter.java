@@ -41,8 +41,7 @@ public class RdbmsGroupWriteAdapter implements GroupWritePort {
   }
 
   @Override
-  public void addMember(
-      final String groupId, final String memberId, final MemberType memberType) {
+  public void addMember(final String groupId, final String memberId, final MemberType memberType) {
     LOG.debug(
         "Adding member memberId={} memberType={} to group groupId={}",
         memberId,

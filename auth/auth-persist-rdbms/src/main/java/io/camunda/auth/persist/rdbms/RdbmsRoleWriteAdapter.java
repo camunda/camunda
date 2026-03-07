@@ -42,7 +42,8 @@ public class RdbmsRoleWriteAdapter implements RoleWritePort {
 
   @Override
   public void addMember(final String roleId, final String memberId, final MemberType memberType) {
-    LOG.debug("Adding member memberId={} memberType={} to role roleId={}", memberId, memberType, roleId);
+    LOG.debug(
+        "Adding member memberId={} memberType={} to role roleId={}", memberId, memberType, roleId);
     final MembershipEntity entity = new MembershipEntity();
     entity.setEntityId(roleId);
     entity.setMemberId(memberId);

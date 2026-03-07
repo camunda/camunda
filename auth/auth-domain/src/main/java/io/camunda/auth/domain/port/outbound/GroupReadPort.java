@@ -15,5 +15,6 @@ import java.util.Optional;
 /** Read-only port for group lookups. */
 public interface GroupReadPort {
   Optional<AuthGroup> findById(String groupId);
+
   List<AuthGroup> findByMember(String memberId, MemberType memberType);
 }

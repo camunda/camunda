@@ -69,7 +69,6 @@ public interface GroupMapper {
   void insertMember(MembershipEntity entity);
 
   @Delete(
-      "DELETE FROM AUTH_GROUP_MEMBER "
-          + "WHERE GROUP_ID = #{entityId} AND MEMBER_ID = #{memberId}")
+      "DELETE FROM AUTH_GROUP_MEMBER " + "WHERE GROUP_ID = #{entityId} AND MEMBER_ID = #{memberId}")
   void deleteMember(MembershipEntity entity);
 }

@@ -12,5 +12,6 @@ import io.camunda.auth.domain.model.AuthUser;
 /** Write port for user persistence. Only available in standalone persistence mode. */
 public interface UserWritePort {
   void save(AuthUser user);
+
   void deleteByUsername(String username);
 }

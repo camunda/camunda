@@ -12,5 +12,6 @@ import io.camunda.auth.domain.model.AuthMappingRule;
 /** Write port for mapping rule persistence. Only available in standalone persistence mode. */
 public interface MappingRuleWritePort {
   void save(AuthMappingRule mappingRule);
+
   void deleteById(String mappingRuleId);
 }

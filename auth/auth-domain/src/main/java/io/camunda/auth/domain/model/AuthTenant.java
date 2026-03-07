@@ -8,8 +8,4 @@
 package io.camunda.auth.domain.model;
 
 /** A tenant for multi-tenancy isolation. */
-public record AuthTenant(
-    long tenantKey,
-    String tenantId,
-    String name,
-    String description) {}
+public record AuthTenant(long tenantKey, String tenantId, String name, String description) {}

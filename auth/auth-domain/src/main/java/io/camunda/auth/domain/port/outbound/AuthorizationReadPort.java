@@ -13,6 +13,7 @@ import java.util.List;
 /** Read-only port for authorization lookups. */
 public interface AuthorizationReadPort {
   List<AuthorizationRecord> findByOwner(String ownerId, String ownerType);
+
   List<AuthorizationRecord> findByOwnerAndResourceType(
       String ownerId, String ownerType, String resourceType);
 }

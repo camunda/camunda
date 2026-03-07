@@ -29,8 +29,7 @@ public class ElasticsearchUserWriteAdapter implements UserWritePort {
     this(client, DEFAULT_INDEX_NAME);
   }
 
-  public ElasticsearchUserWriteAdapter(
-      final ElasticsearchClient client, final String indexName) {
+  public ElasticsearchUserWriteAdapter(final ElasticsearchClient client, final String indexName) {
     this.client = client;
     this.indexName = indexName;
   }
@@ -40,14 +39,11 @@ public class ElasticsearchUserWriteAdapter implements UserWritePort {
     LOG.debug("Indexing user with userKey={} into index={}", user.userKey(), indexName);
     try {
       client.index(
-          request ->
-              request.index(indexName).id(String.valueOf(user.userKey())).document(user));
+          request -> request.index(indexName).id(String.valueOf(user.userKey())).document(user));
     } catch (final ElasticsearchException e) {
-      throw new RuntimeException(
-          "Failed to index user with userKey=" + user.userKey(), e);
+      throw new RuntimeException("Failed to index user with userKey=" + user.userKey(), e);
     } catch (final IOException e) {
-      throw new RuntimeException(
-          "I/O error indexing user with userKey=" + user.userKey(), e);
+      throw new RuntimeException("I/O error indexing user with userKey=" + user.userKey(), e);
     }
   }
 

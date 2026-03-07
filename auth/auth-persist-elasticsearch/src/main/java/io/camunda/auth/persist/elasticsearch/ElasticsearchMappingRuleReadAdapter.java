@@ -47,8 +47,7 @@ public class ElasticsearchMappingRuleReadAdapter implements MappingRuleReadPort 
     LOG.debug("Fetching mapping rule by id={} from index={}", mappingRuleId, indexName);
     try {
       final GetResponse<AuthMappingRule> response =
-          client.get(
-              request -> request.index(indexName).id(mappingRuleId), AuthMappingRule.class);
+          client.get(request -> request.index(indexName).id(mappingRuleId), AuthMappingRule.class);
       if (response.found() && response.source() != null) {
         return Optional.of(response.source());
       }
@@ -69,19 +68,16 @@ public class ElasticsearchMappingRuleReadAdapter implements MappingRuleReadPort 
     try {
       final SearchResponse<AuthMappingRule> response =
           client.search(
-              request ->
-                  request.index(indexName).query(q -> q.matchAll(m -> m)).size(10_000),
+              request -> request.index(indexName).query(q -> q.matchAll(m -> m)).size(10_000),
               AuthMappingRule.class);
       return response.hits().hits().stream()
           .map(Hit::source)
           .filter(doc -> doc != null)
           .collect(Collectors.toList());
     } catch (final ElasticsearchException e) {
-      throw new RuntimeException(
-          "Failed to search mapping rules in index=" + indexName, e);
+      throw new RuntimeException("Failed to search mapping rules in index=" + indexName, e);
     } catch (final IOException e) {
-      throw new RuntimeException(
-          "I/O error searching mapping rules in index=" + indexName, e);
+      throw new RuntimeException("I/O error searching mapping rules in index=" + indexName, e);
     }
   }
 }

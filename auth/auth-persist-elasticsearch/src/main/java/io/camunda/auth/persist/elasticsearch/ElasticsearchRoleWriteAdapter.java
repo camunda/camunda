@@ -34,9 +34,7 @@ public class ElasticsearchRoleWriteAdapter implements RoleWritePort {
   }
 
   public ElasticsearchRoleWriteAdapter(
-      final ElasticsearchClient client,
-      final String indexName,
-      final String memberIndexName) {
+      final ElasticsearchClient client, final String indexName, final String memberIndexName) {
     this.client = client;
     this.indexName = indexName;
     this.memberIndexName = memberIndexName;
@@ -46,14 +44,11 @@ public class ElasticsearchRoleWriteAdapter implements RoleWritePort {
   public void save(final AuthRole role) {
     LOG.debug("Indexing role with roleId={} into index={}", role.roleId(), indexName);
     try {
-      client.index(
-          request -> request.index(indexName).id(role.roleId()).document(role));
+      client.index(request -> request.index(indexName).id(role.roleId()).document(role));
     } catch (final ElasticsearchException e) {
-      throw new RuntimeException(
-          "Failed to index role with roleId=" + role.roleId(), e);
+      throw new RuntimeException("Failed to index role with roleId=" + role.roleId(), e);
     } catch (final IOException e) {
-      throw new RuntimeException(
-          "I/O error indexing role with roleId=" + role.roleId(), e);
+      throw new RuntimeException("I/O error indexing role with roleId=" + role.roleId(), e);
     }
   }
 
@@ -71,8 +66,7 @@ public class ElasticsearchRoleWriteAdapter implements RoleWritePort {
   }
 
   @Override
-  public void addMember(
-      final String roleId, final String memberId, final MemberType memberType) {
+  public void addMember(final String roleId, final String memberId, final MemberType memberType) {
     final String docId = roleId + "_" + memberId;
     LOG.debug(
         "Adding member memberId={} memberType={} to role roleId={} in index={}",
@@ -83,8 +77,7 @@ public class ElasticsearchRoleWriteAdapter implements RoleWritePort {
     try {
       final Map<String, String> document =
           Map.of("roleId", roleId, "memberId", memberId, "memberType", memberType.name());
-      client.index(
-          request -> request.index(memberIndexName).id(docId).document(document));
+      client.index(request -> request.index(memberIndexName).id(docId).document(document));
     } catch (final ElasticsearchException e) {
       throw new RuntimeException(
           "Failed to add member memberId=" + memberId + " to role roleId=" + roleId, e);

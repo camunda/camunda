@@ -34,9 +34,7 @@ public class ElasticsearchGroupWriteAdapter implements GroupWritePort {
   }
 
   public ElasticsearchGroupWriteAdapter(
-      final ElasticsearchClient client,
-      final String indexName,
-      final String memberIndexName) {
+      final ElasticsearchClient client, final String indexName, final String memberIndexName) {
     this.client = client;
     this.indexName = indexName;
     this.memberIndexName = memberIndexName;
@@ -46,14 +44,11 @@ public class ElasticsearchGroupWriteAdapter implements GroupWritePort {
   public void save(final AuthGroup group) {
     LOG.debug("Indexing group with groupId={} into index={}", group.groupId(), indexName);
     try {
-      client.index(
-          request -> request.index(indexName).id(group.groupId()).document(group));
+      client.index(request -> request.index(indexName).id(group.groupId()).document(group));
     } catch (final ElasticsearchException e) {
-      throw new RuntimeException(
-          "Failed to index group with groupId=" + group.groupId(), e);
+      throw new RuntimeException("Failed to index group with groupId=" + group.groupId(), e);
     } catch (final IOException e) {
-      throw new RuntimeException(
-          "I/O error indexing group with groupId=" + group.groupId(), e);
+      throw new RuntimeException("I/O error indexing group with groupId=" + group.groupId(), e);
     }
   }
 
@@ -71,8 +66,7 @@ public class ElasticsearchGroupWriteAdapter implements GroupWritePort {
   }
 
   @Override
-  public void addMember(
-      final String groupId, final String memberId, final MemberType memberType) {
+  public void addMember(final String groupId, final String memberId, final MemberType memberType) {
     final String docId = groupId + "_" + memberId;
     LOG.debug(
         "Adding member memberId={} memberType={} to group groupId={} in index={}",
@@ -83,8 +77,7 @@ public class ElasticsearchGroupWriteAdapter implements GroupWritePort {
     try {
       final Map<String, String> document =
           Map.of("groupId", groupId, "memberId", memberId, "memberType", memberType.name());
-      client.index(
-          request -> request.index(memberIndexName).id(docId).document(document));
+      client.index(request -> request.index(memberIndexName).id(docId).document(document));
     } catch (final ElasticsearchException e) {
       throw new RuntimeException(
           "Failed to add member memberId=" + memberId + " to group groupId=" + groupId, e);
