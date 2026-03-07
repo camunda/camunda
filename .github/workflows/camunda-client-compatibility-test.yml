@@ -171,6 +171,10 @@ jobs:
           if [[ "$IS_MAIN" == "true" ]]; then
             # On main, the only client is the pom version
             CLIENT_LIST="${{ steps.pom-version.outputs.pom-version }}"$'\n'
+          elif (( CLIENT_COUNT == 0 )); then
+            # On stable branches with no GA tags yet, use the pom SNAPSHOT version
+            CLIENT_LIST="${{ steps.pom-version.outputs.pom-version }}"$'\n'
+            echo "No GA tags found for stable version $STABLE_VERSION - using pom SNAPSHOT as client"
           fi
 
           echo "$CLIENT_LIST" > /tmp/client_list.txt
