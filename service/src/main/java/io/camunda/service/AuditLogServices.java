@@ -11,13 +11,13 @@ import static io.camunda.service.authorization.Authorizations.AUDIT_LOG_READ_AUT
 import static io.camunda.service.authorization.Authorizations.AUDIT_LOG_READ_PROCESS_INSTANCE_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.AUDIT_LOG_READ_USER_TASK_AUTHORIZATION;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.clients.AuditLogSearchClient;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.condition.AuthorizationCondition;
 import io.camunda.security.auth.condition.AuthorizationConditions;
 import io.camunda.service.search.core.SearchQueryService;

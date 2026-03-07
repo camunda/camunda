@@ -7,8 +7,8 @@
  */
 package io.camunda.application.commons.identity;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.entities.UserEntity;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.UserServices;
 import java.util.Optional;
 import org.springframework.security.core.userdetails.User;

@@ -13,7 +13,7 @@ import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.TASK_NOT_ASSIGN
 import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.TASK_NOT_ASSIGNED_TO_CURRENT_USER;
 import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.createErrorMessage;
 
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;

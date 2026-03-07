@@ -1,0 +1,45 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.auth.spring.handler;
+
+import static org.springframework.http.HttpStatus.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import org.springframework.security.web.RedirectStrategy;
+
+/**
+ * {@link RedirectStrategy} implementation that adapts redirect handling for a web application
+ * frontend. Instead of HTTP 3xx redirects, sends JSON responses for JavaScript navigation.
+ */
+public class WebappRedirectStrategy implements RedirectStrategy {
+
+  private static final String DEFAULT_REDIRECT_URL = "/";
+  private final ObjectMapper objectMapper = new ObjectMapper();
+
+  @Override
+  public void sendRedirect(
+      final HttpServletRequest request, final HttpServletResponse response, final String url)
+      throws IOException {
+
+    if (url == null || DEFAULT_REDIRECT_URL.equals(url)) {
+      response.setStatus(NO_CONTENT.value());
+      return;
+    }
+
+    response.setHeader("Content-Type", "application/json");
+    response.setStatus(OK.value());
+
+    objectMapper.writeValue(response.getWriter(), new RedirectResponse(url));
+    response.getWriter().flush();
+  }
+
+  private record RedirectResponse(String url) {}
+}

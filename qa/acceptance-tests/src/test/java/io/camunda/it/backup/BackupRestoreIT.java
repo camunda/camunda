@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import feign.FeignException.NotFound;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.auth.domain.model.AuthenticationMethod;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.configuration.Camunda;
@@ -24,7 +25,6 @@ import io.camunda.qa.util.cluster.HistoryBackupClient;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbConfigurator;
 import io.camunda.search.connect.configuration.DatabaseType;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.Metadata;

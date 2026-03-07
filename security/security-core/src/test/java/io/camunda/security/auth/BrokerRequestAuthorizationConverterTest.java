@@ -7,7 +7,7 @@
  */
 package io.camunda.security.auth;
 
-import static io.camunda.security.entity.AuthenticationMethod.OIDC;
+import static io.camunda.auth.domain.model.AuthenticationMethod.OIDC;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_ANONYMOUS_USER;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_CLIENT_ID;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
@@ -17,7 +17,8 @@ import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.auth.domain.config.OidcAuthenticationConfiguration;
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.List;
 import java.util.Map;

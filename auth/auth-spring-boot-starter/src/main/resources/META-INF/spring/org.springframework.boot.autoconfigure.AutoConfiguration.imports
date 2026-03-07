@@ -1,0 +1,12 @@
+io.camunda.auth.starter.CamundaAuthAutoConfiguration
+io.camunda.auth.starter.CamundaAuthSecurityAutoConfiguration
+io.camunda.auth.starter.CamundaOidcAutoConfiguration
+io.camunda.auth.starter.CamundaSecurityFilterChainAutoConfiguration
+io.camunda.auth.starter.CamundaWebappSecurityAutoConfiguration
+io.camunda.auth.starter.CamundaBasicAuthAutoConfiguration
+io.camunda.auth.starter.CamundaBasicAuthNoDbAutoConfiguration
+io.camunda.auth.starter.CamundaWebappFiltersAutoConfiguration
+io.camunda.auth.starter.CamundaOboAutoConfiguration
+io.camunda.auth.starter.CamundaAuthPersistenceAutoConfiguration
+io.camunda.auth.starter.CamundaUserProviderAutoConfiguration
+io.camunda.auth.starter.CamundaWebSessionAutoConfiguration

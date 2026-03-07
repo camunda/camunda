@@ -7,10 +7,10 @@
  */
 package io.camunda.gateway.mcp.tool.cluster;
 
+import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.TopologyServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import org.springaicommunity.mcp.annotation.McpTool;

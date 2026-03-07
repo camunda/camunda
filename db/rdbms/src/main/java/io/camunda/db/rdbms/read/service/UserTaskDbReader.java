@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.read.service;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER_TASK;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.UserTaskDbQuery;
 import io.camunda.db.rdbms.read.domain.UserTaskDbQuery.UserTaskAuthorizationProperties;
@@ -21,7 +22,6 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.util.NumberParsingUtil;
 import java.util.List;

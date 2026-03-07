@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.camunda.auth</groupId>
+  <artifactId>camunda-auth-parent</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>Camunda Auth SDK Parent</name>
+  <description>Centralized authentication and authorization SDK with OIDC OBO and OAuth2 Token Exchange (RFC 8693) support.</description>
+  <url>https://github.com/camunda/camunda</url>
+
+  <licenses>
+    <license>
+      <name>Camunda License v1.0</name>
+    </license>
+  </licenses>
+
+  <modules>
+    <module>auth-bom</module>
+    <module>auth-domain</module>
+    <module>auth-persist-rdbms</module>
+    <module>auth-persist-elasticsearch</module>
+    <module>auth-spring</module>
+    <module>auth-spring-boot-starter</module>
+  </modules>
+
+  <properties>
+    <camunda-auth.version>1.0.0-SNAPSHOT</camunda-auth.version>
+
+    <!-- Java -->
+    <version.java>21</version.java>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <!-- Spring ecosystem (aligned with Spring Boot 4.0.3) -->
+    <version.spring-boot>4.0.3</version.spring-boot>
+
+    <!-- Third-party libraries -->
+    <version.nimbus-jose-jwt>10.8</version.nimbus-jose-jwt>
+    <version.elasticsearch-java-client>8.19.12</version.elasticsearch-java-client>
+    <version.mybatis-spring-boot-starter>4.0.1</version.mybatis-spring-boot-starter>
+    <version.archunit>1.4.1</version.archunit>
+    <version.wiremock>3.13.2</version.wiremock>
+    <version.testcontainers>2.0.3</version.testcontainers>
+    <version.json-path>3.0.0</version.json-path>
+    <version.tc-keycloak>4.1.1</version.tc-keycloak>
+    <version.keycloak-client>26.0.8</version.keycloak-client>
+
+    <!-- Maven plugins -->
+    <version.maven-compiler-plugin>3.14.0</version.maven-compiler-plugin>
+    <version.maven-surefire-plugin>3.5.3</version.maven-surefire-plugin>
+    <version.maven-failsafe-plugin>3.5.3</version.maven-failsafe-plugin>
+    <version.maven-jar-plugin>3.4.2</version.maven-jar-plugin>
+    <version.spotless-maven-plugin>2.44.4</version.spotless-maven-plugin>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- Spring Boot BOM — manages Spring Framework, Spring Security, Jackson, SLF4J, JUnit, Mockito, etc. -->
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${version.spring-boot}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- Internal modules -->
+      <dependency>
+        <groupId>io.camunda.auth</groupId>
+        <artifactId>camunda-auth-domain</artifactId>
+        <version>${camunda-auth.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.camunda.auth</groupId>
+        <artifactId>camunda-auth-domain</artifactId>
+        <version>${camunda-auth.version}</version>
+        <type>test-jar</type>
+      </dependency>
+      <dependency>
+        <groupId>io.camunda.auth</groupId>
+        <artifactId>camunda-auth-persist-rdbms</artifactId>
+        <version>${camunda-auth.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.camunda.auth</groupId>
+        <artifactId>camunda-auth-persist-elasticsearch</artifactId>
+        <version>${camunda-auth.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.camunda.auth</groupId>
+        <artifactId>camunda-auth-spring</artifactId>
+        <version>${camunda-auth.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.camunda.auth</groupId>
+        <artifactId>camunda-auth-spring-boot-starter</artifactId>
+        <version>${camunda-auth.version}</version>
+      </dependency>
+
+      <!-- Third-party (not managed by Spring Boot BOM) -->
+      <dependency>
+        <groupId>com.nimbusds</groupId>
+        <artifactId>nimbus-jose-jwt</artifactId>
+        <version>${version.nimbus-jose-jwt}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mybatis.spring.boot</groupId>
+        <artifactId>mybatis-spring-boot-starter</artifactId>
+        <version>${version.mybatis-spring-boot-starter}</version>
+      </dependency>
+      <dependency>
+        <groupId>co.elastic.clients</groupId>
+        <artifactId>elasticsearch-java</artifactId>
+        <version>${version.elasticsearch-java-client}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.jayway.jsonpath</groupId>
+        <artifactId>json-path</artifactId>
+        <version>${version.json-path}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.tngtech.archunit</groupId>
+        <artifactId>archunit</artifactId>
+        <version>${version.archunit}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.tngtech.archunit</groupId>
+        <artifactId>archunit-junit5-api</artifactId>
+        <version>${version.archunit}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.tngtech.archunit</groupId>
+        <artifactId>archunit-junit5-engine</artifactId>
+        <version>${version.archunit}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.wiremock</groupId>
+        <artifactId>wiremock-standalone</artifactId>
+        <version>${version.wiremock}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-junit-jupiter</artifactId>
+        <version>${version.testcontainers}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-postgresql</artifactId>
+        <version>${version.testcontainers}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-elasticsearch</artifactId>
+        <version>${version.testcontainers}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.dasniko</groupId>
+        <artifactId>testcontainers-keycloak</artifactId>
+        <version>${version.tc-keycloak}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.keycloak</groupId>
+        <artifactId>keycloak-admin-client</artifactId>
+        <version>${version.keycloak-client}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${version.maven-compiler-plugin}</version>
+          <configuration>
+            <release>${version.java}</release>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${version.maven-surefire-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <version>${version.maven-failsafe-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>${version.maven-jar-plugin}</version>
+        </plugin>
+        <plugin>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <version>${version.spotless-maven-plugin}</version>
+          <configuration>
+            <java>
+              <googleJavaFormat/>
+            </java>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>integration-tests</id>
+      <modules>
+        <module>auth-integration-tests</module>
+      </modules>
+    </profile>
+  </profiles>
+
+</project>

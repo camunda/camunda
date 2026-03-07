@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.authentication;
 
 import static io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper.toCamundaUser;
 
-import io.camunda.authentication.service.CamundaUserService;
+import io.camunda.auth.domain.spi.CamundaUserProvider;
 import io.camunda.gateway.protocol.model.CamundaUserResult;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
@@ -24,15 +24,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @ConditionalOnSecondaryStorageEnabled
 @RequestMapping("/v2/authentication")
 public class AuthenticationController {
-  private final CamundaUserService camundaUserService;
+  private final CamundaUserProvider camundaUserProvider;
 
-  public AuthenticationController(final CamundaUserService camundaUserService) {
-    this.camundaUserService = camundaUserService;
+  public AuthenticationController(final CamundaUserProvider camundaUserProvider) {
+    this.camundaUserProvider = camundaUserProvider;
   }
 
   @CamundaGetMapping(path = "/me")
   public ResponseEntity<CamundaUserResult> getCurrentUser() {
-    final var authenticatedUser = camundaUserService.getCurrentUser();
+    final var authenticatedUser = camundaUserProvider.getCurrentUser();
 
     return authenticatedUser == null
         ? ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()

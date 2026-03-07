@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity.authorization.resolver;
 
-import io.camunda.security.auth.MappingRuleMatcher;
+import io.camunda.auth.domain.auth.MappingRuleMatcher;
 import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
