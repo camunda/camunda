@@ -13,13 +13,18 @@ import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import net.jcip.annotations.ThreadSafe;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
+@ThreadSafe
 public final class InFlightEntry {
   final LogStreamMetrics metrics;
-  LogAppendEntryMetadata entryMetadata;
-  final AtomicReference<Listener> requestListener;
-  final AtomicReference<CloseableSilently> writeTimer;
-  final AtomicReference<CloseableSilently> commitTimer;
+  @Nullable LogAppendEntryMetadata entryMetadata;
+  final AtomicReference<@Nullable Listener> requestListener;
+  final AtomicReference<@Nullable CloseableSilently> writeTimer;
+  final AtomicReference<@Nullable CloseableSilently> commitTimer;
 
   /**
    * The position this entry was registered at in the ring buffer. Set by {@link RingBuffer#put}
@@ -38,7 +43,7 @@ public final class InFlightEntry {
   public InFlightEntry(
       final LogStreamMetrics metrics,
       final LogAppendEntryMetadata entryMetadata,
-      final Listener requestListener) {
+      @Nullable final Listener requestListener) {
     this.metrics = metrics;
     this.entryMetadata = entryMetadata;
     this.requestListener = new AtomicReference<>(requestListener);
@@ -80,7 +85,7 @@ public final class InFlightEntry {
     closeIfPossible(commitTimer);
   }
 
-  private void closeIfPossible(final AtomicReference<CloseableSilently> closeableRef) {
+  private void closeIfPossible(final AtomicReference<@Nullable CloseableSilently> closeableRef) {
     final var closeable = closeableRef.getAndSet(null);
     if (closeable != null) {
       closeable.close();
