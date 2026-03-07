@@ -487,8 +487,12 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.runtimeInstructions()).hasSize(2);
+    assertThat(capturedRequest.runtimeInstructions().get(0).getType())
+        .isEqualTo(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE);
     assertThat(capturedRequest.runtimeInstructions().get(0).getAfterElementId())
         .isEqualTo("Activity_1");
+    assertThat(capturedRequest.runtimeInstructions().get(1).getType())
+        .isEqualTo(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE);
     assertThat(capturedRequest.runtimeInstructions().get(1).getAfterElementId())
         .isEqualTo("Activity_2");
   }
