@@ -13,6 +13,7 @@ import {
 } from 'modules/constants';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
 import {Stack as BaseStack} from '@carbon/react';
+import {ErrorMessage as BaseErrorMessage} from 'modules/components/ErrorMessage';
 
 const PanelHeader = styled(BasePanelHeader)`
   padding-right: 0;
@@ -25,6 +26,10 @@ const Container = styled.div`
   position: relative;
   width: 100%;
   background: var(--cds-layer);
+
+  .cds--loading-overlay {
+    position: absolute;
+  }
 
   .ope-selectable {
     cursor: pointer;
@@ -50,4 +55,10 @@ const Stack = styled(BaseStack)`
   margin-left: auto;
 `;
 
-export {PanelHeader, Container, Stack};
+const ErrorMessage = styled(BaseErrorMessage)`
+  grid-row: 2;
+  align-self: center;
+  justify-self: center;
+`;
+
+export {PanelHeader, Container, Stack, ErrorMessage};

@@ -44,6 +44,7 @@ const EmptyMessage = styled(BaseEmptyMessage)`
 
 const ErrorMessage = styled(BaseErrorMessage)`
   ${messageStyles}
+  grid-row: 1 / -1;
 `;
 
 export {Container, Panel, Title, StructuredList, EmptyMessage, ErrorMessage};
