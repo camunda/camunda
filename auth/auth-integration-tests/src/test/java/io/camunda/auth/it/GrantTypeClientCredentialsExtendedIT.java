@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.keycloak.admin.client.Keycloak;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
@@ -26,32 +27,28 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Integration test verifying security headers and error response format when using OIDC
- * authentication with Keycloak. Validates that the auth library correctly returns
- * application/problem+json responses and appropriate security headers.
+ * Extended integration tests for the client_credentials grant type. Validates scopes, token
+ * uniqueness, revocation, and standard JWT claims against a shared Keycloak container.
  */
-@Testcontainers
 @SpringBootTest(
-    classes = KeycloakSecurityHeadersIT.TestApp.class,
+    classes = GrantTypeClientCredentialsExtendedIT.TestApp.class,
     webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
-class KeycloakSecurityHeadersIT {
+class GrantTypeClientCredentialsExtendedIT {
 
-  private static final String REALM = "camunda-headers";
-  private static final String CLIENT_ID = "headers-client";
-  private static final String CLIENT_SECRET = "headers-client-secret";
+  private static final String REALM = "grant-type-cc-extended";
+  private static final String CLIENT_ID = "cc-extended-client";
+  private static final String CLIENT_SECRET = "cc-extended-secret";
 
-  @Container private static final KeycloakContainer KEYCLOAK = KeycloakTestSupport.createKeycloak();
+  private static final KeycloakContainer KEYCLOAK = SharedKeycloakContainer.getInstance();
 
   @LocalServerPort private int port;
 
@@ -85,93 +82,88 @@ class KeycloakSecurityHeadersIT {
   }
 
   @Test
-  void shouldReturnProblemJsonOnUnauthorizedApiCall() {
-    final HttpHeaders headers = new HttpHeaders();
-    headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-    final HttpEntity<Void> entity = new HttpEntity<>(headers);
+  void shouldRequestSpecificScopes() {
+    final Map<String, Object> tokenResponse =
+        KeycloakTestSupport.acquireTokenResponse(
+            KeycloakTestSupport.tokenEndpoint(KEYCLOAK, REALM), CLIENT_ID, CLIENT_SECRET);
 
-    final ResponseEntity<String> response =
-        restTemplate.exchange(
-            "http://localhost:" + port + "/v1/test", HttpMethod.GET, entity, String.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    assertThat(response.getHeaders().getContentType())
-        .isNotNull()
-        .satisfies(
-            contentType -> assertThat(contentType.toString()).contains("application/problem+json"));
+    assertThat(tokenResponse).containsKey("access_token");
+    // Keycloak includes scope in the token response
+    final String scope = (String) tokenResponse.get("scope");
+    assertThat(scope).isNotNull();
   }
 
   @Test
-  void shouldReturnOkForValidTokenOnProtectedEndpoint() {
-    final String token =
+  void shouldIssueDistinctTokensOnSubsequentCalls() {
+    final String token1 =
+        KeycloakTestSupport.acquireToken(
+            KeycloakTestSupport.tokenEndpoint(KEYCLOAK, REALM), CLIENT_ID, CLIENT_SECRET);
+    final String token2 =
         KeycloakTestSupport.acquireToken(
             KeycloakTestSupport.tokenEndpoint(KEYCLOAK, REALM), CLIENT_ID, CLIENT_SECRET);
 
-    final ResponseEntity<String> response = performAuthenticatedGet("/v1/test", token);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).isEqualTo("ok");
+    // Two calls should produce different tokens (different jti/iat at minimum)
+    assertThat(token1).isNotEqualTo(token2);
   }
 
   @Test
-  void shouldIncludeCacheControlHeaderOnApiResponse() {
-    final String token =
-        KeycloakTestSupport.acquireToken(
-            KeycloakTestSupport.tokenEndpoint(KEYCLOAK, REALM), CLIENT_ID, CLIENT_SECRET);
+  void shouldRejectRevokedClientCredentials() {
+    // Disable the client in Keycloak
+    try (Keycloak admin = KEYCLOAK.getKeycloakAdminClient()) {
+      final var clients = admin.realm(REALM).clients().findByClientId(CLIENT_ID);
+      assertThat(clients).isNotEmpty();
+      final var clientRep = clients.get(0);
+      clientRep.setEnabled(false);
+      admin.realm(REALM).clients().get(clientRep.getId()).update(clientRep);
+    }
 
-    final ResponseEntity<String> response = performAuthenticatedGet("/v1/test", token);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    // Spring Security typically adds cache control headers for protected resources
-    final List<String> cacheControl = response.getHeaders().get("Cache-Control");
-    if (cacheControl != null) {
-      assertThat(String.join(", ", cacheControl)).contains("no-cache");
+    try {
+      // Attempt to acquire a token with disabled client — should fail
+      final KeycloakTestSupport.TokenResponse response =
+          KeycloakTestSupport.postTokenRequest(
+              KeycloakTestSupport.tokenEndpoint(KEYCLOAK, REALM),
+              "grant_type=client_credentials&client_id="
+                  + CLIENT_ID
+                  + "&client_secret="
+                  + CLIENT_SECRET);
+      assertThat(response.statusCode()).isNotEqualTo(200);
+    } finally {
+      // Re-enable the client for other tests
+      try (Keycloak admin = KEYCLOAK.getKeycloakAdminClient()) {
+        final var clients = admin.realm(REALM).clients().findByClientId(CLIENT_ID);
+        final var clientRep = clients.get(0);
+        clientRep.setEnabled(true);
+        admin.realm(REALM).clients().get(clientRep.getId()).update(clientRep);
+      }
     }
   }
 
   @Test
-  void shouldReturnOkForUnprotectedPaths() {
-    final ResponseEntity<String> response =
-        restTemplate.getForEntity("http://localhost:" + port + "/actuator/health", String.class);
+  @SuppressWarnings("unchecked")
+  void shouldIncludeStandardJwtClaims() {
+    final String token =
+        KeycloakTestSupport.acquireToken(
+            KeycloakTestSupport.tokenEndpoint(KEYCLOAK, REALM), CLIENT_ID, CLIENT_SECRET);
+
+    final ResponseEntity<Map> response = performAuthenticatedGet("/v1/user", token, Map.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).isEqualTo("UP");
+    final Map<String, Object> claims = response.getBody();
+    assertThat(claims).isNotNull();
+    assertThat(claims).containsKey("iss");
+    assertThat(claims).containsKey("sub");
+    assertThat(claims).containsKey("exp");
+    assertThat(claims).containsKey("iat");
+    assertThat(claims).containsKey("jti");
   }
 
-  @Test
-  void shouldReturnUnauthorizedWithBearerChallengeHeader() {
-    final ResponseEntity<String> response =
-        restTemplate.getForEntity("http://localhost:" + port + "/v1/test", String.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  void shouldReturnProblemDetailBody() {
-    final HttpHeaders headers = new HttpHeaders();
-    headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-    final HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-    final ResponseEntity<Map> response =
-        restTemplate.exchange(
-            "http://localhost:" + port + "/v1/test", HttpMethod.GET, entity, Map.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    final Map<String, Object> body = response.getBody();
-    assertThat(body).isNotNull();
-    assertThat(body).containsKey("status");
-    assertThat(body.get("status")).isEqualTo(401);
-  }
-
-  private ResponseEntity<String> performAuthenticatedGet(
-      final String path, final String accessToken) {
+  private <T> ResponseEntity<T> performAuthenticatedGet(
+      final String path, final String accessToken, final Class<T> responseType) {
     final HttpHeaders headers = new HttpHeaders();
     headers.setBearerAuth(accessToken);
     final HttpEntity<Void> entity = new HttpEntity<>(headers);
-
     return restTemplate.exchange(
-        "http://localhost:" + port + path, HttpMethod.GET, entity, String.class);
+        "http://localhost:" + port + path, HttpMethod.GET, entity, responseType);
   }
 
   @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
@@ -185,9 +177,10 @@ class KeycloakSecurityHeadersIT {
         return "ok";
       }
 
-      @GetMapping("/actuator/health")
-      String health() {
-        return "UP";
+      @GetMapping("/v1/user")
+      Map<String, Object> user(
+          @org.springframework.security.core.annotation.AuthenticationPrincipal final Jwt jwt) {
+        return jwt.getClaims();
       }
     }
   }

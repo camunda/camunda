@@ -37,8 +37,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -142,9 +142,7 @@ class OidcConsumerIT {
     wireMock.stubFor(
         WireMock.get(urlPathEqualTo("/realms/test/protocol/openid-connect/certs"))
             .willReturn(
-                aResponse()
-                    .withHeader("Content-Type", "application/json")
-                    .withBody(jwkSetJson)));
+                aResponse().withHeader("Content-Type", "application/json").withBody(jwkSetJson)));
   }
 
   @Autowired private ApplicationContext applicationContext;
@@ -203,10 +201,7 @@ class OidcConsumerIT {
   void shouldRejectRequestWithInvalidSignature() throws Exception {
     // Generate a different key to create a JWT with a bad signature
     final RSAKey otherKey =
-        new RSAKeyGenerator(2048)
-            .keyID("other-key")
-            .algorithm(JWSAlgorithm.RS256)
-            .generate();
+        new RSAKeyGenerator(2048).keyID("other-key").algorithm(JWSAlgorithm.RS256).generate();
 
     final String issuer = wireMock.baseUrl() + "/realms/test";
     final var claims =
@@ -254,8 +249,7 @@ class OidcConsumerIT {
 
   @Test
   void shouldExtractClaimsFromValidJwt() throws Exception {
-    final String jwt =
-        createValidJwt("claims-user", "test-client", List.of("group-a", "group-b"));
+    final String jwt = createValidJwt("claims-user", "test-client", List.of("group-a", "group-b"));
 
     final var result =
         mockMvc
@@ -315,8 +309,7 @@ class OidcConsumerIT {
 
   // -- Test application --
 
-  @SpringBootApplication(
-      exclude = {DataSourceAutoConfiguration.class})
+  @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
   static class TestApp {
 
     @RestController

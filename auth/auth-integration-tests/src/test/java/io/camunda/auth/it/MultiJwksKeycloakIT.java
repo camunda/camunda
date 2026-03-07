@@ -106,8 +106,7 @@ class MultiJwksKeycloakIT {
 
   // -- Infrastructure --
 
-  @Container
-  private static final KeycloakContainer KEYCLOAK = KeycloakTestSupport.createKeycloak();
+  @Container private static final KeycloakContainer KEYCLOAK = KeycloakTestSupport.createKeycloak();
 
   @RegisterExtension
   static WireMockExtension wireMock =
@@ -149,16 +148,10 @@ class MultiJwksKeycloakIT {
 
   private static void generateM2mKeyPairs() throws Exception {
     m2mPrimaryKey =
-        new RSAKeyGenerator(2048)
-            .keyID(M2M_PRIMARY_KID)
-            .algorithm(JWSAlgorithm.RS256)
-            .generate();
+        new RSAKeyGenerator(2048).keyID(M2M_PRIMARY_KID).algorithm(JWSAlgorithm.RS256).generate();
 
     m2mSecondaryKey =
-        new RSAKeyGenerator(2048)
-            .keyID(M2M_SECONDARY_KID)
-            .algorithm(JWSAlgorithm.RS256)
-            .generate();
+        new RSAKeyGenerator(2048).keyID(M2M_SECONDARY_KID).algorithm(JWSAlgorithm.RS256).generate();
   }
 
   private static void stubWireMockJwksEndpoints() {
@@ -201,8 +194,7 @@ class MultiJwksKeycloakIT {
     registry.add(
         "camunda.security.authentication.oidc.jwkSetUri",
         () -> KeycloakTestSupport.jwkSetUri(KEYCLOAK, PRIMARY_REALM));
-    registry.add(
-        "camunda.security.authentication.oidc.grantType", () -> "client_credentials");
+    registry.add("camunda.security.authentication.oidc.grantType", () -> "client_credentials");
     // Additional JWKS for the primary provider: both M2M keys
     registry.add(
         "camunda.security.authentication.oidc.additionalJwkSetUris[0]",
@@ -277,8 +269,7 @@ class MultiJwksKeycloakIT {
     final String primaryIssuer = KeycloakTestSupport.issuerUri(KEYCLOAK, PRIMARY_REALM);
     final String m2mToken = createM2mToken(primaryIssuer, m2mPrimaryKey, M2M_PRIMARY_KID);
 
-    final ResponseEntity<Map> response =
-        performAuthenticatedGet("/v1/claims", m2mToken, Map.class);
+    final ResponseEntity<Map> response = performAuthenticatedGet("/v1/claims", m2mToken, Map.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     final Map<String, Object> claims = response.getBody();
@@ -316,8 +307,7 @@ class MultiJwksKeycloakIT {
     final String primaryIssuer = KeycloakTestSupport.issuerUri(KEYCLOAK, PRIMARY_REALM);
     final String m2mToken = createM2mToken(primaryIssuer, m2mPrimaryKey, M2M_PRIMARY_KID);
 
-    final ResponseEntity<Map> response =
-        performAuthenticatedGet("/v1/claims", m2mToken, Map.class);
+    final ResponseEntity<Map> response = performAuthenticatedGet("/v1/claims", m2mToken, Map.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     final Map<String, Object> claims = response.getBody();
@@ -347,8 +337,7 @@ class MultiJwksKeycloakIT {
   @Test
   void shouldAcceptSecondaryRealmM2mTokenViaAdditionalJwks() throws Exception {
     final String secondaryIssuer = KeycloakTestSupport.issuerUri(KEYCLOAK, SECONDARY_REALM);
-    final String m2mToken =
-        createM2mToken(secondaryIssuer, m2mSecondaryKey, M2M_SECONDARY_KID);
+    final String m2mToken = createM2mToken(secondaryIssuer, m2mSecondaryKey, M2M_SECONDARY_KID);
 
     final ResponseEntity<String> response = performAuthenticatedGet("/v1/test", m2mToken);
 
@@ -414,9 +403,7 @@ class MultiJwksKeycloakIT {
     // Use a structurally valid but non-matching issuer
     final String m2mToken =
         createM2mToken(
-            "http://totally-different-idp.example.org/realms/fake",
-            m2mPrimaryKey,
-            M2M_PRIMARY_KID);
+            "http://totally-different-idp.example.org/realms/fake", m2mPrimaryKey, M2M_PRIMARY_KID);
 
     final ResponseEntity<String> response = performAuthenticatedGet("/v1/test", m2mToken);
 
@@ -456,10 +443,7 @@ class MultiJwksKeycloakIT {
   void shouldHandleKeyRotation() throws Exception {
     // Generate a brand-new M2M key
     final RSAKey rotatedKey =
-        new RSAKeyGenerator(2048)
-            .keyID("m2m-rotated-key")
-            .algorithm(JWSAlgorithm.RS256)
-            .generate();
+        new RSAKeyGenerator(2048).keyID("m2m-rotated-key").algorithm(JWSAlgorithm.RS256).generate();
 
     // Update the WireMock stub for primary additional JWKS to include both old and new keys
     final String rotatedJwksJson =
@@ -472,8 +456,7 @@ class MultiJwksKeycloakIT {
                     .withBody(rotatedJwksJson)));
 
     final String primaryIssuer = KeycloakTestSupport.issuerUri(KEYCLOAK, PRIMARY_REALM);
-    final String rotatedToken =
-        createM2mToken(primaryIssuer, rotatedKey, "m2m-rotated-key");
+    final String rotatedToken = createM2mToken(primaryIssuer, rotatedKey, "m2m-rotated-key");
 
     final ResponseEntity<String> response = performAuthenticatedGet("/v1/test", rotatedToken);
 
@@ -517,8 +500,7 @@ class MultiJwksKeycloakIT {
             .build();
 
     final SignedJWT signedJwt =
-        new SignedJWT(
-            new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(kid).build(), claims);
+        new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(kid).build(), claims);
     signedJwt.sign(new RSASSASigner(signingKey));
     return signedJwt.serialize();
   }
@@ -541,8 +523,7 @@ class MultiJwksKeycloakIT {
 
     final SignedJWT signedJwt =
         new SignedJWT(
-            new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(signingKey.getKeyID()).build(),
-            claims);
+            new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(signingKey.getKeyID()).build(), claims);
     signedJwt.sign(new RSASSASigner(signingKey));
     return signedJwt.serialize();
   }

@@ -14,4 +14,5 @@ with lightweight extensions for context and consequences.
 | [0003](0003-persistence-abstraction.md)        | Persistence abstraction with read/write separation | Accepted           |
 | [0004](0004-spring-boot-auto-configuration.md) | Spring Boot auto-configuration strategy            | Accepted           |
 | [0005](0005-grant-type-simplification.md)      | Grant type hierarchy — sealed interface design     | Accepted (Revised) |
+| [0006](0006-native-spring-security-grant-types.md) | Native Spring Security grant type support       | Accepted           |
 

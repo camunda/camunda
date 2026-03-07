@@ -32,9 +32,9 @@ import liquibase.resource.ClassLoaderResourceAccessor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.core.userdetails.User;
@@ -143,10 +143,7 @@ class RdbmsConsumerIT {
     // Perform login via the webapp form login path
     mockMvc
         .perform(
-            post("/login")
-                .param("username", "testuser")
-                .param("password", "password")
-                .with(csrf()))
+            post("/login").param("username", "testuser").param("password", "password").with(csrf()))
         .andExpect(status().is3xxRedirection());
 
     // After login, at least one session should exist in the RDBMS store
@@ -174,9 +171,7 @@ class RdbmsConsumerIT {
   @Test
   void shouldIncludeSecurityHeadersOnWebappResponse() throws Exception {
     mockMvc
-        .perform(
-            get("/login")
-                .with(httpBasic("testuser", "password")))
+        .perform(get("/login").with(httpBasic("testuser", "password")))
         .andExpect(header().exists("X-Content-Type-Options"))
         .andExpect(header().string("X-Content-Type-Options", "nosniff"));
   }
@@ -184,9 +179,7 @@ class RdbmsConsumerIT {
   // -- Test application and configuration --
 
   @SpringBootApplication(
-      exclude = {
-        io.camunda.auth.starter.CamundaWebappSecurityAutoConfiguration.class
-      })
+      exclude = {io.camunda.auth.starter.CamundaWebappSecurityAutoConfiguration.class})
   static class TestApp {
 
     @RestController
@@ -211,10 +204,7 @@ class RdbmsConsumerIT {
     @Bean
     UserDetailsService userDetailsService() {
       return new InMemoryUserDetailsManager(
-          User.withUsername("testuser")
-              .password("{noop}password")
-              .roles("USER")
-              .build());
+          User.withUsername("testuser").password("{noop}password").roles("USER").build());
     }
 
     @Bean

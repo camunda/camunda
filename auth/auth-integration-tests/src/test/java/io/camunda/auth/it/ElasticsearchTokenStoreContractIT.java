@@ -65,8 +65,8 @@ class ElasticsearchTokenStoreContractIT extends AbstractTokenStoreContractTest {
   }
 
   /**
-   * Decorator that forces an index refresh after each write so documents are immediately visible for
-   * search. Required because ES is eventually consistent by default.
+   * Decorator that forces an index refresh after each write so documents are immediately visible
+   * for search. Required because ES is eventually consistent by default.
    */
   private record RefreshingTokenStoreAdapter(TokenStorePort delegate, ElasticsearchClient client)
       implements TokenStorePort {

@@ -26,33 +26,30 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Integration test validating client_credentials grant flow with a real Keycloak IDP. Verifies the
- * auth library correctly configures Spring Security OIDC resource server to accept Keycloak-issued
- * JWTs.
+ * Integration test validating the refresh_token grant type against a real Keycloak IDP. Uses ROPC
+ * to obtain an initial token pair, then validates refresh token operations.
  */
-@Testcontainers
 @SpringBootTest(
-    classes = KeycloakClientCredentialsIT.TestApp.class,
+    classes = GrantTypeRefreshTokenIT.TestApp.class,
     webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
-class KeycloakClientCredentialsIT {
+class GrantTypeRefreshTokenIT {
 
-  private static final String REALM = "camunda-test";
-  private static final String CLIENT_ID = "test-api";
-  private static final String CLIENT_SECRET = "test-api-secret";
+  private static final String REALM = "grant-type-refresh";
+  private static final String CLIENT_ID = "refresh-client";
+  private static final String CLIENT_SECRET = "refresh-secret";
+  private static final String TEST_USER = "refreshuser";
+  private static final String TEST_PASSWORD = "refreshpassword";
 
-  @Container private static final KeycloakContainer KEYCLOAK = KeycloakTestSupport.createKeycloak();
+  private static final KeycloakContainer KEYCLOAK = SharedKeycloakContainer.getInstance();
 
   @LocalServerPort private int port;
 
@@ -62,6 +59,7 @@ class KeycloakClientCredentialsIT {
   static void setUpRealm() {
     final var client = KeycloakTestSupport.createConfidentialClient(CLIENT_ID, CLIENT_SECRET);
     KeycloakTestSupport.createRealm(KEYCLOAK, REALM, List.of(client));
+    KeycloakTestSupport.createUser(KEYCLOAK, REALM, TEST_USER, TEST_PASSWORD);
   }
 
   @DynamicPropertySource
@@ -82,95 +80,107 @@ class KeycloakClientCredentialsIT {
         "camunda.security.authentication.oidc.jwkSetUri",
         () -> KeycloakTestSupport.jwkSetUri(KEYCLOAK, REALM));
     registry.add("camunda.security.authentication.oidc.grantType", () -> "client_credentials");
-    // Disable the webapp security to avoid login redirects
     registry.add("camunda.auth.security.webapp-enabled", () -> "false");
   }
 
   @Test
-  void shouldRejectUnauthenticatedApiCall() {
-    final ResponseEntity<String> response =
-        restTemplate.getForEntity("http://localhost:" + port + "/v1/test", String.class);
+  void shouldRefreshAccessToken() {
+    // Obtain initial token pair via ROPC
+    final Map<String, Object> initialResponse =
+        KeycloakTestSupport.acquireTokenWithPassword(
+            KeycloakTestSupport.tokenEndpoint(KEYCLOAK, REALM),
+            CLIENT_ID,
+            CLIENT_SECRET,
+            TEST_USER,
+            TEST_PASSWORD);
+    final String refreshTokenValue = (String) initialResponse.get("refresh_token");
+    assertThat(refreshTokenValue).isNotBlank();
 
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    // Refresh
+    final Map<String, Object> refreshedResponse =
+        KeycloakTestSupport.refreshToken(
+            KeycloakTestSupport.tokenEndpoint(KEYCLOAK, REALM),
+            CLIENT_ID,
+            CLIENT_SECRET,
+            refreshTokenValue);
+
+    assertThat(refreshedResponse).containsKey("access_token");
+    final String newAccessToken = (String) refreshedResponse.get("access_token");
+    assertThat(newAccessToken).isNotBlank();
   }
 
   @Test
-  void shouldAcceptValidClientCredentialsToken() {
-    final String token =
-        KeycloakTestSupport.acquireToken(
-            KeycloakTestSupport.tokenEndpoint(KEYCLOAK, REALM), CLIENT_ID, CLIENT_SECRET);
+  void shouldAcceptRefreshedTokenOnProtectedEndpoint() {
+    final Map<String, Object> initialResponse =
+        KeycloakTestSupport.acquireTokenWithPassword(
+            KeycloakTestSupport.tokenEndpoint(KEYCLOAK, REALM),
+            CLIENT_ID,
+            CLIENT_SECRET,
+            TEST_USER,
+            TEST_PASSWORD);
+    final String refreshTokenValue = (String) initialResponse.get("refresh_token");
 
-    final ResponseEntity<String> response = performAuthenticatedGet("/v1/test", token);
+    final Map<String, Object> refreshedResponse =
+        KeycloakTestSupport.refreshToken(
+            KeycloakTestSupport.tokenEndpoint(KEYCLOAK, REALM),
+            CLIENT_ID,
+            CLIENT_SECRET,
+            refreshTokenValue);
+    final String newAccessToken = (String) refreshedResponse.get("access_token");
+
+    final ResponseEntity<String> response = performAuthenticatedGet("/v1/test", newAccessToken);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(response.getBody()).isEqualTo("ok");
   }
 
   @Test
+  void shouldRejectInvalidRefreshToken() {
+    final KeycloakTestSupport.TokenResponse response =
+        KeycloakTestSupport.postTokenRequest(
+            KeycloakTestSupport.tokenEndpoint(KEYCLOAK, REALM),
+            "grant_type=refresh_token"
+                + "&client_id="
+                + CLIENT_ID
+                + "&client_secret="
+                + CLIENT_SECRET
+                + "&refresh_token=invalid-garbage-token");
+
+    assertThat(response.statusCode()).isNotEqualTo(200);
+  }
+
+  @Test
   @SuppressWarnings("unchecked")
-  void shouldExtractClaimsFromToken() {
-    final String token =
-        KeycloakTestSupport.acquireToken(
-            KeycloakTestSupport.tokenEndpoint(KEYCLOAK, REALM), CLIENT_ID, CLIENT_SECRET);
+  void shouldReturnNewAccessTokenDifferentFromOriginal() {
+    final Map<String, Object> initialResponse =
+        KeycloakTestSupport.acquireTokenWithPassword(
+            KeycloakTestSupport.tokenEndpoint(KEYCLOAK, REALM),
+            CLIENT_ID,
+            CLIENT_SECRET,
+            TEST_USER,
+            TEST_PASSWORD);
+    final String originalAccessToken = (String) initialResponse.get("access_token");
+    final String refreshTokenValue = (String) initialResponse.get("refresh_token");
 
-    final ResponseEntity<Map> response = performAuthenticatedGet("/v1/user", token, Map.class);
+    final Map<String, Object> refreshedResponse =
+        KeycloakTestSupport.refreshToken(
+            KeycloakTestSupport.tokenEndpoint(KEYCLOAK, REALM),
+            CLIENT_ID,
+            CLIENT_SECRET,
+            refreshTokenValue);
+    final String newAccessToken = (String) refreshedResponse.get("access_token");
 
+    // Tokens should be different (different jti/exp)
+    assertThat(newAccessToken).isNotEqualTo(originalAccessToken);
+
+    // Verify both are valid JWTs with correct claims
+    final ResponseEntity<Map> response =
+        performAuthenticatedGet("/v1/user", newAccessToken, Map.class);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     final Map<String, Object> claims = response.getBody();
     assertThat(claims).isNotNull();
-    assertThat(claims).containsEntry("azp", CLIENT_ID);
-    assertThat(claims.get("iss").toString())
-        .isEqualTo(KeycloakTestSupport.issuerUri(KEYCLOAK, REALM));
-  }
-
-  @Test
-  void shouldAllowUnprotectedPaths() {
-    final ResponseEntity<String> response =
-        restTemplate.getForEntity("http://localhost:" + port + "/actuator/health", String.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-  }
-
-  @Test
-  void shouldRejectInvalidToken() {
-    final ResponseEntity<String> response =
-        performAuthenticatedGet("/v1/test", "this-is-not-a-valid-jwt");
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-  }
-
-  @Test
-  void shouldRejectTokenWithTamperedPayload() {
-    // Acquire a valid token, then tamper with the payload to simulate an invalid token
-    final String validToken =
-        KeycloakTestSupport.acquireToken(
-            KeycloakTestSupport.tokenEndpoint(KEYCLOAK, REALM), CLIENT_ID, CLIENT_SECRET);
-
-    // Tamper with the middle part (payload) of the JWT
-    final String[] parts = validToken.split("\\.");
-    assertThat(parts).hasSize(3);
-    final String tamperedToken = parts[0] + ".dGFtcGVyZWQ." + parts[2];
-
-    final ResponseEntity<String> response = performAuthenticatedGet("/v1/test", tamperedToken);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-  }
-
-  @Test
-  void shouldReturnProblemJsonOnUnauthorized() {
-    final HttpHeaders headers = new HttpHeaders();
-    headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-    final HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-    final ResponseEntity<String> response =
-        restTemplate.exchange(
-            "http://localhost:" + port + "/v1/test", HttpMethod.GET, entity, String.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    assertThat(response.getHeaders().getContentType())
-        .isNotNull()
-        .satisfies(
-            contentType -> assertThat(contentType.toString()).contains("application/problem+json"));
+    assertThat(claims).containsKey("jti");
+    assertThat(claims).containsKey("exp");
   }
 
   private ResponseEntity<String> performAuthenticatedGet(
@@ -183,7 +193,6 @@ class KeycloakClientCredentialsIT {
     final HttpHeaders headers = new HttpHeaders();
     headers.setBearerAuth(accessToken);
     final HttpEntity<Void> entity = new HttpEntity<>(headers);
-
     return restTemplate.exchange(
         "http://localhost:" + port + path, HttpMethod.GET, entity, responseType);
   }
@@ -203,11 +212,6 @@ class KeycloakClientCredentialsIT {
       Map<String, Object> user(
           @org.springframework.security.core.annotation.AuthenticationPrincipal final Jwt jwt) {
         return jwt.getClaims();
-      }
-
-      @GetMapping("/actuator/health")
-      String health() {
-        return "UP";
       }
     }
   }

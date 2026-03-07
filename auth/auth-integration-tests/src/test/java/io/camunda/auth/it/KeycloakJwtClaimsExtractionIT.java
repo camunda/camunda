@@ -18,10 +18,10 @@ import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -38,8 +38,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Integration test verifying JWT claims extraction from Keycloak tokens. Validates that custom
- * claims (groups, azp, preferred_username) are correctly extracted and mapped to CamundaAuthentication
- * via protocol mappers configured on the Keycloak client.
+ * claims (groups, azp, preferred_username) are correctly extracted and mapped to
+ * CamundaAuthentication via protocol mappers configured on the Keycloak client.
  */
 @Testcontainers
 @SpringBootTest(
@@ -52,8 +52,7 @@ class KeycloakJwtClaimsExtractionIT {
   private static final String CLIENT_ID = "claims-client";
   private static final String CLIENT_SECRET = "claims-client-secret";
 
-  @Container
-  private static final KeycloakContainer KEYCLOAK = KeycloakTestSupport.createKeycloak();
+  @Container private static final KeycloakContainer KEYCLOAK = KeycloakTestSupport.createKeycloak();
 
   @LocalServerPort private int port;
 
@@ -113,9 +112,7 @@ class KeycloakJwtClaimsExtractionIT {
     registry.add(
         "camunda.security.authentication.oidc.jwkSetUri",
         () -> KeycloakTestSupport.jwkSetUri(KEYCLOAK, REALM));
-    registry.add(
-        "camunda.security.authentication.oidc.grantType",
-        () -> "client_credentials");
+    registry.add("camunda.security.authentication.oidc.grantType", () -> "client_credentials");
     // Configure claim extraction
     registry.add("camunda.auth.oidc.groups-claim", () -> "groups");
     registry.add("camunda.auth.oidc.username-claim", () -> "preferred_username");
@@ -220,8 +217,7 @@ class KeycloakJwtClaimsExtractionIT {
         "http://localhost:" + port + path, HttpMethod.GET, entity, responseType);
   }
 
-  @SpringBootApplication(
-      exclude = {DataSourceAutoConfiguration.class})
+  @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
   static class TestApp {
 
     @RestController

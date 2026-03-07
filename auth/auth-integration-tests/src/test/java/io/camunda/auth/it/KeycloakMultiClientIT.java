@@ -17,10 +17,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -36,9 +36,9 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Integration test verifying that the auth library accepts tokens issued to different clients within
- * the same Keycloak realm. Both client-a and client-b share the same issuer, so the library's
- * single-issuer JWT decoder should validate tokens from either client.
+ * Integration test verifying that the auth library accepts tokens issued to different clients
+ * within the same Keycloak realm. Both client-a and client-b share the same issuer, so the
+ * library's single-issuer JWT decoder should validate tokens from either client.
  */
 @Testcontainers
 @SpringBootTest(
@@ -53,8 +53,7 @@ class KeycloakMultiClientIT {
   private static final String CLIENT_B_ID = "client-b";
   private static final String CLIENT_B_SECRET = "secret-b";
 
-  @Container
-  private static final KeycloakContainer KEYCLOAK = KeycloakTestSupport.createKeycloak();
+  @Container private static final KeycloakContainer KEYCLOAK = KeycloakTestSupport.createKeycloak();
 
   @LocalServerPort private int port;
 
@@ -85,9 +84,7 @@ class KeycloakMultiClientIT {
     registry.add(
         "camunda.security.authentication.oidc.jwkSetUri",
         () -> KeycloakTestSupport.jwkSetUri(KEYCLOAK, REALM));
-    registry.add(
-        "camunda.security.authentication.oidc.grantType",
-        () -> "client_credentials");
+    registry.add("camunda.security.authentication.oidc.grantType", () -> "client_credentials");
     registry.add("camunda.auth.oidc.client-id-claim", () -> "azp");
     registry.add("camunda.auth.oidc.prefer-username-claim", () -> "false");
     registry.add("camunda.auth.security.webapp-enabled", () -> "false");
@@ -158,8 +155,7 @@ class KeycloakMultiClientIT {
         "http://localhost:" + port + path, HttpMethod.GET, entity, responseType);
   }
 
-  @SpringBootApplication(
-      exclude = {DataSourceAutoConfiguration.class})
+  @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
   static class TestApp {
 
     @RestController

@@ -242,8 +242,7 @@ class ElasticsearchConsumerIT {
     }
 
     @Bean
-    SessionPersistencePort sessionPersistencePort(
-        final ElasticsearchClient elasticsearchClient) {
+    SessionPersistencePort sessionPersistencePort(final ElasticsearchClient elasticsearchClient) {
       return new ElasticsearchSessionPersistenceAdapter(elasticsearchClient);
     }
   }
