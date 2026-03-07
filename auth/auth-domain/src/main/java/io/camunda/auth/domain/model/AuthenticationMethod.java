@@ -21,9 +21,6 @@ public enum AuthenticationMethod {
     }
     return Arrays.stream(values())
         .filter(method -> method.name().equalsIgnoreCase(value))
-        .findFirst()
-        .map(Optional::of)
-        .orElseThrow(
-            () -> new IllegalArgumentException("unsupported authentication method: " + value));
+        .findFirst();
   }
 }

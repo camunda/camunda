@@ -1,90 +1,84 @@
-# ADR-0005: Grant Type Simplification — Remove Unused Abstractions
+# ADR-0005: Grant Type Model Removal
 
-**Date:** 2025-03
-**Status:** Accepted
+**Date:** 2025-03 (Original), 2026-03 (Revised)
+**Status:** Accepted (Revised)
 
 ## Context
 
-The auth library was initially designed with a generic authorization grant framework supporting
-multiple OAuth 2.0 grant types:
+The auth library was initially designed with a custom grant type domain model:
 
-- `AuthorizationGrantRequest` (sealed interface)
-  - `TokenExchangeGrantRequest`
-  - `ClientCredentialsGrantRequest`
-  - `JwtBearerGrantRequest`
-  - `AuthorizationCodeGrantRequest`
+- `AuthorizationGrantRequest` (sealed interface) with four record subtypes:
+  `TokenExchangeGrantRequest`, `ClientCredentialsGrantRequest`,
+  `JwtBearerGrantRequest`, `AuthorizationCodeGrantRequest`
+- Corresponding `AuthorizationGrantResponse` sealed hierarchy
+- `GrantType` enum mapping grant type URIs
+- `TokenType` enum mapping token type URIs
+- `DelegatedIdentity` model for delegation chain tracking
+- `AuthorizationGrantException` sealed exception hierarchy
+- `SpringOidcTokenExchangeConverter` bridging Spring Security to the domain model
 
-Each grant type had corresponding request/response record pairs, and a service layer:
-
-- `AuthorizationGrantService` — orchestrator dispatching to the correct grant client
-- `DelegationChainValidator` — validated delegation chains for token exchange
-- `AuthorizationGrantPort` (inbound port) — use-case interface
-- `AuthorizationGrantClient` (outbound port) — infrastructure interface for each grant type
-- `SpringSecurityAuthorizationGrantClient` — Spring Security adapter implementing all grants
-
-Additionally, there was an `auth-sdk` module providing a public facade (`CamundaAuthSdk`) that
-wrapped all of these in a consumer-friendly API.
+A prior revision (2025-03) removed the abstract service/port/client layer
+(`AuthorizationGrantService`, `AuthorizationGrantPort`, `AuthorizationGrantClient`,
+`auth-sdk` module) but preserved the domain model types, anticipating future consumers.
 
 ### The problem
 
-1. **Only `TokenExchangeGrantRequest` was actually used.** The `ClientCredentials`, `JwtBearer`,
-   and `AuthorizationCode` grant types had implementations but zero consumers in the monorepo
-   or any known external project.
+1. **Zero consumers.** No code in the Camunda codebase imports or uses any of the grant type
+   request/response records, the `GrantType` enum, `TokenType` enum, `DelegatedIdentity` model,
+   or `AuthorizationGrantException` hierarchy.
 
-2. **The `auth-sdk` module had zero consumers.** No code anywhere imported from
-   `io.camunda.auth.sdk`.
+2. **Spring Security already provides native equivalents.** `AuthorizationGrantType` covers all
+   standard grants (authorization_code, client_credentials, jwt_bearer, token_exchange,
+   refresh_token, device_code). Spring's `OAuth2AuthorizedClientManager` and
+   `OAuth2AuthorizedClientProvider` handle grant execution. The OBO flow
+   (`OnBehalfOfTokenRelayFilter`) uses Spring's `OAuth2AuthorizedClientManager` directly.
 
-3. **The generic grant service added indirection without value.** A sealed interface with four
-   permits, a dispatcher service, and a delegation chain validator — all for a single active
-   grant type.
+3. **`SpringOidcTokenExchangeConverter`** was registered as a bean but never injected or called
+   by any component.
 
-4. **`LoggingAuthenticationFailureHandler`** duplicated Spring Security's built-in failure
-   handling without adding meaningful functionality.
+4. **`DelegatedIdentity`** and `DelegationChainTooDeep`** had no consumers — the
+   `DelegationChainValidator` was deleted in the prior revision, and
+   `OnBehalfOfTokenRelayFilter` does not track delegation chains.
+
+5. **`OboProperties.maxDelegationChainDepth` and `targetAudiences`** had zero consumers —
+   no code reads these configuration values.
 
 ## Decision
 
-Remove the unused abstractions:
+Remove the entire custom grant type domain model and related infrastructure. Spring Security's
+native OAuth2 types are sufficient for all current grant type needs.
 
 ### Deleted
 
-- **`auth-sdk` module** — entire module (5 Java files, 1 POM). Zero consumers.
-- **`AuthorizationGrantService`** — generic dispatcher. Only token exchange remains, handled
-  directly.
-- **`DelegationChainValidator`** — only used by the grant service.
-- **`AuthorizationGrantPort`** (inbound port) — the generic use-case interface.
-- **`AuthorizationGrantClient`** (outbound port) — the generic infrastructure interface.
-- **`ClientCredentialsGrantRequest` / `ClientCredentialsGrantResponse`** — unused grant type.
-- **`JwtBearerGrantRequest` / `JwtBearerGrantResponse`** — unused grant type.
-- **`AuthorizationCodeGrantRequest` / `AuthorizationCodeGrantResponse`** — unused grant type.
-- **`SpringSecurityAuthorizationGrantClient`** — Spring adapter for the generic grant framework.
-- **`CamundaAuthorizationGrantAutoConfiguration`** — auto-config for the grant service.
-- **`LoggingAuthenticationFailureHandler`** — replaced by `AuthFailureHandler`.
-- **6 test files** covering the above.
+**Domain model** (`auth-domain`):
+- `AuthorizationGrantRequest` (sealed interface) and all four record subtypes
+- `AuthorizationGrantResponse` (sealed interface) and all four record subtypes
+- `GrantType` enum
+- `TokenType` enum
+- `DelegatedIdentity` model
+- `AuthorizationGrantException` sealed exception hierarchy
+
+**Spring adapter** (`auth-spring`):
+- `SpringOidcTokenExchangeConverter`
+
+**Auto-configuration** (`auth-spring-boot-starter`):
+- `springOidcTokenExchangeConverter()` bean in `CamundaAuthAutoConfiguration`
+- `maxDelegationChainDepth` and `targetAudiences` properties from `OboProperties`
 
 ### Preserved
 
-- **`AuthorizationGrantRequest`** (sealed interface) — now permits only `TokenExchangeGrantRequest`.
-- **`AuthorizationGrantResponse`** (sealed interface) — now permits only `TokenExchangeGrantResponse`.
-- **`TokenExchangeGrantRequest` / `TokenExchangeGrantResponse`** — the one grant type that is
-  actually used.
-- **Token exchange service and OBO auto-configuration** — `CamundaOboAutoConfiguration` handles
-  on-behalf-of token exchange directly.
-- **Persistence modules** (`auth-persist-elasticsearch`, `auth-persist-rdbms`) — preserved as
-  designed for storage backend selection. `TokenStorePort` and `TokenMetadata` remain.
-
-### Net result
-
-- **2,549 lines deleted**, 29 lines added.
-- The sealed hierarchy is simplified but remains extensible — new grant types can be added
-  to the `permits` clause when actually needed.
+- All persistence modules (`auth-persist-rdbms`, `auth-persist-elasticsearch`)
+- `OnBehalfOfTokenRelayFilter` — uses Spring's `OAuth2AuthorizedClientManager` directly
+- `CamundaOboAutoConfiguration` — wires the OBO filter using Spring Security's native types
+- Token exchange via Spring Security's native `OAuth2AuthorizedClientManager`
 
 ## Consequences
 
-- **Positive:** Significantly less code to understand and maintain.
-- **Positive:** No speculative abstractions — code exists only when there's a consumer.
-- **Positive:** The sealed interface pattern is preserved, so adding a new grant type later
-  is a backward-compatible addition.
-- **Negative:** If a consumer needs `ClientCredentials` or `JwtBearer` grants in the future,
-  the implementation must be re-created. However, the patterns are well-established and the
-  deleted code is preserved in git history.
+- **Positive:** Eliminated 15 unused source files and reduced domain surface area.
+- **Positive:** No behavioral change — all deleted types had zero consumers.
+- **Positive:** Future grant type needs use Spring Security's native types directly, avoiding
+  a parallel type system.
+- **Negative:** If a future need arises for custom grant type modeling beyond Spring Security's
+  capabilities, the types would need to be re-created. This is considered unlikely given Spring
+  Security's comprehensive OAuth2 support.
 

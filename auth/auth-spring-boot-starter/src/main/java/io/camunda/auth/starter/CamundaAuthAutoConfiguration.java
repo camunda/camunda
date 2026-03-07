@@ -16,7 +16,6 @@ import io.camunda.auth.domain.support.CamundaAuthenticationDelegatingConverter;
 import io.camunda.auth.domain.support.CamundaAuthenticationDelegatingHolder;
 import io.camunda.auth.spring.DefaultCamundaAuthenticationProvider;
 import io.camunda.auth.spring.SpringAuthenticationAdapter;
-import io.camunda.auth.spring.SpringOidcTokenExchangeConverter;
 import io.camunda.auth.spring.converter.NoOpMembershipResolver;
 import io.camunda.auth.spring.converter.OidcTokenAuthenticationConverter;
 import io.camunda.auth.spring.converter.TokenClaimsConverter;
@@ -53,12 +52,6 @@ public class CamundaAuthAutoConfiguration {
   @ConditionalOnMissingBean
   public AuthenticationPort authenticationPort() {
     return new SpringAuthenticationAdapter();
-  }
-
-  @Bean
-  @ConditionalOnMissingBean
-  public SpringOidcTokenExchangeConverter springOidcTokenExchangeConverter() {
-    return new SpringOidcTokenExchangeConverter();
   }
 
   @Bean

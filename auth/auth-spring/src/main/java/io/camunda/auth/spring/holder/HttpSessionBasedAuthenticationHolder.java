@@ -15,6 +15,8 @@ import jakarta.servlet.http.HttpSession;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -27,6 +29,15 @@ public class HttpSessionBasedAuthenticationHolder implements CamundaAuthenticati
   public static final String CAMUNDA_AUTHENTICATION_SESSION_HOLDER_KEY =
       "io.camunda.security.session:CamundaAuthentication";
   public static final String LAST_REFRESH_ATTR = "AUTH_LAST_REFRESH";
+
+  /**
+   * Per-session lock objects keyed by session ID. Using a ConcurrentMap instead of a session
+   * attribute avoids two problems: (1) session.getAttribute() can return null after session
+   * deserialization, causing NPE in synchronized blocks; (2) deserialized String attributes may
+   * yield different object references across calls, breaking synchronized semantics.
+   */
+  private static final ConcurrentMap<String, Object> SESSION_LOCKS = new ConcurrentHashMap<>();
+
   private final Duration authenticationRefreshInterval;
 
   public HttpSessionBasedAuthenticationHolder(final Duration authenticationRefreshInterval) {
@@ -71,9 +82,9 @@ public class HttpSessionBasedAuthenticationHolder implements CamundaAuthenticati
   }
 
   private void lockAndRefresh(final HttpSession session, final Instant now) {
-    final Instant lastRefresh;
-    synchronized (session.getAttribute(LAST_REFRESH_ATTR + "_LOCK")) {
-      lastRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
+    final Object lock = SESSION_LOCKS.computeIfAbsent(session.getId(), id -> new Object());
+    synchronized (lock) {
+      final Instant lastRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
       if (isRefreshRequired(lastRefresh, now)) {
         removeCamundaAuthenticationInSession(session);
         session.setAttribute(LAST_REFRESH_ATTR, now);
@@ -93,11 +104,11 @@ public class HttpSessionBasedAuthenticationHolder implements CamundaAuthenticati
 
   public void removeCamundaAuthenticationInSession(final HttpSession session) {
     session.removeAttribute(CAMUNDA_AUTHENTICATION_SESSION_HOLDER_KEY);
+    SESSION_LOCKS.remove(session.getId());
   }
 
   private static void initializeRefreshAttributes(final HttpSession session, final Instant now) {
     session.setAttribute(LAST_REFRESH_ATTR, now);
-    session.setAttribute(LAST_REFRESH_ATTR + "_LOCK", session.getId() + "LOCK");
   }
 
   private boolean isRefreshRequired(final Instant lastRefresh, final Instant now) {

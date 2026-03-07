@@ -57,6 +57,12 @@ public class RdbmsSessionPersistenceAdapter implements SessionPersistencePort {
         .collect(Collectors.toList());
   }
 
+  @Override
+  public void deleteExpired() {
+    LOG.debug("Deleting expired web sessions");
+    mapper.deleteExpired(System.currentTimeMillis());
+  }
+
   private static WebSessionEntity toEntity(final SessionData data) {
     final WebSessionEntity entity = new WebSessionEntity();
     entity.setSessionId(data.id());

@@ -100,7 +100,8 @@ public class ElasticsearchTokenStoreAdapter implements TokenStorePort {
         indexName);
     try {
       final Query subjectQuery =
-          Query.of(q -> q.term(t -> t.field("subjectPrincipalId").value(subjectPrincipalId)));
+          Query.of(
+              q -> q.term(t -> t.field("subjectPrincipalId.keyword").value(subjectPrincipalId)));
       final Query rangeQuery =
           Query.of(
               q ->

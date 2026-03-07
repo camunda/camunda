@@ -18,5 +18,28 @@ public interface SessionPersistencePort {
 
   void deleteById(String sessionId);
 
+  /**
+   * Returns all persisted sessions.
+   *
+   * @deprecated Use {@link #deleteExpired()} instead, which allows backends to handle expiry
+   *     natively without loading all sessions into memory.
+   */
+  @Deprecated
   List<SessionData> findAll();
+
+  /**
+   * Deletes all expired sessions from the underlying store. Implementations should handle expiry
+   * natively (e.g. via a database query) rather than loading all sessions into memory.
+   *
+   * <p>The default implementation falls back to {@link #findAll()} filtering, which is kept only
+   * for backward compatibility with existing implementations.
+   */
+  default void deleteExpired() {
+    final long now = System.currentTimeMillis();
+    findAll().stream()
+        .filter(
+            session ->
+                session.lastAccessedTime() + (session.maxInactiveIntervalInSeconds() * 1000) < now)
+        .forEach(session -> deleteById(session.id()));
+  }
 }

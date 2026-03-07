@@ -25,7 +25,7 @@ import org.springframework.context.annotation.Bean;
 public class CamundaAuthPersistenceAutoConfiguration {
 
   @Bean
-  @ConditionalOnMissingBean
+  @ConditionalOnMissingBean(name = "compositeTokenStore")
   @ConditionalOnBean(TokenStorePort.class)
   public TokenStorePort compositeTokenStore(final List<TokenStorePort> stores) {
     if (stores.size() == 1) {

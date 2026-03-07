@@ -12,6 +12,7 @@ import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.json.JsonData;
 import io.camunda.auth.domain.model.SessionData;
 import io.camunda.auth.domain.spi.SessionPersistencePort;
 import java.io.IOException;
@@ -103,6 +104,34 @@ public class ElasticsearchSessionPersistenceAdapter implements SessionPersistenc
       throw new RuntimeException("Failed to search sessions in index=" + indexName, e);
     } catch (final IOException e) {
       throw new RuntimeException("I/O error searching sessions in index=" + indexName, e);
+    }
+  }
+
+  @Override
+  public void deleteExpired() {
+    LOG.debug("Deleting expired sessions from index={}", indexName);
+    final long now = System.currentTimeMillis();
+    try {
+      client.deleteByQuery(
+          request ->
+              request
+                  .index(indexName)
+                  .query(
+                      q ->
+                          q.script(
+                              s ->
+                                  s.script(
+                                      sc ->
+                                          sc.lang("painless")
+                                              .source(
+                                                  "doc['lastAccessedTime'].value"
+                                                      + " + doc['maxInactiveIntervalInSeconds'].value * 1000"
+                                                      + " < params.now")
+                                              .params("now", JsonData.of(now))))));
+    } catch (final ElasticsearchException e) {
+      LOG.warn("Failed to delete expired sessions from index={}: {}", indexName, e.getMessage());
+    } catch (final IOException e) {
+      throw new RuntimeException("I/O error deleting expired sessions from index=" + indexName, e);
     }
   }
 }
