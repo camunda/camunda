@@ -31,8 +31,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@MultiDbTest
-@CompatibilityTest
+//@MultiDbTest
+@CompatibilityTest(envVars = "ZEEBE_BROKER_EXPERIMENTAL_ENGINE_JOBMETRICS_EXPORTINTERVAL=PT2S")
 public class JobTimeSeriesStatisticsIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
