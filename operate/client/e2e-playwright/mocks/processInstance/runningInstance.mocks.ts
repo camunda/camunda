@@ -152,7 +152,7 @@ const runningInstance: InstanceMock = {
         completed: 1,
       },
     ],
-  }
+  },
 };
 
 export {runningInstance};
