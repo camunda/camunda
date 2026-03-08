@@ -10,11 +10,14 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.gateway.impl.broker.HashBasedDispatchStrategy;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -77,6 +80,25 @@ public final class BrokerCreateProcessInstanceWithResultRequest
                     .setElementId(startInstructionReq.getElementId()))
         .forEach(requestDto::addStartInstruction);
 
+    return this;
+  }
+
+  public BrokerCreateProcessInstanceWithResultRequest setRuntimeInstructions(
+      final List<GatewayOuterClass.ProcessInstanceCreationRuntimeInstruction> runtimeInstructions) {
+    runtimeInstructions.stream()
+        .map(
+            instruction ->
+                switch (instruction.getInstructionCase()) {
+                  case TERMINATE ->
+                      new ProcessInstanceCreationRuntimeInstruction()
+                          .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+                          .setAfterElementId(instruction.getTerminate().getAfterElementId());
+                  case INSTRUCTION_NOT_SET ->
+                      throw new IllegalArgumentException(
+                          "Unsupported runtime instruction type: "
+                              + instruction.getInstructionCase().name());
+                })
+        .forEach(requestDto::addRuntimeInstruction);
     return this;
   }
 
