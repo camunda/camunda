@@ -13,13 +13,16 @@ import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreResolved;
 import static io.camunda.it.util.TestHelper.waitUntilIncidentsConditionsAreMet;
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.List;
 import java.util.Objects;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -56,7 +59,15 @@ public class IncidentIT {
             .singleItem();
 
     // when
-    camundaClient.newResolveIncidentCommand(activeIncident.getIncidentKey()).send().join();
+    Awaitility.await("Incident should be resolvable")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                camundaClient
+                    .newResolveIncidentCommand(activeIncident.getIncidentKey())
+                    .send()
+                    .join());
     waitUntilIncidentsAreResolved(camundaClient, List.of(activeIncident.getIncidentKey()));
     final var resolvedIncident =
         camundaClient.newIncidentGetRequest(activeIncident.getIncidentKey()).send().join();

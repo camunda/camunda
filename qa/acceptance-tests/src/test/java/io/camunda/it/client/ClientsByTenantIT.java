@@ -7,6 +7,7 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -55,6 +56,7 @@ public class ClientsByTenantIT {
 
     // then
     Awaitility.await("Clients are assigned to the tenant and can be searched")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -88,9 +90,15 @@ public class ClientsByTenantIT {
 
   @Test
   void searchClientsShouldReturnEmptyListWhenSearchingForNonExistingTenantId() {
-    final var clientsSearchResponse =
-        camundaClient.newClientsByTenantSearchRequest("someTenantId").send().join();
-    assertThat(clientsSearchResponse.items()).isEmpty();
+    Awaitility.await("Search for non-existing tenant should return empty list")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var clientsSearchResponse =
+                  camundaClient.newClientsByTenantSearchRequest("someTenantId").send().join();
+              assertThat(clientsSearchResponse.items()).isEmpty();
+            });
   }
 
   @Test
