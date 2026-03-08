@@ -9,12 +9,12 @@ package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.waitForProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
-import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.test.util.collection.Maps;
@@ -168,5 +168,9 @@ public class ProcessInstanceCreateTest {
         .isEqualTo(deployedProcess.getBpmnProcessId());
     assertThat(processInstanceCreation.getProcessDefinitionKey())
         .isEqualTo(deployedProcess.getProcessDefinitionKey());
+
+    // verify that the runtime instruction was honoured and the process instance is terminated
+    waitForProcessInstanceToBeTerminated(
+        camundaClient, processInstanceCreation.getProcessInstanceKey());
   }
 }
