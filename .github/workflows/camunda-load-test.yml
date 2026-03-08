@@ -287,7 +287,7 @@ jobs:
         name: Build Camunda Platform
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild ${{ inputs.enable-optimize == false && '-P\!include-optimize' || '' }}
+          maven-extra-args: -PskipFrontendBuild ${{ inputs.enable-optimize && '-Pinclude-optimize' || '-P\!include-optimize' }}
       - uses: ./.github/actions/build-platform-docker
         name: Build Camunda Docker Image
         with:
@@ -297,6 +297,16 @@ jobs:
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           dockerfile: 'camunda.Dockerfile'
+      - uses: ./.github/actions/build-platform-docker
+        name: Build Optimize Docker Image
+        if: ${{ inputs.enable-optimize }}
+        with:
+          repository: '${{ env.IMAGE_REPOSITORY }}/optimize'
+          revision: ${{ inputs.ref }}
+          push: true
+          version: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          distball: 'optimize-distro/target/camunda-optimize-*.tar.gz'
+          dockerfile: 'optimize.Dockerfile'
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -407,7 +417,7 @@ jobs:
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
             enable_optimize=${{ inputs.enable-optimize }} \
-            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }} --set orchestration.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'team-zeebe/camunda' }} --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.enable-optimize && format('--set optimize.image.tag={0}', needs.calculate-image-tag.outputs.image-tag) || '' }} ${{ inputs.platform-helm-values }}" \
+            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }} --set orchestration.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'team-zeebe/camunda' }} --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.enable-optimize && format('--set optimize.image.registry=registry.camunda.cloud --set optimize.image.repository=team-zeebe/optimize --set optimize.image.tag={0}', needs.calculate-image-tag.outputs.image-tag) || '' }} ${{ inputs.platform-helm-values }}" \
             additional_load_test_configuration="$load_test_config"
       - name: Summarize platform deployment
         if: success()
