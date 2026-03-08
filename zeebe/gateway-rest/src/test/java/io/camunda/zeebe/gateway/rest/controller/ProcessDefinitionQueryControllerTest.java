@@ -884,46 +884,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "INVALID_ARGUMENT",
                   "status": 400,
-                  "detail": "The value for page.limit is '-1' but must be a positive number.",
-                  "instance": "%s"
-                }""",
-            PROCESS_DEFINITION_SEARCH_URL);
-    // when / then
-    webClient
-        .post()
-        .uri(PROCESS_DEFINITION_SEARCH_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedResponse, JsonCompareMode.STRICT);
-
-    verify(processDefinitionServices, never()).search(any(ProcessDefinitionQuery.class));
-  }
-
-  @Test
-  void shouldInvalidateProcessDefinitionSearchQueryWithZeroLimit() {
-    // given
-    final var request =
-        """
-            {
-                "page": {
-                    "limit": 0
-                }
-            }""";
-    final var expectedResponse =
-        String.format(
-            """
-                {
-                  "type": "about:blank",
-                  "title": "INVALID_ARGUMENT",
-                  "status": 400,
-                  "detail": "The value for page.limit is '0' but must be a positive number.",
+                  "detail": "The value for page.limit is '-1' but must be a non-negative number.",
                   "instance": "%s"
                 }""",
             PROCESS_DEFINITION_SEARCH_URL);

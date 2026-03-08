@@ -1143,7 +1143,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "INVALID_ARGUMENT",
                   "status": 400,
-                  "detail": "The value for page.limit is '-1' but must be a positive number.",
+                  "detail": "The value for page.limit is '-1' but must be a non-negative number.",
                   "instance": "%s"
                 }""",
             PROCESS_INSTANCES_SEARCH_URL);
@@ -1183,7 +1183,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "INVALID_ARGUMENT",
                   "status": 400,
-                  "detail": "The value for page.limit is '-1' but must be a positive number. The value for page.from is '-1' but must be a non-negative number.",
+                  "detail": "The value for page.limit is '-1' but must be a non-negative number. The value for page.from is '-1' but must be a non-negative number.",
                   "instance": "%s"
                 }""",
             PROCESS_INSTANCES_SEARCH_URL);
