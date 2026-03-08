@@ -17,6 +17,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ final class UsageMetricArchiverJobTest extends ArchiverJobRecordingMetricsAbstra
   private static final Logger LOGGER = LoggerFactory.getLogger(UsageMetricArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
+  private final Semaphore reindexSemaphore = new Semaphore(Integer.MAX_VALUE);
 
   private final TestRepository repository = new TestRepository();
   private final UsageMetricTemplate usageMetricTemplate = new UsageMetricTemplate("", true);
@@ -35,7 +37,8 @@ final class UsageMetricArchiverJobTest extends ArchiverJobRecordingMetricsAbstra
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
 
   private final UsageMetricArchiverJob job =
-      new UsageMetricArchiverJob(repository, usageMetricTemplate, metrics, LOGGER, executor);
+      new UsageMetricArchiverJob(
+          repository, usageMetricTemplate, metrics, LOGGER, executor, reindexSemaphore);
 
   @BeforeEach
   void setUp() {

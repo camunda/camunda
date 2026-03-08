@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 
 public class BatchOperationArchiverJob extends ArchiverJob<ArchiveBatch.BasicArchiveBatch> {
@@ -31,12 +32,14 @@ public class BatchOperationArchiverJob extends ArchiverJob<ArchiveBatch.BasicArc
       final List<BatchOperationDependant> batchOperationDependants,
       final CamundaExporterMetrics metrics,
       final Logger logger,
-      final Executor executor) {
+      final Executor executor,
+      final Semaphore reindexSemaphore) {
     super(
         repository,
         metrics,
         logger,
         executor,
+        reindexSemaphore,
         metrics::recordBatchOperationsArchiving,
         metrics::recordBatchOperationsArchived);
     this.batchOperationTemplate = batchOperationTemplate;

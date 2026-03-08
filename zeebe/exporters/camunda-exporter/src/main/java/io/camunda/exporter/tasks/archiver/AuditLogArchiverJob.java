@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 
 public class AuditLogArchiverJob extends ArchiverJob<AuditLogCleanupBatch> {
@@ -28,12 +29,14 @@ public class AuditLogArchiverJob extends ArchiverJob<AuditLogCleanupBatch> {
       final AuditLogTemplate auditLogTemplate,
       final CamundaExporterMetrics exporterMetrics,
       final Logger logger,
-      final Executor executor) {
+      final Executor executor,
+      final Semaphore reindexSemaphore) {
     super(
         archiverRepository,
         exporterMetrics,
         logger,
         executor,
+        reindexSemaphore,
         exporterMetrics::recordAuditLogsArchiving,
         exporterMetrics::recordAuditLogsArchived);
     this.repository = repository;

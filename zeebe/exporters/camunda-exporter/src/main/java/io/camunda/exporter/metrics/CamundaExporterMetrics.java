@@ -99,6 +99,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   private final AtomicReference<Instant> lastFlushTime = new AtomicReference<>(Instant.now());
   private final AtomicInteger processInstancesAwaitingArchival = new AtomicInteger(0);
+  private final AtomicInteger archiverReindexTasksInFlight = new AtomicInteger(0);
 
   public CamundaExporterMetrics(final MeterRegistry meterRegistry) {
     this(meterRegistry, InstantSource.system());
@@ -285,6 +286,13 @@ public class CamundaExporterMetrics implements AutoCloseable {
             AtomicInteger::get)
         .description("Number of process instances awaiting archival (approximate)")
         .register(meterRegistry);
+
+    Gauge.builder(
+            meterName("archiver.reindex.tasks.inflight"),
+            archiverReindexTasksInFlight,
+            AtomicInteger::get)
+        .description("Number of archiver reindexing tasks inflight")
+        .register(meterRegistry);
   }
 
   public CloseableSilently measureFlushDuration() {
@@ -401,6 +409,14 @@ public class CamundaExporterMetrics implements AutoCloseable {
     processInstancesAwaitingArchival.set(count);
   }
 
+  public void beginArchiverReindexTask() {
+    archiverReindexTasksInFlight.incrementAndGet();
+  }
+
+  public void completeArchiverReindexTask() {
+    archiverReindexTasksInFlight.decrementAndGet();
+  }
+
   /**
    * For each record write timestamp, observes the export latency by subtracting the timestamp from
    * the current stream clock.
@@ -464,6 +480,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
     // Remove custom gauges by their names if needed
     removeGaugeIfExists(meterName("since.last.flush.seconds"));
     removeGaugeIfExists(meterName("process.instances.awaiting.archival"));
+    removeGaugeIfExists(meterName("archiver.reindex.tasks.inflight"));
   }
 
   private void removeGaugeIfExists(final String meterName) {
