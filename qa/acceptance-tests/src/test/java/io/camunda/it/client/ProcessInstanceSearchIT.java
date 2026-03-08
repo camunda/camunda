@@ -14,6 +14,7 @@ import static io.camunda.it.util.TestHelper.assertSorted;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.startProcessInstanceWithBusinessId;
+import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeCompleted;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitUntilJobWorkerHasFailedJob;
@@ -100,6 +101,9 @@ public class ProcessInstanceSearchIT {
 
     waitForProcessInstancesToStart(camundaClient, 10);
     waitUntilProcessInstanceHasIncidents(camundaClient, 2);
+    // Wait for manual_process (3 instances), parent_process_v1, and child_process_v1 to complete
+    // so that eventual consistency on AWS OpenSearch does not cause stale ACTIVE state
+    waitForProcessInstancesToBeCompleted(camundaClient, f -> {}, 5);
   }
 
   @AfterAll
