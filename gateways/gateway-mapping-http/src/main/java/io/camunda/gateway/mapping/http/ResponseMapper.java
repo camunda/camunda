@@ -45,12 +45,8 @@ import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionResult;
 import io.camunda.gateway.protocol.model.ExpressionEvaluationResult;
-import io.camunda.gateway.protocol.model.GroupCreateResult;
-import io.camunda.gateway.protocol.model.GroupUpdateResult;
 import io.camunda.gateway.protocol.model.JobKindEnum;
 import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
-import io.camunda.gateway.protocol.model.MappingRuleCreateResult;
-import io.camunda.gateway.protocol.model.MappingRuleUpdateResult;
 import io.camunda.gateway.protocol.model.MatchedDecisionRuleItem;
 import io.camunda.gateway.protocol.model.MessageCorrelationResult;
 import io.camunda.gateway.protocol.model.MessagePublicationResult;
@@ -58,15 +54,9 @@ import io.camunda.gateway.protocol.model.Partition.HealthEnum;
 import io.camunda.gateway.protocol.model.Partition.RoleEnum;
 import io.camunda.gateway.protocol.model.ProcessInstanceReference;
 import io.camunda.gateway.protocol.model.ResourceResult;
-import io.camunda.gateway.protocol.model.RoleCreateResult;
-import io.camunda.gateway.protocol.model.RoleUpdateResult;
 import io.camunda.gateway.protocol.model.SignalBroadcastResult;
-import io.camunda.gateway.protocol.model.TenantCreateResult;
-import io.camunda.gateway.protocol.model.TenantUpdateResult;
 import io.camunda.gateway.protocol.model.TopologyResponse;
-import io.camunda.gateway.protocol.model.UserCreateResult;
 import io.camunda.gateway.protocol.model.UserTaskProperties;
-import io.camunda.gateway.protocol.model.UserUpdateResult;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
@@ -81,8 +71,6 @@ import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
@@ -94,7 +82,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.FormMetadataRecord
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
-import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -102,8 +89,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
-import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
-import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
@@ -587,80 +572,6 @@ public final class ResponseMapper {
       final AuthorizationRecord authorizationRecord) {
     return new AuthorizationCreateResult()
         .authorizationKey(KeyUtil.keyToString(authorizationRecord.getAuthorizationKey()));
-  }
-
-  public static UserCreateResult toUserCreateResponse(final UserRecord userRecord) {
-    return new UserCreateResult()
-        .username(userRecord.getUsername())
-        .email(userRecord.getEmail())
-        .name(userRecord.getName());
-  }
-
-  public static UserUpdateResult toUserUpdateResponse(final UserRecord userRecord) {
-    return new UserUpdateResult()
-        .username(userRecord.getUsername())
-        .email(userRecord.getEmail())
-        .name(userRecord.getName());
-  }
-
-  public static RoleCreateResult toRoleCreateResponse(final RoleRecord roleRecord) {
-    return new RoleCreateResult()
-        .roleId(roleRecord.getRoleId())
-        .name(roleRecord.getName())
-        .description(roleRecord.getDescription());
-  }
-
-  public static RoleUpdateResult toRoleUpdateResponse(final RoleRecord roleRecord) {
-    return new RoleUpdateResult()
-        .roleId(roleRecord.getRoleId())
-        .description(roleRecord.getDescription())
-        .name(roleRecord.getName());
-  }
-
-  public static GroupCreateResult toGroupCreateResponse(final GroupRecord groupRecord) {
-    return new GroupCreateResult()
-        .name(groupRecord.getName())
-        .groupId(groupRecord.getGroupId())
-        .description(groupRecord.getDescription());
-  }
-
-  public static GroupUpdateResult toGroupUpdateResponse(final GroupRecord groupRecord) {
-    return new GroupUpdateResult()
-        .groupId(groupRecord.getGroupId())
-        .description(groupRecord.getDescription())
-        .name(groupRecord.getName());
-  }
-
-  public static TenantCreateResult toTenantCreateResponse(final TenantRecord record) {
-    return new TenantCreateResult()
-        .tenantId(record.getTenantId())
-        .name(record.getName())
-        .description(record.getDescription());
-  }
-
-  public static TenantUpdateResult toTenantUpdateResponse(final TenantRecord record) {
-    return new TenantUpdateResult()
-        .tenantId(record.getTenantId())
-        .name(record.getName())
-        .description(record.getDescription());
-  }
-
-  public static MappingRuleCreateResult toMappingRuleCreateResponse(
-      final MappingRuleRecord record) {
-    return new MappingRuleCreateResult()
-        .claimName(record.getClaimName())
-        .claimValue(record.getClaimValue())
-        .mappingRuleId(record.getMappingRuleId())
-        .name(record.getName());
-  }
-
-  public static MappingRuleUpdateResult toMappingRuleUpdateResponse(
-      final MappingRuleRecord record) {
-    return new MappingRuleUpdateResult()
-        .claimName(record.getClaimName())
-        .claimValue(record.getClaimValue())
-        .mappingRuleId(record.getMappingRuleId())
-        .name(record.getName());
   }
 
   public static EvaluateDecisionResult toEvaluateDecisionResponse(
