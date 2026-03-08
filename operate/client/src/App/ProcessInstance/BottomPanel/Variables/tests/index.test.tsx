@@ -155,4 +155,40 @@ describe('Variables', () => {
       }),
     ).toBeInTheDocument();
   });
+
+  it('should have a button to see full value for non-truncated variables in completed instances', async () => {
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2({isTruncated: false})],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'COMPLETED',
+    });
+    processInstanceDetailsStore.setProcessInstance({
+      ...instanceMock,
+      state: 'COMPLETED',
+    });
+
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
+
+    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
+      wrapper: getWrapper(),
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+
+    expect(
+      await screen.findByRole('button', {
+        name: 'View full value of testVariableName',
+      }),
+    ).toBeInTheDocument();
+  });
 });

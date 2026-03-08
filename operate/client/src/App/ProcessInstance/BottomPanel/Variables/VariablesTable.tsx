@@ -54,13 +54,26 @@ const VariablesTable: React.FC<Props> = ({
     (initialValues?.name === variableName && isProcessInstanceRunning) ||
     isVariableModificationAllowed;
 
-  const createFetchFullVariableHandler =
-    (variableKey: string) => async (): Promise<string | null> => {
+  const createVariableValueFetcher =
+    ({
+      variableKey,
+      value,
+      isTruncated,
+    }: {
+      variableKey: string;
+      value: string;
+      isTruncated: boolean;
+    }) =>
+    async () => {
+      if (!isTruncated) {
+        return value;
+      }
+
       try {
         const {response} = await getVariable(variableKey);
-        return response?.value ?? null;
+        return response?.value ?? value;
       } catch {
-        return null;
+        return value;
       }
     };
 
@@ -108,12 +121,11 @@ const VariablesTable: React.FC<Props> = ({
                     return (
                       <ViewFullVariableButton
                         variableName={name}
-                        onClick={
-                          isTruncated
-                            ? createFetchFullVariableHandler(variableKey)
-                            : undefined
-                        }
-                        value={!isTruncated ? value : undefined}
+                        onClick={createVariableValueFetcher({
+                          variableKey,
+                          value,
+                          isTruncated,
+                        })}
                       />
                     );
                   }
@@ -132,9 +144,11 @@ const VariablesTable: React.FC<Props> = ({
                         isTruncated ? (
                           <ViewFullVariableButton
                             variableName={name}
-                            onClick={createFetchFullVariableHandler(
+                            onClick={createVariableValueFetcher({
                               variableKey,
-                            )}
+                              value,
+                              isTruncated,
+                            })}
                           />
                         ) : null
                       }
