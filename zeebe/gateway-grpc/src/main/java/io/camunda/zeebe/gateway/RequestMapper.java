@@ -265,6 +265,7 @@ public final class RequestMapper extends RequestUtil {
         .setTenantId(ensureTenantIdSet("CreateProcessInstance", grpcRequest.getTenantId()))
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
         .setStartInstructions(grpcRequest.getStartInstructionsList())
+        .setRuntimeInstructions(grpcRequest.getRuntimeInstructionsList())
         .setTags(Set.copyOf(grpcRequest.getTagsList()))
         .setBusinessId(ensureBusinessIdValid(grpcRequest.getBusinessId()));
 
@@ -289,6 +290,7 @@ public final class RequestMapper extends RequestUtil {
         .setTenantId(ensureTenantIdSet("CreateProcessInstanceWithResult", request.getTenantId()))
         .setVariables(ensureJsonSet(request.getVariables()))
         .setStartInstructions(request.getStartInstructionsList())
+        .setRuntimeInstructions(request.getRuntimeInstructionsList())
         .setTags(Set.copyOf(request.getTagsList()))
         .setFetchVariables(grpcRequest.getFetchVariablesList())
         .setBusinessId(ensureBusinessIdValid(request.getBusinessId()));
