@@ -259,11 +259,42 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
+<<<<<<< HEAD
+=======
+      - uses: ./.github/actions/build-frontend
+        name: Build Operate Frontend
+        id: build-operate-fe
+        if: ${{ inputs.build-frontend }}
+        with:
+          directory: ./operate/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Tasklist Frontend
+        id: build-tasklist-fe
+        if: ${{ inputs.build-frontend }}
+        with:
+          directory: ./tasklist/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Identity Frontend
+        id: build-identity-fe
+        if: ${{ inputs.build-frontend }}
+        with:
+          directory: ./identity/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Optimize Frontend
+        id: build-optimize-fe
+        if: ${{ inputs.build-frontend && inputs.enable-optimize }}
+        with:
+          directory: ./optimize/client
+          package-manager: "yarn"
+>>>>>>> e3a36703 (feat: add support for building optimize Docker image based on input flag)
       - uses: ./.github/actions/build-zeebe
         name: Build Zeebe
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild -P\!include-optimize
+          maven-extra-args: -PskipFrontendBuild ${{ inputs.enable-optimize && '-Pinclude-optimize' || '-P\!include-optimize' }}
       - uses: ./.github/actions/build-platform-docker
         name: Build Zeebe Docker Image
         with:
@@ -272,7 +303,21 @@ jobs:
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
+<<<<<<< HEAD
           dockerfile: 'Dockerfile'
+=======
+          dockerfile: 'camunda.Dockerfile'
+      - uses: ./.github/actions/build-platform-docker
+        name: Build Optimize Docker Image
+        if: ${{ inputs.enable-optimize }}
+        with:
+          repository: '${{ env.IMAGE_REPOSITORY }}/optimize'
+          revision: ${{ inputs.ref }}
+          push: true
+          version: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          distball: 'optimize-distro/target/camunda-optimize-*.tar.gz'
+          dockerfile: 'optimize.Dockerfile'
+>>>>>>> e3a36703 (feat: add support for building optimize Docker image based on input flag)
       - name: Observe build status
         if: always()
         continue-on-error: true
