@@ -921,10 +921,10 @@ public final class SearchQueryRequestMapper {
           default -> null;
         };
 
-    if (limit != null && limit < 1) {
+    if (limit != null && limit < 0) {
       violations.add(
           ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-              "page.limit", limit, "a positive number"));
+              "page.limit", limit, "a non-negative number"));
     }
 
     if (requestedPage instanceof final OffsetPagination req) {
