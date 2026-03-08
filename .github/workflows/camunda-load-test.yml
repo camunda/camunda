@@ -295,11 +295,18 @@ jobs:
         with:
           directory: ./identity/client
           package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Optimize Frontend
+        id: build-optimize-fe
+        if: ${{ inputs.build-frontend && inputs.enable-optimize }}
+        with:
+          directory: ./optimize/client
+          package-manager: "yarn"
       - uses: ./.github/actions/build-zeebe
         name: Build Camunda Platform
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild -P\!include-optimize
+          maven-extra-args: -PskipFrontendBuild ${{ inputs.enable-optimize && '-Pinclude-optimize' || '-P\!include-optimize' }}
       - uses: ./.github/actions/build-platform-docker
         name: Build Camunda Docker Image
         with:
@@ -309,6 +316,16 @@ jobs:
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           dockerfile: 'camunda.Dockerfile'
+      - uses: ./.github/actions/build-platform-docker
+        name: Build Optimize Docker Image
+        if: ${{ inputs.enable-optimize }}
+        with:
+          repository: '${{ env.IMAGE_REPOSITORY }}/optimize'
+          revision: ${{ inputs.ref }}
+          push: true
+          version: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          distball: 'optimize-distro/target/camunda-optimize-*.tar.gz'
+          dockerfile: 'optimize.Dockerfile'
       - name: Observe build status
         if: always()
         continue-on-error: true
