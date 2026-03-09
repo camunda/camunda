@@ -15,6 +15,7 @@ import io.camunda.search.connect.configuration.SecurityConfiguration;
 import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.os.json.SearchRequestJacksonJsonpMapperWrapper;
 import io.camunda.search.connect.plugin.PluginRepository;
+import io.camunda.search.connect.util.HttpAuthUtil;
 import io.camunda.search.connect.util.SecurityUtil;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -234,14 +235,7 @@ public final class OpensearchConnector {
             configuration.getUsername(), configuration.getPassword().toCharArray()));
 
     builder.setDefaultCredentialsProvider(credentialsProvider);
-
-    // Add a preemptive basic auth interceptor to ensure the Authorization header is always sent
-    // on the first request. The opensearch-java ApacheHttpClient5Transport uses an internal
-    // WrappingAuthCache for preemptive auth, but its AuthScope matching with
-    // BasicCredentialsProvider can intermittently fail to attach credentials. Since the
-    // opensearch-java transport treats HTTP 401 as terminal (no retry/challenge handling),
-    // a missing Authorization header causes an unrecoverable authentication failure.
-    addPreemptiveBasicAuthInterceptor(builder, username, password);
+    HttpAuthUtil.addPreemptiveBasicAuthInterceptor(builder, username, password);
 
     return builder;
   }
@@ -253,26 +247,6 @@ public final class OpensearchConnector {
             proxyConfig.isSslEnabled() ? "https" : "http",
             proxyConfig.getHost(),
             proxyConfig.getPort()));
-  }
-
-  private void addPreemptiveBasicAuthInterceptor(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder,
-      final String username,
-      final String password) {
-    final String credentials = username + ":" + password;
-    final String encodedCredentials =
-        Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
-    final String basicAuthHeaderValue = "Basic " + encodedCredentials;
-
-    httpAsyncClientBuilder.addRequestInterceptorFirst(
-        (HttpRequestInterceptor)
-            (request, entity, context) -> {
-              if (!request.containsHeader("Authorization")) {
-                request.addHeader("Authorization", basicAuthHeaderValue);
-              }
-            });
-
-    LOGGER.debug("Preemptive basic authentication enabled for OpenSearch");
   }
 
   private void addPreemptiveProxyAuthInterceptor(

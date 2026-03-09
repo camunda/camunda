@@ -41,6 +41,7 @@ import io.camunda.optimize.service.util.mapper.CustomReportDefinitionDeserialize
 import io.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
+import io.camunda.search.connect.util.HttpAuthUtil;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -275,6 +276,8 @@ public class OpenSearchClientBuilder {
         new UsernamePasswordCredentials(username, password.toCharArray()));
 
     builder.setDefaultCredentialsProvider(credentialsProvider);
+    HttpAuthUtil.addPreemptiveBasicAuthInterceptor(builder, username, password);
+
     return builder;
   }
 

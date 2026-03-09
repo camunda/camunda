@@ -9,6 +9,7 @@ package io.camunda.tasklist.os;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.plugin.PluginRepository;
+import io.camunda.search.connect.util.HttpAuthUtil;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.OpenSearchProperties;
@@ -187,6 +188,9 @@ public class OpenSearchConnector {
             osConfig.getUsername(), osConfig.getPassword().toCharArray()));
 
     builder.setDefaultCredentialsProvider(credentialsProvider);
+    HttpAuthUtil.addPreemptiveBasicAuthInterceptor(
+        builder, osConfig.getUsername(), osConfig.getPassword());
+
     return builder;
   }
 

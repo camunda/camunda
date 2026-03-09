@@ -16,6 +16,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.ProxyProperties;
 import io.camunda.operate.property.SslProperties;
 import io.camunda.search.connect.plugin.PluginRepository;
+import io.camunda.search.connect.util.HttpAuthUtil;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -230,36 +231,10 @@ public class OpensearchConnector {
             osConfig.getUsername(), osConfig.getPassword().toCharArray()));
 
     builder.setDefaultCredentialsProvider(credentialsProvider);
-
-    // Add a preemptive basic auth interceptor to ensure the Authorization header is always sent
-    // on the first request. The opensearch-java ApacheHttpClient5Transport uses an internal
-    // WrappingAuthCache for preemptive auth, but its AuthScope matching with
-    // BasicCredentialsProvider can intermittently fail to attach credentials. Since the
-    // opensearch-java transport treats HTTP 401 as terminal (no retry/challenge handling),
-    // a missing Authorization header causes an unrecoverable authentication failure.
-    addPreemptiveBasicAuthInterceptor(builder, osConfig.getUsername(), osConfig.getPassword());
+    HttpAuthUtil.addPreemptiveBasicAuthInterceptor(
+        builder, osConfig.getUsername(), osConfig.getPassword());
 
     return builder;
-  }
-
-  private void addPreemptiveBasicAuthInterceptor(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder,
-      final String username,
-      final String password) {
-    final String credentials = username + ":" + password;
-    final String encodedCredentials =
-        Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
-    final String basicAuthHeaderValue = "Basic " + encodedCredentials;
-
-    httpAsyncClientBuilder.addRequestInterceptorFirst(
-        (HttpRequestInterceptor)
-            (request, entity, context) -> {
-              if (!request.containsHeader("Authorization")) {
-                request.addHeader("Authorization", basicAuthHeaderValue);
-              }
-            });
-
-    LOGGER.debug("Preemptive basic authentication enabled for OpenSearch");
   }
 
   private void addPreemptiveProxyAuthInterceptor(
