@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.zeebe.engine.loggers.JobAuthorizationLogger;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -28,15 +29,10 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.camunda.zeebe.util.cache.LogDeduplicationCache;
-import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Optional;
 import java.util.Set;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A behavior class which allows processors to activate a job. Use this anywhere a job should
@@ -50,9 +46,6 @@ import org.slf4j.LoggerFactory;
  * Both the job push and the job worker notification are executed through a {@link io.camunda.zeebe.stream.api.SideEffectProducer}.
  */
 public class BpmnJobActivationBehavior {
-  private static final Logger LOG = LoggerFactory.getLogger(BpmnJobActivationBehavior.class);
-  private static final int MAX_LOGGED_UNAUTHORIZED_ACCESS_ENTRIES = 10_000;
-
   private final JobStreamer jobStreamer;
   private final JobVariablesCollector jobVariablesCollector;
   private final StateWriter stateWriter;
@@ -61,8 +54,7 @@ public class BpmnJobActivationBehavior {
   private final JobProcessingMetrics jobMetrics;
   private final InstantSource clock;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
-  private final LogDeduplicationCache loggedUnauthorizedAccess =
-      LogDeduplicationCache.create(MAX_LOGGED_UNAUTHORIZED_ACCESS_ENTRIES, Duration.ofMinutes(30));
+  private final JobAuthorizationLogger jobAuthorizationLogger;
 
   public BpmnJobActivationBehavior(
       final JobStreamer jobStreamer,
@@ -80,6 +72,7 @@ public class BpmnJobActivationBehavior {
     sideEffectWriter = writers.sideEffect();
     this.clock = clock;
     authorizationCheckBehavior = authCheckBehavior;
+    this.jobAuthorizationLogger = JobAuthorizationLogger.createDefault();
   }
 
   public void publishWork(final long jobKey, final JobRecord jobRecord) {
@@ -184,77 +177,28 @@ public class BpmnJobActivationBehavior {
           case PROVIDED -> jobActivationProperties.tenantIds().contains(ownerTenantId);
         };
     if (!isTenantAuthorized) {
-      logUnauthorizedTenantAccess(jobActivationProperties, jobRecord, ownerTenantId);
+      // don't push jobs to workers that don't request them from the job's tenant
+      jobAuthorizationLogger.logUnauthorizedTenantAccess(jobActivationProperties, jobRecord);
       return false;
     }
 
     final var claims = jobActivationProperties.claims();
-    final var isResourceAuthorized =
-        authorizationCheckBehavior
-            .isAuthorized(
-                AuthorizationRequest.builder()
-                    .authorizationClaims(claims)
-                    .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                    .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-                    .addResourceId(jobRecord.getBpmnProcessId())
-                    .tenantId(ownerTenantId)
-                    .build())
-            .isRight(); // we only care if the job stream is authorized, not why it isn't
+    final var authorizationResult =
+        authorizationCheckBehavior.isAuthorized(
+            AuthorizationRequest.builder()
+                .authorizationClaims(claims)
+                .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
+                .addResourceId(jobRecord.getBpmnProcessId())
+                .tenantId(ownerTenantId)
+                .build());
 
-    if (!isResourceAuthorized) {
-      logUnauthorizedResourceAccess(jobActivationProperties, jobRecord, ownerTenantId);
-      return false;
-    }
+    authorizationResult.ifLeft(
+        ignored ->
+            jobAuthorizationLogger.logUnauthorizedResourceAccess(
+                jobActivationProperties, jobRecord));
 
-    return true;
-  }
-
-  private void logUnauthorizedTenantAccess(
-      final JobActivationProperties jobActivationProperties,
-      final JobRecord jobRecord,
-      final String ownerTenantId) {
-    final var workerName = BufferUtil.bufferAsString(jobActivationProperties.worker());
-    final var logKey =
-        String.format(
-            "tenant:%s:processId:%s:worker:%s",
-            ownerTenantId, jobRecord.getBpmnProcessId(), workerName);
-
-    if (loggedUnauthorizedAccess.markIfFirstSeen(logKey)) {
-      final var authorizedTenants =
-          authorizationCheckBehavior.getAuthorizedTenantIds(jobActivationProperties.claims());
-      LOG.warn(
-          "Job stream for worker '{}' requesting jobs of type '{}' is not authorized to access tenant '{}'. "
-              + "Job for process '{}' will not be pushed to this stream. "
-              + "Authorized tenants: {}, Tenant filter: {}",
-          workerName,
-          jobRecord.getType(),
-          ownerTenantId,
-          jobRecord.getBpmnProcessId(),
-          authorizedTenants.isAnonymous() ? "none" : authorizedTenants.getAuthorizedTenantIds(),
-          jobActivationProperties.tenantFilter());
-    }
-  }
-
-  private void logUnauthorizedResourceAccess(
-      final JobActivationProperties jobActivationProperties,
-      final JobRecord jobRecord,
-      final String ownerTenantId) {
-    final var workerName = BufferUtil.bufferAsString(jobActivationProperties.worker());
-    final var logKey =
-        String.format(
-            "tenant:%s:processId:%s:worker:%s",
-            ownerTenantId, jobRecord.getBpmnProcessId(), workerName);
-
-    if (loggedUnauthorizedAccess.markIfFirstSeen(logKey)) {
-      LOG.warn(
-          "Job stream for worker '{}' requesting jobs of type '{}' is not authorized to access process definition '{}' in tenant '{}'. "
-              + "Job will not be pushed to this stream. Required permission: {}",
-          workerName,
-          jobRecord.getType(),
-          jobRecord.getBpmnProcessId(),
-          ownerTenantId,
-          PermissionType.UPDATE_PROCESS_INSTANCE);
-    }
+    return authorizationResult.isRight();
   }
 
   private boolean isAuthorizedForJob(
