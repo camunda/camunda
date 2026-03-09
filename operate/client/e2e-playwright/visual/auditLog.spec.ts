@@ -43,6 +43,7 @@ test.describe('audit log page', () => {
 
     await operationsLogPage.gotoOperationsLogPage();
 
+    await expect(operationsLogPage.tableLoader).not.toBeVisible();
     await expect(page.getByText('No operation log items yet')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
@@ -53,6 +54,7 @@ test.describe('audit log page', () => {
 
     await operationsLogPage.gotoOperationsLogPage();
 
+    await expect(operationsLogPage.tableLoader).not.toBeVisible();
     await expect(page.getByText('Data could not be fetched')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
@@ -65,9 +67,9 @@ test.describe('audit log page', () => {
     );
 
     await operationsLogPage.gotoOperationsLogPage();
-    await page.getByTestId('data-table-loader').waitFor({state: 'detached'});
 
     await expect(operationsLogPage.operationsLogTable).toBeVisible();
+    await expect(operationsLogPage.tableLoader).not.toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
@@ -100,6 +102,7 @@ test.describe('audit log page', () => {
     });
 
     await expect(operationsLogPage.operationsLogTable).toBeVisible();
+    await expect(operationsLogPage.tableLoader).not.toBeVisible();
     await expect(operationsLogPage.processInstanceKeyFilter).toHaveValue(
       processInstanceKey,
     );
