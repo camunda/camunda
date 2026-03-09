@@ -131,14 +131,8 @@ public final class BackupEndpoint {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> query(
-      @Selector(match = Match.ALL_REMAINING) final String[] arguments) {
-    if (arguments.length > 1) {
-      return new WebEndpointResponse<>(
-          new Error().message("Invalid arguments provided."),
-          WebEndpointResponse.STATUS_BAD_REQUEST);
-    }
-    final String argument = arguments[0];
+  public WebEndpointResponse<?> query(@Selector final String prefixOrId) {
+    final String argument = prefixOrId;
     if (BackupApi.STATE.equals(argument)) {
       return state();
     }
@@ -160,25 +154,19 @@ public final class BackupEndpoint {
   }
 
   @DeleteOperation
-  public WebEndpointResponse<?> delete(@Selector(match = Match.ALL_REMAINING) final String[] path) {
-    if (path.length == 1 && BackupApi.STATE.equals(path[0])) {
+  public WebEndpointResponse<?> delete(@Selector final String id) {
+    if (BackupApi.STATE.equals(id)) {
       return deleteState();
     }
-    if (path.length == 1) {
-      final long id;
-      try {
-        id = Long.parseLong(path[0]);
-      } catch (final NumberFormatException e) {
-        return new WebEndpointResponse<>(
-            new Error()
-                .message("Expected a backup ID or 'state', but got '%s'.".formatted(path[0])),
-            WebEndpointResponse.STATUS_BAD_REQUEST);
-      }
-      return deleteBackup(id);
+    final long backupId;
+    try {
+      backupId = Long.parseLong(id);
+    } catch (final NumberFormatException e) {
+      return new WebEndpointResponse<>(
+          new Error().message("Expected a backup ID or 'state', but got '%s'.".formatted(id)),
+          WebEndpointResponse.STATUS_BAD_REQUEST);
     }
-    return new WebEndpointResponse<>(
-        new Error().message("Unknown delete operation: " + String.join("/", path)),
-        WebEndpointResponse.STATUS_BAD_REQUEST);
+    return deleteBackup(backupId);
   }
 
   private WebEndpointResponse<?> deleteBackup(final long id) {
