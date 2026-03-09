@@ -23,7 +23,15 @@ public class BatchOperationResumedV2Applier
 
   @Override
   public void applyState(final long key, final BatchOperationLifecycleManagementRecord value) {
-    batchOperationState.resume(value.getBatchOperationKey());
-    batchOperationState.addToPending(value.getBatchOperationKey());
+    final var batchOperationKey = value.getBatchOperationKey();
+    batchOperationState.resume(batchOperationKey);
+
+    // Only re-add to pending if the batch operation was not yet fully initialized.
+    // Initialized batch operations are removed from pending by transitionToInitialized()
+    // and are driven by chunk execution, not the scheduler's pending queue.
+    final var batch = batchOperationState.get(batchOperationKey);
+    if (batch.isPresent() && !batch.get().isInitialized()) {
+      batchOperationState.addToPending(batchOperationKey);
+    }
   }
 }
