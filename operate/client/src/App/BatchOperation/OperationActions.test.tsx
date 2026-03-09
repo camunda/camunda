@@ -110,7 +110,7 @@ describe('<OperationActions />', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledTimes(1);
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title: 'Operation could not be created',
+      title: 'Operation cannot be suspended',
       isDismissable: true,
     });
   });
@@ -128,8 +128,9 @@ describe('<OperationActions />', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledTimes(1);
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title:
-        'Batch operation not found. It may have already completed or failed',
+      title: 'Operation cannot be suspended',
+      subtitle:
+        'Batch operation not found. It may have already completed or failed.',
       isDismissable: true,
     });
   });
@@ -174,7 +175,7 @@ describe('<OperationActions />', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledTimes(1);
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title: 'Operation could not be created',
+      title: 'Operation cannot be resumed',
       isDismissable: true,
     });
   });
@@ -192,8 +193,9 @@ describe('<OperationActions />', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledTimes(1);
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title:
-        'Batch operation not found. It may have already completed or failed',
+      title: 'Operation cannot be resumed',
+      subtitle:
+        'Batch operation not found. It may have already completed or failed.',
       isDismissable: true,
     });
   });
@@ -237,7 +239,7 @@ describe('<OperationActions />', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledTimes(1);
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title: 'Operation could not be created',
+      title: 'Operation cannot be canceled',
       isDismissable: true,
     });
   });
@@ -256,8 +258,9 @@ describe('<OperationActions />', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledTimes(1);
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title:
-        'Batch operation not found. It may have already completed or failed',
+      title: 'Operation cannot be canceled',
+      subtitle:
+        'Batch operation not found. It may have already completed or failed.',
       isDismissable: true,
     });
   });
