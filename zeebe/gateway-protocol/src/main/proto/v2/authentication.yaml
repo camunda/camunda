@@ -38,6 +38,9 @@ components:
         - salesPlanType
         - c8Links
         - canLogout
+        - displayName
+        - email
+        - username
       properties:
         username:
           description: The username of the user.
