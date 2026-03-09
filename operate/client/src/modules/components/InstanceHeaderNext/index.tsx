@@ -15,6 +15,7 @@ import {
   NameContainer,
   InstanceName,
   IncidentCount,
+  AdditionalContent,
 } from './styled';
 import {StateIcon} from 'modules/components/StateIcon';
 import {ArrowLeft} from '@carbon/react/icons';
@@ -105,7 +106,7 @@ const InstanceHeader: React.FC<Props> = ({
           </tr>
         </tbody>
       </Table>
-      {additionalContent}
+      <AdditionalContent>{additionalContent}</AdditionalContent>
     </Container>
   );
 };
