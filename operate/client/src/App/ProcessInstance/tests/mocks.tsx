@@ -30,7 +30,7 @@ import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
-import {VariablesTab} from '../BottomPanelTabs/VariablesTab';
+import {VariablesTab} from 'App/ProcessInstance/BottomPanelTabs/VariablesTab';
 
 const mockSequenceFlowsV2: SequenceFlow[] = [
   {

@@ -47,8 +47,8 @@ const Decision: React.FC = observer(() => {
       definitionSelection.kind === 'no-match'
     ) {
       setParams((p) => {
-        p.delete('name');
-        p.delete('version');
+        p.delete('decisionDefinitionId');
+        p.delete('decisionDefinitionVersion');
         return p;
       });
       notificationsStore.displayNotification({

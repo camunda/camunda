@@ -59,9 +59,9 @@ const areDecisionIdsComplete = (value: string) => {
   );
 };
 
-const validateIdsCharacters: FieldValidator<ProcessInstanceFilters['ids']> = (
-  value = '',
-) => {
+const validateIdsCharacters: FieldValidator<
+  ProcessInstanceFilters['processInstanceKey']
+> = (value = '') => {
   if (
     value !== '' &&
     !/^[0-9]+$/g.test(value.replace(/,/g, '').replace(/\s/g, ''))
@@ -71,7 +71,7 @@ const validateIdsCharacters: FieldValidator<ProcessInstanceFilters['ids']> = (
 };
 
 const validateDecisionIdsCharacters: FieldValidator<
-  DecisionsFilter['decisionInstanceIds']
+  DecisionsFilter['decisionEvaluationInstanceKey']
 > = (value = '') => {
   if (
     value !== '' &&
@@ -81,31 +81,32 @@ const validateDecisionIdsCharacters: FieldValidator<
   }
 };
 
-const validateIdsLength: FieldValidator<ProcessInstanceFilters['ids']> = (
-  value = '',
-) => {
+const validateIdsLength: FieldValidator<
+  ProcessInstanceFilters['processInstanceKey']
+> = (value = '') => {
   if (areIdsTooLong(value)) {
     return ERRORS.ids;
   }
 };
 
 const validateDecisionIdsLength: FieldValidator<
-  DecisionsFilter['decisionInstanceIds']
+  DecisionsFilter['decisionEvaluationInstanceKey']
 > = (value = '') => {
   if (areDecisionIdsTooLong(value)) {
     return ERRORS.decisionsIds;
   }
 };
 
-const validatesIdsComplete: FieldValidator<ProcessInstanceFilters['ids']> =
-  promisifyValidator((value = '') => {
-    if (!areIdsComplete(value)) {
-      return ERRORS.ids;
-    }
-  }, VALIDATION_TIMEOUT);
+const validatesIdsComplete: FieldValidator<
+  ProcessInstanceFilters['processInstanceKey']
+> = promisifyValidator((value = '') => {
+  if (!areIdsComplete(value)) {
+    return ERRORS.ids;
+  }
+}, VALIDATION_TIMEOUT);
 
 const validatesDecisionIdsComplete: FieldValidator<
-  DecisionsFilter['decisionInstanceIds']
+  DecisionsFilter['decisionEvaluationInstanceKey']
 > = promisifyValidator((value = '') => {
   if (!areDecisionIdsComplete(value)) {
     return ERRORS.decisionsIds;
@@ -113,7 +114,7 @@ const validatesDecisionIdsComplete: FieldValidator<
 }, VALIDATION_TIMEOUT);
 
 const validateParentInstanceIdCharacters: FieldValidator<
-  ProcessInstanceFilters['parentInstanceId']
+  ProcessInstanceFilters['parentProcessInstanceKey']
 > = (value = '') => {
   if (value !== '' && !/^[0-9]+$/.test(value)) {
     return ERRORS.parentInstanceId;
@@ -121,7 +122,7 @@ const validateParentInstanceIdCharacters: FieldValidator<
 };
 
 const validateParentInstanceIdComplete: FieldValidator<
-  ProcessInstanceFilters['parentInstanceId']
+  ProcessInstanceFilters['parentProcessInstanceKey']
 > = promisifyValidator((value = '') => {
   if (!areIdsComplete(value)) {
     return ERRORS.parentInstanceId;
@@ -129,7 +130,7 @@ const validateParentInstanceIdComplete: FieldValidator<
 }, VALIDATION_TIMEOUT);
 
 const validateParentInstanceIdNotTooLong: FieldValidator<
-  ProcessInstanceFilters['parentInstanceId']
+  ProcessInstanceFilters['parentProcessInstanceKey']
 > = (value = '') => {
   if (areIdsTooLong(value)) {
     return ERRORS.parentInstanceId;
@@ -250,7 +251,7 @@ const validateMultipleVariableValuesValid: FieldValidator<
  * Validates if value contains only characters from a key or UUID
  */
 const validateOperationIdCharacters: FieldValidator<
-  ProcessInstanceFilters['operationId']
+  ProcessInstanceFilters['batchOperationId']
 > = (value = '') => {
   const schema = z.union([
     z.string().length(0),
@@ -267,7 +268,7 @@ const validateOperationIdCharacters: FieldValidator<
  * Validates if value is a complete key (16-19 characters) or a complete UUID
  */
 const validateOperationIdComplete: FieldValidator<
-  ProcessInstanceFilters['operationId']
+  ProcessInstanceFilters['batchOperationId']
 > = promisifyValidator((value = '') => {
   const schema = z.union([
     z.string().length(0),

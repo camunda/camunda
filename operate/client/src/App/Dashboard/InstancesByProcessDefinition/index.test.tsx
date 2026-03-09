@@ -126,7 +126,7 @@ describe('InstancesByProcessDefinition', () => {
 
     expect(processLink).toHaveAttribute(
       'href',
-      `${Paths.processes()}?process=orderProcess&version=all&active=true&incidents=true`,
+      `${Paths.processes()}?processDefinitionId=orderProcess&processDefinitionVersion=all&active=true&incidents=true`,
     );
 
     expect(
@@ -160,7 +160,7 @@ describe('InstancesByProcessDefinition', () => {
     ).toBeInTheDocument();
     expect(firstVersion).toHaveAttribute(
       'href',
-      `${Paths.processes()}?process=mockProcess&version=1&active=true&incidents=true`,
+      `${Paths.processes()}?processDefinitionId=mockProcess&processDefinitionVersion=1&active=true&incidents=true`,
     );
 
     const secondVersion = screen.getByRole('link', {
@@ -180,7 +180,7 @@ describe('InstancesByProcessDefinition', () => {
     ).toBeInTheDocument();
     expect(secondVersion).toHaveAttribute(
       'href',
-      `${Paths.processes()}?process=mockProcess&version=2&active=true&incidents=true`,
+      `${Paths.processes()}?processDefinitionId=mockProcess&processDefinitionVersion=2&active=true&incidents=true`,
     );
   });
 
@@ -217,7 +217,7 @@ describe('InstancesByProcessDefinition', () => {
 
     expect(processLink).toHaveAttribute(
       'href',
-      `${Paths.processes()}?process=loanProcess&version=1&active=true&incidents=true`,
+      `${Paths.processes()}?processDefinitionId=loanProcess&processDefinitionVersion=1&active=true&incidents=true`,
     );
 
     expect(screen.getByTestId('incident-instances-badge')).toHaveTextContent(
@@ -253,7 +253,7 @@ describe('InstancesByProcessDefinition', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('search')).toHaveTextContent(
-        /^\?process=loanProcess&version=1&active=true&incidents=true$/,
+        /^\?processDefinitionId=loanProcess&processDefinitionVersion=1&active=true&incidents=true$/,
       ),
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);

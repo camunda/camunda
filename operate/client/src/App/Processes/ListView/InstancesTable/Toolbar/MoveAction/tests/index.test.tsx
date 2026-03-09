@@ -63,7 +63,7 @@ describe('<MoveAction />', () => {
   it('should disable button when only finished instances are selected', async () => {
     render(<MoveAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
+        initialPath: `/processes?processDefinitionId=${PROCESS_ID}&processDefinitionVersion=1&elementId=Task`,
         withTestButtons: true,
       }),
     });
@@ -92,7 +92,7 @@ describe('<MoveAction />', () => {
   it('should disable button when start event is selected', async () => {
     render(<MoveAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=StartEvent`,
+        initialPath: `/processes?processDefinitionId=${PROCESS_ID}&processDefinitionVersion=1&elementId=StartEvent`,
         withTestButtons: true,
       }),
     });
@@ -121,7 +121,7 @@ describe('<MoveAction />', () => {
   it('should disable button when boundary event is selected', async () => {
     render(<MoveAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=BoundaryEvent`,
+        initialPath: `/processes?processDefinitionId=${PROCESS_ID}&processDefinitionVersion=1&elementId=BoundaryEvent`,
         withTestButtons: true,
       }),
     });
@@ -150,7 +150,7 @@ describe('<MoveAction />', () => {
   it('should disable button when multi instance task is selected', async () => {
     render(<MoveAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=MultiInstanceTask`,
+        initialPath: `/processes?processDefinitionId=${PROCESS_ID}&processDefinitionVersion=1&elementId=MultiInstanceTask`,
         withTestButtons: true,
       }),
     });
@@ -179,7 +179,7 @@ describe('<MoveAction />', () => {
   it('should disable button if element is attached to event based gateway', async () => {
     render(<MoveAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=MessageEvent`,
+        initialPath: `/processes?processDefinitionId=${PROCESS_ID}&processDefinitionVersion=1&elementId=MessageEvent`,
         withTestButtons: true,
       }),
     });
@@ -208,7 +208,7 @@ describe('<MoveAction />', () => {
   it('should disable button if element is inside multi instance sub process', async () => {
     render(<MoveAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=TaskInsideMultiInstance`,
+        initialPath: `/processes?processDefinitionId=${PROCESS_ID}&processDefinitionVersion=1&elementId=TaskInsideMultiInstance`,
         withTestButtons: true,
       }),
     });
@@ -237,7 +237,7 @@ describe('<MoveAction />', () => {
   it('should enable move button when active or incident instances are selected', async () => {
     render(<MoveAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
+        initialPath: `/processes?processDefinitionId=${PROCESS_ID}&processDefinitionVersion=1&elementId=Task`,
         withTestButtons: true,
       }),
     });
@@ -262,7 +262,7 @@ describe('<MoveAction />', () => {
   it('should enable move button when all instances are selected', async () => {
     const {user} = render(<MoveAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
+        initialPath: `/processes?processDefinitionId=${PROCESS_ID}&processDefinitionVersion=1&elementId=Task`,
         withTestButtons: true,
       }),
     });
@@ -283,7 +283,7 @@ describe('<MoveAction />', () => {
   it('should display migration helper modal and enter migration mode', async () => {
     const {user} = render(<MoveAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
+        initialPath: `/processes?processDefinitionId=${PROCESS_ID}&processDefinitionVersion=1&elementId=Task`,
         withTestButtons: true,
       }),
     });
@@ -320,7 +320,7 @@ describe('<MoveAction />', () => {
   it('should hide helper modal after checkbox click', async () => {
     const {user} = render(<MoveAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=Task`,
+        initialPath: `/processes?processDefinitionId=${PROCESS_ID}&processDefinitionVersion=1&elementId=Task`,
         withTestButtons: true,
       }),
     });
@@ -369,7 +369,7 @@ describe('<MoveAction />', () => {
   it('should enable move button when conditional event is selected', async () => {
     render(<MoveAction />, {
       wrapper: createWrapper({
-        initialPath: `/processes?process=${PROCESS_ID}&version=1&flowNodeId=ConditionalEvent`,
+        initialPath: `/processes?processDefinitionId=${PROCESS_ID}&processDefinitionVersion=1&elementId=ConditionalEvent`,
         withTestButtons: true,
       }),
     });

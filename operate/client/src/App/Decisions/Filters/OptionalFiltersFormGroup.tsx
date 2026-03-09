@@ -37,13 +37,13 @@ import {
 import {Close} from '@carbon/react/icons';
 
 type OptionalFilter =
-  | 'decisionInstanceIds'
-  | 'processInstanceId'
+  | 'decisionEvaluationInstanceKey'
+  | 'processInstanceKey'
   | 'evaluationDateRange';
 
 const optionalFilters: Array<OptionalFilter> = [
-  'decisionInstanceIds',
-  'processInstanceId',
+  'decisionEvaluationInstanceKey',
+  'processInstanceKey',
   'evaluationDateRange',
 ];
 
@@ -58,8 +58,8 @@ const OPTIONAL_FILTER_FIELDS: Record<
     keys: DecisionsFilterField[];
   }
 > = {
-  decisionInstanceIds: {
-    keys: ['decisionInstanceIds'],
+  decisionEvaluationInstanceKey: {
+    keys: ['decisionEvaluationInstanceKey'],
     label: 'Decision Instance Key(s)',
     type: 'multiline',
     placeholder: 'Separated by space or comma',
@@ -70,8 +70,8 @@ const OPTIONAL_FILTER_FIELDS: Record<
       validatesDecisionIdsComplete,
     ),
   },
-  processInstanceId: {
-    keys: ['processInstanceId'],
+  processInstanceKey: {
+    keys: ['processInstanceKey'],
     label: 'Process Instance Key',
     type: 'text',
     validate: mergeValidators(
@@ -81,7 +81,7 @@ const OPTIONAL_FILTER_FIELDS: Record<
     ),
   },
   evaluationDateRange: {
-    keys: ['evaluationDateAfter', 'evaluationDateBefore'],
+    keys: ['evaluationDateFrom', 'evaluationDateTo'],
     label: 'Evaluation Date Range',
   },
 };
@@ -119,8 +119,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
           new Set([
             ...currentVisibleFilters,
             ...optionalParams,
-            ...('evaluationDateAfter' in filters &&
-            'evaluationDateBefore' in filters
+            ...('evaluationDateFrom' in filters && 'evaluationDateTo' in filters
               ? ['evaluationDateRange']
               : []),
           ] as OptionalFilter[]),
@@ -165,8 +164,8 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                   filterName={filter}
                   popoverTitle="Filter decisions by evaluation date"
                   label={OPTIONAL_FILTER_FIELDS[filter].label}
-                  fromDateTimeKey="evaluationDateAfter"
-                  toDateTimeKey="evaluationDateBefore"
+                  fromDateTimeKey="evaluationDateFrom"
+                  toDateTimeKey="evaluationDateTo"
                 />
               ) : (
                 <Field

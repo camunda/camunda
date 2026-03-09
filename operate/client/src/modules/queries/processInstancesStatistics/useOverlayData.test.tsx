@@ -27,7 +27,7 @@ describe('useProcessInstancesOverlayStatistics', () => {
   );
 
   const mockFilters: ProcessInstanceFilters = {
-    flowNodeId: 'messageCatchEvent',
+    elementId: 'messageCatchEvent',
   };
 
   beforeEach(() => {

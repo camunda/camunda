@@ -24,8 +24,8 @@ const DecisionsFormGroup: React.FC = observer(() => {
   const tenantsById = useAvailableTenants();
 
   const form = useForm();
-  const nameValue = useField('name').input.value;
-  const tenantValue = useField('tenant').input.value;
+  const nameValue = useField('decisionDefinitionId').input.value;
+  const tenantValue = useField('tenantId').input.value;
 
   const definitionId = getDefinitionIdFromIdentifier(nameValue);
   const specificTenantId =
@@ -43,7 +43,7 @@ const DecisionsFormGroup: React.FC = observer(() => {
     <div>
       <Title>Decision</Title>
       <Stack gap={5}>
-        <Field name="name">
+        <Field name="decisionDefinitionId">
           {({input}) => {
             return (
               <ComboBox
@@ -61,9 +61,12 @@ const DecisionsFormGroup: React.FC = observer(() => {
                     (d) => d.identifier === selectedItem?.id,
                   );
                   input.onChange(selectedItem?.id);
-                  form.change('version', matchingDecision?.version ?? '');
+                  form.change(
+                    'decisionDefinitionVersion',
+                    matchingDecision?.version ?? '',
+                  );
                   if (isMultiTenancyEnabled && matchingDecision) {
-                    form.change('tenant', matchingDecision.tenantId);
+                    form.change('tenantId', matchingDecision.tenantId);
                   }
                 }}
                 titleText="Name"
@@ -74,7 +77,7 @@ const DecisionsFormGroup: React.FC = observer(() => {
             );
           }}
         </Field>
-        <Field name="version">
+        <Field name="decisionDefinitionVersion">
           {({input}) => (
             <Dropdown
               label="Select a Decision Version"

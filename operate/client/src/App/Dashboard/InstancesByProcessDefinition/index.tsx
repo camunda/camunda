@@ -77,8 +77,8 @@ const InstancesByProcessDefinition: React.FC<Props> = ({
           instance: (
             <LinkWrapper
               to={Locations.processes({
-                process: processDefinitionId,
-                version: version.toString(),
+                processDefinitionId,
+                processDefinitionVersion: version.toString(),
                 active: true,
                 incidents: true,
                 ...(totalInstancesCount === 0
@@ -89,7 +89,7 @@ const InstancesByProcessDefinition: React.FC<Props> = ({
                   : {}),
                 ...(isMultiTenancyEnabled
                   ? {
-                      tenant: normalizedTenantId,
+                      tenantId: normalizedTenantId,
                     }
                   : {}),
               })}
