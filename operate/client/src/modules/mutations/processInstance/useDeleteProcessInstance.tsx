@@ -17,10 +17,7 @@ import {queryKeys} from 'modules/queries/queryKeys';
 
 function useDeleteProcessInstance(
   processInstanceKey: string,
-  options?: Pick<
-    UseMutationOptions<Response, Error>,
-    'onSuccess' | 'onError'
-  > & {
+  options?: Omit<UseMutationOptions, 'mutationFn'> & {
     shouldSkipResultCheck?: boolean;
   },
 ) {
