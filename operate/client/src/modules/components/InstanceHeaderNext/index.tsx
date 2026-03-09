@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button} from '@carbon/react';
 import {
   Container,
   Table,
@@ -18,7 +17,6 @@ import {
   AdditionalContent,
 } from './styled';
 import {StateIcon} from 'modules/components/StateIcon';
-import {ArrowLeft} from '@carbon/react/icons';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 
 type Column = {
@@ -36,8 +34,6 @@ type Props = {
   bodyColumns: Column[];
   additionalContent?: React.ReactNode;
   hideBottomBorder?: boolean;
-  backButtonLabel?: string;
-  onBackClick?: React.MouseEventHandler<HTMLButtonElement>;
 };
 
 const InstanceHeader: React.FC<Props> = ({
@@ -48,27 +44,12 @@ const InstanceHeader: React.FC<Props> = ({
   incidentsCount = 0,
   additionalContent,
   hideBottomBorder = false,
-  backButtonLabel = 'Back',
-  onBackClick,
 }) => {
   return (
     <Container
       data-testid="instance-header"
       $hideBottomBorder={hideBottomBorder}
     >
-      {onBackClick && (
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={ArrowLeft}
-          hasIconOnly
-          iconDescription={backButtonLabel}
-          aria-label={backButtonLabel}
-          tooltipPosition="bottom"
-          tooltipAlignment="start"
-          onClick={onBackClick}
-        />
-      )}
       <StateIcon state={state} size={24} data-testid={`${state}-icon`} />
 
       <NameContainer>

@@ -24,7 +24,6 @@ import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessI
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {getClientConfig} from 'modules/utils/getClientConfig';
-import {useNavigate} from 'react-router-dom';
 
 const headerColumns = [
   'Process Instance Key',
@@ -74,7 +73,6 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
     hasIncident,
     processDefinitionId,
   } = processInstance;
-  const navigate = useNavigate();
   const tenantsById = useAvailableTenants();
   const tenantName = tenantsById[tenantId] ?? tenantId;
 
@@ -89,13 +87,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   });
 
   if (processInstance === null || isPending) {
-    return (
-      <Skeleton
-        backButtonLabel="Back"
-        onBackClick={() => navigate(-1)}
-        headerColumns={skeletonColumns}
-      />
-    );
+    return <Skeleton headerColumns={skeletonColumns} />;
   }
 
   const versionColumnTitle = `View process "${getProcessDefinitionName(
@@ -111,8 +103,6 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
       state={processInstanceState}
       instanceName={getProcessDefinitionName(processInstance)}
       incidentsCount={incidentsCount}
-      backButtonLabel="Back"
-      onBackClick={() => navigate(-1)}
       headerColumns={headerColumns.filter((name) => {
         if (name === 'Tenant') {
           return isMultiTenancyEnabled;
