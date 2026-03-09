@@ -117,25 +117,25 @@ describe('InstanceHeader', () => {
   });
 
   it('should render an incidents count for process instances with incidents', async () => {
-    const finishedInstance = {
+    const failedInstance = {
       ...mockInstance,
       state: 'ACTIVE',
       hasIncident: true,
     } satisfies typeof mockInstance;
     mockSearchIncidentsByProcessInstance(
-      finishedInstance.processInstanceKey,
+      failedInstance.processInstanceKey,
     ).withSuccess(mockIncidents);
     mockQueryBatchOperationItems().withSuccess(searchResult([]));
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
-    render(<ProcessInstanceHeader processInstance={finishedInstance} />, {
+    render(<ProcessInstanceHeader processInstance={failedInstance} />, {
       wrapper: Wrapper,
     });
 
     expect(await screen.findByText('2 Incidents')).toBeInTheDocument();
     expect(screen.getByTestId(`INCIDENT-icon`)).toBeInTheDocument();
     expect(
-      screen.getByText(finishedInstance.processDefinitionName),
+      screen.getByText(failedInstance.processDefinitionName),
     ).toBeInTheDocument();
   });
 
