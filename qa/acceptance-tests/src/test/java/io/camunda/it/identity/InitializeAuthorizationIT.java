@@ -25,6 +25,7 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.configuration.ConfiguredAuthorization;
+import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -49,6 +50,8 @@ class InitializeAuthorizationIT {
           AuthorizationResourceType.PROCESS_DEFINITION,
           "*",
           Set.of(PermissionType.READ_PROCESS_INSTANCE, PermissionType.CREATE_PROCESS_INSTANCE));
+  private static final ConfiguredUser RESTRICTED_USER =
+      new ConfiguredUser(RESTRICTED, DEFAULT_PASSWORD, RESTRICTED, "");
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -56,7 +59,10 @@ class InitializeAuthorizationIT {
           .withBasicAuth()
           .withAuthorizationsEnabled()
           .withSecurityConfig(
-              conf -> conf.getInitialization().setAuthorizations(List.of(CONFIGURED_AUTH_1)));
+              conf -> {
+                conf.getInitialization().setAuthorizations(List.of(CONFIGURED_AUTH_1));
+                conf.getInitialization().getUsers().add(RESTRICTED_USER);
+              });
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -67,10 +73,6 @@ class InitializeAuthorizationIT {
               new Permissions(AUTHORIZATION, READ, List.of("*")),
               new Permissions(AUTHORIZATION, CREATE, List.of("*")),
               new Permissions(AUTHORIZATION, DELETE, List.of("*"))));
-
-  @UserDefinition
-  private static final TestUser RESTRICTED_USER =
-      new TestUser(RESTRICTED, DEFAULT_PASSWORD, List.of());
 
   @Test
   void searchShouldReturnAuthorizationsFromInitialization(

@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_GROUPS_ENABLED;
+import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_USERS_ENABLED;
+
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -35,8 +38,6 @@ import java.util.Map;
 
 public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
 
-  public static final String IS_CAMUNDA_USERS_ENABLED = "is_camunda_users_enabled";
-  public static final String IS_CAMUNDA_GROUPS_ENABLED = "is_camunda_groups_enabled";
   public static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
       "Expected to update role with ID '%s', but a role with this ID does not exist.";
   public static final String ENTITY_NOT_FOUND_ERROR_MESSAGE =
