@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.runtime.properties;
 
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
@@ -72,12 +73,8 @@ public class JudgeProperties {
 
   public boolean isExplicitlyConfigured() {
     return Double.compare(threshold, DEFAULT_THRESHOLD) != 0
-        || hasText(customPrompt)
-        || hasText(chatModelProvider);
-  }
-
-  private boolean hasText(final String text) {
-    return text != null && !text.trim().isEmpty();
+        || isNotBlank(customPrompt)
+        || isNotBlank(chatModelProvider);
   }
 
   public double getThreshold() {
