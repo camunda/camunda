@@ -46,6 +46,20 @@ const WarningFilled = styled(BaseWarningFilled)`
   margin-top: ${spacing01};
 `;
 
+const CountBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 ${spacing01};
+  border-radius: 50%;
+  background-color: var(--cds-layer-accent-01);
+  color: var(--cds-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+`;
+
 export {
   Content,
   EmptyMessageContainer,
@@ -53,4 +67,5 @@ export {
   Form,
   VariablesContainer,
   WarningFilled,
+  CountBadge,
 };

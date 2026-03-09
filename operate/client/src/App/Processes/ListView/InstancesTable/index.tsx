@@ -157,7 +157,12 @@ const InstancesTable: React.FC = observer(() => {
             processName: (
               <ProcessName>
                 <StateIcon
-                  state={instance.state}
+                  state={
+                    // TODO: Remove hardcoded prototype state
+                    instance.id === '2251799813700045'
+                      ? 'SUSPENDED'
+                      : instance.state
+                  }
                   data-testid={`${instance.state}-icon-${instance.id}`}
                   size={20}
                 />

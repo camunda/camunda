@@ -18,7 +18,13 @@ import {getIncidentsSearchFilter} from 'modules/utils/incidents';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {IncidentsTable} from '../../IncidentsWrapper/IncidentsTable';
 import {IncidentsFilter} from '../../IncidentsWrapper/IncidentsFilter';
-import {Content, FilterContainer, ViewAllIncidentsBar} from './IncidentsContent.styled';
+import {
+  Content,
+  FilterContainer,
+  ViewAllIncidentsBar,
+  ResolvedIncidentsContainer,
+} from './IncidentsContent.styled';
+import {PanelHeader} from 'modules/components/PanelHeader';
 import {isInstanceRunning} from 'modules/utils/instance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
@@ -134,6 +140,14 @@ const IncidentsContent: React.FC = observer(() => {
           processInstanceKey={processInstance.processInstanceKey}
           incidents={enhancedIncidents}
         />
+        <ResolvedIncidentsContainer>
+          <PanelHeader title="Resolved incidents" size="sm" />
+        </ResolvedIncidentsContainer>
+        <IncidentsTable
+          state={handle.displayState}
+          processInstanceKey={processInstance.processInstanceKey}
+          incidents={enhancedIncidents}
+        />
       </Content>
     );
   }
@@ -174,6 +188,14 @@ const IncidentsContent: React.FC = observer(() => {
           state={handle.displayState}
           onVerticalScrollStartReach={handle.handleScrollStartReach}
           onVerticalScrollEndReach={handle.handleScrollEndReach}
+          processInstanceKey={processInstance.processInstanceKey}
+          incidents={enhancedIncidents}
+        />
+        <ResolvedIncidentsContainer>
+          <PanelHeader title="Resolved incidents" size="sm" />
+        </ResolvedIncidentsContainer>
+        <IncidentsTable
+          state={handle.displayState}
           processInstanceKey={processInstance.processInstanceKey}
           incidents={enhancedIncidents}
         />
@@ -226,6 +248,14 @@ const IncidentsContent: React.FC = observer(() => {
           state={handle.displayState}
           onVerticalScrollStartReach={handle.handleScrollStartReach}
           onVerticalScrollEndReach={handle.handleScrollEndReach}
+          processInstanceKey={processInstance.processInstanceKey}
+          incidents={enhancedIncidents}
+        />
+        <ResolvedIncidentsContainer>
+          <PanelHeader title="Resolved incidents" size="sm" />
+        </ResolvedIncidentsContainer>
+        <IncidentsTable
+          state={handle.displayState}
           processInstanceKey={processInstance.processInstanceKey}
           incidents={enhancedIncidents}
         />

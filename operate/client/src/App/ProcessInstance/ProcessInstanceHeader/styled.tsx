@@ -55,4 +55,32 @@ const IncidentCount = styled.div`
   letter-spacing: 0.16px;
 `;
 
-export {VersionTag, ProcessNameContainer, ProcessNameLabel, IncidentCount, HeaderContent};
+const StatusMessage = styled.div`
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.28572;
+  letter-spacing: 0.16px;
+`;
+
+const SuspendedStatus = styled(StatusMessage)`
+  color: var(--cds-icon-secondary);
+`;
+
+const WaitingStatus = styled(StatusMessage)`
+  color: #eb6200;
+`;
+
+const DegradedStatus = styled(StatusMessage)`
+  color: #eb6200;
+`;
+
+export {
+  VersionTag,
+  ProcessNameContainer,
+  ProcessNameLabel,
+  IncidentCount,
+  HeaderContent,
+  SuspendedStatus,
+  WaitingStatus,
+  DegradedStatus,
+};

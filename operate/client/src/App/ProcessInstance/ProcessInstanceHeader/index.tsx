@@ -23,6 +23,9 @@ import {
   ProcessNameLabel,
   IncidentCount,
   HeaderContent,
+  SuspendedStatus,
+  WaitingStatus,
+  DegradedStatus,
 } from './styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
@@ -131,7 +134,16 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance, isBreadcrumbVi
     isMultiTenancyEnabled ? ` - ${tenantName}` : ''
   }`;
   const hasVersionTag = !isNil(processDefinitionVersionTag);
-  const processInstanceState = hasIncident ? 'INCIDENT' : state;
+  // TODO: Remove hardcoded prototype states
+  const isSuspended = processInstanceKey === '2251799813700045';
+  const isWaitingForTimer = processInstanceKey === '2251799813700037';
+  const isDegraded = processInstanceKey === '2251799813699972';
+
+  const processInstanceState = isSuspended
+    ? 'SUSPENDED'
+    : hasIncident
+      ? 'INCIDENT'
+      : state;
   const hasEndDate = state === 'COMPLETED' || state === 'TERMINATED';
 
   const processName = getProcessDefinitionName(processInstance);
@@ -282,8 +294,27 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance, isBreadcrumbVi
       }
       customContent={
         <HeaderContent>
-          <ProcessNameContainer $hasIncident={hasIncident}>
-            {hasIncident ? (
+          <ProcessNameContainer
+            $hasIncident={
+              hasIncident || isSuspended || isWaitingForTimer || isDegraded
+            }
+          >
+            {isSuspended ? (
+              <>
+                <ProcessNameLabel>{processName}</ProcessNameLabel>
+                <SuspendedStatus>Suspended</SuspendedStatus>
+              </>
+            ) : isWaitingForTimer ? (
+              <>
+                <ProcessNameLabel>{processName}</ProcessNameLabel>
+                <WaitingStatus>Waiting for timer</WaitingStatus>
+              </>
+            ) : isDegraded ? (
+              <>
+                <ProcessNameLabel>{processName}</ProcessNameLabel>
+                <DegradedStatus>Degraded: 1 retry left</DegradedStatus>
+              </>
+            ) : hasIncident ? (
               <>
                 <ProcessNameLabel>{processName}</ProcessNameLabel>
                 <IncidentCount>

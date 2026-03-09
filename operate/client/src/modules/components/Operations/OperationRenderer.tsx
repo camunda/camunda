@@ -46,6 +46,17 @@ const OperationRenderer: React.FC<Props> = ({
       );
     case 'CANCEL_PROCESS_INSTANCE':
       return <Cancel {...baseProps} />;
+    case 'RESUME_PROCESS_INSTANCE':
+      return (
+        <OperationItem
+          type="RESUME_PROCESS_INSTANCE"
+          onClick={operation.onExecute}
+          title={operation.label || `Resume Instance ${processInstanceKey}`}
+          disabled={operation.disabled}
+          size="sm"
+          useIcons={useIcons}
+        />
+      );
     case 'DELETE_PROCESS_INSTANCE':
       return <Delete {...baseProps} />;
     case 'ENTER_MODIFICATION_MODE':

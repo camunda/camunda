@@ -35,5 +35,16 @@ const ViewAllIncidentsBar = styled.div`
   }
 `;
 
-export {Content, FilterContainer, ViewAllIncidentsBar};
+const ResolvedIncidentsContainer = styled.div`
+  padding-top: var(--cds-spacing-05);
+  border-top: 1px solid var(--cds-border-subtle-01);
+  margin-top: var(--cds-spacing-05);
+`;
+
+export {
+  Content,
+  FilterContainer,
+  ViewAllIncidentsBar,
+  ResolvedIncidentsContainer,
+};
 

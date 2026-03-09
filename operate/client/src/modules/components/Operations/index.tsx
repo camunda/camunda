@@ -18,6 +18,7 @@ const OPERATION_LABELS: Record<OperationType, string> = {
   RESOLVE_INCIDENT: 'Retry',
   MIGRATE_PROCESS_INSTANCE: 'Migrate',
   CANCEL_PROCESS_INSTANCE: 'Cancel',
+  RESUME_PROCESS_INSTANCE: 'Resume',
   DELETE_PROCESS_INSTANCE: 'Delete',
   ENTER_MODIFICATION_MODE: 'Modify',
 };

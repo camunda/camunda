@@ -12,6 +12,7 @@ import {
   WarningFilled as BaseWarningFilled,
   CheckmarkOutline as BaseCheckmarkOutline,
   RadioButtonChecked as BaseRadioButtonChecked,
+  PauseOutlineFilled as BasePauseOutlineFilled,
 } from '@carbon/react/icons';
 
 const WarningFilled = styled(BaseWarningFilled)`
@@ -26,4 +27,8 @@ const RadioButtonChecked = styled(BaseRadioButtonChecked)`
   fill: var(--cds-support-success);
 `;
 
-export {WarningFilled, CheckmarkOutline, RadioButtonChecked};
+const PauseOutlineFilled = styled(BasePauseOutlineFilled)`
+  fill: var(--cds-icon-secondary);
+`;
+
+export {WarningFilled, CheckmarkOutline, RadioButtonChecked, PauseOutlineFilled};

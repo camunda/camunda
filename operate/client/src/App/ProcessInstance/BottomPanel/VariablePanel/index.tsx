@@ -18,7 +18,7 @@ import {DetailsContent} from './DetailsContent';
 import {IncidentsContent} from './IncidentsContent';
 import {Listeners, type ListenerTypeFilter} from './Listeners';
 import {OperationsLog} from './OperationsLog';
-import {WarningFilled} from './styled';
+import {WarningFilled, CountBadge} from './styled';
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
@@ -105,9 +105,9 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     (isRootNodeSelected && processIncidentsCount > 0) ||
     (!isRootNodeSelected && elementIncidentsCountFinal > 0);
 
-  const incidentsTabLabel = shouldShowIncidentsTab
-    ? `Incidents (${isRootNodeSelected ? processIncidentsCount : elementIncidentsCountFinal})`
-    : 'Incidents';
+  const incidentsCount = isRootNodeSelected
+    ? processIncidentsCount
+    : elementIncidentsCountFinal;
 
   const shouldFetchListeners = resolvedElementInstanceKey || selectedElementId;
   const {
@@ -140,7 +140,10 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
           ? [
               {
                 id: tabIds.incidents,
-                label: incidentsTabLabel,
+                label: 'Incidents',
+                labelIcon: (
+                  <CountBadge>{incidentsCount}</CountBadge>
+                ),
                 content: <IncidentsContent />,
                 removePadding: true,
                 onClick: () => {

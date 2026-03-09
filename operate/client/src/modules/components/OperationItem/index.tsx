@@ -12,6 +12,7 @@ import {
   Tools,
   RetryFailed,
   MigrateAlt,
+  PlayOutline,
   type CarbonIconType,
 } from '@carbon/react/icons';
 
@@ -20,6 +21,7 @@ type ItemProps = {
     | 'RESOLVE_INCIDENT'
     | 'MIGRATE_PROCESS_INSTANCE'
     | 'CANCEL_PROCESS_INSTANCE'
+    | 'RESUME_PROCESS_INSTANCE'
     | 'ENTER_MODIFICATION_MODE';
   onClick: React.ComponentProps<'button'>['onClick'];
   title: string;
@@ -36,6 +38,7 @@ const TYPE_DETAILS: Readonly<
       testId: string;
       isDangerous?: boolean;
       label: string;
+      kind?: React.ComponentProps<typeof Button>['kind'];
     }
   >
 > = {
@@ -54,6 +57,12 @@ const TYPE_DETAILS: Readonly<
     label: 'Cancel',
     icon: Error,
   },
+  RESUME_PROCESS_INSTANCE: {
+    testId: 'resume-operation',
+    label: 'Resume',
+    icon: PlayOutline,
+    kind: 'primary',
+  },
   ENTER_MODIFICATION_MODE: {
     testId: 'enter-modification-mode',
     label: 'Modify',
@@ -69,13 +78,14 @@ const OperationItem: React.FC<ItemProps> = ({
   size,
   useIcons = false,
 }) => {
-  const {testId, label, isDangerous, icon} = TYPE_DETAILS[type];
+  const {testId, label, isDangerous, icon, kind} = TYPE_DETAILS[type];
+  const buttonKind = kind ?? 'ghost';
 
   if (useIcons && icon) {
     return (
       <li>
         <Button
-          kind="ghost"
+          kind={buttonKind}
           renderIcon={icon}
           tooltipPosition="left"
           iconDescription={title}
@@ -94,7 +104,7 @@ const OperationItem: React.FC<ItemProps> = ({
   return (
     <li>
       <Button
-        kind="ghost"
+        kind={buttonKind}
         renderIcon={icon}
         onClick={onClick}
         disabled={disabled}

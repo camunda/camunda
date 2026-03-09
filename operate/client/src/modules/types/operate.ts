@@ -22,6 +22,7 @@ type FlowNodeState = 'active' | 'incidents' | 'canceled' | 'completed';
 
 type InstanceEntityState =
   | 'ACTIVE'
+  | 'SUSPENDED'
   | 'COMPLETED'
   | 'CANCELED'
   | 'INCIDENT'

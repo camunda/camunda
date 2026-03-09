@@ -136,6 +136,10 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   const isInstanceActive = processInstance.state === 'ACTIVE';
   const {isModificationModeEnabled} = modificationsStore;
 
+  // TODO: Remove hardcoded prototype state
+  const isSuspended =
+    processInstance.processInstanceKey === '2251799813700045';
+
   if (
     isInstanceActive &&
     processInstance.hasIncident &&
@@ -150,7 +154,14 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
     });
   }
 
-  if (isInstanceActive && !isModificationModeEnabled) {
+  if (isSuspended && !isModificationModeEnabled) {
+    operations.push({
+      type: 'RESUME_PROCESS_INSTANCE',
+      onExecute: () => {
+        // TODO: Replace with actual resume API call
+      },
+    });
+  } else if (isInstanceActive && !isModificationModeEnabled) {
     operations.push({
       type: 'CANCEL_PROCESS_INSTANCE',
       onExecute: cancelProcessInstance,
