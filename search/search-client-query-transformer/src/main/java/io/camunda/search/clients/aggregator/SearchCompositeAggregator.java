@@ -19,6 +19,26 @@ public record SearchCompositeAggregator(
     List<SearchAggregator> sources)
     implements SearchAggregator {
 
+  public static final String COMPOSITE_KEY_DELIMITER = "__";
+
+  /** Joins multiple composite source values into a single bucket map key. */
+  public static String joinKeys(final String... parts) {
+    return String.join(COMPOSITE_KEY_DELIMITER, parts);
+  }
+
+  /**
+   * Splits a composite bucket key back into its parts.
+   *
+   * <p>Uses a bounded split so that the last part can itself contain the delimiter.
+   *
+   * @param key the composite key (e.g. {@code "errorCode__errorMessage"})
+   * @param expectedParts the number of parts expected (i.e. number of composite sources)
+   * @return an array of length {@code expectedParts}
+   */
+  public static String[] splitKey(final String key, final int expectedParts) {
+    return key.split(COMPOSITE_KEY_DELIMITER, expectedParts);
+  }
+
   @Override
   public String getName() {
     return name;
