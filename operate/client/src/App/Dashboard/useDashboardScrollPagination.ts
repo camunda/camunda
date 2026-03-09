@@ -10,8 +10,7 @@ import {useCallback} from 'react';
 import type {InfiniteData} from '@tanstack/react-query';
 
 const ROW_HEIGHT = 64;
-const PAGE_LIMIT = 50;
-const SMOOTH_SCROLL_STEP_SIZE = PAGE_LIMIT * ROW_HEIGHT;
+const DEFAULT_PAGE_SIZE = 50;
 
 type PaginatedResult = {
   hasPreviousPage: boolean;
@@ -22,7 +21,10 @@ type PaginatedResult = {
   fetchNextPage: () => Promise<unknown>;
 };
 
-function useDashboardScrollPagination(queryResult: PaginatedResult) {
+function useDashboardScrollPagination(
+  queryResult: PaginatedResult,
+  pageSize: number = DEFAULT_PAGE_SIZE,
+) {
   const {
     hasPreviousPage,
     hasNextPage,
@@ -32,14 +34,16 @@ function useDashboardScrollPagination(queryResult: PaginatedResult) {
     fetchNextPage,
   } = queryResult;
 
+  const smoothScrollStepSize = pageSize * ROW_HEIGHT;
+
   const handleScrollStartReach = useCallback(
     async (scrollDown: (distance: number) => void) => {
       if (hasPreviousPage && !isFetchingPreviousPage) {
         await fetchPreviousPage();
-        scrollDown(SMOOTH_SCROLL_STEP_SIZE);
+        scrollDown(smoothScrollStepSize);
       }
     },
-    [hasPreviousPage, isFetchingPreviousPage, fetchPreviousPage],
+    [hasPreviousPage, isFetchingPreviousPage, fetchPreviousPage, smoothScrollStepSize],
   );
 
   const handleScrollEndReach = useCallback(() => {
