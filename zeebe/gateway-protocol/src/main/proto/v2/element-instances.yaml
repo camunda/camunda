@@ -105,6 +105,18 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        "504":
+          description: |
+            The request timed out in the gateway. This can occur when the targeted element
+            instance is a user task with
+            [task listeners](https://docs.camunda.io/docs/components/concepts/user-task-listeners/)
+            configured and the listener job is not completed within the request timeout.
+            The variable update may still complete asynchronously after the timeout if the
+            listener job is eventually processed.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
 
   /element-instances/{elementInstanceKey}/incidents/search:
     post:
