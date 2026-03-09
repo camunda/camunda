@@ -37,8 +37,8 @@ import ElementTaskSend from 'modules/components/Icon/element-task-send.svg?react
 import ElementTaskSubProcess from 'modules/components/Icon/element-subprocess-embedded.svg?react';
 import ElementTaskSubProcessAdhoc from 'modules/components/Icon/element-subprocess-adhoc.svg?react';
 import ElementTaskSubProcessAdhocInnerInstance from 'modules/components/Icon/element-subprocess-adhoc-inner-instance.svg?react';
-import ElementTaskMulti from 'modules/components/Icon/element-multi-instance-parallel.svg?react';
-import ElementTaskParallel from 'modules/components/Icon/element-multi-instance-sequential.svg?react';
+import ElementTaskMultiParallel from 'modules/components/Icon/element-multi-instance-parallel.svg?react';
+import ElementTaskSequential from 'modules/components/Icon/element-multi-instance-sequential.svg?react';
 import ElementCallActivity from 'modules/components/Icon/element-call-activity.svg?react';
 import ElementTaskUser from 'modules/components/Icon/element-task-user.svg?react';
 import ElementTaskBusinessRule from 'modules/components/Icon/element-task-business-rule.svg?react';
@@ -201,11 +201,11 @@ const ElementInstanceIcon: React.FC<Props> = ({
     const multiInstanceType = getMultiInstanceType(diagramBusinessObject);
 
     if (multiInstanceType === 'parallel') {
-      return <ElementTaskParallel {...svgProps} />;
+      return <ElementTaskSequential {...svgProps} />;
     }
 
     if (multiInstanceType === 'sequential') {
-      return <ElementTaskMulti {...svgProps} />;
+      return <ElementTaskMultiParallel {...svgProps} />;
     }
   }
 
