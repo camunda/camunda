@@ -65,7 +65,7 @@ import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstan
 import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram';
 import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
 
-const OVERLAY_TYPE_STATE = 'flowNodeState';
+const OVERLAY_TYPE_STATE = 'elementState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
 
 const overlayPositions = {
@@ -156,9 +156,9 @@ const TopPanel: React.FC = observer(() => {
       selectableElementsWithIncidents,
     );
 
-    const allFlowNodeStateOverlays = [
+    const allElementStateOverlays = [
       ...(statistics?.map(({elementState, count, id: elementId}) => ({
-        payload: {flowNodeState: elementState, count},
+        payload: {elementState: elementState, count},
         type: OVERLAY_TYPE_STATE,
         elementId,
         position: overlayPositions[elementState],
@@ -166,13 +166,13 @@ const TopPanel: React.FC = observer(() => {
       ...subprocessOverlays,
     ];
 
-    const notCompletedFlowNodeStateOverlays = allFlowNodeStateOverlays?.filter(
-      (stateOverlay) => stateOverlay.payload.flowNodeState !== 'completed',
+    const notCompletedElementStateOverlays = allElementStateOverlays?.filter(
+      (stateOverlay) => stateOverlay.payload.elementState !== 'completed',
     );
 
     return isExecutionCountVisible
-      ? allFlowNodeStateOverlays
-      : notCompletedFlowNodeStateOverlays;
+      ? allElementStateOverlays
+      : notCompletedElementStateOverlays;
   }, [statistics, businessObjects, isExecutionCountVisible]);
 
   const selectedElementIds = useMemo(() => {
@@ -320,12 +320,12 @@ const TopPanel: React.FC = observer(() => {
               <Diagram
                 xml={processDefinitionData?.xml}
                 processDefinitionKey={processDefinitionKey}
-                selectableFlowNodes={
+                selectableElements={
                   isModificationModeEnabled
                     ? modifiableElements
                     : selectableElements
                 }
-                selectedFlowNodeIds={selectedElementIds}
+                selectedElementIds={selectedElementIds}
                 onRootChange={(rootElementId, getSelectionRootId) => {
                   if (!selectedElementId) {
                     return;
@@ -335,7 +335,7 @@ const TopPanel: React.FC = observer(() => {
                     clearSelection();
                   }
                 }}
-                onFlowNodeSelection={(elementId, isMultiInstance) => {
+                onElementSelection={(elementId, isMultiInstance) => {
                   if (modificationsStore.state.status === 'moving-token') {
                     const ancestorScopeType = getAncestorScopeType(
                       businessObjects,
@@ -357,7 +357,7 @@ const TopPanel: React.FC = observer(() => {
                     if (modificationsStore.state.status !== 'adding-token') {
                       if (elementId !== undefined) {
                         selectElement({
-                          elementId: elementId,
+                          elementId,
                           isMultiInstanceBody: isMultiInstance,
                         });
                       } else {
@@ -374,7 +374,7 @@ const TopPanel: React.FC = observer(() => {
                       ]
                     : elementStateOverlays
                 }
-                selectedFlowNodeOverlay={
+                selectedElementOverlay={
                   isModificationModeEnabled ? (
                     <ModificationDropdown />
                   ) : (
@@ -383,7 +383,7 @@ const TopPanel: React.FC = observer(() => {
                   )
                 }
                 highlightedSequenceFlows={highlightedSequenceFlows}
-                highlightedFlowNodeIds={highlightedSequenceFlowIds}
+                highlightedElementIds={highlightedSequenceFlowIds}
                 nonSelectableNodeTooltipText={
                   isModificationModeEnabled
                     ? 'Modification is not supported for this element.'
@@ -396,14 +396,14 @@ const TopPanel: React.FC = observer(() => {
               >
                 {stateOverlays.map((overlay) => {
                   const payload = overlay.payload as {
-                    flowNodeState: ElementState | 'completedEndEvents';
+                    elementState: ElementState | 'completedEndEvents';
                     count: number;
                   };
 
                   return (
                     <StateOverlay
-                      key={`${overlay.elementId}-${payload.flowNodeState}`}
-                      state={payload.flowNodeState}
+                      key={`${overlay.elementId}-${payload.elementState}`}
+                      state={payload.elementState}
                       count={payload.count}
                       container={overlay.container}
                       isFaded={hasPendingCancelOrMoveModification({
@@ -412,7 +412,7 @@ const TopPanel: React.FC = observer(() => {
                         modificationsByElement: modificationsByElement,
                       })}
                       title={
-                        payload.flowNodeState === 'completed'
+                        payload.elementState === 'completed'
                           ? 'Execution Count'
                           : undefined
                       }

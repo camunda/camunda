@@ -125,7 +125,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
 
   export type SubprocessOverlay = {
     payload: {
-      flowNodeState: string;
+      elementState: string;
     };
     type: string;
     elementId: string;
