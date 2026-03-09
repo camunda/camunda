@@ -10,8 +10,8 @@ const MOCK_TIMESTAMP = '2018-12-12 00:00:00';
 
 function formatDate(
   dateString: Date | string | null,
-  placeholder: string | null = '--',
-) {
+  placeholder = '--',
+): string {
   return dateString ? MOCK_TIMESTAMP : placeholder;
 }
 
