@@ -689,6 +689,174 @@ public class BatchOperationStateTest {
     assertThat(canResume).isFalse();
   }
 
+  @Test
+  void shouldSkipSuspendedAndReturnNextPendingBatch() {
+    // given — two batch operations, the first is suspended
+    final var batchAKey = 1L;
+    final var batchARecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchAKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    state.create(batchAKey, batchARecord);
+    state.suspend(batchAKey);
+
+    final var batchBKey = 2L;
+    final var batchBRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchBKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    state.create(batchBKey, batchBRecord);
+
+    // when
+    final var nextPending = state.getNextPendingBatchOperation();
+
+    // then — batchB should be returned, not the suspended batchA
+    assertThat(nextPending).isPresent();
+    assertThat(nextPending.get().getKey()).isEqualTo(batchBKey);
+  }
+
+  @Test
+  void shouldReturnResumedBatchAsPending() {
+    // given — a batch operation that was suspended and then resumed
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    state.create(batchOperationKey, batchRecord);
+    state.suspend(batchOperationKey);
+    state.resume(batchOperationKey);
+
+    // when
+    final var nextPending = state.getNextPendingBatchOperation();
+
+    // then — the resumed batch should be returned as pending
+    assertThat(nextPending).isPresent();
+    assertThat(nextPending.get().getKey()).isEqualTo(batchOperationKey);
+  }
+
+  @Test
+  void shouldSkipMultipleSuspendedBatches() {
+    // given — three batch operations, first two are suspended
+    final var batchAKey = 1L;
+    state.create(
+        batchAKey,
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchAKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE));
+    state.suspend(batchAKey);
+
+    final var batchBKey = 2L;
+    state.create(
+        batchBKey,
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchBKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE));
+    state.suspend(batchBKey);
+
+    final var batchCKey = 3L;
+    state.create(
+        batchCKey,
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchCKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE));
+
+    // when
+    final var nextPending = state.getNextPendingBatchOperation();
+
+    // then — batchC should be returned, skipping both suspended batches
+    assertThat(nextPending).isPresent();
+    assertThat(nextPending.get().getKey()).isEqualTo(batchCKey);
+  }
+
+  @Test
+  void shouldReturnEmptyWhenAllBatchesAreSuspended() {
+    // given — all batch operations are suspended
+    final var batchAKey = 1L;
+    state.create(
+        batchAKey,
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchAKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE));
+    state.suspend(batchAKey);
+
+    final var batchBKey = 2L;
+    state.create(
+        batchBKey,
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchBKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE));
+    state.suspend(batchBKey);
+
+    // when
+    final var nextPending = state.getNextPendingBatchOperation();
+
+    // then — no pending operation should be returned
+    assertThat(nextPending).isEmpty();
+  }
+
+  @Test
+  void removeFromPendingShouldRemoveFromPendingQueue() {
+    // given — a batch operation
+    final var batchOperationKey = 1L;
+    state.create(
+        batchOperationKey,
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE));
+
+    // when
+    state.removeFromPending(batchOperationKey);
+
+    // then — it should not appear in pending
+    assertThat(state.getNextPendingBatchOperation()).isEmpty();
+  }
+
+  @Test
+  void removeFromPendingShouldNotAffectOtherPendingBatches() {
+    // given — two batch operations, first is removed from pending
+    final var batchAKey = 1L;
+    state.create(
+        batchAKey,
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchAKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE));
+    state.removeFromPending(batchAKey);
+
+    final var batchBKey = 2L;
+    state.create(
+        batchBKey,
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchBKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE));
+
+    // when
+    final var nextPending = state.getNextPendingBatchOperation();
+
+    // then — batchB should be returned
+    assertThat(nextPending).isPresent();
+    assertThat(nextPending.get().getKey()).isEqualTo(batchBKey);
+  }
+
+  @Test
+  void addToPendingShouldReAddToPendingQueue() {
+    // given — a batch operation that was removed from pending
+    final var batchOperationKey = 1L;
+    state.create(
+        batchOperationKey,
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE));
+    state.removeFromPending(batchOperationKey);
+
+    // when
+    state.addToPending(batchOperationKey);
+
+    // then — it should be returned as pending
+    assertThat(state.getNextPendingBatchOperation()).isPresent();
+    assertThat(state.getNextPendingBatchOperation().get().getKey()).isEqualTo(batchOperationKey);
+  }
+
   private static UnsafeBuffer convertToBuffer(final Object object) {
     return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(object));
   }
