@@ -40,6 +40,7 @@ jobs:
     outputs:
       actionlint: ${{ steps.filter.outputs.actionlint }}
       commitlint: ${{ steps.filter.outputs.commitlint }}
+      codeowners-check: ${{ steps.filter.outputs.codeowners-check }}
       maven-spotless-linter: ${{ steps.filter.outputs.maven-spotless-linter }}
       java-code-changes: ${{ steps.filter.outputs.java-code-changes }}
       camunda-docker-tests: ${{ steps.filter.outputs.camunda-docker-tests}}
@@ -155,6 +156,36 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw spotless:check
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  codeowners-check:
+    if: needs.detect-changes.outputs.codeowners-check == 'true'
+    name: "Lint / Codeowners"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/codeowners-setup-cli
+      - name: Check for unowned files
+        run: |
+          set -euo pipefail
+          unowned="$(codeowners-cli unowned --root ./)"
+          if [[ -n "${unowned}" ]]; then
+            echo -e "::error::The following files have no owner in .codeowners:\n${unowned}\n\n"
+            echo "Please add ownership rules for these files in .codeowners"
+            exit 1
+          fi
+          echo "All files have owners."
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1426,6 +1457,7 @@ jobs:
       - archunit-tests
       - build-platform-frontend
       - client-components
+      - codeowners-check
       - commitlint
       - database-integration-tests
       - dependency-cycle-check

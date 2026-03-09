@@ -1,0 +1,91 @@
+# description: Determines the owner(s) of a specific file using the .codeowners rules
+# type: CI Helper - Manual
+# owner: @camunda/orchestration-cluster
+---
+name: Codeowners File Owner Lookup
+
+on:
+  workflow_dispatch:
+    inputs:
+      file_path:
+        description: 'Repo-relative path to the file (e.g. zeebe/engine/pom.xml)'
+        required: true
+        type: string
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  file-owner:
+    name: Determine file owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    env:
+      TEST_OWNER: Orchestration Cluster
+      TEST_PRODUCT: Orchestration Cluster
+      TEST_TYPE: CI Helper
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+
+      - name: Setup codeowners-cli
+        uses: ./.github/actions/codeowners-setup-cli
+
+      - name: Resolve owner
+        env:
+          FILE_PATH: ${{ inputs.file_path }}
+        run: |
+          set -euo pipefail
+
+          echo "🔍 Looking up ownership for: ${FILE_PATH}"
+          echo ""
+
+          if [[ ! -f "${FILE_PATH}" ]]; then
+            echo "::error::File does not exist: ${FILE_PATH}"
+            exit 1
+          fi
+
+          codeowners-cli owner --root ./ --format json "${FILE_PATH}" | tee owners.json
+
+          echo ""
+          echo "──────────────────────────────────────"
+          echo "📋 Ownership result for: ${FILE_PATH}"
+          echo "──────────────────────────────────────"
+
+          required="$(jq -r --arg f "${FILE_PATH}" '.[$f].required // [] | join(", ")' owners.json)"
+          optional="$(jq -r --arg f "${FILE_PATH}" '.[$f].optional // [] | join(", ")' owners.json)"
+
+          if [[ -n "${required}" ]]; then
+            echo "Required reviewers: ${required}"
+          else
+            echo "Required reviewers: (none)"
+          fi
+
+          if [[ -n "${optional}" ]]; then
+            echo "Optional reviewers: ${optional}"
+          fi
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+
+
+
