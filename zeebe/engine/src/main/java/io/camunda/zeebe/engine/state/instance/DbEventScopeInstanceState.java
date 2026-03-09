@@ -87,8 +87,7 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
     final EventTrigger[] next = new EventTrigger[1];
     eventTriggerColumnFamily.whileEqualPrefix(
         eventTriggerScopeKey,
-        key -> {
-          final var value = eventTriggerColumnFamily.get(key);
+        (key, value) -> {
           next[0] = new EventTrigger(value);
           deleteTrigger(key);
           return false;

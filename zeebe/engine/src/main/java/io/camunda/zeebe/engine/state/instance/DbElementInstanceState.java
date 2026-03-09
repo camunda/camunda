@@ -298,8 +298,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
     numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
         flowScopeKeyAndElementId,
-        key -> {
-          final var number = numberOfTakenSequenceFlowsColumnFamily.get(key);
+        (key, number) -> {
           final var newValue = number.getValue() - 1;
           if (newValue > 0) {
             numberOfTakenSequenceFlows.wrapInt(newValue);
