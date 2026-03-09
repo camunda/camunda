@@ -44,9 +44,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
           "Diagnostic: total users in DB = {}, usernames = {}",
           allUsers.total(),
           allUsers.items() != null
-              ? allUsers.items().stream()
-                  .map(UserEntity::username)
-                  .toList()
+              ? allUsers.items().stream().map(UserEntity::username).toList()
               : "null");
     } catch (final Exception e) {
       LOG.debug("Diagnostic: failed to list all users: {}", e.getMessage());

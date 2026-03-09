@@ -99,8 +99,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
                   record.getUsers().size(),
                   record.getRoles().size(),
                   record.getTenants().size());
-              taskResultBuilder.appendCommandRecord(
-                  IdentitySetupIntent.INITIALIZE, record);
+              taskResultBuilder.appendCommandRecord(IdentitySetupIntent.INITIALIZE, record);
               return taskResultBuilder.build();
             });
   }
