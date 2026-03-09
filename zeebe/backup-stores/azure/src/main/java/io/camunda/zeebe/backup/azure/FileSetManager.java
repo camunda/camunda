@@ -21,13 +21,15 @@ import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.nio.file.Path;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 final class FileSetManager {
   // The path format is constructed by contents/partitionId/checkpointId/nodeId/nameOfFile
   private static final String PATH_FORMAT = "contents/%s/%s/%s/%s/";
   private final BlobContainerClient containerClient;
-  private boolean containerCreated = false;
+  private final ReentrantLock containerCreationLock = new ReentrantLock();
+  private volatile boolean containerCreated = false;
 
   FileSetManager(final BlobContainerClient containerClient, final boolean createContainer) {
     this.containerClient = containerClient;
@@ -91,8 +93,15 @@ final class FileSetManager {
 
   void assureContainerCreated() {
     if (!containerCreated) {
-      containerClient.createIfNotExists();
-      containerCreated = true;
+      containerCreationLock.lock();
+      try {
+        if (!containerCreated) {
+          containerClient.createIfNotExists();
+          containerCreated = true;
+        }
+      } finally {
+        containerCreationLock.unlock();
+      }
     }
   }
 

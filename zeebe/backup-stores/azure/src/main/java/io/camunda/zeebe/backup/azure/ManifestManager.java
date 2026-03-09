@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 
 public final class ManifestManager {
@@ -64,7 +65,8 @@ public final class ManifestManager {
           .registerModule(new JavaTimeModule())
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
-  private boolean containerCreated;
+  private volatile boolean containerCreated;
+  private final ReentrantLock containerCreationLock = new ReentrantLock();
   private final BlobContainerClient blobContainerClient;
 
   ManifestManager(final BlobContainerClient blobContainerClient, final boolean createContainer) {
@@ -266,8 +268,15 @@ public final class ManifestManager {
 
   void assureContainerCreated() {
     if (!containerCreated) {
-      blobContainerClient.createIfNotExists();
-      containerCreated = true;
+      containerCreationLock.lock();
+      try {
+        if (!containerCreated) {
+          blobContainerClient.createIfNotExists();
+          containerCreated = true;
+        }
+      } finally {
+        containerCreationLock.unlock();
+      }
     }
   }
 
