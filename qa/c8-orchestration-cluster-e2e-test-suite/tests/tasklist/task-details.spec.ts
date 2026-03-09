@@ -205,15 +205,21 @@ test.describe('task details page', () => {
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
     await taskPanelPage.openTask('Zeebe_user_task');
-    await expect(page.getByText('zeebeVar')).toBeVisible({timeout: 60000});
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(page.getByText('zeebeVar', {exact: true})).toBeVisible();
+      },
+      onFailure: async () => {
+        await page.reload();
+      },
+    });
     await expect(taskDetailsPage.assignToMeButton).toBeHidden();
     await expect(taskDetailsPage.unassignButton).toBeHidden();
     await expect(taskDetailsPage.completeTaskButton).toBeHidden();
 
-    await taskPanelPage.openTask('JobWorker_user_task');
-
     await waitForAssertion({
       assertion: async () => {
+        await taskPanelPage.openTask('JobWorker_user_task');
         await expect(page.getByText('jobWorkerVar')).toBeVisible();
         await expect(page.getByText('zeebeVar')).toBeVisible({timeout: 60000});
       },
@@ -417,6 +423,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.assertFieldValue('Number', '2');
     await taskDetailsPage.clickDecrementButton();
     await taskDetailsPage.assertFieldValue('Number', '1');
+    await sleep(1000);
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
