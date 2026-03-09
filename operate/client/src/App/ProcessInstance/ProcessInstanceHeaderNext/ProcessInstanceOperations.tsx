@@ -28,6 +28,7 @@ import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCan
 import {useDeleteProcessInstance} from 'modules/mutations/processInstance/useDeleteProcessInstance';
 import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
 import {type OperationEntityType} from 'modules/types/operate';
+import {MigrationHelperModal} from 'modules/components/HelperModal/MigrationHelperModal';
 import {CancelConfirmationModal} from 'modules/components/Operations/CancelConfirmationModal';
 import {DeleteConfirmationModal} from 'modules/components/Operations/DeleteConfirmationModal';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
@@ -64,6 +65,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   const [isDeleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [isCancelConfirmationOpen, setCancelConfirmationOpen] = useState(false);
   const [isModificationHelperOpen, setModificationHelperOpen] = useState(false);
+  const [isMigrationHelperOpen, setMigrationHelperOpen] = useState(false);
 
   const {mutate: deleteProcessInstance, status: deleteStatus} =
     useDeleteProcessInstance(processInstanceKey, {
@@ -123,6 +125,14 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
     });
   };
 
+  const handleOpenMigrationHelper = () => {
+    if (getStateLocally()?.hideMigrationHelperModal) {
+      enterMigrationMode();
+    } else {
+      setMigrationHelperOpen(true);
+    }
+  };
+
   const enterMigrationMode = () => {
     processInstanceMigrationStore.setSourceProcessDefinition({
       processDefinitionKey: processInstance.processDefinitionKey,
@@ -140,6 +150,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
     });
     processInstanceMigrationStore.enable();
     tracking.track({eventName: 'process-instance-migration-button-clicked'});
+    tracking.track({eventName: 'process-instance-migration-mode-entered'});
     navigate(
       Locations.processes({
         active: true,
@@ -216,18 +227,28 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
               label="Migrate"
               icon={MigrateAlt}
               title={`Migrate Instance ${processInstanceKey}`}
-              onClick={enterMigrationMode}
+              onClick={handleOpenMigrationHelper}
             />
           </>
         )}
       </CollapsibleOperationsToolbar>
       {isModificationHelperOpen && (
         <ModificationHelperModal
-          isVisible={isModificationHelperOpen}
+          open={isModificationHelperOpen}
           onClose={() => setModificationHelperOpen(false)}
           onSubmit={() => {
             setModificationHelperOpen(false);
             enterModificationMode();
+          }}
+        />
+      )}
+      {isMigrationHelperOpen && (
+        <MigrationHelperModal
+          open={isMigrationHelperOpen}
+          onClose={() => setMigrationHelperOpen(false)}
+          onSubmit={() => {
+            setMigrationHelperOpen(false);
+            enterMigrationMode();
           }}
         />
       )}
