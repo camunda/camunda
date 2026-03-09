@@ -85,7 +85,7 @@ public final class EngineConfiguration {
   private int validatorsResultsOutputMaxSize = DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE;
   private boolean enableAuthorization = DEFAULT_ENABLE_AUTHORIZATION_CHECKS;
   private int maxProcessDepth = DEFAULT_MAX_PROCESS_DEPTH;
-  private Duration batchOperationSchedulerInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
+  private Duration batchOperationSchedulerInterval = DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL;
   private int batchOperationChunkSize = DEFAULT_BATCH_OPERATION_CHUNK_SIZE;
   private int batchOperationQueryPageSize = DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE;
   private int batchOperationQueryInClauseSize = DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE;
