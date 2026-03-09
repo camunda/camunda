@@ -5,9 +5,33 @@
 
 set -exo pipefail
 
-if [ -z "$1" ]
-then
-  echo "Please provide a namespace name!"
+usage() {
+  cat <<'EOF'
+Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize]
+
+Arguments:
+  namespace          Base namespace name. Will be prefixed with "c8-" if missing.
+  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, none. Default: elasticsearch.
+  ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
+  enable_optimize    Optional. true|false to enable Optimize. Default: false.
+
+Options:
+  -h, --help         Show this help message.
+
+Examples:
+  ./newLoadTest.sh demo
+  ./newLoadTest.sh perf opensearch 3 true
+EOF
+}
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+  usage
+  exit 0
+fi
+
+if [ -z "$1" ]; then
+  echo "Error: Missing namespace name."
+  usage
   exit 1
 fi
 
@@ -26,14 +50,14 @@ fi
 
 # Validate secondaryStorage value
 secondaryStorage="${2:-elasticsearch}"
-if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "opensearch" && "$secondaryStorage" != "postgresql" ]]; then
+if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "opensearch" && "$secondaryStorage" != "postgresql" && "$secondaryStorage" != "none" ]]; then
   echo "Error: Invalid secondary storage type '$secondaryStorage'"
-  echo "Allowed values are: elasticsearch, opensearch, postgresql"
+  echo "Allowed values are: elasticsearch, opensearch, postgresql, none"
   exit 1
 fi
 
 # Validate TTL value
-ttl_days="${3:-7}"
+ttl_days="${3:-1}"
 numberRegex='^[0-9]+$'
 if ! [[ $ttl_days =~ $numberRegex ]] ; then
    echo "Error: TTL '$ttl_days' is not a number"
@@ -79,7 +103,7 @@ raw_git_author=$(git config user.name || echo "unknown")
 git_author=$(sanitize_k8s_label "$raw_git_author")
 kubectl label namespace "$namespace" created-by="$git_author" --overwrite
 
-# Label namespace with TTL deadline (default: 7 days from now)
+# Label namespace with TTL deadline (default: 1 day from now)
 # Try GNU date format first (Linux), then BSD/macOS format
 if deadline_date=$(date -d "+${ttl_days} days" +%Y-%m-%d 2>/dev/null); then
   : # GNU date succeeded
@@ -97,12 +121,11 @@ kubectl label namespace "$namespace" registry=harbor --overwrite
 # Copy default folder to new namespace folder
 cp -rv default/ $namespace
 
-# Copy camunda-platform-values*.yaml files to the new folder
-cp -v ../camunda-platform-values*.yaml $namespace/
-cp -v ../secondary-storage-values*.yaml $namespace/
+# Copy all *.yaml files to the new folder
+cp -v ../*.yaml $namespace/
 
-# Copy Prometheus ElasticSearch Exporter values.yaml to the new folder
-cp -v ../prometheus-elasticsearch-exporter-values.yaml $namespace/
+# Copy secrets creation script to the new folder
+cp -v ./createCredsLoadTest.sh $namespace/
 
 cd $namespace
 
