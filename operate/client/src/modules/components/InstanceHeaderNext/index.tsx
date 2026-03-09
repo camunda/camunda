@@ -6,8 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Container, Table, Th, Td} from './styled';
+import {
+  Container,
+  Table,
+  Th,
+  Td,
+  NameContainer,
+  InstanceName,
+  IncidentCount,
+  AdditionalContent,
+} from './styled';
 import {StateIcon} from 'modules/components/StateIcon';
+import pluralSuffix from 'modules/utils/pluralSuffix';
 
 type Column = {
   title?: string;
@@ -18,6 +28,8 @@ type Column = {
 
 type Props = {
   state: React.ComponentProps<typeof StateIcon>['state'];
+  instanceName: string;
+  incidentsCount?: number;
   headerColumns: string[];
   bodyColumns: Column[];
   additionalContent?: React.ReactNode;
@@ -28,6 +40,8 @@ const InstanceHeader: React.FC<Props> = ({
   state,
   headerColumns,
   bodyColumns,
+  instanceName,
+  incidentsCount = 0,
   additionalContent,
   hideBottomBorder = false,
 }) => {
@@ -38,6 +52,14 @@ const InstanceHeader: React.FC<Props> = ({
     >
       <StateIcon state={state} size={24} data-testid={`${state}-icon`} />
 
+      <NameContainer>
+        <InstanceName>{instanceName}</InstanceName>
+        {incidentsCount > 0 && (
+          <IncidentCount>
+            {pluralSuffix(incidentsCount, 'Incident')}
+          </IncidentCount>
+        )}
+      </NameContainer>
       <Table>
         <thead>
           <tr>
@@ -65,7 +87,7 @@ const InstanceHeader: React.FC<Props> = ({
           </tr>
         </tbody>
       </Table>
-      {additionalContent}
+      <AdditionalContent>{additionalContent}</AdditionalContent>
     </Container>
   );
 };
