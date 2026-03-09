@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_USERS_ENABLED;
+
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -21,6 +23,7 @@ import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -29,6 +32,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Map;
 
 public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
   private static final String ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE =
@@ -36,6 +40,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
 
   private final GroupState groupState;
   private final MappingRuleState mappingRuleState;
+  private final UserState userState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -56,6 +61,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     groupState = processingState.getGroupState();
     membershipState = processingState.getMembershipState();
     mappingRuleState = processingState.getMappingRuleState();
+    userState = processingState.getUserState();
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -92,7 +98,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     final var groupKey = persistedRecord.get().getGroupKey();
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityId, entityType)) {
+    if (!isEntityPresent(command.getAuthorizations(), entityId, entityType)) {
       final var errorMessage =
           "Expected to add an entity with ID '%s' and type '%s' to group with ID '%s', but the entity does not exist."
               .formatted(entityId, entityType, groupId);
@@ -135,10 +141,15 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean isEntityPresent(final String entityId, final EntityType entityType) {
+  private boolean isEntityPresent(
+      final Map<String, Object> authorizations,
+      final String entityId,
+      final EntityType entityType) {
+    final boolean localUserEnabled =
+        (boolean) authorizations.getOrDefault(IS_CAMUNDA_USERS_ENABLED, false);
     return switch (entityType) {
-      case EntityType.USER, CLIENT ->
-          true; // With simple mapping rules, any username or client id can be assigned
+      case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();
+      case CLIENT -> true;
       case EntityType.MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
       default -> false;
     };

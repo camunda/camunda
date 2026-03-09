@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_GROUPS_ENABLED;
+import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_USERS_ENABLED;
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.GROUP_DOES_NOT_EXIST_ERROR_MESSAGE;
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.IS_CAMUNDA_GROUPS_ENABLED;
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.IS_CAMUNDA_USERS_ENABLED;
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE;
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.ROLE_DOES_NOT_EXIST_ERROR_MESSAGE;
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityValidator.USER_DOES_NOT_EXIST_ERROR_MESSAGE;
