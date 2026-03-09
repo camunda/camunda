@@ -7,8 +7,6 @@
  */
 
 import styled from 'styled-components';
-import {styles} from '@carbon/elements';
-import {StructuredList as BaseStructuredList} from 'modules/components/StructuredList';
 
 const EmptyMessageContainer = styled.div`
   display: flex;
@@ -17,14 +15,11 @@ const EmptyMessageContainer = styled.div`
   height: 100%;
 `;
 
-const WarningText = styled.p`
-  ${styles.bodyShort01};
-  margin: 0;
-  padding: var(--cds-spacing-05) var(--cds-spacing-05) 0;
-`;
-
-const StructuredList = styled(BaseStructuredList)`
+const Container = styled.div`
   padding-top: var(--cds-spacing-05);
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-spacing-05);
 `;
 
-export {EmptyMessageContainer, WarningText, StructuredList};
+export {EmptyMessageContainer, Container};
