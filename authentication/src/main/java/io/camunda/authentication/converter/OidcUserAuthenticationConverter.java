@@ -140,7 +140,10 @@ public class OidcUserAuthenticationConverter
         clientRegistrationId,
         k -> {
           final var issuerUri = clientRegistration.getProviderDetails().getIssuerUri();
-          final var additionalUris = additionalJwkSetUrisByIssuer.get(issuerUri);
+          // issuerUri may be null when configured without auto-discovery (e.g. explicit
+          // jwkSetUri/authorizationUri/tokenUri). Guard against NPE on the immutable map.
+          final var additionalUris =
+              issuerUri != null ? additionalJwkSetUrisByIssuer.get(issuerUri) : null;
           return accessTokenDecoderFactory.createAccessTokenDecoder(
               clientRegistration, additionalUris);
         });
