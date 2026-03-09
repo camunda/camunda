@@ -42,12 +42,6 @@ jobs:
           distribution: "adopt"
           java-version: ${{ env.JAVA_VERSION }}
 
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven-dist
-        with:
-          maven-version: 3.8.6
-          set-mvnw: true
-
       - name: Configure Maven
         uses: ./.github/actions/setup-maven-cache
         with:
