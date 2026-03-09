@@ -79,13 +79,10 @@ on:
         required: false
         default: false
       secondary-storage-type:
-        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch", "postgresql" or "none"'
+        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch"'
         type: choice
         options:
         - elasticsearch
-        - opensearch
-        - postgresql
-        - none
         default: elasticsearch
   workflow_call:
     inputs:
@@ -153,7 +150,7 @@ on:
         required: false
         default: false
       secondary-storage-type:
-        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch", "postgresql" or "none"'
+        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch"'
         # type choice is invalid here
         type: string
         required: false
