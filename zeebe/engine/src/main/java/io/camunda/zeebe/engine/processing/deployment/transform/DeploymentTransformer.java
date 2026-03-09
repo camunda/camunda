@@ -11,7 +11,6 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static java.util.Map.entry;
 
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -38,7 +37,7 @@ public final class DeploymentTransformer {
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private static final DeploymentResourceTransformer UNKNOWN_RESOURCE =
       new UnknownResourceTransformer();
-  private final EngineConfiguration config;
+  private final ValidationConfig config;
   private final Map<String, DeploymentResourceTransformer> resourceTransformers;
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
   // internal changes during processing
@@ -51,7 +50,7 @@ public final class DeploymentTransformer {
       final ExpressionProcessor expressionProcessor,
       final KeyGenerator keyGenerator,
       final FeatureFlags featureFlags,
-      final EngineConfiguration config,
+      final ValidationConfig config,
       final InstantSource clock,
       final ExpressionLanguageMetrics expressionLanguageMetrics) {
     this.config = config;
@@ -73,8 +72,7 @@ public final class DeploymentTransformer {
             stateWriter,
             checksumGenerator,
             processingState.getDecisionState(),
-            config.getMaxIdFieldLength(),
-            config.getMaxNameFieldLength());
+            config);
 
     final var formResourceTransformer =
         new FormResourceTransformer(
@@ -174,11 +172,11 @@ public final class DeploymentTransformer {
     final var resourceName = deploymentResource.getResourceName();
     final var transformer = getResourceTransformer(resourceName);
 
-    if (resourceName.length() > config.getMaxNameFieldLength()) {
+    if (resourceName.length() > config.maxNameFieldLength()) {
       errors.append(
           String.format(
               "\n- Resource name '%s' exceeds maximum length of %d characters",
-              resourceName, config.getMaxNameFieldLength()));
+              resourceName, config.maxNameFieldLength()));
       return false;
     }
 
