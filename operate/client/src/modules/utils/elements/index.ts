@@ -50,7 +50,7 @@ export function getElementName({
 
 export function getSubprocessOverlayFromIncidentElements(
   flowNodes?: (BusinessObject | undefined)[],
-  type: string = 'flowNodeState',
+  type: string = 'elementState',
 ) {
   const overlays: SubprocessOverlay[] = [];
 
@@ -59,7 +59,7 @@ export function getSubprocessOverlayFromIncidentElements(
       const parent = flowNode.$parent;
       if (parent.$type === 'bpmn:SubProcess') {
         overlays.push({
-          payload: {flowNodeState: 'incidents'},
+          payload: {elementState: 'incidents'},
           type: type,
           elementId: parent.id,
           position: SUBPROCESS_WITH_INCIDENTS,

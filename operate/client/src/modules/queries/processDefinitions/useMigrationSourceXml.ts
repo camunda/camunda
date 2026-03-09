@@ -34,17 +34,17 @@ const getMigrationSourceXmlParser =
       diagramModel,
       selectableFlowNodes: selectableFlowNodes
         .filter(isMigratableElement)
-        .filter((sourceFlowNode) => {
+        .filter((sourceElement) => {
           return (
             sourceProcessDefinitionId !== undefined &&
             hasParentProcess({
-              flowNode: diagramModel?.elementsById[sourceFlowNode.id],
+              element: diagramModel?.elementsById[sourceElement.id],
               bpmnProcessId: sourceProcessDefinitionId,
             })
           );
         })
-        .map((flowNode) => {
-          return {...flowNode, name: flowNode.name ?? flowNode.id};
+        .map((element) => {
+          return {...element, name: element.name ?? element.id};
         }),
       selectableSequenceFlows,
     };

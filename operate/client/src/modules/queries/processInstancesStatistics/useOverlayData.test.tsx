@@ -57,7 +57,7 @@ describe('useProcessInstancesOverlayStatistics', () => {
         elementId: 'messageCatchEvent',
         payload: {
           count: 2,
-          flowNodeState: 'active',
+          elementState: 'active',
         },
         position: {
           bottom: 9,
@@ -69,7 +69,7 @@ describe('useProcessInstancesOverlayStatistics', () => {
         elementId: 'messageCatchEvent',
         payload: {
           count: 3,
-          flowNodeState: 'incidents',
+          elementState: 'incidents',
         },
         position: {
           bottom: 9,
@@ -81,7 +81,7 @@ describe('useProcessInstancesOverlayStatistics', () => {
         elementId: 'messageCatchEvent',
         payload: {
           count: 1,
-          flowNodeState: 'canceled',
+          elementState: 'canceled',
         },
         position: {
           top: -16,

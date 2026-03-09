@@ -22,7 +22,7 @@ import {tracking} from 'modules/tracking';
 import {bpmnRendererColors, highlightedSequenceFlowsColor} from './styled';
 import type {OverlayData} from './overlayTypes';
 
-type OnFlowNodeSelection = (
+type OnElementSelection = (
   elementId?: string,
   isMultiInstance?: boolean,
 ) => void;
@@ -30,11 +30,11 @@ type OnFlowNodeSelection = (
 type RenderOptions = {
   container: HTMLElement;
   xml: string;
-  selectableFlowNodes?: string[];
-  selectedFlowNodeIds?: string[];
+  selectableElements?: string[];
+  selectedElementIds?: string[];
   overlaysData?: OverlayData[];
   highlightedSequenceFlows?: string[];
-  highlightedFlowNodeIds?: string[];
+  highlightedElementIds?: string[];
   nonSelectableNodeTooltipText?: string;
   hasOuterBorderOnSelection: boolean;
 };
@@ -42,13 +42,13 @@ type RenderOptions = {
 class BpmnJS {
   #navigatedViewer: NavigatedViewer | null = null;
   #xml: string | null = null;
-  #selectableFlowNodes: string[] = [];
-  #nonSelectableFlowNodes: string[] = [];
-  #selectedFlowNodeIds?: string[];
+  #selectableElements: string[] = [];
+  #nonSelectableElements: string[] = [];
+  #selectedElementIds?: string[];
   #highlightedSequenceFlows: string[] = [];
-  #highlightedFlowNodeIds: string[] = [];
-  selectedFlowNode?: SVGGraphicsElement;
-  onFlowNodeSelection?: OnFlowNodeSelection;
+  #highlightedElementIds: string[] = [];
+  selectedElement?: SVGGraphicsElement;
+  onElementSelection?: OnElementSelection;
   onViewboxChange?: (isChanging: boolean) => void;
   onRootChange?: (rootElementId: string) => void;
   #overlaysData: OverlayData[] = [];
@@ -67,8 +67,8 @@ class BpmnJS {
     this.#navigatedViewer!.off('root.set', this.#handleRootChange);
 
     this.#overlaysData = [];
-    this.#selectableFlowNodes = [];
-    this.#selectedFlowNodeIds = undefined;
+    this.#selectableElements = [];
+    this.#selectedElementIds = undefined;
     this.#hasOuterBorderOnSelection = false;
     this.#rootElement = undefined;
 
@@ -92,11 +92,11 @@ class BpmnJS {
     const {
       container,
       xml,
-      selectableFlowNodes: unfilteredSelectableFlowNodes = [],
-      selectedFlowNodeIds: unfilteredSelectedFlowNodeIds,
+      selectableElements: unfilteredSelectableElements = [],
+      selectedElementIds: unfilteredSelectedElementIds,
       overlaysData = [],
       highlightedSequenceFlows = [],
-      highlightedFlowNodeIds: unfilteredHighlightedFlowNodeIds = [],
+      highlightedElementIds: unfilteredHighlightedElementIds = [],
       nonSelectableNodeTooltipText,
       hasOuterBorderOnSelection,
     } = options;
@@ -110,18 +110,18 @@ class BpmnJS {
       await this.import(xml);
     }
 
-    const doesElementExist = (flowNodeId: string) => {
+    const doesElementExist = (elementId: string) => {
       return (
-        this.#navigatedViewer?.get('elementRegistry')?.get(flowNodeId) !==
+        this.#navigatedViewer?.get('elementRegistry')?.get(elementId) !==
         undefined
       );
     };
-    const selectedFlowNodeIds =
-      unfilteredSelectedFlowNodeIds?.filter(doesElementExist);
-    const highlightedFlowNodeIds =
-      unfilteredHighlightedFlowNodeIds?.filter(doesElementExist);
-    const selectableFlowNodes =
-      unfilteredSelectableFlowNodes?.filter(doesElementExist);
+    const selectedElementIds =
+      unfilteredSelectedElementIds?.filter(doesElementExist);
+    const highlightedElementIds =
+      unfilteredHighlightedElementIds?.filter(doesElementExist);
+    const selectableElements =
+      unfilteredSelectableElements?.filter(doesElementExist);
 
     // if render is called a second time before importing has finished,
     // exit early because there is no root element yet.
@@ -129,103 +129,103 @@ class BpmnJS {
       return;
     }
 
-    if (!isEqual(this.#selectableFlowNodes, selectableFlowNodes)) {
+    if (!isEqual(this.#selectableElements, selectableElements)) {
       // handle op-selectable markers
-      this.#selectableFlowNodes.forEach((flowNodeId) => {
-        this.#removeMarker(flowNodeId, 'op-selectable');
+      this.#selectableElements.forEach((elementId) => {
+        this.#removeMarker(elementId, 'op-selectable');
       });
-      selectableFlowNodes.forEach((flowNodeId) => {
-        this.#addMarker(flowNodeId, 'op-selectable');
+      selectableElements.forEach((elementId) => {
+        this.#addMarker(elementId, 'op-selectable');
       });
-      this.#selectableFlowNodes = selectableFlowNodes;
+      this.#selectableElements = selectableElements;
 
       // handle op-non-selectable markers
       const elementRegistry = this.#navigatedViewer?.get('elementRegistry');
-      this.#nonSelectableFlowNodes.forEach((flowNodeId) => {
-        this.#removeMarker(flowNodeId, 'op-non-selectable');
-        this.#removeTooltip(flowNodeId);
+      this.#nonSelectableElements.forEach((elementId) => {
+        this.#removeMarker(elementId, 'op-non-selectable');
+        this.#removeTooltip(elementId);
       });
-      const nonSelectableFlowNodes = elementRegistry?.filter((element) =>
-        isNonSelectableElement(element, selectableFlowNodes),
+      const nonSelectableElements = elementRegistry?.filter((element) =>
+        isNonSelectableElement(element, selectableElements),
       );
-      nonSelectableFlowNodes?.forEach(({id}) => {
+      nonSelectableElements?.forEach(({id}) => {
         this.#addMarker(id, 'op-non-selectable');
         if (nonSelectableNodeTooltipText !== undefined) {
           this.#addTooltip(id, nonSelectableNodeTooltipText);
         }
       });
-      this.#nonSelectableFlowNodes = nonSelectableFlowNodes
-        ? nonSelectableFlowNodes.map(({id}) => id)
+      this.#nonSelectableElements = nonSelectableElements
+        ? nonSelectableElements.map(({id}) => id)
         : [];
     }
 
-    // handle op-selected markers and selected flow node ref
+    // handle op-selected markers and selected element ref
     if (
-      !isEqual(this.#selectedFlowNodeIds?.sort(), selectedFlowNodeIds?.sort())
+      !isEqual(this.#selectedElementIds?.sort(), selectedElementIds?.sort())
     ) {
-      if (this.#selectedFlowNodeIds !== undefined) {
-        this.#selectedFlowNodeIds.forEach((flowNodeId) => {
-          this.#removeMarker(flowNodeId, 'op-selected');
-          this.#removeMarker(flowNodeId, 'op-selected-frame');
+      if (this.#selectedElementIds !== undefined) {
+        this.#selectedElementIds.forEach((elementId) => {
+          this.#removeMarker(elementId, 'op-selected');
+          this.#removeMarker(elementId, 'op-selected-frame');
         });
 
-        this.selectedFlowNode = undefined;
+        this.selectedElement = undefined;
       }
 
       const elementRegistry = this.#navigatedViewer?.get('elementRegistry');
       const canvas = this.#navigatedViewer?.get('canvas');
 
-      if (selectedFlowNodeIds !== undefined) {
-        selectedFlowNodeIds.forEach((flowNodeId) => {
-          this.#addMarker(flowNodeId, 'op-selected');
+      if (selectedElementIds !== undefined) {
+        selectedElementIds.forEach((elementId) => {
+          this.#addMarker(elementId, 'op-selected');
           if (hasOuterBorderOnSelection) {
-            this.#addMarker(flowNodeId, 'op-selected-frame');
+            this.#addMarker(elementId, 'op-selected-frame');
           }
-          this.selectedFlowNode = elementRegistry?.getGraphics(flowNodeId);
+          this.selectedElement = elementRegistry?.getGraphics(elementId);
 
           if (canvas !== undefined) {
-            const selectedFlowNodeIdRootElement = canvas.findRoot(flowNodeId);
+            const selectedElementIdRootElement = canvas.findRoot(elementId);
 
             if (
-              selectedFlowNodeIdRootElement !== undefined &&
-              this.#rootElement?.id !== selectedFlowNodeIdRootElement.id
+              selectedElementIdRootElement !== undefined &&
+              this.#rootElement?.id !== selectedElementIdRootElement.id
             ) {
-              canvas.setRootElement(selectedFlowNodeIdRootElement);
+              canvas.setRootElement(selectedElementIdRootElement);
             }
           }
         });
       }
 
-      this.#selectedFlowNodeIds = selectedFlowNodeIds;
+      this.#selectedElementIds = selectedElementIds;
     }
 
     if (
-      selectedFlowNodeIds !== undefined &&
+      selectedElementIds !== undefined &&
       this.#hasOuterBorderOnSelection !== hasOuterBorderOnSelection
     ) {
-      selectedFlowNodeIds.forEach((flowNodeId) => {
-        this.#removeMarker(flowNodeId, 'op-selected-frame');
+      selectedElementIds.forEach((elementId) => {
+        this.#removeMarker(elementId, 'op-selected-frame');
         if (hasOuterBorderOnSelection) {
-          this.#addMarker(flowNodeId, 'op-selected-frame');
+          this.#addMarker(elementId, 'op-selected-frame');
         }
       });
 
       this.#hasOuterBorderOnSelection = hasOuterBorderOnSelection;
     }
 
-    // handle op-highlighted flow node markers
-    if (!isEqual(this.#highlightedFlowNodeIds, highlightedFlowNodeIds)) {
+    // handle op-highlighted element markers
+    if (!isEqual(this.#highlightedElementIds, highlightedElementIds)) {
       // remove previous markers
-      this.#highlightedFlowNodeIds.forEach((flowNodeId) => {
-        this.#removeMarker(flowNodeId, 'op-highlighted');
+      this.#highlightedElementIds.forEach((elementId) => {
+        this.#removeMarker(elementId, 'op-highlighted');
       });
 
       // add new markers
-      highlightedFlowNodeIds.forEach((element) => {
+      highlightedElementIds.forEach((element) => {
         this.#addMarker(element, 'op-highlighted');
       });
 
-      this.#highlightedFlowNodeIds = highlightedFlowNodeIds;
+      this.#highlightedElementIds = highlightedElementIds;
     }
 
     // handle overlays
@@ -294,9 +294,9 @@ class BpmnJS {
     }
   };
 
-  #addTooltip = (flowNodeId: string, tooltipText: string) => {
+  #addTooltip = (elementId: string, tooltipText: string) => {
     const titleElement = document.querySelector(
-      `[data-element-id="${flowNodeId}"] title`,
+      `[data-element-id="${elementId}"] title`,
     );
 
     if (titleElement === null) {
@@ -307,18 +307,18 @@ class BpmnJS {
 
       tooltip.textContent = tooltipText;
       document
-        .querySelector(`[data-element-id="${flowNodeId}"]`)
+        .querySelector(`[data-element-id="${elementId}"]`)
         ?.appendChild(tooltip);
     }
   };
 
-  #removeTooltip = (flowNodeId: string) => {
+  #removeTooltip = (elementId: string) => {
     const titleElement = document.querySelector(
-      `[data-element-id="${flowNodeId}"] title`,
+      `[data-element-id="${elementId}"] title`,
     );
     if (titleElement !== null) {
       document
-        .querySelector(`[data-element-id="${flowNodeId}"]`)
+        .querySelector(`[data-element-id="${elementId}"]`)
         ?.removeChild(titleElement);
     }
   };
@@ -378,24 +378,24 @@ class BpmnJS {
   };
 
   #handleElementClick = (event: Event) => {
-    const flowNode = event.element;
+    const element = event.element;
     if (
-      isNonSelectableElement(flowNode, this.#selectableFlowNodes) ||
-      this.#selectableFlowNodes.length === 0
+      isNonSelectableElement(element, this.#selectableElements) ||
+      this.#selectableElements.length === 0
     ) {
       return;
     }
     if (
-      this.#selectableFlowNodes.includes(flowNode.id) &&
-      (this.#selectedFlowNodeIds === undefined ||
-        !this.#selectedFlowNodeIds.includes(flowNode.id))
+      this.#selectableElements.includes(element.id) &&
+      (this.#selectedElementIds === undefined ||
+        !this.#selectedElementIds.includes(element.id))
     ) {
-      this.onFlowNodeSelection?.(
-        flowNode.id,
-        isMultiInstance(flowNode.businessObject),
+      this.onElementSelection?.(
+        element.id,
+        isMultiInstance(element.businessObject),
       );
-    } else if (this.#selectedFlowNodeIds !== undefined) {
-      this.onFlowNodeSelection?.(undefined);
+    } else if (this.#selectedElementIds !== undefined) {
+      this.onElementSelection?.(undefined);
     }
   };
 
@@ -412,7 +412,7 @@ class BpmnJS {
   };
 
   reset = () => {
-    this.onFlowNodeSelection = undefined;
+    this.onElementSelection = undefined;
     this.onViewboxChange = undefined;
     this.#destroy();
   };
@@ -442,12 +442,12 @@ class BpmnJS {
     }
   };
 
-  findRootId = (selectedFlowNodeId: string) => {
-    return this.#navigatedViewer?.get('canvas')?.findRoot(selectedFlowNodeId)
+  findRootId = (selectedElementId: string) => {
+    return this.#navigatedViewer?.get('canvas')?.findRoot(selectedElementId)
       ?.businessObject.id;
   };
 }
 
 export {BpmnJS};
-export type {OnFlowNodeSelection};
+export type {OnElementSelection};
 export type {OverlayData} from './overlayTypes';

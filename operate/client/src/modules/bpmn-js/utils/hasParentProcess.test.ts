@@ -11,7 +11,7 @@ import {hasParentProcess} from './hasParentProcess';
 
 describe('hasParentProcess', () => {
   it('should return true (parent process found)', () => {
-    const flowNode: BusinessObject = {
+    const element: BusinessObject = {
       id: 'StartEvent_1',
       name: 'Start Event 1',
       $type: 'bpmn:StartEvent',
@@ -27,11 +27,11 @@ describe('hasParentProcess', () => {
       },
     };
 
-    expect(hasParentProcess({flowNode, bpmnProcessId: 'Process_1'})).toBe(true);
+    expect(hasParentProcess({element, bpmnProcessId: 'Process_1'})).toBe(true);
   });
 
   it('should return false (parent process not found)', () => {
-    const flowNode: BusinessObject = {
+    const element: BusinessObject = {
       id: 'StartEvent_1',
       name: 'Start Event 1',
       $type: 'bpmn:StartEvent',
@@ -47,8 +47,6 @@ describe('hasParentProcess', () => {
       },
     };
 
-    expect(hasParentProcess({flowNode, bpmnProcessId: 'Process_2'})).toBe(
-      false,
-    );
+    expect(hasParentProcess({element, bpmnProcessId: 'Process_2'})).toBe(false);
   });
 });

@@ -79,12 +79,12 @@ const SourceDiagram: React.FC = observer(() => {
           <Diagram
             xml={migrationSourceData.xml}
             processDefinitionKey={sourceProcessDefinition?.processDefinitionKey}
-            selectableFlowNodes={[
+            selectableElements={[
               ...migrationSourceData.selectableFlowNodes,
               ...migrationSourceData.selectableSequenceFlows,
             ].map((element) => element.id)}
-            selectedFlowNodeIds={selectedSourceElementIds}
-            onFlowNodeSelection={(elementId) => {
+            selectedElementIds={selectedSourceElementIds}
+            onElementSelection={(elementId) => {
               processInstanceMigrationStore.selectSourceElement(elementId);
             }}
             overlaysData={
@@ -94,14 +94,14 @@ const SourceDiagram: React.FC = observer(() => {
             {processInstanceMigrationStore.isSummaryStep &&
               statisticsOverlays.map((overlay) => {
                 const payload = overlay.payload as {
-                  flowNodeState: ElementState;
+                  elementState: ElementState;
                   count: number;
                 };
 
                 return (
                   <StateOverlay
-                    key={`${overlay.elementId}-${payload.flowNodeState}`}
-                    state={payload.flowNodeState}
+                    key={`${overlay.elementId}-${payload.elementState}`}
+                    state={payload.elementState}
                     count={payload.count}
                     container={overlay.container}
                   />

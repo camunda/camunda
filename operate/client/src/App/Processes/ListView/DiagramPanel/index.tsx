@@ -152,7 +152,7 @@ const DiagramPanel: React.FC = observer(() => {
     }
   };
 
-  const getSelectedFlowNodeIds = () => {
+  const getSelectedElementIds = () => {
     if (!batchModificationStore.state.isEnabled) {
       return flowNodeId ? [flowNodeId] : undefined;
     }
@@ -167,7 +167,7 @@ const DiagramPanel: React.FC = observer(() => {
     return ids;
   };
 
-  const getSelectableFlowNodes = () => {
+  const getSelectableElements = () => {
     if (!batchModificationStore.state.isEnabled) {
       return selectableIds;
     }
@@ -244,10 +244,10 @@ const DiagramPanel: React.FC = observer(() => {
           <Diagram
             xml={processDefinitionXML.xml}
             processDefinitionKey={selectedDefinitionKey}
-            selectedFlowNodeIds={getSelectedFlowNodeIds()}
-            onFlowNodeSelection={handleElementSelection}
+            selectedElementIds={getSelectedElementIds()}
+            onElementSelection={handleElementSelection}
             overlaysData={getOverlaysData()}
-            selectableFlowNodes={getSelectableFlowNodes()}
+            selectableElements={getSelectableElements()}
           >
             {statisticsOverlays?.map((overlay) => {
               if (!isStatisticsPayload(overlay.payload)) {
@@ -255,9 +255,9 @@ const DiagramPanel: React.FC = observer(() => {
               }
               return (
                 <StateOverlay
-                  testId={`state-overlay-${overlay.elementId}-${overlay.payload.flowNodeState}`}
-                  key={`${overlay.elementId}-${overlay.payload.flowNodeState}`}
-                  state={overlay.payload.flowNodeState}
+                  testId={`state-overlay-${overlay.elementId}-${overlay.payload.elementState}`}
+                  key={`${overlay.elementId}-${overlay.payload.elementState}`}
+                  state={overlay.payload.elementState}
                   count={overlay.payload.count}
                   container={overlay.container}
                 />
