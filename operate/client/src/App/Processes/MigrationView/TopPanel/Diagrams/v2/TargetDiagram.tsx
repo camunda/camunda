@@ -110,16 +110,16 @@ const TargetDiagram: React.FC = observer(() => {
           <Diagram
             xml={data.xml}
             processDefinitionKey={targetProcessDefinition?.processDefinitionKey}
-            selectableFlowNodes={[
+            selectableElements={[
               ...data.selectableFlowNodes,
               ...data.selectableSequenceFlows,
             ].map((element) => element.id)}
-            selectedFlowNodeIds={
+            selectedElementIds={
               processInstanceMigrationStore.selectedTargetElementId
                 ? [processInstanceMigrationStore.selectedTargetElementId]
                 : undefined
             }
-            onFlowNodeSelection={
+            onElementSelection={
               processInstanceMigrationStore.selectTargetElement
             }
             overlaysData={

@@ -42,7 +42,7 @@ const overlayParser =
     return elementStates
       .filter((elementData) => elementData.elementState !== 'completed')
       .map(({elementState, count, elementId}) => ({
-        payload: {flowNodeState: elementState, count},
+        payload: {elementState: elementState, count},
         type: `statistics-${elementState}`,
         elementId,
         position: overlayPositions[elementState],
