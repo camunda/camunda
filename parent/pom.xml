@@ -2605,6 +2605,20 @@
           <version>${plugin.version.enforcer}</version>
           <executions>
             <execution>
+              <id>enforce-maven-version</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <requireMavenVersion>
+                    <version>[3.9,)</version>
+                    <message>Maven 3.9 or higher is required.</message>
+                  </requireMavenVersion>
+                </rules>
+              </configuration>
+            </execution>
+            <execution>
               <id>enforce-dependency-convergence</id>
               <goals>
                 <goal>enforce</goal>
