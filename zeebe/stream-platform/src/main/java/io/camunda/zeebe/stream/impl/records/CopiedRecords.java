@@ -32,6 +32,7 @@ public final class CopiedRecords {
 
     final RecordMetadata metadata = new RecordMetadata();
     metadata.wrap(metadataBuffer, 0, metadataBuffer.capacity());
+    metadata.getAuthorization().freeze();
 
     final byte[] valueBytes = new byte[rawEvent.getValueLength()];
     contentBuffer.getBytes(rawEvent.getValueOffset(), valueBytes);
