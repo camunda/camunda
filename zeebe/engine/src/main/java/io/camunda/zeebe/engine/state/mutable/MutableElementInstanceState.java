@@ -114,25 +114,25 @@ public interface MutableElementInstanceState extends ElementInstanceState {
 
   /**
    * Inserts a mapping from business id to process instance key. This is used to enforce uniqueness
-   * of business id per process definition (scoped by tenant).
+   * of business id per process definition (scoped by tenant, across versions).
    *
    * @param businessId the business id
-   * @param processDefinitionKey the process definition key
+   * @param processDefinitionId the process definition id
    * @param tenantId the tenant id
    * @param processInstanceKey the process instance key
    */
   void insertProcessInstanceKeyByBusinessId(
-      String businessId, long processDefinitionKey, String tenantId, long processInstanceKey);
+      String businessId, String processDefinitionId, String tenantId, long processInstanceKey);
 
   /**
    * Deletes the mapping from business id to process instance key. This is used to enforce
-   * uniqueness of business id per process definition (scoped by tenant).
+   * uniqueness of business id per process definition (scoped by tenant, across versions).
    *
    * @param businessId the business id
-   * @param processDefinitionKey the process definition key
+   * @param processDefinitionId the process definition id
    * @param tenantId the tenant id
    * @param processInstanceKey the process instance key
    */
   void deleteProcessInstanceKeyMappingByBusinessId(
-      String businessId, long processDefinitionKey, String tenantId, long processInstanceKey);
+      String businessId, String processDefinitionId, String tenantId, long processInstanceKey);
 }
