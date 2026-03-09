@@ -334,14 +334,16 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     pendingBatchOperationColumnFamily.whileTrue(
         key -> {
           final var batchOperation = batchOperationColumnFamily.get(key);
-          if (batchOperation != null) {
+          if (batchOperation != null && !batchOperation.isSuspended()) {
             pendingBatchOperation.set(batchOperation);
+            // found a non-suspended pending batch operation, stop iterating
+            return false;
           }
-          // only return the first pending batch operation
-          return false;
+          // skip suspended or missing batch operations and continue to the next one
+          return true;
         });
 
-    // return that first pending batch operation if it exists
+    // return the first non-suspended pending batch operation if it exists
     return Optional.ofNullable(pendingBatchOperation.get());
   }
 
