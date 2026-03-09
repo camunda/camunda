@@ -134,6 +134,22 @@ public interface MutableBatchOperationState extends BatchOperationState {
   void resume(final long batchOperationKey);
 
   /**
+   * Removes a batch operation from the pending batch operations queue. This prevents the scheduler
+   * from picking it up.
+   *
+   * @param batchOperationKey the key of the batch operation
+   */
+  void removeFromPending(final long batchOperationKey);
+
+  /**
+   * Adds a batch operation to the pending batch operations queue so that the scheduler can pick it
+   * up.
+   *
+   * @param batchOperationKey the key of the batch operation
+   */
+  void addToPending(final long batchOperationKey);
+
+  /**
    * Marks a batch operation as completed. This will delete the batch operation from the state.
    *
    * @param batchOperationKey the key of the batch operation
