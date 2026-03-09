@@ -16,9 +16,7 @@ import io.camunda.identity.sdk.exception.IdentityException;
 import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.rest.exceptions.NotSupportedException;
-import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.CCSMTokenService;
-import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import jakarta.servlet.http.Cookie;
@@ -42,11 +40,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
   private final CCSMTokenService ccsmTokenService;
 
   public CCSMAuthenticationService(
-      final SessionService sessionService,
-      final AuthCookieService authCookieService,
-      final CCSMTokenService ccsmTokenService,
-      final ConfigurationService configurationService) {
-    super(sessionService, authCookieService);
+      final CCSMTokenService ccsmTokenService, final ConfigurationService configurationService) {
     this.configurationService = configurationService;
     this.ccsmTokenService = ccsmTokenService;
   }
@@ -90,7 +84,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
         // We catch the exception even if the token revoke failed, so we can still delete the
         // Optimize cookies
       } finally {
-        ccsmTokenService.createOptimizeDeleteAuthNewCookies().forEach(response::addCookie);
+        ccsmTokenService.createOptimizeDeleteAuthCookies().forEach(response::addCookie);
       }
     }
   }

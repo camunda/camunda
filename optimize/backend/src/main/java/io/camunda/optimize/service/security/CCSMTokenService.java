@@ -10,11 +10,11 @@ package io.camunda.optimize.service.security;
 import static io.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
 import static io.camunda.optimize.rest.AuthenticationRestService.CALLBACK;
 import static io.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
-import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_REFRESH_TOKEN;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
 import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
+import io.camunda.auth.spring.session.ChunkedCookieService;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Authentication;
@@ -33,6 +33,8 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import jakarta.servlet.http.Cookie;
 import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -53,31 +55,41 @@ public class CCSMTokenService {
   private static final String OPTIMIZE_PERMISSION = "write:*";
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CCSMTokenService.class);
 
-  private final AuthCookieService authCookieService;
+  private final ChunkedCookieService chunkedCookieService;
+  private final ServiceTokenCookieHelper serviceTokenCookieHelper;
   private final ConfigurationService configurationService;
   private final Identity identity;
 
   public CCSMTokenService(
-      final AuthCookieService authCookieService,
+      final ChunkedCookieService chunkedCookieService,
+      final ServiceTokenCookieHelper serviceTokenCookieHelper,
       final ConfigurationService configurationService,
       final Identity identity) {
-    this.authCookieService = authCookieService;
+    this.chunkedCookieService = chunkedCookieService;
+    this.serviceTokenCookieHelper = serviceTokenCookieHelper;
     this.configurationService = configurationService;
     this.identity = identity;
+  }
+
+  public ChunkedCookieService getChunkedCookieService() {
+    return chunkedCookieService;
   }
 
   public List<Cookie> createOptimizeAuthNewCookies(
       final Tokens tokens, final AccessToken accessToken, final String scheme) {
     LOG.trace("Creating Optimize service authorization cookie(s).");
     final String tokenValue = accessToken.getToken().getToken();
+    final Instant expiresAt = accessToken.getToken().getExpiresAtAsInstant();
+    final boolean isSecure = "https".equalsIgnoreCase(scheme);
+    final long maxAgeSeconds = Duration.between(Instant.now(), expiresAt).toSeconds();
+
     final List<Cookie> cookies =
         new ArrayList<>(
-            authCookieService.createOptimizeAuthCookies(
-                tokenValue, accessToken.getToken().getExpiresAtAsInstant(), scheme));
+            chunkedCookieService.createAuthCookies(tokenValue, maxAgeSeconds, isSecure));
+
     final Date refreshTokenExpirationDate = getRefreshTokenExpirationDate(tokens.getRefreshToken());
     final Cookie optimizeRefreshCookie =
-        authCookieService.createCookie(
-            OPTIMIZE_REFRESH_TOKEN,
+        serviceTokenCookieHelper.createRefreshCookie(
             tokens.getRefreshToken(),
             Optional.ofNullable(refreshTokenExpirationDate).map(Date::toInstant).orElse(null),
             scheme);
@@ -86,14 +98,9 @@ public class CCSMTokenService {
   }
 
   public List<Cookie> createOptimizeDeleteAuthCookies() {
-    final List<Cookie> cookies = authCookieService.createDeleteOptimizeAuthCookies();
-    cookies.add(authCookieService.createDeleteOptimizeRefreshCookie());
-    return cookies;
-  }
-
-  public List<Cookie> createOptimizeDeleteAuthNewCookies() {
-    final List<Cookie> cookies = authCookieService.createDeleteOptimizeAuthNewCookie(true);
-    cookies.add(authCookieService.createDeleteOptimizeRefreshNewCookie(true));
+    final List<Cookie> cookies =
+        new ArrayList<>(serviceTokenCookieHelper.createDeleteAuthCookies(true));
+    cookies.add(serviceTokenCookieHelper.createDeleteRefreshCookie(true));
     return cookies;
   }
 
@@ -214,23 +221,6 @@ public class CCSMTokenService {
         Collections.emptyList());
   }
 
-  public Optional<String> getCurrentUserIdFromAuthToken() {
-    try {
-      // The userID is the subject of the current JWT token
-      return getCurrentUserAuthToken().map(token -> authentication().decodeJWT(token).getSubject());
-    } catch (final TokenDecodeException ex) {
-      throw new NotAuthorizedException("Token could not be decoded", ex);
-    }
-  }
-
-  public Optional<String> getCurrentUserAuthToken() {
-    return Optional.ofNullable(RequestContextHolder.getRequestAttributes())
-        .filter(ServletRequestAttributes.class::isInstance)
-        .map(ServletRequestAttributes.class::cast)
-        .map(ServletRequestAttributes::getRequest)
-        .flatMap(AuthCookieService::getAuthCookieToken);
-  }
-
   public List<TenantDto> getAuthorizedTenantsFromToken(final String accessToken) {
     try {
       return identity.tenants().forToken(accessToken).stream()
@@ -240,6 +230,18 @@ public class CCSMTokenService {
       LOG.error("Could not retrieve authorized tenants from identity.", e);
       return Collections.emptyList();
     }
+  }
+
+  public Optional<String> getCurrentUserAuthToken() {
+    return Optional.ofNullable(RequestContextHolder.getRequestAttributes())
+        .filter(ServletRequestAttributes.class::isInstance)
+        .map(ServletRequestAttributes.class::cast)
+        .map(ServletRequestAttributes::getRequest)
+        .map(chunkedCookieService::extractToken);
+  }
+
+  public Optional<String> getCurrentUserIdFromAuthToken() {
+    return getCurrentUserAuthToken().map(this::getSubjectFromToken);
   }
 
   private String extractTokenFromAuthorizationValue(final String cookieValue) {

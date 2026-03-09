@@ -25,7 +25,7 @@ import io.camunda.optimize.rest.exceptions.BadRequestException;
 import io.camunda.optimize.service.BranchAnalysisService;
 import io.camunda.optimize.service.OutlierAnalysisService;
 import io.camunda.optimize.service.export.CSVUtils;
-import io.camunda.optimize.service.security.SessionService;
+import io.camunda.optimize.service.security.SecurityContextUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.ZoneId;
@@ -50,22 +50,19 @@ public class AnalysisRestService {
 
   private final BranchAnalysisService branchAnalysisService;
   private final OutlierAnalysisService outlierAnalysisService;
-  private final SessionService sessionService;
 
   public AnalysisRestService(
       final BranchAnalysisService branchAnalysisService,
-      final OutlierAnalysisService outlierAnalysisService,
-      final SessionService sessionService) {
+      final OutlierAnalysisService outlierAnalysisService) {
     this.branchAnalysisService = branchAnalysisService;
     this.outlierAnalysisService = outlierAnalysisService;
-    this.sessionService = sessionService;
   }
 
   @PostMapping("/correlation")
   public BranchAnalysisResponseDto getBranchAnalysis(
       @RequestBody final BranchAnalysisRequestDto branchAnalysisDto,
       final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     final ZoneId timezone = extractTimezone(request);
     return branchAnalysisService.branchAnalysis(userId, branchAnalysisDto, timezone);
   }
@@ -74,7 +71,7 @@ public class AnalysisRestService {
   public Map<String, FindingsDto> getFlowNodeOutlierMap(
       @RequestBody final ProcessDefinitionParametersDto parameters,
       final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     validateProvidedFilters(parameters.getFilters());
     final OutlierAnalysisServiceParameters<ProcessDefinitionParametersDto> outlierAnalysisParams =
         new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(request), userId);
@@ -103,7 +100,7 @@ public class AnalysisRestService {
   public List<DurationChartEntryDto> getCountByDurationChart(
       @RequestBody final FlowNodeOutlierParametersDto parameters,
       final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     validateProvidedFilters(parameters.getFilters());
     final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams =
         new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(request), userId);
@@ -114,7 +111,7 @@ public class AnalysisRestService {
   public List<VariableTermDto> getSignificantOutlierVariableTerms(
       @RequestBody final FlowNodeOutlierParametersDto parameters,
       final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     validateProvidedFilters(parameters.getFilters());
     final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams =
         new OutlierAnalysisServiceParameters<>(parameters, extractTimezone(request), userId);
@@ -131,7 +128,7 @@ public class AnalysisRestService {
       @RequestBody final FlowNodeOutlierVariableParametersDto parameters,
       final HttpServletRequest request,
       final HttpServletResponse response) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     validateProvidedFilters(parameters.getFilters());
     final String resultFileName = fileName == null ? System.currentTimeMillis() + ".csv" : fileName;
     final OutlierAnalysisServiceParameters<FlowNodeOutlierVariableParametersDto>

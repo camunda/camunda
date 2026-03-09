@@ -15,8 +15,7 @@ import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.service.entities.EntityImportService;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
-import io.camunda.optimize.service.security.SessionService;
-import jakarta.servlet.http.HttpServletRequest;
+import io.camunda.optimize.service.security.SecurityContextUtils;
 import java.util.List;
 import java.util.Set;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,15 +30,12 @@ public class ImportRestService {
 
   public static final String IMPORT_PATH = "/import";
 
-  private final SessionService sessionService;
   private final EntityImportService entityImportService;
   private final AbstractIdentityService identityService;
 
   public ImportRestService(
-      final SessionService sessionService,
       final EntityImportService entityImportService,
       final AbstractIdentityService identityService) {
-    this.sessionService = sessionService;
     this.entityImportService = entityImportService;
     this.identityService = identityService;
   }
@@ -47,11 +43,10 @@ public class ImportRestService {
   @PostMapping
   public List<EntityIdResponseDto> importEntities(
       @RequestParam(name = "collectionId", required = false) final String collectionId,
-      @RequestBody final String exportedDtoJson,
-      final HttpServletRequest request) {
+      @RequestBody final String exportedDtoJson) {
     final Set<OptimizeEntityExportDto> exportDtos =
         entityImportService.readExportDtoOrFailIfInvalid(exportedDtoJson);
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     validateUserAuthorization(collectionId);
     return entityImportService.importEntitiesAsUser(userId, collectionId, exportDtos);
   }

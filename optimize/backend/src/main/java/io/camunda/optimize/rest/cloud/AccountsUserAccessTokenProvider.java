@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.rest.cloud;
 
-import io.camunda.optimize.service.security.AuthCookieService;
+import io.camunda.optimize.service.security.ServiceTokenCookieHelper;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -50,7 +50,7 @@ public class AccountsUserAccessTokenProvider {
             .filter(ServletRequestAttributes.class::isInstance)
             .map(ServletRequestAttributes.class::cast)
             .map(ServletRequestAttributes::getRequest)
-            .flatMap(AuthCookieService::getServiceAccessToken);
+            .flatMap(ServiceTokenCookieHelper::getServiceAccessToken);
     // In case we don't have a cookie to extract the service token from, we try to retrieve it
     // directly from the
     // framework

@@ -18,7 +18,7 @@ import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import io.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import io.camunda.optimize.rest.mapper.EntityRestMapper;
 import io.camunda.optimize.service.entities.EntitiesService;
-import io.camunda.optimize.service.security.SessionService;
+import io.camunda.optimize.service.security.SecurityContextUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -39,25 +39,20 @@ public class EntitiesRestService {
   public static final String ENTITIES_PATH = "/entities";
 
   private final EntitiesService entitiesService;
-  private final SessionService sessionService;
   private final EntityRestMapper entityRestMapper;
 
   public EntitiesRestService(
-      final EntitiesService entitiesService,
-      final SessionService sessionService,
-      final EntityRestMapper entityRestMapper) {
+      final EntitiesService entitiesService, final EntityRestMapper entityRestMapper) {
     this.entitiesService = entitiesService;
-    this.sessionService = sessionService;
     this.entityRestMapper = entityRestMapper;
   }
 
   @GetMapping
   public List<EntityResponseDto> getEntities(
       @RequestParam(name = "sortBy", required = false) final String sortBy,
-      @RequestParam(name = "sortOrder", required = false) final SortOrder sortOrder,
-      final HttpServletRequest request) {
+      @RequestParam(name = "sortOrder", required = false) final SortOrder sortOrder) {
     final EntitySorter entitySorter = new EntitySorter(sortBy, sortOrder);
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     final List<EntityResponseDto> entities = entitiesService.getAllEntities(userId);
     entities.forEach(entityRestMapper::prepareRestResponse);
     return entitySorter.applySort(entities);
@@ -71,17 +66,15 @@ public class EntitiesRestService {
 
   @PostMapping("/delete-conflicts")
   public boolean entitiesHaveDeleteConflicts(
-      @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return entitiesService.entitiesHaveConflicts(entities, userId);
   }
 
   @PostMapping("/delete")
   public void bulkDeleteEntities(
-      @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @Valid @NotNull @RequestBody final EntitiesDeleteRequestDto entities) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     entitiesService.bulkDeleteEntities(entities, userId);
   }
 }

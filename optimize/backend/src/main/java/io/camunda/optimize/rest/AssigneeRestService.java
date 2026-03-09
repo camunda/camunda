@@ -15,8 +15,7 @@ import io.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import io.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
 import io.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
 import io.camunda.optimize.service.AssigneeCandidateGroupService;
-import io.camunda.optimize.service.security.SessionService;
-import jakarta.servlet.http.HttpServletRequest;
+import io.camunda.optimize.service.security.SecurityContextUtils;
 import jakarta.validation.Valid;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,13 +40,9 @@ public class AssigneeRestService {
   public static final String ASSIGNEE_REPORTS_SEARCH_SUB_PATH = "/search/reports";
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(AssigneeRestService.class);
 
-  private final SessionService sessionService;
   private final AssigneeCandidateGroupService assigneeCandidateGroupService;
 
-  public AssigneeRestService(
-      final SessionService sessionService,
-      final AssigneeCandidateGroupService assigneeCandidateGroupService) {
-    this.sessionService = sessionService;
+  public AssigneeRestService(final AssigneeCandidateGroupService assigneeCandidateGroupService) {
     this.assigneeCandidateGroupService = assigneeCandidateGroupService;
   }
 
@@ -63,17 +58,15 @@ public class AssigneeRestService {
 
   @PostMapping(ASSIGNEE_DEFINITION_SEARCH_SUB_PATH)
   public IdentitySearchResultResponseDto searchAssignees(
-      @Valid @RequestBody final AssigneeCandidateGroupDefinitionSearchRequestDto requestDto,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @Valid @RequestBody final AssigneeCandidateGroupDefinitionSearchRequestDto requestDto) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return assigneeCandidateGroupService.searchForAssigneesAsUser(userId, requestDto);
   }
 
   @PostMapping(ASSIGNEE_REPORTS_SEARCH_SUB_PATH)
   public IdentitySearchResultResponseDto searchAssignees(
-      @Valid @RequestBody final AssigneeCandidateGroupReportSearchRequestDto requestDto,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @Valid @RequestBody final AssigneeCandidateGroupReportSearchRequestDto requestDto) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return assigneeCandidateGroupService.searchForAssigneesAsUser(userId, requestDto);
   }
 }

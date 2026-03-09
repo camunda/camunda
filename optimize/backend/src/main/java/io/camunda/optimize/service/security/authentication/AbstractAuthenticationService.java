@@ -9,23 +9,12 @@ package io.camunda.optimize.service.security.authentication;
 
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
-import io.camunda.optimize.service.security.AuthCookieService;
-import io.camunda.optimize.service.security.SessionService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 
 public abstract class AbstractAuthenticationService {
-
-  protected final SessionService sessionService;
-  protected final AuthCookieService authCookieService;
-
-  public AbstractAuthenticationService(
-      final SessionService sessionService, final AuthCookieService authCookieService) {
-    this.sessionService = sessionService;
-    this.authCookieService = authCookieService;
-  }
 
   public abstract void authenticateUser(CredentialsRequestDto credentials);
 

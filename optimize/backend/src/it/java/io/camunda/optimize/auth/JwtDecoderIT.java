@@ -246,11 +246,18 @@ public class JwtDecoderIT extends AbstractCCSMIT {
     if ("SaaS".equalsIgnoreCase(type)) {
       configurerAdapter =
           new CCSaaSSecurityConfigurerAdapter(
-              embeddedOptimizeExtension.getConfigurationService(), null, null, null, null, null);
+              embeddedOptimizeExtension.getConfigurationService(),
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null);
     } else if ("CCSM".equalsIgnoreCase(type)) {
       configurerAdapter =
           new CCSMSecurityConfigurerAdapter(
-              embeddedOptimizeExtension.getConfigurationService(), null, null, null, null);
+              embeddedOptimizeExtension.getConfigurationService(), null, null);
     } else {
       throw new IllegalArgumentException("Invalid type: " + type);
     }

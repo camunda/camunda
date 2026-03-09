@@ -7,12 +7,12 @@
  */
 package io.camunda.optimize.service.identity;
 
+import io.camunda.auth.spring.session.ChunkedCookieService;
 import io.camunda.optimize.dto.optimize.GroupDto;
 import io.camunda.optimize.dto.optimize.IdentityDto;
 import io.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import io.camunda.optimize.dto.optimize.UserDto;
 import io.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
-import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
@@ -31,14 +31,17 @@ public class CCSMIdentityService extends AbstractIdentityService {
 
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CCSMIdentityService.class);
   private final CCSMTokenService ccsmTokenService;
+  private final ChunkedCookieService chunkedCookieService;
   private final CCSMUserCache userCache;
 
   public CCSMIdentityService(
       final ConfigurationService configurationService,
       final CCSMTokenService ccsmTokenService,
+      final ChunkedCookieService chunkedCookieService,
       final CCSMUserCache userCache) {
     super(configurationService);
     this.ccsmTokenService = ccsmTokenService;
+    this.chunkedCookieService = chunkedCookieService;
     this.userCache = userCache;
   }
 
@@ -50,11 +53,8 @@ public class CCSMIdentityService extends AbstractIdentityService {
   @Override
   public Optional<UserDto> getCurrentUserById(
       final String userId, final HttpServletRequest request) {
-    return Optional.ofNullable(request.getCookies())
-        .flatMap(
-            cookies ->
-                AuthCookieService.extractJoinedCookieValueFromCookies(List.of(request.getCookies()))
-                    .map(cookie -> ccsmTokenService.getUserInfoFromToken(userId, cookie)));
+    return Optional.ofNullable(chunkedCookieService.extractToken(request))
+        .map(token -> ccsmTokenService.getUserInfoFromToken(userId, token));
   }
 
   @Override

@@ -15,7 +15,7 @@ import io.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import io.camunda.optimize.dto.optimize.rest.UserResponseDto;
 import io.camunda.optimize.rest.exceptions.NotFoundException;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
-import io.camunda.optimize.service.security.SessionService;
+import io.camunda.optimize.service.security.SecurityContextUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -34,29 +34,26 @@ public class IdentityRestService {
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(IdentityRestService.class);
 
   private final AbstractIdentityService identityService;
-  private final SessionService sessionService;
 
-  public IdentityRestService(
-      final AbstractIdentityService identityService, final SessionService sessionService) {
+  public IdentityRestService(final AbstractIdentityService identityService) {
     this.identityService = identityService;
-    this.sessionService = sessionService;
   }
 
   @GetMapping(path = IDENTITY_SEARCH_SUB_PATH)
   public IdentitySearchResultResponseDto searchIdentity(
       @RequestParam(value = "terms", required = false) final String searchTerms,
       @RequestParam(value = "limit", defaultValue = "25") final int limit,
-      @RequestParam(value = "excludeUserGroups", required = false) final boolean excludeUserGroups,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @RequestParam(value = "excludeUserGroups", required = false)
+          final boolean excludeUserGroups) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return identityService.searchForIdentitiesAsUser(
         userId, Optional.ofNullable(searchTerms).orElse(""), limit, excludeUserGroups);
   }
 
   @GetMapping(path = "/{id}")
   public IdentityWithMetadataResponseDto getIdentityById(
-      @PathVariable("id") final String identityId, final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @PathVariable("id") final String identityId) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return identityService
         .getIdentityWithMetadataForIdAsUser(userId, identityId)
         .orElseThrow(
@@ -67,7 +64,7 @@ public class IdentityRestService {
 
   @GetMapping(path = CURRENT_USER_IDENTITY_SUB_PATH)
   public UserResponseDto getCurrentUser(final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     final UserDto currentUserDto =
         identityService.getCurrentUserById(userId, request).orElseGet(() -> new UserDto(userId));
     return new UserResponseDto(currentUserDto, identityService.getEnabledAuthorizations());

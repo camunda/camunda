@@ -12,6 +12,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableList;
+import io.camunda.auth.spring.session.ChunkedCookieService;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Authentication;
@@ -37,7 +38,8 @@ public class CCSMTokenServiceTest {
   private static final String NAME = "name";
   private static final String USERNAME = "username";
 
-  @Mock private AuthCookieService authCookieService;
+  @Mock private ChunkedCookieService chunkedCookieService;
+  @Mock private ServiceTokenCookieHelper serviceTokenCookieHelper;
   @Mock private ConfigurationService configurationService;
   @Mock private Identity identity;
   @Mock private Authentication authentication;
@@ -52,7 +54,9 @@ public class CCSMTokenServiceTest {
     when(authentication.verifyToken(ACCESS_TOKEN_VALUE)).thenReturn(accessToken);
     when(accessToken.getPermissions()).thenReturn(ImmutableList.of(OPTIMIZE_PERMISSION));
 
-    ccsmTokenService = new CCSMTokenService(authCookieService, configurationService, identity);
+    ccsmTokenService =
+        new CCSMTokenService(
+            chunkedCookieService, serviceTokenCookieHelper, configurationService, identity);
   }
 
   @Test

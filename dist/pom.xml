@@ -340,6 +340,11 @@
 
     <dependency>
       <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-spring</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
       <artifactId>camunda-auth-persist-elasticsearch</artifactId>
     </dependency>
 
@@ -418,6 +423,10 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-domain</artifactId>
     </dependency>
 
     <dependency>
@@ -1045,6 +1054,7 @@
             <ignoredNonTestScopedDependency>org.apache.httpcomponents.core5:httpcore5</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.camunda:zeebe-bpmn-model</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.camunda:camunda-client-java</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>io.camunda.auth:camunda-auth-spring</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
@@ -1076,6 +1086,11 @@
 
             <!-- App Integrations Exporter -->
             <dependency>io.camunda:app-integrations-exporter</dependency>
+
+            <!-- Auth library persistence adapters — runtime only -->
+            <dependency>io.camunda.auth:camunda-auth-persist-elasticsearch</dependency>
+            <dependency>io.camunda.auth:camunda-auth-persist-rdbms</dependency>
+            <dependency>org.springframework.session:spring-session-core</dependency>
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>

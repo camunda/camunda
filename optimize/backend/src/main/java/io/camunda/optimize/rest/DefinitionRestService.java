@@ -28,8 +28,7 @@ import io.camunda.optimize.rest.providers.CacheRequest;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.collection.CollectionScopeService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import io.camunda.optimize.service.security.SessionService;
-import jakarta.servlet.http.HttpServletRequest;
+import io.camunda.optimize.service.security.SecurityContextUtils;
 import jakarta.validation.Valid;
 import java.util.Collections;
 import java.util.Comparator;
@@ -61,38 +60,33 @@ public class DefinitionRestService {
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DefinitionRestService.class);
   private final DefinitionService definitionService;
   private final CollectionScopeService collectionScopeService;
-  private final SessionService sessionService;
 
   public DefinitionRestService(
       final DefinitionService definitionService,
-      final CollectionScopeService collectionScopeService,
-      final SessionService sessionService) {
+      final CollectionScopeService collectionScopeService) {
     this.definitionService = definitionService;
     this.collectionScopeService = collectionScopeService;
-    this.sessionService = sessionService;
   }
 
   @GetMapping()
-  public List<DefinitionResponseDto> getDefinitions(final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+  public List<DefinitionResponseDto> getDefinitions() {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return definitionService.getFullyImportedDefinitions(userId);
   }
 
   @GetMapping("/{type}")
   public List<DefinitionOptimizeResponseDto> getDefinitions(
       @PathVariable("type") final DefinitionType type,
-      @RequestParam(name = "includeXml", required = false) final boolean includeXml,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @RequestParam(name = "includeXml", required = false) final boolean includeXml) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return definitionService.getFullyImportedDefinitions(type, userId, includeXml);
   }
 
   @PostMapping("/{type}/_resolveTenantsForVersions")
   public List<DefinitionWithTenantsResponseDto> getDefinitionTenantsForMultipleKeys(
       @PathVariable("type") final DefinitionType type,
-      @Valid @RequestBody final MultiDefinitionTenantsRequestDto request,
-      final HttpServletRequest servletRequest) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(servletRequest);
+      @Valid @RequestBody final MultiDefinitionTenantsRequestDto request) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
 
     if (CollectionUtils.isEmpty(request.getDefinitions())) {
       return Collections.emptyList();
@@ -116,10 +110,8 @@ public class DefinitionRestService {
 
   @GetMapping("/{type}/{key}")
   public DefinitionResponseDto getDefinition(
-      @PathVariable("type") final DefinitionType type,
-      @PathVariable("key") final String key,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @PathVariable("type") final DefinitionType type, @PathVariable("key") final String key) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return definitionService
         .getDefinitionWithAvailableTenants(type, key, userId)
         .orElseThrow(
@@ -136,9 +128,9 @@ public class DefinitionRestService {
   public List<DefinitionVersionResponseDto> getDefinitionVersions(
       @PathVariable("type") final DefinitionType type,
       @PathVariable("key") final String key,
-      @RequestParam(value = "filterByCollectionScope", required = false) final String collectionId,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @RequestParam(value = "filterByCollectionScope", required = false)
+          final String collectionId) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     final Optional<String> optionalCollectionId = Optional.ofNullable(collectionId);
 
     final List<DefinitionVersionResponseDto> definitionVersions =
@@ -175,9 +167,8 @@ public class DefinitionRestService {
   @GetMapping("/{type}/keys")
   public List<DefinitionKeyResponseDto> getDefinitionKeys(
       @PathVariable(name = "type") final DefinitionType type,
-      @RequestParam(name = "filterByCollectionScope", required = false) final String collectionId,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @RequestParam(name = "filterByCollectionScope", required = false) final String collectionId) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
 
     final List<DefinitionResponseDto> definitions = getDefinitions(type, collectionId, userId);
     return definitions.stream()
@@ -186,9 +177,8 @@ public class DefinitionRestService {
   }
 
   @GetMapping("/_groupByTenant")
-  public List<TenantWithDefinitionsResponseDto> getDefinitionsGroupedByTenant(
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+  public List<TenantWithDefinitionsResponseDto> getDefinitionsGroupedByTenant() {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return definitionService.getDefinitionsGroupedByTenant(userId);
   }
 
@@ -207,9 +197,8 @@ public class DefinitionRestService {
       @PathVariable("type") final DefinitionType type,
       @RequestParam(name = "key", required = false) final String key,
       @RequestParam(name = "version", required = false) final String version,
-      @RequestParam(name = "tenantId", required = false) final String tenantId,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @RequestParam(name = "tenantId", required = false) final String tenantId) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     final Optional<DefinitionOptimizeResponseDto> definitionDto =
         definitionService.getDefinitionWithXml(type, userId, key, version, tenantId);
 
