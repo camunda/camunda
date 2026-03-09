@@ -31,6 +31,7 @@ import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
@@ -63,12 +64,16 @@ public class JobControllerTest extends RestControllerTest {
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
   @MockitoBean ResponseObserverProvider responseObserverProvider;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @MockitoBean GatewayRestConfiguration gatewayRestConfiguration;
 
   @BeforeEach
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(jobServices.withAuthentication(any(CamundaAuthentication.class))).thenReturn(jobServices);
+    final var jobMetricsCfg = new GatewayRestConfiguration.JobMetricsConfiguration();
+    jobMetricsCfg.setEnabled(true);
+    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(jobMetricsCfg);
   }
 
   @Test
@@ -2397,6 +2402,174 @@ public class JobControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldReturn403ForGlobalStatisticsWhenJobMetricsDisabled() {
+    // given
+    final var disabledCfg = new GatewayRestConfiguration.JobMetricsConfiguration();
+    disabledCfg.setEnabled(false);
+    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(disabledCfg);
+
+    // when/then
+    webClient
+        .get()
+        .uri(
+            JOBS_BASE_URL
+                + "/statistics/global?from=2024-07-28T15:51:28.071Z&to=2024-07-29T15:51:28.071Z")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isForbidden()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "FORBIDDEN",
+              "status": 403,
+              "detail": "Job metrics feature is disabled",
+              "instance": "/v2/jobs/statistics/global"
+            }
+            """,
+            JsonCompareMode.STRICT);
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldReturn403ForJobTypeStatisticsWhenJobMetricsDisabled() {
+    // given
+    final var disabledCfg = new GatewayRestConfiguration.JobMetricsConfiguration();
+    disabledCfg.setEnabled(false);
+    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(disabledCfg);
+
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "to": "2024-07-29T15:51:28.071Z"
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-types")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isForbidden()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "FORBIDDEN",
+              "status": 403,
+              "detail": "Job metrics feature is disabled",
+              "instance": "/v2/jobs/statistics/by-types"
+            }
+            """,
+            JsonCompareMode.STRICT);
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldReturn403ForJobWorkerStatisticsWhenJobMetricsDisabled() {
+    // given
+    final var disabledCfg = new GatewayRestConfiguration.JobMetricsConfiguration();
+    disabledCfg.setEnabled(false);
+    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(disabledCfg);
+
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "to": "2024-07-29T15:51:28.071Z"
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-workers")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isForbidden()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "FORBIDDEN",
+              "status": 403,
+              "detail": "Job metrics feature is disabled",
+              "instance": "/v2/jobs/statistics/by-workers"
+            }
+            """,
+            JsonCompareMode.STRICT);
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldReturn403ForJobTimeSeriesStatisticsWhenJobMetricsDisabled() {
+    // given
+    final var disabledCfg = new GatewayRestConfiguration.JobMetricsConfiguration();
+    disabledCfg.setEnabled(false);
+    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(disabledCfg);
+
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "to": "2024-07-29T15:51:28.071Z",
+                "jobType": "fetch-customer-data"
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/time-series")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isForbidden()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "FORBIDDEN",
+              "status": 403,
+              "detail": "Job metrics feature is disabled",
+              "instance": "/v2/jobs/statistics/time-series"
+            }
+            """,
+            JsonCompareMode.STRICT);
 
     verifyNoInteractions(jobServices);
   }
