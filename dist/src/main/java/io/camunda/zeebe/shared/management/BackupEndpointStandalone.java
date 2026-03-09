@@ -48,13 +48,12 @@ public final class BackupEndpointStandalone {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> query(
-      @Selector(match = Match.ALL_REMAINING) final String[] arguments) {
-    return backupEndpoint.query(arguments);
+  public WebEndpointResponse<?> query(@Selector final String prefixOrId) {
+    return backupEndpoint.query(prefixOrId);
   }
 
   @DeleteOperation
-  public WebEndpointResponse<?> delete(@Selector(match = Match.ALL_REMAINING) final String[] path) {
-    return backupEndpoint.delete(path);
+  public WebEndpointResponse<?> delete(@Selector final String id) {
+    return backupEndpoint.delete(id);
   }
 }
