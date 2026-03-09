@@ -33,6 +33,9 @@ class OperateProcessInstancePage {
   readonly executionCountToggleOn: Locator;
   readonly executionCountToggleOff: Locator;
   readonly listenersTabButton: Locator;
+  readonly startFlowNode: Locator;
+  readonly serviceTaskBFlowNode: Locator;
+  readonly executionListenerText: Locator;
   readonly metadataModal: Locator;
   readonly modifyInstanceButton: Locator;
   readonly listenerTypeFilter: Locator;
@@ -102,6 +105,9 @@ class OperateProcessInstancePage {
       'hide execution count',
     );
     this.listenersTabButton = page.getByTestId('listeners-tab-button');
+    this.startFlowNode = page.getByLabel('StartEvent_1');
+    this.serviceTaskBFlowNode = page.getByLabel(/service task b/i);
+    this.executionListenerText = page.getByText('Execution listener');
     this.metadataModal = this.page.getByRole('dialog', {name: 'metadata'});
     this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
     this.listenerTypeFilter = page.getByTestId('listener-type-filter');
