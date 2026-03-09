@@ -25,6 +25,8 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 
@@ -33,6 +35,9 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnAnyHttpGatewayEnabled
 @ConditionalOnSecondaryStorageEnabled
 public class CamundaBasicAuthMembershipResolver implements BasicAuthMembershipResolver {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(CamundaBasicAuthMembershipResolver.class);
 
   private final RoleServices roleServices;
   private final GroupServices groupServices;
@@ -45,10 +50,12 @@ public class CamundaBasicAuthMembershipResolver implements BasicAuthMembershipRe
     this.roleServices = roleServices;
     this.groupServices = groupServices;
     this.tenantServices = tenantServices;
+    LOG.debug("CamundaBasicAuthMembershipResolver initialized");
   }
 
   @Override
   public CamundaAuthentication resolveMemberships(final String username) {
+    LOG.debug("[MembershipResolver] Resolving memberships for username='{}'", username);
     final var ownerTypeToIds = new HashMap<EntityType, Set<String>>();
     ownerTypeToIds.put(USER, Set.of(username));
 
@@ -59,6 +66,7 @@ public class CamundaBasicAuthMembershipResolver implements BasicAuthMembershipRe
             .stream()
             .map(GroupEntity::groupId)
             .collect(Collectors.toSet());
+    LOG.debug("[MembershipResolver] Groups for '{}': {}", username, groups);
 
     if (!groups.isEmpty()) {
       ownerTypeToIds.put(GROUP, groups);
@@ -71,6 +79,7 @@ public class CamundaBasicAuthMembershipResolver implements BasicAuthMembershipRe
             .stream()
             .map(RoleEntity::roleId)
             .collect(Collectors.toSet());
+    LOG.debug("[MembershipResolver] Roles for '{}': {}", username, roles);
 
     if (!roles.isEmpty()) {
       ownerTypeToIds.put(ROLE, roles);
@@ -83,12 +92,21 @@ public class CamundaBasicAuthMembershipResolver implements BasicAuthMembershipRe
             .stream()
             .map(TenantEntity::tenantId)
             .toList();
+    LOG.debug("[MembershipResolver] Tenants for '{}': {}", username, tenants);
 
-    return CamundaAuthentication.of(
-        a ->
-            a.user(username)
-                .roleIds(roles.stream().toList())
-                .groupIds(groups.stream().toList())
-                .tenants(tenants));
+    final var auth =
+        CamundaAuthentication.of(
+            a ->
+                a.user(username)
+                    .roleIds(roles.stream().toList())
+                    .groupIds(groups.stream().toList())
+                    .tenants(tenants));
+    LOG.debug(
+        "[MembershipResolver] Resolved CamundaAuthentication for '{}': roles={}, groups={}, tenants={}",
+        username,
+        auth.authenticatedRoleIds(),
+        auth.authenticatedGroupIds(),
+        auth.authenticatedTenantIds());
+    return auth;
   }
 }

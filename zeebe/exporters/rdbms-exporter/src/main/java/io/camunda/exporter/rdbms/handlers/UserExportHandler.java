@@ -39,12 +39,21 @@ public class UserExportHandler implements RdbmsExportHandler<UserRecordValue> {
   @Override
   public void export(final Record<UserRecordValue> record) {
     final UserRecordValue value = record.getValue();
+    LOG.debug(
+        "[UserExport] Exporting user record: intent={}, username='{}', userKey={}, hasPassword={}",
+        record.getIntent(),
+        value.getUsername(),
+        value.getUserKey(),
+        value.getPassword() != null && !value.getPassword().isBlank());
     if (record.getIntent() == UserIntent.CREATED) {
       userWriter.create(map(value));
+      LOG.debug("[UserExport] User '{}' written to RDBMS (CREATED)", value.getUsername());
     } else if (record.getIntent() == UserIntent.UPDATED) {
       userWriter.update(map(value));
+      LOG.debug("[UserExport] User '{}' written to RDBMS (UPDATED)", value.getUsername());
     } else if (record.getIntent() == UserIntent.DELETED) {
       userWriter.delete(value.getUsername());
+      LOG.debug("[UserExport] User '{}' deleted from RDBMS", value.getUsername());
     } else {
       LOG.warn("Unexpected intent {} for user record", record.getIntent());
     }

@@ -86,13 +86,21 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
 
     // We use a timestamp of 0L to ensure this is runs immediately once the stream processor is
     // started,
+    LOG.debug(
+        "[IdentitySetup] Scheduling identity setup on partition {}", context.getPartitionId());
     context
         .getScheduleService()
         .runAtAsync(
             0L,
             (taskResultBuilder) -> {
+              final var record = buildSetupRecord();
+              LOG.debug(
+                  "[IdentitySetup] Built setup record with {} users, {} roles, {} tenants",
+                  record.getUsers().size(),
+                  record.getRoles().size(),
+                  record.getTenants().size());
               taskResultBuilder.appendCommandRecord(
-                  IdentitySetupIntent.INITIALIZE, buildSetupRecord());
+                  IdentitySetupIntent.INITIALIZE, record);
               return taskResultBuilder.build();
             });
   }
@@ -158,13 +166,19 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     initialization
         .getUsers()
         .forEach(
-            user ->
-                setupRecord.addUser(
-                    new UserRecord()
-                        .setUsername(user.getUsername())
-                        .setName(user.getName())
-                        .setEmail(user.getEmail())
-                        .setPassword(passwordEncoder.encode(user.getPassword()))));
+            user -> {
+              LOG.debug(
+                  "[IdentitySetup] Adding user '{}' (name={}, email={}) to setup record",
+                  user.getUsername(),
+                  user.getName(),
+                  user.getEmail());
+              setupRecord.addUser(
+                  new UserRecord()
+                      .setUsername(user.getUsername())
+                      .setName(user.getName())
+                      .setEmail(user.getEmail())
+                      .setPassword(passwordEncoder.encode(user.getPassword())));
+            });
 
     initialization
         .getMappingRules()
