@@ -82,7 +82,7 @@ jobs:
       - name: Execute profiling
         run: >
           ./load-tests/docs/scripts/executeProfiling.sh ${{ matrix.pod }} ${{ matrix.event }} "${{ inputs.profiler_options }}"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: flamegraph-${{ matrix.event }}-${{ matrix.pod }}
           path: ${{ matrix.pod }}*
@@ -131,7 +131,7 @@ jobs:
       - name: Execute profiling
         run: >
           ./load-tests/docs/scripts/executeProfiling.sh ${{ inputs.pod }} cpu "${{ inputs.profiler_options }}"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: flamegraph-cpu-${{ inputs.pod }}
           path: ${{ inputs.pod }}*

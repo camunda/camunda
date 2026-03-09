@@ -10,6 +10,11 @@ on:
         type: string
         default: ""
         required: false
+      ttl:
+        description: 'Specifies after how many days the weekly load test namespace should be deleted. Useful to adjust if we recreate the weekly tests.'
+        type: number
+        default: 28
+        required: false
   schedule:
     # Runs at 1am every monday https://crontab.guru/#0_1_*_*_1
     - cron: 0 1 * * 1
@@ -52,23 +57,23 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.test-data.outputs.test }}-typical
-      ttl: 28
+      ttl: ${{ inputs.ttl || 28 }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: typical
       build-frontend: true
-  setup-rdbms-typical-load-test:
-    name: Postgres typical load test
+  setup-rdbms-realistic-load-test:
+    name: Postgres realistic load test
     needs:
       - test-data
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
-      name: ${{ needs.test-data.outputs.test }}-rdbms-typical
-      ttl: 28
+      name: ${{ needs.test-data.outputs.test }}-rdbms-realistic
+      ttl: ${{ inputs.ttl || 28 }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       secondary-storage-type: 'postgresql'
-      scenario: typical
       build-frontend: true
+      scenario: realistic
   setup-realistic-test:
     name: Realistic load test
     uses: ./.github/workflows/camunda-load-test.yml
@@ -76,8 +81,8 @@ jobs:
     needs:
       - test-data
     with:
-      name: ${{ needs.test-data.outputs.test }}-mixed
-      ttl: 28
+      name: ${{ needs.test-data.outputs.test }}-realistic
+      ttl: ${{ inputs.ttl || 28 }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: realistic
       build-frontend: true
@@ -89,7 +94,7 @@ jobs:
       - test-data
     with:
       name: ${{ needs.test-data.outputs.test }}-latency
-      ttl: 28
+      ttl: ${{ inputs.ttl || 28 }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: latency
       build-frontend: true
@@ -97,7 +102,7 @@ jobs:
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ setup-typical-load-test, setup-rdbms-typical-load-test, setup-realistic-test, setup-latency-test ]
+    needs: [ setup-typical-load-test, setup-rdbms-realistic-load-test, setup-realistic-test, setup-latency-test ]
     if: failure()
     steps:
       - uses: actions/checkout@v6
