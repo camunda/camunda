@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import com.google.common.base.Strings;
 import io.camunda.zeebe.dmn.DecisionEngine;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.dmn.ParsedDecision;
@@ -17,7 +18,7 @@ import io.camunda.zeebe.dmn.ParsedDecisionOutput;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.dmn.ParsedDecisionRule;
 import io.camunda.zeebe.dmn.impl.ParsedDmnScalaDrg;
-import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -59,19 +60,23 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   private final StateWriter stateWriter;
   private final ChecksumGenerator checksumGenerator;
   private final DecisionState decisionState;
-  private final EngineConfiguration engineConfiguration;
+
+  private final int maxIdLength;
+  private final int maxNameLength;
 
   public DmnResourceTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
       final ChecksumGenerator checksumGenerator,
       final DecisionState decisionState,
-      final EngineConfiguration engineConfiguration) {
+      final int maxIdLength,
+      final int maxNameLength) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.checksumGenerator = checksumGenerator;
     this.decisionState = decisionState;
-    this.engineConfiguration = engineConfiguration;
+    this.maxIdLength = maxIdLength;
+    this.maxNameLength = maxNameLength;
   }
 
   @Override
@@ -236,14 +241,14 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
 
     return checkFieldLength(
             Stream.of(decisionRequirementsId),
-            engineConfiguration.getMaxIdFieldLength(),
+            maxIdLength,
             "The ID of a DRG must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
             resource)
         .flatMap(
             valid ->
                 checkFieldLength(
                     Stream.of(decisionRequirementsName),
-                    engineConfiguration.getMaxNameFieldLength(),
+                    maxNameLength,
                     "The name of a DRG must not be longer than the configured max-name-length of %s characters, but was '%s' in DRG '%s'",
                     resource));
   }
@@ -252,14 +257,14 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
       final DeploymentResource resource, final ParsedDecision decision) {
     return checkFieldLength(
             decision.getId(),
-            engineConfiguration.getMaxIdFieldLength(),
+            maxIdLength,
             "The ID of a decision must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
             resource)
         .flatMap(
             valid ->
                 checkFieldLength(
                     decision.getName(),
-                    engineConfiguration.getMaxNameFieldLength(),
+                    maxNameLength,
                     "The name of a decision must not be longer than the configured max-name-length of %s characters, but was '%s' in resource '%s'",
                     resource))
         .flatMap(valid -> checkDecisionTable(resource, decision));
@@ -273,7 +278,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
 
     return checkFieldLength(
             decision.getDecisionTable().getInputs().stream().map(ParsedDecisionInput::getId),
-            engineConfiguration.getMaxIdFieldLength(),
+            maxIdLength,
             "The ID of a decision input must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
             resource)
         .flatMap(
@@ -281,7 +286,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                 checkFieldLength(
                     decision.getDecisionTable().getInputs().stream()
                         .map(ParsedDecisionInput::getName),
-                    engineConfiguration.getMaxNameFieldLength(),
+                    maxNameLength,
                     "The name of a decision input must not be longer than the configured max-name-length of %s characters, but was '%s' in resource '%s'",
                     resource))
         .flatMap(
@@ -289,7 +294,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                 checkFieldLength(
                     decision.getDecisionTable().getOutputs().stream()
                         .map(ParsedDecisionOutput::getId),
-                    engineConfiguration.getMaxIdFieldLength(),
+                    maxIdLength,
                     "The ID of a decision output must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
                     resource))
         .flatMap(
@@ -297,16 +302,38 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                 checkFieldLength(
                     decision.getDecisionTable().getOutputs().stream()
                         .map(ParsedDecisionOutput::getName),
-                    engineConfiguration.getMaxNameFieldLength(),
+                    maxNameLength,
                     "The name of a decision output must not be longer than the configured max-name-length of %s characters, but was '%s' in resource '%s'",
                     resource))
         .flatMap(
             valid ->
                 checkFieldLength(
-                    decision.getDecisionTable().getRules().stream().map(ParsedDecisionRule::getId),
-                    engineConfiguration.getMaxIdFieldLength(),
+                    decision.getDecisionTable().getRules().stream()
+                        .map(ParsedDecisionRule::getId)
+                        .filter(id -> !Strings.isNullOrEmpty(id)),
+                    maxIdLength,
                     "The ID of a decision rule must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
-                    resource));
+                    resource))
+        .flatMap(valid -> checkBlankRuleIds(resource, decision));
+  }
+
+  private Either<Failure, ?> checkBlankRuleIds(
+      final DeploymentResource resource, final ParsedDecision decision) {
+    final var hasBlankRuleIds =
+        decision.getDecisionTable().getRules().stream()
+            .anyMatch(rule -> Strings.isNullOrEmpty(rule.getId()));
+    if (hasBlankRuleIds) {
+      final var synthesizedRuleId = DecisionBehavior.synthesizeRuleId(decision.getId(), 9999, 9999);
+      final var maxLengthDecisionId =
+          maxIdLength - synthesizedRuleId.length() + decision.getId().length();
+      return checkFieldLength(
+          decision.getId(),
+          maxLengthDecisionId,
+          "A blank ruleId requires a decisionId having a max-id-length of %s characters, but was '%s' in resource '%s'. Either shorten the decisionId or set a ruleId explicitly",
+          resource);
+    } else {
+      return NO_VALIDATION_ERROR;
+    }
   }
 
   private Either<Failure, ?> checkDecisions(
