@@ -253,7 +253,6 @@ components:
 
     IncidentErrorTypeFilterProperty:
       description: IncidentErrorTypeEnum with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -314,7 +313,6 @@ components:
 
     IncidentStateFilterProperty:
       description: IncidentStateEnum with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match

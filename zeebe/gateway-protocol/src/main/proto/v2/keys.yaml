@@ -165,7 +165,6 @@ components:
 
     ProcessDefinitionKeyFilterProperty:
       description: ProcessDefinitionKey property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -203,7 +202,6 @@ components:
 
     ProcessInstanceKeyFilterProperty:
       description: ProcessInstanceKey property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -241,7 +239,6 @@ components:
 
     ElementInstanceKeyFilterProperty:
       description: ElementInstanceKey property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -279,7 +276,6 @@ components:
 
     JobKeyFilterProperty:
       description: JobKey property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -317,7 +313,6 @@ components:
 
     DecisionDefinitionKeyFilterProperty:
       description: DecisionDefinitionKey property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -357,7 +352,6 @@ components:
       description: |
         ScopeKey property with full advanced search capabilities. Filter by the key of the
         element instance or process instance that defines the scope of a variable.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -395,7 +389,6 @@ components:
 
     VariableKeyFilterProperty:
       description: VariableKey property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -433,7 +426,6 @@ components:
 
     DecisionEvaluationInstanceKeyFilterProperty:
       description: DecisionEvaluationInstanceKey property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -471,7 +463,6 @@ components:
 
     AuditLogKeyFilterProperty:
       description: AuditLogKey property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -509,7 +500,6 @@ components:
 
     FormKeyFilterProperty:
       description: FormKey property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -548,7 +538,6 @@ components:
 
     DecisionEvaluationKeyFilterProperty:
       description: DecisionEvaluationKey property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -586,7 +575,6 @@ components:
 
     DecisionRequirementsKeyFilterProperty:
       description: DecisionRequirementsKey property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
