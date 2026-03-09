@@ -17,12 +17,19 @@ package io.camunda.zeebe.dmn;
 public interface ParsedDecision {
 
   /**
+   * @return the id of the decision
+   */
+  String getId();
+
+  /**
    * @return the name of the decision
    */
   String getName();
 
   /**
-   * @return the id of the decision
+   * @return the decision table of the decision if the decision logic is a decision table; otherwise
+   *     {@code null} (for example, when the decision uses a literal expression or context instead
+   *     of a decision table)
    */
-  String getId();
+  ParsedDecisionTable getDecisionTable();
 }

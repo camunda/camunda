@@ -71,7 +71,8 @@ public final class DeploymentTransformer {
             stateWriter,
             checksumGenerator,
             processingState.getDecisionState(),
-            config);
+            config.getMaxIdFieldLength(),
+            config.getMaxNameFieldLength());
 
     final var formResourceTransformer =
         new FormResourceTransformer(
