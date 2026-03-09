@@ -41,9 +41,7 @@ public interface ProcessingSession {
 
   default void appendAuthInfoToFollowUps(final AuthInfo authInfo) {
     if (authInfo != null && authInfo.hasAnyClaims()) {
-      // make a copy to rule out any side effects
-      final var authorization = AuthInfo.of(authInfo);
-      appendMetadataToFollowUps(metadata -> metadata.authorization(authorization));
+      appendMetadataToFollowUps(metadata -> metadata.authorization(authInfo));
     }
   }
 
