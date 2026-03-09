@@ -7,10 +7,9 @@
 // every nested schema (including allOf-composed schemas, nested objects, and
 // array items).
 //
-// IMPORTANT: Error paths are anchored at the operation level (method node)
-// rather than pointing deep into the resolved schema. This prevents Spectral's
-// $ref source-mapping from duplicating errors — once at the reference site
-// (under paths) and again at the definition site (under components).
+// IMPORTANT: Error paths are anchored at the operation node under `paths` to
+// stay on the `paths` side of any $ref boundary. Response/property location
+// detail is appended as a synthetic suffix so each violation remains distinct.
 //
 // Fields that are not required cause SDK generators to produce optional/union
 // types (e.g. `string | undefined`), which complicates consumer code and
@@ -33,17 +32,23 @@ module.exports = (input, _opts, context) => {
       continue;
     }
 
-    // Anchor all error paths at the operation level so they never cross
-    // a $ref boundary (response schemas are typically $ref'd to components).
     const operationPath = [...context.path, method];
 
     for (const [code, response] of Object.entries(operation.responses)) {
       if (!response || !response.content) continue;
 
-      for (const [, mediaObj] of Object.entries(response.content)) {
+      for (const [mediaType, mediaObj] of Object.entries(response.content)) {
         if (!mediaObj || !mediaObj.schema) continue;
 
-        checkSchema(mediaObj.schema, operationPath, errors, new Set());
+        const schemaLocation = `responses/${code}/content/${mediaType}/schema`;
+
+        checkSchema(
+          mediaObj.schema,
+          operationPath,
+          schemaLocation,
+          errors,
+          new Set()
+        );
       }
     }
   }
@@ -53,7 +58,12 @@ module.exports = (input, _opts, context) => {
 
 // Aggregate `required` entries and `properties` from a schema and its allOf
 // members into a single view for the current schema level.
-function collectRequiredAndProperties(schema, requiredSet, propertyEntries) {
+function collectRequiredAndProperties(
+  schema,
+  requiredSet,
+  propertyEntries,
+  propertyPath
+) {
   if (!schema || typeof schema !== 'object') return;
 
   if (Array.isArray(schema.required)) {
@@ -62,18 +72,33 @@ function collectRequiredAndProperties(schema, requiredSet, propertyEntries) {
 
   if (schema.properties && typeof schema.properties === 'object') {
     for (const [name, prop] of Object.entries(schema.properties)) {
-      propertyEntries.push({ name, schema: prop });
+      propertyEntries.push({
+        name,
+        schema: prop,
+        path: [...propertyPath, 'properties', name],
+      });
     }
   }
 
   if (Array.isArray(schema.allOf)) {
-    schema.allOf.forEach((sub) =>
-      collectRequiredAndProperties(sub, requiredSet, propertyEntries)
+    schema.allOf.forEach((sub, i) =>
+      collectRequiredAndProperties(sub, requiredSet, propertyEntries, [
+        ...propertyPath,
+        'allOf',
+        i,
+      ])
     );
   }
 }
 
-function checkSchema(schema, anchorPath, errors, visited) {
+function checkSchema(
+  schema,
+  anchorPath,
+  schemaLocation,
+  errors,
+  visited,
+  propertyPath = []
+) {
   if (!schema || typeof schema !== 'object') return;
 
   // Prevent infinite loops on circular $refs.
@@ -83,21 +108,34 @@ function checkSchema(schema, anchorPath, errors, visited) {
   // Aggregate required + properties across allOf at this level.
   const requiredSet = new Set();
   const propertyEntries = [];
-  collectRequiredAndProperties(schema, requiredSet, propertyEntries);
+  collectRequiredAndProperties(
+    schema,
+    requiredSet,
+    propertyEntries,
+    propertyPath
+  );
 
-  for (const { name, schema: propSchema } of propertyEntries) {
+  for (const { name, schema: propSchema, path: propPath } of propertyEntries) {
     if (!propSchema || typeof propSchema !== 'object') continue;
 
     if (!requiredSet.has(name)) {
+      const renderedPath = propPath.join('/');
       errors.push({
-        message: `Response property \`${name}\` must be listed in \`required\`.`,
-        path: anchorPath,
+        message: `Response property \`${name}\` at \`${schemaLocation}/${renderedPath}\` must be listed in \`required\`.`,
+        path: [...anchorPath, `${schemaLocation}/${renderedPath}`],
       });
     }
 
     // Recurse into nested objects and allOf compositions.
     if (propSchema.properties || propSchema.allOf) {
-      checkSchema(propSchema, anchorPath, errors, visited);
+      checkSchema(
+        propSchema,
+        anchorPath,
+        schemaLocation,
+        errors,
+        visited,
+        propPath
+      );
     }
 
     // Recurse into array items.
@@ -106,7 +144,14 @@ function checkSchema(schema, anchorPath, errors, visited) {
       propSchema.items &&
       typeof propSchema.items === 'object'
     ) {
-      checkSchema(propSchema.items, anchorPath, errors, visited);
+      checkSchema(
+        propSchema.items,
+        anchorPath,
+        schemaLocation,
+        errors,
+        visited,
+        [...propPath, 'items']
+      );
     }
   }
 }
