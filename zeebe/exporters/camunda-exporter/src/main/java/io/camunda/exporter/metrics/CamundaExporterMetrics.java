@@ -97,6 +97,8 @@ public class CamundaExporterMetrics implements AutoCloseable {
   private final Counter failedFlush;
   private final Timer recordExportDuration;
 
+  private final Counter processInstanceAlreadyArchived;
+
   private final AtomicReference<Instant> lastFlushTime = new AtomicReference<>(Instant.now());
   private final AtomicInteger processInstancesAwaitingArchival = new AtomicInteger(0);
 
@@ -285,6 +287,14 @@ public class CamundaExporterMetrics implements AutoCloseable {
             AtomicInteger::get)
         .description("Number of process instances awaiting archival (approximate)")
         .register(meterRegistry);
+
+    processInstanceAlreadyArchived =
+        Counter.builder(meterName("archiver.process.instances.already.archived"))
+            .register(meterRegistry);
+  }
+
+  public void processInstanceAlreadyArchived() {
+    processInstanceAlreadyArchived.increment();
   }
 
   public CloseableSilently measureFlushDuration() {

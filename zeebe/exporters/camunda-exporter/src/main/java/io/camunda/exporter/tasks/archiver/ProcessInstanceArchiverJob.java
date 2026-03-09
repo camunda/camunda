@@ -7,11 +7,14 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -27,9 +30,10 @@ import org.slf4j.Logger;
  * node instances, variable updates, etc).
  */
 public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchiveBatch> {
-
   private final ListViewTemplate processInstanceTemplate;
   private final List<ProcessInstanceDependant> processInstanceDependants;
+  private final Cache<Long, Boolean> recentlyArchivedProcessInstances =
+      CacheBuilder.newBuilder().expireAfterWrite(Duration.ofMinutes(1)).build();
 
   public ProcessInstanceArchiverJob(
       final ArchiverRepository repository,
@@ -59,7 +63,20 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
 
   @Override
   CompletableFuture<ProcessInstanceArchiveBatch> getNextBatch() {
-    return getArchiverRepository().getProcessInstancesNextBatch();
+    return getArchiverRepository()
+        .getProcessInstancesNextBatch()
+        .whenComplete(
+            (batch, ex) -> {
+              if (batch != null) {
+                for (final var id : batch.rootProcessInstanceKeys()) {
+                  if (recentlyArchivedProcessInstances.getIfPresent(id) == null) {
+                    recentlyArchivedProcessInstances.put(id, Boolean.TRUE);
+                  } else {
+                    exporterMetrics.processInstanceAlreadyArchived();
+                  }
+                }
+              }
+            });
   }
 
   @Override
