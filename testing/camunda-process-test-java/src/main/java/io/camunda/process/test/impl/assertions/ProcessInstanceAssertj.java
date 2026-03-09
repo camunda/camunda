@@ -48,7 +48,7 @@ public class ProcessInstanceAssertj
   private final VariableAssertj variableAssertj;
   private final IncidentAssertj incidentAssertj;
   private final MessageSubscriptionAssertj messageSubscriptionAssertj;
-  private final JudgeAssertj judgeAssertj;
+  private JudgeAssertj judgeAssertj;
   private final String failureMessagePrefix;
   private final Function<String, ElementSelector> elementSelector;
 
@@ -402,6 +402,16 @@ public class ProcessInstanceAssertj
       final String messageName, final String correlationKey) {
     messageSubscriptionAssertj.hasCorrelatedMessage(
         getProcessInstanceKey(), messageName, correlationKey);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert withJudgeConfig(final JudgeConfig judgeConfig) {
+    if (judgeConfig == null) {
+      throw new IllegalArgumentException("judgeConfig must not be null");
+    }
+    this.judgeAssertj =
+        new JudgeAssertj(dataSource, awaitBehavior, judgeConfig, failureMessagePrefix);
     return this;
   }
 
