@@ -15,7 +15,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.cloud.storage.Blob;
-import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
@@ -189,36 +188,36 @@ public final class ManifestManager {
   public Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
     final var blobFilter = filterBlobsByWildcard(wildcard);
     LOG.debug("Searching for matching blobs for wildcard {}", wildcard);
-
-    final var matchingBlobIds = new ArrayList<BlobId>();
-    for (final var blob :
+    final var listing =
         client
             .list(bucketInfo.getName(), BlobListOption.prefix(wildcardPrefix(wildcard)))
-            .iterateAll()) {
-      if (blobFilter.test(blob)) {
-        matchingBlobIds.add(blob.getBlobId());
+            .iterateAll();
+    final var manifestFutures = new ArrayList<CompletableFuture<Manifest>>();
+    for (final var blob : listing) {
+      if (!blobFilter.test(blob)) {
+        continue;
       }
+      final var future =
+          CompletableFuture.supplyAsync(
+              () -> {
+                try {
+                  return MAPPER.readValue(client.readAllBytes(blob.getBlobId()), Manifest.class);
+                } catch (final IOException e) {
+                  throw new UncheckedIOException(e);
+                }
+              },
+              executor);
+      manifestFutures.add(future);
     }
 
-    LOG.trace("Found {} matching blobs for wildcard {}", matchingBlobIds.size(), wildcard);
-    final var futures =
-        matchingBlobIds.stream()
-            .map(
-                blobId ->
-                    CompletableFuture.supplyAsync(
-                        () -> {
-                          try {
-                            return MAPPER.readValue(client.readAllBytes(blobId), Manifest.class);
-                          } catch (final IOException e) {
-                            throw new UncheckedIOException(e);
-                          }
-                        },
-                        executor));
+    CompletableFuture.allOf(manifestFutures.toArray(CompletableFuture[]::new)).join();
+    LOG.debug(
+        "Found {} matching manifestFutures for wildcard {}", manifestFutures.size(), wildcard);
 
-    final var filtered =
-        futures.map(CompletableFuture::join).filter(m -> wildcard.matches(m.id())).toList();
-    LOG.debug("Found {} matching manifests for wildcard {}", filtered.size(), wildcard);
-    return filtered;
+    return manifestFutures.stream()
+        .map(CompletableFuture::join)
+        .filter(manifest -> wildcard.matches(manifest.id()))
+        .toList();
   }
 
   public void deleteManifest(final Manifest manifest) {
