@@ -36,7 +36,7 @@ jobs:
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
         with:
           branch: ${{ github.event.pull_request.head.ref }}
-          max_length: 50  # reduced to account for load-test prefix "c8-"" and potential suffixes for uniqueness
+          max_length: 44  # reduced to account for load-test prefix "c8-"" and potential suffixes for uniqueness
       - name: Observe build status
         if: always()
         continue-on-error: true
