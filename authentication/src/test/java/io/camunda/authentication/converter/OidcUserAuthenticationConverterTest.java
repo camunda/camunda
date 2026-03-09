@@ -8,6 +8,7 @@
 package io.camunda.authentication.converter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -334,6 +335,59 @@ public class OidcUserAuthenticationConverterTest {
 
     // then — decoder factory called only once (cached)
     verify(oidcAccessTokenDecoderFactory, times(1)).createAccessTokenDecoder(any(), any());
+  }
+
+  @Test
+  public void shouldNotThrowWhenIssuerUriIsNull() {
+    // given — OIDC provider configured without issuer-uri (only
+    // jwkSetUri/authorizationUri/tokenUri)
+    // This is the regression test for the NPE introduced by PR #47219:
+    // additionalJwkSetUrisByIssuer is an immutable Map.copyOf() and does not permit null key
+    // lookups.
+    final var converter =
+        new OidcUserAuthenticationConverter(
+            authorizedClientRepository,
+            oidcAccessTokenDecoderFactory,
+            tokenClaimsConverter,
+            request,
+            Map.of("https://other-issuer.example.com", List.of("https://other/jwks")));
+
+    final var oidcUser = mock(OidcUser.class);
+    when(oidcUser.getAttributes()).thenReturn(Map.of("sub", "test-user"));
+
+    final var authentication = mock(OAuth2AuthenticationToken.class);
+    when(authentication.getPrincipal()).thenReturn(oidcUser);
+
+    final var accessToken = mock(OAuth2AccessToken.class);
+    when(accessToken.getTokenValue()).thenReturn("test-access-token");
+
+    // issuerUri is null — provider configured with explicit jwkSetUri/authorizationUri/tokenUri
+    final var providerDetails = mock(ClientRegistration.ProviderDetails.class);
+    when(providerDetails.getIssuerUri()).thenReturn(null);
+    final var clientRegistration = mock(ClientRegistration.class);
+    when(clientRegistration.getRegistrationId()).thenReturn("no-issuer-reg");
+    when(clientRegistration.getProviderDetails()).thenReturn(providerDetails);
+
+    final var authorizedClient = mock(OAuth2AuthorizedClient.class);
+    when(authorizedClient.getAccessToken()).thenReturn(accessToken);
+    when(authorizedClient.getClientRegistration()).thenReturn(clientRegistration);
+    when(authorizedClientRepository.loadAuthorizedClient(any(), any(), any()))
+        .thenReturn(authorizedClient);
+
+    final var jwt = mock(Jwt.class);
+    when(jwt.getClaims()).thenReturn(Map.of("sub", "test-user"));
+    when(oidcAccessTokenDecoderFactory.createAccessTokenDecoder(any(), any()))
+        .thenReturn(jwtDecoder);
+    when(jwtDecoder.decode(any())).thenReturn(jwt);
+    when(tokenClaimsConverter.convert(any()))
+        .thenReturn(CamundaAuthentication.of(b -> b.user("foo")));
+
+    // when / then — must not throw NullPointerException when issuerUri is null
+    assertThatCode(() -> converter.convert(authentication)).doesNotThrowAnyException();
+
+    // and — null is passed to decoder factory since issuer has no additional JWKS configured
+    verify(oidcAccessTokenDecoderFactory)
+        .createAccessTokenDecoder(eq(clientRegistration), isNull());
   }
 
   @Test
