@@ -576,7 +576,6 @@ components:
 
     MessageSubscriptionStateFilterProperty:
       description: MessageSubscriptionStateEnum with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -638,7 +637,6 @@ components:
 
     MessageSubscriptionKeyFilterProperty:
       description: MessageSubscriptionKey property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
