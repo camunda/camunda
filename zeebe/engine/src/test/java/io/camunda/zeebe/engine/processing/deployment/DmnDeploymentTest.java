@@ -69,6 +69,8 @@ public final class DmnDeploymentTest {
       "/dmn/decision-table-with-long-output-name.dmn";
   private static final String DECISION_RULE_ID_LENGTH_EXCEEDED =
       "/dmn/decision-table-with-long-rule-id.dmn";
+  private static final String DECISION_RULE_ID_BLANK_EXCEEDED =
+      "/dmn/decision-table-with-blank-rule-id.dmn";
 
   private static final int MAX_ID_FIELD_LENGTH = 100;
   private static final int MAX_NAME_FIELD_LENGTH = 100;
@@ -840,6 +842,29 @@ public final class DmnDeploymentTest {
             String.format(
                 "The ID of a decision rule must not be longer than the configured max-id-length of %s characters, but was 'this_is_an_extremely_creative_and_very_long_id_for_a_decision_rule_that_should_exceed_one_hundred_characters_for_testing' in resource '%s'",
                 MAX_ID_FIELD_LENGTH, DECISION_RULE_ID_LENGTH_EXCEEDED));
+  }
+
+  @Test
+  public void shouldRejectIfDecisionRuleIdIsBlankAndDecisionIdExceedsSize() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DECISION_RULE_ID_BLANK_EXCEEDED)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "A blank ruleId requires a decisionId having a max-id-length of %s characters, but was 'this_is_a_creative_and_long_id_for_a_decision_but_it_is_worth_it_because_we_need_it_for_a_test' in resource '%s'. Either shorten the decisionId or set a ruleId explicitly",
+                MAX_ID_FIELD_LENGTH - 29, DECISION_RULE_ID_BLANK_EXCEEDED));
   }
 
   private byte[] getChecksum(final String resourceName) {
