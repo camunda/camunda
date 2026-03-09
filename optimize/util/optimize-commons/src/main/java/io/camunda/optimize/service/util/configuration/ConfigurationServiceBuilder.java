@@ -9,7 +9,6 @@ package io.camunda.optimize.service.util.configuration;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
@@ -188,12 +187,11 @@ public class ConfigurationServiceBuilder {
      */
     private static List<String> getListProperty(
         final Environment environment, final String propertyName) {
-      final String directMatch = environment.getProperty(propertyName);
+      @SuppressWarnings("unchecked")
+      final List<String> directMatch =
+          (List<String>) environment.getProperty(propertyName, List.class);
       if (directMatch != null) {
-        // direct matches may still be comma delimited
-        final var asArray = StringUtils.commaDelimitedListToStringArray(directMatch);
-        // comma delimitation may require whitespace trimming
-        return Arrays.stream(asArray).map(String::trim).toList();
+        return directMatch;
       }
       final List<String> collectedValues = new ArrayList<>();
       for (int index = 0; index < Integer.MAX_VALUE; index++) {
