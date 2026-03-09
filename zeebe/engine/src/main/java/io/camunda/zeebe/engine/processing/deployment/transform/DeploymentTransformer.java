@@ -175,8 +175,8 @@ public final class DeploymentTransformer {
     if (resourceName.length() > config.maxNameFieldLength()) {
       errors.append(
           String.format(
-              "\n- Resource name '%s' exceeds maximum length of %d characters",
-              resourceName, config.maxNameFieldLength()));
+              "\n- Resource name '%s' exceeds maximum length of %d characters as it has a length of %d characters",
+              resourceName, config.maxNameFieldLength(), resourceName.length()));
       return false;
     }
 
