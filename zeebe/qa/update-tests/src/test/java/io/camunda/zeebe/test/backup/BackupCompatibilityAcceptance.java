@@ -120,7 +120,14 @@ public interface BackupCompatibilityAcceptance {
         new TestStandaloneBroker().withUnifiedConfig(this::configureCurrentBackupStore)) {
       broker.start();
       final var backupActuator = BackupActuator.of(broker);
-      assertThat(backupActuator.list()).singleElement().returns(backupId, BackupInfo::getBackupId);
+      Awaitility.await("until backup from previous version is visible")
+          .atMost(Duration.ofSeconds(30))
+          .ignoreExceptions()
+          .untilAsserted(
+              () ->
+                  assertThat(backupActuator.list())
+                      .singleElement()
+                      .returns(backupId, BackupInfo::getBackupId));
 
       // when -- delete backup from previous version
       backupActuator.delete(backupId);
