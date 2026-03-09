@@ -65,6 +65,7 @@ test.describe('audit log page', () => {
     );
 
     await operationsLogPage.gotoOperationsLogPage();
+    await page.getByTestId('data-table-loader').waitFor({state: 'detached'});
 
     await expect(operationsLogPage.operationsLogTable).toBeVisible();
 
@@ -102,6 +103,7 @@ test.describe('audit log page', () => {
     await expect(operationsLogPage.processInstanceKeyFilter).toHaveValue(
       processInstanceKey,
     );
+    await page.getByTestId('data-table-loader').waitFor({state: 'detached'});
 
     await expect(page).toHaveScreenshot();
   });
