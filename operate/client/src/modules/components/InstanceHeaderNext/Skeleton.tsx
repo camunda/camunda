@@ -6,38 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button} from '@carbon/react';
-import {ArrowLeft} from '@carbon/react/icons';
-import {Container, Table, Th, Td, SkeletonText, SkeletonIcon} from './styled';
+import {
+  Container,
+  Table,
+  Th,
+  Td,
+  SkeletonText,
+  SkeletonIcon,
+  NameContainer,
+} from './styled';
 
 type Props = {
   headerColumns: {name: string; skeletonWidth: string}[];
-  backButtonLabel?: string;
-  onBackClick?: React.MouseEventHandler<HTMLButtonElement>;
 };
 
-const Skeleton: React.FC<Props> = ({
-  headerColumns,
-  backButtonLabel = 'Back',
-  onBackClick,
-}) => {
+const Skeleton: React.FC<Props> = ({headerColumns}) => {
   return (
     <Container data-testid="instance-header-skeleton">
-      {onBackClick && (
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={ArrowLeft}
-          hasIconOnly
-          iconDescription={backButtonLabel}
-          aria-label={backButtonLabel}
-          tooltipPosition="bottom"
-          tooltipAlignment="start"
-          onClick={onBackClick}
-        />
-      )}
       <SkeletonIcon />
-      <SkeletonText width="128px" />
+      <NameContainer>
+        <SkeletonText width="128px" />
+      </NameContainer>
       <Table>
         <thead>
           <tr>
@@ -56,7 +45,6 @@ const Skeleton: React.FC<Props> = ({
           </tr>
         </tbody>
       </Table>
-      <SkeletonText width={'78px'} />
     </Container>
   );
 };

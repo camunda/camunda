@@ -17,7 +17,6 @@ import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecisionInstance';
 import type {DrdPanelState} from 'modules/queries/decisionInstances/useDrdPanelState';
 import {getClientConfig} from 'modules/utils/getClientConfig';
-import {useNavigate} from 'react-router-dom';
 
 const getHeaderColumns = (isMultiTenancyEnabled: boolean = false) => {
   return [
@@ -57,7 +56,6 @@ const Header: React.FC<HeaderProps> = ({
   decisionEvaluationInstanceKey,
   onChangeDrdPanelState,
 }) => {
-  const navigate = useNavigate();
   const isMultiTenancyEnabled = getClientConfig().multiTenancyEnabled;
   const headerColumns = getHeaderColumns(isMultiTenancyEnabled);
   const tenantsById = useAvailableTenants();
@@ -66,13 +64,7 @@ const Header: React.FC<HeaderProps> = ({
   );
 
   if (status === 'pending') {
-    return (
-      <Skeleton
-        backButtonLabel="Back"
-        onBackClick={() => navigate(-1)}
-        headerColumns={headerColumns}
-      />
-    );
+    return <Skeleton headerColumns={headerColumns} />;
   }
 
   if (status === 'success' && decisionInstance !== null) {
@@ -89,8 +81,6 @@ const Header: React.FC<HeaderProps> = ({
         state={decisionInstance.state}
         instanceName={decisionInstance.decisionDefinitionName}
         incidentsCount={decisionInstance.state === 'FAILED' ? 1 : 0}
-        backButtonLabel="Back"
-        onBackClick={() => navigate(-1)}
         headerColumns={headerColumns.map(({name}) => name)}
         bodyColumns={[
           {
