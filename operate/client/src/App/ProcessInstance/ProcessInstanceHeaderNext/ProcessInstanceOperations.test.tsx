@@ -17,7 +17,6 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/cancelProcessInstance';
 import {mockResolveProcessInstanceIncidents} from 'modules/mocks/api/v2/processInstances/resolveProcessInstanceIncidents';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
-import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockDeleteProcessInstance} from 'modules/mocks/api/v2/processInstances/deleteProcessInstance';
 
 vi.mock('modules/stores/notifications', () => ({
@@ -54,15 +53,6 @@ describe('ProcessInstanceOperations', () => {
     vi.clearAllMocks();
     modificationsStore.reset();
     mockFetchCallHierarchy().withSuccess([]);
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
   });
 
   it('should render operations for active instance with incident', () => {
@@ -85,6 +75,7 @@ describe('ProcessInstanceOperations', () => {
     expect(screen.getByTitle(/retry instance/i)).toBeInTheDocument();
     expect(screen.getByTitle(/cancel instance/i)).toBeInTheDocument();
     expect(screen.getByTitle(/modify instance/i)).toBeInTheDocument();
+    expect(screen.getByTitle(/migrate instance/i)).toBeInTheDocument();
   });
 
   it('should render operations for active instance without incident', () => {
@@ -98,6 +89,7 @@ describe('ProcessInstanceOperations', () => {
     expect(screen.queryByTitle(/retry instance/i)).not.toBeInTheDocument();
     expect(screen.getByTitle(/cancel instance/i)).toBeInTheDocument();
     expect(screen.getByTitle(/modify instance/i)).toBeInTheDocument();
+    expect(screen.getByTitle(/migrate instance/i)).toBeInTheDocument();
   });
 
   it('should render delete operation for terminated instance', () => {
@@ -112,6 +104,7 @@ describe('ProcessInstanceOperations', () => {
     expect(screen.getByTitle(/delete instance/i)).toBeInTheDocument();
     expect(screen.queryByTitle(/cancel instance/i)).not.toBeInTheDocument();
     expect(screen.queryByTitle(/modify instance/i)).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/migrate instance/i)).not.toBeInTheDocument();
   });
 
   it('should hide operations when modification mode is enabled', () => {
@@ -135,6 +128,7 @@ describe('ProcessInstanceOperations', () => {
     expect(screen.queryByTitle(/retry instance/i)).not.toBeInTheDocument();
     expect(screen.queryByTitle(/cancel instance/i)).not.toBeInTheDocument();
     expect(screen.queryByTitle(/modify instance/i)).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/migrate instance/i)).not.toBeInTheDocument();
   });
 
   it('should show notification on cancel error', async () => {
@@ -239,35 +233,4 @@ describe('ProcessInstanceOperations', () => {
     );
   });
 
-  it('should show spinner when process instance has active operation items', async () => {
-    mockQueryBatchOperationItems().withSuccess({
-      items: [
-        {
-          batchOperationKey: 'batch-123',
-          processInstanceKey: '123456789',
-          state: 'ACTIVE',
-          operationType: 'CANCEL_PROCESS_INSTANCE',
-          itemKey: '123456789',
-          rootProcessInstanceKey: null,
-          processedDate: null,
-          errorMessage: null,
-        },
-      ],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-
-    render(
-      <ProcessInstanceOperations processInstance={mockProcessInstance} />,
-      {wrapper: getWrapper()},
-    );
-
-    await waitFor(() => {
-      expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
-    });
-  });
 });
