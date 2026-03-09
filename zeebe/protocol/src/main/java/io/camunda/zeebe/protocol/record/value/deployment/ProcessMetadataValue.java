@@ -50,6 +50,11 @@ public interface ProcessMetadataValue extends RecordValue, TenantOwned {
   String getResourceName();
 
   /**
+   * @return the BPMN process name, or {@code null} if none is set
+   */
+  String getProcessName();
+
+  /**
    * @return the checksum of the process (MD5)
    */
   byte[] getChecksum();
