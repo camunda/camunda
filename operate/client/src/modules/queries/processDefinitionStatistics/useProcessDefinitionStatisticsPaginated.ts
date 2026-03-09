@@ -85,4 +85,4 @@ const useProcessDefinitionStatisticsPaginated = <
   });
 };
 
-export {useProcessDefinitionStatisticsPaginated, PAGES_LIMIT};
+export {useProcessDefinitionStatisticsPaginated, PAGE_LIMIT, PAGES_LIMIT};

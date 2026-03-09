@@ -13,8 +13,14 @@ import {PAGE_TITLE} from 'modules/constants';
 import {Grid, ScrollableContent, Tile, TileTitle} from './styled';
 import {InstancesByProcessDefinition} from './InstancesByProcessDefinition';
 import {IncidentsByError} from './IncidentsByError';
-import {useProcessDefinitionStatisticsPaginated} from 'modules/queries/processDefinitionStatistics/useProcessDefinitionStatisticsPaginated';
-import {useIncidentProcessInstanceStatisticsByErrorPaginated} from 'modules/queries/incidentStatistics/useIncidentProcessInstanceStatisticsByErrorPaginated';
+import {
+  useProcessDefinitionStatisticsPaginated,
+  PAGE_LIMIT as PROCESS_PAGE_LIMIT,
+} from 'modules/queries/processDefinitionStatistics/useProcessDefinitionStatisticsPaginated';
+import {
+  useIncidentProcessInstanceStatisticsByErrorPaginated,
+  PAGE_LIMIT as INCIDENT_PAGE_LIMIT,
+} from 'modules/queries/incidentStatistics/useIncidentProcessInstanceStatisticsByErrorPaginated';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
 import {
   useDashboardScrollPagination,
@@ -32,11 +38,20 @@ const Dashboard: React.FC = () => {
 
   const incidentStats = useIncidentProcessInstanceStatisticsByErrorPaginated({
     enablePeriodicRefetch: true,
+    enabled:
+      processStats.status !== 'success' ||
+      (processStats.data?.totalCount ?? 0) > 0,
     select: flattenPaginatedPages,
   });
 
-  const processScroll = useDashboardScrollPagination(processStats);
-  const incidentScroll = useDashboardScrollPagination(incidentStats);
+  const processScroll = useDashboardScrollPagination(
+    processStats,
+    PROCESS_PAGE_LIMIT,
+  );
+  const incidentScroll = useDashboardScrollPagination(
+    incidentStats,
+    INCIDENT_PAGE_LIMIT,
+  );
 
   const hasNoInstances =
     processStats.status === 'success' &&
