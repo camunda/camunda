@@ -12,18 +12,26 @@ import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 
-public class BatchOperationSuspendedV1Applier
+public class BatchOperationResumedV2Applier
     implements TypedEventApplier<BatchOperationIntent, BatchOperationLifecycleManagementRecord> {
 
   private final MutableBatchOperationState batchOperationState;
 
-  public BatchOperationSuspendedV1Applier(final MutableBatchOperationState batchOperationState) {
+  public BatchOperationResumedV2Applier(final MutableBatchOperationState batchOperationState) {
     this.batchOperationState = batchOperationState;
   }
 
   @Override
-  public void applyState(
-      final long suspendKey, final BatchOperationLifecycleManagementRecord value) {
-    batchOperationState.suspend(value.getBatchOperationKey());
+  public void applyState(final long key, final BatchOperationLifecycleManagementRecord value) {
+    final var batchOperationKey = value.getBatchOperationKey();
+    batchOperationState.resume(batchOperationKey);
+
+    // Only re-add to pending if the batch operation was not yet fully initialized.
+    // Initialized batch operations are removed from pending by transitionToInitialized()
+    // and are driven by chunk execution, not the scheduler's pending queue.
+    final var batch = batchOperationState.get(batchOperationKey);
+    if (batch.isPresent() && !batch.get().isInitialized()) {
+      batchOperationState.addToPending(batchOperationKey);
+    }
   }
 }
