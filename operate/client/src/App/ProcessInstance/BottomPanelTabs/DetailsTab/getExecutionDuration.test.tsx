@@ -8,22 +8,22 @@
 
 import {getExecutionDuration} from './getExecutionDuration';
 
-const MOCK_EXECUTION_DATE = '21 seconds';
 const MOCK_START_DATE = '2022-01-01T11:00:00.000+0000';
 const MOCK_END_DATE = '2022-01-03T11:00:00.000+0000';
 
-vi.mock('date-fns', async () => {
-  const actual = await vi.importActual('date-fns');
-  return {
-    ...actual,
-    formatDistanceToNowStrict: () => MOCK_EXECUTION_DATE,
-  };
-});
-
 describe('getExecutionDuration', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2022-01-01T11:00:21.000+0000'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('should return a duration for open periods', () => {
     expect(getExecutionDuration(MOCK_START_DATE, null)).toBe(
-      `${MOCK_EXECUTION_DATE} (running)`,
+      '21 seconds (running)',
     );
   });
 
