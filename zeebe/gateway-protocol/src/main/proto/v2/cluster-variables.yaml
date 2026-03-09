@@ -465,7 +465,6 @@ components:
           type: boolean
     ClusterVariableScopeFilterProperty:
       description: ClusterVariableScopeEnum property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match

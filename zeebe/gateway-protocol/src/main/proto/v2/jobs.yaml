@@ -1029,7 +1029,6 @@ components:
 
     JobKindFilterProperty:
       description: JobKindEnum property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -1064,7 +1063,6 @@ components:
 
     JobListenerEventTypeFilterProperty:
       description: JobListenerEventTypeEnum property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -1099,7 +1097,6 @@ components:
 
     JobStateFilterProperty:
       description: JobStateEnum property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
