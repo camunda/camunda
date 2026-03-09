@@ -21,5 +21,6 @@ kubectl create namespace $namespace
 cp -rv cloud-default/ $namespace
 cd $namespace
 
-# calls OS specific sed inplace function
-sed_inplace "s/default/$namespace/g" Makefile starter.yaml timer.yaml simpleStarter.yaml worker.yaml
+
+# Update Makefile to use the namespace
+sed_inplace "s/__NAMESPACE__/$namespace/" Makefile
