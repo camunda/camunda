@@ -27,7 +27,7 @@ Before modifying code, read the module's README.md and check `docs/` for cross-c
 
 ## Build Commands
 
-All builds use `./mvnw`. Use `-T1C` for parallel builds. Prefer module-scoped builds.
+All builds use `./mvnw`. Use `-T1C` for parallel builds, or `-T2` if running builds alongside other resource-intensive processes. Prefer module-scoped builds.
 
 ```bash
 # Build a module and its dependencies
