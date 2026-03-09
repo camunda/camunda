@@ -49,6 +49,7 @@ components:
         - replicationFactor
         - gatewayVersion
         - lastCompletedChangeId
+        - clusterId
       properties:
         brokers:
           description: A list of brokers that are part of this cluster.
