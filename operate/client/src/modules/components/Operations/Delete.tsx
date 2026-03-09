@@ -7,9 +7,10 @@
  */
 
 import {useState} from 'react';
-import {Modal} from '@carbon/react';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {DangerButton} from 'modules/components/OperationItem/DangerButton';
+import {DeleteConfirmationModal} from './DeleteConfirmationModal';
+
 type Props = {
   processInstanceKey: ProcessInstance['processInstanceKey'];
   onExecute: () => void;
@@ -22,15 +23,6 @@ const Delete: React.FC<Props> = ({
   disabled = false,
 }) => {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
-
-  const confirmation = {
-    title: 'Delete Instance',
-    message: `About to delete Instance ${processInstanceKey}.`,
-    primaryButtonText: 'Delete',
-    secondaryButtonText: 'Cancel',
-    isDangerous: true,
-  };
-
   return (
     <>
       <DangerButton
@@ -40,26 +32,16 @@ const Delete: React.FC<Props> = ({
         disabled={disabled}
         size="sm"
       />
-
       {isDeleteModalVisible && (
-        <Modal
+        <DeleteConfirmationModal
+          processInstanceKey={processInstanceKey}
           open={isDeleteModalVisible}
-          danger={confirmation.isDangerous}
-          preventCloseOnClickOutside
-          modalHeading={confirmation.title}
-          primaryButtonText={confirmation.primaryButtonText}
-          secondaryButtonText={confirmation.secondaryButtonText}
-          onRequestSubmit={() => {
-            onExecute();
+          onConfirm={() => {
             setIsDeleteModalVisible(false);
+            onExecute();
           }}
-          onRequestClose={() => setIsDeleteModalVisible(false)}
-          size="md"
-          data-testid="confirm-deletion-modal"
-        >
-          <p>{confirmation.message}</p>
-          <p>Click "{confirmation.primaryButtonText}" to proceed.</p>
-        </Modal>
+          onCancel={() => setIsDeleteModalVisible(false)}
+        />
       )}
     </>
   );
