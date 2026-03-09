@@ -24,16 +24,19 @@ type Options = Omit<
     unknown
   >,
   'mutationFn'
->;
+> & {
+  shouldSkipResultCheck?: boolean;
+};
 
 function useResolveProcessInstanceIncidents(
   processInstanceKey: string,
   options?: Options,
 ) {
   const queryClient = useQueryClient();
+  const {shouldSkipResultCheck, ...mutationOptions} = options ?? {};
 
   return useMutation({
-    ...options,
+    ...mutationOptions,
     mutationFn: async () => {
       const {response, error} =
         await resolveProcessInstanceIncidents(processInstanceKey);
@@ -42,6 +45,10 @@ function useResolveProcessInstanceIncidents(
           status: error.response?.status,
           statusText: error.response?.statusText,
         };
+      }
+
+      if (shouldSkipResultCheck) {
+        return response;
       }
 
       await queryClient.fetchQuery({
