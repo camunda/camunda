@@ -114,7 +114,19 @@ public class OidcUserAuthenticationConverter
     final var clientRegistrationId = clientRegistration.getRegistrationId();
     return jwtDecoders.computeIfAbsent(
         clientRegistrationId,
+<<<<<<< HEAD
         k -> accessTokenDecoderFactory.createAccessTokenDecoder(clientRegistration));
+=======
+        k -> {
+          final var issuerUri = clientRegistration.getProviderDetails().getIssuerUri();
+          // issuerUri may be null when configured without auto-discovery (e.g. explicit
+          // jwkSetUri/authorizationUri/tokenUri). Guard against NPE on the immutable map.
+          final var additionalUris =
+              issuerUri != null ? additionalJwkSetUrisByIssuer.get(issuerUri) : null;
+          return accessTokenDecoderFactory.createAccessTokenDecoder(
+              clientRegistration, additionalUris);
+        });
+>>>>>>> 4f2efb37 (fix: prevent NPE in OidcUserAuthenticationConverter when issuerUri is null)
   }
 
   protected Map<String, Object> getIdTokenClaims(
