@@ -120,11 +120,15 @@ Uses [Conventional Commits](https://www.conventionalcommits.org/). Max 120 chars
 
 Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`, `revert`, `style`, `test`
 
+- Separate behavioral changes from structural/refactoring changes into distinct commits
+- Commit messages should explain *why*, not just *what* changed
+
 ## Pull Request Conventions
 
 - PR title follows conventional commit format (e.g., `feat: add user validation`)
 - Reference the issue number in the description (e.g., `Closes #1234`)
 - Keep PRs focused on a single concern
+- Describe why the changes are necessary and note alternatives considered
 
 ## Git Workflow
 
