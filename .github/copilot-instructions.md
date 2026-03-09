@@ -39,7 +39,7 @@ Before modifying code in any module:
 
 ## Build Commands
 
-All builds use the Maven wrapper (`./mvnw`). Use `-T1C` for parallel module builds.
+All builds use the Maven wrapper (`./mvnw`). Use `-T1C` for parallel module builds, or `-T2` if running builds alongside other resource-intensive processes.
 
 ### Module-scoped builds (preferred)
 
