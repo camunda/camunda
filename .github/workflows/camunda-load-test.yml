@@ -18,7 +18,7 @@ on:
     inputs:
       ref:
         description: 'Specifies the ref (e.g. branch name, commit sha or tag) from which the docker image is built and used to run the load test against'
-        default: 'main'
+        default: 'stable/8.9'
         type: string
         required: false
       name:
@@ -27,7 +27,7 @@ on:
       ttl:
         description: 'Specifies after how many days the load test namespace should be deleted'
         type: number
-        default: 7
+        default: 1
         required: false
       reuse-tag:
         description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
@@ -58,6 +58,11 @@ on:
         type: string
         default: ""
         required: false
+      perform-read-benchmarks:
+        description: 'Perform continuous read benchmarks on secondary storage. This may influence the exporter performance as it puts more load on the secondary database. The metrics are available in the Data-Layer dashboard.'
+        type: boolean
+        required: false
+        default: false
       stable-vms:
         description: 'Deploy to non-spot VMs'
         type: boolean
@@ -74,18 +79,19 @@ on:
         required: false
         default: false
       secondary-storage-type:
-        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch" or "postgresql"'
+        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch", "postgresql" or "none"'
         type: choice
         options:
         - elasticsearch
         - opensearch
         - postgresql
+        - none
         default: elasticsearch
   workflow_call:
     inputs:
       ref:
         description: 'Specifies the ref (e.g. branch name, commit sha or tag) from which the docker image is built and used to run the load test against'
-        default: 'main'
+        default: 'stable/8.9'
         type: string
         required: false
       name:
@@ -95,7 +101,7 @@ on:
       ttl:
         description: 'Specifies after how many days the load test namespace should be deleted'
         type: number
-        default: 7
+        default: 1
         required: false
       reuse-tag:
         description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
@@ -126,6 +132,11 @@ on:
         default: ""
         type: string
         required: false
+      perform-read-benchmarks:
+        description: 'Perform continuous read benchmarks on secondary storage. This may influence the exporter performance as it puts more load on the secondary database. The metrics are available in the Data-Layer dashboard.'
+        type: boolean
+        required: false
+        default: false
       stable-vms:
         description: 'Deploy to non-spot VMs'
         type: boolean
@@ -142,7 +153,7 @@ on:
         required: false
         default: false
       secondary-storage-type:
-        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch" or "postgresql"'
+        description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch", "postgresql" or "none"'
         # type choice is invalid here
         type: string
         required: false
@@ -383,7 +394,11 @@ jobs:
           cd load-tests/setup/${{ env.NAMESPACE }}
 
           # Build additional load test configuration
-          load_test_config="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set global.image.repository=${{ env.IMAGE_REPOSITORY }} --set global.image.pullSecrets[0].name=harbor-registry"
+          load_test_config="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} \
+                            --set global.image.repository=${{ env.IMAGE_REPOSITORY }} \
+                            --set global.image.pullSecrets[0].name=harbor-registry \
+                            --set global.extraEnvVars[0].name=CONFIG_FORCE_app_performReadBenchmarks \
+                            --set global.extraEnvVars[0].value=${{inputs.perform-read-benchmarks}}"
           # Append load-test-load configuration if not empty
           if [[ -n "${{ needs.calculate-scenario-config.outputs.load-test-load }}" ]]; then
             load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
