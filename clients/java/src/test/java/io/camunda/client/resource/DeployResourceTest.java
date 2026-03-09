@@ -220,8 +220,11 @@ public final class DeployResourceTest extends ClientTest {
     final long key = 123L;
     final String tenantId = "test-tenant";
     final String filename = DeployResourceTest.class.getResource(BPMN_1_FILENAME).getPath();
+    final String processName = "TestProcess";
     gatewayService.onDeployResourceRequest(
-        key, tenantId, deployment(deployedProcess(BPMN_1_PROCESS_ID, 12, 423, filename, tenantId)));
+        key,
+        tenantId,
+        deployment(deployedProcess(BPMN_1_PROCESS_ID, 12, 423, filename, tenantId, processName)));
 
     // when
     final DeploymentEvent response =
@@ -236,7 +239,8 @@ public final class DeployResourceTest extends ClientTest {
     assertThat(response.getKey()).isEqualTo(key);
     assertThat(response.getTenantId()).isEqualTo(tenantId);
     assertThat(response.getProcesses())
-        .containsExactly(new ProcessImpl(423, BPMN_1_PROCESS_ID, 12, filename, tenantId));
+        .containsExactly(
+            new ProcessImpl(423, BPMN_1_PROCESS_ID, 12, filename, tenantId, processName));
   }
 
   @Test
@@ -246,11 +250,13 @@ public final class DeployResourceTest extends ClientTest {
     final String tenantId = "test-tenant";
     final String filename1 = BPMN_1_FILENAME.substring(1);
     final String filename2 = BPMN_2_FILENAME.substring(1);
+    final String processName1 = "TestProcess1";
+    final String processName2 = "";
     gatewayService.onDeployResourceRequest(
         key,
         tenantId,
-        deployment(deployedProcess(BPMN_1_PROCESS_ID, 1, 1, filename1, tenantId)),
-        deployment(deployedProcess(BPMN_2_PROCESS_ID, 1, 2, filename2, tenantId)));
+        deployment(deployedProcess(BPMN_1_PROCESS_ID, 1, 1, filename1, tenantId, processName1)),
+        deployment(deployedProcess(BPMN_2_PROCESS_ID, 1, 2, filename2, tenantId, processName2)));
 
     // when
     final DeploymentEvent response =
@@ -266,8 +272,8 @@ public final class DeployResourceTest extends ClientTest {
     assertThat(response.getKey()).isEqualTo(key);
     assertThat(response.getProcesses())
         .containsExactly(
-            new ProcessImpl(1, BPMN_1_PROCESS_ID, 1, filename1, tenantId),
-            new ProcessImpl(2, BPMN_2_PROCESS_ID, 1, filename2, tenantId));
+            new ProcessImpl(1, BPMN_1_PROCESS_ID, 1, filename1, tenantId, processName1),
+            new ProcessImpl(2, BPMN_2_PROCESS_ID, 1, filename2, tenantId, processName2));
   }
 
   @Test
