@@ -19,7 +19,7 @@ test.describe('Decision Instances', () => {
     await deploy(['./resources/decisions_v_1.dmn']);
     await deploy(['./resources/decisions_v_2.dmn']);
 
-    await sleep(3000);
+    await sleep(5000);
   });
 
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {

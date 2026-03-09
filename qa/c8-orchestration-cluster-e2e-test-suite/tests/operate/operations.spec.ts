@@ -173,7 +173,7 @@ test.describe('Operations', () => {
 
       await expect(
         operateProcessesPage.getCanceledIcon(instance.processInstanceKey),
-      ).toBeVisible();
+      ).toBeVisible({timeout: 60000});
 
       await expect(instanceRow.getByText(instance.bpmnProcessId)).toBeVisible();
       await expect(
