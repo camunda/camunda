@@ -220,7 +220,7 @@ elasticsearch:
     pdb:
       minAvailable: 2
     ## @param elasticsearch.master.heapSize
-    heapSize: 3g
+    heapSize: 6g
     persistence:
       ## @param elasticsearch.master.persistence.size
       size: 128Gi
@@ -228,17 +228,17 @@ elasticsearch:
       accessModes: ["ReadWriteOnce"]
     resources:
       requests:
-        cpu: 3000m
-        memory: 3Gi
-      limits:
-        cpu: 3000m
+        cpu: 6000m
         memory: 6Gi
+      limits:
+        cpu: 6000m
+        memory: 12Gi
     nodeSelector:
-      component: benchmark-n2-standard-4
+      component: benchmark-n2-standard-8
     tolerations:
       - key: nodepool
         operator: Equal
-        value: n2-standard-4
+        value: n2-standard-8
         effect: NoSchedule
   extraConfig:
     logger.org.elasticsearch.deprecation: "OFF"
