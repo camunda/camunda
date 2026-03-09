@@ -68,12 +68,12 @@ const Container = styled.header<ContainerProps>`
       css`
         border-bottom: none;
       `}
-
-      & > :last-child {
-        margin-left: auto;
-      }
     `;
   }}
+`;
+
+const AdditionalContent = styled.div`
+  margin-left: auto;
 `;
 
 const NameContainer = styled.div`
@@ -117,6 +117,7 @@ export {
   Td,
   Th,
   Container,
+  AdditionalContent,
   SkeletonText,
   SkeletonIcon,
   NameContainer,
