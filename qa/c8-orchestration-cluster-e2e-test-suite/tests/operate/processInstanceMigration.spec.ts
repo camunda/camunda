@@ -646,11 +646,8 @@ test.describe.serial('Process Instance Migration', () => {
 
     await test.step('Verify Business rule task incident migration', async () => {
       await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
-      await operateDiagramPage.showMetaData();
 
       await operateDiagramPage.verifyIncidentInPopover(/invalid.*decision/i);
-
-      await operateDiagramPage.closeMetadataModal();
     });
   });
 

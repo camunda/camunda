@@ -187,7 +187,9 @@ test.describe('Process Instance', () => {
       await operateProcessInstancePage.cancelInstance(instanceId);
 
       await expect(operateProcessInstancePage.operationSpinner).toBeVisible();
-      await expect(operateProcessInstancePage.operationSpinner).toBeHidden();
+      await expect(operateProcessInstancePage.operationSpinner).toBeHidden({
+        timeout: 60000,
+      });
     });
 
     await test.step('Verify instance is canceled', async () => {

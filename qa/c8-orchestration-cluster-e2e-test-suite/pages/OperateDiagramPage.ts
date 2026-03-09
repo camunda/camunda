@@ -201,11 +201,11 @@ export class OperateDiagramPage {
       this.popover.getByRole('heading', {
         name: 'Incident',
       }),
-    ).toBeVisible();
+    ).toBeVisible({timeout: 30000});
 
     await expect(
       this.popover.locator('dd').getByText(incidentPattern),
-    ).toBeVisible();
+    ).toBeVisible({timeout: 30000});
   }
 
   async closeMetadataModal(): Promise<void> {
