@@ -684,7 +684,6 @@ components:
 
     BatchOperationTypeFilterProperty:
       description: BatchOperationTypeEnum property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -719,7 +718,6 @@ components:
 
     BatchOperationStateFilterProperty:
       description: BatchOperationStateEnum property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -754,7 +752,6 @@ components:
 
     BatchOperationItemStateFilterProperty:
       description: BatchOperationItemStateEnum property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match

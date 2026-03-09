@@ -477,7 +477,6 @@ components:
 
     DeploymentKeyFilterProperty:
       description: DeploymentKey property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -515,7 +514,6 @@ components:
 
     ResourceKeyFilterProperty:
       description: ResourceKey property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
