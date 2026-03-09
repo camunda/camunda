@@ -22,7 +22,7 @@ public interface MutableBatchOperationState extends BatchOperationState {
    * <p>This method is deprecated because the {@code BatchOperationIntent.CREATED} command could be
    * processed multiple times for the same batch operation key. This probably occurred because the
    * command was not acknowledged during {@link
-   * io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor#processDistributedCommand},
+   * io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreationCreateProcessor#processDistributedCommand},
    * leading to duplicate processing. This would cause a new {@link
    * io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation} instance to be created
    * and upserted in the state, overriding the previous instance via {@link
