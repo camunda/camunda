@@ -60,7 +60,7 @@ public final class GcsBackupStore implements BackupStore {
     basePath = Optional.ofNullable(config.basePath()).map(s -> s + "/").orElse("");
     this.client = client;
     executor = Executors.newVirtualThreadPerTaskExecutor();
-    manifestManager = new ManifestManager(client, bucketInfo, basePath);
+    manifestManager = new ManifestManager(client, bucketInfo, basePath, executor);
     fileSetManager =
         new FileSetManager(client, bucketInfo, basePath, executor, config.maxConcurrentTransfers());
   }
