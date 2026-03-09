@@ -249,6 +249,22 @@ export class OperateDiagramPage {
     return this.popover.getByText(pattern);
   }
 
+  getIncidentsOverlay(elementId: string): Locator {
+    return this.page
+      .locator(`[data-container-id="${elementId}"]`)
+      .getByTestId('state-overlay-incidents');
+  }
+
+  getExecutionCountOverlay(elementId: string): Locator {
+    return this.page
+      .locator(`[data-container-id="${elementId}"]`)
+      .getByTestId('state-overlay-completed');
+  }
+
+  async clickShowIncident(): Promise<void> {
+    await this.popover.getByRole('button', {name: /^show incident$/i}).click();
+  }
+
   async clickPopoverLink(pattern: RegExp | string): Promise<void> {
     await this.popover.getByRole('link', {name: pattern}).click();
   }
