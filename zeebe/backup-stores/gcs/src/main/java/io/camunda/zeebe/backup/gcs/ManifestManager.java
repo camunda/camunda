@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
@@ -29,12 +30,14 @@ import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.StreamSupport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ManifestManager {
 
@@ -49,6 +52,7 @@ public final class ManifestManager {
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
   public static final int PRECONDITION_FAILED = 412;
+  private static final Logger LOG = LoggerFactory.getLogger(ManifestManager.class);
 
   /**
    * Format for path to all manifests.
@@ -78,11 +82,17 @@ public final class ManifestManager {
   private final BucketInfo bucketInfo;
   private final Storage client;
   private final String basePath;
+  private final ExecutorService executor;
 
-  ManifestManager(final Storage client, final BucketInfo bucketInfo, final String basePath) {
+  ManifestManager(
+      final Storage client,
+      final BucketInfo bucketInfo,
+      final String basePath,
+      final ExecutorService executor) {
     this.bucketInfo = bucketInfo;
     this.client = client;
     this.basePath = basePath;
+    this.executor = executor;
   }
 
   PersistedManifest createInitialManifest(final Backup backup) {
@@ -177,27 +187,38 @@ public final class ManifestManager {
   }
 
   public Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
-    final var spliterator =
-        Spliterators.spliteratorUnknownSize(
-            client
-                .list(bucketInfo.getName(), BlobListOption.prefix(wildcardPrefix(wildcard)))
-                .iterateAll()
-                .iterator(),
-            Spliterator.IMMUTABLE);
-    return StreamSupport.stream(spliterator, false)
-        .filter(filterBlobsByWildcard(wildcard))
-        .parallel()
-        .map(Blob::getContent)
-        .map(
-            content -> {
-              try {
-                return MAPPER.readValue(content, Manifest.class);
-              } catch (final IOException e) {
-                throw new UncheckedIOException(e);
-              }
-            })
-        .filter(m -> wildcard.matches(m.id()))
-        .toList();
+    final var blobFilter = filterBlobsByWildcard(wildcard);
+    LOG.debug("Searching for matching blobs for wildcard {}", wildcard);
+
+    final var matchingBlobIds = new ArrayList<BlobId>();
+    for (final var blob :
+        client
+            .list(bucketInfo.getName(), BlobListOption.prefix(wildcardPrefix(wildcard)))
+            .iterateAll()) {
+      if (blobFilter.test(blob)) {
+        matchingBlobIds.add(blob.getBlobId());
+      }
+    }
+
+    LOG.trace("Found {} matching blobs for wildcard {}", matchingBlobIds.size(), wildcard);
+    final var futures =
+        matchingBlobIds.stream()
+            .map(
+                blobId ->
+                    CompletableFuture.supplyAsync(
+                        () -> {
+                          try {
+                            return MAPPER.readValue(client.readAllBytes(blobId), Manifest.class);
+                          } catch (final IOException e) {
+                            throw new UncheckedIOException(e);
+                          }
+                        },
+                        executor));
+
+    final var filtered =
+        futures.map(CompletableFuture::join).filter(m -> wildcard.matches(m.id())).toList();
+    LOG.debug("Found {} matching manifests for wildcard {}", filtered.size(), wildcard);
+    return filtered;
   }
 
   public void deleteManifest(final Manifest manifest) {
