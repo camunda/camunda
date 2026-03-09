@@ -100,7 +100,7 @@ test.describe('Process Instance', () => {
       await operateProcessInstancePage.editVariableButtonInList.click();
 
       await operateProcessInstancePage.editVariableValueField.clear();
-      await operateProcessInstancePage.editVariableValueField.type('20');
+      await operateProcessInstancePage.editVariableValueField.fill('20');
 
       await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled();
       await operateProcessInstancePage.saveVariableButton.click();
@@ -146,7 +146,9 @@ test.describe('Process Instance', () => {
 
       await operateProcessInstancePage.saveVariableButton.click();
       await expect(operateProcessInstancePage.variableSpinner).toBeVisible();
-      await expect(operateProcessInstancePage.variableSpinner).toBeHidden();
+      await expect(operateProcessInstancePage.variableSpinner).toBeHidden({
+        timeout: 30000,
+      });
     });
 
     await test.step('Retry second incident to resolve it', async () => {

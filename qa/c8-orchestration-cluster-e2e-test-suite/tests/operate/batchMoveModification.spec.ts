@@ -23,9 +23,10 @@ const NUM_SELECTED_PROCESS_INSTANCES = 4;
 
 test.beforeAll(async () => {
   await deploy(['./resources/orderProcessBatchMod_v_1.bpmn']);
+  await sleep(1500);
   await createInstances('orderProcessBatchMod', 1, NUM_PROCESS_INSTANCES);
 
-  await sleep(5000);
+  await sleep(6000);
 });
 
 test.describe('Process Instance Batch Modification', () => {

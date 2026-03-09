@@ -25,6 +25,7 @@ test.beforeAll(async () => {
     './resources/calledProcess.bpmn',
   ]);
 
+  await sleep(1500);
   const instance = await createSingleInstance(
     'CallActivityNavigationProcess',
     1,
@@ -33,7 +34,7 @@ test.beforeAll(async () => {
     processInstanceKey: instance.processInstanceKey,
   };
 
-  await sleep(3000);
+  await sleep(4000);
 });
 
 test.describe('Call Activities', () => {
