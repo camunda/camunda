@@ -448,7 +448,7 @@ final class BackupEndpointTest {
       doThrow(failure).when(api).getStatus(anyLong());
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(new String[] {"1"});
+      final WebEndpointResponse<?> response = endpoint.query("1");
 
       // then
       assertThat(response.getBody())
@@ -470,7 +470,7 @@ final class BackupEndpointTest {
       doReturn(CompletableFuture.completedFuture(backupStatus)).when(api).getStatus(anyLong());
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(new String[] {"1"});
+      final WebEndpointResponse<?> response = endpoint.query("1");
 
       // then
       assertThat(response.getStatus()).isEqualTo(404);
@@ -492,7 +492,7 @@ final class BackupEndpointTest {
       doReturn(CompletableFuture.failedFuture(error)).when(api).getStatus(anyLong());
 
       // when
-      final var response = endpoint.query(new String[] {"1"});
+      final var response = endpoint.query("1");
 
       // then
       assertThat(response.getStatus()).isEqualTo(expectedCode);
@@ -551,7 +551,7 @@ final class BackupEndpointTest {
       final BackupInfo expectedResponse = mapper.readValue(expectedJson, BackupInfo.class);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(new String[] {"1"});
+      final WebEndpointResponse<?> response = endpoint.query("1");
 
       // then
       assertThat(response.getBody())
@@ -602,7 +602,7 @@ final class BackupEndpointTest {
       final BackupInfo expectedResponse = mapper.readValue(expectedJson, BackupInfo.class);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(new String[] {"1"});
+      final WebEndpointResponse<?> response = endpoint.query("1");
 
       // then
       assertThat(response.getBody())
@@ -824,7 +824,7 @@ final class BackupEndpointTest {
       doThrow(failure).when(api).deleteBackup(1);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.delete(new String[] {"1"});
+      final WebEndpointResponse<?> response = endpoint.delete("1");
 
       // then
       assertThat(response.getBody())
@@ -845,7 +845,7 @@ final class BackupEndpointTest {
       doReturn(CompletableFuture.failedFuture(error)).when(api).deleteBackup(anyLong());
 
       // when
-      final var response = endpoint.delete(new String[] {"1"});
+      final var response = endpoint.delete("1");
 
       // then
       assertThat(response.getStatus()).isEqualTo(expectedCode);
@@ -868,7 +868,7 @@ final class BackupEndpointTest {
       doReturn(CompletableFuture.completedFuture(null)).when(api).deleteBackup(1);
 
       // when
-      final WebEndpointResponse<?> response = endpoint.delete(new String[] {"1"});
+      final WebEndpointResponse<?> response = endpoint.delete("1");
 
       // then
       assertThat(response.getStatus()).isEqualTo(204);
@@ -887,7 +887,7 @@ final class BackupEndpointTest {
       doReturn(CompletableFuture.completedFuture(null)).when(api).deleteRuntimeState();
 
       // when
-      final WebEndpointResponse<?> response = endpoint.delete(new String[] {"state"});
+      final WebEndpointResponse<?> response = endpoint.delete("state");
 
       // then
       assertThat(response.getStatus()).isEqualTo(204);
@@ -903,7 +903,7 @@ final class BackupEndpointTest {
       doReturn(CompletableFuture.failedFuture(error)).when(api).deleteRuntimeState();
 
       // when
-      final var response = endpoint.delete(new String[] {"state"});
+      final var response = endpoint.delete("state");
 
       // then
       assertThat(response.getStatus()).isEqualTo(expectedCode);
@@ -924,7 +924,7 @@ final class BackupEndpointTest {
       doThrow(failure).when(api).deleteRuntimeState();
 
       // when
-      final WebEndpointResponse<?> response = endpoint.delete(new String[] {"state"});
+      final WebEndpointResponse<?> response = endpoint.delete("state");
 
       // then
       assertThat(response.getBody())
@@ -962,7 +962,7 @@ final class BackupEndpointTest {
       when(api.getBackupRanges()).thenReturn(CompletableFuture.completedFuture(rangesResponse));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(new String[] {BackupApi.STATE});
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE);
 
       // then
       assertThat(response.getBody())
@@ -1020,7 +1020,7 @@ final class BackupEndpointTest {
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(new String[] {BackupApi.STATE});
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE);
 
       // then
       assertThat(response.getBody())
@@ -1061,7 +1061,7 @@ final class BackupEndpointTest {
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(new String[] {BackupApi.STATE});
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE);
 
       // then
       assertThat(response.getBody())
@@ -1106,7 +1106,7 @@ final class BackupEndpointTest {
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(new String[] {BackupApi.STATE});
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE);
 
       // then
       assertThat(response.getBody())
@@ -1151,7 +1151,7 @@ final class BackupEndpointTest {
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(new String[] {BackupApi.STATE});
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE);
 
       // then
       assertThat(response.getBody())
@@ -1233,7 +1233,7 @@ final class BackupEndpointTest {
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
 
       // when
-      final WebEndpointResponse<?> response = endpoint.query(new String[] {BackupApi.STATE});
+      final WebEndpointResponse<?> response = endpoint.query(BackupApi.STATE);
 
       // then
       assertThat(response.getBody())
