@@ -19,6 +19,7 @@ export class OperateDiagramPage {
   readonly metadataModal: Locator;
   readonly metadataModalCloseButton: Locator;
   readonly monacoScrollableElement: Locator;
+  readonly viewRootCauseDecisionLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -39,6 +40,9 @@ export class OperateDiagramPage {
     this.monacoScrollableElement = this.metadataModal.locator(
       '.monaco-scrollable-element',
     );
+    this.viewRootCauseDecisionLink = this.page.getByRole('link', {
+      name: /View root cause decision/i,
+    });
   }
 
   async moveCanvasHorizontally(dx: number) {
@@ -247,5 +251,14 @@ export class OperateDiagramPage {
 
   async clickPopoverLink(pattern: RegExp | string): Promise<void> {
     await this.popover.getByRole('link', {name: pattern}).click();
+  }
+
+  async clickViewRootCauseDecisionLink(): Promise<void> {
+    await this.viewRootCauseDecisionLink.scrollIntoViewIfNeeded();
+    await this.viewRootCauseDecisionLink.waitFor({
+      state: 'visible',
+      timeout: 30000,
+    });
+    await this.viewRootCauseDecisionLink.click();
   }
 }
