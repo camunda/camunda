@@ -7,21 +7,18 @@
  */
 
 import {observer} from 'mobx-react';
-import {Link, OrderedList, Stack, TableBatchAction} from '@carbon/react';
+import {TableBatchAction} from '@carbon/react';
 import {MigrateAlt} from '@carbon/react/icons';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
-import {ListItem} from './styled';
+import {MigrationHelperModal} from 'modules/components/HelperModal/MigrationHelperModal';
 import {tracking} from 'modules/tracking';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {HelperModal} from 'modules/components/HelperModal';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {useSelectedProcessDefinitionContext} from '../../../selectedProcessDefinitionContext';
 import {variableFilterStore} from 'modules/stores/variableFilter';
-
-const localStorageKey = 'hideMigrationHelperModal';
 
 const MigrateAction: React.FC = observer(() => {
   const {
@@ -87,7 +84,7 @@ const MigrateAction: React.FC = observer(() => {
         <TableBatchAction
           renderIcon={MigrateAlt}
           onClick={() => {
-            if (getStateLocally()?.[localStorageKey]) {
+            if (getStateLocally()?.hideMigrationHelperModal) {
               handleSubmit();
             } else {
               setOpen(true);
@@ -108,41 +105,11 @@ const MigrateAction: React.FC = observer(() => {
       )}
     >
       {({open, setOpen}) => (
-        <HelperModal
-          title="Migrate process instance versions"
+        <MigrationHelperModal
           open={open}
           onClose={() => setOpen(false)}
-          localStorageKey={localStorageKey}
           onSubmit={handleSubmit}
-        >
-          {/* @ts-expect-error - Carbon types are wrong */}
-          <Stack as={OrderedList} nested gap={5}>
-            <ListItem>
-              Migrate is used to migrate running process instances to a
-              different process definition.
-            </ListItem>
-            <ListItem>
-              When the migration steps are executed, all selected process
-              instances will be affected. This can lead to interruptions, delays
-              or changes.
-            </ListItem>
-            <ListItem>
-              To minimize interruptions or delays, plan the migration at times
-              when the system load is low.
-            </ListItem>
-          </Stack>
-          <p>
-            Questions or concerns? Check our{' '}
-            <Link
-              href="https://docs.camunda.io/docs/components/operate/userguide/process-instance-migration/"
-              target="_blank"
-              inline
-            >
-              migration documentation
-            </Link>{' '}
-            for guidance and best practices.
-          </p>
-        </HelperModal>
+        />
       )}
     </ModalStateManager>
   );
