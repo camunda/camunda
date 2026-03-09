@@ -94,15 +94,12 @@ const VariablesTable: React.FC<Props> = ({
                   }
 
                   if (!isProcessInstanceRunning) {
-                    if (isTruncated) {
-                      return (
-                        <ViewFullVariableButton
-                          variableName={name}
-                          variableKey={variableKey}
-                        />
-                      );
-                    }
-                    return null;
+                    return (
+                      <ViewFullVariableButton
+                        variableName={name}
+                        variableKey={variableKey}
+                      />
+                    );
                   }
 
                   if (initialValues?.name === name) {
