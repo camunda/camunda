@@ -203,6 +203,12 @@ jobs:
         with:
           work-dir: ./optimize
 
+      - name: "Read Parent Pom Info"
+        id: "parent-pom-info"
+        uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: .
+
       - name: Clean release
         run: |
           mvn release:clean
@@ -334,7 +340,7 @@ jobs:
           OPTIMIZE_IMAGE_TAG: ${{ env.RELEASE_VERSION }}
           ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
           ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
-          IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
+          IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version || steps.parent-pom-info.outputs.x_version_identity }}
           OPERATE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
 
       - name: Wait for Optimize to start
@@ -354,7 +360,7 @@ jobs:
         uses: octokit/request-action@v2.3.1
         with:
           route: POST /repos/camunda/camunda/releases
-          make_latest: false
+          make_latest: "false"
           name: ${{ env.TAG }}
           tag_name: ${{ env.TAG }}
           generate_release_notes: true
