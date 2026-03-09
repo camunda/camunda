@@ -295,8 +295,7 @@ public final class CreateProcessInstanceTest {
                       .variables("[]")
                       .send()
                       .join())
-          .hasMessageContaining(
-              "Property 'variables' is invalid: Expected document to be a root level object, but was 'ARRAY'");
+          .hasMessageContaining("Expected variables to be valid msgpack, but it could not be read");
     }
   }
 
