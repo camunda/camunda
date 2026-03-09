@@ -271,7 +271,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     return parentKeyProp.getValue();
   }
 
-  public long getActiveSequenceFlows() {
+  public int getActiveSequenceFlows() {
     return activeSequenceFlowsProp.getValue();
   }
 
@@ -284,6 +284,13 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
       //      throw new IllegalStateException(
       //          "Not expected to have an active sequence flow count lower then zero!");
       //    }
+    }
+  }
+
+  public void decrementActiveSequenceFlows(final int amount) {
+    final var current = getActiveSequenceFlows();
+    if (current > 0) {
+      activeSequenceFlowsProp.setValue(Math.max(0, current - amount));
     }
   }
 

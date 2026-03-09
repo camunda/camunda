@@ -315,10 +315,10 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionRequirementsKey.wrapLong(decisionRequirementsKey);
     decisionKeyByDecisionRequirementsKey.whileEqualPrefix(
         new DbCompositeKey<>(tenantIdKey, dbDecisionRequirementsKey),
-        ((key, nil) -> {
+        key -> {
           final var decisionKey = key.second().inner().wrappedKey().getValue();
           findDecisionByTenantAndKey(tenantId, decisionKey).ifPresent(decisions::add);
-        }));
+        });
 
     return decisions;
   }

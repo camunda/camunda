@@ -196,7 +196,7 @@ public class DbDistributionState implements MutableDistributionState {
     final var hasRetriable = new MutableBoolean();
     retriableDistributionColumnFamily.whileEqualPrefix(
         this.distributionKey,
-        (compositeKey, dbNil) -> {
+        ignored -> {
           hasRetriable.set(true);
           return false;
         });
@@ -211,7 +211,7 @@ public class DbDistributionState implements MutableDistributionState {
     final var hasPending = new MutableBoolean();
     pendingDistributionColumnFamily.whileEqualPrefix(
         this.distributionKey,
-        (compositeKey, dbNil) -> {
+        ignored -> {
           hasPending.set(true);
           return false;
         });
@@ -274,8 +274,8 @@ public class DbDistributionState implements MutableDistributionState {
     final var lastDistributionKey = new MutableLong(0);
     final var lastPendingDistribution = new MutableReference<CommandDistributionRecord>();
 
-    retriableDistributionColumnFamily.forEach(
-        (compositeKey, nil) -> {
+    retriableDistributionColumnFamily.forEachKey(
+        (compositeKey) -> {
           final var distributionKey = compositeKey.first().inner().getValue();
           final var partitionId = compositeKey.second().getValue();
 
@@ -307,7 +307,7 @@ public class DbDistributionState implements MutableDistributionState {
     final var lastCommandDistribution = new MutableReference<CommandDistributionRecord>();
 
     pendingDistributionColumnFamily.whileTrue(
-        (compositeKey, nil) -> {
+        compositeKey -> {
           final var distributionKey = compositeKey.first().inner().getValue();
           final var partitionId = compositeKey.second().getValue();
 
@@ -341,7 +341,7 @@ public class DbDistributionState implements MutableDistributionState {
     final var nextDistributionKey = new MutableReference<Long>(null);
     queuedCommandDistributionColumnFamily.whileEqualPrefix(
         queuePerPartitionKey,
-        (key, value) -> {
+        key -> {
           nextDistributionKey.set(key.second().second().inner().getValue());
           return false;
         });
@@ -362,7 +362,7 @@ public class DbDistributionState implements MutableDistributionState {
     final var hasQueuedDistributions = new MutableBoolean();
     queuedCommandDistributionColumnFamily.whileEqualPrefix(
         queueId,
-        (key, value) -> {
+        key -> {
           hasQueuedDistributions.set(true);
           return false;
         });
@@ -375,7 +375,7 @@ public class DbDistributionState implements MutableDistributionState {
     queueId.wrapString(queue);
     continuationCommandColumnFamily.whileEqualPrefix(
         queueId,
-        (key, value) -> {
+        key -> {
           final var continuationKey = key.second().getValue();
           consumer.visit(continuationKey);
           return true;
