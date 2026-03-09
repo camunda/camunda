@@ -56,6 +56,8 @@ public class WebappsConfigurationInitializer
 
       // Enable the auth library's webapp security filter chain
       propertyMap.put("camunda.auth.security.webapp-enabled", true);
+      // SPA webapps expect 204 No Content on login/logout success, not redirects
+      propertyMap.put("camunda.auth.security.login-success-status", 204);
       // Bridge webapp paths to include app-specific routes
       int idx = 0;
       for (final String path : buildWebappPaths(activeProfiles)) {
