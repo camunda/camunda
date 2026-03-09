@@ -763,7 +763,7 @@ describe('Edit variable', () => {
     });
   });
 
-  it('should not display edit button next to variables if instance is completed or canceled', async () => {
+  it('should display view full value button and not display edit button if instance is completed or canceled', async () => {
     mockFetchProcessInstance().withSuccess({
       ...mockProcessInstance,
       state: 'TERMINATED',
@@ -782,8 +782,17 @@ describe('Edit variable', () => {
       wrapper: getWrapper(),
     });
 
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+
     expect(
       screen.queryByRole('button', {name: /edit variable/i}),
     ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /view full value of testVariableName/i,
+      }),
+    ).toBeInTheDocument();
   });
 });
