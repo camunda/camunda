@@ -24,5 +24,6 @@ public class BatchOperationResumedV2Applier
   @Override
   public void applyState(final long key, final BatchOperationLifecycleManagementRecord value) {
     batchOperationState.resume(value.getBatchOperationKey());
+    batchOperationState.addToPending(value.getBatchOperationKey());
   }
 }

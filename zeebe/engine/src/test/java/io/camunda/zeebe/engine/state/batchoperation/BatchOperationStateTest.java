@@ -795,6 +795,68 @@ public class BatchOperationStateTest {
     assertThat(nextPending).isEmpty();
   }
 
+  @Test
+  void removeFromPendingShouldRemoveFromPendingQueue() {
+    // given — a batch operation
+    final var batchOperationKey = 1L;
+    state.create(
+        batchOperationKey,
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE));
+
+    // when
+    state.removeFromPending(batchOperationKey);
+
+    // then — it should not appear in pending
+    assertThat(state.getNextPendingBatchOperation()).isEmpty();
+  }
+
+  @Test
+  void removeFromPendingShouldNotAffectOtherPendingBatches() {
+    // given — two batch operations, first is removed from pending
+    final var batchAKey = 1L;
+    state.create(
+        batchAKey,
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchAKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE));
+    state.removeFromPending(batchAKey);
+
+    final var batchBKey = 2L;
+    state.create(
+        batchBKey,
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchBKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE));
+
+    // when
+    final var nextPending = state.getNextPendingBatchOperation();
+
+    // then — batchB should be returned
+    assertThat(nextPending).isPresent();
+    assertThat(nextPending.get().getKey()).isEqualTo(batchBKey);
+  }
+
+  @Test
+  void addToPendingShouldReAddToPendingQueue() {
+    // given — a batch operation that was removed from pending
+    final var batchOperationKey = 1L;
+    state.create(
+        batchOperationKey,
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE));
+    state.removeFromPending(batchOperationKey);
+
+    // when
+    state.addToPending(batchOperationKey);
+
+    // then — it should be returned as pending
+    assertThat(state.getNextPendingBatchOperation()).isPresent();
+    assertThat(state.getNextPendingBatchOperation().get().getKey()).isEqualTo(batchOperationKey);
+  }
+
   private static UnsafeBuffer convertToBuffer(final Object object) {
     return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(object));
   }
