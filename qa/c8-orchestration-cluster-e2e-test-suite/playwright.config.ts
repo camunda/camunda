@@ -221,6 +221,12 @@ const normalProjects = [
     use: devices['Desktop Chrome'],
     testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },
+  {
+    name: 'swagger-ui',
+    testMatch: ['tests/swagger-ui/*.spec.ts'],
+    use: devices['Desktop Chrome'],
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+  },
 ];
 
 const v2StatelessProjects = [
