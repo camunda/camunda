@@ -14,6 +14,9 @@ import NavigatedViewer, {
 import OutlineModule from 'bpmn-js/lib/features/outline';
 // @ts-expect-error Could not find a declaration file for module '@bpmn-io/element-templates-icons-renderer'
 import ElementTemplatesIconsRenderer from '@bpmn-io/element-template-icon-renderer';
+// @ts-expect-error Could not find a declaration file for module 'diagram-js-minimap'
+import minimapModule from 'diagram-js-minimap';
+import 'diagram-js-minimap/assets/diagram-js-minimap.css';
 import isEqual from 'lodash/isEqual';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {isNonSelectableElement} from './utils/isNonSelectableElement';
@@ -279,7 +282,11 @@ class BpmnJS {
       container,
       bpmnRenderer: bpmnRendererColors,
       canvas: {deferUpdate: true},
-      additionalModules: [ElementTemplatesIconsRenderer, OutlineModule],
+      additionalModules: [
+        ElementTemplatesIconsRenderer,
+        OutlineModule,
+        minimapModule,
+      ],
     });
   };
 
@@ -445,6 +452,33 @@ class BpmnJS {
   findRootId = (selectedElementId: string) => {
     return this.#navigatedViewer?.get('canvas')?.findRoot(selectedElementId)
       ?.businessObject.id;
+  };
+
+  notifyResize = () => {
+    const canvas = this.#navigatedViewer?.get('canvas');
+    if (canvas) {
+      canvas.resized();
+    }
+  };
+
+  toggleMinimap = () => {
+    const minimap = this.#navigatedViewer?.get('minimap');
+    if (minimap) {
+      const isOpen = minimap.isOpen();
+      if (isOpen) {
+        minimap.close();
+      } else {
+        minimap.open();
+      }
+    }
+  };
+
+  isMinimapOpen = (): boolean => {
+    const minimap = this.#navigatedViewer?.get('minimap');
+    if (minimap) {
+      return minimap.isOpen() ?? false;
+    }
+    return false;
   };
 }
 
