@@ -20,6 +20,7 @@ public class AppCfg {
   private AuthCfg auth;
   private boolean monitorDataAvailability = true;
   private Duration monitorDataAvailabilityInterval = Duration.ofMillis(250);
+  private boolean performReadBenchmarks = false;
 
   public String getBrokerUrl() {
     return brokerUrl;
@@ -91,5 +92,13 @@ public class AppCfg {
 
   public void setMonitorDataAvailabilityInterval(final Duration monitorDataAvailabilityInterval) {
     this.monitorDataAvailabilityInterval = monitorDataAvailabilityInterval;
+  }
+
+  public boolean isPerformReadBenchmarks() {
+    return performReadBenchmarks;
+  }
+
+  public void setPerformReadBenchmarks(final boolean performReadBenchmarks) {
+    this.performReadBenchmarks = performReadBenchmarks;
   }
 }
