@@ -60,6 +60,10 @@ Note: `-Dquickly` skips tests, checks, and Optimize. Add `-DskipTests=false` to 
 
 Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`, `revert`, `style`, `test`
 
+- Separate behavioral changes from structural/refactoring changes into distinct commits
+- Commit messages should explain *why*, not just *what* changed
+- In PRs, describe why the changes are necessary and note alternatives considered
+
 ## Before Submitting
 
 1. Format: `./mvnw license:format spotless:apply -T1C`
