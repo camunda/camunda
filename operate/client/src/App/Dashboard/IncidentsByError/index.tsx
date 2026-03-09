@@ -18,35 +18,34 @@ import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
 import {LinkWrapper, ErrorMessage, LoadingContainer} from '../styled';
 import {EmptyState} from 'modules/components/EmptyState';
 import EmptyStateProcessIncidents from 'modules/components/Icon/empty-state-process-incidents.svg?react';
-import {
-  PAGE_LIMIT,
-  useIncidentProcessInstanceStatisticsByErrorPaginated,
-} from 'modules/queries/incidentStatistics/useIncidentProcessInstanceStatisticsByErrorPaginated';
 import type {IncidentProcessInstanceStatisticsByError} from '@camunda/camunda-api-zod-schemas/8.9';
 import {Details} from './Details';
 import {InlineLoading} from '@carbon/react';
 
-const ROW_HEIGHT = 64;
-const SMOOTH_SCROLL_STEP_SIZE = PAGE_LIMIT * ROW_HEIGHT;
-
 type Props = {
+  status: 'pending' | 'error' | 'success';
+  items: IncidentProcessInstanceStatisticsByError[];
+  totalCount: number;
   scrollableContainerRef: React.RefObject<HTMLDivElement | null>;
+  isFetchingNextPage: boolean;
+  isFetchingPreviousPage: boolean;
+  onScrollStartReach?: (scrollDown: (distance: number) => void) => void;
+  onScrollEndReach: () => void;
 };
 
-const IncidentsByError: React.FC<Props> = ({scrollableContainerRef}) => {
-  const result = useIncidentProcessInstanceStatisticsByErrorPaginated({
-    enablePeriodicRefetch: true,
-    select: (data) => ({
-      items: data.pages.flatMap((page) => page.items),
-      totalCount: data.pages[0]?.page.totalItems ?? 0,
-    }),
-  });
-  const incidents = result.data?.items ?? [];
-  const totalCount = result.data?.totalCount ?? 0;
-
+const IncidentsByError: React.FC<Props> = ({
+  status,
+  items,
+  totalCount,
+  scrollableContainerRef,
+  isFetchingNextPage,
+  isFetchingPreviousPage,
+  onScrollStartReach,
+  onScrollEndReach,
+}) => {
   const rows = useMemo(
     () =>
-      incidents.map((item: IncidentProcessInstanceStatisticsByError) => {
+      items.map((item: IncidentProcessInstanceStatisticsByError) => {
         const {errorHashCode, errorMessage, activeInstancesWithErrorCount} =
           item;
 
@@ -80,12 +79,12 @@ const IncidentsByError: React.FC<Props> = ({scrollableContainerRef}) => {
           ),
         };
       }),
-    [incidents],
+    [items],
   );
 
   const expandedContents = useMemo(
     () =>
-      incidents.reduce<Record<string, React.ReactElement<{tabIndex: number}>>>(
+      items.reduce<Record<string, React.ReactElement<{tabIndex: number}>>>(
         (accumulator, item) => {
           accumulator[String(item.errorHashCode)] = (
             <Details
@@ -97,33 +96,18 @@ const IncidentsByError: React.FC<Props> = ({scrollableContainerRef}) => {
         },
         {},
       ),
-    [incidents],
+    [items],
   );
 
-  const handleScrollStartReach = async (
-    scrollDown: (distance: number) => void,
-  ) => {
-    if (result.hasPreviousPage && !result.isFetchingPreviousPage) {
-      await result.fetchPreviousPage();
-      scrollDown(SMOOTH_SCROLL_STEP_SIZE);
-    }
-  };
-
-  const handleScrollEndReach = () => {
-    if (result.hasNextPage && !result.isFetchingNextPage) {
-      result.fetchNextPage();
-    }
-  };
-
-  if (result.status === 'pending' && !result.data) {
+  if (status === 'pending') {
     return <Skeleton />;
   }
 
-  if (result.status === 'error') {
+  if (status === 'error') {
     return <ErrorMessage />;
   }
 
-  if (result.status === 'success' && totalCount === 0) {
+  if (status === 'success' && totalCount === 0) {
     return (
       <EmptyState
         icon={<EmptyStateProcessIncidents title="Your processes are healthy" />}
@@ -135,7 +119,7 @@ const IncidentsByError: React.FC<Props> = ({scrollableContainerRef}) => {
 
   return (
     <>
-      {result.isFetchingPreviousPage && (
+      {isFetchingPreviousPage && (
         <LoadingContainer>
           <InlineLoading description="Loading previous incidents..." />
         </LoadingContainer>
@@ -143,13 +127,13 @@ const IncidentsByError: React.FC<Props> = ({scrollableContainerRef}) => {
       <PartiallyExpandableDataTable
         dataTestId="incident-byError"
         headers={[{key: 'incident', header: 'incident'}]}
-        onVerticalScrollStartReach={handleScrollStartReach}
-        onVerticalScrollEndReach={handleScrollEndReach}
+        onVerticalScrollStartReach={onScrollStartReach}
+        onVerticalScrollEndReach={onScrollEndReach}
         scrollableContainerRef={scrollableContainerRef}
         expandedContents={expandedContents}
         rows={rows}
       />
-      {result.isFetchingNextPage && (
+      {isFetchingNextPage && (
         <LoadingContainer>
           <InlineLoading description="Loading more incidents..." />
         </LoadingContainer>
