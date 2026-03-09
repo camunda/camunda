@@ -50,7 +50,6 @@ components:
 
     BasicStringFilterProperty:
       description: String property with basic advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -59,7 +58,6 @@ components:
 
     StringFilterProperty:
       description: String property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -107,7 +105,6 @@ components:
 
     IntegerFilterProperty:
       description: Integer property with advanced search capabilities.
-      type: object
       oneOf:
         - type: integer
           format: int32
@@ -156,7 +153,6 @@ components:
 
     DateTimeFilterProperty:
       description: Date-time property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           format: date-time
