@@ -10,6 +10,11 @@
 ################################################### Global cluster configuration
 ########################################################################################
 global:
+  # Our default is ELASTICSEARCH
+  # We need to explicitly enable ELS as per default this is disabled now
+  # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
+  elasticsearch:
+    enabled: true
   # Disable global ingress
   ingress:
     enabled: false
@@ -116,6 +121,50 @@ orchestration:
     -XX:NativeMemoryTracking=summary
     -Xlog:gc*:file=/usr/local/camunda/data/gc.log:time:filecount=7,filesize=8M
 
+  # We need to explicitly set the secondary storage type to ELS
+  # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  # We set extra configuration to configure additional settings for Camunda application, that are part
+  # of the orchestration cluster.
+  # This allows adding configurations without the need of overwriting all environment variables from the Platform chart.
+  extraConfiguration:
+    - file: application.yml
+      content: |
+        # Enable execution metrics exporter to be able to see the execution metrics, like process instance and job completion times
+        zeebe.broker.executionMetricsExporterEnabled: "true"
+        camunda.flags.jfr.metrics: "true"
+        # Define when the broker should start to reject requests when the disk is almost full, for both processing and replication.
+        zeebe.broker.data.disk.freeSpace.processing: "3GB"
+        zeebe.broker.data.disk.freeSpace.replication: "2GB"
+        # We want to have this for long running load tests, to detect consistency issues early on and to have the foreign key checks enabled for better data integrity.
+        # Like endurance / soak tests  but not for our maximum stress tests, where we want to push the system to the limits and consistency checks might cause too much overhead.
+        zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
+        zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
+        # Configure index suffix with hour pattern, so we create every hour a new index
+        # such that ILM can clean it up quickly
+        # We need to configure it for the ES exporter AND the CamundaExporter
+        zeebe.broker.exporters.camundaexporter.args.history.elsRolloverDateFormat: "yyyy-MM-dd-HH"
+        zeebe.broker.exporters.camundaexporter.args.history.rolloverInterval: "1h"
+        zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize: 300
+        zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving: "1m"
+        # Configure a rate limit for all writes, so that we can visualize flow control metrics.
+        zeebe.broker.flowControl.write.enabled: "true"
+        zeebe.broker.flowControl.write.limit: 10000
+        zeebe.broker.flowControl.write.throttling.enabled: "true"
+        # Schema management has been moved out of exporter - to be bootstrap at start; once
+        camunda.data.secondary-storage.retention.enabled: "true"
+        camunda.data.secondary-storage.retention.minimum-age: "70m"
+        # We define the retention policy name for both, ES and OpenSearch, to be the same, as the ILM policy is compatible with both and it simplifies the configuration.
+        camunda.data.secondary-storage.elasticsearch.history.policy-name: "camunda-retention-policy"
+        camunda.data.secondary-storage.opensearch.history.policy-name: "camunda-retention-policy"
+        camunda.database.retention.policyName: "camunda-retention-policy"
+        zeebe.broker.exporters.camundaexporter.args.history.retention.policyName: "camunda-retention-policy"
+        # RocksDB memory limit setting, limits the overall RocksDB memory usage
+        # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
+        zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
+
   # Zeebe config
   extraVolumes:
     - name: logs
@@ -156,3 +205,40 @@ prometheusServiceMonitor:
   labels:
     release: monitoring
   scrapeInterval: 30s
+
+########################################################################################
+################################################### Elasticsearch cluster configuration
+########################################################################################
+elasticsearch:
+  enabled: true
+  clusterName: "elasticsearch"
+  master:
+    fullnameOverride: elastic
+    nameOverride: elastic
+    ## @param elasticsearch.master.replicaCount defines number of master-elegible replicas to deploy
+    replicaCount: 3
+    pdb:
+      minAvailable: 2
+    ## @param elasticsearch.master.heapSize
+    heapSize: 3g
+    persistence:
+      ## @param elasticsearch.master.persistence.size
+      size: 128Gi
+      storageClass: "ssd"
+      accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        cpu: 3000m
+        memory: 3Gi
+      limits:
+        cpu: 3000m
+        memory: 6Gi
+    nodeSelector:
+      component: benchmark-n2-standard-4
+    tolerations:
+      - key: nodepool
+        operator: Equal
+        value: n2-standard-4
+        effect: NoSchedule
+  extraConfig:
+    logger.org.elasticsearch.deprecation: "OFF"
