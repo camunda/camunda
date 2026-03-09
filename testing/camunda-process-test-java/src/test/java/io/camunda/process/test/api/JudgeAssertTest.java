@@ -17,6 +17,7 @@ package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
@@ -30,6 +31,7 @@ import io.camunda.process.test.utils.CamundaAssertExtension;
 import io.camunda.process.test.utils.ElementInstanceBuilder;
 import io.camunda.process.test.utils.ProcessInstanceBuilder;
 import io.camunda.process.test.utils.VariableBuilder;
+import java.util.Arrays;
 import java.util.Collections;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
@@ -59,7 +61,8 @@ public class JudgeAssertTest {
 
   @BeforeEach
   void configureMocks() {
-    org.mockito.Mockito.lenient()
+    // lenient: some tests (e.g. withJudgeConfig(null)) throw before process instance resolution
+    lenient()
         .when(camundaDataSource.findProcessInstances(any()))
         .thenReturn(
             Collections.singletonList(
@@ -624,7 +627,7 @@ public class JudgeAssertTest {
       final Variable varA = newVariable("varA", "\"value A\"");
       final Variable varB = newVariable("varB", "\"value B\"");
       when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(java.util.Arrays.asList(varA, varB));
+          .thenReturn(Arrays.asList(varA, varB));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -652,6 +655,38 @@ public class JudgeAssertTest {
                       .withJudgeConfig(null))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("judgeConfig must not be null");
+    }
+
+    @Test
+    void shouldNotAffectGlobalDefaultForNewAssertThatCalls() {
+      // given — global judge captures calls, override judge also captures
+      final boolean[] globalCalled = {false};
+      final ChatModelAdapter globalModel =
+          prompt -> {
+            globalCalled[0] = true;
+            return "{\"score\": 0.9, \"reasoning\": \"Global judge.\"}";
+          };
+      final ChatModelAdapter overrideModel =
+          prompt -> "{\"score\": 0.9, \"reasoning\": \"Override judge.\"}";
+      CamundaAssert.setJudgeConfig(JudgeConfig.of(globalModel));
+
+      final Variable variable = newVariable("result", "\"Hello\"");
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when — use override on first chain
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .withJudgeConfig(JudgeConfig.of(overrideModel))
+          .hasVariableSatisfiesJudge("result", "some expectation");
+
+      // then — new assertThat uses global default
+      globalCalled[0] = false;
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasVariableSatisfiesJudge("result", "some expectation");
+
+      Assertions.assertThat(globalCalled[0]).isTrue();
     }
   }
 }
