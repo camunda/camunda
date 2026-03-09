@@ -26,6 +26,7 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationStartInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
@@ -256,6 +257,95 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     assertThat(startInstructionA.getElementId()).isEqualTo(ELEMENT_ID_A);
     final ProcessInstanceCreationStartInstruction startInstructionB = startInstructionList.get(1);
     assertThat(startInstructionB.getElementId()).isEqualTo(ELEMENT_ID_B);
+  }
+
+  @Test
+  public void shouldAddRuntimeInstruction() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .terminateAfterElement(ELEMENT_ID_A)
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+
+    final List<ProcessInstanceCreationTerminateInstruction> runtimeInstructionList =
+        request.getRuntimeInstructions();
+    assertThat(runtimeInstructionList).hasSize(1);
+    final ProcessInstanceCreationTerminateInstruction runtimeInstruction =
+        runtimeInstructionList.get(0);
+    assertThat(runtimeInstruction.getAfterElementId()).isEqualTo(ELEMENT_ID_A);
+    assertThat(runtimeInstruction.getType()).isEqualTo("TERMINATE_PROCESS_INSTANCE");
+  }
+
+  @Test
+  public void shouldAddMultipleRuntimeInstructions() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .terminateAfterElement(ELEMENT_ID_A)
+        .terminateAfterElement(ELEMENT_ID_B)
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+
+    final List<ProcessInstanceCreationTerminateInstruction> runtimeInstructionList =
+        request.getRuntimeInstructions();
+    assertThat(runtimeInstructionList).hasSize(2);
+    final ProcessInstanceCreationTerminateInstruction runtimeInstructionA =
+        runtimeInstructionList.get(0);
+    assertThat(runtimeInstructionA.getAfterElementId()).isEqualTo(ELEMENT_ID_A);
+    assertThat(runtimeInstructionA.getType()).isEqualTo("TERMINATE_PROCESS_INSTANCE");
+    final ProcessInstanceCreationTerminateInstruction runtimeInstructionB =
+        runtimeInstructionList.get(1);
+    assertThat(runtimeInstructionB.getAfterElementId()).isEqualTo(ELEMENT_ID_B);
+    assertThat(runtimeInstructionB.getType()).isEqualTo("TERMINATE_PROCESS_INSTANCE");
+  }
+
+  @Test
+  public void shouldAddStartAndRuntimeInstructions() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .startBeforeElement(ELEMENT_ID_A)
+        .terminateAfterElement(ELEMENT_ID_A)
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+
+    final List<ProcessInstanceCreationStartInstruction> startInstructionList =
+        request.getStartInstructions();
+    assertThat(startInstructionList).hasSize(1);
+    assertThat(startInstructionList.get(0).getElementId()).isEqualTo(ELEMENT_ID_A);
+
+    final List<ProcessInstanceCreationTerminateInstruction> runtimeInstructionList =
+        request.getRuntimeInstructions();
+    assertThat(runtimeInstructionList).hasSize(1);
+    final ProcessInstanceCreationTerminateInstruction runtimeInstruction =
+        runtimeInstructionList.get(0);
+    assertThat(runtimeInstruction.getAfterElementId()).isEqualTo(ELEMENT_ID_A);
+    assertThat(runtimeInstruction.getType()).isEqualTo("TERMINATE_PROCESS_INSTANCE");
   }
 
   @Test

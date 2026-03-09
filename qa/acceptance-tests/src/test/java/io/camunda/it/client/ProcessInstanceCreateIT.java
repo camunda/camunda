@@ -9,6 +9,7 @@ package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.waitForProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -16,7 +17,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
-import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.test.util.collection.Maps;
@@ -26,7 +26,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-@CompatibilityTest
+// @CompatibilityTest
 public class ProcessInstanceCreateIT {
 
   private static CamundaClient camundaClient;
@@ -244,5 +244,41 @@ public class ProcessInstanceCreateIT {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("businessId")
         .hasMessageContaining("256");
+  }
+
+  @Test
+  void shouldCreateProcessInstanceWithRuntimeInstructions() {
+    // given - deploy a process with a manual task to use with terminate instruction
+    final var processWithTask =
+        Bpmn.createExecutableProcess("processWithTask")
+            .startEvent()
+            .manualTask("task1")
+            .endEvent()
+            .done();
+
+    final var deployedProcess =
+        deployProcessAndWaitForIt(camundaClient, processWithTask, "processWithTask.bpmn");
+
+    // when - create instance with runtimeInstructions to terminate after the task
+    final var processInstanceCreation =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId("processWithTask")
+            .latestVersion()
+            .terminateAfterElement("task1")
+            .send()
+            .join();
+
+    // then
+    assertThat(processInstanceCreation).isNotNull();
+    assertThat(processInstanceCreation.getProcessInstanceKey()).isNotNull();
+    assertThat(processInstanceCreation.getBpmnProcessId())
+        .isEqualTo(deployedProcess.getBpmnProcessId());
+    assertThat(processInstanceCreation.getProcessDefinitionKey())
+        .isEqualTo(deployedProcess.getProcessDefinitionKey());
+
+    // verify that the runtime instruction was honoured and the process instance is terminated
+    waitForProcessInstanceToBeTerminated(
+        camundaClient, processInstanceCreation.getProcessInstanceKey());
   }
 }

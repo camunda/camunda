@@ -45,6 +45,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -349,6 +350,151 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
     assertThat(capturedRequest.businessId()).isEqualTo(businessId);
+  }
+
+  @Test
+  void shouldCreateProcessInstanceWithRuntimeInstructionsByProcessDefinitionId() {
+    // given
+    final var mockResponse =
+        new ProcessInstanceCreationRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(456L)
+            .setTenantId("<default>");
+
+    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "startInstructions": [
+                    { "elementId": "Activity_1" }
+                ],
+                "runtimeInstructions": [
+                    { "afterElementId": "Activity_1", "type": "TERMINATE_PROCESS_INSTANCE" }
+                ]
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
+    assertThat(capturedRequest.startInstructions()).hasSize(1);
+    assertThat(capturedRequest.startInstructions().getFirst().getElementId())
+        .isEqualTo("Activity_1");
+    assertThat(capturedRequest.runtimeInstructions()).hasSize(1);
+    assertThat(capturedRequest.runtimeInstructions().getFirst().getType())
+        .isEqualTo(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE);
+    assertThat(capturedRequest.runtimeInstructions().getFirst().getAfterElementId())
+        .isEqualTo("Activity_1");
+  }
+
+  @Test
+  void shouldCreateProcessInstanceWithRuntimeInstructionsByProcessDefinitionKey() {
+    // given
+    final var mockResponse =
+        new ProcessInstanceCreationRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(456L)
+            .setTenantId("<default>");
+
+    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+            {
+                "processDefinitionKey": "123",
+                "startInstructions": [
+                    { "elementId": "Activity_1" }
+                ],
+                "runtimeInstructions": [
+                    { "afterElementId": "Activity_1", "type": "TERMINATE_PROCESS_INSTANCE" }
+                ]
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
+    assertThat(capturedRequest.startInstructions()).hasSize(1);
+    assertThat(capturedRequest.startInstructions().getFirst().getElementId())
+        .isEqualTo("Activity_1");
+    assertThat(capturedRequest.runtimeInstructions()).hasSize(1);
+    assertThat(capturedRequest.runtimeInstructions().getFirst().getType())
+        .isEqualTo(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE);
+    assertThat(capturedRequest.runtimeInstructions().getFirst().getAfterElementId())
+        .isEqualTo("Activity_1");
+  }
+
+  @Test
+  void shouldCreateProcessInstanceWithMultipleRuntimeInstructions() {
+    // given
+    final var mockResponse =
+        new ProcessInstanceCreationRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(456L)
+            .setTenantId("<default>");
+
+    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "runtimeInstructions": [
+                    { "afterElementId": "Activity_1", "type": "TERMINATE_PROCESS_INSTANCE" },
+                    { "afterElementId": "Activity_2", "type": "TERMINATE_PROCESS_INSTANCE" }
+                ]
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.runtimeInstructions()).hasSize(2);
+    assertThat(capturedRequest.runtimeInstructions().get(0).getType())
+        .isEqualTo(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE);
+    assertThat(capturedRequest.runtimeInstructions().get(0).getAfterElementId())
+        .isEqualTo("Activity_1");
+    assertThat(capturedRequest.runtimeInstructions().get(1).getType())
+        .isEqualTo(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE);
+    assertThat(capturedRequest.runtimeInstructions().get(1).getAfterElementId())
+        .isEqualTo("Activity_2");
   }
 
   @Test

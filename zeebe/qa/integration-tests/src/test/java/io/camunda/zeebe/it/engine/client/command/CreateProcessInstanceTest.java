@@ -378,6 +378,47 @@ public final class CreateProcessInstanceTest {
         .hasMessageContaining("[NO_VARIABLE_FOUND] No variable found with name 'missing_var'");
   }
 
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateWithRuntimeInstructions(final boolean useRest, final TestInfo testInfo) {
+    // given
+    final var testProcessId =
+        "process-runtime-" + testInfo.getTestMethod().get().getName() + "-" + useRest;
+    final var processDefinitionKey =
+        resourcesHelper.deployProcess(
+            Bpmn.createExecutableProcess(testProcessId)
+                .startEvent()
+                .manualTask("task1")
+                .endEvent()
+                .done(),
+            useRest);
+
+    // when
+    final var instance =
+        getCommand(client, useRest)
+            .processDefinitionKey(processDefinitionKey)
+            .terminateAfterElement("task1")
+            .send()
+            .join();
+
+    final var processInstanceKey = instance.getProcessInstanceKey();
+
+    // then
+    assertThat(processInstanceKey).isPositive();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(testProcessId, ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED))
+        .extracting(Record::getValue)
+        .extracting(
+            ProcessInstanceRecordValue::getBpmnElementType,
+            ProcessInstanceRecordValue::getElementId)
+        .describedAs("Expect that the process is terminated after the task completes")
+        .contains(tuple(BpmnElementType.PROCESS, testProcessId));
+  }
+
   private CreateProcessInstanceCommandStep1 getCommand(
       final CamundaClient client, final boolean useRest) {
     final CreateProcessInstanceCommandStep1 createInstanceCommand =
