@@ -188,14 +188,16 @@ final class InFlightEntryTest {
     }
 
     @Test
-    void closesTimers() {
+    void discardsTimersWithoutRecording() {
       final var entry = new InFlightEntry(metrics, null, null);
       entry.onAppend();
 
       entry.cleanup();
 
-      assertThat(writeTimerFromMetrics.closeCount.get()).isEqualTo(1);
-      assertThat(commitTimerFromMetrics.closeCount.get()).isEqualTo(1);
+      assertThat(writeTimerFromMetrics.closeCount.get()).isEqualTo(0);
+      assertThat(commitTimerFromMetrics.closeCount.get()).isEqualTo(0);
+      assertThat(entry.writeTimer.get()).isNull();
+      assertThat(entry.commitTimer.get()).isNull();
     }
 
     @Test
@@ -274,12 +276,13 @@ final class InFlightEntryTest {
       doneLatch.await();
 
       for (int i = 0; i < entryCount; i++) {
+        // Timer closed at most once: onWrite/onCommit may close it, or cleanup may discard it
         assertThat(writeTimers[i].closeCount.get())
-            .describedAs("write timer %d closed exactly once", i)
-            .isEqualTo(1);
+            .describedAs("write timer %d closed at most once", i)
+            .isLessThanOrEqualTo(1);
         assertThat(commitTimers[i].closeCount.get())
-            .describedAs("commit timer %d closed exactly once", i)
-            .isEqualTo(1);
+            .describedAs("commit timer %d closed at most once", i)
+            .isLessThanOrEqualTo(1);
         final int callbacks = listeners[i].successCount.get() + listeners[i].ignoreCount.get();
         assertThat(callbacks).describedAs("listener %d called back exactly once", i).isEqualTo(1);
       }
