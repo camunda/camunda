@@ -123,9 +123,7 @@ describe('IncidentsByError', () => {
       },
     );
 
-    expect(
-      screen.getByText('Your processes are healthy'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Your processes are healthy')).toBeInTheDocument();
     expect(
       screen.getByText('There are no incidents on any instances.'),
     ).toBeInTheDocument();
@@ -149,9 +147,7 @@ describe('IncidentsByError', () => {
       },
     );
 
-    const withinIncident = within(
-      screen.getByTestId('incident-byError-0'),
-    );
+    const withinIncident = within(screen.getByTestId('incident-byError-0'));
 
     const expandButton = withinIncident.getByRole('button', {
       name: 'Expand current row',
@@ -250,9 +246,7 @@ describe('IncidentsByError', () => {
       incidents: 'true',
     }).toString();
 
-    const withinIncident = within(
-      screen.getByTestId('incident-byError-0'),
-    );
+    const withinIncident = within(screen.getByTestId('incident-byError-0'));
 
     const expandButton = withinIncident.getByRole('button', {
       name: 'Expand current row',
@@ -304,9 +298,7 @@ describe('IncidentsByError', () => {
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
 
-    const withinIncident = within(
-      screen.getByTestId('incident-byError-0'),
-    );
+    const withinIncident = within(screen.getByTestId('incident-byError-0'));
 
     const expandButton = withinIncident.getByRole('button', {
       name: 'Expand current row',
