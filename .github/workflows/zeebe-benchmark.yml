@@ -184,11 +184,6 @@ jobs:
         with:
           distribution: "adopt"
           java-version: "21"
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven-dist
-        with:
-          maven-version: 3.8.8
-          set-mvnw: true
       - name: Configure Maven
         uses: ./.github/actions/setup-maven-cache
         with:
