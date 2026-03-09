@@ -128,7 +128,8 @@ describe('<OperationActions />', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledTimes(1);
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title: 'Batch operation not found. It may have already completed or failed',
+      title:
+        'Batch operation not found. It may have already completed or failed',
       isDismissable: true,
     });
   });
@@ -191,7 +192,8 @@ describe('<OperationActions />', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledTimes(1);
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title: 'Batch operation not found. It may have already completed or failed',
+      title:
+        'Batch operation not found. It may have already completed or failed',
       isDismissable: true,
     });
   });
@@ -254,7 +256,8 @@ describe('<OperationActions />', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledTimes(1);
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title: 'Batch operation not found. It may have already completed or failed',
+      title:
+        'Batch operation not found. It may have already completed or failed',
       isDismissable: true,
     });
   });
