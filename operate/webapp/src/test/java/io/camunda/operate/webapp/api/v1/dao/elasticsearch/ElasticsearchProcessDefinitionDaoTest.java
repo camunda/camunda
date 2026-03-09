@@ -52,7 +52,6 @@ public class ElasticsearchProcessDefinitionDaoTest {
     ReflectionTestUtils.setField(processDefinitionDao, "tenantAwareClient", tenantAwareClient);
     ReflectionTestUtils.setField(processDefinitionDao, "objectMapper", objectMapper);
     ReflectionTestUtils.setField(processDefinitionDao, "processIndex", processIndex);
-    when(processIndex.getAlias()).thenReturn("process-index");
   }
 
   @Test
@@ -93,6 +92,7 @@ public class ElasticsearchProcessDefinitionDaoTest {
   public void shouldExcludeBpmnXmlFromSearch() throws APIException, IOException {
     // given
     final Query<ProcessDefinition> query = new Query<>();
+    when(processIndex.getAlias()).thenReturn("process-index");
     mockSearchResponse();
 
     // when
@@ -119,6 +119,7 @@ public class ElasticsearchProcessDefinitionDaoTest {
             .setTenantId("<default>")
             .setVersion(2);
     final Query<ProcessDefinition> query = new Query<ProcessDefinition>().setFilter(filter);
+    when(processIndex.getAlias()).thenReturn("process-index");
     mockSearchResponse();
 
     // when
@@ -137,6 +138,7 @@ public class ElasticsearchProcessDefinitionDaoTest {
     // given - query with pagination parameters
     final Query<ProcessDefinition> query =
         new Query<ProcessDefinition>().setSize(100).setSearchAfter(new Object[] {50L});
+    when(processIndex.getAlias()).thenReturn("process-index");
     mockSearchResponse();
 
     // when
@@ -154,6 +156,7 @@ public class ElasticsearchProcessDefinitionDaoTest {
   public void shouldOnlyExcludeBpmnXmlAndNotOtherFields() throws APIException, IOException {
     // given - ensure only BPMN XML is excluded, not other process definition fields
     final Query<ProcessDefinition> query = new Query<>();
+    when(processIndex.getAlias()).thenReturn("process-index");
     mockSearchResponse();
 
     // when
@@ -188,6 +191,7 @@ public class ElasticsearchProcessDefinitionDaoTest {
             .setFilter(filter)
             .setSize(25)
             .setSort(Query.Sort.listOf(ProcessDefinition.VERSION, Query.Sort.Order.DESC));
+    when(processIndex.getAlias()).thenReturn("process-index");
     mockSearchResponse();
 
     // when
@@ -207,6 +211,7 @@ public class ElasticsearchProcessDefinitionDaoTest {
     final Query<ProcessDefinition> query =
         new Query<ProcessDefinition>()
             .setSort(Query.Sort.listOf(ProcessDefinition.NAME, Query.Sort.Order.ASC));
+    when(processIndex.getAlias()).thenReturn("process-index");
     mockSearchResponse();
 
     // when
