@@ -21,6 +21,8 @@ import io.camunda.gateway.protocol.model.JobActivationRequest;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.gateway.protocol.model.JobCompletionRequest;
 import io.camunda.gateway.protocol.model.JobErrorRequest;
+import io.camunda.gateway.protocol.model.JobErrorStatisticsQuery;
+import io.camunda.gateway.protocol.model.JobErrorStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobFailRequest;
 import io.camunda.gateway.protocol.model.JobSearchQuery;
 import io.camunda.gateway.protocol.model.JobSearchQueryResult;
@@ -148,6 +150,14 @@ public class JobController {
         .fold(RestErrorMapper::mapProblemToResponse, this::getTimeSeriesStatistics);
   }
 
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/statistics/errors")
+  public ResponseEntity<JobErrorStatisticsQueryResult> getJobErrorStatistics(
+      @RequestBody final JobErrorStatisticsQuery request) {
+    return SearchQueryRequestMapper.toJobErrorStatisticsQuery(request)
+        .fold(RestErrorMapper::mapProblemToResponse, this::getErrorStatistics);
+  }
+
   private CompletableFuture<ResponseEntity<Object>> activateJobs(
       final ActivateJobsRequest activationRequest) {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
@@ -272,6 +282,19 @@ public class JobController {
               .getJobTimeSeriesStatistics(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toJobTimeSeriesStatisticsQueryResult(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<JobErrorStatisticsQueryResult> getErrorStatistics(
+      final io.camunda.search.query.JobErrorStatisticsQuery query) {
+    try {
+      final var result =
+          jobServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .getJobErrorStatistics(query);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toJobErrorStatisticsQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

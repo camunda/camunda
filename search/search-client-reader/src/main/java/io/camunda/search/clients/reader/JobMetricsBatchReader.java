@@ -8,10 +8,12 @@
 package io.camunda.search.clients.reader;
 
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
+import io.camunda.search.entities.JobErrorStatisticsEntity;
 import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
+import io.camunda.search.query.JobErrorStatisticsQuery;
 import io.camunda.search.query.JobTimeSeriesStatisticsQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
 import io.camunda.search.query.JobWorkerStatisticsQuery;
@@ -31,4 +33,7 @@ public interface JobMetricsBatchReader extends SearchClientReader {
 
   SearchQueryResult<JobTimeSeriesStatisticsEntity> getJobTimeSeriesStatistics(
       JobTimeSeriesStatisticsQuery query, ResourceAccessChecks resourceAccessChecks);
+
+  SearchQueryResult<JobErrorStatisticsEntity> getJobErrorStatistics(
+      JobErrorStatisticsQuery query, ResourceAccessChecks resourceAccessChecks);
 }

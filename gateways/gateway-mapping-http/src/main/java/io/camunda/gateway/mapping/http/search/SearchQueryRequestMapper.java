@@ -40,6 +40,7 @@ import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.JobErrorStatisticsQuery;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
@@ -155,6 +156,14 @@ public final class SearchQueryRequestMapper {
     final var filter = SearchQueryFilterMapper.toJobTimeSeriesStatisticsFilter(request.getFilter());
     return buildSearchQuery(
         filter, Either.right(null), page, SearchQueryBuilders::jobTimeSeriesStatisticsSearchQuery);
+  }
+
+  public static Either<ProblemDetail, JobErrorStatisticsQuery> toJobErrorStatisticsQuery(
+      final io.camunda.gateway.protocol.model.JobErrorStatisticsQuery request) {
+    final Either<List<String>, SearchQueryPage> page = toSearchQueryPage(request.getPage());
+    final var filter = SearchQueryFilterMapper.toJobErrorStatisticsFilter(request.getFilter());
+    return buildSearchQuery(
+        filter, Either.right(null), page, SearchQueryBuilders::jobErrorStatisticsSearchQuery);
   }
 
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
