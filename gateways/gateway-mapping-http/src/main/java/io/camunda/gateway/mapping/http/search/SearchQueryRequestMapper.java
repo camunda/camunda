@@ -965,6 +965,13 @@ public final class SearchQueryRequestMapper {
       return Either.right(null);
     }
 
+    final List<String> violations = new ArrayList<>();
+    validatePageAttributes(requestedPage, violations);
+
+    if (!violations.isEmpty()) {
+      return Either.left(violations);
+    }
+
     // Delegate to the existing mapping
     return Either.right(innerToSearchQueryPage(requestedPage));
   }
