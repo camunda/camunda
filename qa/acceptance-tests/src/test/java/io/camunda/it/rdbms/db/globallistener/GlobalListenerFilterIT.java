@@ -23,6 +23,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.GlobalListenerSort;
 import io.camunda.security.reader.ResourceAccessChecks;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -649,6 +650,123 @@ public class GlobalListenerFilterIT {
                     new GlobalListenerFilter.Builder()
                         .types(testIdentifier)
                         .priorityOperations(Operation.in(2, 5))
+                        .build(),
+                    GlobalListenerSort.of(b -> b),
+                    SearchQueryPage.of(b -> b)),
+                ResourceAccessChecks.disabled());
+
+    // then only the expected listeners are found
+    assertExpectedResult(searchResult, expectedListener1, expectedListener2);
+  }
+
+  @TestTemplate
+  public void shouldFindGlobalListenerWithEqEventTypeFilter(
+      final CamundaRdbmsTestApplication testApplication) {
+    // This value is set in the "type" of all listeners and used in the search query in order to
+    // ensure that only the listeners created in this specific test are returned
+    final String testIdentifier = nextStringId();
+
+    // given multiple listeners but only two with "assigning" event type
+    createAndSaveRandomGlobalListener(
+        testApplication, b -> b.eventTypes(List.of("creating")).type(testIdentifier));
+    final var expectedListener1 =
+        createAndSaveRandomGlobalListener(
+            testApplication, b -> b.eventTypes(List.of("assigning")).type(testIdentifier));
+    createAndSaveRandomGlobalListener(
+        testApplication, b -> b.eventTypes(List.of("updating")).type(testIdentifier));
+    final var expectedListener2 =
+        createAndSaveRandomGlobalListener(
+            testApplication,
+            b -> b.eventTypes(List.of("completing", "assigning")).type(testIdentifier));
+
+    // when searching by equal event type
+    final var searchResult =
+        testApplication
+            .getRdbmsService()
+            .getGlobalListenerDbReader()
+            .search(
+                new GlobalListenerQuery(
+                    new GlobalListenerFilter.Builder()
+                        .types(testIdentifier)
+                        .eventTypeOperations(Operation.eq("assigning"))
+                        .build(),
+                    GlobalListenerSort.of(b -> b),
+                    SearchQueryPage.of(b -> b)),
+                ResourceAccessChecks.disabled());
+
+    // then only the expected listeners are found
+    assertExpectedResult(searchResult, expectedListener1, expectedListener2);
+  }
+
+  @TestTemplate
+  public void shouldFindGlobalListenerWithLikeEventTypeFilter(
+      final CamundaRdbmsTestApplication testApplication) {
+    // This value is set in the "type" of all listeners and used in the search query in order to
+    // ensure that only the listeners created in this specific test are returned
+    final String testIdentifier = nextStringId();
+
+    // given multiple listeners but only two with event type matching the "c*" pattern
+    createAndSaveRandomGlobalListener(
+        testApplication, b -> b.eventTypes(List.of("updating")).type(testIdentifier));
+    final var expectedListener1 =
+        createAndSaveRandomGlobalListener(
+            testApplication, b -> b.eventTypes(List.of("creating")).type(testIdentifier));
+    createAndSaveRandomGlobalListener(
+        testApplication, b -> b.eventTypes(List.of("assigning")).type(testIdentifier));
+    final var expectedListener2 =
+        createAndSaveRandomGlobalListener(
+            testApplication,
+            b -> b.eventTypes(List.of("canceling", "assigning")).type(testIdentifier));
+
+    // when searching by event type matching pattern
+    final var searchResult =
+        testApplication
+            .getRdbmsService()
+            .getGlobalListenerDbReader()
+            .search(
+                new GlobalListenerQuery(
+                    new GlobalListenerFilter.Builder()
+                        .types(testIdentifier)
+                        .eventTypeOperations(Operation.like("c*"))
+                        .build(),
+                    GlobalListenerSort.of(b -> b),
+                    SearchQueryPage.of(b -> b)),
+                ResourceAccessChecks.disabled());
+
+    // then only the expected listeners are found
+    assertExpectedResult(searchResult, expectedListener1, expectedListener2);
+  }
+
+  @TestTemplate
+  public void shouldFindGlobalListenerWithInEventTypeFilter(
+      final CamundaRdbmsTestApplication testApplication) {
+    // This value is set in the "type" of all listeners and used in the search query in order to
+    // ensure that only the listeners created in this specific test are returned
+    final String testIdentifier = nextStringId();
+
+    // given multiple listeners but only two with event type either "creating" or "canceling"
+    createAndSaveRandomGlobalListener(
+        testApplication, b -> b.eventTypes(List.of("updating")).type(testIdentifier));
+    final var expectedListener1 =
+        createAndSaveRandomGlobalListener(
+            testApplication, b -> b.eventTypes(List.of("creating")).type(testIdentifier));
+    createAndSaveRandomGlobalListener(
+        testApplication, b -> b.eventTypes(List.of("assigning")).type(testIdentifier));
+    final var expectedListener2 =
+        createAndSaveRandomGlobalListener(
+            testApplication,
+            b -> b.eventTypes(List.of("canceling", "assigning")).type(testIdentifier));
+
+    // when searching by event type in provided set
+    final var searchResult =
+        testApplication
+            .getRdbmsService()
+            .getGlobalListenerDbReader()
+            .search(
+                new GlobalListenerQuery(
+                    new GlobalListenerFilter.Builder()
+                        .types(testIdentifier)
+                        .eventTypeOperations(Operation.in("creating", "canceling"))
                         .build(),
                     GlobalListenerSort.of(b -> b),
                     SearchQueryPage.of(b -> b)),
