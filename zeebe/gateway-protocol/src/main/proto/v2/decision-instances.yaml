@@ -513,7 +513,6 @@ components:
 
     DecisionInstanceStateFilterProperty:
       description: DecisionInstanceStateEnum property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
