@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.ThrowableAssert.catchThrowable;
@@ -175,6 +176,30 @@ public final class CompleteJobTest {
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.COMPLETED);
     assertThat(completedRecord.getValue().getVariables()).containsExactly(entry("foo", "bar"));
+  }
+
+  @Test
+  public void shouldCompleteJobIfVariableNameExceedsDefaultMaxLength() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(username);
+    final String variableName = "x".repeat(257);
+
+    // when
+    final Record<JobRecordValue> completedRecord =
+        ENGINE
+            .job()
+            .withKey(batchRecord.getValue().getJobKeys().get(0))
+            .withVariables(asMsgPack(variableName, "bar"))
+            .complete();
+
+    // then
+    Assertions.assertThat(completedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.COMPLETED);
+    assertThat(completedRecord.getValue().getVariables())
+        .containsExactly(entry(variableName, "bar"));
   }
 
   @Test

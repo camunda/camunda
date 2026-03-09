@@ -36,6 +36,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.ResponseObserver;
+import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
@@ -48,6 +49,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
 
   private final ActivateJobsHandler<T> activateJobsHandler;
   private final JobSearchClient jobSearchClient;
+  private final int maxVariableNameLength;
 
   public JobServices(
       final BrokerClient brokerClient,
@@ -56,6 +58,24 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final JobSearchClient jobSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    this(
+        brokerClient,
+        securityContextProvider,
+        activateJobsHandler,
+        jobSearchClient,
+        executorProvider,
+        brokerRequestAuthorizationConverter,
+        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
+  }
+
+  public JobServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ActivateJobsHandler<T> activateJobsHandler,
+      final JobSearchClient jobSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final int maxVariableNameLength) {
     super(
         brokerClient,
         securityContextProvider,
@@ -63,6 +83,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
         brokerRequestAuthorizationConverter);
     this.activateJobsHandler = activateJobsHandler;
     this.jobSearchClient = jobSearchClient;
+    this.maxVariableNameLength = maxVariableNameLength;
   }
 
   public void activateJobs(
@@ -118,7 +139,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final JobResult result,
       final CamundaAuthentication authentication) {
     return sendBrokerRequest(
-        new BrokerCompleteJobRequest(jobKey, getDocumentOrEmpty(variables), result),
+        new BrokerCompleteJobRequest(
+            jobKey, getDocumentOrEmpty(variables), result, maxVariableNameLength),
         authentication);
   }
 

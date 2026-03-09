@@ -54,6 +54,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRe
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
+import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
@@ -79,6 +80,8 @@ public final class RequestMapper extends RequestUtil {
   private static final Pattern TENANT_ID_MASK = Pattern.compile("^[\\w\\.-]{1,31}$");
   private static final int MAX_BUSINESS_ID_LENGTH = 256;
   private static boolean isMultiTenancyEnabled = false;
+  private static int maxVariableNameLength =
+      VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH;
 
   /**
    * Sets whether multi-tenancy is enabled or not. This typically does not change at runtime. We
@@ -90,6 +93,10 @@ public final class RequestMapper extends RequestUtil {
    */
   public static void setMultiTenancyEnabled(final boolean isEnabled) {
     isMultiTenancyEnabled = isEnabled;
+  }
+
+  public static void setMaxVariableNameLength(final int maxVariableNameLength) {
+    RequestMapper.maxVariableNameLength = maxVariableNameLength;
   }
 
   public static BrokerDeployResourceRequest toDeployProcessRequest(
@@ -172,7 +179,8 @@ public final class RequestMapper extends RequestUtil {
     return new BrokerCompleteJobRequest(
         grpcRequest.getJobKey(),
         ensureJsonSet(grpcRequest.getVariables()),
-        getJobResultOrDefault(grpcRequest));
+        getJobResultOrDefault(grpcRequest),
+        maxVariableNameLength);
   }
 
   private static JobResult getJobResultOrDefault(final CompleteJobRequest request) {
@@ -256,7 +264,7 @@ public final class RequestMapper extends RequestUtil {
 
   public static BrokerCreateProcessInstanceRequest toCreateProcessInstanceRequest(
       final CreateProcessInstanceRequest grpcRequest) {
-    final var brokerRequest = new BrokerCreateProcessInstanceRequest();
+    final var brokerRequest = new BrokerCreateProcessInstanceRequest(maxVariableNameLength);
 
     brokerRequest
         .setBpmnProcessId(grpcRequest.getBpmnProcessId())
@@ -279,7 +287,8 @@ public final class RequestMapper extends RequestUtil {
   public static BrokerCreateProcessInstanceWithResultRequest
       toCreateProcessInstanceWithResultRequest(
           final CreateProcessInstanceWithResultRequest grpcRequest) {
-    final var brokerRequest = new BrokerCreateProcessInstanceWithResultRequest();
+    final var brokerRequest =
+        new BrokerCreateProcessInstanceWithResultRequest(maxVariableNameLength);
 
     final var request = grpcRequest.getRequest();
 

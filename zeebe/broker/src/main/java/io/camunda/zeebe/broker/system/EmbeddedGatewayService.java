@@ -55,7 +55,8 @@ public final class EmbeddedGatewayService implements AutoCloseable {
             userServices,
             passwordEncoder,
             jwtDecoder,
-            meterRegistry);
+            meterRegistry,
+            configuration.getExperimental().getEngine().getValidators().getMaxNameFieldLength());
   }
 
   @Override
