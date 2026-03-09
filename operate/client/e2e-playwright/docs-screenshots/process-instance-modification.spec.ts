@@ -409,7 +409,8 @@ test.describe('process instance modification', () => {
 
     await page.getByRole('button', {name: 'Continue'}).click();
 
-    const timerEvent = processInstancePage.diagram.getFlowNodeById('timerEvent');
+    const timerEvent =
+      processInstancePage.diagram.getFlowNodeById('timerEvent');
 
     await commonPage.addDownArrow(timerEvent);
 

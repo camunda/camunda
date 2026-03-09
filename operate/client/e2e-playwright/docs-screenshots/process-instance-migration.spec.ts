@@ -363,9 +363,7 @@ test.describe('process instance migration', () => {
     ).toHaveCount(2);
 
     // Verify user task element is shown in the source diagram
-    await expect(
-      processesPage.diagram.getFlowNodeById('A'),
-    ).toHaveCount(1);
+    await expect(processesPage.diagram.getFlowNodeById('A')).toHaveCount(1);
 
     // Map the ad hoc subprocess
     await migrationView.mapElement({
