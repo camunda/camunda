@@ -40,7 +40,7 @@ const DetailsTab: React.FC = () => {
 
   const elementInstanceKey =
     resolvedElementInstance?.elementInstanceKey ?? null;
-  const type = resolvedElementInstance?.type;
+  const resolvedElementType = resolvedElementInstance?.type;
 
   const {data: calledProcessInstancesSearchResult} = useProcessInstancesSearch(
     {
@@ -49,7 +49,7 @@ const DetailsTab: React.FC = () => {
       },
     },
     {
-      enabled: !!elementInstanceKey && type === 'CALL_ACTIVITY',
+      enabled: !!elementInstanceKey && resolvedElementType === 'CALL_ACTIVITY',
     },
   );
 
@@ -71,7 +71,8 @@ const DetailsTab: React.FC = () => {
       },
     },
     {
-      enabled: !!elementInstanceKey && type === 'BUSINESS_RULE_TASK',
+      enabled:
+        !!elementInstanceKey && resolvedElementType === 'BUSINESS_RULE_TASK',
     },
   );
 
@@ -134,7 +135,7 @@ const DetailsTab: React.FC = () => {
 
     if (
       businessObject?.$type === 'bpmn:CallActivity' &&
-      type !== 'MULTI_INSTANCE_BODY'
+      resolvedElementType !== 'MULTI_INSTANCE_BODY'
     ) {
       baseRows.push({
         key: 'called-process-instance',
@@ -189,7 +190,7 @@ const DetailsTab: React.FC = () => {
     elementInstanceKey,
     job,
     businessObject,
-    type,
+    resolvedElementType,
     calledProcessInstance,
     calledDecisionInstance,
   ]);
@@ -217,14 +218,15 @@ const DetailsTab: React.FC = () => {
 
   return (
     <Container data-testid="details-tab">
-      {type === 'USER_TASK' && !isCamundaUserTask(businessObject) && (
-        <Callout
-          kind="warning"
-          lowContrast
-          title="User tasks with job worker implementation are deprecated."
-          subtitle="Consider migrating to Camunda user tasks."
-        />
-      )}
+      {resolvedElementType === 'USER_TASK' &&
+        !isCamundaUserTask(businessObject) && (
+          <Callout
+            kind="warning"
+            lowContrast
+            title="User tasks with job worker implementation are deprecated."
+            subtitle="Consider migrating to Camunda user tasks."
+          />
+        )}
       <StructuredList
         label="Element Instance Details"
         isFlush={false}
