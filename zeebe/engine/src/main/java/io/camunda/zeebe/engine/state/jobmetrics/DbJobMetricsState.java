@@ -122,10 +122,8 @@ public class DbJobMetricsState implements MutableJobMetricsState {
   }
 
   private void populateStringEncodingCache() {
-    stringEncodingColumnFamily.forEachKey(
-        (key) ->
-            stringEncodingCache.put(
-                key.toString(), stringEncodingColumnFamily.get(key).getValue()));
+    stringEncodingColumnFamily.forEach(
+        (key, value) -> stringEncodingCache.put(key.toString(), value.getValue()));
   }
 
   private void populateMetricsCache() {

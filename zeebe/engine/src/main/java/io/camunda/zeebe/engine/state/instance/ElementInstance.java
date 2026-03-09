@@ -290,7 +290,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   public void decrementActiveSequenceFlows(final int amount) {
     final var current = getActiveSequenceFlows();
     if (current > 0) {
-      activeSequenceFlowsProp.setValue(current - amount);
+      activeSequenceFlowsProp.setValue(Math.max(0, current - amount));
     }
   }
 
