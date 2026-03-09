@@ -399,6 +399,10 @@ components:
           description: Name of this process definition.
           nullable: true
           type: string
+        processName:
+          description: Name of this process.
+          nullable: true
+          type: string
         resourceName:
           description: Resource name for this process definition.
           type: string
