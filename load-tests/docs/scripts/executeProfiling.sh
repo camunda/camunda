@@ -81,7 +81,7 @@ fi
 PID=$(kubectl exec "$node" -- ps -ax | awk '$5 ~ /java/ {print $1}')
 
 # Run profiling
-kubectl exec "$node" -- ./data/asprof -e "$profiler_event" -d 100 -f "$containerPath/$filename" --libpath "$containerPath/libasyncProfiler.so" $additional_options "$PID"
+kubectl exec "$node" -- $containerPath/asprof -e "$profiler_event" -d 100 -f "$containerPath/$filename" --libpath "$containerPath/libasyncProfiler.so" $additional_options "$PID"
 
 # Copy result
 kubectl cp "$node:$containerPath/$filename" "$node-$filename"
