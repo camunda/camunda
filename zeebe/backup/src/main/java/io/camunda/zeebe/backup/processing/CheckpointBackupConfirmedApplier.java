@@ -16,14 +16,17 @@ public class CheckpointBackupConfirmedApplier {
   private final CheckpointState checkpointState;
   private final DbCheckpointMetadataState checkpointMetadataState;
   private final DbBackupRangeState backupRangeState;
+  private final boolean trackBackupMetadata;
 
   public CheckpointBackupConfirmedApplier(
       final CheckpointState checkpointState,
       final DbCheckpointMetadataState checkpointMetadataState,
-      final DbBackupRangeState backupRangeState) {
+      final DbBackupRangeState backupRangeState,
+      final boolean trackBackupMetadata) {
     this.checkpointState = checkpointState;
     this.checkpointMetadataState = checkpointMetadataState;
     this.backupRangeState = backupRangeState;
+    this.trackBackupMetadata = trackBackupMetadata;
   }
 
   public void apply(final CheckpointRecord checkpointRecord, final long checkpointTimestamp) {
@@ -34,10 +37,31 @@ public class CheckpointBackupConfirmedApplier {
     final var latestBackupId = checkpointState.getLatestBackupId();
     final var latestBackupPosition = checkpointState.getLatestBackupPosition();
 
+    if (trackBackupMetadata) {
+      updateRangeState(latestBackupId, firstLogPosition, latestBackupPosition, checkpointId);
+    }
+
+    // Update the existing checkpoint state (2-entry DEFAULT CF)
+    final var checkpointPosition = checkpointRecord.getCheckpointPosition();
+    final var checkpointType = checkpointRecord.getCheckpointType();
+    checkpointState.setLatestBackupInfo(
+        checkpointId, checkpointPosition, checkpointTimestamp, checkpointType, firstLogPosition);
+    if (trackBackupMetadata) {
+      checkpointMetadataState.addBackupCheckpoint(
+          checkpointId, checkpointPosition, checkpointTimestamp, checkpointType, firstLogPosition);
+    }
+  }
+
+  private void updateRangeState(
+      final long latestBackupId,
+      final long firstLogPosition,
+      final long latestBackupPosition,
+      final long checkpointId) {
     // Update range state: extend existing range or start a new one
     if (latestBackupId != CheckpointState.NO_CHECKPOINT
         && firstLogPosition <= latestBackupPosition + 1) {
-      // Contiguous with previous backup — find and extend the range that contains the latest backup
+      // Contiguous with previous backup — find and extend the range that contains the latest
+      // backup
       final var existingRange = backupRangeState.findRangeContaining(latestBackupId);
       if (existingRange.isPresent()) {
         backupRangeState.updateRangeEnd(existingRange.get().start(), checkpointId);
@@ -48,13 +72,5 @@ public class CheckpointBackupConfirmedApplier {
     } else {
       backupRangeState.startNewRange(checkpointId);
     }
-
-    // Update the existing checkpoint state (2-entry DEFAULT CF)
-    final var checkpointPosition = checkpointRecord.getCheckpointPosition();
-    final var checkpointType = checkpointRecord.getCheckpointType();
-    checkpointState.setLatestBackupInfo(
-        checkpointId, checkpointPosition, checkpointTimestamp, checkpointType, firstLogPosition);
-    checkpointMetadataState.addBackupCheckpoint(
-        checkpointId, checkpointPosition, checkpointTimestamp, checkpointType, firstLogPosition);
   }
 }

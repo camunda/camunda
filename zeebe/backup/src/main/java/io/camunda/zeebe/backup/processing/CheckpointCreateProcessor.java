@@ -8,11 +8,9 @@
 package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.backup.api.BackupManager;
-import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.metrics.CheckpointMetrics;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
-import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -22,7 +20,6 @@ import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.util.Set;
 
 public final class CheckpointCreateProcessor {
   private final CheckpointState checkpointState;
@@ -35,18 +32,16 @@ public final class CheckpointCreateProcessor {
   public CheckpointCreateProcessor(
       final CheckpointState checkpointState,
       final BackupManager backupManager,
-      final DbCheckpointMetadataState checkpointMetadataState,
-      final Set<CheckpointListener> listeners,
       final ScalingStatusSupplier scalingStatusSupplier,
       final PartitionCountSupplier partitionCountSupplier,
-      final CheckpointMetrics metrics) {
+      final CheckpointMetrics metrics,
+      final CheckpointCreatedEventApplier checkpointCreatedApplier) {
     this.checkpointState = checkpointState;
     this.backupManager = backupManager;
     this.scalingStatusSupplier = scalingStatusSupplier;
     this.metrics = metrics;
     this.partitionCountSupplier = partitionCountSupplier;
-    checkpointCreatedApplier =
-        new CheckpointCreatedEventApplier(checkpointState, checkpointMetadataState, listeners);
+    this.checkpointCreatedApplier = checkpointCreatedApplier;
   }
 
   public ProcessingResult process(
