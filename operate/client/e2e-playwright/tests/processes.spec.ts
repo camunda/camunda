@@ -206,15 +206,15 @@ test.describe('Processes', () => {
       })}`,
     );
 
-    await expect(
-      processesPage.diagram.getElement('Check Payment'),
-    ).toHaveClass(/selected/);
+    await expect(processesPage.diagram.getElement('Check Payment')).toHaveClass(
+      /selected/,
+    );
 
     // Ensure that flow node is still selected after page reload
     await page.reload();
-    await expect(
-      processesPage.diagram.getElement('Check Payment'),
-    ).toHaveClass(/selected/);
+    await expect(processesPage.diagram.getElement('Check Payment')).toHaveClass(
+      /selected/,
+    );
   });
 
   test('Wait for process creation', async ({
