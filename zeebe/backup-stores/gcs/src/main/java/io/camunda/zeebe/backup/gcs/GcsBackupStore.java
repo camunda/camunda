@@ -130,8 +130,7 @@ public final class GcsBackupStore implements BackupStore {
   @Override
   public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
     return CompletableFuture.supplyAsync(
-        () -> manifestManager.listManifests(wildcard).stream().map(Manifest::toStatus).toList(),
-        executor);
+        () -> manifestManager.listBackupStatuses(wildcard), executor);
   }
 
   @Override
