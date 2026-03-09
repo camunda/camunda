@@ -776,10 +776,18 @@ public final class EventAppliers implements EventApplier {
         new BatchOperationCanceledApplier(state.getBatchOperationState()));
     register(
         BatchOperationIntent.SUSPENDED,
-        new BatchOperatioSuspendedApplier(state.getBatchOperationState()));
+        new BatchOperationSuspendedV1Applier(state.getBatchOperationState()));
+    register(
+        BatchOperationIntent.SUSPENDED,
+        2,
+        new BatchOperationSuspendedV2Applier(state.getBatchOperationState()));
     register(
         BatchOperationIntent.RESUMED,
-        new BatchOperationResumedApplier(state.getBatchOperationState()));
+        new BatchOperationResumedV1Applier(state.getBatchOperationState()));
+    register(
+        BatchOperationIntent.RESUMED,
+        2,
+        new BatchOperationResumedV2Applier(state.getBatchOperationState()));
     register(
         BatchOperationIntent.COMPLETED,
         new BatchOperationCompletedApplier(state.getBatchOperationState()));
