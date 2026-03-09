@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.engine.EngineConfiguration;
 
-public record BpmnValidatorConfig(
+public record ValidationConfig(
     int maxIdFieldLength,
     int maxNameFieldLength,
     int maxWorkerTypeLength,
@@ -20,7 +20,7 @@ public record BpmnValidatorConfig(
     return new Builder();
   }
 
-  public static class Builder implements ObjectBuilder<BpmnValidatorConfig> {
+  public static class Builder implements ObjectBuilder<ValidationConfig> {
     private int maxIdFieldLength = EngineConfiguration.DEFAULT_MAX_ID_FIELD_LENGTH;
     private int maxNameFieldLength = EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH;
     private int maxWorkerTypeLength = EngineConfiguration.DEFAULT_MAX_WORKER_TYPE_LENGTH;
@@ -48,8 +48,8 @@ public record BpmnValidatorConfig(
     }
 
     @Override
-    public BpmnValidatorConfig build() {
-      return new BpmnValidatorConfig(
+    public ValidationConfig build() {
+      return new ValidationConfig(
           maxIdFieldLength, maxNameFieldLength, maxWorkerTypeLength, validatorResultsOutputMaxSize);
     }
   }

@@ -14,7 +14,7 @@ import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
-import io.camunda.zeebe.engine.processing.deployment.transform.BpmnValidatorConfig;
+import io.camunda.zeebe.engine.processing.deployment.transform.ValidationConfig;
 import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -91,7 +91,7 @@ public class ProcessValidationUtil {
                     ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor),
                     ZeebeDesignTimeValidators.VALIDATORS,
                     ZeebeConfigurationValidators.getValidators(
-                        BpmnValidatorConfig.builder()
+                        ValidationConfig.builder()
                             .withMaxIdFieldLength(MAX_ID_FIELD_LENGTH)
                             .withMaxNameFieldLength(MAX_NAME_FIELD_LENGTH)
                             .withMaxWorkerTypeLength(MAX_WORKER_TYPE_LENGTH)

@@ -29,7 +29,7 @@ public final class BpmnValidator {
   public BpmnValidator(
       final ExpressionLanguage expressionLanguage,
       final ExpressionProcessor expressionProcessor,
-      final BpmnValidatorConfig config) {
+      final ValidationConfig config) {
     final var designTimeAspectValidator =
         new ValidationVisitor(ZeebeDesignTimeValidators.VALIDATORS);
     final var runtimeAspectValidator =
