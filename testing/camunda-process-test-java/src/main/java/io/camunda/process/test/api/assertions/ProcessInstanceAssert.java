@@ -565,6 +565,24 @@ public interface ProcessInstanceAssert {
   ProcessInstanceAssert hasCorrelatedMessage(final String messageName, final String correlationKey);
 
   /**
+   * Overrides the {@link JudgeConfig} for subsequent judge assertions in this chain. The global
+   * default set via {@link io.camunda.process.test.api.CamundaAssert#setJudgeConfig(JudgeConfig)}
+   * is not affected. Each new {@code assertThat(pi)} call starts fresh from the global default.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   *   assertThat(pi)
+   *       .withJudgeConfig(customJudge)
+   *       .hasVariableSatisfiesJudge("result", "should contain valid data");
+   * </pre>
+   *
+   * @param judgeConfig the judge configuration to use for subsequent judge assertions
+   * @return the assertion object
+   */
+  ProcessInstanceAssert withJudgeConfig(JudgeConfig judgeConfig);
+
+  /**
    * Verifies that a process variable's value satisfies a natural language expectation using an LLM
    * judge. Uses the default threshold from the configured {@link JudgeConfig}.
    *
