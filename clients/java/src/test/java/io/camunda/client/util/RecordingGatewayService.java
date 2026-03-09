@@ -185,12 +185,14 @@ public final class RecordingGatewayService extends GatewayImplBase {
       final int version,
       final long processDefinitionKey,
       final String resourceName) {
+    final String processName = "";
     return deployedProcess(
         bpmnProcessId,
         version,
         processDefinitionKey,
         resourceName,
-        CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+        CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER,
+        processName);
   }
 
   public static ProcessMetadata deployedProcess(
@@ -198,13 +200,15 @@ public final class RecordingGatewayService extends GatewayImplBase {
       final int version,
       final long processDefinitionKey,
       final String resourceName,
-      final String tenantId) {
+      final String tenantId,
+      final String processName) {
     return ProcessMetadata.newBuilder()
         .setBpmnProcessId(bpmnProcessId)
         .setVersion(version)
         .setProcessDefinitionKey(processDefinitionKey)
         .setResourceName(resourceName)
         .setTenantId(tenantId)
+        .setProcessName(processName)
         .build();
   }
 
