@@ -68,6 +68,22 @@ class OperateProcessInstancePage {
   readonly incidentsViewHeader: Locator;
   readonly viewAllChildProcessesLink: Locator;
   readonly variableCellByName: (name: string | RegExp) => Locator;
+  readonly getVariableRow: (variableName: string) => Locator;
+  readonly getEditVariableFieldSelector: (variableName: string) => Locator;
+  readonly getNewVariableNameFieldSelector: (variableName: string) => Locator;
+  readonly getNewVariableValueFieldSelector: (variableName: string) => Locator;
+  readonly getLastModificationLabel: (pattern: string | RegExp) => Locator;
+  readonly getModificationSummaryItem: (text: string | RegExp) => Locator;
+  readonly getNthDeleteVariableModificationButtonInSummary: (
+    index: number,
+  ) => Locator;
+  readonly modificationModeText: Locator;
+  readonly lastModificationFooter: Locator;
+  readonly noVariablesText: Locator;
+  readonly applyModificationsButton: Locator;
+  readonly deleteVariableModificationButton: Locator;
+  readonly cancelModificationSummaryButton: Locator;
+  readonly undoButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -175,6 +191,44 @@ class OperateProcessInstancePage {
     this.viewAllChildProcessesLink = this.instanceHeader.getByRole('link', {
       name: 'View all',
     });
+    this.getVariableRow = (variableName: string) =>
+      page.getByTestId(`variable-${variableName}`);
+    this.getEditVariableFieldSelector = (variableName: string) =>
+      page
+        .getByTestId(`variable-${variableName}`)
+        .getByRole('textbox', {name: /value/i});
+    this.getNewVariableNameFieldSelector = (variableName: string) =>
+      page
+        .getByTestId(`variable-${variableName}`)
+        .getByTestId('new-variable-name');
+    this.getNewVariableValueFieldSelector = (variableName: string) =>
+      page
+        .getByTestId(`variable-${variableName}`)
+        .getByTestId('new-variable-value');
+    this.getLastModificationLabel = (pattern: string | RegExp) =>
+      page.getByText(pattern);
+    this.getModificationSummaryItem = (text: string | RegExp) =>
+      page.getByRole('dialog').getByText(text);
+    this.getNthDeleteVariableModificationButtonInSummary = (index: number) =>
+      page
+        .getByRole('dialog')
+        .getByRole('button', {name: 'Delete variable modification'})
+        .nth(index);
+    this.modificationModeText = page.getByText(
+      'Process Instance Modification Mode',
+    );
+    this.lastModificationFooter = page.getByText('Last added modification:');
+    this.noVariablesText = page.getByText(/The Flow Node has no Variables/i);
+    this.applyModificationsButton = page.getByRole('button', {
+      name: /apply modifications/i,
+    });
+    this.deleteVariableModificationButton = page.getByRole('button', {
+      name: /delete variable modification/i,
+    });
+    this.cancelModificationSummaryButton = page
+      .getByRole('dialog')
+      .getByRole('button', {name: 'Cancel'});
+    this.undoButton = page.getByRole('button', {name: /undo/i});
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
@@ -323,6 +377,65 @@ class OperateProcessInstancePage {
 
   async toggleExecutionCount(): Promise<void> {
     await this.executionCountToggleButton.click();
+  }
+
+  async undoModification(): Promise<void> {
+    await this.undoButton.click();
+  }
+
+  async enterModificationMode(): Promise<void> {
+    await this.modifyInstanceButton.click();
+  }
+
+  async clickApplyModificationsButton(): Promise<void> {
+    await this.applyModificationsButton.click();
+  }
+
+  async clickDeleteVariableModification(): Promise<void> {
+    await this.deleteVariableModificationButton.click();
+  }
+
+  async cancelModificationSummary(): Promise<void> {
+    await this.cancelModificationSummaryButton.click();
+  }
+
+  async clickAddVariableInModificationMode(): Promise<void> {
+    await this.addVariableButton.click();
+  }
+
+  async pressTab(): Promise<void> {
+    await this.page.keyboard.press('Tab');
+  }
+
+  async assertAndEnterModificationMode(): Promise<void> {
+    await expect(this.getVariableRow('foo')).toBeVisible();
+    await this.enterModificationMode();
+    await expect(this.modificationModeText).toBeVisible();
+  }
+
+  async editExistingVariable(name: string, value: string): Promise<void> {
+    await this.getEditVariableFieldSelector(name).clear();
+    await this.getEditVariableFieldSelector(name).fill(value);
+    await this.pressTab();
+  }
+
+  async assertLastModificationIs(label: string | RegExp): Promise<void> {
+    await expect(this.lastModificationFooter).toBeVisible();
+    await expect(this.getLastModificationLabel(label)).toBeVisible();
+  }
+
+  async addNewVariableInModificationMode(
+    rowKey: string,
+    name: string,
+    value: string,
+  ): Promise<void> {
+    await this.clickAddVariableInModificationMode();
+    await expect(this.getVariableRow(rowKey)).toBeVisible();
+    await this.getNewVariableNameFieldSelector(rowKey).clear();
+    await this.getNewVariableNameFieldSelector(rowKey).fill(name);
+    await this.pressTab();
+    await this.getNewVariableValueFieldSelector(rowKey).fill(value);
+    await this.pressTab();
   }
 
   async verifyExecutionCountBadgesNotVisible(
