@@ -17,7 +17,7 @@ import {queryKeys} from 'modules/queries/queryKeys';
 
 function useCancelProcessInstance(
   processInstanceKey: string,
-  options?: Partial<UseMutationOptions> & {
+  options?: Omit<UseMutationOptions, 'mutationFn'> & {
     shouldSkipResultCheck?: boolean;
   },
 ) {
