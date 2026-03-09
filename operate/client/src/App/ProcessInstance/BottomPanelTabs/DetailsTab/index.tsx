@@ -7,7 +7,7 @@
  */
 
 import {useMemo} from 'react';
-import {StructuredListSkeleton} from '@carbon/react';
+import {Callout, StructuredListSkeleton} from '@carbon/react';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
@@ -18,8 +18,9 @@ import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 import {isCamundaUserTask} from 'modules/bpmn-js/utils/isCamundaUserTask';
 import {getExecutionDuration} from './getExecutionDuration';
-import {EmptyMessageContainer, WarningText, StructuredList} from './styled';
+import {EmptyMessageContainer, Container} from './styled';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
+import {StructuredList} from 'modules/components/StructuredList';
 
 const DetailsTab: React.FC = () => {
   const {
@@ -215,12 +216,14 @@ const DetailsTab: React.FC = () => {
   }
 
   return (
-    <div data-testid="details-tab">
+    <Container data-testid="details-tab">
       {type === 'USER_TASK' && !isCamundaUserTask(businessObject) && (
-        <WarningText>
-          User tasks with job worker implementation are deprecated. Consider
-          migrating to Camunda user tasks.
-        </WarningText>
+        <Callout
+          kind="warning"
+          lowContrast
+          title="User tasks with job worker implementation are deprecated."
+          subtitle="Consider migrating to Camunda user tasks."
+        />
       )}
       <StructuredList
         label="Element Instance Details"
@@ -232,7 +235,7 @@ const DetailsTab: React.FC = () => {
         ]}
         rows={rows}
       />
-    </div>
+    </Container>
   );
 };
 
