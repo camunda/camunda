@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformation;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableConditional;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableError;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEscalation;
@@ -34,6 +35,7 @@ public final class TransformContext {
   private final Map<DirectBuffer, ExecutableConditional> conditionals = new HashMap<>();
 
   private ExpressionLanguage expressionLanguage;
+  private int maxNameFieldLength = EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH;
 
   /*
    * set whenever parsing a process
@@ -106,6 +108,14 @@ public final class TransformContext {
 
   public void setExpressionLanguage(final ExpressionLanguage expressionLanguage) {
     this.expressionLanguage = expressionLanguage;
+  }
+
+  public int getMaxNameFieldLength() {
+    return maxNameFieldLength;
+  }
+
+  public void setMaxNameFieldLength(final int maxNameFieldLength) {
+    this.maxNameFieldLength = maxNameFieldLength;
   }
 
   public void addConditional(final ExecutableConditional condition) {
