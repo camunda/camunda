@@ -258,7 +258,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
       currentLease = tryAcquireInitialLease(storedLease);
       return storedLease;
     } catch (final Exception e) {
-      LOG.warn("Failed to acquire initial lease for nodeId {}: {}", nodeId, e.getMessage());
+      LOG.warn("Failed to acquire initial lease for nodeId {}", nodeId, e);
       return null;
     }
   }
