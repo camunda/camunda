@@ -43,7 +43,12 @@ function useDashboardScrollPagination(
         scrollDown(smoothScrollStepSize);
       }
     },
-    [hasPreviousPage, isFetchingPreviousPage, fetchPreviousPage, smoothScrollStepSize],
+    [
+      hasPreviousPage,
+      isFetchingPreviousPage,
+      fetchPreviousPage,
+      smoothScrollStepSize,
+    ],
   );
 
   const handleScrollEndReach = useCallback(() => {
