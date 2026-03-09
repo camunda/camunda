@@ -40,6 +40,7 @@ jobs:
     outputs:
       actionlint: ${{ steps.filter.outputs.actionlint }}
       commitlint: ${{ steps.filter.outputs.commitlint }}
+      codeowners-check: ${{ steps.filter.outputs.codeowners-check }}
       maven-spotless-linter: ${{ steps.filter.outputs.maven-spotless-linter }}
       java-code-changes: ${{ steps.filter.outputs.java-code-changes }}
       camunda-docker-tests: ${{ steps.filter.outputs.camunda-docker-tests}}
@@ -166,6 +167,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   codeowners-check:
+    if: needs.detect-changes.outputs.codeowners-check == 'true'
     name: "Lint / Codeowners"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
@@ -173,7 +175,17 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v6
-      - uses: ./.github/actions/codeowners-check
+      - uses: ./.github/actions/codeowners-setup-cli
+      - name: Check for unowned files
+        run: |
+          set -euo pipefail
+          unowned="$(codeowners-cli unowned --root ./)"
+          if [[ -n "${unowned}" ]]; then
+            echo -e "::error::The following files have no owner in .codeowners:\n${unowned}\n\n"
+            echo "Please add ownership rules for these files in .codeowners"
+            exit 1
+          fi
+          echo "All files have owners."
       - name: Observe build status
         if: always()
         continue-on-error: true
