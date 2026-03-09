@@ -25,5 +25,6 @@ public class BatchOperationSuspendedV2Applier
   public void applyState(
       final long suspendKey, final BatchOperationLifecycleManagementRecord value) {
     batchOperationState.suspend(value.getBatchOperationKey());
+    batchOperationState.removeFromPending(value.getBatchOperationKey());
   }
 }

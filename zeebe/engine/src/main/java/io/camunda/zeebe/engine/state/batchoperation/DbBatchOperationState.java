@@ -284,6 +284,20 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
+  public void removeFromPending(final long batchOperationKey) {
+    LOGGER.trace("Removing batch operation with key {} from pending", batchOperationKey);
+    batchKey.wrapLong(batchOperationKey);
+    pendingBatchOperationColumnFamily.deleteIfExists(batchKey);
+  }
+
+  @Override
+  public void addToPending(final long batchOperationKey) {
+    LOGGER.trace("Adding batch operation with key {} to pending", batchOperationKey);
+    batchKey.wrapLong(batchOperationKey);
+    pendingBatchOperationColumnFamily.upsert(batchKey, DbNil.INSTANCE);
+  }
+
+  @Override
   public void complete(final long batchOperationKey) {
     LOGGER.trace("Completing batch operation with key {}", batchOperationKey);
     deleteBatchOperation(batchOperationKey);
