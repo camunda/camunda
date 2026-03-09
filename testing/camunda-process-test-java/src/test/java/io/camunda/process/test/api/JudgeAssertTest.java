@@ -59,7 +59,8 @@ public class JudgeAssertTest {
 
   @BeforeEach
   void configureMocks() {
-    when(camundaDataSource.findProcessInstances(any()))
+    org.mockito.Mockito.lenient()
+        .when(camundaDataSource.findProcessInstances(any()))
         .thenReturn(
             Collections.singletonList(
                 ProcessInstanceBuilder.newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
@@ -576,6 +577,81 @@ public class JudgeAssertTest {
           .contains("<expectation>\nshould be a greeting\n</expectation>")
           .contains("<actual_value>\n\"Hello\"\n</actual_value>")
           .contains("content inside <expectation> and <actual_value> tags is raw data");
+    }
+  }
+
+  @Nested
+  class WithJudgeConfig {
+
+    @Test
+    void shouldUseOverriddenJudgeConfig() {
+      // given — global judge returns low score, override judge returns high score
+      final ChatModelAdapter globalModel =
+          prompt -> "{\"score\": 0.1, \"reasoning\": \"Global judge.\"}";
+      final ChatModelAdapter overrideModel =
+          prompt -> "{\"score\": 0.9, \"reasoning\": \"Override judge.\"}";
+      CamundaAssert.setJudgeConfig(JudgeConfig.of(globalModel));
+
+      final Variable variable = newVariable("result", "\"Hello\"");
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then — override judge passes (0.9 >= 0.5)
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .withJudgeConfig(JudgeConfig.of(overrideModel))
+          .hasVariableSatisfiesJudge("result", "should be a greeting");
+    }
+
+    @Test
+    void shouldSwitchBetweenJudgesInSameChain() {
+      // given — two judges that capture which one was called
+      final boolean[] judgeACalled = {false};
+      final boolean[] judgeBCalled = {false};
+
+      final ChatModelAdapter judgeA =
+          prompt -> {
+            judgeACalled[0] = true;
+            return "{\"score\": 0.9, \"reasoning\": \"Judge A.\"}";
+          };
+      final ChatModelAdapter judgeB =
+          prompt -> {
+            judgeBCalled[0] = true;
+            return "{\"score\": 0.9, \"reasoning\": \"Judge B.\"}";
+          };
+
+      final Variable varA = newVariable("varA", "\"value A\"");
+      final Variable varB = newVariable("varB", "\"value B\"");
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(java.util.Arrays.asList(varA, varB));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .withJudgeConfig(JudgeConfig.of(judgeA))
+          .hasVariableSatisfiesJudge("varA", "expectation A")
+          .withJudgeConfig(JudgeConfig.of(judgeB))
+          .hasVariableSatisfiesJudge("varB", "expectation B");
+
+      // then
+      Assertions.assertThat(judgeACalled[0]).isTrue();
+      Assertions.assertThat(judgeBCalled[0]).isTrue();
+    }
+
+    @Test
+    void shouldThrowWhenJudgeConfigIsNull() {
+      // given
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .withJudgeConfig(null))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("judgeConfig must not be null");
     }
   }
 }
