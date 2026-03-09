@@ -23,9 +23,11 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
  *   <li>Startup will be called at most once
  *   <li>Shutdown may be called more than once with the expectation that the first call will trigger
  *       the shutdown and any subsequent calls shall do nothing
- *   <li>Shutdown will not be called while startup is running
+ *   <li>Shutdown will not be called while startup is running, unless {@link
+ *       StartupStep#isInterruptible()} is true
  *   <li>Implementation classes can assume that methods of this interface are never called
- *       concurrently
+ *       concurrently, unless {@link StartupStep#isInterruptible()} is true, in which case shutdown
+ *       can be called while startup is still running.
  * </ul>
  *
  * @param <CONTEXT> context object for the startup and shutdown steps. During startup this context
@@ -56,4 +58,21 @@ public interface StartupStep<CONTEXT> {
    * @return future with the shutdown context at the end of this step.
    */
   ActorFuture<CONTEXT> shutdown(final CONTEXT context);
+
+  /**
+   * Whether the startup step is interruptible. If a startup step is interruptible, it can be
+   * interrupted by a shutdown while it is still running. In this case, the shutdown will trigger
+   * the shutdown logic of the step immediately, without waiting for the startup logic to complete.
+   * If a startup step is not interruptible, it cannot be interrupted by a shutdown while it is
+   * still running. In this case, the shutdown will wait for the startup logic to complete before
+   * triggering the shutdown logic of the step.
+   *
+   * <p>If a startup step is interruptible, it should ensure that a shutdown can be triggered at any
+   * point during the execution of the startup logic.
+   *
+   * @return {@code true} if the startup step is interruptible, {@code false} otherwise
+   */
+  default boolean isInterruptible() {
+    return false;
+  }
 }
