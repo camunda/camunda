@@ -7,6 +7,7 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
@@ -24,11 +25,10 @@ public class ProcessDefinitionCreateIT {
 
   @Test
   @EnabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
-  void shouldRejectProcessDefinitionOnRdbmsWhenIdIsTooLong() {
+  void shouldRejectProcessDefinitionOnRdbmsWhenNameIsTooLong() {
     final var processDefinition =
-        Bpmn.createExecutableProcess(
-                "p".repeat(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH + 1))
-            .name("my process")
+        Bpmn.createExecutableProcess("processId")
+            .name("p".repeat(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH + 1))
             .startEvent()
             .endEvent()
             .done();
@@ -42,7 +42,66 @@ public class ProcessDefinitionCreateIT {
             })
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining(
-            "ERROR: IDs must not be longer than the configured max-id-length of %d characters"
+            "ERROR: Names must not be longer than the configured max-name-length of %d characters"
                 .formatted(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH));
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
+  void shouldRejectProcessDefinitionOnRdbmsWhenNameIsTooLongUtf8() {
+    final var processDefinition =
+        Bpmn.createExecutableProcess("processId")
+            .name("ü".repeat(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH + 1))
+            .startEvent()
+            .endEvent()
+            .done();
+
+    assertThatThrownBy(
+            () -> {
+              camundaClient
+                  .newDeployResourceCommand()
+                  .addProcessModel(processDefinition, "process.bpmn")
+                  .execute();
+            })
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining(
+            "ERROR: Names must not be longer than the configured max-name-length of %d characters"
+                .formatted(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH));
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
+  void shouldDeployProcessDefinitionOnRdbmsWhenNameIsExactlyWithinSizeLimit() {
+    final var processDefinition =
+        Bpmn.createExecutableProcess("processId")
+            .name("p".repeat(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH))
+            .startEvent()
+            .endEvent()
+            .done();
+
+    camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(processDefinition, "process.bpmn")
+        .execute();
+
+    waitForProcessesToBeDeployed(camundaClient, 1);
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
+  void shouldDeployProcessDefinitionOnRdbmsWhenNameIsExactlyWithinSizeLimitUtf8() {
+    final var processDefinition =
+        Bpmn.createExecutableProcess("processId")
+            .name("ü".repeat(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH))
+            .startEvent()
+            .endEvent()
+            .done();
+
+    camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(processDefinition, "process.bpmn")
+        .execute();
+
+    waitForProcessesToBeDeployed(camundaClient, 1);
   }
 }
