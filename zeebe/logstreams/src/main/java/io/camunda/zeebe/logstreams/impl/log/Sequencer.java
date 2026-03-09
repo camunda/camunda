@@ -116,8 +116,8 @@ final class Sequencer implements LogStreamWriter, Closeable {
       final var sequencedBatch =
           new SequencedBatch(
               clock.millis(), currentPosition, sourcePosition, appendEntries, batchLength);
-      flowControl.registerEntry(highestPosition, inFlightEntry);
-      logStorage.append(currentPosition, highestPosition, sequencedBatch, flowControl);
+      final var appendListener = flowControl.registerEntry(highestPosition, inFlightEntry);
+      logStorage.append(currentPosition, highestPosition, sequencedBatch, appendListener);
       position = currentPosition + batchSize;
     } finally {
       lock.unlock();
