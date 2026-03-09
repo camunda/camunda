@@ -34,8 +34,7 @@ test.describe.parallel('Search Batch Operation Tests', () => {
     }
   });
 
-  //Skipped due to bug 43161: https://github.com/camunda/camunda/issues/43161
-  test.skip('Search Batch Operations Success', async ({request}) => {
+  test('Search Batch Operations Success', async ({request}) => {
     await expect(async () => {
       const res = await request.post(buildUrl('/batch-operations/search'), {
         headers: jsonHeaders(),
