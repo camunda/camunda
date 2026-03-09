@@ -61,7 +61,7 @@ public class ListViewFlowNodeFromJobHandlerTest {
   }
 
   @Test
-  public void shouldNotHandlesRecord() {
+  public void shouldNotHandlesRecordOfProcessInstances() {
     // given
     final Record<JobRecordValue> jobRecord =
         factory.generateRecord(
@@ -72,6 +72,25 @@ public class ListViewFlowNodeFromJobHandlerTest {
                             .withProcessDefinitionKey(1L)
                             .withElementInstanceKey(111L)
                             .withProcessInstanceKey(111L)
+                            .build())
+                    .withKey(111L));
+    // when - then
+    assertThat(underTest.handlesRecord(jobRecord)).isFalse();
+  }
+
+  @Test
+  public void shouldNotHandlesRecordOfUserTaskImplementationMigration() {
+    // given
+    final Record<JobRecordValue> jobRecord =
+        factory.generateRecord(
+            r ->
+                r.withValueType(ValueType.JOB)
+                    .withValue(
+                        ImmutableJobRecordValue.builder()
+                            .withProcessDefinitionKey(1L)
+                            .withElementInstanceKey(111L)
+                            .withProcessInstanceKey(222L)
+                            .withJobToUserTaskMigration(true)
                             .build())
                     .withKey(111L));
     // when - then
