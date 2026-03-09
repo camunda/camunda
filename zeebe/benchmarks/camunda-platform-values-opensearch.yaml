@@ -1,0 +1,92 @@
+########################################################################################
+################################################### Global cluster configuration
+########################################################################################
+global:
+  elasticsearch:
+    enabled: false
+
+  opensearch:
+    enabled: true
+    url:
+      protocol: http
+      host: "opensearch"
+      port: 9200
+
+########################################################################################
+################################################### Orchestration cluster configuration
+########################################################################################
+orchestration:
+  # We need to explicitly set the secondary storage type to OpenSearch
+  # overriding the default value of elasticsearch
+  data:
+    secondaryStorage:
+      type: opensearch
+
+#################################################################################################
+################################################### Disable Elasticsearch when using OpenSearch
+#################################################################################################
+elasticsearch:
+  enabled: false
+
+###########################################################################
+#######
+#     # #####  ###### #    #  ####  ######   ##   #####   ####  #    #
+#     # #    # #      ##   # #      #       #  #  #    # #    # #    #
+#     # #####  #####  # #  #  ####  #####  #    # #    # #      ######
+#     # #      #      #  # #      # #      ###### #####  #      #    #
+#     # #      #      #   ## #    # #      #    # #   #  #    # #    #
+####### #      ###### #    #  ####  ###### #    # #    #  ####  #    #
+###########################################################################
+
+# Override values for https://github.com/opensearch-project/helm-charts
+
+clusterName: "opensearch"
+nameOverride: "opensearch"
+masterService: "opensearch"
+
+majorVersion: "2.19.0"
+
+config:
+  opensearch.yml: |
+    cluster.name: opensearch
+    network.host: 0.0.0.0
+    plugins.security.disabled: true
+
+extraEnvs:
+  - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
+    value: "yourStrongPassword123!"
+
+opensearchJavaOpts: "-Xms1024m -Xmx1024m"
+
+sysctlInit:
+  enabled: true
+sysctlVmMaxMapCount: 262144
+
+resources:
+  requests:
+    cpu: 3000m
+    memory: 4Gi
+  limits:
+    cpu: 3000m
+    memory: 10Gi
+
+persistence:
+  enabled: true
+  size: 128Gi
+  storageClass: "ssd"
+
+nodeSelector:
+  component: benchmark-n2-standard-4
+
+tolerations:
+  - key: nodepool
+    operator: Equal
+    value: n2-standard-4
+    effect: NoSchedule
+
+antiAffinity: "hard"
+
+protocol: http
+
+securityConfig:
+  enabled: false

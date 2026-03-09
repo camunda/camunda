@@ -10,6 +10,11 @@
 ################################################### Global cluster configuration
 ########################################################################################
 global:
+  # Our default is ELASTICSEARCH
+  # We need to explicitly enable ELS as per default this is disabled now
+  # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
+  elasticsearch:
+    enabled: true
   # Disable global ingress
   ingress:
     enabled: false
@@ -59,8 +64,8 @@ orchestration:
   # This means we will have pods like: camunda-0, camunda-1, camunda-2
   fullnameOverride: camunda
   image:
-    registry: registry.camunda.cloud
-    repository: team-zeebe/zeebe
+    registry: docker.io
+    repository: camunda/camunda
     tag: "SNAPSHOT"
   ## @param core.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
@@ -75,10 +80,10 @@ orchestration:
   # Resources of the orchestration cluster
   resources:
     requests:
-      cpu: 2000m
+      cpu: 3000m
       memory: 2Gi
     limits:
-      cpu: 2000m
+      cpu: 3000m
       memory: 2Gi
 
   nodeSelector:
@@ -116,51 +121,49 @@ orchestration:
     -XX:NativeMemoryTracking=summary
     -Xlog:gc*:file=/usr/local/camunda/data/gc.log:time:filecount=7,filesize=8M
 
-  # We set extra configuration to configure additional settings for Broker and Gateway, that are part
+  # We need to explicitly set the secondary storage type to ELS
+  # THIS GETS OVERRIDDEN IN THE OTHER VALUES FILES, e.g. for OpenSearch and RDBMS
+  data:
+    secondaryStorage:
+      type: elasticsearch
+  # We set extra configuration to configure additional settings for Camunda application, that are part
   # of the orchestration cluster.
   # This allows adding configurations without the need of overwriting all environment variables from the Platform chart.
   extraConfiguration:
-    application.yml: |
-      zeebe.gateway.monitoring.enabled: "true"
-      zeebe.gateway.threads.managementThreads: "1"
-      zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
-      zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
-      zeebe.broker.executionMetricsExporterEnabled: "true"
-      zeebe.broker.data.disk.freeSpace.processing: "3GB"
-      zeebe.broker.data.disk.freeSpace.replication: "2GB"
-      # Configure index suffix with hour pattern, so we create every hour a new index
-      # such that ILM can clean it up quickly
-      # We need to configure it for the ES exporter AND the CamundaExporter
-      zeebe.broker.exporters.camundaexporter.args.history.elsRolloverDateFormat: "yyyy-MM-dd-HH"
-      zeebe.broker.exporters.camundaexporter.args.history.rolloverInterval: "1h"
-      zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize: 300
-      zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving: "1m"
-      # We moved the archiver configuration under retention at some point, but still need to support the previous
-      # versions for now, so the configurations for retention are duplicated
-      zeebe.broker.exporters.camundaexporter.args.history.retention.enabled: "true"
-      # 0s causes ILM to move data asap - it is normally the default
-      # https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
-      zeebe.broker.exporters.camundaexporter.args.history.retention.minimumAge: "70m"
-      zeebe.broker.exporters.camundaexporter.args.history.retention.policyName: "camunda-retention-policy"
-      # Configure a rate limit for all writes, so that we can visualize flow control metrics.
-      zeebe.broker.flowControl.write.enabled: "true"
-      zeebe.broker.flowControl.write.limit: 4000
-      zeebe.broker.flowControl.write.throttling.enabled: "true"
-      # Disable the importers
-      camunda.tasklist.importerEnabled: "false"
-      camunda.operate.importerEnabled: "false"
-      camunda.operate.elasticsearch.numberOfShards: 3
-      # Schema management has been moved out of exporter - to be bootstrap at start; once
-      camunda.database.retention.enabled: "true"
-      # 0s causes ILM to move data asap - it is normally the default
-      # https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
-      camunda.database.retention.minimumAge: "70m"
-      camunda.database.retention.policyName: "camunda-retention-policy"
-      #Metrics:
-      camunda.flags.jfr.metrics: "true"
-      # RocksDB memory limit setting, limits the overall RocksDB memory usage
-      # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
-      zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
+    - file: application.yml
+      content: |
+        # Enable execution metrics exporter to be able to see the execution metrics, like process instance and job completion times
+        zeebe.broker.executionMetricsExporterEnabled: "true"
+        camunda.flags.jfr.metrics: "true"
+        # Define when the broker should start to reject requests when the disk is almost full, for both processing and replication.
+        zeebe.broker.data.disk.freeSpace.processing: "3GB"
+        zeebe.broker.data.disk.freeSpace.replication: "2GB"
+        # We want to have this for long running load tests, to detect consistency issues early on and to have the foreign key checks enabled for better data integrity.
+        # Like endurance / soak tests  but not for our maximum stress tests, where we want to push the system to the limits and consistency checks might cause too much overhead.
+        zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
+        zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
+        # Configure index suffix with hour pattern, so we create every hour a new index
+        # such that ILM can clean it up quickly
+        # We need to configure it for the ES exporter AND the CamundaExporter
+        zeebe.broker.exporters.camundaexporter.args.history.elsRolloverDateFormat: "yyyy-MM-dd-HH"
+        zeebe.broker.exporters.camundaexporter.args.history.rolloverInterval: "1h"
+        zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize: 300
+        zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving: "1m"
+        # Configure a rate limit for all writes, so that we can visualize flow control metrics.
+        zeebe.broker.flowControl.write.enabled: "true"
+        zeebe.broker.flowControl.write.limit: 10000
+        zeebe.broker.flowControl.write.throttling.enabled: "true"
+        # Schema management has been moved out of exporter - to be bootstrap at start; once
+        camunda.data.secondary-storage.retention.enabled: "true"
+        camunda.data.secondary-storage.retention.minimum-age: "70m"
+        # We define the retention policy name for both, ES and OpenSearch, to be the same, as the ILM policy is compatible with both and it simplifies the configuration.
+        camunda.data.secondary-storage.elasticsearch.history.policy-name: "camunda-retention-policy"
+        camunda.data.secondary-storage.opensearch.history.policy-name: "camunda-retention-policy"
+        camunda.database.retention.policyName: "camunda-retention-policy"
+        zeebe.broker.exporters.camundaexporter.args.history.retention.policyName: "camunda-retention-policy"
+        # RocksDB memory limit setting, limits the overall RocksDB memory usage
+        # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
+        zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
 
   # Zeebe config
   extraVolumes:
@@ -207,6 +210,8 @@ prometheusServiceMonitor:
 ################################################### Elasticsearch cluster configuration
 ########################################################################################
 elasticsearch:
+  enabled: true
+  clusterName: "elasticsearch"
   master:
     fullnameOverride: elastic
     nameOverride: elastic
@@ -223,10 +228,10 @@ elasticsearch:
       accessModes: ["ReadWriteOnce"]
     resources:
       requests:
-        cpu: 3
+        cpu: 3000m
         memory: 3Gi
       limits:
-        cpu: 3
+        cpu: 3000m
         memory: 6Gi
     nodeSelector:
       component: benchmark-n2-standard-4
