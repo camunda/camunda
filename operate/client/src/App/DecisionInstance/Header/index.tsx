@@ -92,14 +92,14 @@ const Header: React.FC<HeaderProps> = ({
             content: (
               <Link
                 to={Locations.decisions({
-                  version:
+                  decisionDefinitionVersion:
                     decisionInstance.decisionDefinitionVersion.toString(),
-                  name: decisionInstance.decisionDefinitionId,
+                  decisionDefinitionId: decisionInstance.decisionDefinitionId,
                   evaluated: true,
                   failed: true,
                   ...(isMultiTenancyEnabled
                     ? {
-                        tenant: tenantId,
+                        tenantId,
                       }
                     : {}),
                 })}

@@ -114,7 +114,7 @@ const InstancesTable: React.FC = observer(() => {
     OperationsLogFilters
   >(location.search, AUDIT_LOG_FILTER_FIELDS, []);
   const selectedTenantId =
-    filterValues.tenant === 'all' ? undefined : filterValues.tenant;
+    filterValues.tenantId === 'all' ? undefined : filterValues.tenantId;
   const {data: selectedProcessDefinition} = useSelectedProcessDefinition();
 
   const request: QueryAuditLogsRequestBody = useMemo(() => {

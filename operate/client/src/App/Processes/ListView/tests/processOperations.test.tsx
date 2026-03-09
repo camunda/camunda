@@ -86,7 +86,7 @@ describe('<ListView /> - operations', () => {
     });
 
     const queryString =
-      '?active=true&incidents=true&process=demoProcess&version=1';
+      '?active=true&incidents=true&processDefinitionId=demoProcess&processDefinitionVersion=1';
 
     render(<ListView />, {
       wrapper: getWrapper(`/processes${queryString}`),
@@ -167,7 +167,8 @@ describe('<ListView /> - operations', () => {
       },
     });
 
-    const queryString = '?active=true&incidents=true&process=demoProcess';
+    const queryString =
+      '?active=true&incidents=true&processDefinitionId=demoProcess';
 
     render(<ListView />, {
       wrapper: getWrapper(`/processes${queryString}`),
@@ -221,7 +222,9 @@ describe('<ListView /> - operations', () => {
     mockDeleteResource().withServerError(403);
 
     const {user} = render(<ListView />, {
-      wrapper: getWrapper('/processes?process=demoProcess&version=1'),
+      wrapper: getWrapper(
+        '/processes?processDefinitionId=demoProcess&processDefinitionVersion=1',
+      ),
     });
 
     expect(

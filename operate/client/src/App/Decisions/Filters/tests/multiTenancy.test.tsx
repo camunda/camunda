@@ -51,13 +51,13 @@ const expectVersion = (version: string) => {
 };
 
 const MOCK_FILTERS_PARAMS = {
-  name: 'invoice-assign-approver',
-  version: '2',
+  decisionDefinitionId: 'invoice-assign-approver',
+  decisionDefinitionVersion: '2',
   evaluated: 'true',
   failed: 'true',
-  decisionInstanceIds: '2251799813689540-1',
-  processInstanceId: '2251799813689549',
-  tenant: 'tenant-A',
+  decisionEvaluationInstanceKey: '2251799813689540-1',
+  processInstanceKey: '2251799813689549',
+  tenantId: 'tenant-A',
 } as const;
 
 describe('<Filters />', () => {
@@ -111,9 +111,9 @@ describe('<Filters />', () => {
     });
 
     const MOCK_VALUES = {
-      name: 'invoice-assign-approver',
-      version: '2',
-      tenant: 'tenant-A',
+      decisionDefinitionId: 'invoice-assign-approver',
+      decisionDefinitionVersion: '2',
+      tenantId: 'tenant-A',
     } as const;
 
     const {user} = render(<Filters />, {wrapper: getWrapper()});
@@ -134,7 +134,7 @@ describe('<Filters />', () => {
             screen.getByTestId('search').textContent ?? '',
           ).entries(),
         ),
-      ).toEqual(expect.objectContaining({tenant: 'all'})),
+      ).toEqual(expect.objectContaining({tenantId: 'all'})),
     );
 
     await selectDecision({

@@ -38,16 +38,16 @@ const mockBusinessObjects: BusinessObjects = {
 describe('buildProcessInstanceFilter', () => {
   it('maps fields with correct operators and date ranges', () => {
     const filters: ProcessInstanceFilters = {
-      startDateAfter: '2023-01-01T00:00:00Z',
-      startDateBefore: '2023-01-31T00:00:00Z',
-      endDateAfter: '2023-02-01T00:00:00Z',
-      endDateBefore: '2023-02-28T00:00:00Z',
-      ids: 'id1,id2',
-      parentInstanceId: 'parent1',
-      operationId: 'op1',
-      flowNodeId: 'node1',
-      tenant: 'tenant1',
-      retriesLeft: true,
+      startDateFrom: '2023-01-01T00:00:00Z',
+      startDateTo: '2023-01-31T00:00:00Z',
+      endDateFrom: '2023-02-01T00:00:00Z',
+      endDateTo: '2023-02-28T00:00:00Z',
+      processInstanceKey: 'id1,id2',
+      parentProcessInstanceKey: 'parent1',
+      batchOperationId: 'op1',
+      elementId: 'node1',
+      tenantId: 'tenant1',
+      hasRetriesLeft: true,
       errorMessage: 'boom',
       incidentErrorHashCode: 123,
     };
@@ -196,7 +196,7 @@ describe('buildProcessInstanceFilter', () => {
 
   it('does not add elementInstanceState filter when element is an end event', () => {
     const filters: ProcessInstanceFilters = {
-      flowNodeId: 'endEvent1',
+      elementId: 'endEvent1',
       active: true,
     };
 
@@ -213,7 +213,7 @@ describe('buildProcessInstanceFilter', () => {
 
   it('adds elementInstanceState filter when element is not an end event', () => {
     const filters: ProcessInstanceFilters = {
-      flowNodeId: 'serviceTask1',
+      elementId: 'serviceTask1',
       active: true,
     };
 
@@ -230,8 +230,8 @@ describe('buildProcessInstanceFilter', () => {
 
   it('does not add version or processDefinitionVersionTag to the filter', () => {
     const filters: ProcessInstanceFilters = {
-      version: 'v1',
-      process: 'my-process',
+      processDefinitionVersion: 'v1',
+      processDefinitionId: 'my-process',
     };
 
     const result = buildProcessInstanceFilter(filters);

@@ -101,7 +101,7 @@ describe('Tenant Field', () => {
     );
 
     render(<TenantField />, {
-      wrapper: getWrapper({tenant: 'invalid-tenant'}),
+      wrapper: getWrapper({tenantId: 'invalid-tenant'}),
     });
 
     expect(

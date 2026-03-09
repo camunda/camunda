@@ -33,7 +33,7 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
       useBatchOperationMutationRequestBody();
 
     const processInstancesFilters = getProcessInstanceFilters(location.search);
-    const {flowNodeId: sourceElementId} = processInstancesFilters;
+    const {elementId: sourceElementId} = processInstancesFilters;
     const process = useSelectedProcessDefinitionContext();
     const processName = process ? getProcessDefinitionName(process) : 'Process';
     const {selectedTargetElementId} = batchModificationStore.state;

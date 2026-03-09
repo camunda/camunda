@@ -7,8 +7,8 @@
  */
 
 type OperationsLogFilterField =
-  | 'process'
-  | 'version'
+  | 'processDefinitionId'
+  | 'processDefinitionVersion'
   | 'processInstanceKey'
   | 'operationType'
   | 'entityType'
@@ -16,11 +16,11 @@ type OperationsLogFilterField =
   | 'result'
   | 'timestampBefore'
   | 'timestampAfter'
-  | 'tenant';
+  | 'tenantId';
 
 type OperationsLogFilters = {
-  process?: string;
-  version?: string;
+  processDefinitionId?: string;
+  processDefinitionVersion?: string;
   processInstanceKey?: string;
   operationType?: string;
   entityType?: string;
@@ -28,12 +28,12 @@ type OperationsLogFilters = {
   result?: string;
   timestampBefore?: string;
   timestampAfter?: string;
-  tenant?: string;
+  tenantId?: string;
 };
 
 const AUDIT_LOG_FILTER_FIELDS: (keyof OperationsLogFilters)[] = [
-  'process',
-  'version',
+  'processDefinitionId',
+  'processDefinitionVersion',
   'processInstanceKey',
   'operationType',
   'entityType',
@@ -41,7 +41,7 @@ const AUDIT_LOG_FILTER_FIELDS: (keyof OperationsLogFilters)[] = [
   'result',
   'timestampBefore',
   'timestampAfter',
-  'tenant',
+  'tenantId',
 ];
 
 export type {OperationsLogFilters, OperationsLogFilterField};

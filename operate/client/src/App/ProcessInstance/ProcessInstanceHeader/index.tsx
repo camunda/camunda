@@ -130,13 +130,13 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
           content: (
             <Link
               to={Locations.processes({
-                version: processDefinitionVersion?.toString(),
-                process: processDefinitionId,
+                processDefinitionVersion: processDefinitionVersion?.toString(),
+                processDefinitionId,
                 active: true,
                 incidents: true,
                 ...(isMultiTenancyEnabled
                   ? {
-                      tenant: tenantId,
+                      tenantId,
                     }
                   : {}),
               })}
@@ -189,7 +189,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
               ) ? (
                 <Link
                   to={Locations.processes({
-                    parentInstanceId: processInstanceKey,
+                    parentProcessInstanceKey: processInstanceKey,
                     active: true,
                     incidents: true,
                     canceled: true,
