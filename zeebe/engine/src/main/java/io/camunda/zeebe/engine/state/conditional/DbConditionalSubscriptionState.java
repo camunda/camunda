@@ -174,7 +174,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
 
     scopeKeyColumnFamily.whileEqualPrefix(
         this.scopeKey,
-        (key, ignore) -> {
+        key -> {
           subscriptionKey.wrapLong(key.second().wrappedKey().getValue());
           tenantIdKey.wrapBuffer(key.second().tenantKey().getBuffer());
           final var subscription =
@@ -196,8 +196,8 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
 
     processDefinitionKeyColumnFamily.whileEqualPrefix(
         this.processDefinitionKey,
-        (key, nil) -> {
-          tenantIdKey.wrapString(key.second().tenantKey().toString());
+        key -> {
+          tenantIdKey.wrapBuffer(key.second().tenantKey().getBuffer());
           subscriptionKey.wrapLong(key.second().wrappedKey().getValue());
           final var subscription =
               subscriptionKeyColumnFamily.get(
@@ -216,7 +216,7 @@ public class DbConditionalSubscriptionState implements MutableConditionalSubscri
 
     tenantIdColumnFamily.whileEqualPrefix(
         tenantIdKey,
-        (key, nil) -> {
+        key -> {
           subscriptionKey.wrapLong(key.wrappedKey().getValue());
           final var subscription =
               subscriptionKeyColumnFamily.get(

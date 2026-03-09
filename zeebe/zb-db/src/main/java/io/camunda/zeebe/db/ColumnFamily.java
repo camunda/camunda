@@ -164,6 +164,95 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue>
    */
   void whileTrueReverse(KeyType startAtKey, KeyValuePairVisitor<KeyType, ValueType> visitor);
 
+  // ---- Key-only iteration methods ----
+  // These methods iterate over keys without reading the corresponding values from the database,
+  // which can be significantly more efficient when only the keys are needed.
+
+  /**
+   * Visits the keys stored in the column family without reading the values. The ordering depends on
+   * the key.
+   *
+   * <p>The given consumer accepts the keys. Be aware that the given DbKey wraps the stored key and
+   * reflects the current iteration step. The DbKey should not be stored, since it will change its
+   * internal value during iteration.
+   *
+   * @param consumer the consumer which accepts the key
+   */
+  void forEachKey(Consumer<KeyType> consumer);
+
+  /**
+   * Visits the keys stored in the column family without reading the values. The ordering depends on
+   * the key. The visitor can indicate via the return value whether the iteration should continue or
+   * not. This means if the visitor returns false the iteration will stop.
+   *
+   * @param visitor the visitor which visits the keys
+   */
+  void whileTrue(KeyVisitor<KeyType> visitor);
+
+  /**
+   * Visits the keys stored in the column family without reading the values. The ordering depends on
+   * the key. The visitor can indicate via the return value whether the iteration should continue or
+   * not. This means if the visitor returns false the iteration will stop.
+   *
+   * <p>The given {@code startAtKey} indicates where the iteration should start. If the key exists,
+   * the first key will be equal to {@code startAtKey}. If the key doesn't exist it will start
+   * after.
+   *
+   * @param startAtKey indicates on which key the iteration should start
+   * @param visitor the visitor which visits the keys
+   */
+  void whileTrue(KeyType startAtKey, KeyVisitor<KeyType> visitor);
+
+  /**
+   * Visits the keys stored in the column family which have the same common prefix, without reading
+   * the values. The ordering depends on the key.
+   *
+   * @param keyPrefix the prefix which should have the keys in common
+   * @param visitor the consumer which accepts the keys
+   */
+  void whileEqualPrefix(DbKey keyPrefix, Consumer<KeyType> visitor);
+
+  /**
+   * Visits the keys stored in the column family which have the same common prefix, without reading
+   * the values. The ordering depends on the key. The visitor can indicate via the return value
+   * whether the iteration should continue or not. This means if the visitor returns false the
+   * iteration will stop.
+   *
+   * @param keyPrefix the prefix which should have the keys in common
+   * @param visitor the visitor which visits the keys
+   */
+  void whileEqualPrefix(DbKey keyPrefix, KeyVisitor<KeyType> visitor);
+
+  /**
+   * Visits the keys stored in the column family which have the same common prefix, without reading
+   * the values. The ordering depends on the key. The visitor can indicate via the return value
+   * whether the iteration should continue or not. This means if the visitor returns false the
+   * iteration will stop.
+   *
+   * <p>The given {@code startAtKey} indicates where the iteration should start. If the key exists,
+   * the first key will be equal to {@code startAtKey}. If the key doesn't exist it will start
+   * after.
+   *
+   * @param keyPrefix the prefix which should have the keys in common
+   * @param startAtKey indicates on which key the iteration should start
+   * @param visitor the visitor which visits the keys
+   */
+  void whileEqualPrefix(DbKey keyPrefix, KeyType startAtKey, KeyVisitor<KeyType> visitor);
+
+  /**
+   * Visits the keys in reverse order stored in the column family without reading the values. The
+   * visitor can indicate via the return value whether the iteration should continue or not. This
+   * means if the visitor returns false the iteration will stop.
+   *
+   * <p>The given {@code startAtKey} indicates where the iteration should start. If the key exists,
+   * the first key will be equal to {@code startAtKey}. If the key doesn't exist it will start at
+   * the key just before it.
+   *
+   * @param startAtKey indicates on which key the reverse iteration should start
+   * @param visitor the visitor which visits the keys
+   */
+  void whileTrueReverse(KeyType startAtKey, KeyVisitor<KeyType> visitor);
+
   /**
    * Deletes the key-value pair with the given key if it exists in the column family
    *

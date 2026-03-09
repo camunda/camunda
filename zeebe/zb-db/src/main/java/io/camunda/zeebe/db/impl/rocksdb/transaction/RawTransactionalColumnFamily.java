@@ -55,6 +55,27 @@ public class RawTransactionalColumnFamily {
         });
   }
 
+  /**
+   * Run the given visitor for each key in the column family, without reading the values.
+   *
+   * @param visitor to run for each key: the key bytearray is "raw", i.e. contains also the column
+   *     family prefix. In order to get access to the key without the prefix, you need to use {@link
+   *     ColumnFamilyContext#wrapKeyView(byte[])}
+   */
+  public void forEachKey(final TransactionContext context, final KeyOnlyVisitor visitor) {
+    context.runInTransaction(
+        () -> {
+          columnFamilyContext.withPrefixKey(
+              new DbNullKey(),
+              (prefixKey, prefixLength) -> {
+                try (final RocksIterator iterator =
+                    newIterator(context, transactionDb.getPrefixReadOptions())) {
+                  forEachKey(iterator, columnFamily, prefixKey, 0, prefixLength, visitor);
+                }
+              });
+        });
+  }
+
   public void put(
       final ZeebeTransaction transaction,
       final byte[] key,
@@ -198,6 +219,45 @@ public class RawTransactionalColumnFamily {
     }
   }
 
+  /**
+   * Iterates over the column family with prefix {@param prefixKey}, visiting only keys without
+   * reading values from the database.
+   *
+   * @param iterator the underlying rocksDB iterator
+   * @param columnFamily the column family being iterated
+   * @param prefixKey the prefix key to filter the iteration
+   * @param prefixOffset the offset in the prefix key array
+   * @param prefixLength the length of the prefix key
+   * @param visitor the visitor to apply to each key
+   */
+  public static void forEachKey(
+      final RocksIterator iterator,
+      final ZbColumnFamilies columnFamily,
+      final byte[] prefixKey,
+      final int prefixOffset,
+      final int prefixLength,
+      final KeyOnlyVisitor visitor) {
+    final var seekTarget = new DbNullKey();
+    boolean shouldVisitNext = true;
+    final var columnFamilyContext = new ColumnFamilyContext(columnFamily.getValue());
+    for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
+        iterator.isValid() && shouldVisitNext;
+        iterator.next()) {
+      final var keyBytes = iterator.key();
+
+      if (!startsWith(prefixKey, prefixOffset, prefixLength, keyBytes, 0, keyBytes.length)) {
+        break;
+      }
+      try {
+        shouldVisitNext = visitor.visit(keyBytes, 0, keyBytes.length);
+      } catch (final Exception e) {
+        LOG.error(
+            "Error visiting key {} in column family {}", new String(keyBytes), columnFamily, e);
+        shouldVisitNext = false;
+      }
+    }
+  }
+
   RocksIterator newIterator(final TransactionContext context, final ReadOptions options) {
     final var currentTransaction = (ZeebeTransaction) context.getCurrentTransaction();
     return currentTransaction.newIterator(options, transactionDb.getDefaultHandle());
@@ -218,5 +278,22 @@ public class RawTransactionalColumnFamily {
      */
     boolean visit(
         byte[] key, int keyOffset, int keyLen, byte[] value, int valueOffset, int valueLen);
+  }
+
+  /**
+   * A visitor that receives only the key bytes during iteration, without reading the value from the
+   * database. This can be significantly more efficient when only the keys are needed.
+   */
+  public interface KeyOnlyVisitor {
+
+    /**
+     * Visits a key in the column family during iteration.
+     *
+     * @param key the key byte array
+     * @param keyOffset the offset in the key array
+     * @param keyLen the length of the key
+     * @return true if iteration should continue, false otherwise
+     */
+    boolean visit(byte[] key, int keyOffset, int keyLen);
   }
 }
