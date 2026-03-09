@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
+import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -20,8 +21,17 @@ public final class BrokerCompleteJobRequest extends BrokerExecuteCommand<JobReco
 
   public BrokerCompleteJobRequest(
       final long key, final DirectBuffer variables, final JobResult result) {
+    this(key, variables, result, VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
+  }
+
+  public BrokerCompleteJobRequest(
+      final long key,
+      final DirectBuffer variables,
+      final JobResult result,
+      final int maxVariableNameLength) {
     super(ValueType.JOB, JobIntent.COMPLETE);
     request.setKey(key);
+    VariableNameLengthValidator.validateVariableNameLength(variables, maxVariableNameLength);
     requestDto.setVariables(variables);
     requestDto.setResult(result);
   }

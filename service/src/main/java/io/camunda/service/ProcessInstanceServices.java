@@ -45,6 +45,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceW
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteHistoryRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
+import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
@@ -81,6 +82,7 @@ public final class ProcessInstanceServices
   private final IncidentServices incidentServices;
   private final RequestRetryHandler requestRetryHandler;
   private final ExecutorService executor;
+  private final int maxVariableNameLength;
 
   public ProcessInstanceServices(
       final BrokerClient brokerClient,
@@ -90,6 +92,70 @@ public final class ProcessInstanceServices
       final IncidentServices incidentServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    this(
+        brokerClient,
+        securityContextProvider,
+        processInstanceSearchClient,
+        sequenceFlowSearchClient,
+        incidentServices,
+        executorProvider,
+        brokerRequestAuthorizationConverter,
+        new RequestRetryHandler(brokerClient, brokerClient.getTopologyManager()),
+        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
+  }
+
+  public ProcessInstanceServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ProcessInstanceSearchClient processInstanceSearchClient,
+      final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final IncidentServices incidentServices,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final int maxVariableNameLength) {
+    this(
+        brokerClient,
+        securityContextProvider,
+        processInstanceSearchClient,
+        sequenceFlowSearchClient,
+        incidentServices,
+        executorProvider,
+        brokerRequestAuthorizationConverter,
+        new RequestRetryHandler(brokerClient, brokerClient.getTopologyManager()),
+        maxVariableNameLength);
+  }
+
+  public ProcessInstanceServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ProcessInstanceSearchClient processInstanceSearchClient,
+      final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final IncidentServices incidentServices,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final RequestRetryHandler requestRetryHandler) {
+    this(
+        brokerClient,
+        securityContextProvider,
+        processInstanceSearchClient,
+        sequenceFlowSearchClient,
+        incidentServices,
+        executorProvider,
+        brokerRequestAuthorizationConverter,
+        requestRetryHandler,
+        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
+  }
+
+  public ProcessInstanceServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ProcessInstanceSearchClient processInstanceSearchClient,
+      final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final IncidentServices incidentServices,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final RequestRetryHandler requestRetryHandler,
+      final int maxVariableNameLength) {
     super(
         brokerClient,
         securityContextProvider,
@@ -98,8 +164,9 @@ public final class ProcessInstanceServices
     this.processInstanceSearchClient = processInstanceSearchClient;
     this.sequenceFlowSearchClient = sequenceFlowSearchClient;
     this.incidentServices = incidentServices;
+    this.requestRetryHandler = requestRetryHandler;
     executor = executorProvider.getExecutor();
-    requestRetryHandler = new RequestRetryHandler(brokerClient, brokerClient.getTopologyManager());
+    this.maxVariableNameLength = maxVariableNameLength;
   }
 
   @Override
@@ -208,7 +275,7 @@ public final class ProcessInstanceServices
   public CompletableFuture<ProcessInstanceCreationRecord> createProcessInstance(
       final ProcessInstanceCreateRequest request, final CamundaAuthentication authentication) {
     final var brokerRequest =
-        new BrokerCreateProcessInstanceRequest()
+        new BrokerCreateProcessInstanceRequest(maxVariableNameLength)
             .setBpmnProcessId(request.bpmnProcessId())
             .setKey(request.processDefinitionKey())
             .setVersion(request.version())
@@ -234,7 +301,7 @@ public final class ProcessInstanceServices
   public CompletableFuture<ProcessInstanceResultRecord> createProcessInstanceWithResult(
       final ProcessInstanceCreateRequest request, final CamundaAuthentication authentication) {
     final var brokerRequest =
-        new BrokerCreateProcessInstanceWithResultRequest()
+        new BrokerCreateProcessInstanceWithResultRequest(maxVariableNameLength)
             .setBpmnProcessId(request.bpmnProcessId())
             .setKey(request.processDefinitionKey())
             .setVersion(request.version())

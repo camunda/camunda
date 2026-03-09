@@ -69,6 +69,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesReque
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutResponse;
+import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.util.VersionUtil;
 import io.grpc.Context;
@@ -94,12 +95,27 @@ public final class EndpointManager {
       final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
       final StreamJobsHandler streamJobsHandler,
       final MultiTenancyConfiguration multiTenancy) {
+    this(
+        brokerClient,
+        activateJobsHandler,
+        streamJobsHandler,
+        multiTenancy,
+        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
+  }
+
+  public EndpointManager(
+      final BrokerClient brokerClient,
+      final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
+      final StreamJobsHandler streamJobsHandler,
+      final MultiTenancyConfiguration multiTenancy,
+      final int maxVariableNameLength) {
     this.brokerClient = brokerClient;
     this.activateJobsHandler = activateJobsHandler;
     this.streamJobsHandler = streamJobsHandler;
     topologyManager = brokerClient.getTopologyManager();
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
     RequestMapper.setMultiTenancyEnabled(multiTenancy.isChecksEnabled());
+    RequestMapper.setMaxVariableNameLength(maxVariableNameLength);
   }
 
   private void addBrokerInfo(
