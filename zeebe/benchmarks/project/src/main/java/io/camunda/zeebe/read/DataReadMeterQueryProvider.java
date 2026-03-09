@@ -8,7 +8,6 @@
 package io.camunda.zeebe.read;
 
 import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.zeebe.read.DataReadMeter.ReadQuery;
 import java.time.Duration;
@@ -68,14 +67,6 @@ public final class DataReadMeterQueryProvider {
             (client, context) ->
                 client
                     .newDecisionInstanceSearchRequest()
-                    .filter(
-                        f ->
-                            f.state(
-                                d ->
-                                    d.in(
-                                        List.of(
-                                            DecisionInstanceState.EVALUATED,
-                                            DecisionInstanceState.FAILED))))
                     .page(p -> p.limit(100))
                     .sort(s -> s.evaluationDate().desc())));
   }
