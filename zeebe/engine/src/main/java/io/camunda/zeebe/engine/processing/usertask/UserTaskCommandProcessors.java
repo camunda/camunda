@@ -37,7 +37,8 @@ public final class UserTaskCommandProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final int maxVariableNameLength) {
     final EventHandle eventHandle =
         new EventHandle(
             keyGenerator,
@@ -71,7 +72,12 @@ public final class UserTaskCommandProcessors {
                     authCheckBehavior),
                 UserTaskIntent.COMPLETE,
                 new UserTaskCompleteProcessor(
-                    processingState, eventHandle, writers, asyncRequestBehavior, authCheckBehavior),
+                    processingState,
+                    eventHandle,
+                    writers,
+                    asyncRequestBehavior,
+                    authCheckBehavior,
+                    maxVariableNameLength),
                 UserTaskIntent.CANCEL,
                 new UserTaskCancelProcessor(processingState, writers)));
     validateProcessorsSetup(commandToProcessor);

@@ -63,6 +63,25 @@ public final class CorrelateMessageTest {
   }
 
   @Test
+  public void shouldCorrelateWhenVariableNameExceedsDefaultMaxLength() {
+    // given
+    deployProcessWithMessageStartEvent();
+    final String variableName = "x".repeat(257);
+
+    // when
+    final var record =
+        engine
+            .messageCorrelation()
+            .withCorrelationKey(CORRELATION_KEY)
+            .withName(MESSAGE_NAME)
+            .withVariables(asMsgPack(variableName, "bar"))
+            .correlate();
+
+    // then
+    assertMessageIsCorrelated(record);
+  }
+
+  @Test
   public void shouldHaveCorrectCorrelatedLifecycleForStartEvent() {
     // given
     deployProcessWithMessageStartEvent();
