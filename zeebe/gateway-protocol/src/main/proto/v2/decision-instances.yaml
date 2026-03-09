@@ -377,8 +377,8 @@ components:
         - $ref: '#/components/schemas/DecisionInstanceResult'
         - type: object
           required:
-          - evaluatedInputs
-          - matchedRules
+            - evaluatedInputs
+            - matchedRules
           properties:
             evaluatedInputs:
               type: array
@@ -394,6 +394,10 @@ components:
                 The matched rules of the decision instance.
 
     EvaluatedDecisionInputItem:
+      required:
+        - inputId
+        - inputName
+        - inputValue
       type: object
       description: A decision input that was evaluated within this decision evaluation.
       properties:
@@ -404,13 +408,16 @@ components:
           type: string
           description: The name of the decision input.
         inputValue:
-          description: The description of the decision input.
+          description: The value of the decision input.
           type: string
 
     EvaluatedDecisionOutputItem:
       required:
         - ruleId
         - ruleIndex
+        - outputId
+        - outputName
+        - outputValue
       type: object
       description: The evaluated decision outputs.
       properties:
@@ -436,6 +443,8 @@ components:
     MatchedDecisionRuleItem:
       required:
         - evaluatedOutputs
+        - ruleId
+        - ruleIndex
       type: object
       description: A decision rule that matched within this decision evaluation.
       properties:
