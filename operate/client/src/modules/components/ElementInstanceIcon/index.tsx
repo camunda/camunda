@@ -193,10 +193,6 @@ const ElementInstanceIcon: React.FC<Props> = ({
       return <ElementTaskSubProcess {...svgProps} />;
   }
 
-  if (diagramBusinessObject === undefined) {
-    return <ElementTask {...svgProps} />;
-  }
-
   if (isMultiInstance(diagramBusinessObject)) {
     const multiInstanceType = getMultiInstanceType(diagramBusinessObject);
 
