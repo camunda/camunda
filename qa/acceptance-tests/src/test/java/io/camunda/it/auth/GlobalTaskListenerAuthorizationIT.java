@@ -43,6 +43,7 @@ class GlobalTaskListenerAuthorizationIT {
   private static final String ADMIN = "admin";
   private static final String CREATE_AUTHORIZED = "createAuthorized";
   private static final String READ_AUTHORIZED = "readAuthorized";
+  private static final String PARTIAL_READ_AUTHORIZED = "partialReadAuthorized";
   private static final String UPDATE_AUTHORIZED = "updateAuthorized";
   private static final String DELETE_AUTHORIZED = "deleteAuthorized";
   private static final String UNAUTHORIZED = "unauthorized";
@@ -71,6 +72,13 @@ class GlobalTaskListenerAuthorizationIT {
           READ_AUTHORIZED,
           "password",
           List.of(new Permissions(GLOBAL_LISTENER, READ_TASK_LISTENER, List.of(WILDCARD_CHAR))));
+
+  @UserDefinition
+  private static final TestUser PARTIAL_READ_AUTHORIZED_USER =
+      new TestUser(
+          PARTIAL_READ_AUTHORIZED,
+          "password",
+          List.of(new Permissions(GLOBAL_LISTENER, READ_TASK_LISTENER, List.of("listenerId"))));
 
   @UserDefinition
   private static final TestUser UPDATE_AUTHORIZED_USER =
@@ -265,6 +273,33 @@ class GlobalTaskListenerAuthorizationIT {
       @Authenticated(UNAUTHORIZED) final CamundaClient unauthorizedClient) {
     // given an existing global listener
     final var listenerId = UUID.randomUUID().toString();
+    adminClient
+        .newCreateGlobalTaskListenerRequest()
+        .id(listenerId)
+        .type("job-type")
+        .eventTypes(GlobalTaskListenerEventType.ALL)
+        .send()
+        .join();
+    waitForCreatedGlobalListener(adminClient, listenerId);
+
+    // when an unauthorized user tries to read the global listener
+    // then a 403 Forbidden error is returned
+    assertThatThrownBy(
+            () -> unauthorizedClient.newGlobalTaskListenerGetRequest(listenerId).send().join())
+        .isInstanceOf(io.camunda.client.api.command.ProblemException.class)
+        .satisfies(
+            e -> {
+              final var problemException = (io.camunda.client.api.command.ProblemException) e;
+              assertThat(problemException.code()).isEqualTo(403);
+            });
+  }
+
+  @Test
+  void shouldForbidReadOfGlobalTaskListenerWithNonWildcardAuthorization(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(PARTIAL_READ_AUTHORIZED) final CamundaClient unauthorizedClient) {
+    // given an existing global listener
+    final var listenerId = "listenerId";
     adminClient
         .newCreateGlobalTaskListenerRequest()
         .id(listenerId)
