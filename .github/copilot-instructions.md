@@ -80,23 +80,7 @@ Note: `-Dquickly` skips tests, checks, and Optimize. Add `-DskipTests=false` to 
 - Use [Awaitility](http://www.awaitility.org/) for async waiting. Never use `Thread.sleep`.
 - Use JUnit 5. Migrate JUnit 4 tests when modifying them.
 - Detailed guide: `docs/testing.md` and `docs/testing/`.
-
-Example:
-
-```java
-@Test
-void shouldRejectInvalidInput() {
-  // given
-  final var input = new ProcessInput("invalid");
-
-  // when
-  final var result = validator.validate(input);
-
-  // then
-  assertThat(result.isValid()).isFalse();
-  assertThat(result.errors()).containsExactly("Input is not valid");
-}
-```
+- Reference example: `qa/acceptance-tests/src/test/java/io/camunda/it/StandaloneCamundaTest.java`
 
 ## Commit Conventions
 
