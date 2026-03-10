@@ -136,7 +136,7 @@ public class CamundaExporter implements Exporter {
       writer = createBatchWriter();
       controller.readMetadata().ifPresent(metadata::deserialize);
       taskManager.start();
-      scheduleDelayedFlush(System.currentTimeMillis());
+      scheduleDelayedFlush(context.clock().millis());
 
       LOG.info("Exporter opened");
     } catch (final Exception e) {
@@ -309,19 +309,16 @@ public class CamundaExporter implements Exporter {
   }
 
   private void scheduleDelayedFlush(final long now) {
-    long delta = configuration.getBulk().getDelay();
+    long delayMs = configuration.getBulk().getDelay() * 1000L;
     if (lastFlushTimestamp > 0) {
-      delta =
-          Math.min(
-              configuration.getBulk().getDelay() * 1000L - (now - lastFlushTimestamp),
-              configuration.getBulk().getDelay() * 1000L);
+      delayMs = Math.max(0, delayMs - (now - lastFlushTimestamp));
     }
 
-    controller.scheduleCancellableTask(Duration.ofMillis(delta), this::flushAndReschedule);
+    controller.scheduleCancellableTask(Duration.ofMillis(delayMs), this::flushAndReschedule);
   }
 
   private void flushAndReschedule() {
-    final var now = System.currentTimeMillis();
+    final var now = context.clock().millis();
     try {
       if (now - lastFlushTimestamp >= configuration.getBulk().getDelay() * 1000L) {
         flush();
