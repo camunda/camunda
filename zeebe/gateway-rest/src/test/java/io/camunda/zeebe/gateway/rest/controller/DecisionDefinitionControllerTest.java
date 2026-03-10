@@ -11,9 +11,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
@@ -78,8 +78,6 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(decisionServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(decisionServices);
   }
 
   @Test
@@ -88,7 +86,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString()))
+    when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString(), any()))
         .thenReturn((buildResponse("tenantId")));
 
     final var request =
@@ -115,14 +113,15 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
 
     response.expectBody().json(EXPECTED_EVALUATION_RESPONSE, JsonCompareMode.STRICT);
     Mockito.verify(decisionServices)
-        .evaluateDecision("", 123456L, Map.of("key", "value"), "tenantId");
+        .evaluateDecision(
+            eq(""), eq(123456L), eq(Map.<String, Object>of("key", "value")), eq("tenantId"), any());
   }
 
   @Test
   void shouldEvaluateDecisionWithMultitenancyDisabled() {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
-    when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString()))
+    when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString(), any()))
         .thenReturn((buildResponse(TenantOwned.DEFAULT_TENANT_IDENTIFIER)));
 
     final var request =
@@ -147,7 +146,11 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
         .isOk();
     Mockito.verify(decisionServices)
         .evaluateDecision(
-            "", 123456L, Map.of("key", "value"), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+            eq(""),
+            eq(123456L),
+            eq(Map.<String, Object>of("key", "value")),
+            eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER),
+            any());
   }
 
   @Test
@@ -156,7 +159,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString()))
+    when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString(), any()))
         .thenReturn((buildResponse("tenantId")));
 
     final var request =
@@ -183,7 +186,12 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
 
     response.expectBody().json(EXPECTED_EVALUATION_RESPONSE, JsonCompareMode.STRICT);
     Mockito.verify(decisionServices)
-        .evaluateDecision("decisionId", -1L, Map.of("key", "value"), "tenantId");
+        .evaluateDecision(
+            eq("decisionId"),
+            eq(-1L),
+            eq(Map.<String, Object>of("key", "value")),
+            eq("tenantId"),
+            any());
   }
 
   @Test

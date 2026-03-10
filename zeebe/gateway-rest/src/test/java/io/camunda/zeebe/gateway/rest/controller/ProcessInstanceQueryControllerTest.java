@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -233,8 +234,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(processInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(processInstanceServices);
   }
 
   private static void assertJsonNonExtensible(final String expected, final byte[] actualBytes) {
@@ -251,7 +250,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchProcessInstancesWithEmptyBody() {
     // given
-    when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     webClient
@@ -266,13 +265,13 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .consumeWith(
             result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
 
-    verify(processInstanceServices).search(new ProcessInstanceQuery.Builder().build());
+    verify(processInstanceServices).search(eq(new ProcessInstanceQuery.Builder().build()), any());
   }
 
   @Test
   void shouldSearchProcessInstancesWithEmptyQuery() {
     // given
-    when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     final String request = "{}";
     // when / then
@@ -291,7 +290,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .consumeWith(
             result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
 
-    verify(processInstanceServices).search(new ProcessInstanceQuery.Builder().build());
+    verify(processInstanceServices).search(eq(new ProcessInstanceQuery.Builder().build()), any());
   }
 
   @Test
@@ -335,7 +334,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
   }
 
   @Test
@@ -378,13 +377,13 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
   }
 
   @Test
   void shouldSearchProcessInstancessWithSorting() {
     // given
-    when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
@@ -418,15 +417,17 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
     verify(processInstanceServices)
         .search(
-            new ProcessInstanceQuery.Builder()
-                .sort(
-                    new ProcessInstanceSort.Builder()
-                        .processDefinitionId()
-                        .desc()
-                        .processDefinitionKey()
-                        .asc()
-                        .build())
-                .build());
+            eq(
+                new ProcessInstanceQuery.Builder()
+                    .sort(
+                        new ProcessInstanceSort.Builder()
+                            .processDefinitionId()
+                            .desc()
+                            .processDefinitionKey()
+                            .asc()
+                            .build())
+                    .build()),
+            any());
   }
 
   @Test
@@ -468,7 +469,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
   }
 
   @Test
@@ -510,7 +511,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
   }
 
   @Test
@@ -551,7 +552,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
   }
 
   @Test
@@ -591,7 +592,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
   }
 
   @Test
@@ -632,14 +633,15 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
   }
 
   @Test
   public void shouldReturnProcessInstanceForValidKey() {
     // given
     final var validProcesInstanceKey = 123L;
-    when(processInstanceServices.getByKey(validProcesInstanceKey))
+    when(processInstanceServices.getByKey(
+            eq(validProcesInstanceKey), any(CamundaAuthentication.class)))
         .thenReturn(PROCESS_INSTANCE_ENTITY);
 
     // when / then
@@ -656,7 +658,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                 assertJsonNonExtensible(PROCESS_INSTANCE_ENTITY_JSON, result.getResponseBody()));
 
     // Verify that the service was called with the valid key
-    verify(processInstanceServices).getByKey(validProcesInstanceKey);
+    verify(processInstanceServices)
+        .getByKey(eq(validProcesInstanceKey), any(CamundaAuthentication.class));
   }
 
   @Test
@@ -682,7 +685,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "PI_456",
             null,
             null);
-    when(processInstanceServices.getByKey(processInstanceKey)).thenReturn(entityWithNullBusinessId);
+    when(processInstanceServices.getByKey(eq(processInstanceKey), any(CamundaAuthentication.class)))
+        .thenReturn(entityWithNullBusinessId);
 
     final var expectedJson =
         """
@@ -717,14 +721,16 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .consumeWith(result -> assertJsonNonExtensible(expectedJson, result.getResponseBody()));
 
-    verify(processInstanceServices).getByKey(processInstanceKey);
+    verify(processInstanceServices)
+        .getByKey(eq(processInstanceKey), any(CamundaAuthentication.class));
   }
 
   @Test
   public void shouldReturn404ForInvalidProcessInstaceKey() {
     // given
     final var invalidProcesInstanceKey = 100L;
-    when(processInstanceServices.getByKey(invalidProcesInstanceKey))
+    when(processInstanceServices.getByKey(
+            eq(invalidProcesInstanceKey), any(CamundaAuthentication.class)))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -754,7 +760,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // Verify that the service was called with the invalid key
-    verify(processInstanceServices).getByKey(invalidProcesInstanceKey);
+    verify(processInstanceServices)
+        .getByKey(eq(invalidProcesInstanceKey), any(CamundaAuthentication.class));
   }
 
   private static Stream<Arguments> provideAdvancedSearchParameters() {
@@ -838,7 +845,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             }"""
             .formatted(filterString);
     System.out.println("request = " + request);
-    when(processInstanceServices.search(queryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);
+    when(processInstanceServices.search(queryCaptor.capture(), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient
@@ -857,7 +865,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
 
     verify(processInstanceServices)
-        .search(new ProcessInstanceQuery.Builder().filter(filter).build());
+        .search(eq(new ProcessInstanceQuery.Builder().filter(filter).build()), any());
   }
 
   @ParameterizedTest
@@ -877,7 +885,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             .build();
 
     // when
-    when(processInstanceServices.search(queryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);
+    when(processInstanceServices.search(queryCaptor.capture(), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
     webClient
         .post()
         .uri(PROCESS_INSTANCES_SEARCH_URL)
@@ -895,7 +904,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
     // then
     verify(processInstanceServices)
-        .search(new ProcessInstanceQuery.Builder().filter(filter).build());
+        .search(eq(new ProcessInstanceQuery.Builder().filter(filter).build()), any());
   }
 
   @Test
@@ -928,7 +937,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             .tenantIdOperations(Operation.eq("tenant"));
     orFilters.forEach(expectedFilter::addOrOperation);
 
-    when(processInstanceServices.search(queryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);
+    when(processInstanceServices.search(queryCaptor.capture(), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient
@@ -947,7 +957,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
 
     verify(processInstanceServices)
-        .search(new ProcessInstanceQuery.Builder().filter(expectedFilter.build()).build());
+        .search(
+            eq(new ProcessInstanceQuery.Builder().filter(expectedFilter.build()).build()), any());
   }
 
   @Test
@@ -955,7 +966,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
     // given
     final var processInstanceKey = 123L;
 
-    when(processInstanceServices.callHierarchy(processInstanceKey))
+    when(processInstanceServices.callHierarchy(eq(processInstanceKey), any()))
         .thenReturn(List.of(PROCESS_INSTANCE_ENTITY));
 
     // when / then
@@ -970,7 +981,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_CALL_HIERARCHY, JsonCompareMode.STRICT);
 
     // Verify that the service was called with the valid key
-    verify(processInstanceServices).callHierarchy(processInstanceKey);
+    verify(processInstanceServices).callHierarchy(eq(processInstanceKey), any());
   }
 
   @Test
@@ -1101,7 +1112,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                 "filter": %s
             }"""
             .formatted(filterString);
-    when(processInstanceServices.searchIncidents(anyLong(), incidentQueryCaptor.capture()))
+    when(processInstanceServices.searchIncidents(anyLong(), incidentQueryCaptor.capture(), any()))
         .thenReturn(SEARCH_INCIDENT_QUERY_RESULT);
 
     // when / then
@@ -1123,7 +1134,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                     EXPECTED_PROCESS_INSTANCE_INCIDENTS_SEARCH_RESPONSE, result.getResponseBody()));
 
     verify(processInstanceServices)
-        .searchIncidents(123L, new IncidentQuery.Builder().filter(filter).build());
+        .searchIncidents(eq(123L), eq(new IncidentQuery.Builder().filter(filter).build()), any());
   }
 
   @Test
@@ -1162,7 +1173,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
   }
 
   @Test
@@ -1202,6 +1213,6 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
   }
 }

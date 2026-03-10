@@ -12,7 +12,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.MessageServices;
@@ -64,15 +63,13 @@ public class MessageControllerTest extends RestControllerTest {
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(messageServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(messageServices);
   }
 
   @Test
   void shouldCorrelateMessageWithMultiTenancyDisabled() {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
-    when(messageServices.correlateMessage(any()))
+    when(messageServices.correlateMessage(any(), any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new MessageCorrelationRecord()
@@ -103,7 +100,7 @@ public class MessageControllerTest extends RestControllerTest {
             .expectStatus()
             .isOk();
 
-    Mockito.verify(messageServices).correlateMessage(correlationRequestCaptor.capture());
+    Mockito.verify(messageServices).correlateMessage(correlationRequestCaptor.capture(), any());
     final var capturedRequest = correlationRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("messageName");
     assertThat(capturedRequest.correlationKey()).isEqualTo("correlationKey");
@@ -128,7 +125,7 @@ public class MessageControllerTest extends RestControllerTest {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
-    when(messageServices.correlateMessage(any()))
+    when(messageServices.correlateMessage(any(), any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new MessageCorrelationRecord()
@@ -159,7 +156,7 @@ public class MessageControllerTest extends RestControllerTest {
             .expectStatus()
             .isOk();
 
-    Mockito.verify(messageServices).correlateMessage(correlationRequestCaptor.capture());
+    Mockito.verify(messageServices).correlateMessage(correlationRequestCaptor.capture(), any());
     final var capturedRequest = correlationRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("messageName");
     assertThat(capturedRequest.correlationKey()).isEqualTo("correlationKey");
@@ -403,7 +400,7 @@ public class MessageControllerTest extends RestControllerTest {
   @Test
   void shouldPublishMessage() {
     // given
-    when(messageServices.publishMessage(any())).thenReturn(buildPublishResponse());
+    when(messageServices.publishMessage(any(), any())).thenReturn(buildPublishResponse());
 
     final var request =
         """
@@ -431,7 +428,7 @@ public class MessageControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_PUBLICATION_RESPONSE, JsonCompareMode.STRICT);
 
-    Mockito.verify(messageServices).publishMessage(publicationRequestCaptor.capture());
+    Mockito.verify(messageServices).publishMessage(publicationRequestCaptor.capture(), any());
     final var capturedRequest = publicationRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("messageName");
     assertThat(capturedRequest.correlationKey()).isEqualTo("correlationKey");
@@ -444,7 +441,7 @@ public class MessageControllerTest extends RestControllerTest {
   @Test
   void shouldPublishMessageWithoutCorrelationKey() {
     // given
-    when(messageServices.publishMessage(any())).thenReturn(buildPublishResponse());
+    when(messageServices.publishMessage(any(), any())).thenReturn(buildPublishResponse());
 
     final var request =
         """
@@ -471,7 +468,7 @@ public class MessageControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_PUBLICATION_RESPONSE, JsonCompareMode.STRICT);
 
-    Mockito.verify(messageServices).publishMessage(publicationRequestCaptor.capture());
+    Mockito.verify(messageServices).publishMessage(publicationRequestCaptor.capture(), any());
     final var capturedRequest = publicationRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("messageName");
     assertThat(capturedRequest.correlationKey()).isEqualTo("");
@@ -484,7 +481,7 @@ public class MessageControllerTest extends RestControllerTest {
   @Test
   void shouldPublishMessageWithoutTimeToLive() {
     // given
-    when(messageServices.publishMessage(any())).thenReturn(buildPublishResponse());
+    when(messageServices.publishMessage(any(), any())).thenReturn(buildPublishResponse());
 
     final var request =
         """
@@ -510,7 +507,7 @@ public class MessageControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_PUBLICATION_RESPONSE, JsonCompareMode.STRICT);
 
-    Mockito.verify(messageServices).publishMessage(publicationRequestCaptor.capture());
+    Mockito.verify(messageServices).publishMessage(publicationRequestCaptor.capture(), any());
     final var capturedRequest = publicationRequestCaptor.getValue();
     assertThat(capturedRequest.name()).isEqualTo("messageName");
     assertThat(capturedRequest.correlationKey()).isEqualTo("");
@@ -523,7 +520,7 @@ public class MessageControllerTest extends RestControllerTest {
   @Test
   void shouldRejectPublishMessageWithoutName() {
     // given
-    when(messageServices.publishMessage(any())).thenReturn(buildPublishResponse());
+    when(messageServices.publishMessage(any(), any())).thenReturn(buildPublishResponse());
 
     final var request =
         """
