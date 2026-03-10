@@ -73,7 +73,10 @@ The changes should look similar to this:
 global:
   image:
     tag: SNAPSHOT-2024-01-15-abcd1234
-orchestration:
+zeebe:
+  image:
+    tag: SNAPSHOT-2024-01-15-abcd1234
+zeebeGateway:
   image:
     tag: SNAPSHOT-2024-01-15-abcd1234
 ```
