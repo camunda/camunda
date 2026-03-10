@@ -27,7 +27,6 @@ class ReportMetricsTest {
     final SingleProcessReportDefinitionRequestDto report =
         new SingleProcessReportDefinitionRequestDto();
     report.setId("report-123");
-    report.setName("My Process Report");
 
     // when
     final Tags tags = ReportMetrics.buildTags(report, "success");

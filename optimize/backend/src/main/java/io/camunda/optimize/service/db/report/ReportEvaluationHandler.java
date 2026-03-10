@@ -7,10 +7,12 @@
  */
 package io.camunda.optimize.service.db.report;
 
+import static io.camunda.optimize.MetricEnum.REPORT_LATENCY_METRIC;
 import static io.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static io.camunda.optimize.service.util.ExceptionUtil.isTooManyBucketsException;
 import static java.util.stream.Collectors.mapping;
 
+import io.camunda.optimize.ReportMetrics;
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.TenantDto;
@@ -86,24 +88,31 @@ public abstract class ReportEvaluationHandler {
 
   public AuthorizedReportEvaluationResult evaluateReport(
       final ReportEvaluationInfo evaluationInfo) {
-    evaluationInfo.postFetchSavedReport(reportService);
-    updateAndSetLatestReportDefinitionXml(evaluationInfo);
-    setDataSourcesForSystemGeneratedReports(evaluationInfo);
-    final RoleType currentUserRole =
-        getAuthorizedRole(evaluationInfo.getUserId(), evaluationInfo.getReport())
-            .orElseThrow(
-                () ->
-                    new ForbiddenException(
-                        String.format(
-                            "User [%s] is not authorized to evaluate report [%s].",
-                            evaluationInfo.getUserId(), evaluationInfo.getReport().getName())));
-    final ReportEvaluationResult result;
-    if (evaluationInfo.getReport().isCombined()) {
-      result = evaluateCombinedReport(evaluationInfo, currentUserRole);
-    } else {
-      result = evaluateSingleReportWithErrorCheck(evaluationInfo, currentUserRole);
-    }
-    return new AuthorizedReportEvaluationResult(result, currentUserRole);
+    return ReportMetrics.recordLatency(
+        REPORT_LATENCY_METRIC,
+        evaluationInfo::getReport,
+        () -> {
+          evaluationInfo.postFetchSavedReport(reportService);
+          updateAndSetLatestReportDefinitionXml(evaluationInfo);
+          setDataSourcesForSystemGeneratedReports(evaluationInfo);
+          final RoleType currentUserRole =
+              getAuthorizedRole(evaluationInfo.getUserId(), evaluationInfo.getReport())
+                  .orElseThrow(
+                      () ->
+                          new ForbiddenException(
+                              String.format(
+                                  "User [%s] is not authorized to evaluate report [%s].",
+                                  evaluationInfo.getUserId(),
+                                  evaluationInfo.getReport().getName())));
+          final ReportEvaluationResult result;
+          if (evaluationInfo.getReport().isCombined()) {
+            result = evaluateCombinedReport(evaluationInfo, currentUserRole);
+          } else {
+            result = evaluateSingleReportWithErrorCheck(evaluationInfo, currentUserRole);
+          }
+
+          return new AuthorizedReportEvaluationResult(result, currentUserRole);
+        });
   }
 
   private void updateAndSetLatestReportDefinitionXml(
