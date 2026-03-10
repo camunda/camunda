@@ -328,6 +328,7 @@ const CollapsibleOperationTrigger: React.FC<
         kind={isDanger ? 'danger--ghost' : 'ghost'}
         renderIcon={icon}
         title={title}
+        aria-label={title}
         size="sm"
         onClick={onClick}
         disabled={rest.status === 'pending'}
