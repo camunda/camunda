@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
-import io.camunda.zeebe.engine.processing.deployment.transform.BpmnValidatorConfig;
+import io.camunda.zeebe.engine.processing.deployment.transform.ValidationConfig;
 import io.camunda.zeebe.model.bpmn.instance.CallableElement;
 import io.camunda.zeebe.model.bpmn.instance.Category;
 import io.camunda.zeebe.model.bpmn.instance.Collaboration;
@@ -45,8 +45,7 @@ import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 
 public final class ZeebeConfigurationValidators {
 
-  public static Collection<ModelElementValidator<?>> getValidators(
-      final BpmnValidatorConfig config) {
+  public static Collection<ModelElementValidator<?>> getValidators(final ValidationConfig config) {
     return List.of(
         new IdLengthValidator(config.maxIdFieldLength()),
         new NameLengthValidator<>(CallableElement.class, config.maxNameFieldLength()),
