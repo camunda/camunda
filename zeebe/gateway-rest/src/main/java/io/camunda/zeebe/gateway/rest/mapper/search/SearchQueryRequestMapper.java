@@ -592,6 +592,13 @@ public final class SearchQueryRequestMapper {
       return Either.right(null);
     }
 
+    final List<String> violations = new ArrayList<>();
+    validatePageAttributes(requestedPage, violations);
+
+    if (!violations.isEmpty()) {
+      return Either.left(violations);
+    }
+
     if (requestedPage.getAfter() != null && requestedPage.getBefore() != null) {
       return Either.left(List.of(ERROR_SEARCH_BEFORE_AND_AFTER));
     }
@@ -607,6 +614,23 @@ public final class SearchQueryRequestMapper {
                     .from(requestedPage.getFrom())
                     .after(requestedPage.getAfter())
                     .before(requestedPage.getBefore())));
+  }
+
+  private static void validatePageAttributes(
+      final SearchQueryPageRequest requestedPage, final List<String> violations) {
+    final Integer limit = requestedPage.getLimit();
+    if (limit != null && limit < 0) {
+      violations.add(
+          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+              "page.limit", limit, "a non-negative number"));
+    }
+
+    final Integer from = requestedPage.getFrom();
+    if (from != null && from < 0) {
+      violations.add(
+          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+              "page.from", from, "a non-negative number"));
+    }
   }
 
   private static <

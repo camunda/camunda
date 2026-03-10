@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -523,5 +524,44 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
     verify(processDefinitionServices)
         .search(new ProcessDefinitionQuery.Builder().filter(filter).build());
+  }
+
+  @Test
+  void shouldInvalidateProcessDefinitionSearchQueryWithNegativeLimit() {
+    // given
+    final var request =
+        """
+            {
+                "page": {
+                    "limit": -1
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "The value for page.limit is '-1' but must be a non-negative number.",
+                  "instance": "%s"
+                }""",
+            PROCESS_DEFINITION_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(processDefinitionServices, never()).search(any(ProcessDefinitionQuery.class));
   }
 }
