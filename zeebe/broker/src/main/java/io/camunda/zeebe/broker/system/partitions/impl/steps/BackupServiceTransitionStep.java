@@ -14,6 +14,7 @@ import io.camunda.zeebe.backup.management.NoopBackupManager;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 
@@ -114,7 +115,7 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
     final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
     context
         .getActorSchedulingService()
-        .submitActor(backupManager)
+        .submitActor(backupManager, SchedulingHints.ioBound())
         .onComplete(
             (ignore, error) -> {
               if (error == null) {
