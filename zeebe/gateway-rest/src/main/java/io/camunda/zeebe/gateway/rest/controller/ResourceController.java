@@ -85,28 +85,23 @@ public class ResourceController {
 
   private CompletableFuture<ResponseEntity<Object>> deployResources(
       final DeployResourcesRequest request) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () ->
-            resourceServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .deployResources(request),
+        () -> resourceServices.deployResources(request, authentication),
         ResponseMapper::toDeployResourceResponse,
         HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> delete(final ResourceDeletionRequest request) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () ->
-            resourceServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .deleteResource(request),
+        () -> resourceServices.deleteResource(request, authentication),
         ResponseMapper::toDeleteResourceResponse,
         HttpStatus.OK);
   }
 
   private CompletableFuture<ResourceRecord> fetchResource(final long resourceKey) {
-    return resourceServices
-        .withAuthentication(authenticationProvider.getCamundaAuthentication())
-        .fetchResource(new ResourceFetchRequest(resourceKey));
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return resourceServices.fetchResource(new ResourceFetchRequest(resourceKey), authentication);
   }
 }

@@ -88,11 +88,9 @@ public class GlobalTaskListenerController {
 
   private CompletableFuture<ResponseEntity<Object>> createGlobalListener(
       final GlobalListenerRecord request) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () ->
-            globalListenerServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .createGlobalListener(request),
+        () -> globalListenerServices.createGlobalListener(request, authentication),
         globalListenerMapper::toGlobalListenerResponse,
         HttpStatus.CREATED);
   }
@@ -107,12 +105,11 @@ public class GlobalTaskListenerController {
 
   private ResponseEntity<Object> getGlobalListener(final GlobalListenerRecord request) {
     try {
+      final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toGlobalTaskListenerResult(
-                  globalListenerServices
-                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                      .getGlobalTaskListener(request)));
+                  globalListenerServices.getGlobalTaskListener(request, authentication)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -120,30 +117,24 @@ public class GlobalTaskListenerController {
 
   private CompletableFuture<ResponseEntity<Object>> updateGlobalListener(
       final GlobalListenerRecord request) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () ->
-            globalListenerServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .updateGlobalListener(request),
+        () -> globalListenerServices.updateGlobalListener(request, authentication),
         globalListenerMapper::toGlobalListenerResponse,
         HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> deleteGlobalListener(
       final GlobalListenerRecord request) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () ->
-            globalListenerServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .deleteGlobalListener(request));
+        () -> globalListenerServices.deleteGlobalListener(request, authentication));
   }
 
   private ResponseEntity<Object> search(final GlobalListenerQuery query) {
     try {
-      final var result =
-          globalListenerServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
+      final var authentication = authenticationProvider.getCamundaAuthentication();
+      final var result = globalListenerServices.search(query, authentication);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toGlobalTaskListenerSearchQueryResponse(result));
     } catch (final Exception e) {
