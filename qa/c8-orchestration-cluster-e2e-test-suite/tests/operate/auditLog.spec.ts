@@ -17,20 +17,18 @@ type ProcessInstance = {
   processInstanceKey: string;
 };
 
-let initialData: {
+let process: {
   instance: ProcessInstance;
 };
 
 test.beforeAll(async ({request}) => {
-  test.setTimeout(180000);
-
   await deploy(['./resources/orderProcess_v_1.bpmn']);
 
   const instance = await createSingleInstance('orderProcess', 1, {
     paid: false,
   });
 
-  initialData = {
+  process = {
     instance: {processInstanceKey: instance.processInstanceKey},
   };
 
@@ -90,7 +88,7 @@ test.describe('Audit Log (Operations Log)', () => {
     page,
     operateOperationsLogPage,
   }) => {
-    const {processInstanceKey} = initialData.instance;
+    const {processInstanceKey} = process.instance;
 
     await operateOperationsLogPage.gotoOperationsLogPage({
       searchParams: {processInstanceKey},
