@@ -915,6 +915,7 @@ components:
         - variables
         - processInstanceKey
         - tags
+        - businessId
       type: object
       properties:
         processDefinitionId:
@@ -1336,6 +1337,12 @@ components:
       type: object
       required:
         - rootProcessInstanceKey
+        - elementId
+        - processDefinitionId
+        - processDefinitionKey
+        - processInstanceKey
+        - sequenceFlowId
+        - tenantId
       properties:
         sequenceFlowId:
           type: string
