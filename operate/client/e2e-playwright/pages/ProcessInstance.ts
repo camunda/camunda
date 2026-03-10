@@ -29,6 +29,9 @@ export class ProcessInstance {
   readonly executionCountToggle: Locator;
   readonly endDateToggle: Locator;
   readonly listenersTabButton: Locator;
+  readonly operationsLogTabButton: Locator;
+  readonly operationsLogTable: Locator;
+  readonly operationsLogTableSpinner: Locator;
   readonly metadataModal: Locator;
   readonly modifyInstanceButton: Locator;
   readonly listenerTypeFilter: Locator;
@@ -57,6 +60,13 @@ export class ProcessInstance {
       this.instanceHistory.getByLabel(/^execution count$/i);
     this.endDateToggle = this.instanceHistory.getByLabel(/^end date$/i);
     this.listenersTabButton = page.getByTestId('listeners-tab-button');
+    this.operationsLogTabButton = page.getByRole('tab', {
+      name: /^Operations Log$/i,
+    });
+    this.operationsLogTable = page
+      .getByTestId('data-table-container')
+      .getByRole('table');
+    this.operationsLogTableSpinner = page.getByTestId('data-table-loader');
     this.metadataModal = this.page.getByRole('dialog', {name: /metadata/i});
     this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
     this.listenerTypeFilter = page.getByTestId('listener-type-filter');
@@ -107,6 +117,17 @@ export class ProcessInstance {
     options?: Parameters<Page['goto']>[1];
   }) {
     await this.page.goto(`/operate/processes/${key}`, options);
+  }
+
+  async gotoProcessInstanceOperationsLogPage({
+    key,
+    options,
+  }: {
+    key: string;
+    options?: Parameters<Page['goto']>[1];
+  }) {
+    await this.gotoProcessInstancePage({key, options});
+    await this.operationsLogTabButton.click();
   }
 
   async getNthTreeNodeTestId(n: number) {

@@ -15,6 +15,7 @@ import type {
   ProcessInstance,
   QueryProcessInstanceIncidentsResponseBody,
   QueryElementInstancesResponseBody,
+  QueryAuditLogsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.9';
 
 type InstanceMock = {
@@ -37,6 +38,7 @@ function mockResponses({
   variables,
   xml,
   incidents,
+  auditLogs,
 }: {
   processInstanceDetail?: ProcessInstance;
   callHierarchy?: GetProcessInstanceCallHierarchyResponseBody;
@@ -46,6 +48,7 @@ function mockResponses({
   variables?: Variable[];
   xml?: string;
   incidents?: QueryProcessInstanceIncidentsResponseBody;
+  auditLogs?: QueryAuditLogsResponseBody;
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/v2/authentication/me')) {
@@ -232,6 +235,16 @@ function mockResponses({
           operationsTotalCount: 1,
           operationsFinishedCount: 0,
         }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('/v2/audit-logs/search')) {
+      return route.fulfill({
+        status: auditLogs === undefined ? 400 : 200,
+        body: JSON.stringify(auditLogs),
         headers: {
           'content-type': 'application/json',
         },
