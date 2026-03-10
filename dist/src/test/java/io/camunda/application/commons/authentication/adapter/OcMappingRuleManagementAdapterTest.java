@@ -15,16 +15,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.auth.domain.model.CamundaAuthentication;
-import io.camunda.auth.domain.model.search.MappingRuleFilter;
-import io.camunda.auth.domain.model.search.SearchPage;
-import io.camunda.auth.domain.model.search.SearchQuery;
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.search.entities.MappingRuleEntity;
-import io.camunda.search.query.MappingRuleQuery;
-import io.camunda.search.query.SearchQueryResult;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -89,20 +83,6 @@ class OcMappingRuleManagementAdapterTest {
     adapter.delete("mr-1");
 
     verify(authenticatedServices).deleteMappingRule("mr-1");
-  }
-
-  @Test
-  void searchDelegatesToMappingRuleServicesSearch() {
-    final var entity = new MappingRuleEntity("mr-1", 1L, "groups", "admin", "Admin");
-    final var queryResult = new SearchQueryResult<>(1L, false, List.of(entity), null, null);
-    when(authenticatedServices.search(any(MappingRuleQuery.class))).thenReturn(queryResult);
-
-    final var filter = new MappingRuleFilter("mr-1", "groups", "admin", null);
-    final var query = new SearchQuery<>(filter, null, new SearchPage(0, 10));
-    final var result = adapter.search(query);
-
-    assertThat(result.total()).isEqualTo(1L);
-    assertThat(result.items().get(0).mappingRuleId()).isEqualTo("mr-1");
   }
 
   @Test

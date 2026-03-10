@@ -16,16 +16,10 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.auth.domain.model.AuthUser;
 import io.camunda.auth.domain.model.CamundaAuthentication;
-import io.camunda.auth.domain.model.search.SearchPage;
-import io.camunda.auth.domain.model.search.SearchQuery;
-import io.camunda.auth.domain.model.search.UserFilter;
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.search.entities.UserEntity;
-import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.query.UserQuery;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -194,72 +188,6 @@ class OcUserManagementAdapterTest {
       assertThatThrownBy(() -> adapter.delete("alice"))
           .isInstanceOf(IllegalStateException.class)
           .hasMessage("not found");
-    }
-  }
-
-  @Nested
-  class Search {
-
-    @Test
-    void delegatesToUserServicesSearchAndMapsResults() {
-      final var entity1 = new UserEntity(1L, "alice", "Alice", "alice@example.com", null);
-      final var entity2 = new UserEntity(2L, "bob", "Bob", "bob@example.com", null);
-      final var queryResult =
-          new SearchQueryResult<>(2L, false, List.of(entity1, entity2), null, null);
-      when(authenticatedServices.search(any(UserQuery.class))).thenReturn(queryResult);
-
-      final var filter = new UserFilter("alice", null, null);
-      final var page = new SearchPage(0, 10);
-      final var query = new SearchQuery<>(filter, null, page);
-
-      final var result = adapter.search(query);
-
-      assertThat(result.total()).isEqualTo(2L);
-      assertThat(result.items()).hasSize(2);
-      assertThat(result.items().get(0).username()).isEqualTo("alice");
-      assertThat(result.items().get(1).username()).isEqualTo("bob");
-    }
-
-    @Test
-    void handlesNullFilter() {
-      final var queryResult = new SearchQueryResult<UserEntity>(0L, false, List.of(), null, null);
-      when(authenticatedServices.search(any(UserQuery.class))).thenReturn(queryResult);
-
-      final var query = new SearchQuery<UserFilter>(null, null, new SearchPage(0, 20));
-
-      final var result = adapter.search(query);
-
-      assertThat(result.total()).isEqualTo(0L);
-      assertThat(result.items()).isEmpty();
-    }
-
-    @Test
-    void mapsAllFilterFields() {
-      final var queryResult = new SearchQueryResult<UserEntity>(0L, false, List.of(), null, null);
-      when(authenticatedServices.search(any(UserQuery.class))).thenReturn(queryResult);
-
-      final var filter = new UserFilter("alice", "Alice", "alice@example.com");
-      final var query = new SearchQuery<>(filter, null, new SearchPage(5, 25));
-
-      adapter.search(query);
-
-      final var captor = ArgumentCaptor.forClass(UserQuery.class);
-      verify(authenticatedServices).search(captor.capture());
-      // The query was constructed and passed through to the services
-      assertThat(captor.getValue()).isNotNull();
-    }
-
-    @Test
-    void passwordAlwaysNullInMappedResults() {
-      final var entity = new UserEntity(1L, "alice", "Alice", "alice@example.com", "hashed");
-      final var queryResult = new SearchQueryResult<>(1L, false, List.of(entity), null, null);
-      when(authenticatedServices.search(any(UserQuery.class))).thenReturn(queryResult);
-
-      final var query = new SearchQuery<UserFilter>(null, null, new SearchPage());
-
-      final var result = adapter.search(query);
-
-      assertThat(result.items().get(0).password()).isNull();
     }
   }
 }

@@ -16,9 +16,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.auth.domain.model.AuthorizationRecord;
 import io.camunda.auth.domain.model.CamundaAuthentication;
-import io.camunda.auth.domain.model.search.AuthorizationFilter;
-import io.camunda.auth.domain.model.search.SearchPage;
-import io.camunda.auth.domain.model.search.SearchQuery;
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
@@ -118,22 +115,6 @@ class OcAuthorizationManagementAdapterTest {
     adapter.delete(100L);
 
     verify(authenticatedServices).deleteAuthorization(100L);
-  }
-
-  @Test
-  void searchDelegatesToAuthorizationServicesSearch() {
-    final var entity =
-        new AuthorizationEntity(
-            1L, "alice", "USER", "RESOURCE", (short) 1, "r-1", null, Set.of(PermissionType.READ));
-    final var queryResult = new SearchQueryResult<>(1L, false, List.of(entity), null, null);
-    when(authenticatedServices.search(any(AuthorizationQuery.class))).thenReturn(queryResult);
-
-    final var filter = new AuthorizationFilter("alice", "USER", null);
-    final var query = new SearchQuery<>(filter, null, new SearchPage(0, 10));
-    final var result = adapter.search(query);
-
-    assertThat(result.total()).isEqualTo(1L);
-    assertThat(result.items().get(0).ownerId()).isEqualTo("alice");
   }
 
   @Test

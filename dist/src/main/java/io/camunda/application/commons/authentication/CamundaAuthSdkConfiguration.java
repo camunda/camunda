@@ -10,7 +10,6 @@ package io.camunda.application.commons.authentication;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.auth.domain.spi.MembershipResolver;
-import io.camunda.auth.domain.spi.TenantInfoProvider;
 import io.camunda.auth.domain.spi.UserProfileProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
@@ -57,10 +56,5 @@ public class CamundaAuthSdkConfiguration {
   @Bean
   public UserProfileProvider camundaUserProfileProvider(final UserServices userServices) {
     return new CamundaUserProfileProvider(userServices);
-  }
-
-  @Bean
-  public TenantInfoProvider camundaTenantInfoProvider(final TenantServices tenantServices) {
-    return new CamundaTenantInfoProvider(tenantServices);
   }
 }

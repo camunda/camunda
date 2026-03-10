@@ -16,22 +16,12 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.auth.domain.model.MemberType;
-import io.camunda.auth.domain.model.search.SearchPage;
-import io.camunda.auth.domain.model.search.SearchQuery;
-import io.camunda.auth.domain.model.search.TenantFilter;
-import io.camunda.auth.domain.model.search.UserFilter;
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.search.entities.TenantMemberEntity;
-import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.query.TenantMemberQuery;
-import io.camunda.search.query.TenantQuery;
-import io.camunda.service.MappingRuleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.TenantServices.TenantRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +31,6 @@ class OcTenantManagementAdapterTest {
 
   private final TenantServices tenantServices = mock(TenantServices.class);
   private final TenantServices authenticatedTenantServices = mock(TenantServices.class);
-  private final MappingRuleServices mappingRuleServices = mock(MappingRuleServices.class);
   private final CamundaAuthenticationProvider authProvider =
       mock(CamundaAuthenticationProvider.class);
   private final CamundaAuthentication authentication = CamundaAuthentication.none();
@@ -52,7 +41,7 @@ class OcTenantManagementAdapterTest {
   void setUp() {
     when(authProvider.getCamundaAuthentication()).thenReturn(authentication);
     when(tenantServices.withAuthentication(authentication)).thenReturn(authenticatedTenantServices);
-    adapter = new OcTenantManagementAdapter(tenantServices, mappingRuleServices, authProvider);
+    adapter = new OcTenantManagementAdapter(tenantServices, authProvider);
   }
 
   @Test
@@ -106,34 +95,6 @@ class OcTenantManagementAdapterTest {
     assertThat(captor.getValue().tenantId()).isEqualTo("t-1");
     assertThat(captor.getValue().entityId()).isEqualTo("alice");
     assertThat(captor.getValue().entityType()).isEqualTo(EntityType.USER);
-  }
-
-  @Test
-  void searchDelegatesToTenantServicesSearch() {
-    final var entity = new TenantEntity(1L, "t-1", "T1", "desc");
-    final var queryResult = new SearchQueryResult<>(1L, false, List.of(entity), null, null);
-    when(authenticatedTenantServices.search(any(TenantQuery.class))).thenReturn(queryResult);
-
-    final var filter = new TenantFilter("t-1", null);
-    final var query = new SearchQuery<>(filter, null, new SearchPage(0, 10));
-    final var result = adapter.search(query);
-
-    assertThat(result.total()).isEqualTo(1L);
-    assertThat(result.items().get(0).tenantId()).isEqualTo("t-1");
-  }
-
-  @Test
-  void searchUserMembersDelegatesToTenantServicesSearchMembers() {
-    final var member = new TenantMemberEntity("t-1", "alice", EntityType.USER);
-    final var queryResult = new SearchQueryResult<>(1L, false, List.of(member), null, null);
-    when(authenticatedTenantServices.searchMembers(any(TenantMemberQuery.class)))
-        .thenReturn(queryResult);
-
-    final var query = new SearchQuery<UserFilter>(null, null, new SearchPage(0, 10));
-    final var result = adapter.searchUserMembers("t-1", query);
-
-    assertThat(result.total()).isEqualTo(1L);
-    assertThat(result.items().get(0).username()).isEqualTo("alice");
   }
 
   @Test

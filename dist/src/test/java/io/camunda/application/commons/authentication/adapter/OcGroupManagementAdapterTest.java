@@ -16,22 +16,12 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.auth.domain.model.MemberType;
-import io.camunda.auth.domain.model.search.GroupFilter;
-import io.camunda.auth.domain.model.search.SearchPage;
-import io.camunda.auth.domain.model.search.SearchQuery;
-import io.camunda.auth.domain.model.search.UserFilter;
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.search.entities.GroupEntity;
-import io.camunda.search.entities.GroupMemberEntity;
-import io.camunda.search.query.GroupMemberQuery;
-import io.camunda.search.query.GroupQuery;
-import io.camunda.search.query.SearchQueryResult;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
-import io.camunda.service.MappingRuleServices;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +31,6 @@ class OcGroupManagementAdapterTest {
 
   private final GroupServices groupServices = mock(GroupServices.class);
   private final GroupServices authenticatedGroupServices = mock(GroupServices.class);
-  private final MappingRuleServices mappingRuleServices = mock(MappingRuleServices.class);
   private final CamundaAuthenticationProvider authProvider =
       mock(CamundaAuthenticationProvider.class);
   private final CamundaAuthentication authentication = CamundaAuthentication.none();
@@ -52,7 +41,7 @@ class OcGroupManagementAdapterTest {
   void setUp() {
     when(authProvider.getCamundaAuthentication()).thenReturn(authentication);
     when(groupServices.withAuthentication(authentication)).thenReturn(authenticatedGroupServices);
-    adapter = new OcGroupManagementAdapter(groupServices, mappingRuleServices, authProvider);
+    adapter = new OcGroupManagementAdapter(groupServices, authProvider);
   }
 
   @Test
@@ -105,34 +94,6 @@ class OcGroupManagementAdapterTest {
     assertThat(captor.getValue().groupId()).isEqualTo("dev-team");
     assertThat(captor.getValue().memberId()).isEqualTo("alice");
     assertThat(captor.getValue().memberType()).isEqualTo(EntityType.USER);
-  }
-
-  @Test
-  void searchDelegatesToGroupServicesSearch() {
-    final var entity = new GroupEntity(1L, "dev", "Dev", "desc");
-    final var queryResult = new SearchQueryResult<>(1L, false, List.of(entity), null, null);
-    when(authenticatedGroupServices.search(any(GroupQuery.class))).thenReturn(queryResult);
-
-    final var filter = new GroupFilter("dev", null);
-    final var query = new SearchQuery<>(filter, null, new SearchPage(0, 10));
-    final var result = adapter.search(query);
-
-    assertThat(result.total()).isEqualTo(1L);
-    assertThat(result.items().get(0).groupId()).isEqualTo("dev");
-  }
-
-  @Test
-  void searchUserMembersDelegatesToGroupServicesSearchMembers() {
-    final var member = new GroupMemberEntity("bob", EntityType.USER);
-    final var queryResult = new SearchQueryResult<>(1L, false, List.of(member), null, null);
-    when(authenticatedGroupServices.searchMembers(any(GroupMemberQuery.class)))
-        .thenReturn(queryResult);
-
-    final var query = new SearchQuery<UserFilter>(null, null, new SearchPage(0, 10));
-    final var result = adapter.searchUserMembers("dev-team", query);
-
-    assertThat(result.total()).isEqualTo(1L);
-    assertThat(result.items().get(0).username()).isEqualTo("bob");
   }
 
   @Test

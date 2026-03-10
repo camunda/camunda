@@ -59,27 +59,21 @@ public class CamundaAuthPortAdapterConfiguration {
 
   @Bean
   RoleManagementPort ocRoleManagementPort(
-      final RoleServices roleServices,
-      final MappingRuleServices mappingRuleServices,
-      final CamundaAuthenticationProvider authProvider) {
-    return new OcRoleManagementAdapter(roleServices, mappingRuleServices, authProvider);
+      final RoleServices roleServices, final CamundaAuthenticationProvider authProvider) {
+    return new OcRoleManagementAdapter(roleServices, authProvider);
   }
 
   @Bean
   @ConditionalOnCamundaGroupsEnabled
   GroupManagementPort ocGroupManagementPort(
-      final GroupServices groupServices,
-      final MappingRuleServices mappingRuleServices,
-      final CamundaAuthenticationProvider authProvider) {
-    return new OcGroupManagementAdapter(groupServices, mappingRuleServices, authProvider);
+      final GroupServices groupServices, final CamundaAuthenticationProvider authProvider) {
+    return new OcGroupManagementAdapter(groupServices, authProvider);
   }
 
   @Bean
   TenantManagementPort ocTenantManagementPort(
-      final TenantServices tenantServices,
-      final MappingRuleServices mappingRuleServices,
-      final CamundaAuthenticationProvider authProvider) {
-    return new OcTenantManagementAdapter(tenantServices, mappingRuleServices, authProvider);
+      final TenantServices tenantServices, final CamundaAuthenticationProvider authProvider) {
+    return new OcTenantManagementAdapter(tenantServices, authProvider);
   }
 
   @Bean

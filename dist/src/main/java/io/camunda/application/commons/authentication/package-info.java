@@ -34,8 +34,6 @@
  *       &mdash; checks component-level authorization via {@code ResourceAccessProvider}.
  *   <li>{@link io.camunda.application.commons.authentication.CamundaUserProfileProvider} &mdash;
  *       looks up user display name and email via {@code UserServices}.
- *   <li>{@link io.camunda.application.commons.authentication.CamundaTenantInfoProvider} &mdash;
- *       looks up tenant display names via {@code TenantServices}.
  * </ul>
  *
  * <p>These beans are registered by {@link

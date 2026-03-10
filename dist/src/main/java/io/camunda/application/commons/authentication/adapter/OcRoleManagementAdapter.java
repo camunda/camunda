@@ -7,27 +7,12 @@
  */
 package io.camunda.application.commons.authentication.adapter;
 
-import io.camunda.auth.domain.model.AuthGroup;
-import io.camunda.auth.domain.model.AuthMappingRule;
 import io.camunda.auth.domain.model.AuthRole;
-import io.camunda.auth.domain.model.AuthUser;
 import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.auth.domain.model.MemberType;
-import io.camunda.auth.domain.model.search.GroupFilter;
-import io.camunda.auth.domain.model.search.MappingRuleFilter;
-import io.camunda.auth.domain.model.search.RoleFilter;
-import io.camunda.auth.domain.model.search.SearchQuery;
-import io.camunda.auth.domain.model.search.SearchResult;
-import io.camunda.auth.domain.model.search.UserFilter;
 import io.camunda.auth.domain.port.inbound.RoleManagementPort;
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
-import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
-import io.camunda.search.entities.RoleMemberEntity;
-import io.camunda.search.query.MappingRuleQuery;
-import io.camunda.search.query.RoleMemberQuery;
-import io.camunda.search.query.RoleQuery;
-import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
@@ -35,23 +20,15 @@ import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletionException;
 
-/**
- * Bridges the auth library's {@link RoleManagementPort} to the monorepo's {@link RoleServices}.
- * Member search for mapping rules delegates to {@link MappingRuleServices} because mapping rule
- * members are stored as full entities with claim metadata.
- */
+/** Bridges the auth library's {@link RoleManagementPort} to the monorepo's {@link RoleServices}. */
 public class OcRoleManagementAdapter implements RoleManagementPort {
 
   private final RoleServices roleServices;
-  private final MappingRuleServices mappingRuleServices;
   private final CamundaAuthenticationProvider authProvider;
 
   public OcRoleManagementAdapter(
-      final RoleServices roleServices,
-      final MappingRuleServices mappingRuleServices,
-      final CamundaAuthenticationProvider authProvider) {
+      final RoleServices roleServices, final CamundaAuthenticationProvider authProvider) {
     this.roleServices = roleServices;
-    this.mappingRuleServices = mappingRuleServices;
     this.authProvider = authProvider;
   }
 
@@ -121,92 +98,6 @@ public class OcRoleManagementAdapter implements RoleManagementPort {
     }
   }
 
-  @Override
-  public SearchResult<AuthRole> search(final SearchQuery<RoleFilter> query) {
-    final var filter = query.filter();
-    final var page = query.page();
-
-    final var ocQuery =
-        RoleQuery.of(
-            q -> {
-              q.filter(
-                  f -> {
-                    if (filter != null) {
-                      if (filter.roleId() != null) {
-                        f.roleId(filter.roleId());
-                      }
-                      if (filter.name() != null) {
-                        f.name(filter.name());
-                      }
-                    }
-                    return f;
-                  });
-              q.page(p -> p.from(page.from()).size(page.size()));
-              return q;
-            });
-
-    final var result = roleServices.withAuthentication(auth()).search(ocQuery);
-    final var items = result.items().stream().map(OcRoleManagementAdapter::toAuthRole).toList();
-    return new SearchResult<>(items, result.total());
-  }
-
-  @Override
-  public SearchResult<AuthUser> searchUserMembers(
-      final String roleId, final SearchQuery<UserFilter> query) {
-    return searchMembersByType(roleId, EntityType.USER, query.page())
-        .mapItems(m -> new AuthUser(0L, m.id(), null, null, null));
-  }
-
-  @Override
-  public SearchResult<AuthGroup> searchGroupMembers(
-      final String roleId, final SearchQuery<GroupFilter> query) {
-    return searchMembersByType(roleId, EntityType.GROUP, query.page())
-        .mapItems(m -> new AuthGroup(0L, m.id(), null, null));
-  }
-
-  @Override
-  public SearchResult<AuthUser> searchClientMembers(
-      final String roleId, final SearchQuery<UserFilter> query) {
-    return searchMembersByType(roleId, EntityType.CLIENT, query.page())
-        .mapItems(m -> new AuthUser(0L, m.id(), null, null, null));
-  }
-
-  @Override
-  public SearchResult<AuthMappingRule> searchMappingRuleMembers(
-      final String roleId, final SearchQuery<MappingRuleFilter> query) {
-    final var page = query.page();
-
-    final var ocQuery =
-        MappingRuleQuery.of(
-            q -> {
-              q.filter(f -> f.roleId(roleId));
-              q.page(p -> p.from(page.from()).size(page.size()));
-              return q;
-            });
-
-    final var result = mappingRuleServices.withAuthentication(auth()).search(ocQuery);
-    final var items =
-        result.items().stream().map(OcRoleManagementAdapter::toAuthMappingRule).toList();
-    return new SearchResult<>(items, result.total());
-  }
-
-  private MemberSearchResult searchMembersByType(
-      final String roleId,
-      final EntityType entityType,
-      final io.camunda.auth.domain.model.search.SearchPage page) {
-
-    final var ocQuery =
-        RoleMemberQuery.of(
-            q -> {
-              q.filter(f -> f.roleId(roleId).memberType(entityType));
-              q.page(p -> p.from(page.from()).size(page.size()));
-              return q;
-            });
-
-    final var result = roleServices.withAuthentication(auth()).searchMembers(ocQuery);
-    return new MemberSearchResult(result.items(), result.total());
-  }
-
   private CamundaAuthentication auth() {
     return authProvider.getCamundaAuthentication();
   }
@@ -217,15 +108,6 @@ public class OcRoleManagementAdapter implements RoleManagementPort {
         entity.roleId(),
         entity.name(),
         entity.description());
-  }
-
-  private static AuthMappingRule toAuthMappingRule(final MappingRuleEntity entity) {
-    return new AuthMappingRule(
-        entity.mappingRuleKey() != null ? entity.mappingRuleKey() : 0L,
-        entity.mappingRuleId(),
-        entity.claimName(),
-        entity.claimValue(),
-        entity.name());
   }
 
   private static EntityType toEntityType(final MemberType type) {
@@ -243,13 +125,5 @@ public class OcRoleManagementAdapter implements RoleManagementPort {
       return re;
     }
     return new RuntimeException(cause);
-  }
-
-  private record MemberSearchResult(java.util.List<RoleMemberEntity> members, long total) {
-
-    <T> SearchResult<T> mapItems(final java.util.function.Function<RoleMemberEntity, T> mapper) {
-      final var items = members.stream().map(mapper).toList();
-      return new SearchResult<>(items, total);
-    }
   }
 }

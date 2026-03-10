@@ -9,13 +9,9 @@ package io.camunda.application.commons.authentication.adapter;
 
 import io.camunda.auth.domain.model.AuthMappingRule;
 import io.camunda.auth.domain.model.CamundaAuthentication;
-import io.camunda.auth.domain.model.search.MappingRuleFilter;
-import io.camunda.auth.domain.model.search.SearchQuery;
-import io.camunda.auth.domain.model.search.SearchResult;
 import io.camunda.auth.domain.port.inbound.MappingRuleManagementPort;
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.search.entities.MappingRuleEntity;
-import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import java.util.concurrent.CompletionException;
@@ -84,42 +80,6 @@ public class OcMappingRuleManagementAdapter implements MappingRuleManagementPort
     } catch (final CompletionException e) {
       throw mapException(e.getCause());
     }
-  }
-
-  @Override
-  public SearchResult<AuthMappingRule> search(final SearchQuery<MappingRuleFilter> query) {
-    final var filter = query.filter();
-    final var page = query.page();
-
-    final var ocQuery =
-        MappingRuleQuery.of(
-            q -> {
-              q.filter(
-                  f -> {
-                    if (filter != null) {
-                      if (filter.mappingRuleId() != null) {
-                        f.mappingRuleId(filter.mappingRuleId());
-                      }
-                      if (filter.claimName() != null) {
-                        f.claimName(filter.claimName());
-                      }
-                      if (filter.claimValue() != null) {
-                        f.claimValue(filter.claimValue());
-                      }
-                      if (filter.name() != null) {
-                        f.name(filter.name());
-                      }
-                    }
-                    return f;
-                  });
-              q.page(p -> p.from(page.from()).size(page.size()));
-              return q;
-            });
-
-    final var result = mappingRuleServices.withAuthentication(auth()).search(ocQuery);
-    final var items =
-        result.items().stream().map(OcMappingRuleManagementAdapter::toAuthMappingRule).toList();
-    return new SearchResult<>(items, result.total());
   }
 
   private CamundaAuthentication auth() {

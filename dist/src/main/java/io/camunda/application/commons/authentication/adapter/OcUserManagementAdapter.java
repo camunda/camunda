@@ -9,13 +9,9 @@ package io.camunda.application.commons.authentication.adapter;
 
 import io.camunda.auth.domain.model.AuthUser;
 import io.camunda.auth.domain.model.CamundaAuthentication;
-import io.camunda.auth.domain.model.search.SearchQuery;
-import io.camunda.auth.domain.model.search.SearchResult;
-import io.camunda.auth.domain.model.search.UserFilter;
 import io.camunda.auth.domain.port.inbound.UserManagementPort;
 import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.search.entities.UserEntity;
-import io.camunda.search.query.UserQuery;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import java.util.concurrent.CompletionException;
@@ -76,38 +72,6 @@ public class OcUserManagementAdapter implements UserManagementPort {
     } catch (final CompletionException e) {
       throw mapException(e.getCause());
     }
-  }
-
-  @Override
-  public SearchResult<AuthUser> search(final SearchQuery<UserFilter> query) {
-    final var filter = query.filter();
-    final var page = query.page();
-
-    final var ocQuery =
-        UserQuery.of(
-            q -> {
-              q.filter(
-                  f -> {
-                    if (filter != null) {
-                      if (filter.username() != null) {
-                        f.usernames(filter.username());
-                      }
-                      if (filter.name() != null) {
-                        f.names(filter.name());
-                      }
-                      if (filter.email() != null) {
-                        f.emails(filter.email());
-                      }
-                    }
-                    return f;
-                  });
-              q.page(p -> p.from(page.from()).size(page.size()));
-              return q;
-            });
-
-    final var result = userServices.withAuthentication(auth()).search(ocQuery);
-    final var items = result.items().stream().map(OcUserManagementAdapter::toAuthUser).toList();
-    return new SearchResult<>(items, result.total());
   }
 
   private CamundaAuthentication auth() {
