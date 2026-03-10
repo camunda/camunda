@@ -323,7 +323,9 @@ jobs:
           # being added to the Maven reactor. In that case we build the starter/worker from the
           # current workflow SHA (main) which always has the module. For all other cases we
           # honour inputs.ref so developers can test a specific load-tester branch.
-          ref: ${{ inputs.use-official-docker-images && '' || inputs.ref }}
+          # Note: github.sha (truthy) is used instead of '' so the ternary pattern works correctly —
+          # an empty string is falsy in GHA expressions and would always fall through to inputs.ref.
+          ref: ${{ inputs.use-official-docker-images && github.sha || inputs.ref }}
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
