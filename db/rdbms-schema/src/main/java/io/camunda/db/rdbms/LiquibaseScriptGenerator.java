@@ -7,7 +7,6 @@
  */
 package io.camunda.db.rdbms;
 
-import com.github.vertical_blank.sqlformatter.SqlFormatter;
 import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -175,22 +174,13 @@ public class LiquibaseScriptGenerator {
           }
         }
 
-        sqlScript.append(formatSql(sqlString));
+        sqlScript.append(sqlString);
         sqlScript.append(";");
         sqlScript.append("\n");
       }
 
       sqlScript.append("\n");
     }
-  }
-
-  private static String formatSql(final String sqlString) {
-    var formattedSql = SqlFormatter.format(sqlString);
-
-    // Fix spaces inside backticked identifiers (e.g., ` DESCRIPTION ` -> `DESCRIPTION`)
-    // Match backtick pairs and remove leading/trailing whitespace inside them
-    formattedSql = formattedSql.replaceAll("`\\s+([^`]+?)\\s+`", "`$1`");
-    return formattedSql;
   }
 
   private static boolean isSupported(final Change change, final Database database) {
