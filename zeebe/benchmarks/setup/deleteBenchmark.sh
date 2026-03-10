@@ -16,4 +16,4 @@ namespace=${1//\//} # remove trailing slashes
 
 kubens default
 kubectl delete namespace $namespace --wait=false
-rm -r $namespace
+rm -rf $namespace
