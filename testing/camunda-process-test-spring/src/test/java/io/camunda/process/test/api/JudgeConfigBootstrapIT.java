@@ -22,6 +22,8 @@ import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.JudgeConfigBootstrap;
 import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
+import io.camunda.process.test.api.judge.JudgeConfigBootstrapData.OpenAiConfig;
+import io.camunda.process.test.api.judge.JudgeConfigBootstrapData.ProviderConfig;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,15 @@ import org.springframework.test.context.NestedTestConfiguration.EnclosingConfigu
 
 @NestedTestConfiguration(EnclosingConfiguration.OVERRIDE)
 public class JudgeConfigBootstrapIT {
+
+  @Configuration
+  static class ChatModelAdapterConfig {
+
+    @Bean
+    ChatModelAdapter chatModelAdapter() {
+      return prompt -> "mocked response";
+    }
+  }
 
   @Nested
   @SpringBootTest(classes = JudgeConfigBootstrapIT.class)
@@ -192,15 +203,6 @@ public class JudgeConfigBootstrapIT {
     }
   }
 
-  @Configuration
-  static class ChatModelAdapterConfig {
-
-    @Bean
-    ChatModelAdapter chatModelAdapter() {
-      return prompt -> "mocked response";
-    }
-  }
-
   @Nested
   class InvalidConfiguration {
 
@@ -217,8 +219,7 @@ public class JudgeConfigBootstrapIT {
     void shouldReturnNullWhenProviderIsUnknown() {
       final JudgeConfigBootstrapData data =
           JudgeConfigBootstrapData.builder()
-              .provider("unknown-provider")
-              .model("test-model")
+              .providerConfig(new ProviderConfig("unknown-provider", "test-model") {})
               .build();
       final JudgeConfig config = bootstrap.bootstrap(data);
       assertThat(config).isNull();
@@ -227,7 +228,9 @@ public class JudgeConfigBootstrapIT {
     @Test
     void shouldThrowWhenRequiredFieldMissing() {
       final JudgeConfigBootstrapData data =
-          JudgeConfigBootstrapData.builder().provider("openai").build();
+          JudgeConfigBootstrapData.builder()
+              .providerConfig(new OpenAiConfig(null, "api-key"))
+              .build();
       assertThatThrownBy(() -> bootstrap.bootstrap(data)).isInstanceOf(IllegalStateException.class);
     }
   }
