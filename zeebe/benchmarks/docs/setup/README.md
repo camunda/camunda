@@ -66,31 +66,13 @@ Save this to `admin.yml` and apply via `kubectl apply -f admin.yml`.
 Once these secrets exist, you can now install the operator. To do so, run:
 
 ```sh
-helm install metrics stable/prometheus-operator --atomic -f prometheus-operator-values.yml
+helm install metrics stable/prometheus-operator --atomic -f zeebe-cluster-prometheus-values.yml
 ```
 
 To access Grafana, you can simply proxy the Grafana port so it's available locally:
 
 ```sh
 kubectl port-forward svc/metrics-grafana-loadbalancer :80
-```
-
-## Linkerd
-
-A lightweight alternative to Istio, you can also set up linkerd. In order to enable linkerd, it's a good idea to install the [linkerd CLI](https://linkerd.io/2/getting-started/#step-1-install-the-cli).
-
-> If you're not sure if linkerd is already installed on your cluster, you can simply verify the installation first
-
-To install Istio on your cluster, run:
-
-```sh
-kubectl apply -f linkerd-manifest.yml -f linkerd-service-monitor.yml
-```
-
-Then once finished, verify that the installation is correct:
-
-```sh
-linkerd check
 ```
 
 # Google Cloud Platform

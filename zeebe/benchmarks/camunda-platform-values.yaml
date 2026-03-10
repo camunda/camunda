@@ -60,8 +60,11 @@ zeebe:
   # Image configuration to configure the zeebe image specifics
   image:
     # Image.repository defines which image repository to use
-    repository: registry.camunda.cloud/team-zeebe/zeebe
-    tag: 8.7.0
+    repository: camunda/zeebe
+    # Image.registry defines which image registry to use
+    registry: docker.io
+    # Image.tag defines the tag / version which should be used in the chart
+    tag: 8.7-SNAPSHOT
   # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
   # PartitionCount defines how many zeebe partitions are set up in the cluster
@@ -131,14 +134,6 @@ zeebe:
 
   # Environment variables
   env:
-    - name: K8S_NAMESPACE
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.namespace
-    - name: K8S_NAME
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.name
     # Enable JSON logging for google cloud stackdriver
     - name: ZEEBE_LOG_APPENDER
       value: Stackdriver
@@ -150,8 +145,6 @@ zeebe:
           fieldPath: metadata.namespace
     - name: ATOMIX_LOG_LEVEL
       value: INFO
-    - name: ZEEBE_LOG_LEVEL
-      value: DEBUG
     # To be able to load a separate/additional configuration
     # See https://github.com/camunda/camunda-platform-helm/issues/2197
     - name: SPRING_CONFIG_ADDITIONALLOCATION
@@ -189,8 +182,11 @@ zeebeGateway:
   # Image configuration to configure the zeebe-gateway image specifics
   image:
     # Image.repository defines which image repository to use
-    repository: registry.camunda.cloud/team-zeebe/zeebe
-    tag: 8.7.0
+    repository: camunda/zeebe
+    # Image.registry defines which image registry to use
+    registry: docker.io
+    # Image.tag defines the tag / version which should be used in the chart
+    tag: 8.7-SNAPSHOT
   # LogLevel defines the log level which is used by the gateway
   logLevel: debug
 
@@ -223,8 +219,6 @@ zeebeGateway:
           fieldPath: metadata.namespace
     - name: ATOMIX_LOG_LEVEL
       value: INFO
-    - name: ZEEBE_LOG_LEVEL
-      value: DEBUG
     # To be able to load a separate/additional configuration
     # See https://github.com/camunda/camunda-platform-helm/issues/2197
     - name: SPRING_CONFIG_ADDITIONALLOCATION
