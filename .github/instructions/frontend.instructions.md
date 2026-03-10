@@ -10,9 +10,9 @@ The webapps (Operate, Tasklist, Identity, Optimize) each have a separate fronten
 ## Tech Stack
 
 - React, TypeScript, Vite, Carbon Design System (`@carbon/react`). Check each app's `package.json` for current versions.
-- Testing: Vitest (Operate, Tasklist), react-scripts (Optimize legacy)
+- Testing: Vitest (Operate, Tasklist), react-scripts (Optimize legacy). Identity has no unit test framework.
 - Linting: ESLint, Prettier; Tasklist also uses Stylelint
-- E2E: Playwright (Operate, Tasklist)
+- E2E: Playwright — cross-app E2E tests in `qa/c8-orchestration-cluster-e2e-test-suite/`, visual regression tests in each app's `client/` directory
 - Package manager: npm (Operate, Tasklist, Identity), Yarn (Optimize)
 
 ## Common Commands
@@ -26,6 +26,7 @@ npm ci                # Install dependencies
 npm run build         # Build for production
 npm run test          # Run unit tests
 npm run lint          # Lint (ESLint + TypeScript check)
+npm run fix:prettier  # Auto-format with Prettier
 npm run start         # Start dev server
 ```
 
