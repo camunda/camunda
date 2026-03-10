@@ -72,7 +72,7 @@ public class DocumentBasedHistory {
   /** Maximum millisecond interval between archiver runs due to failure backoffs */
   private Duration maxDelayBetweenRuns = DEFAULT_HISTORY_MAX_DELAY_BETWEEN_RUNS;
 
-  /** Maximum archiver reindex tasks per partition (set `-1` for unlimited with caution) */
+  /** Maximum archiver reindex tasks per partition (set `<=0` for unlimited with caution) */
   private int maxParallelArchiverReindexTasks = DEFAULT_HISTORY_MAX_PARALLEL_ARCHIVER_REINDEX_TASKS;
 
   /** Defines the name of the created and applied ILM policy. */

@@ -230,7 +230,7 @@ public class ExporterConfiguration {
     private String waitPeriodBeforeArchiving = "1h";
     private int delayBetweenRuns = 2000;
     private int maxDelayBetweenRuns = 60000;
-    // use `-1` for unlimited parallel archiver reindex tasks, use with caution
+    // use `<=0` for unlimited parallel archiver reindex tasks, use with caution
     private int maxParallelArchiverReindexTasks = 5;
     private RetentionConfiguration retention = new RetentionConfiguration();
     private boolean trackArchivalMetricsForProcessInstance = true;

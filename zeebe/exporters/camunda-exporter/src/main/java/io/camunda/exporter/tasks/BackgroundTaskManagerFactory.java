@@ -161,9 +161,8 @@ public final class BackgroundTaskManagerFactory {
   private int getMaxParallelArchiverReindexTasks() {
     if (config.getHistory().getMaxParallelArchiverReindexTasks() <= 0) {
       logger.info(
-          "Creating a reindexing throttler with unlimited parallel execution permits. Use "
-              + "the `history.maxParallelArchiverReindexTasks` config property to set a lower "
-              + "number of parallel execution permits to reduce resource usage.");
+          "Creating a reindexing throttler with unlimited parallel execution permits. Set a "
+              + "lower number of parallel execution permits to reduce resource usage.");
       return Integer.MAX_VALUE;
     }
 
