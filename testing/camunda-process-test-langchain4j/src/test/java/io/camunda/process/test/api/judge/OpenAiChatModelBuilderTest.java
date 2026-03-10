@@ -29,11 +29,11 @@ class OpenAiChatModelBuilderTest {
   @Test
   void shouldBuildChatModel() {
     // given
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder().apiKey("test-api-key").model("gpt-4o").build();
+    final JudgeConfigBootstrapData.OpenAiConfig config =
+        new JudgeConfigBootstrapData.OpenAiConfig("gpt-4o", "test-api-key");
 
     // when
-    final ChatModel chatModel = OpenAiChatModelBuilder.build(data);
+    final ChatModel chatModel = OpenAiChatModelBuilder.build(config);
 
     // then
     assertThat(chatModel).isNotNull();
@@ -44,11 +44,11 @@ class OpenAiChatModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenApiKeyMissingOrBlank(final String apiKey) {
     // given
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder().apiKey(apiKey).model("gpt-4o").build();
+    final JudgeConfigBootstrapData.OpenAiConfig config =
+        new JudgeConfigBootstrapData.OpenAiConfig("gpt-4o", apiKey);
 
     // when / then
-    assertThatThrownBy(() -> OpenAiChatModelBuilder.build(data))
+    assertThatThrownBy(() -> OpenAiChatModelBuilder.build(config))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("apiKey")
         .hasMessageContaining("openai");
@@ -59,11 +59,11 @@ class OpenAiChatModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder().apiKey("test-api-key").model(model).build();
+    final JudgeConfigBootstrapData.OpenAiConfig config =
+        new JudgeConfigBootstrapData.OpenAiConfig(model, "test-api-key");
 
     // when / then
-    assertThatThrownBy(() -> OpenAiChatModelBuilder.build(data))
+    assertThatThrownBy(() -> OpenAiChatModelBuilder.build(config))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("model")
         .hasMessageContaining("openai");

@@ -22,7 +22,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 public class JudgeConfigBootstrapTest {
 
@@ -32,20 +31,6 @@ public class JudgeConfigBootstrapTest {
   void shouldReturnNullWhenNotConfigured() {
     // given
     final JudgeConfigBootstrapData data = JudgeConfigBootstrapData.builder().build();
-
-    // when
-    final JudgeConfig config = bootstrap.bootstrap(data);
-
-    // then
-    assertThat(config).isNull();
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {"unknown-provider", "   "})
-  void shouldReturnNullWhenProviderIsNotRecognised(final String provider) {
-    // given
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder().provider(provider).build();
 
     // when
     final JudgeConfig config = bootstrap.bootstrap(data);
@@ -81,9 +66,7 @@ public class JudgeConfigBootstrapTest {
     // given
     final JudgeConfigBootstrapData data =
         JudgeConfigBootstrapData.builder()
-            .provider("openai")
-            .model("gpt-4o")
-            .apiKey("test-key")
+            .providerConfig(new JudgeConfigBootstrapData.OpenAiConfig("gpt-4o", "test-key"))
             .threshold(0.8)
             .customPrompt("Custom evaluation criteria")
             .build();
@@ -99,35 +82,34 @@ public class JudgeConfigBootstrapTest {
 
   private static JudgeConfigBootstrapData openAiData() {
     return JudgeConfigBootstrapData.builder()
-        .provider("openai")
-        .model("gpt-4o")
-        .apiKey("test-key")
+        .providerConfig(new JudgeConfigBootstrapData.OpenAiConfig("gpt-4o", "test-key"))
         .build();
   }
 
   private static JudgeConfigBootstrapData anthropicData() {
     return JudgeConfigBootstrapData.builder()
-        .provider("anthropic")
-        .model("claude-3-5-sonnet-20241022")
-        .apiKey("test-key")
+        .providerConfig(
+            new JudgeConfigBootstrapData.AnthropicConfig("claude-3-5-sonnet-20241022", "test-key"))
         .build();
   }
 
   private static JudgeConfigBootstrapData bedrockData() {
     return JudgeConfigBootstrapData.builder()
-        .provider("amazon-bedrock")
-        .model("anthropic.claude-3-5-sonnet-20241022-v2:0")
-        .region("us-east-1")
-        .credentialsAccessKey("test-access-key")
-        .credentialsSecretKey("test-secret-key")
+        .providerConfig(
+            new JudgeConfigBootstrapData.AmazonBedrockConfig(
+                "anthropic.claude-3-5-sonnet-20241022-v2:0",
+                "us-east-1",
+                null,
+                "test-access-key",
+                "test-secret-key"))
         .build();
   }
 
   private static JudgeConfigBootstrapData openAiCompatibleData() {
     return JudgeConfigBootstrapData.builder()
-        .provider("openai-compatible")
-        .model("mistral-7b")
-        .baseUrl("http://localhost:11434/v1")
+        .providerConfig(
+            new JudgeConfigBootstrapData.OpenAiCompatibleConfig(
+                "mistral-7b", "http://localhost:11434/v1", null))
         .build();
   }
 }

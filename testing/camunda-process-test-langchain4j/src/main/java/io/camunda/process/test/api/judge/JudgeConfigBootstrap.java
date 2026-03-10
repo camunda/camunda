@@ -25,36 +25,41 @@ public class JudgeConfigBootstrap implements JudgeConfigBootstrapProvider {
 
   @Override
   public JudgeConfig bootstrap(final JudgeConfigBootstrapData data) {
-    final String provider = data.getProvider();
-    if (provider == null || provider.trim().isEmpty()) {
+    final JudgeConfigBootstrapData.ProviderConfig providerConfig = data.getProviderConfig();
+    if (providerConfig == null) {
       LOG.debug("No provider configured, skipping judge config bootstrap");
       return null;
     }
 
-    final String normalizedProvider = provider.trim().toLowerCase();
-    LOG.debug("Bootstrapping judge config for provider '{}'", normalizedProvider);
+    LOG.debug("Bootstrapping judge config for provider '{}'", providerConfig.getProvider());
 
-    final ChatModel chatModel = createChatModel(data, normalizedProvider);
+    final ChatModel chatModel = createChatModel(providerConfig);
     if (chatModel == null) {
-      LOG.debug("Unknown provider '{}', skipping judge config bootstrap", normalizedProvider);
+      LOG.debug(
+          "Unknown provider '{}', skipping judge config bootstrap", providerConfig.getProvider());
       return null;
     }
 
     final ChatModelAdapter adapter = chatModel::chat;
     LOG.debug(
         "Judge config bootstrapped successfully for provider '{}' with threshold {}",
-        normalizedProvider,
+        providerConfig.getProvider(),
         data.getThreshold());
     return JudgeConfig.of(adapter, data.getThreshold(), data.getCustomPrompt());
   }
 
-  private ChatModel createChatModel(final JudgeConfigBootstrapData data, final String provider) {
-    return switch (provider) {
-      case "openai" -> OpenAiChatModelBuilder.build(data);
-      case "anthropic" -> AnthropicChatModelBuilder.build(data);
-      case "amazon-bedrock" -> BedrockChatModelBuilder.build(data);
-      case "openai-compatible" -> OpenAiCompatibleChatModelBuilder.build(data);
-      default -> null;
-    };
+  private ChatModel createChatModel(final JudgeConfigBootstrapData.ProviderConfig providerConfig) {
+    if (providerConfig instanceof JudgeConfigBootstrapData.OpenAiConfig openAi) {
+      return OpenAiChatModelBuilder.build(openAi);
+    } else if (providerConfig instanceof JudgeConfigBootstrapData.AnthropicConfig anthropic) {
+      return AnthropicChatModelBuilder.build(anthropic);
+    } else if (providerConfig instanceof JudgeConfigBootstrapData.AmazonBedrockConfig bedrock) {
+      return BedrockChatModelBuilder.build(bedrock);
+    } else if (providerConfig
+        instanceof JudgeConfigBootstrapData.OpenAiCompatibleConfig compatible) {
+      return OpenAiCompatibleChatModelBuilder.build(compatible);
+    } else {
+      return null;
+    }
   }
 }

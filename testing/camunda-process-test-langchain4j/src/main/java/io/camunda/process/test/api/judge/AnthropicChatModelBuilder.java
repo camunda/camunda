@@ -28,11 +28,11 @@ final class AnthropicChatModelBuilder {
 
   private AnthropicChatModelBuilder() {}
 
-  static ChatModel build(final JudgeConfigBootstrapData data) {
+  static ChatModel build(final JudgeConfigBootstrapData.AnthropicConfig config) {
     LOG.debug("Building Anthropic chat model");
 
-    final String model = require(data.getModel(), "model", "anthropic");
-    final String apiKey = require(data.getApiKey(), "apiKey", "anthropic");
+    final String model = require(config.getModel(), "model", "anthropic");
+    final String apiKey = require(config.getApiKey(), "apiKey", "anthropic");
 
     final ChatModel chatModel =
         AnthropicChatModel.builder().apiKey(apiKey).modelName(model).build();
