@@ -52,7 +52,7 @@ public class TenantServiceTest {
     securityConfiguration.getMultiTenancy().setChecksEnabled(true);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(mock(CamundaAuthentication.class));
-    when(tenantAccessProvider.resolveTenantAccess(any(CamundaAuthentication.class)))
+    when(tenantAccessProvider.resolveTenantAccess(any()))
         .thenReturn(TenantAccess.allowed(listOfTenants));
 
     final List<String> expectedListOfTenants = new ArrayList<String>();
@@ -77,8 +77,7 @@ public class TenantServiceTest {
     securityConfiguration.getMultiTenancy().setChecksEnabled(true);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(mock(CamundaAuthentication.class));
-    when(tenantAccessProvider.hasTenantAccessByTenantId(
-            any(CamundaAuthentication.class), eq(tenantId)))
+    when(tenantAccessProvider.hasTenantAccessByTenantId(any(), eq(tenantId)))
         .thenReturn(TenantAccess.denied(List.of(tenantId)));
 
     // when / then
@@ -94,8 +93,7 @@ public class TenantServiceTest {
     securityConfiguration.getMultiTenancy().setChecksEnabled(true);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(mock(CamundaAuthentication.class));
-    when(tenantAccessProvider.hasTenantAccessByTenantId(
-            any(CamundaAuthentication.class), eq(tenantId)))
+    when(tenantAccessProvider.hasTenantAccessByTenantId(any(), eq(tenantId)))
         .thenReturn(TenantAccess.allowed(List.of(tenantId)));
 
     // when / then
