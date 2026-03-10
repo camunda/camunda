@@ -16,6 +16,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {searchResult} from 'modules/testUtils';
@@ -113,6 +114,24 @@ const mockCalledProcessInstance = {
   endDate: null,
 } satisfies ProcessInstance;
 
+const mockProcessInstance = {
+  processInstanceKey: PROCESS_INSTANCE_ID,
+  processDefinitionId: 'process-def-1',
+  processDefinitionKey: PROCESS_DEFINITION_KEY,
+  processDefinitionName: 'Main Process',
+  processDefinitionVersion: 1,
+  state: 'ACTIVE',
+  startDate: '2023-01-15T10:00:00.000Z',
+  tenantId: '<default>',
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  hasIncident: false,
+  rootProcessInstanceKey: null,
+  tags: [],
+  processDefinitionVersionTag: null,
+  endDate: null,
+} satisfies ProcessInstance;
+
 const mockCalledDecisionInstance = {
   decisionEvaluationInstanceKey: '777888999',
   decisionEvaluationKey: '777888999',
@@ -171,6 +190,7 @@ function getWrapper(initialSearchParams?: string) {
 
 describe('<DetailsTab />', () => {
   beforeEach(() => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess('');
     mockSearchJobs().withSuccess(searchResult([]));
     mockSearchProcessInstances().withSuccess(searchResult([]));
