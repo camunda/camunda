@@ -324,18 +324,43 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private JudgeConfigBootstrapData toConfigurationData(
       final JudgeConfiguration judgeConfiguration) {
     final JudgeConfiguration.ChatModelConfiguration chatModel = judgeConfiguration.getChatModel();
+
+    final JudgeConfigBootstrapData.Builder builder =
+        JudgeConfigBootstrapData.builder()
+            .threshold(judgeConfiguration.getThreshold())
+            .customPrompt(judgeConfiguration.getCustomPrompt());
+
+    if (chatModel.getProvider() != null) {
+      builder.providerConfig(createProviderConfig(chatModel));
+    }
+
+    return builder.build();
+  }
+
+  private JudgeConfigBootstrapData.ProviderConfig createProviderConfig(
+      final JudgeConfiguration.ChatModelConfiguration chatModel) {
     final JudgeConfiguration.CredentialsConfiguration credentials = chatModel.getCredentials();
-    return JudgeConfigBootstrapData.builder()
-        .provider(chatModel.getProvider())
-        .model(chatModel.getModel())
-        .apiKey(chatModel.getApiKey())
-        .baseUrl(chatModel.getBaseUrl())
-        .region(chatModel.getRegion())
-        .credentialsAccessKey(credentials != null ? credentials.getAccessKey() : null)
-        .credentialsSecretKey(credentials != null ? credentials.getSecretKey() : null)
-        .threshold(judgeConfiguration.getThreshold())
-        .customPrompt(judgeConfiguration.getCustomPrompt())
-        .build();
+    final String provider = chatModel.getProvider().trim().toLowerCase();
+    switch (provider) {
+      case "openai":
+        return new JudgeConfigBootstrapData.OpenAiConfig(
+            chatModel.getModel(), chatModel.getApiKey());
+      case "anthropic":
+        return new JudgeConfigBootstrapData.AnthropicConfig(
+            chatModel.getModel(), chatModel.getApiKey());
+      case "amazon-bedrock":
+        return new JudgeConfigBootstrapData.AmazonBedrockConfig(
+            chatModel.getModel(),
+            chatModel.getRegion(),
+            chatModel.getApiKey(),
+            credentials != null ? credentials.getAccessKey() : null,
+            credentials != null ? credentials.getSecretKey() : null);
+      case "openai-compatible":
+        return new JudgeConfigBootstrapData.OpenAiCompatibleConfig(
+            chatModel.getModel(), chatModel.getBaseUrl(), chatModel.getApiKey());
+      default:
+        return null;
+    }
   }
 
   private ChatModelAdapter findChatModelAdapterBean(final TestContext testContext) {

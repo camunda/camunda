@@ -29,14 +29,11 @@ class AnthropicChatModelBuilderTest {
   @Test
   void shouldBuildChatModel() {
     // given
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder()
-            .apiKey("test-api-key")
-            .model("claude-3-5-sonnet-20241022")
-            .build();
+    final JudgeConfigBootstrapData.AnthropicConfig config =
+        new JudgeConfigBootstrapData.AnthropicConfig("claude-3-5-sonnet-20241022", "test-api-key");
 
     // when
-    final ChatModel chatModel = AnthropicChatModelBuilder.build(data);
+    final ChatModel chatModel = AnthropicChatModelBuilder.build(config);
 
     // then
     assertThat(chatModel).isNotNull();
@@ -47,14 +44,11 @@ class AnthropicChatModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenApiKeyMissingOrBlank(final String apiKey) {
     // given
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder()
-            .apiKey(apiKey)
-            .model("claude-3-5-sonnet-20241022")
-            .build();
+    final JudgeConfigBootstrapData.AnthropicConfig config =
+        new JudgeConfigBootstrapData.AnthropicConfig("claude-3-5-sonnet-20241022", apiKey);
 
     // when / then
-    assertThatThrownBy(() -> AnthropicChatModelBuilder.build(data))
+    assertThatThrownBy(() -> AnthropicChatModelBuilder.build(config))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("apiKey")
         .hasMessageContaining("anthropic");
@@ -65,11 +59,11 @@ class AnthropicChatModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder().apiKey("test-api-key").model(model).build();
+    final JudgeConfigBootstrapData.AnthropicConfig config =
+        new JudgeConfigBootstrapData.AnthropicConfig(model, "test-api-key");
 
     // when / then
-    assertThatThrownBy(() -> AnthropicChatModelBuilder.build(data))
+    assertThatThrownBy(() -> AnthropicChatModelBuilder.build(config))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("model")
         .hasMessageContaining("anthropic");

@@ -31,16 +31,16 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldBuildChatModelWithAccessKeyCredentials() {
     // given
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder()
-            .model("anthropic.claude-3-5-sonnet-20241022-v2:0")
-            .region("us-east-1")
-            .credentialsAccessKey("test-access-key")
-            .credentialsSecretKey("test-secret-key")
-            .build();
+    final JudgeConfigBootstrapData.AmazonBedrockConfig config =
+        new JudgeConfigBootstrapData.AmazonBedrockConfig(
+            "anthropic.claude-3-5-sonnet-20241022-v2:0",
+            "us-east-1",
+            null,
+            "test-access-key",
+            "test-secret-key");
 
     // when
-    final ChatModel chatModel = BedrockChatModelBuilder.build(data);
+    final ChatModel chatModel = BedrockChatModelBuilder.build(config);
 
     // then
     assertThat(chatModel).isNotNull();
@@ -49,15 +49,12 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldBuildChatModelWithApiKey() {
     // given
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder()
-            .model("anthropic.claude-3-5-sonnet-20241022-v2:0")
-            .region("us-east-1")
-            .apiKey("test-api-key")
-            .build();
+    final JudgeConfigBootstrapData.AmazonBedrockConfig config =
+        new JudgeConfigBootstrapData.AmazonBedrockConfig(
+            "anthropic.claude-3-5-sonnet-20241022-v2:0", "us-east-1", "test-api-key", null, null);
 
     // when
-    final ChatModel chatModel = BedrockChatModelBuilder.build(data);
+    final ChatModel chatModel = BedrockChatModelBuilder.build(config);
 
     // then
     assertThat(chatModel).isNotNull();
@@ -66,14 +63,12 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldBuildChatModelWithDefaultCredentialChain() {
     // given — no explicit authentication, uses AWS default credential chain
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder()
-            .model("anthropic.claude-3-5-sonnet-20241022-v2:0")
-            .region("us-east-1")
-            .build();
+    final JudgeConfigBootstrapData.AmazonBedrockConfig config =
+        new JudgeConfigBootstrapData.AmazonBedrockConfig(
+            "anthropic.claude-3-5-sonnet-20241022-v2:0", "us-east-1", null, null, null);
 
     // when
-    final ChatModel chatModel = BedrockChatModelBuilder.build(data);
+    final ChatModel chatModel = BedrockChatModelBuilder.build(config);
 
     // then
     assertThat(chatModel).isNotNull();
@@ -86,16 +81,12 @@ class BedrockChatModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder()
-            .model(model)
-            .region("us-east-1")
-            .credentialsAccessKey("test-access-key")
-            .credentialsSecretKey("test-secret-key")
-            .build();
+    final JudgeConfigBootstrapData.AmazonBedrockConfig config =
+        new JudgeConfigBootstrapData.AmazonBedrockConfig(
+            model, "us-east-1", null, "test-access-key", "test-secret-key");
 
     // when / then
-    assertThatThrownBy(() -> BedrockChatModelBuilder.build(data))
+    assertThatThrownBy(() -> BedrockChatModelBuilder.build(config))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("model")
         .hasMessageContaining("amazon-bedrock");
@@ -107,15 +98,12 @@ class BedrockChatModelBuilderTest {
   @ValueSource(strings = {"", "  "})
   void shouldFallbackToDefaultCredentialChainWhenApiKeyBlank(final String apiKey) {
     // given — blank apiKey is treated as absent
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder()
-            .model("anthropic.claude-3-5-sonnet-20241022-v2:0")
-            .region("us-east-1")
-            .apiKey(apiKey)
-            .build();
+    final JudgeConfigBootstrapData.AmazonBedrockConfig config =
+        new JudgeConfigBootstrapData.AmazonBedrockConfig(
+            "anthropic.claude-3-5-sonnet-20241022-v2:0", "us-east-1", apiKey, null, null);
 
     // when
-    final ChatModel chatModel = BedrockChatModelBuilder.build(data);
+    final ChatModel chatModel = BedrockChatModelBuilder.build(config);
 
     // then
     assertThat(chatModel).isNotNull();
@@ -125,16 +113,12 @@ class BedrockChatModelBuilderTest {
   @ValueSource(strings = {"", "  "})
   void shouldFallbackToDefaultCredentialChainWhenBothKeysBlank(final String blankValue) {
     // given — both blank credentials are treated as absent
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder()
-            .model("anthropic.claude-3-5-sonnet-20241022-v2:0")
-            .region("us-east-1")
-            .credentialsAccessKey(blankValue)
-            .credentialsSecretKey(blankValue)
-            .build();
+    final JudgeConfigBootstrapData.AmazonBedrockConfig config =
+        new JudgeConfigBootstrapData.AmazonBedrockConfig(
+            "anthropic.claude-3-5-sonnet-20241022-v2:0", "us-east-1", null, blankValue, blankValue);
 
     // when
-    final ChatModel chatModel = BedrockChatModelBuilder.build(data);
+    final ChatModel chatModel = BedrockChatModelBuilder.build(config);
 
     // then
     assertThat(chatModel).isNotNull();
@@ -145,17 +129,16 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldThrowWhenBothAuthMethodsProvided() {
     // given — both accessKey/secretKey and apiKey are set
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder()
-            .model("anthropic.claude-3-5-sonnet-20241022-v2:0")
-            .region("us-east-1")
-            .credentialsAccessKey("test-access-key")
-            .credentialsSecretKey("test-secret-key")
-            .apiKey("test-api-key")
-            .build();
+    final JudgeConfigBootstrapData.AmazonBedrockConfig config =
+        new JudgeConfigBootstrapData.AmazonBedrockConfig(
+            "anthropic.claude-3-5-sonnet-20241022-v2:0",
+            "us-east-1",
+            "test-api-key",
+            "test-access-key",
+            "test-secret-key");
 
     // when / then
-    assertThatThrownBy(() -> BedrockChatModelBuilder.build(data))
+    assertThatThrownBy(() -> BedrockChatModelBuilder.build(config))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("amazon-bedrock");
   }
@@ -163,15 +146,16 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldThrowWhenOnlyAccessKeyProvided() {
     // given — only accessKey without secretKey
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder()
-            .model("anthropic.claude-3-5-sonnet-20241022-v2:0")
-            .region("us-east-1")
-            .credentialsAccessKey("test-access-key")
-            .build();
+    final JudgeConfigBootstrapData.AmazonBedrockConfig config =
+        new JudgeConfigBootstrapData.AmazonBedrockConfig(
+            "anthropic.claude-3-5-sonnet-20241022-v2:0",
+            "us-east-1",
+            null,
+            "test-access-key",
+            null);
 
     // when / then
-    assertThatThrownBy(() -> BedrockChatModelBuilder.build(data))
+    assertThatThrownBy(() -> BedrockChatModelBuilder.build(config))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("accessKey")
         .hasMessageContaining("secretKey");
@@ -180,15 +164,16 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldThrowWhenOnlySecretKeyProvided() {
     // given — only secretKey without accessKey
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder()
-            .model("anthropic.claude-3-5-sonnet-20241022-v2:0")
-            .region("us-east-1")
-            .credentialsSecretKey("test-secret-key")
-            .build();
+    final JudgeConfigBootstrapData.AmazonBedrockConfig config =
+        new JudgeConfigBootstrapData.AmazonBedrockConfig(
+            "anthropic.claude-3-5-sonnet-20241022-v2:0",
+            "us-east-1",
+            null,
+            null,
+            "test-secret-key");
 
     // when / then
-    assertThatThrownBy(() -> BedrockChatModelBuilder.build(data))
+    assertThatThrownBy(() -> BedrockChatModelBuilder.build(config))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("accessKey")
         .hasMessageContaining("secretKey");
@@ -197,16 +182,16 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldThrowWhenAccessKeyBlankAndSecretKeySet() {
     // given — blank accessKey treated as absent, creating a partial key-pair
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder()
-            .model("anthropic.claude-3-5-sonnet-20241022-v2:0")
-            .region("us-east-1")
-            .credentialsAccessKey("  ")
-            .credentialsSecretKey("test-secret-key")
-            .build();
+    final JudgeConfigBootstrapData.AmazonBedrockConfig config =
+        new JudgeConfigBootstrapData.AmazonBedrockConfig(
+            "anthropic.claude-3-5-sonnet-20241022-v2:0",
+            "us-east-1",
+            null,
+            "  ",
+            "test-secret-key");
 
     // when / then
-    assertThatThrownBy(() -> BedrockChatModelBuilder.build(data))
+    assertThatThrownBy(() -> BedrockChatModelBuilder.build(config))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("accessKey")
         .hasMessageContaining("secretKey");
@@ -215,16 +200,12 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldThrowWhenSecretKeyBlankAndAccessKeySet() {
     // given — blank secretKey treated as absent, creating a partial key-pair
-    final JudgeConfigBootstrapData data =
-        JudgeConfigBootstrapData.builder()
-            .model("anthropic.claude-3-5-sonnet-20241022-v2:0")
-            .region("us-east-1")
-            .credentialsAccessKey("test-access-key")
-            .credentialsSecretKey("")
-            .build();
+    final JudgeConfigBootstrapData.AmazonBedrockConfig config =
+        new JudgeConfigBootstrapData.AmazonBedrockConfig(
+            "anthropic.claude-3-5-sonnet-20241022-v2:0", "us-east-1", null, "test-access-key", "");
 
     // when / then
-    assertThatThrownBy(() -> BedrockChatModelBuilder.build(data))
+    assertThatThrownBy(() -> BedrockChatModelBuilder.build(config))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("accessKey")
         .hasMessageContaining("secretKey");
