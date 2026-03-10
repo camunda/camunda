@@ -24,22 +24,22 @@ Not every module has a README yet — when one exists, treat it as the primary r
 
 ### Key Modules
 
-| Module           | Description                                                   |
-|------------------|---------------------------------------------------------------|
-| `zeebe/`         | Core process engine (broker, engine, protocol, exporters)     |
-| `zeebe/gateway`  | gRPC gateway                                                  |
-| `operate/`       | Process monitoring webapp                                     |
-| `tasklist/`      | User task management webapp                                   |
-| `identity/`      | Authentication and authorization                              |
-| `optimize/`      | Process analytics (skipped with `-Dquickly`)                  |
-| `db/`            | Database layer (rdbms, rdbms-schema)                          |
-| `search/`        | Search client abstraction (Elasticsearch, OpenSearch)         |
-| `service/`       | Internal services                                             |
-| `clients/`       | Client libraries (Java, Spring Boot starters)                 |
-| `gateways/`      | Gateway implementations (HTTP mapping, MCP)                   |
-| `security/`      | Security core, protocol, validation                           |
-| `qa/`            | Cross-component acceptance tests                              |
-| `testing/`       | Process testing libraries                                     |
+|     Module      |                        Description                        |
+|-----------------|-----------------------------------------------------------|
+| `zeebe/`        | Core process engine (broker, engine, protocol, exporters) |
+| `zeebe/gateway` | gRPC gateway                                              |
+| `operate/`      | Process monitoring webapp                                 |
+| `tasklist/`     | User task management webapp                               |
+| `identity/`     | Authentication and authorization                          |
+| `optimize/`     | Process analytics (skipped with `-Dquickly`)              |
+| `db/`           | Database layer (rdbms, rdbms-schema)                      |
+| `search/`       | Search client abstraction (Elasticsearch, OpenSearch)     |
+| `service/`      | Internal services                                         |
+| `clients/`      | Client libraries (Java, Spring Boot starters)             |
+| `gateways/`     | Gateway implementations (HTTP mapping, MCP)               |
+| `security/`     | Security core, protocol, validation                       |
+| `qa/`           | Cross-component acceptance tests                          |
+| `testing/`      | Process testing libraries                                 |
 
 ## Build Commands
 
