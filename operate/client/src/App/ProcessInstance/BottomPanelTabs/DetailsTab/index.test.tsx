@@ -296,6 +296,42 @@ describe('<DetailsTab />', () => {
     expect(link).toHaveTextContent('Called Process - 987654321');
   });
 
+  it('should display view all link when multiple called process instances exist', async () => {
+    const callActivityInstance = {
+      ...mockElementInstance,
+      type: 'CALL_ACTIVITY',
+    } satisfies ElementInstance;
+
+    const secondCalledProcessInstance = {
+      ...mockCalledProcessInstance,
+      processInstanceKey: '111111111',
+    } satisfies ProcessInstance;
+
+    mockFetchProcessDefinitionXml().withSuccess(CALL_ACTIVITY_XML);
+    mockFetchElementInstance('123456789').withSuccess(callActivityInstance);
+    mockSearchProcessInstances().withSuccess(
+      searchResult([mockCalledProcessInstance, secondCalledProcessInstance], 2),
+    );
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    expect(
+      await screen.findByText('Called Process Instance'),
+    ).toBeInTheDocument();
+
+    const link = await screen.findByRole('link', {
+      name: /View all called process instances/,
+    });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveTextContent('View all (2)');
+    expect(link).toHaveAttribute(
+      'href',
+      `/processes?parentInstanceId=${PROCESS_INSTANCE_ID}&active=true&incidents=true&completed=true&canceled=true`,
+    );
+  });
+
   it('should display called decision instance link for business rule tasks', async () => {
     const businessRuleTaskInstance = {
       ...mockElementInstance,
