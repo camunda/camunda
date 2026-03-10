@@ -68,9 +68,8 @@ public class AdminUserCheckFilter extends OncePerRequestFilter {
     }
 
     try {
-      if (!roleServices
-          .withAuthentication(CamundaAuthentication.anonymous())
-          .hasMembersOfType(ADMIN_ROLE_ID, EntityType.USER)) {
+      if (!roleServices.hasMembersOfType(
+          ADMIN_ROLE_ID, EntityType.USER, CamundaAuthentication.anonymous())) {
         LOG.debug("No user with admin role exists. Redirecting to identity setup page.");
         final var redirectUrl = String.format("%s%s", request.getContextPath(), REDIRECT_PATH);
         response.sendRedirect(redirectUrl);
