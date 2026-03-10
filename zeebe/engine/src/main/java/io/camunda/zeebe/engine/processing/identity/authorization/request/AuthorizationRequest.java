@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.property.Resour
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.Lazy;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
 public record AuthorizationRequest(
-    Map<String, Object> claims,
+    Lazy<Map<String, Object>> lazyClaims,
     AuthorizationResourceType resourceType,
     PermissionType permissionType,
     String tenantId,
@@ -44,6 +45,11 @@ public record AuthorizationRequest(
       "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant";
   private static final String NOT_FOUND_FOR_TENANT_ERROR_MESSAGE =
       "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
+
+  /** Forces evaluation and returns the resolved claims map. */
+  public Map<String, Object> claims() {
+    return lazyClaims.get();
+  }
 
   public boolean hasResourceProperties() {
     return resourceProperties != null && resourceProperties.hasProperties();
@@ -167,7 +173,7 @@ public record AuthorizationRequest(
         throw new IllegalStateException("command and authorizationClaims are mutually exclusive");
       }
 
-      final var claims = resolveClaims();
+      final var lazyClaims = Lazy.of(this::resolveClaims);
       final var isTenantOwnedResource = tenantId != null && !tenantId.isEmpty();
       final var isTriggeredByInternalCommand = command != null && command.isInternalCommand();
 
@@ -176,7 +182,7 @@ public record AuthorizationRequest(
       }
 
       return new AuthorizationRequest(
-          claims,
+          lazyClaims,
           resourceType,
           permissionType,
           tenantId,
