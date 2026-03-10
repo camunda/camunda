@@ -22,7 +22,6 @@ import io.camunda.gateway.protocol.model.simple.ProcessInstanceSearchQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
-import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -61,9 +60,8 @@ public class ProcessInstanceTools {
 
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(
-              processInstanceServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .search(processInstanceQuery.get())));
+              processInstanceServices.search(
+                  processInstanceQuery.get(), authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -81,9 +79,8 @@ public class ProcessInstanceTools {
     try {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toProcessInstance(
-              processInstanceServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .getByKey(processInstanceKey)));
+              processInstanceServices.getByKey(
+                  processInstanceKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -111,19 +108,18 @@ public class ProcessInstanceTools {
         return CallToolResultMapper.mapProblemToResult(request.getLeft());
       }
 
-      final var authenticatedServices =
-          processInstanceServices.withAuthentication(
-              authenticationProvider.getCamundaAuthentication());
-
-      final ProcessInstanceCreateRequest processInstanceCreateRequest = request.get();
+      final var processInstanceCreateRequest = request.get();
+      final var camundaAuthentication = authenticationProvider.getCamundaAuthentication();
       if (Boolean.TRUE.equals(processInstanceCreateRequest.awaitCompletion())) {
         return CallToolResultMapper.from(
-            authenticatedServices.createProcessInstanceWithResult(processInstanceCreateRequest),
+            processInstanceServices.createProcessInstanceWithResult(
+                processInstanceCreateRequest, camundaAuthentication),
             ResponseMapper::toCreateProcessInstanceWithResultResponse);
       }
 
       return CallToolResultMapper.from(
-          authenticatedServices.createProcessInstance(processInstanceCreateRequest),
+          processInstanceServices.createProcessInstance(
+              processInstanceCreateRequest, camundaAuthentication),
           ResponseMapper::toCreateProcessInstanceResponse);
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
