@@ -32,8 +32,11 @@ import java.util.List;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 public final class DecisionDefinitionServiceTest {
+
+  @Mock private CamundaAuthentication authentication;
 
   private DecisionDefinitionServices services;
   private DecisionDefinitionSearchClient client;
@@ -44,15 +47,12 @@ public final class DecisionDefinitionServiceTest {
     client = mock(DecisionDefinitionSearchClient.class);
     decisionRequirementServices = mock(DecisionRequirementsServices.class);
     when(client.withSecurityContext(any())).thenReturn(client);
-    when(decisionRequirementServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(decisionRequirementServices);
     services =
         new DecisionDefinitionServices(
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,
             decisionRequirementServices,
-            null,
             mock(ApiServicesExecutorProvider.class),
             null);
   }
@@ -68,7 +68,7 @@ public final class DecisionDefinitionServiceTest {
 
     // when
     final SearchQueryResult<DecisionDefinitionEntity> searchQueryResult =
-        services.search(searchQuery);
+        services.search(searchQuery, authentication);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -81,11 +81,11 @@ public final class DecisionDefinitionServiceTest {
     when(definitionEntity.decisionRequirementsKey()).thenReturn(42L);
     when(definitionEntity.decisionDefinitionId()).thenReturn("decId");
     when(client.getDecisionDefinition(eq(42L))).thenReturn(definitionEntity);
-    when(decisionRequirementServices.getDecisionRequirementsXml(any(Long.class)))
+    when(decisionRequirementServices.getDecisionRequirementsXml(any(Long.class), any()))
         .thenReturn("<foo>bar</foo>");
 
     // when
-    final var xml = services.getDecisionDefinitionXml(42L);
+    final var xml = services.getDecisionDefinitionXml(42L, authentication);
 
     // then
     assertThat(xml).isEqualTo("<foo>bar</foo>");
@@ -102,7 +102,7 @@ public final class DecisionDefinitionServiceTest {
     when(client.getDecisionDefinition(eq(42L))).thenReturn(definitionEntity);
 
     // when
-    final DecisionDefinitionEntity decisionDefinition = services.getByKey(42L);
+    final DecisionDefinitionEntity decisionDefinition = services.getByKey(42L, authentication);
 
     // then
     assertThat(decisionDefinition.decisionDefinitionKey()).isEqualTo(42L);
@@ -121,7 +121,7 @@ public final class DecisionDefinitionServiceTest {
                 Authorizations.DECISION_DEFINITION_READ_AUTHORIZATION));
 
     // when
-    final ThrowingCallable executable = () -> services.getByKey(1L);
+    final ThrowingCallable executable = () -> services.getByKey(1L, authentication);
 
     // then
     final var exception =
@@ -144,7 +144,7 @@ public final class DecisionDefinitionServiceTest {
                 Authorizations.DECISION_DEFINITION_READ_AUTHORIZATION));
 
     // when
-    final ThrowingCallable executable = () -> services.getDecisionDefinitionXml(1L);
+    final ThrowingCallable executable = () -> services.getDecisionDefinitionXml(1L, authentication);
 
     // then
     final var exception =
@@ -153,6 +153,6 @@ public final class DecisionDefinitionServiceTest {
         .isEqualTo(
             "Unauthorized to perform operation 'READ_DECISION_DEFINITION' on resource 'DECISION_DEFINITION'");
     assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
-    verify(decisionRequirementServices, never()).getDecisionRequirementsXml(any(Long.class));
+    verify(decisionRequirementServices, never()).getDecisionRequirementsXml(any(Long.class), any());
   }
 }

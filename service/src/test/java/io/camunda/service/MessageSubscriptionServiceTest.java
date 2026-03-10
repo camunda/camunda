@@ -25,17 +25,18 @@ public class MessageSubscriptionServiceTest {
 
   private MessageSubscriptionServices services;
   private MessageSubscriptionSearchClient client;
+  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     client = mock(MessageSubscriptionSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    authentication = mock(CamundaAuthentication.class);
     services =
         new MessageSubscriptionServices(
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,
-            null,
             mock(ApiServicesExecutorProvider.class),
             null);
   }
@@ -49,22 +50,9 @@ public class MessageSubscriptionServiceTest {
     final var searchQuery = SearchQueryBuilders.messageSubscriptionSearchQuery().build();
 
     // when
-    final var searchQueryResult = services.search(searchQuery);
+    final var searchQueryResult = services.search(searchQuery, authentication);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
-  }
-
-  @Test
-  void shouldReturnAuthenticatedInstance() {
-    // given
-    final var authentication = mock(CamundaAuthentication.class);
-
-    // when
-    final var authenticatedServices = services.withAuthentication(authentication);
-
-    // then
-    assertThat(authenticatedServices).isNotNull();
-    assertThat(authenticatedServices).isInstanceOf(MessageSubscriptionServices.class);
   }
 }

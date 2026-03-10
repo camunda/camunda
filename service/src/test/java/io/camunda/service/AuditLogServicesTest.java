@@ -87,7 +87,6 @@ class AuditLogServicesTest {
             brokerClient,
             securityContextProvider,
             auditLogSearchClient,
-            authentication,
             executorProvider,
             brokerRequestAuthorizationConverter);
   }
@@ -101,7 +100,7 @@ class AuditLogServicesTest {
     when(query.filter()).thenReturn(FilterBuilders.auditLog().build());
 
     // when
-    final var result = auditLogServices.search(query);
+    final var result = auditLogServices.search(query, authentication);
 
     // then
     assertThat(result).isEqualTo(searchResult);
@@ -119,7 +118,7 @@ class AuditLogServicesTest {
     when(auditLogSearchClient.getAuditLog(key)).thenReturn(AUDIT_LOG_ENTITY);
 
     // when
-    final var result = auditLogServices.getAuditLog(key);
+    final var result = auditLogServices.getAuditLog(key, authentication);
 
     // then
     assertThat(result).isEqualTo(AUDIT_LOG_ENTITY);
@@ -134,7 +133,7 @@ class AuditLogServicesTest {
     when(query.filter()).thenReturn(FilterBuilders.auditLog().build());
 
     // when
-    final ThrowingCallable executeSearch = () -> auditLogServices.search(query);
+    final ThrowingCallable executeSearch = () -> auditLogServices.search(query, authentication);
 
     // then
     final var exception =
@@ -154,7 +153,8 @@ class AuditLogServicesTest {
         .thenThrow(new ResourceAccessDeniedException(Authorizations.AUDIT_LOG_READ_AUTHORIZATION));
 
     // when
-    final ThrowingCallable executeGetByKey = () -> auditLogServices.getAuditLog(key);
+    final ThrowingCallable executeGetByKey =
+        () -> auditLogServices.getAuditLog(key, authentication);
 
     // then
     final var exception =

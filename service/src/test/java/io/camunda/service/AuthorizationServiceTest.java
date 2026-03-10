@@ -17,12 +17,16 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 public class AuthorizationServiceTest {
+
+  @Mock private CamundaAuthentication authentication;
 
   private AuthorizationServices services;
   private AuthorizationSearchClient client;
@@ -36,7 +40,6 @@ public class AuthorizationServiceTest {
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,
-            null,
             mock(ApiServicesExecutorProvider.class),
             null);
   }
@@ -51,7 +54,7 @@ public class AuthorizationServiceTest {
     final var searchQuery = SearchQueryBuilders.authorizationSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery);
+    final var searchQueryResult = services.search(searchQuery, authentication);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -64,7 +67,8 @@ public class AuthorizationServiceTest {
     when(client.getAuthorization(any(Long.class))).thenReturn(entity);
 
     // when
-    final var searchQueryResult = services.getAuthorization(entity.authorizationKey());
+    final var searchQueryResult =
+        services.getAuthorization(entity.authorizationKey(), authentication);
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);

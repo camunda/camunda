@@ -15,12 +15,16 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 public final class FormServiceTest {
+
+  @Mock private CamundaAuthentication authentication;
 
   private FormServices services;
   private FormSearchClient client;
@@ -34,7 +38,6 @@ public final class FormServiceTest {
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,
-            null,
             mock(ApiServicesExecutorProvider.class),
             null);
   }
@@ -49,7 +52,7 @@ public final class FormServiceTest {
     when(client.searchForms(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.search(searchQuery);
+    final var searchQueryResult = services.search(searchQuery, authentication);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -65,7 +68,7 @@ public final class FormServiceTest {
     when(client.searchForms(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.search(searchQuery);
+    final var searchQueryResult = services.search(searchQuery, authentication);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);

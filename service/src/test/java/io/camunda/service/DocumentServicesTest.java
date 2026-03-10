@@ -51,6 +51,7 @@ public class DocumentServicesTest {
   private final SimpleDocumentStoreRegistry registry = mock(SimpleDocumentStoreRegistry.class);
   private final AuthorizationChecker authorizationChecker = mock(AuthorizationChecker.class);
   private final SecurityConfiguration securityConfiguration = mock(SecurityConfiguration.class);
+  private final CamundaAuthentication authentication = mock(CamundaAuthentication.class);
 
   @BeforeEach
   public void before() {
@@ -58,7 +59,6 @@ public class DocumentServicesTest {
         new DocumentServices(
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
-            mock(CamundaAuthentication.class),
             registry,
             authorizationChecker,
             securityConfiguration,
@@ -81,7 +81,7 @@ public class DocumentServicesTest {
     final var fileMock = mock(DocumentCreateRequest.class);
 
     // when
-    final var future = services.createDocument(fileMock);
+    final var future = services.createDocument(fileMock, authentication);
 
     assertThat(future.isCompletedExceptionally()).isTrue();
   }
@@ -97,7 +97,7 @@ public class DocumentServicesTest {
     final var fileMock = mock(DocumentCreateRequest.class);
 
     // when
-    final var future = services.createDocument(fileMock);
+    final var future = services.createDocument(fileMock, authentication);
 
     assertThat(future.isCompletedExceptionally()).isTrue();
   }
@@ -112,7 +112,8 @@ public class DocumentServicesTest {
         .thenReturn(Set.of(PermissionType.READ));
 
     // when
-    final var future = services.deleteDocument("irrelevant-document-id", "irrelevant-store-id");
+    final var future =
+        services.deleteDocument("irrelevant-document-id", "irrelevant-store-id", authentication);
 
     assertThat(future.isCompletedExceptionally()).isTrue();
   }
@@ -129,7 +130,7 @@ public class DocumentServicesTest {
     // when
     final var future =
         services.getDocumentContent(
-            "irrelevant-document-id", "irrelevant-store-id", "irrelevant-hash");
+            "irrelevant-document-id", "irrelevant-store-id", "irrelevant-hash", authentication);
 
     assertThat(future.isCompletedExceptionally()).isTrue();
   }
@@ -153,7 +154,7 @@ public class DocumentServicesTest {
         .thenReturn(CompletableFuture.completedFuture(Either.right(expectedResult1)));
 
     // when
-    final var response = services.createDocument(file1).join();
+    final var response = services.createDocument(file1, authentication).join();
 
     // then
     assertThat(response)
@@ -189,7 +190,7 @@ public class DocumentServicesTest {
         .thenReturn(CompletableFuture.completedFuture(Either.right(null)));
 
     // when
-    final var future = services.deleteDocument(documentId, storeId);
+    final var future = services.deleteDocument(documentId, storeId, authentication);
 
     // then
     assertThat(future).isNotNull();
@@ -220,7 +221,7 @@ public class DocumentServicesTest {
         .thenReturn(CompletableFuture.completedFuture(Either.right(expectedResult1)));
 
     // when
-    final var response = services.createDocument(file1).join();
+    final var response = services.createDocument(file1, authentication).join();
 
     // then
     assertThat(response)
@@ -263,7 +264,7 @@ public class DocumentServicesTest {
         .thenReturn(CompletableFuture.completedFuture(Either.right(expectedResult2)));
 
     // when
-    final var response = services.createDocumentBatch(List.of(file1, file2)).join();
+    final var response = services.createDocumentBatch(List.of(file1, file2), authentication).join();
 
     // then
     assertThat(response).isNotNull();
@@ -318,7 +319,7 @@ public class DocumentServicesTest {
 
     // when
     final var actualDocumentContent =
-        services.getDocumentContent(documentId, storeId, contentHash).join();
+        services.getDocumentContent(documentId, storeId, contentHash, authentication).join();
 
     // then
     assertThat(actualDocumentContent).isNotNull();

@@ -52,7 +52,6 @@ public class TopologyServiceTest {
         new TopologyServices(
             brokerClient,
             mock(SecurityContextProvider.class),
-            null,
             mock(ApiServicesExecutorProvider.class),
             null);
   }
