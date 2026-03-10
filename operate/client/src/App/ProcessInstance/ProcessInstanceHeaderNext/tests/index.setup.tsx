@@ -9,6 +9,8 @@
 /* eslint-disable react-refresh/only-export-components */
 
 import {authenticationStore} from 'modules/stores/authentication';
+import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
+import {modificationsStore} from 'modules/stores/modifications';
 import {createProcessInstance} from 'modules/testUtils';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
@@ -28,6 +30,8 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {
       authenticationStore.reset();
+      processInstanceMigrationStore.reset();
+      modificationsStore.reset();
     };
   }, []);
 
