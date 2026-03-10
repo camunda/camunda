@@ -343,7 +343,6 @@
       <artifactId>camunda-auth-spring</artifactId>
     </dependency>
 
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-elasticsearch</artifactId>
@@ -1077,7 +1076,6 @@
 
             <!-- App Integrations Exporter -->
             <dependency>io.camunda:app-integrations-exporter</dependency>
-
 
             <dependency>org.springframework.session:spring-session-core</dependency>
           </usedDependencies>
