@@ -684,6 +684,12 @@ jobs:
     name: "General / Integration / RDBMS ITs"
     timeout-minutes: 30
     runs-on: gcp-perf-core-8-default
+    strategy:
+      # In case of stress testing, we want the status from all jobs.
+      fail-fast: false
+      matrix:
+        # Opt-in to stress testing this job via the PR label "ci:stress-test".
+        include: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') && fromJson('[{"stressRun":1},{"stressRun":2},{"stressRun":3},{"stressRun":4},{"stressRun":5},{"stressRun":6},{"stressRun":7},{"stressRun":8},{"stressRun":9},{"stressRun":10}]') || fromJson('[{"stressRun":1}]') }}
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     permissions: { }  # no GITHUB_TOKEN is needed
@@ -709,7 +715,7 @@ jobs:
           -D forkCount=1
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
+          -D failsafe.rerunFailingTestsCount=${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') && '0' || env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
           -P rdbms,extract-flaky-tests
           -pl qa/acceptance-tests
           verify
@@ -724,12 +730,13 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "[IT] RDBMS"
+          name: "[IT] RDBMS - Run ${{ matrix.stressRun }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          job_name: ${{ format('rdbms-integration-tests{0}', matrix.stressRun != 1 && format('/{0}', matrix.stressRun) || '') }}
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "General"
