@@ -262,7 +262,7 @@ jobs:
         name: Build Zeebe
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild -P\!include-optimize -Dmaven.test.skip=true
+          maven-extra-args: -PskipFrontendBuild -P\!include-optimize
       - uses: ./.github/actions/build-platform-docker
         name: Build Zeebe Docker Image
         with:
