@@ -29,6 +29,11 @@ jobs:
       uses: YunaBraska/java-info-action@main
       with:
         work-dir: ./optimize
+    - name: "Read Parent Pom Info"
+      id: "parent-pom-info"
+      uses: YunaBraska/java-info-action@main
+      with:
+        work-dir: .
     - name: Expose common variables as Env
       run: |
         {
@@ -83,7 +88,7 @@ jobs:
         OPTIMIZE_IMAGE_TAG: ${{ env.DOCKER_TAG }}
         ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
         ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
-        IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
+        IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version || steps.parent-pom-info.outputs.x_version_identity }}
         OPERATE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
 
     - name: Wait for Optimize to start
