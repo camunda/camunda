@@ -13,7 +13,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.UserEntity;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -34,13 +33,12 @@ public class CamundaUserDetailsServiceTest {
   public void setup() throws Exception {
     MockitoAnnotations.openMocks(this).close();
     userDetailsService = new CamundaUserDetailsService(userService);
-    when(userService.withAuthentication(any(CamundaAuthentication.class))).thenReturn(userService);
   }
 
   @Test
   public void testUserDetailsIsLoaded() {
     // given
-    when(userService.getUser(any()))
+    when(userService.getUser(any(), any()))
         .thenReturn(new UserEntity(100L, TEST_USER_ID, "Foo Bar", "email@tested", "password1"));
 
     // when
@@ -54,7 +52,8 @@ public class CamundaUserDetailsServiceTest {
   @Test
   public void testUserDetailsNotFound() {
     // given
-    when(userService.getUser(any())).thenThrow(new ServiceException("not found", Status.NOT_FOUND));
+    when(userService.getUser(any(), any()))
+        .thenThrow(new ServiceException("not found", Status.NOT_FOUND));
 
     // when/then
     assertThatThrownBy(() -> userDetailsService.loadUserByUsername(TEST_USER_ID))
