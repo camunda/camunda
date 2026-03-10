@@ -12,6 +12,7 @@ Use this skill when a workflow change needs local validation with `act`.
 
 After creating or editing a workflow:
 1. Assess if the workflow is Tier 1, Tier 2, or Tier 3 (see `references/workflow-tiers.md`).
+   - Re-assess tier after every major scope change during iteration (e.g., removed jobs/branches/options).
 2. If Tier 1 or Tier 2, create a temporary `test-<workflow>.yml` harness and run drift guard:
    - `bash .github/skills/act-testing/scripts/check-drift.sh <production-workflow> <test-workflow>`
 3. Assess whether `act` execution is possible in the current environment.
@@ -35,6 +36,19 @@ Decision rule:
 - If internal logic is a primary risk, prepare harness + scenario matrix (Tier 1/2).
 - If external orchestration is the primary risk and internal logic is minimal, Tier 3 rationale is acceptable.
 - For multi-workflow changes, classify each workflow explicitly; do not infer one workflow's tier from another.
+
+## Mocked-Signal Gate (mandatory)
+
+Before committing to Tier 1/2 harnessing, estimate how much critical behavior is mocked in the harness:
+
+- If >=70% of critical path steps are mocked, do **not** default to Tier 1/2.
+- In that case, either:
+   - classify as Tier 3, or
+   - provide a written justification why remaining unmocked logic still gives high-confidence signal.
+
+Required statement for Tier 1/2: "What risk is actually tested by act in this harness?"
+
+If this statement cannot be answered clearly, classify as Tier 3.
 
 ## Harness Rules
 
@@ -115,6 +129,7 @@ For Tier 3 workflows, the final user message must still include:
 - `tier: 3`
 - `non-applicability rationale: <why external orchestration dominates>`
 - `act-scenarios: not required`
+- `harness: not created (or removed) because mocked signal is insufficient`
 
 ## Success Metrics for Act Readiness
 
