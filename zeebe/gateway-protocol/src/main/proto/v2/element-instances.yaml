@@ -400,6 +400,8 @@ components:
         - processInstanceKey
         - processDefinitionKey
         - rootProcessInstanceKey
+        - endDate
+        - incidentKey
       properties:
         processDefinitionId:
           description: The process definition ID associated to this element instance.
