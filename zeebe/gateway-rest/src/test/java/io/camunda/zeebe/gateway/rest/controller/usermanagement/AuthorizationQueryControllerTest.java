@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -24,7 +25,6 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.AuthorizationServices;
@@ -134,8 +134,6 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(authorizationServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(authorizationServices);
   }
 
   @Test
@@ -153,7 +151,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
             Set.of(PermissionType.CREATE));
 
     final Long authorizationKey = authorizationEntity.authorizationKey();
-    when(authorizationServices.getAuthorization(authorizationKey)).thenReturn(authorizationEntity);
+    when(authorizationServices.getAuthorization(eq(authorizationKey), any()))
+        .thenReturn(authorizationEntity);
 
     // when
     webClient
@@ -178,7 +177,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(authorizationServices, times(1)).getAuthorization(authorizationKey);
+    verify(authorizationServices, times(1)).getAuthorization(eq(authorizationKey), any());
   }
 
   @Test
@@ -186,7 +185,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
     // given
     final var authorizationKey = 100L;
     final var path = "%s/%s".formatted("/v2/authorizations", authorizationKey);
-    when(authorizationServices.getAuthorization(authorizationKey))
+    when(authorizationServices.getAuthorization(eq(authorizationKey), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -214,13 +213,13 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(authorizationServices, times(1)).getAuthorization(authorizationKey);
+    verify(authorizationServices, times(1)).getAuthorization(eq(authorizationKey), any());
   }
 
   @Test
   void shouldSearchAuthorizationsWithEmptyBody() {
     // given
-    when(authorizationServices.search(any(AuthorizationQuery.class)))
+    when(authorizationServices.search(any(AuthorizationQuery.class), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when / then
 
@@ -235,13 +234,13 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(authorizationServices).search(new AuthorizationQuery.Builder().build());
+    verify(authorizationServices).search(eq(new AuthorizationQuery.Builder().build()), any());
   }
 
   @Test
   void shouldSearchAuthorizationsWithEmptyQuery() {
     // given
-    when(authorizationServices.search(any(AuthorizationQuery.class)))
+    when(authorizationServices.search(any(AuthorizationQuery.class), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     final String request = "{}";
     // when / then
@@ -259,7 +258,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(authorizationServices).search(new AuthorizationQuery.Builder().build());
+    verify(authorizationServices).search(eq(new AuthorizationQuery.Builder().build()), any());
   }
 
   @ParameterizedTest
@@ -267,7 +266,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
   void shouldSearchAuthorizationsWithValidQueries(
       final String request, final AuthorizationQuery query) {
     // given
-    when(authorizationServices.search(any(AuthorizationQuery.class)))
+    when(authorizationServices.search(any(AuthorizationQuery.class), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
@@ -285,7 +284,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(authorizationServices).search(query);
+    verify(authorizationServices).search(eq(query), any());
   }
 
   @ParameterizedTest
@@ -307,7 +306,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(authorizationServices, never()).search(any(AuthorizationQuery.class));
+    verify(authorizationServices, never()).search(any(AuthorizationQuery.class), any());
   }
 
   public static Stream<Arguments> validAuthorizationSearchQueries() {

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.system;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -17,7 +18,6 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUStatisticsEntityTenant;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -79,14 +79,12 @@ public class SystemControllerTest extends RestControllerTest {
   void setupUsageMetricsServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(usageMetricsServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(usageMetricsServices);
   }
 
   @Test
   void shouldSearchWithStartTimeAndEndTime() {
     // given
-    when(usageMetricsServices.search(any()))
+    when(usageMetricsServices.search(any(), any()))
         .thenReturn(
             SearchQueryResult.of(
                 Tuple.of(
@@ -111,7 +109,9 @@ public class SystemControllerTest extends RestControllerTest {
     final var endTime = OffsetDateTime.of(2024, 12, 31, 10, 50, 26, 0, ZoneOffset.UTC);
 
     verify(usageMetricsServices)
-        .search(UsageMetricsQuery.of(q -> q.filter(f -> f.startTime(startTime).endTime(endTime))));
+        .search(
+            eq(UsageMetricsQuery.of(q -> q.filter(f -> f.startTime(startTime).endTime(endTime)))),
+            any());
   }
 
   @Test
@@ -129,7 +129,7 @@ public class SystemControllerTest extends RestControllerTest {
             new UsageMetricTUStatisticsEntityTenant(1L),
             "tenant2",
             new UsageMetricTUStatisticsEntityTenant(3L));
-    when(usageMetricsServices.search(any()))
+    when(usageMetricsServices.search(any(), any()))
         .thenReturn(
             SearchQueryResult.of(
                 Tuple.of(
@@ -155,8 +155,10 @@ public class SystemControllerTest extends RestControllerTest {
 
     verify(usageMetricsServices)
         .search(
-            UsageMetricsQuery.of(
-                q -> q.filter(f -> f.startTime(startTime).endTime(endTime).withTenants(true))));
+            eq(
+                UsageMetricsQuery.of(
+                    q -> q.filter(f -> f.startTime(startTime).endTime(endTime).withTenants(true)))),
+            any());
   }
 
   @Test

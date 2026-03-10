@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,7 +26,6 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.exception.ErrorMapper;
@@ -117,8 +117,6 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(decisionInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(decisionInstanceServices);
   }
 
   private static Stream<Arguments> provideQueryParameters() {
@@ -209,7 +207,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
           expectedQuery) {
     // given
     when(decisionInstanceServices.search(
-            SearchQueryBuilders.decisionInstanceSearchQuery(expectedQuery)))
+            eq(SearchQueryBuilders.decisionInstanceSearchQuery(expectedQuery)), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when
     webClient
@@ -227,7 +225,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   @Test
   void shouldReturnDecisionInstancesForNullBody() {
     // given
-    when(decisionInstanceServices.search(SearchQueryBuilders.decisionInstanceSearchQuery(q -> q)))
+    when(decisionInstanceServices.search(
+            eq(SearchQueryBuilders.decisionInstanceSearchQuery(q -> q)), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     // when
     webClient
@@ -270,7 +269,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                 new DecisionInstanceOutputEntity("1", "name1", "value1", "ruleId1", 1),
                 new DecisionInstanceOutputEntity("2", "name2", "value2", "ruleId1", 1),
                 new DecisionInstanceOutputEntity("3", "name3", "value3", "ruleId2", 2)));
-    when(decisionInstanceServices.getById(decisionInstanceId)).thenReturn(decisionInstanceInDB);
+    when(decisionInstanceServices.getById(eq(decisionInstanceId), any()))
+        .thenReturn(decisionInstanceInDB);
     // when
     webClient
         .get()
@@ -349,7 +349,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   void shouldReturn404WhenDecisionInstanceNotFound() {
     // given
     final var decisionInstanceId = "123-1";
-    when(decisionInstanceServices.getById(decisionInstanceId))
+    when(decisionInstanceServices.getById(eq(decisionInstanceId), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -381,7 +381,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   void shouldReturn500ForInternalErrorGetDecisionDefinitionByKey() {
     // given
     final var decisionInstanceId = "123-1";
-    when(decisionInstanceServices.getById(decisionInstanceId))
+    when(decisionInstanceServices.getById(eq(decisionInstanceId), any()))
         .thenThrow(new RuntimeException("Something bad happened."));
     // when
     webClient
@@ -409,7 +409,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   void shouldReturn403ForUnauthorizedGetDecisionDefinitionByKey() {
     // given
     final var decisionInstanceId = "123-1";
-    when(decisionInstanceServices.getById(decisionInstanceId))
+    when(decisionInstanceServices.getById(eq(decisionInstanceId), any()))
         .thenThrow(
             ErrorMapper.createForbiddenException(
                 Authorization.of(a -> a.decisionDefinition().readDecisionInstance())));
@@ -497,7 +497,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
             }"""
             .formatted(filterString);
     System.out.println("request = " + request);
-    when(decisionInstanceServices.search(any(DecisionInstanceQuery.class)))
+    when(decisionInstanceServices.search(any(DecisionInstanceQuery.class), any()))
         .thenReturn(SEARCH_QUERY_RESULT);
     final var decisionInstanceKey = 123L;
 
@@ -517,7 +517,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionInstanceServices)
-        .search(new DecisionInstanceQuery.Builder().filter(filter).build());
+        .search(eq(new DecisionInstanceQuery.Builder().filter(filter).build()), any());
   }
 
   @Test
@@ -549,7 +549,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(decisionInstanceServices, never()).search(any(DecisionInstanceQuery.class));
+    verify(decisionInstanceServices, never()).search(any(DecisionInstanceQuery.class), any());
   }
 
   @Test
@@ -581,7 +581,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(decisionInstanceServices, never()).search(any(DecisionInstanceQuery.class));
+    verify(decisionInstanceServices, never()).search(any(DecisionInstanceQuery.class), any());
   }
 
   private record TestArguments(

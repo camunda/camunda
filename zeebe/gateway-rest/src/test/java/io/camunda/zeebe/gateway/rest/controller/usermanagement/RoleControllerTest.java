@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.security.configuration.SecurityConfiguration.DEFAULT_EXTERNAL_ID_REGEX;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -16,7 +17,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.protocol.model.RoleCreateRequest;
 import io.camunda.gateway.protocol.model.RoleUpdateRequest;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
@@ -69,14 +69,6 @@ public class RoleControllerTest {
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-      when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(roleServices);
-      when(userServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(userServices);
-      when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(mappingRuleServices);
-      when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(groupServices);
     }
 
     @ParameterizedTest
@@ -86,7 +78,7 @@ public class RoleControllerTest {
       final var roleName = "Test Role";
       final var description = "A role used for testing";
       final var request = new CreateRoleRequest(roleId, roleName, description);
-      when(roleServices.createRole(request))
+      when(roleServices.createRole(eq(request), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new RoleRecord()
@@ -106,7 +98,7 @@ public class RoleControllerTest {
           .isCreated();
 
       // then
-      verify(roleServices, times(1)).createRole(request);
+      verify(roleServices, times(1)).createRole(eq(request), any());
     }
 
     @Test
@@ -281,7 +273,7 @@ public class RoleControllerTest {
       final var roleName = "Updated Role Name";
       final var description = "Updated Role Description";
       final var request = new UpdateRoleRequest(roleId, roleName, description);
-      when(roleServices.updateRole(request))
+      when(roleServices.updateRole(eq(request), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new RoleRecord()
@@ -313,7 +305,7 @@ public class RoleControllerTest {
               JsonCompareMode.STRICT);
 
       // then
-      verify(roleServices, times(1)).updateRole(request);
+      verify(roleServices, times(1)).updateRole(eq(request), any());
     }
 
     @Test
@@ -358,7 +350,7 @@ public class RoleControllerTest {
       final var description = "Updated Role Description";
       final var request = new UpdateRoleRequest(roleId, roleName, description);
       final var path = "%s/%s".formatted(ROLE_BASE_URL, roleId);
-      when(roleServices.updateRole(request))
+      when(roleServices.updateRole(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -376,7 +368,7 @@ public class RoleControllerTest {
           .expectStatus()
           .isNotFound();
 
-      verify(roleServices, times(1)).updateRole(request);
+      verify(roleServices, times(1)).updateRole(eq(request), any());
     }
 
     @Test
@@ -387,7 +379,7 @@ public class RoleControllerTest {
       final String description = null;
       final var uri = "%s/%s".formatted(ROLE_BASE_URL, roleId);
       final var request = new UpdateRoleRequest(roleId, roleName, description);
-      when(roleServices.updateRole(request))
+      when(roleServices.updateRole(eq(request), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new RoleRecord()
@@ -417,7 +409,7 @@ public class RoleControllerTest {
                   .formatted(roleName, "", roleId),
               JsonCompareMode.STRICT);
 
-      verify(roleServices, times(1)).updateRole(request);
+      verify(roleServices, times(1)).updateRole(eq(request), any());
     }
 
     @Test
@@ -427,7 +419,7 @@ public class RoleControllerTest {
 
       final var roleRecord = new RoleRecord().setRoleId(roleId);
 
-      when(roleServices.deleteRole(roleId))
+      when(roleServices.deleteRole(eq(roleId), any()))
           .thenReturn(CompletableFuture.completedFuture(roleRecord));
 
       // when
@@ -440,7 +432,7 @@ public class RoleControllerTest {
           .isNoContent();
 
       // then
-      verify(roleServices, times(1)).deleteRole(roleId);
+      verify(roleServices, times(1)).deleteRole(eq(roleId), any());
     }
 
     @Test
@@ -450,7 +442,8 @@ public class RoleControllerTest {
       final var username = "username";
 
       final var request = new RoleMemberRequest(roleId, username, EntityType.USER);
-      when(roleServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+      when(roleServices.addMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
       webClient
@@ -462,7 +455,7 @@ public class RoleControllerTest {
           .isNoContent();
 
       // then
-      verify(roleServices, times(1)).addMember(request);
+      verify(roleServices, times(1)).addMember(eq(request), any());
     }
 
     @Test
@@ -471,7 +464,8 @@ public class RoleControllerTest {
       final var roleId = Strings.newRandomValidIdentityId();
       final var mappingRuleId = Strings.newRandomValidIdentityId();
       final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE);
-      when(roleServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+      when(roleServices.addMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
       webClient
@@ -483,7 +477,7 @@ public class RoleControllerTest {
           .isNoContent();
 
       // then
-      verify(roleServices, times(1)).addMember(request);
+      verify(roleServices, times(1)).addMember(eq(request), any());
     }
 
     @Test
@@ -493,7 +487,7 @@ public class RoleControllerTest {
       final var mappingRuleId = Strings.newRandomValidIdentityId();
       final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingRuleId);
       final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE);
-      when(roleServices.addMember(request))
+      when(roleServices.addMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -513,7 +507,7 @@ public class RoleControllerTest {
           .isNotFound();
 
       // then
-      verify(roleServices, times(1)).addMember(request);
+      verify(roleServices, times(1)).addMember(eq(request), any());
     }
 
     @Test
@@ -523,7 +517,7 @@ public class RoleControllerTest {
       final var mappingRuleId = Strings.newRandomValidIdentityId();
       final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingRuleId);
       final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE);
-      when(roleServices.addMember(request))
+      when(roleServices.addMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -543,7 +537,7 @@ public class RoleControllerTest {
           .isNotFound();
 
       // then
-      verify(roleServices, times(1)).addMember(request);
+      verify(roleServices, times(1)).addMember(eq(request), any());
     }
 
     @Test
@@ -615,7 +609,8 @@ public class RoleControllerTest {
       final var mappingRuleId = Strings.newRandomValidIdentityId();
 
       final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE);
-      when(roleServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+      when(roleServices.removeMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
       webClient
@@ -627,7 +622,7 @@ public class RoleControllerTest {
           .isNoContent();
 
       // then
-      verify(roleServices, times(1)).removeMember(request);
+      verify(roleServices, times(1)).removeMember(eq(request), any());
     }
 
     @Test
@@ -637,7 +632,7 @@ public class RoleControllerTest {
       final var mappingRuleId = Strings.newRandomValidIdentityId();
       final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingRuleId);
       final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE);
-      when(roleServices.removeMember(request))
+      when(roleServices.removeMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -657,7 +652,7 @@ public class RoleControllerTest {
           .isNotFound();
 
       // then
-      verify(roleServices, times(1)).removeMember(request);
+      verify(roleServices, times(1)).removeMember(eq(request), any());
     }
 
     @Test
@@ -667,7 +662,7 @@ public class RoleControllerTest {
       final var mappingRuleId = Strings.newRandomValidIdentityId();
       final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingRuleId);
       final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE);
-      when(roleServices.removeMember(request))
+      when(roleServices.removeMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -687,7 +682,7 @@ public class RoleControllerTest {
           .isNotFound();
 
       // then
-      verify(roleServices, times(1)).removeMember(request);
+      verify(roleServices, times(1)).removeMember(eq(request), any());
     }
 
     @Test
@@ -697,7 +692,7 @@ public class RoleControllerTest {
       final var username = "username";
       final var path = "%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username);
       final var request = new RoleMemberRequest(roleId, username, EntityType.USER);
-      when(roleServices.addMember(request))
+      when(roleServices.addMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -717,7 +712,7 @@ public class RoleControllerTest {
           .isNotFound();
 
       // then
-      verify(roleServices, times(1)).addMember(request);
+      verify(roleServices, times(1)).addMember(eq(request), any());
     }
 
     @Test
@@ -727,7 +722,7 @@ public class RoleControllerTest {
       final String username = "username";
       final var path = "%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username);
       final var request = new RoleMemberRequest(roleId, username, EntityType.USER);
-      when(roleServices.addMember(request))
+      when(roleServices.addMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -747,7 +742,7 @@ public class RoleControllerTest {
           .isNotFound();
 
       // then
-      verify(roleServices, times(1)).addMember(request);
+      verify(roleServices, times(1)).addMember(eq(request), any());
     }
 
     @Test
@@ -819,7 +814,8 @@ public class RoleControllerTest {
       final var username = "username";
 
       final var request = new RoleMemberRequest(roleId, username, EntityType.USER);
-      when(roleServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+      when(roleServices.removeMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
       webClient
@@ -831,7 +827,7 @@ public class RoleControllerTest {
           .isNoContent();
 
       // then
-      verify(roleServices, times(1)).removeMember(request);
+      verify(roleServices, times(1)).removeMember(eq(request), any());
     }
 
     @Test
@@ -841,7 +837,7 @@ public class RoleControllerTest {
       final var username = "username";
       final var path = "%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username);
       final var request = new RoleMemberRequest(roleId, username, EntityType.USER);
-      when(roleServices.removeMember(request))
+      when(roleServices.removeMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -861,7 +857,7 @@ public class RoleControllerTest {
           .isNotFound();
 
       // then
-      verify(roleServices, times(1)).removeMember(request);
+      verify(roleServices, times(1)).removeMember(eq(request), any());
     }
 
     @Test
@@ -871,7 +867,7 @@ public class RoleControllerTest {
       final String username = "username";
       final var path = "%s/%s/users/%s".formatted(ROLE_BASE_URL, roleId, username);
       final var request = new RoleMemberRequest(roleId, username, EntityType.USER);
-      when(roleServices.removeMember(request))
+      when(roleServices.removeMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -891,7 +887,7 @@ public class RoleControllerTest {
           .isNotFound();
 
       // then
-      verify(roleServices, times(1)).removeMember(request);
+      verify(roleServices, times(1)).removeMember(eq(request), any());
     }
 
     @Test
@@ -961,7 +957,8 @@ public class RoleControllerTest {
       final var groupId = "groupId";
 
       final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
-      when(roleServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+      when(roleServices.addMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
       webClient
@@ -973,7 +970,7 @@ public class RoleControllerTest {
           .isNoContent();
 
       // then
-      verify(roleServices, times(1)).addMember(request);
+      verify(roleServices, times(1)).addMember(eq(request), any());
     }
 
     @Test
@@ -983,7 +980,7 @@ public class RoleControllerTest {
       final var groupId = "groupId";
       final var path = "%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId);
       final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
-      when(roleServices.addMember(request))
+      when(roleServices.addMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -1003,7 +1000,7 @@ public class RoleControllerTest {
           .isNotFound();
 
       // then
-      verify(roleServices, times(1)).addMember(request);
+      verify(roleServices, times(1)).addMember(eq(request), any());
     }
 
     @Test
@@ -1013,7 +1010,7 @@ public class RoleControllerTest {
       final String groupId = "groupId";
       final var path = "%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId);
       final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
-      when(roleServices.addMember(request))
+      when(roleServices.addMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -1033,7 +1030,7 @@ public class RoleControllerTest {
           .isNotFound();
 
       // then
-      verify(roleServices, times(1)).addMember(request);
+      verify(roleServices, times(1)).addMember(eq(request), any());
     }
 
     @Test
@@ -1105,7 +1102,8 @@ public class RoleControllerTest {
       final var groupId = "groupId";
 
       final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
-      when(roleServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+      when(roleServices.removeMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
       webClient
@@ -1117,7 +1115,7 @@ public class RoleControllerTest {
           .isNoContent();
 
       // then
-      verify(roleServices, times(1)).removeMember(request);
+      verify(roleServices, times(1)).removeMember(eq(request), any());
     }
 
     @Test
@@ -1127,7 +1125,7 @@ public class RoleControllerTest {
       final var groupId = "groupId";
       final var path = "%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId);
       final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
-      when(roleServices.removeMember(request))
+      when(roleServices.removeMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -1147,7 +1145,7 @@ public class RoleControllerTest {
           .isNotFound();
 
       // then
-      verify(roleServices, times(1)).removeMember(request);
+      verify(roleServices, times(1)).removeMember(eq(request), any());
     }
 
     @Test
@@ -1157,7 +1155,7 @@ public class RoleControllerTest {
       final String groupId = "groupId";
       final var path = "%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId);
       final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
-      when(roleServices.removeMember(request))
+      when(roleServices.removeMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -1177,7 +1175,7 @@ public class RoleControllerTest {
           .isNotFound();
 
       // then
-      verify(roleServices, times(1)).removeMember(request);
+      verify(roleServices, times(1)).removeMember(eq(request), any());
     }
 
     @Test
@@ -1255,14 +1253,6 @@ public class RoleControllerTest {
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-      when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(roleServices);
-      when(userServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(userServices);
-      when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(mappingRuleServices);
-      when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(groupServices);
     }
 
     /**
@@ -1276,7 +1266,8 @@ public class RoleControllerTest {
       final var groupId = "group Id";
       final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
 
-      when(roleServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+      when(roleServices.addMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
       webClient
@@ -1288,7 +1279,7 @@ public class RoleControllerTest {
           .isNoContent();
 
       // then
-      verify(roleServices, times(1)).addMember(request);
+      verify(roleServices, times(1)).addMember(eq(request), any());
     }
 
     /**
@@ -1302,7 +1293,8 @@ public class RoleControllerTest {
       final var groupId = "group Id";
       final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
 
-      when(roleServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+      when(roleServices.removeMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
       webClient
@@ -1314,7 +1306,7 @@ public class RoleControllerTest {
           .isNoContent();
 
       // then
-      verify(roleServices, times(1)).removeMember(request);
+      verify(roleServices, times(1)).removeMember(eq(request), any());
     }
 
     @TestConfiguration

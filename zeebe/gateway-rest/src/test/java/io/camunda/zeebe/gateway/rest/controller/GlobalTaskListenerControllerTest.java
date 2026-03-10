@@ -17,7 +17,6 @@ import io.camunda.search.entities.GlobalListenerSource;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GlobalListenerServices;
@@ -55,8 +54,6 @@ public class GlobalTaskListenerControllerTest extends RestControllerTest {
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(globalListenerServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(globalListenerServices);
     when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
@@ -75,7 +72,7 @@ public class GlobalTaskListenerControllerTest extends RestControllerTest {
             GlobalListenerSource.API,
             GlobalListenerType.USER_TASK);
 
-    when(globalListenerServices.getGlobalTaskListener(any(GlobalListenerRecord.class)))
+    when(globalListenerServices.getGlobalTaskListener(any(GlobalListenerRecord.class), any()))
         .thenReturn(entity);
 
     // when / then
@@ -87,7 +84,7 @@ public class GlobalTaskListenerControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk();
 
-    verify(globalListenerServices).getGlobalTaskListener(listenerRecordCaptor.capture());
+    verify(globalListenerServices).getGlobalTaskListener(listenerRecordCaptor.capture(), any());
     final var capturedRequest = listenerRecordCaptor.getValue();
     assertThat(capturedRequest.getId()).isEqualTo("my-listener");
     assertThat(capturedRequest.getListenerType())
@@ -155,7 +152,8 @@ public class GlobalTaskListenerControllerTest extends RestControllerTest {
             .items(List.of(entity1, entity2))
             .build();
 
-    when(globalListenerServices.search(any(GlobalListenerQuery.class))).thenReturn(searchResult);
+    when(globalListenerServices.search(any(GlobalListenerQuery.class), any()))
+        .thenReturn(searchResult);
 
     final var requestBody =
         """
@@ -174,14 +172,14 @@ public class GlobalTaskListenerControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk();
 
-    verify(globalListenerServices).search(searchQueryCaptor.capture());
+    verify(globalListenerServices).search(searchQueryCaptor.capture(), any());
     assertThat(searchQueryCaptor.getValue()).isNotNull();
   }
 
   @Test
   void shouldHandleErrorInGetGlobalTaskListener() {
     // given
-    when(globalListenerServices.getGlobalTaskListener(any(GlobalListenerRecord.class)))
+    when(globalListenerServices.getGlobalTaskListener(any(GlobalListenerRecord.class), any()))
         .thenThrow(new RuntimeException("Test error"));
 
     // when / then
@@ -197,7 +195,7 @@ public class GlobalTaskListenerControllerTest extends RestControllerTest {
   @Test
   void shouldHandleErrorInSearch() {
     // given
-    when(globalListenerServices.search(any(GlobalListenerQuery.class)))
+    when(globalListenerServices.search(any(GlobalListenerQuery.class), any()))
         .thenThrow(new RuntimeException("Test error"));
 
     final var requestBody =
