@@ -207,18 +207,7 @@ public final class ManifestManager {
         statusFutures.add(CompletableFuture.completedFuture(fromMetadata.get()));
       } else {
         // Fallback: download the manifest for blobs without metadata
-        statusFutures.add(
-            CompletableFuture.supplyAsync(
-                () -> {
-                  try {
-                    final var manifest =
-                        MAPPER.readValue(client.readAllBytes(blob.getBlobId()), Manifest.class);
-                    return Manifest.toStatus(manifest);
-                  } catch (final IOException e) {
-                    throw new UncheckedIOException(e);
-                  }
-                },
-                executor));
+        statusFutures.add(downloadManifestStatus(blob));
       }
     }
 
@@ -229,6 +218,20 @@ public final class ManifestManager {
         .map(CompletableFuture::join)
         .filter(status -> wildcard.matches(status.id()))
         .toList();
+  }
+
+  private CompletableFuture<BackupStatus> downloadManifestStatus(final Blob blob) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            final var manifest =
+                MAPPER.readValue(client.readAllBytes(blob.getBlobId()), Manifest.class);
+            return Manifest.toStatus(manifest);
+          } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        },
+        executor);
   }
 
   public void deleteManifest(final Manifest manifest) {
