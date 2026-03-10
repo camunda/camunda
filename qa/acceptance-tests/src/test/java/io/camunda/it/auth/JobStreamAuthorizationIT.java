@@ -25,11 +25,14 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.qa.util.actuator.JobStreamActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.jobstream.JobStreamActuatorAssert;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -56,8 +59,6 @@ public class JobStreamAuthorizationIT {
   private static final String PROCESS_ID_3 = "service_tasks_v3";
   private static final String PROCESS_ID_4 = "service_tasks_v4";
   private static final String PROCESS_ID_5 = "service_tasks_v5";
-  private static final String JOB_TYPE = "taskA";
-  private static final String JOB_TYPE_B = "taskB";
   private static final String USER1_USERNAME = "user1";
   private static final String USER2_USERNAME = "user2";
 
@@ -95,43 +96,6 @@ public class JobStreamAuthorizationIT {
     // tenantB
     assignUserToTenant(adminClient, USER2_USERNAME, TENANT_A);
     assignUserToTenant(adminClient, USER2_USERNAME, TENANT_B);
-
-    deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
-    deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_B);
-
-    final var modelInstance =
-        Bpmn.createExecutableProcess(PROCESS_ID_2)
-            .startEvent()
-            .serviceTask(JOB_TYPE, t -> t.zeebeJobType(JOB_TYPE))
-            .endEvent()
-            .done();
-    deployResource(adminClient, "service_tasks_v2.bpmn", modelInstance, TENANT_B);
-
-    // Deploy processes with JOB_TYPE_B for TenantFilter.ASSIGNED tests (isolated from taskA tests)
-    final var processV3 =
-        Bpmn.createExecutableProcess(PROCESS_ID_3)
-            .startEvent()
-            .serviceTask(JOB_TYPE_B, t -> t.zeebeJobType(JOB_TYPE_B))
-            .endEvent()
-            .done();
-    deployResource(adminClient, "service_tasks_v3.bpmn", processV3, TENANT_A);
-    deployResource(adminClient, "service_tasks_v3.bpmn", processV3, TENANT_B);
-
-    final var processV4 =
-        Bpmn.createExecutableProcess(PROCESS_ID_4)
-            .startEvent()
-            .serviceTask(JOB_TYPE_B, t -> t.zeebeJobType(JOB_TYPE_B))
-            .endEvent()
-            .done();
-    deployResource(adminClient, "service_tasks_v4.bpmn", processV4, TENANT_B);
-
-    final var processV5 =
-        Bpmn.createExecutableProcess(PROCESS_ID_5)
-            .startEvent()
-            .serviceTask(JOB_TYPE_B, t -> t.zeebeJobType(JOB_TYPE_B))
-            .endEvent()
-            .done();
-    deployResource(adminClient, "service_tasks_v5.bpmn", processV5, TENANT_B);
   }
 
   @AfterEach
@@ -147,13 +111,14 @@ public class JobStreamAuthorizationIT {
   public void shouldNotOpenStreamWhenNotAssignedToAllTenants(
       @Authenticated(USER1_USERNAME) final CamundaClient camundaClient) {
     // given
+    final var jobType = uniqueJobType();
     // a job set for collecting jobs in the client
     final var jobCollector = new HashSet<ActivatedJob>();
     // and a job stream command created by the user1 client, with their authorizations
     final var command =
         camundaClient
             .newStreamJobsCommand()
-            .jobType(JOB_TYPE)
+            .jobType(jobType)
             .consumer(job -> jobCollector.add(job))
             .tenantIds(TENANT_A, TENANT_B);
 
@@ -170,16 +135,20 @@ public class JobStreamAuthorizationIT {
   public void shouldReceiveNoJobsWhenNotAuthorized(
       @Authenticated(USER1_USERNAME) final CamundaClient user1Client) {
     // given
+    final var jobType = uniqueJobType();
+    deployProcess(PROCESS_ID_1, jobType, TENANT_A);
+    deployProcess(PROCESS_ID_1, jobType, TENANT_B);
     // a job set for collecting jobs in the client
     final var jobCollector = new HashSet<ActivatedJob>();
     // and a job stream created by the user1 client, with their authorizations
     final var stream =
         user1Client
             .newStreamJobsCommand()
-            .jobType(JOB_TYPE)
+            .jobType(jobType)
             .consumer(job -> jobCollector.add(job))
             .tenantId(TENANT_A)
             .send();
+    awaitStreamRegistered(jobType);
 
     // when
     // two process instances with jobs are created (one for each tenant)
@@ -201,13 +170,17 @@ public class JobStreamAuthorizationIT {
   public void shouldReceiveOnlyAuthorizedJobs(
       @Authenticated(USER2_USERNAME) final CamundaClient user2Client) {
     // given
+    final var jobType = uniqueJobType();
+    deployProcess(PROCESS_ID_1, jobType, TENANT_A);
+    deployProcess(PROCESS_ID_1, jobType, TENANT_B);
+    deployProcess(PROCESS_ID_2, jobType, TENANT_B);
     // a job set for collecting jobs in the client
     final var jobCollector = new HashSet<ActivatedJob>();
     // and a job stream created by the user2 client, with their authorizations
     final var stream =
         user2Client
             .newStreamJobsCommand()
-            .jobType(JOB_TYPE)
+            .jobType(jobType)
             .consumer(
                 job -> {
                   user2Client.newCompleteCommand(job).send().join();
@@ -216,6 +189,7 @@ public class JobStreamAuthorizationIT {
                 })
             .tenantIds(TENANT_A, TENANT_B)
             .send();
+    awaitStreamRegistered(jobType);
 
     // when
     // two process instances with jobs are created (one for each tenant)
@@ -240,15 +214,19 @@ public class JobStreamAuthorizationIT {
   public void shouldReceiveNoJobsWhenNotAuthorizedWithAssignedTenantFilter(
       @Authenticated(USER1_USERNAME) final CamundaClient user1Client) {
     // given
+    final var jobType = uniqueJobType();
+    deployProcess(PROCESS_ID_3, jobType, TENANT_A);
+    deployProcess(PROCESS_ID_3, jobType, TENANT_B);
     final var jobCollector = new HashSet<ActivatedJob>();
     // a job stream created by user1 with ASSIGNED tenant filter (resolves to tenantA only)
     final var stream =
         user1Client
             .newStreamJobsCommand()
-            .jobType(JOB_TYPE_B)
+            .jobType(jobType)
             .consumer(job -> jobCollector.add(job))
             .tenantFilter(TenantFilter.ASSIGNED)
             .send();
+    awaitStreamRegistered(jobType);
 
     // when
     try {
@@ -268,12 +246,16 @@ public class JobStreamAuthorizationIT {
   public void shouldReceiveOnlyAuthorizedJobsWithAssignedTenantFilter(
       @Authenticated(USER2_USERNAME) final CamundaClient user2Client) {
     // given
+    final var jobType = uniqueJobType();
+    deployProcess(PROCESS_ID_3, jobType, TENANT_A);
+    deployProcess(PROCESS_ID_3, jobType, TENANT_B);
+    deployProcess(PROCESS_ID_4, jobType, TENANT_B);
     final var jobCollector = new HashSet<ActivatedJob>();
     // a job stream created by user2 with ASSIGNED tenant filter (resolves to tenantA and tenantB)
     final var stream =
         user2Client
             .newStreamJobsCommand()
-            .jobType(JOB_TYPE_B)
+            .jobType(jobType)
             .consumer(
                 job -> {
                   user2Client.newCompleteCommand(job).send().join();
@@ -282,6 +264,7 @@ public class JobStreamAuthorizationIT {
                 })
             .tenantFilter(TenantFilter.ASSIGNED)
             .send();
+    awaitStreamRegistered(jobType);
 
     // when
     try {
@@ -303,6 +286,8 @@ public class JobStreamAuthorizationIT {
   public void shouldIgnoreProvidedTenantIdsWhenAssignedTenantFilterIsSet(
       @Authenticated(USER2_USERNAME) final CamundaClient user2Client) {
     // given
+    final var jobType = uniqueJobType();
+    deployProcess(PROCESS_ID_5, jobType, TENANT_B);
     final var jobCollector = new HashSet<ActivatedJob>();
     // a job stream with ASSIGNED filter AND an explicit tenantId(TENANT_A) —
     // the ASSIGNED filter should override the provided tenant IDs, so the broker
@@ -310,7 +295,7 @@ public class JobStreamAuthorizationIT {
     final var stream =
         user2Client
             .newStreamJobsCommand()
-            .jobType(JOB_TYPE_B)
+            .jobType(jobType)
             .consumer(
                 job -> {
                   user2Client.newCompleteCommand(job).send().join();
@@ -320,6 +305,7 @@ public class JobStreamAuthorizationIT {
             .tenantId(TENANT_A)
             .tenantFilter(TenantFilter.ASSIGNED)
             .send();
+    awaitStreamRegistered(jobType);
 
     // when
     try {
@@ -336,6 +322,31 @@ public class JobStreamAuthorizationIT {
     }
   }
 
+  private static String uniqueJobType() {
+    return "job-" + UUID.randomUUID();
+  }
+
+  private static void deployProcess(
+      final String processId, final String jobType, final String tenant) {
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask(jobType, t -> t.zeebeJobType(jobType))
+            .endEvent()
+            .done();
+    deployResource(adminClient, processId + ".bpmn", process, tenant);
+  }
+
+  private static void awaitStreamRegistered(final String jobType) {
+    final var actuator = JobStreamActuator.of(BROKER);
+    Awaitility.await("until stream with type '%s' is registered".formatted(jobType))
+        .untilAsserted(
+            () ->
+                JobStreamActuatorAssert.assertThat(actuator)
+                    .remoteStreams()
+                    .haveJobType(1, jobType));
+  }
+
   private static void createTenant(final CamundaClient camundaClient, final String tenant) {
     camundaClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
   }
@@ -343,16 +354,6 @@ public class JobStreamAuthorizationIT {
   private static void assignUserToTenant(
       final CamundaClient camundaClient, final String username, final String tenant) {
     camundaClient.newAssignUserToTenantCommand().username(username).tenantId(tenant).send().join();
-  }
-
-  private static void deployResource(
-      final CamundaClient camundaClient, final String resourceName, final String tenant) {
-    camundaClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath(resourceName)
-        .tenantId(tenant)
-        .send()
-        .join();
   }
 
   private static void deployResource(
