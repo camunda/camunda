@@ -73,7 +73,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
         <SortableTable
           state={state}
           emptyMessage={{
-            message: 'There are no Instances matching this filter set',
+            message: 'There are no incidents matching this filter set',
           }}
           selectionType="row"
           columnsWithNoContentPadding={['operations', 'errorMessage']}
