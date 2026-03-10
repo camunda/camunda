@@ -17,6 +17,10 @@ const Button = styled.button`
 
 const Nav = styled.nav`
   border-bottom: 1px solid var(--cds-border-subtle);
+
+  .cds--tabs__nav-item-label:not(:last-child) {
+    margin-right: var(--cds-spacing-02);
+  }
 `;
 
 export {Nav, Button};
