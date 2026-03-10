@@ -72,6 +72,25 @@ services:
       retries: 10
       start_period: 5s
 
+  oracle-21:
+    # Docker Hub image (feel free to change the tag "latest" to any other available one)
+    image: gvenzl/oracle-xe:${IMAGE_VERSION:-21-slim-faststart}
+    # Forward Oracle port to localhost
+    ports:
+      - "1521:1521"
+    # Provide passwords and other environment variables to the container
+    environment:
+      ORACLE_PASSWORD: sys_user_password
+      APP_USER: camunda
+      APP_USER_PASSWORD: camunda
+    # Customize healthcheck script options for startup
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:${IMAGE_VERSION:-8.19.11}
     container_name: elasticsearch
