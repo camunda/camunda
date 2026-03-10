@@ -254,9 +254,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "Users");
       createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "Sales");
       when(userGroupService.getUserGroups()).thenReturn(List.of("Admins", "Users", "Sales"));
-      when(groupServices.withAuthentication(CamundaAuthentication.anonymous()))
-          .thenReturn(groupServices);
-      when(groupServices.search(any()))
+      when(groupServices.search(any(), any()))
           .thenReturn(
               SearchQueryResult.of(
                   new GroupEntity(1L, "Admins", "Admins", "default"),
@@ -745,9 +743,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       identityProperties.setUserAccessRestrictionsEnabled(true);
       tasklistProperties.setIdentity(identityProperties);
       when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
-      when(groupServices.withAuthentication(CamundaAuthentication.anonymous()))
-          .thenReturn(groupServices);
-      when(groupServices.search(any()))
+      when(groupServices.search(any(), any()))
           .thenReturn(SearchQueryResult.of(new GroupEntity(1L, "Admins", "Admins", "default")));
 
       // when
@@ -822,9 +818,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       identityProperties.setUserAccessRestrictionsEnabled(true);
       tasklistProperties.setIdentity(identityProperties);
       when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
-      when(groupServices.withAuthentication(CamundaAuthentication.anonymous()))
-          .thenReturn(groupServices);
-      when(groupServices.search(any()))
+      when(groupServices.search(any(), any()))
           .thenReturn(SearchQueryResult.of(new GroupEntity(1L, "Admins", "Admins", "default")));
 
       // when
