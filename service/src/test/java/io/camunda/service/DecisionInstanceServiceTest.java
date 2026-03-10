@@ -59,30 +59,23 @@ class DecisionInstanceServiceTest {
 
   private DecisionInstanceServices services;
   private DecisionInstanceSearchClient client;
-  private SecurityContextProvider securityContextProvider;
-  private CamundaAuthentication authentication;
   private BrokerClient brokerClient;
-  private ApiServicesExecutorProvider executorProvider;
-  private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
+  private final CamundaAuthentication authentication = CamundaAuthentication.none();
 
   @BeforeEach
   void before() {
+    final ApiServicesExecutorProvider executorProvider = mock(ApiServicesExecutorProvider.class);
     client = mock(DecisionInstanceSearchClient.class);
-    authentication = CamundaAuthentication.none();
-    when(client.withSecurityContext(any())).thenReturn(client);
-    securityContextProvider = mock(SecurityContextProvider.class);
     brokerClient = mock(BrokerClient.class);
-    executorProvider = mock(ApiServicesExecutorProvider.class);
+    when(client.withSecurityContext(any())).thenReturn(client);
     when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
-    brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
     services =
         new DecisionInstanceServices(
             brokerClient,
-            securityContextProvider,
+            mock(SecurityContextProvider.class),
             client,
-            authentication,
             executorProvider,
-            brokerRequestAuthorizationConverter);
+            mock(BrokerRequestAuthorizationConverter.class));
   }
 
   // --------------------------------------------------------------------------
@@ -97,7 +90,7 @@ class DecisionInstanceServiceTest {
     final DecisionInstanceQuery query = SearchQueryBuilders.decisionInstanceSearchQuery().build();
 
     // when
-    final var response = services.search(query);
+    final var response = services.search(query, authentication);
 
     // then
     assertThat(response).isEqualTo(result);
@@ -114,7 +107,7 @@ class DecisionInstanceServiceTest {
                     .page(p -> p.size(20)));
 
     // when
-    services.search(query);
+    services.search(query, authentication);
 
     // then
     verify(client)
@@ -140,7 +133,8 @@ class DecisionInstanceServiceTest {
         () ->
             services.search(
                 decisionInstanceSearchQuery(
-                    q -> q.filter(f -> f.decisionInstanceKeys(DECISION_INSTANCE_KEY))));
+                    q -> q.filter(f -> f.decisionInstanceKeys(DECISION_INSTANCE_KEY))),
+                authentication);
 
     // then
     final var exception =
@@ -166,7 +160,7 @@ class DecisionInstanceServiceTest {
     when(client.getDecisionInstance(DECISION_INSTANCE_ID)).thenReturn(entity);
 
     // when
-    final var result = services.getById(DECISION_INSTANCE_ID);
+    final var result = services.getById(DECISION_INSTANCE_ID, authentication);
 
     // then
     verify(client).getDecisionInstance(DECISION_INSTANCE_ID);
@@ -202,7 +196,7 @@ class DecisionInstanceServiceTest {
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
-    services.deleteDecisionInstance(decisionInstanceKey, null).join();
+    services.deleteDecisionInstance(decisionInstanceKey, null, authentication).join();
 
     // then
     final var brokerRequest = (HistoryDeletionRecord) captor.getValue().getRequestWriter();
@@ -222,7 +216,8 @@ class DecisionInstanceServiceTest {
                 Reason.NOT_FOUND));
 
     // when/then
-    assertThatThrownBy(() -> services.deleteDecisionInstance(NON_EXISTENT_KEY, null).join())
+    assertThatThrownBy(
+            () -> services.deleteDecisionInstance(NON_EXISTENT_KEY, null, authentication).join())
         .isInstanceOf(ServiceException.class)
         .hasMessage("Decision Instance with key '" + NON_EXISTENT_KEY + "' not found");
   }
@@ -244,7 +239,8 @@ class DecisionInstanceServiceTest {
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
-    final var result = services.deleteDecisionInstancesBatchOperation(filter).join();
+    final var result =
+        services.deleteDecisionInstancesBatchOperation(filter, authentication).join();
 
     // then
     assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
