@@ -137,6 +137,10 @@
       <artifactId>camunda-security-core</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-domain</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.github.openfeign</groupId>
       <artifactId>feign-core</artifactId>
     </dependency>

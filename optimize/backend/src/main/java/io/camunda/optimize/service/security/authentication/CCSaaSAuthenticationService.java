@@ -10,8 +10,6 @@ package io.camunda.optimize.service.security.authentication;
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import io.camunda.optimize.rest.exceptions.NotSupportedException;
-import io.camunda.optimize.service.security.AuthCookieService;
-import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,11 +27,6 @@ public class CCSaaSAuthenticationService extends AbstractAuthenticationService {
       "Requests to this endpoint are not valid in Cloud mode";
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CCSaaSAuthenticationService.class);
-
-  public CCSaaSAuthenticationService(
-      final SessionService sessionService, final AuthCookieService authCookieService) {
-    super(sessionService, authCookieService);
-  }
 
   @Override
   public void authenticateUser(final CredentialsRequestDto credentials) {

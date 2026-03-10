@@ -19,6 +19,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
 import io.camunda.search.entities.IncidentEntity;
@@ -38,7 +39,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.authorization.Authorizations;

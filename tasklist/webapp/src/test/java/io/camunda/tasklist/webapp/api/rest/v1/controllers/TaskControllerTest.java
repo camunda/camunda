@@ -20,10 +20,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.camunda.auth.domain.model.CamundaAuthentication;
+import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.property.IdentityProperties;

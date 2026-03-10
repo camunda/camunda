@@ -101,6 +101,10 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-core</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-domain</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
@@ -181,6 +185,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-authentication</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-spring-boot-starter</artifactId>
     </dependency>
 
     <dependency>
@@ -266,12 +275,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-crypto</artifactId>
       <scope>test</scope>
     </dependency>
 

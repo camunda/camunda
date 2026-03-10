@@ -34,8 +34,8 @@
       <artifactId>camunda-search-domain</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-core</artifactId>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-domain</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>

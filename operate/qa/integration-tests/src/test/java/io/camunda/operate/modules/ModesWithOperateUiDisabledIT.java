@@ -12,13 +12,13 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
+import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.operate.WebappModuleConfiguration;
 import io.camunda.operate.util.apps.modules.ModulesTestApplication;
 import io.camunda.operate.webapp.controllers.OperateIndexController;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;

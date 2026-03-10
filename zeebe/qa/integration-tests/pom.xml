@@ -145,6 +145,11 @@
       <artifactId>camunda-security-core</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-domain</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>

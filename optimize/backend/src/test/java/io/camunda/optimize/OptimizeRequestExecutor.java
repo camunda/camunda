@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
-import io.camunda.optimize.service.security.AuthCookieService;
+import io.camunda.optimize.rest.constants.RestConstants;
 import io.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import io.camunda.optimize.tomcat.OptimizeResourceConstants;
 import jakarta.ws.rs.client.Client;
@@ -162,8 +162,7 @@ public class OptimizeRequestExecutor {
       initAuthCookie();
     }
     if (authCookie != null) {
-      builder =
-          builder.cookie(AuthCookieService.getAuthorizationCookieNameWithSuffix(0), authCookie);
+      builder = builder.cookie(RestConstants.OPTIMIZE_AUTHORIZATION_PREFIX + "0", authCookie);
     }
 
     for (final Map.Entry<String, String> headerEntry : requestHeaders.entrySet()) {
@@ -235,7 +234,7 @@ public class OptimizeRequestExecutor {
     final CredentialsRequestDto entity = new CredentialsRequestDto(username, password);
     final Response response =
         defaultWebTarget.path("authentication").request().post(Entity.json(entity));
-    return AuthCookieService.createOptimizeAuthCookieValue(response.readEntity(String.class));
+    return RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX + response.readEntity(String.class);
   }
 
   private WebTarget createActuatorWebTarget() {

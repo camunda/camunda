@@ -12,7 +12,8 @@ import io.camunda.application.Profile;
 import io.camunda.application.StandaloneCamunda;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
-import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.auth.domain.config.AuthenticationConfiguration;
+import io.camunda.auth.domain.model.AuthenticationMethod;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.NodeIdProvider.Type;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -33,7 +34,6 @@ import io.camunda.configuration.beans.SearchEngineRetentionProperties;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.NodeIdProviderConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -136,7 +136,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
     withProperty(
-        AuthenticationProperties.API_UNPROTECTED,
+        AuthenticationConfiguration.PROPERTY_UNPROTECTED_API,
         securityConfig.getAuthentication().getUnprotectedApi());
     withProperty(
         "camunda.security.authorizations.enabled", securityConfig.getAuthorizations().isEnabled());
@@ -159,7 +159,16 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public TestStandaloneBroker withProperty(final String key, final Object value) {
     // Since the security config is not constructed from the properties, we need to manually update
     // it when we override a property.
-    AuthenticationProperties.applyToSecurityConfig(securityConfig, key, value);
+    switch (key) {
+      case AuthenticationConfiguration.PROPERTY_METHOD ->
+          AuthenticationMethod.parse(String.valueOf(value))
+              .ifPresent(securityConfig.getAuthentication()::setMethod);
+      case AuthenticationConfiguration.PROPERTY_UNPROTECTED_API ->
+          securityConfig
+              .getAuthentication()
+              .setUnprotectedApi(Boolean.parseBoolean(String.valueOf(value)));
+      default -> {}
+    }
     return super.withProperty(key, value);
   }
 

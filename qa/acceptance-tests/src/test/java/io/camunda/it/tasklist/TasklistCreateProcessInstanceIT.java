@@ -11,13 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.auth.domain.model.AuthenticationMethod;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestRestTasklistClient.CreateProcessInstanceVariable;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.security.entity.AuthenticationMethod;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;

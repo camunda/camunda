@@ -16,13 +16,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;

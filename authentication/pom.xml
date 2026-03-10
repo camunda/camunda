@@ -159,6 +159,11 @@
       <artifactId>camunda-security-core</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-spring</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-protocol</artifactId>
     </dependency>
@@ -261,12 +266,9 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
-          <ignoredUnusedDeclaredDependencies>
-            <dep>com.nimbusds:oauth2-oidc-sdk</dep>
-            <dep>org.springframework:spring-webmvc</dep>
-            <dep>org.springframework.boot:spring-boot-actuator-autoconfigure</dep>
-            <dep>org.eclipse.parsson:parsson</dep>
-          </ignoredUnusedDeclaredDependencies>
+          <!-- Module has no source code (controllers moved to auth library).
+               Kept only for transitive dependency re-export to downstream consumers. -->
+          <skip>true</skip>
         </configuration>
       </plugin>
     </plugins>

@@ -20,22 +20,26 @@ import static io.camunda.optimize.tomcat.OptimizeResourceConstants.ACTUATOR_ENDP
 import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 import static io.camunda.optimize.tomcat.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 
+import io.camunda.auth.domain.model.SessionToken;
+import io.camunda.auth.domain.model.SessionTokenRequest;
+import io.camunda.auth.domain.spi.SessionTokenService;
+import io.camunda.auth.spring.filter.CookieAuthenticationFilter;
+import io.camunda.auth.spring.session.ChunkedCookieService;
 import io.camunda.optimize.rest.security.AbstractSecurityConfigurerAdapter;
-import io.camunda.optimize.rest.security.AuthenticationCookieFilter;
 import io.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
 import io.camunda.optimize.rest.security.oauth.AudienceValidator;
 import io.camunda.optimize.rest.security.oauth.CustomClaimValidator;
 import io.camunda.optimize.rest.security.oauth.RoleValidator;
 import io.camunda.optimize.rest.security.oauth.ScopeValidator;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import io.camunda.optimize.service.security.AuthCookieService;
-import io.camunda.optimize.service.security.SessionService;
+import io.camunda.optimize.service.security.ServiceTokenCookieHelper;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import io.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
 import io.camunda.optimize.tomcat.CCSaasRequestAdjustmentFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -54,7 +58,6 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.AuthenticationException;
@@ -88,33 +91,39 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
 
   private static final Logger LOG = LoggerFactory.getLogger(CCSaaSSecurityConfigurerAdapter.class);
   private static final List<String> ALLOWED_ORG_ROLES = Arrays.asList("admin", "analyst", "owner");
+
+  private final SessionTokenService sessionTokenService;
+  private final ChunkedCookieService chunkedCookieService;
+  private final ServiceTokenCookieHelper serviceTokenCookieHelper;
+  private final CookieAuthenticationFilter cookieAuthenticationFilter;
   private final ClientRegistrationRepository clientRegistrationRepository;
   private final OAuth2AuthorizedClientService oAuth2AuthorizedClientService;
 
   public CCSaaSSecurityConfigurerAdapter(
       final ConfigurationService configurationService,
       final CustomPreAuthenticatedAuthenticationProvider preAuthenticatedAuthenticationProvider,
-      final SessionService sessionService,
-      final AuthCookieService authCookieService,
+      final SessionTokenService sessionTokenService,
+      final ChunkedCookieService chunkedCookieService,
+      final ServiceTokenCookieHelper serviceTokenCookieHelper,
+      final CookieAuthenticationFilter cookieAuthenticationFilter,
       final ClientRegistrationRepository clientRegistrationRepository,
       final OAuth2AuthorizedClientService oAuth2AuthorizedClientService) {
-    super(
-        configurationService,
-        preAuthenticatedAuthenticationProvider,
-        sessionService,
-        authCookieService);
+    super(configurationService, preAuthenticatedAuthenticationProvider);
+    this.sessionTokenService = sessionTokenService;
+    this.chunkedCookieService = chunkedCookieService;
+    this.serviceTokenCookieHelper = serviceTokenCookieHelper;
+    this.cookieAuthenticationFilter = cookieAuthenticationFilter;
     this.clientRegistrationRepository = clientRegistrationRepository;
     this.oAuth2AuthorizedClientService = oAuth2AuthorizedClientService;
   }
 
   @Bean
-  public AuthenticationCookieFilter authenticationCookieFilter(final HttpSecurity http)
-      throws Exception {
-    return new AuthenticationCookieFilter(
-        sessionService,
-        http.getSharedObject(AuthenticationManagerBuilder.class)
-            .authenticationProvider(preAuthenticatedAuthenticationProvider)
-            .build());
+  public FilterRegistrationBean<CookieAuthenticationFilter> cookieAuthFilterRegistration(
+      final CookieAuthenticationFilter filter) {
+    final FilterRegistrationBean<CookieAuthenticationFilter> registration =
+        new FilterRegistrationBean<>(filter);
+    registration.setEnabled(false);
+    return registration;
   }
 
   @Bean
@@ -211,7 +220,7 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
                               redirectionEndpointConfig.baseUri(OAUTH_REDIRECT_ENDPOINT))
                       .successHandler(getAuthenticationSuccessHandler()))
           .addFilterBefore(
-              authenticationCookieFilter(http), OAuth2AuthorizationRequestRedirectFilter.class)
+              cookieAuthenticationFilter, OAuth2AuthorizationRequestRedirectFilter.class)
           .exceptionHandling(
               exceptionHandling ->
                   exceptionHandling
@@ -301,7 +310,7 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
     return (request, response, authentication) -> {
       final DefaultOidcUser user = (DefaultOidcUser) authentication.getPrincipal();
       final String userId = user.getIdToken().getSubject();
-      final String sessionToken = sessionService.createAuthToken(userId);
+      final SessionToken sessionToken = sessionTokenService.create(new SessionTokenRequest(userId));
 
       if (hasAccess(user)) {
         // spring security internally stores the access token as an authorized client, we retrieve
@@ -314,17 +323,20 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
                 .getAccessToken();
 
         final Instant cookieExpiryDate =
-            determineCookieExpiryDate(sessionToken, serviceAccessToken)
+            determineCookieExpiryDate(sessionToken.expiresAt(), serviceAccessToken)
                 .orElseThrow(
                     () ->
                         new OptimizeRuntimeException(
                             "Could not determine a cookie expiry date. This is likely a bug, please report."));
-        authCookieService
-            .createOptimizeServiceTokenCookies(
-                serviceAccessToken, cookieExpiryDate, request.getScheme())
+
+        final long maxAgeSeconds = Duration.between(Instant.now(), cookieExpiryDate).toSeconds();
+        final boolean isSecure = "https".equalsIgnoreCase(request.getScheme());
+
+        serviceTokenCookieHelper
+            .createServiceTokenCookies(serviceAccessToken, cookieExpiryDate, request.getScheme())
             .forEach(response::addCookie);
-        authCookieService
-            .createOptimizeAuthCookies(sessionToken, cookieExpiryDate, request.getScheme())
+        chunkedCookieService
+            .createAuthCookies(sessionToken.rawToken(), maxAgeSeconds, isSecure)
             .forEach(response::addCookie);
 
         // we can't redirect to the previously accesses path or the root of the application as the
@@ -339,7 +351,7 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
         // browser to start
         // a new request chain which then allows the Optimize auth cookie to be provided to be read
         // by the
-        // authenticationCookieFilter granting the user access.
+        // cookieAuthenticationFilter granting the user access.
         // This is also a technique documented at w3.org
         // https://www.w3.org/TR/WCAG20-TECHS/H76.html
         response.setContentType(MediaType.TEXT_HTML_VALUE);
@@ -373,10 +385,8 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
   }
 
   private Optional<Instant> determineCookieExpiryDate(
-      final String sessionToken, final OAuth2AccessToken serviceAccessToken) {
+      final Instant sessionTokenExpiry, final OAuth2AccessToken serviceAccessToken) {
     final Instant serviceTokenExpiry = serviceAccessToken.getExpiresAt();
-    final Instant sessionTokenExpiry =
-        authCookieService.getOptimizeAuthCookieTokenExpiryDate(sessionToken).orElse(null);
     return Stream.of(serviceTokenExpiry, sessionTokenExpiry)
         .filter(Objects::nonNull)
         .min(Instant::compareTo);

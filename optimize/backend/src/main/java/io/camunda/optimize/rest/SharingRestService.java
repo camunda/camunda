@@ -27,7 +27,7 @@ import io.camunda.optimize.service.SettingsService;
 import io.camunda.optimize.service.exceptions.SharingNotAllowedException;
 import io.camunda.optimize.service.mixpanel.EventReportingService;
 import io.camunda.optimize.service.mixpanel.client.EventReportingEvent;
-import io.camunda.optimize.service.security.SessionService;
+import io.camunda.optimize.service.security.SecurityContextUtils;
 import io.camunda.optimize.service.security.SharingService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OptimizeProfile;
@@ -59,7 +59,6 @@ public class SharingRestService {
 
   private final SharingService sharingService;
   private final SettingsService settingsService;
-  private final SessionService sessionService;
   private final ReportRestMapper reportRestMapper;
   private final DashboardRestMapper dashboardRestMapper;
   private final EventReportingService eventReportingService;
@@ -68,14 +67,12 @@ public class SharingRestService {
   public SharingRestService(
       final SharingService sharingService,
       final SettingsService settingsService,
-      final SessionService sessionService,
       final ReportRestMapper reportRestMapper,
       final DashboardRestMapper dashboardRestMapper,
       final EventReportingService eventReportingService,
       final Environment environment) {
     this.sharingService = sharingService;
     this.settingsService = settingsService;
-    this.sessionService = sessionService;
     this.reportRestMapper = reportRestMapper;
     this.dashboardRestMapper = dashboardRestMapper;
     this.eventReportingService = eventReportingService;
@@ -84,22 +81,22 @@ public class SharingRestService {
 
   @PostMapping(REPORT_SUB_PATH)
   public IdResponseDto createNewReportShare(
-      @RequestBody final ReportShareRestDto createSharingDto, final HttpServletRequest request) {
+      @RequestBody final ReportShareRestDto createSharingDto) {
     return executeIfSharingEnabled(
         () ->
             sharingService.createNewReportShareIfAbsent(
-                createSharingDto, sessionService.getRequestUserOrFailNotAuthorized(request)),
+                createSharingDto, SecurityContextUtils.getAuthenticatedUser()),
         EventReportingEvent.REPORT_SHARE_ENABLED,
         "Sharing of reports is disabled per Optimize configuration");
   }
 
   @PostMapping(DASHBOARD_SUB_PATH)
   public IdResponseDto createNewDashboardShare(
-      @RequestBody final DashboardShareRestDto createSharingDto, final HttpServletRequest request) {
+      @RequestBody final DashboardShareRestDto createSharingDto) {
     return executeIfSharingEnabled(
         () ->
             sharingService.createNewDashboardShare(
-                createSharingDto, sessionService.getRequestUserOrFailNotAuthorized(request)),
+                createSharingDto, SecurityContextUtils.getAuthenticatedUser()),
         EventReportingEvent.DASHBOARD_SHARE_ENABLED,
         "Sharing of dashboards is disabled per Optimize configuration");
   }
@@ -198,8 +195,8 @@ public class SharingRestService {
    */
   @GetMapping(DASHBOARD_SUB_PATH + "/{dashboardId}/isAuthorizedToShare")
   public String isAuthorizedToShareDashboard(
-      @PathVariable("dashboardId") final String dashboardId, final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @PathVariable("dashboardId") final String dashboardId) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     sharingService.validateAndCheckAuthorization(dashboardId, userId);
     // if no error was thrown
     return "OK";

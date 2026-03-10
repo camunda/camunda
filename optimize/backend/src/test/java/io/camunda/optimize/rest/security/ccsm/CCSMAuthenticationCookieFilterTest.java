@@ -7,7 +7,6 @@
  */
 package io.camunda.optimize.rest.security.ccsm;
 
-import static io.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -16,16 +15,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
+import io.camunda.auth.spring.session.ChunkedCookieService;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.optimize.rest.constants.RestConstants;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
-import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.security.AuthConfiguration;
-import io.camunda.optimize.service.util.configuration.security.CookieConfiguration;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,6 +40,7 @@ public class CCSMAuthenticationCookieFilterTest {
   @Mock private ConfigurationService configurationService;
   @Mock private CCSMTokenService ccsmTokenService;
   @Mock private AuthenticationManager authenticationManager;
+  @Mock private ChunkedCookieService chunkedCookieService;
 
   private CCSMAuthenticationCookieFilter filter;
   private HttpServletRequest mockRequest;
@@ -60,25 +58,25 @@ public class CCSMAuthenticationCookieFilterTest {
 
     // Mock the request to return empty enumeration for getAttributeNames()
     when(mockRequest.getAttributeNames()).thenReturn(java.util.Collections.emptyEnumeration());
+    // Mock the ChunkedCookieService accessor
+    when(ccsmTokenService.getChunkedCookieService()).thenReturn(chunkedCookieService);
   }
 
   @Test
   public void testVerifyAccessTokenSucceeds() throws Exception {
     // given
     final String validAccessToken = "valid.access.token";
-    final Cookie accessTokenCookie =
-        new Cookie(
-            AuthCookieService.getAuthorizationCookieNameWithSuffix(0),
-            AUTH_COOKIE_TOKEN_VALUE_PREFIX + validAccessToken);
+    final Cookie accessTokenCookie = new Cookie("X-Optimize-Authorization_0", "some.cookie.value");
     final Cookie[] cookies = new Cookie[] {accessTokenCookie};
 
     when(mockRequest.getCookies()).thenReturn(cookies);
+    when(chunkedCookieService.extractToken(mockRequest)).thenReturn(validAccessToken);
 
     // when
     filter.doFilter(mockRequest, mockResponse, mockFilterChain);
 
     // then
-    verify(ccsmTokenService, times(1)).verifyAccessToken(anyString());
+    verify(ccsmTokenService, times(1)).verifyAccessToken(validAccessToken);
     verify(mockFilterChain, times(1)).doFilter(mockRequest, mockResponse);
   }
 
@@ -86,13 +84,11 @@ public class CCSMAuthenticationCookieFilterTest {
   public void testVerifyAccessTokenFailsNotAuthorized() throws Exception {
     // given
     final String accessToken = "valid.access.token.without.optimize.permission";
-    final Cookie accessTokenCookie =
-        new Cookie(
-            AuthCookieService.getAuthorizationCookieNameWithSuffix(0),
-            AUTH_COOKIE_TOKEN_VALUE_PREFIX + accessToken);
+    final Cookie accessTokenCookie = new Cookie("X-Optimize-Authorization_0", "some.cookie.value");
     final Cookie[] cookies = new Cookie[] {accessTokenCookie};
 
     when(mockRequest.getCookies()).thenReturn(cookies);
+    when(chunkedCookieService.extractToken(mockRequest)).thenReturn(accessToken);
 
     // verifyAccessToken throws NotAuthorizedException (user lacks Optimize permissions)
     doThrow(new NotAuthorizedException("User is not authorized to access Optimize"))
@@ -113,16 +109,14 @@ public class CCSMAuthenticationCookieFilterTest {
     // given
     final String expiredAccessToken = "expired.access.token";
     final String refreshToken = "refresh.token";
-    final Cookie accessTokenCookie =
-        new Cookie(
-            AuthCookieService.getAuthorizationCookieNameWithSuffix(0),
-            AUTH_COOKIE_TOKEN_VALUE_PREFIX + expiredAccessToken);
+    final Cookie accessTokenCookie = new Cookie("X-Optimize-Authorization_0", "some.cookie.value");
     final Cookie refreshTokenCookie =
         new Cookie(RestConstants.OPTIMIZE_REFRESH_TOKEN, refreshToken);
     final Cookie[] cookies = new Cookie[] {accessTokenCookie, refreshTokenCookie};
 
     when(mockRequest.getCookies()).thenReturn(cookies);
     when(mockRequest.getScheme()).thenReturn("https");
+    when(chunkedCookieService.extractToken(mockRequest)).thenReturn(expiredAccessToken);
 
     // First call to verifyAccessToken throws TokenVerificationException
     doThrow(new TokenVerificationException("Token verification failed"))
@@ -139,11 +133,6 @@ public class CCSMAuthenticationCookieFilterTest {
     when(ccsmTokenService.verifyToken("new.access.token")).thenReturn(mockAccessToken);
     when(mockAccessToken.getToken()).thenReturn(mockInnerToken);
     when(mockInnerToken.getToken()).thenReturn("new.access.token");
-    when(configurationService.getAuthConfiguration()).thenReturn(mock(AuthConfiguration.class));
-    when(configurationService.getAuthConfiguration().getCookieConfiguration())
-        .thenReturn(mock(CookieConfiguration.class));
-    when(configurationService.getAuthConfiguration().getCookieConfiguration().getMaxSize())
-        .thenReturn(4096);
     when(ccsmTokenService.createOptimizeAuthNewCookies(mockTokens, mockAccessToken, "https"))
         .thenReturn(java.util.Collections.emptyList());
 
@@ -164,15 +153,13 @@ public class CCSMAuthenticationCookieFilterTest {
     // given
     final String expiredAccessToken = "expired.access.token";
     final String refreshToken = "refresh.token";
-    final Cookie accessTokenCookie =
-        new Cookie(
-            AuthCookieService.getAuthorizationCookieNameWithSuffix(0),
-            AUTH_COOKIE_TOKEN_VALUE_PREFIX + expiredAccessToken);
+    final Cookie accessTokenCookie = new Cookie("X-Optimize-Authorization_0", "some.cookie.value");
     final Cookie refreshTokenCookie =
         new Cookie(RestConstants.OPTIMIZE_REFRESH_TOKEN, refreshToken);
     final Cookie[] cookies = new Cookie[] {accessTokenCookie, refreshTokenCookie};
 
     when(mockRequest.getCookies()).thenReturn(cookies);
+    when(chunkedCookieService.extractToken(mockRequest)).thenReturn(expiredAccessToken);
 
     // First call to verifyAccessToken throws TokenVerificationException
     doThrow(new TokenVerificationException("Token verification failed"))
@@ -198,15 +185,13 @@ public class CCSMAuthenticationCookieFilterTest {
     // given
     final String expiredAccessToken = "expired.access.token";
     final String refreshToken = "refresh.token";
-    final Cookie accessTokenCookie =
-        new Cookie(
-            AuthCookieService.getAuthorizationCookieNameWithSuffix(0),
-            AUTH_COOKIE_TOKEN_VALUE_PREFIX + expiredAccessToken);
+    final Cookie accessTokenCookie = new Cookie("X-Optimize-Authorization_0", "some.cookie.value");
     final Cookie refreshTokenCookie =
         new Cookie(RestConstants.OPTIMIZE_REFRESH_TOKEN, refreshToken);
     final Cookie[] cookies = new Cookie[] {accessTokenCookie, refreshTokenCookie};
 
     when(mockRequest.getCookies()).thenReturn(cookies);
+    when(chunkedCookieService.extractToken(mockRequest)).thenReturn(expiredAccessToken);
 
     // First call to verifyAccessToken throws TokenVerificationException
     doThrow(new TokenVerificationException("Token verification failed"))
@@ -243,6 +228,8 @@ public class CCSMAuthenticationCookieFilterTest {
 
     when(mockRequest.getCookies()).thenReturn(cookies);
     when(mockRequest.getScheme()).thenReturn("https");
+    // No access token cookie, so extractToken returns null
+    when(chunkedCookieService.extractToken(mockRequest)).thenReturn(null);
 
     // Token renewal succeeds - mock the objects needed
     final Tokens mockTokens = mock(Tokens.class);
@@ -254,11 +241,6 @@ public class CCSMAuthenticationCookieFilterTest {
     when(ccsmTokenService.verifyToken("new.access.token")).thenReturn(mockAccessToken);
     when(mockAccessToken.getToken()).thenReturn(mockInnerToken);
     when(mockInnerToken.getToken()).thenReturn("new.access.token");
-    when(configurationService.getAuthConfiguration()).thenReturn(mock(AuthConfiguration.class));
-    when(configurationService.getAuthConfiguration().getCookieConfiguration())
-        .thenReturn(mock(CookieConfiguration.class));
-    when(configurationService.getAuthConfiguration().getCookieConfiguration().getMaxSize())
-        .thenReturn(4096);
     when(ccsmTokenService.createOptimizeAuthNewCookies(mockTokens, mockAccessToken, "https"))
         .thenReturn(java.util.Collections.emptyList());
 
@@ -282,6 +264,8 @@ public class CCSMAuthenticationCookieFilterTest {
     final Cookie[] cookies = new Cookie[] {refreshTokenCookie};
 
     when(mockRequest.getCookies()).thenReturn(cookies);
+    // No access token cookie, so extractToken returns null
+    when(chunkedCookieService.extractToken(mockRequest)).thenReturn(null);
 
     // Token renewal fails with NotAuthorizedException
     when(ccsmTokenService.renewToken(refreshToken))

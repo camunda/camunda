@@ -11,8 +11,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.search.query.ProcessInstanceQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.zeebe.gateway.rest.controller.ProcessInstanceController;
 import io.camunda.zeebe.gateway.rest.controller.TopologyController;
 import org.junit.jupiter.api.BeforeEach;

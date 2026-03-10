@@ -11,6 +11,7 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AV
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
+import io.camunda.auth.domain.model.AuthenticationMethod;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.search.enums.OwnerType;
@@ -24,7 +25,6 @@ import io.camunda.qa.util.auth.TestClient;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.security.entity.AuthenticationMethod;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;

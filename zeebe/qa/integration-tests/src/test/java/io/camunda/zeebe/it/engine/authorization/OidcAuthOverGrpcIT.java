@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
+import io.camunda.auth.domain.model.AuthenticationMethod;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.search.enums.OwnerType;
@@ -18,7 +19,6 @@ import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.security.configuration.ConfiguredMappingRule;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;

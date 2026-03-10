@@ -12,6 +12,7 @@ import static io.camunda.search.query.SearchQueryBuilders.decisionInstanceSearch
 import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.DECISION_INSTANCE_READ_AUTHORIZATION;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.exception.CamundaSearchException;
@@ -19,7 +20,6 @@ import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;

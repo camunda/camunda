@@ -15,8 +15,7 @@ import io.camunda.optimize.dto.optimize.query.IdentitySearchResultResponseDto;
 import io.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupDefinitionSearchRequestDto;
 import io.camunda.optimize.dto.optimize.query.definition.AssigneeCandidateGroupReportSearchRequestDto;
 import io.camunda.optimize.service.AssigneeCandidateGroupService;
-import io.camunda.optimize.service.security.SessionService;
-import jakarta.servlet.http.HttpServletRequest;
+import io.camunda.optimize.service.security.SecurityContextUtils;
 import jakarta.validation.Valid;
 import java.util.Arrays;
 import java.util.Collections;
@@ -42,13 +41,10 @@ public class CandidateGroupRestService {
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(CandidateGroupRestService.class);
 
-  private final SessionService sessionService;
   private final AssigneeCandidateGroupService assigneeCandidateGroupService;
 
   public CandidateGroupRestService(
-      final SessionService sessionService,
       final AssigneeCandidateGroupService assigneeCandidateGroupService) {
-    this.sessionService = sessionService;
     this.assigneeCandidateGroupService = assigneeCandidateGroupService;
   }
 
@@ -64,17 +60,15 @@ public class CandidateGroupRestService {
 
   @PostMapping(CANDIDATE_GROUP_DEFINITION_SEARCH_SUB_PATH)
   public IdentitySearchResultResponseDto searchCandidateGroups(
-      @Valid @RequestBody final AssigneeCandidateGroupDefinitionSearchRequestDto requestDto,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @Valid @RequestBody final AssigneeCandidateGroupDefinitionSearchRequestDto requestDto) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return assigneeCandidateGroupService.searchForCandidateGroupsAsUser(userId, requestDto);
   }
 
   @PostMapping(CANDIDATE_GROUP_REPORTS_SEARCH_SUB_PATH)
   public IdentitySearchResultResponseDto searchCandidateGroups(
-      @Valid @RequestBody final AssigneeCandidateGroupReportSearchRequestDto requestDto,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @Valid @RequestBody final AssigneeCandidateGroupReportSearchRequestDto requestDto) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return assigneeCandidateGroupService.searchForCandidateGroupsAsUser(userId, requestDto);
   }
 }

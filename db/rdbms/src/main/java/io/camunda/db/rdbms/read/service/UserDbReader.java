@@ -35,7 +35,18 @@ public class UserDbReader extends AbstractEntityReader<UserEntity> implements Us
 
   @Override
   public UserEntity getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
-    return findOneByUsername(id).orElse(null);
+    LOG.debug("[UserDbReader] getById called for username='{}'", id);
+    final var result = findOneByUsername(id).orElse(null);
+    if (result != null) {
+      LOG.debug(
+          "[UserDbReader] Found user '{}' (key={}, hasPassword={})",
+          result.username(),
+          result.userKey(),
+          result.password() != null && !result.password().isBlank());
+    } else {
+      LOG.debug("[UserDbReader] User '{}' NOT found in RDBMS", id);
+    }
+    return result;
   }
 
   @Override

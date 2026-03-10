@@ -15,10 +15,10 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import java.util.List;

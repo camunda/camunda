@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.authorization;
 
-import io.camunda.security.auth.MappingRuleMatcher;
+import io.camunda.auth.domain.auth.MappingRuleMatcher;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;

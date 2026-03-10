@@ -11,8 +11,7 @@ import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH
 
 import io.camunda.optimize.dto.optimize.SettingsDto;
 import io.camunda.optimize.service.SettingsService;
-import io.camunda.optimize.service.security.SessionService;
-import jakarta.servlet.http.HttpServletRequest;
+import io.camunda.optimize.service.security.SecurityContextUtils;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,12 +27,9 @@ public class SettingsRestService {
 
   public static final String SETTINGS_PATH = "/settings";
 
-  private final SessionService sessionService;
   private final SettingsService settingsService;
 
-  public SettingsRestService(
-      final SessionService sessionService, final SettingsService settingsService) {
-    this.sessionService = sessionService;
+  public SettingsRestService(final SettingsService settingsService) {
     this.settingsService = settingsService;
   }
 
@@ -43,9 +39,8 @@ public class SettingsRestService {
   }
 
   @PutMapping
-  public void setSettings(
-      @NotNull @RequestBody final SettingsDto settingsDto, final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+  public void setSettings(@NotNull @RequestBody final SettingsDto settingsDto) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     settingsService.setSettings(userId, settingsDto);
   }
 }

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.configuration;
 
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.zeebe.gateway.rest.RestTest;
 import io.camunda.zeebe.gateway.rest.config.OpenApiResourceConfig;
 import org.junit.jupiter.api.Nested;

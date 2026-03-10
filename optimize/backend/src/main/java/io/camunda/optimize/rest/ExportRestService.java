@@ -31,7 +31,7 @@ import io.camunda.optimize.rest.exceptions.ForbiddenException;
 import io.camunda.optimize.service.entities.EntityExportService;
 import io.camunda.optimize.service.export.CsvExportService;
 import io.camunda.optimize.service.identity.AbstractIdentityService;
-import io.camunda.optimize.service.security.SessionService;
+import io.camunda.optimize.service.security.SecurityContextUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.ZoneId;
@@ -59,26 +59,22 @@ public class ExportRestService {
 
   private final CsvExportService csvExportService;
   private final EntityExportService entityExportService;
-  private final SessionService sessionService;
   private final AbstractIdentityService identityService;
 
   public ExportRestService(
       final CsvExportService csvExportService,
       final EntityExportService entityExportService,
-      final SessionService sessionService,
       final AbstractIdentityService identityService) {
     this.csvExportService = csvExportService;
     this.entityExportService = entityExportService;
-    this.sessionService = sessionService;
     this.identityService = identityService;
   }
 
   @GetMapping("report/json/{reportId}/{fileName}")
   public ResponseEntity<List<ReportDefinitionExportDto>> getJsonReport(
       @PathVariable("reportId") final String reportId,
-      @PathVariable("fileName") final String fileName,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @PathVariable("fileName") final String fileName) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
 
     final List<ReportDefinitionExportDto> jsonReports =
         entityExportService.getReportExportDtosAsUser(userId, Sets.newHashSet(reportId));
@@ -89,9 +85,8 @@ public class ExportRestService {
   @GetMapping("dashboard/json/{dashboardId}/{fileName}")
   public ResponseEntity<List<OptimizeEntityExportDto>> getJsonDashboard(
       @PathVariable("dashboardId") final String dashboardId,
-      @PathVariable("fileName") final String fileName,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @PathVariable("fileName") final String fileName) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
 
     final List<OptimizeEntityExportDto> jsonDashboards =
         entityExportService.getCompleteDashboardExportAsUser(userId, dashboardId);
@@ -107,7 +102,7 @@ public class ExportRestService {
       @PathVariable("reportId") final String reportId,
       @PathVariable("fileName") final String fileName,
       final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     validateAuthorization();
     final ZoneId timezone = extractTimezone(request);
 
@@ -132,7 +127,7 @@ public class ExportRestService {
       @PathVariable("fileName") final String fileName,
       @Valid @RequestBody final ProcessRawDataCsvExportRequestDto request,
       final HttpServletRequest servletRequest) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(servletRequest);
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     validateAuthorization();
     final ZoneId timezone = extractTimezone(servletRequest);
 

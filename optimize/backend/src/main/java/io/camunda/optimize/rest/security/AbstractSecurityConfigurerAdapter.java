@@ -10,8 +10,6 @@ package io.camunda.optimize.rest.security;
 import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import io.camunda.optimize.service.security.AuthCookieService;
-import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -28,18 +26,12 @@ public abstract class AbstractSecurityConfigurerAdapter {
   protected final ConfigurationService configurationService;
   protected final CustomPreAuthenticatedAuthenticationProvider
       preAuthenticatedAuthenticationProvider;
-  protected final SessionService sessionService;
-  protected final AuthCookieService authCookieService;
 
   public AbstractSecurityConfigurerAdapter(
       final ConfigurationService configurationService,
-      final CustomPreAuthenticatedAuthenticationProvider preAuthenticatedAuthenticationProvider,
-      final SessionService sessionService,
-      final AuthCookieService authCookieService) {
+      final CustomPreAuthenticatedAuthenticationProvider preAuthenticatedAuthenticationProvider) {
     this.configurationService = configurationService;
     this.preAuthenticatedAuthenticationProvider = preAuthenticatedAuthenticationProvider;
-    this.sessionService = sessionService;
-    this.authCookieService = authCookieService;
   }
 
   protected SecurityFilterChain applyPublicApiOptions(final HttpSecurity http) {
@@ -61,7 +53,7 @@ public abstract class AbstractSecurityConfigurerAdapter {
     try {
       return http
           // csrf is not used but the same-site property of the auth cookie, see
-          // AuthCookieService#createNewOptimizeAuthCookie
+          // ChunkedCookieService
           .csrf(AbstractHttpConfigurer::disable)
           .httpBasic(AbstractHttpConfigurer::disable)
           // disable frame options so embed links work, it's not a risk disabling this globally as

@@ -9,11 +9,11 @@ package io.camunda.optimize.rest.security.ccsm;
 
 import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_REFRESH_TOKEN;
 
+import io.camunda.auth.spring.session.ChunkedCookieService;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
-import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
@@ -41,6 +41,14 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(CCSMAuthenticationCookieFilter.class);
+
+  /**
+   * Request attribute key used to pass a renewed access token within a single request. When token
+   * renewal occurs during {@link #doFilter}, the renewed token is stored as a request attribute so
+   * that {@link #getPreAuthenticatedPrincipal} can pick it up instead of reading the stale cookie.
+   */
+  private static final String RENEWED_TOKEN_ATTR = "io.camunda.optimize.renewedAccessToken";
+
   private final ConfigurationService configurationService;
   private final CCSMTokenService ccsmTokenService;
 
@@ -70,13 +78,16 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
       try {
         try {
           // Check the validity of the access token
-          AuthCookieService.extractJoinedCookieValueFromCookies(
-                  cookiesByName.values().stream().toList())
-              .ifPresentOrElse(
-                  ccsmTokenService::verifyAccessToken,
-                  // If no access token cookie is present, we can try renewing the tokens using the
-                  // refresh token
-                  () -> tryCookieRenewal(request, response, cookiesByName));
+          final ChunkedCookieService chunkedCookieService =
+              ccsmTokenService.getChunkedCookieService();
+          final String token = chunkedCookieService.extractToken((HttpServletRequest) request);
+          if (token != null) {
+            ccsmTokenService.verifyAccessToken(token);
+          } else {
+            // If no access token cookie is present, we can try renewing the tokens using the
+            // refresh token
+            tryCookieRenewal(request, response, cookiesByName);
+          }
         } catch (final TokenVerificationException verificationException) {
           // If the access token has any verification exception
           // we try to renew the tokens using the refresh token
@@ -94,27 +105,27 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
 
   @Override
   protected Object getPreAuthenticatedPrincipal(final HttpServletRequest request) {
-    return Optional.ofNullable(request.getCookies())
-        .flatMap(
-            cookies ->
-                AuthCookieService.extractJoinedCookieValueFromCookies(Arrays.asList(cookies))
-                    .flatMap(this::validToken)
-                    .map(ccsmTokenService::getSubjectFromToken))
-        .orElseGet(
-            () ->
-                AuthCookieService.getAuthCookieToken(request)
-                    .flatMap(this::validToken)
-                    .map(ccsmTokenService::getSubjectFromToken)
-                    .orElse(null));
+    // Check for a renewed token stored as a request attribute during this request
+    final String renewedToken = (String) request.getAttribute(RENEWED_TOKEN_ATTR);
+    if (renewedToken != null) {
+      return validToken(renewedToken).map(ccsmTokenService::getSubjectFromToken).orElse(null);
+    }
+
+    // Otherwise, extract the token from cookies
+    final String token = ccsmTokenService.getChunkedCookieService().extractToken(request);
+    if (token != null) {
+      return validToken(token).map(ccsmTokenService::getSubjectFromToken).orElse(null);
+    }
+    return null;
   }
 
   @Override
   protected Object getPreAuthenticatedCredentials(final HttpServletRequest request) {
-    return Optional.ofNullable(request.getCookies())
-        .flatMap(
-            cookies ->
-                AuthCookieService.extractJoinedCookieValueFromCookies(Arrays.asList(cookies)))
-        .orElseGet(() -> AuthCookieService.getAuthCookieToken(request).orElse(null));
+    final String renewedToken = (String) request.getAttribute(RENEWED_TOKEN_ATTR);
+    if (renewedToken != null) {
+      return renewedToken;
+    }
+    return ccsmTokenService.getChunkedCookieService().extractToken(request);
   }
 
   private Optional<String> validToken(final String token) {
@@ -135,21 +146,12 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
             refreshTokenCookie -> {
               final Tokens tokens = ccsmTokenService.renewToken(refreshTokenCookie.getValue());
               final AccessToken accessToken = ccsmTokenService.verifyToken(tokens.getAccessToken());
-              // We set the auth token as an attribute on this request so that it can be picked up
-              // when extracting the principal and credentials later
-              final int maxCookieLength =
-                  configurationService.getAuthConfiguration().getCookieConfiguration().getMaxSize();
               final String tokenValue = accessToken.getToken().getToken();
-              final int numberOfCookies =
-                  (int) Math.ceil((double) tokenValue.length() / maxCookieLength);
-              for (int i = 0; i < numberOfCookies; i++) {
-                request.setAttribute(
-                    AuthCookieService.getAuthorizationCookieNameWithSuffix(i),
-                    i == (numberOfCookies - 1)
-                        ? tokenValue.substring((i * maxCookieLength))
-                        : tokenValue.substring(
-                            (i * maxCookieLength), ((i * maxCookieLength) + maxCookieLength)));
-              }
+
+              // Store the renewed token as a request attribute so getPreAuthenticatedPrincipal
+              // can pick it up
+              request.setAttribute(RENEWED_TOKEN_ATTR, tokenValue);
+
               ccsmTokenService
                   .createOptimizeAuthNewCookies(tokens, accessToken, request.getScheme())
                   .forEach(((HttpServletResponse) response)::addCookie);

@@ -23,6 +23,10 @@
       <artifactId>camunda-security-protocol</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-domain</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
@@ -51,11 +55,6 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
-    <dependency>
-      <groupId>jakarta.annotation</groupId>
-      <artifactId>jakarta.annotation-api</artifactId>
-    </dependency>
-
     <dependency>
       <groupId>net.jcip</groupId>
       <artifactId>jcip-annotations</artifactId>

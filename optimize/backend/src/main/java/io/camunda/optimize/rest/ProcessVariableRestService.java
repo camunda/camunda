@@ -16,7 +16,7 @@ import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValu
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import io.camunda.optimize.dto.optimize.rest.GetVariableNamesForReportsRequestDto;
 import io.camunda.optimize.rest.util.TimeZoneUtil;
-import io.camunda.optimize.service.security.SessionService;
+import io.camunda.optimize.service.security.SecurityContextUtils;
 import io.camunda.optimize.service.variable.ProcessVariableLabelService;
 import io.camunda.optimize.service.variable.ProcessVariableService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,15 +36,12 @@ public class ProcessVariableRestService {
   public static final String PROCESS_VARIABLES_PATH = "/variables";
 
   private final ProcessVariableService processVariableService;
-  private final SessionService sessionService;
   private final ProcessVariableLabelService processVariableLabelService;
 
   public ProcessVariableRestService(
       final ProcessVariableService processVariableService,
-      final SessionService sessionService,
       final ProcessVariableLabelService processVariableLabelService) {
     this.processVariableService = processVariableService;
-    this.sessionService = sessionService;
     this.processVariableLabelService = processVariableLabelService;
   }
 
@@ -58,26 +55,23 @@ public class ProcessVariableRestService {
 
   @PostMapping("/reports")
   public List<ProcessVariableNameResponseDto> getVariableNamesForReports(
-      @RequestBody final GetVariableNamesForReportsRequestDto requestDto,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @RequestBody final GetVariableNamesForReportsRequestDto requestDto) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return processVariableService.getVariableNamesForAuthorizedReports(
         userId, requestDto.getReportIds());
   }
 
   @PostMapping("/values")
   public List<String> getVariableValues(
-      @RequestBody final ProcessVariableValueRequestDto variableValueRequestDto,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @RequestBody final ProcessVariableValueRequestDto variableValueRequestDto) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return processVariableService.getVariableValues(userId, variableValueRequestDto);
   }
 
   @PostMapping("/values/reports")
   public List<String> getVariableValuesForReports(
-      @RequestBody final ProcessVariableReportValuesRequestDto requestDto,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @RequestBody final ProcessVariableReportValuesRequestDto requestDto) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return processVariableService.getVariableValuesForReports(userId, requestDto);
   }
 

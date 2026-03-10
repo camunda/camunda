@@ -7,10 +7,14 @@
  */
 package io.camunda.application.commons.identity;
 
+import io.camunda.search.clients.reader.UserReader;
 import io.camunda.search.entities.UserEntity;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.UserServices;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.UserQuery;
+import io.camunda.security.reader.ResourceAccessChecks;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -18,27 +22,55 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 public class CamundaUserDetailsService implements UserDetailsService {
 
-  private final UserServices userServices;
+  private static final Logger LOG = LoggerFactory.getLogger(CamundaUserDetailsService.class);
 
-  public CamundaUserDetailsService(final UserServices userServices) {
-    this.userServices = userServices;
+  private final UserReader userReader;
+
+  public CamundaUserDetailsService(final UserReader userReader) {
+    this.userReader = userReader;
+    LOG.debug(
+        "CamundaUserDetailsService initialized with UserReader implementation: {}",
+        userReader.getClass().getName());
   }
 
   @Override
   public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
-    return Optional.ofNullable(username)
-        .filter(u -> !u.isBlank())
-        .map(this::getUser)
-        .map(this::toUserDetails)
-        .orElseThrow(() -> new UsernameNotFoundException(username));
-  }
-
-  private UserEntity getUser(final String username) {
+    LOG.debug("Loading user details for username: {}", username);
     try {
-      return userServices.withAuthentication(CamundaAuthentication.anonymous()).getUser(username);
+      // Diagnostic: list all users in the database
+      final SearchQueryResult<UserEntity> allUsers =
+          userReader.search(UserQuery.of(b -> b), ResourceAccessChecks.disabled());
+      LOG.debug(
+          "Diagnostic: total users in DB = {}, usernames = {}",
+          allUsers.total(),
+          allUsers.items() != null
+              ? allUsers.items().stream().map(UserEntity::username).toList()
+              : "null");
     } catch (final Exception e) {
-      throw new UsernameNotFoundException(username, e);
+      LOG.debug("Diagnostic: failed to list all users: {}", e.getMessage());
     }
+    UserEntity entity = null;
+    try {
+      entity =
+          Optional.ofNullable(username)
+              .filter(u -> !u.isBlank())
+              .map(u -> userReader.getById(u, ResourceAccessChecks.disabled()))
+              .orElse(null);
+    } catch (final Exception e) {
+      LOG.debug("Exception from UserReader.getById('{}') : {}", username, e.getMessage(), e);
+    }
+    if (entity == null) {
+      LOG.debug("User '{}' not found via UserReader (getById returned null)", username);
+      throw new UsernameNotFoundException(username);
+    }
+    LOG.debug(
+        "Found user '{}' (key={}, passwordPrefix='{}')",
+        entity.username(),
+        entity.userKey(),
+        entity.password() != null && entity.password().length() > 10
+            ? entity.password().substring(0, 10) + "..."
+            : entity.password());
+    return toUserDetails(entity);
   }
 
   private UserDetails toUserDetails(final UserEntity user) {

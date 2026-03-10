@@ -14,13 +14,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.auth.domain.config.AuthenticationConfiguration;
+import io.camunda.auth.domain.config.MultiTenancyConfiguration;
+import io.camunda.auth.domain.config.OidcAuthenticationConfiguration;
+import io.camunda.auth.domain.model.AuthenticationMethod;
 import io.camunda.identity.webapp.controllers.AdminClientConfigController;
-import io.camunda.security.configuration.AuthenticationConfiguration;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SaasConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;

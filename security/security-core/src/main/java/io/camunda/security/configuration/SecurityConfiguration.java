@@ -7,6 +7,9 @@
  */
 package io.camunda.security.configuration;
 
+import io.camunda.auth.domain.config.AuthenticationConfiguration;
+import io.camunda.auth.domain.config.CsrfConfiguration;
+import io.camunda.auth.domain.config.MultiTenancyConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import java.util.regex.Pattern;
 

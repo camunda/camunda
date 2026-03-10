@@ -12,9 +12,8 @@ import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
-import io.camunda.optimize.service.security.SessionService;
+import io.camunda.optimize.service.security.SecurityContextUtils;
 import io.camunda.optimize.service.variable.DecisionVariableService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.validation.annotation.Validated;
@@ -33,12 +32,9 @@ public class DecisionVariablesRestService {
   public static final String DECISION_OUTPUTS_NAMES_PATH = "/outputs/names";
 
   private final DecisionVariableService decisionVariableService;
-  private final SessionService sessionService;
 
-  public DecisionVariablesRestService(
-      final DecisionVariableService decisionVariableService, final SessionService sessionService) {
+  public DecisionVariablesRestService(final DecisionVariableService decisionVariableService) {
     this.decisionVariableService = decisionVariableService;
-    this.sessionService = sessionService;
   }
 
   @PostMapping(DECISION_INPUTS_NAMES_PATH)
@@ -55,17 +51,15 @@ public class DecisionVariablesRestService {
 
   @PostMapping("/inputs/values")
   public List<String> getInputValues(
-      @RequestBody final DecisionVariableValueRequestDto requestDto,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @RequestBody final DecisionVariableValueRequestDto requestDto) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return decisionVariableService.getInputVariableValues(userId, requestDto);
   }
 
   @PostMapping("/outputs/values")
   public List<String> getOutputValues(
-      @RequestBody final DecisionVariableValueRequestDto requestDto,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @RequestBody final DecisionVariableValueRequestDto requestDto) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return decisionVariableService.getOutputVariableValues(userId, requestDto);
   }
 }

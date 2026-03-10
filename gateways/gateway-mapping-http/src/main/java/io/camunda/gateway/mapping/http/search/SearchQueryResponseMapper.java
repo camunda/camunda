@@ -9,10 +9,8 @@ package io.camunda.gateway.mapping.http.search;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static java.util.Optional.ofNullable;
-import static java.util.stream.Collectors.toMap;
-import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
-import io.camunda.authentication.entity.CamundaUserDTO;
+import io.camunda.auth.domain.model.CamundaUserInfo;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
@@ -21,8 +19,6 @@ import io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogResult;
 import io.camunda.gateway.protocol.model.AuditLogResultEnum;
 import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
-import io.camunda.gateway.protocol.model.AuthorizationResult;
-import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
 import io.camunda.gateway.protocol.model.BatchOperationError;
 import io.camunda.gateway.protocol.model.BatchOperationError.TypeEnum;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
@@ -58,12 +54,6 @@ import io.camunda.gateway.protocol.model.GlobalListenerSourceEnum;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerResult;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryResult;
-import io.camunda.gateway.protocol.model.GroupClientResult;
-import io.camunda.gateway.protocol.model.GroupClientSearchResult;
-import io.camunda.gateway.protocol.model.GroupResult;
-import io.camunda.gateway.protocol.model.GroupSearchQueryResult;
-import io.camunda.gateway.protocol.model.GroupUserResult;
-import io.camunda.gateway.protocol.model.GroupUserSearchResult;
 import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionQueryResult;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionResult;
@@ -85,14 +75,10 @@ import io.camunda.gateway.protocol.model.JobTypeStatisticsItem;
 import io.camunda.gateway.protocol.model.JobTypeStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobWorkerStatisticsItem;
 import io.camunda.gateway.protocol.model.JobWorkerStatisticsQueryResult;
-import io.camunda.gateway.protocol.model.MappingRuleResult;
-import io.camunda.gateway.protocol.model.MappingRuleSearchQueryResult;
 import io.camunda.gateway.protocol.model.MatchedDecisionRuleItem;
 import io.camunda.gateway.protocol.model.MessageSubscriptionResult;
 import io.camunda.gateway.protocol.model.MessageSubscriptionSearchQueryResult;
 import io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum;
-import io.camunda.gateway.protocol.model.OwnerTypeEnum;
-import io.camunda.gateway.protocol.model.PermissionTypeEnum;
 import io.camunda.gateway.protocol.model.ProcessDefinitionElementStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceStatisticsResult;
@@ -110,29 +96,11 @@ import io.camunda.gateway.protocol.model.ProcessInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlowResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlowsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
-import io.camunda.gateway.protocol.model.ResourceTypeEnum;
-import io.camunda.gateway.protocol.model.RoleClientResult;
-import io.camunda.gateway.protocol.model.RoleClientSearchResult;
-import io.camunda.gateway.protocol.model.RoleGroupResult;
-import io.camunda.gateway.protocol.model.RoleGroupSearchResult;
-import io.camunda.gateway.protocol.model.RoleResult;
-import io.camunda.gateway.protocol.model.RoleSearchQueryResult;
-import io.camunda.gateway.protocol.model.RoleUserResult;
-import io.camunda.gateway.protocol.model.RoleUserSearchResult;
 import io.camunda.gateway.protocol.model.SearchQueryPageResponse;
 import io.camunda.gateway.protocol.model.StatusMetric;
-import io.camunda.gateway.protocol.model.TenantClientResult;
-import io.camunda.gateway.protocol.model.TenantClientSearchResult;
-import io.camunda.gateway.protocol.model.TenantGroupResult;
-import io.camunda.gateway.protocol.model.TenantGroupSearchResult;
 import io.camunda.gateway.protocol.model.TenantResult;
-import io.camunda.gateway.protocol.model.TenantSearchQueryResult;
-import io.camunda.gateway.protocol.model.TenantUserResult;
-import io.camunda.gateway.protocol.model.TenantUserSearchResult;
 import io.camunda.gateway.protocol.model.UsageMetricsResponse;
 import io.camunda.gateway.protocol.model.UsageMetricsResponseItem;
-import io.camunda.gateway.protocol.model.UserResult;
-import io.camunda.gateway.protocol.model.UserSearchResult;
 import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
 import io.camunda.gateway.protocol.model.UserTaskStateEnum;
@@ -140,7 +108,6 @@ import io.camunda.gateway.protocol.model.VariableResult;
 import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.gateway.protocol.model.VariableSearchResult;
 import io.camunda.search.entities.AuditLogEntity;
-import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
@@ -157,8 +124,6 @@ import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GlobalListenerEntity;
-import io.camunda.search.entities.GroupEntity;
-import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
@@ -167,7 +132,6 @@ import io.camunda.search.entities.JobErrorStatisticsEntity;
 import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
-import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
@@ -175,21 +139,14 @@ import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEnti
 import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
-import io.camunda.search.entities.RoleEntity;
-import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
-import io.camunda.search.entities.TenantEntity;
-import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.entities.UsageMetricStatisticsEntity.UsageMetricStatisticsEntityTenant;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUStatisticsEntityTenant;
-import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.entity.ClusterMetadata.AppName;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collections;
 import java.util.HashSet;
@@ -427,130 +384,6 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static RoleSearchQueryResult toRoleSearchQueryResponse(
-      final SearchQueryResult<RoleEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new RoleSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items()).map(SearchQueryResponseMapper::toRoles).orElseGet(List::of));
-  }
-
-  public static RoleGroupSearchResult toRoleGroupSearchQueryResponse(
-      final SearchQueryResult<RoleMemberEntity> result) {
-    return new RoleGroupSearchResult()
-        .page(toSearchQueryPageResponse(result))
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toRoleGroups)
-                .orElseGet(List::of));
-  }
-
-  public static RoleUserSearchResult toRoleUserSearchQueryResponse(
-      final SearchQueryResult<RoleMemberEntity> result) {
-    return new RoleUserSearchResult()
-        .page(toSearchQueryPageResponse(result))
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toRoleUsers)
-                .orElseGet(List::of));
-  }
-
-  public static RoleClientSearchResult toRoleClientSearchQueryResponse(
-      final SearchQueryResult<RoleMemberEntity> result) {
-    return new RoleClientSearchResult()
-        .page(toSearchQueryPageResponse(result))
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toRoleClients)
-                .orElseGet(List::of));
-  }
-
-  public static GroupSearchQueryResult toGroupSearchQueryResponse(
-      final SearchQueryResult<GroupEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new GroupSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toGroups)
-                .orElseGet(List::of));
-  }
-
-  public static GroupUserSearchResult toGroupUserSearchQueryResponse(
-      final SearchQueryResult<GroupMemberEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new GroupUserSearchResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toGroupUsers)
-                .orElseGet(List::of));
-  }
-
-  public static GroupClientSearchResult toGroupClientSearchQueryResponse(
-      final SearchQueryResult<GroupMemberEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new GroupClientSearchResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toGroupClients)
-                .orElseGet(List::of));
-  }
-
-  public static TenantSearchQueryResult toTenantSearchQueryResponse(
-      final SearchQueryResult<TenantEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new TenantSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toTenants)
-                .orElseGet(List::of));
-  }
-
-  public static TenantGroupSearchResult toTenantGroupSearchQueryResponse(
-      final SearchQueryResult<TenantMemberEntity> result) {
-    return new TenantGroupSearchResult()
-        .page(toSearchQueryPageResponse(result))
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toTenantGroups)
-                .orElseGet(List::of));
-  }
-
-  public static TenantUserSearchResult toTenantUserSearchQueryResponse(
-      final SearchQueryResult<TenantMemberEntity> result) {
-    return new TenantUserSearchResult()
-        .page(toSearchQueryPageResponse(result))
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toTenantUsers)
-                .orElseGet(List::of));
-  }
-
-  public static TenantClientSearchResult toTenantClientSearchQueryResponse(
-      final SearchQueryResult<TenantMemberEntity> result) {
-    return new TenantClientSearchResult()
-        .page(toSearchQueryPageResponse(result))
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toTenantClients)
-                .orElseGet(List::of));
-  }
-
-  public static MappingRuleSearchQueryResult toMappingRuleSearchQueryResponse(
-      final SearchQueryResult<MappingRuleEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new MappingRuleSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toMappingRules)
-                .orElseGet(List::of));
-  }
-
   public static DecisionDefinitionSearchQueryResult toDecisionDefinitionSearchQueryResponse(
       final SearchQueryResult<DecisionDefinitionEntity> result) {
     final var page = toSearchQueryPageResponse(result);
@@ -603,16 +436,6 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(tasks -> toUserTasks(tasks))
-                .orElseGet(Collections::emptyList));
-  }
-
-  public static UserSearchResult toUserSearchQueryResponse(
-      final SearchQueryResult<UserEntity> result) {
-    return new UserSearchResult()
-        .page(toSearchQueryPageResponse(result))
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toUsers)
                 .orElseGet(Collections::emptyList));
   }
 
@@ -835,117 +658,6 @@ public final class SearchQueryResponseMapper {
         .message(batchOperationErrorEntity.message());
   }
 
-  private static List<RoleResult> toRoles(final List<RoleEntity> roles) {
-    return roles.stream().map(SearchQueryResponseMapper::toRole).toList();
-  }
-
-  public static RoleResult toRole(final RoleEntity roleEntity) {
-    return new RoleResult()
-        .roleId(roleEntity.roleId())
-        .description(roleEntity.description())
-        .name(roleEntity.name());
-  }
-
-  private static List<GroupResult> toGroups(final List<GroupEntity> groups) {
-    return groups.stream().map(SearchQueryResponseMapper::toGroup).toList();
-  }
-
-  public static GroupResult toGroup(final GroupEntity groupEntity) {
-    return new GroupResult()
-        .groupId(groupEntity.groupId())
-        .name(groupEntity.name())
-        .description(groupEntity.description());
-  }
-
-  private static List<GroupUserResult> toGroupUsers(final List<GroupMemberEntity> groupMembers) {
-    return groupMembers.stream().map(SearchQueryResponseMapper::toGroupUser).toList();
-  }
-
-  private static GroupUserResult toGroupUser(final GroupMemberEntity groupMember) {
-    return new GroupUserResult().username(groupMember.id());
-  }
-
-  private static List<GroupClientResult> toGroupClients(
-      final List<GroupMemberEntity> groupMembers) {
-    return groupMembers.stream().map(SearchQueryResponseMapper::toGroupClient).toList();
-  }
-
-  private static GroupClientResult toGroupClient(final GroupMemberEntity groupMember) {
-    return new GroupClientResult().clientId(groupMember.id());
-  }
-
-  private static List<TenantResult> toTenants(final List<TenantEntity> tenants) {
-    return tenants.stream().map(SearchQueryResponseMapper::toTenant).toList();
-  }
-
-  public static TenantResult toTenant(final TenantEntity tenantEntity) {
-    return new TenantResult()
-        .name(tenantEntity.name())
-        .description(tenantEntity.description())
-        .tenantId(tenantEntity.tenantId());
-  }
-
-  private static List<TenantUserResult> toTenantUsers(final List<TenantMemberEntity> members) {
-    return members.stream().map(SearchQueryResponseMapper::toTenantUser).toList();
-  }
-
-  private static List<TenantClientResult> toTenantClients(final List<TenantMemberEntity> members) {
-    return members.stream().map(SearchQueryResponseMapper::toTenantClient).toList();
-  }
-
-  private static List<TenantGroupResult> toTenantGroups(final List<TenantMemberEntity> members) {
-    return members.stream().map(SearchQueryResponseMapper::toTenantGroup).toList();
-  }
-
-  private static TenantGroupResult toTenantGroup(final TenantMemberEntity tenantMember) {
-    return new TenantGroupResult().groupId(tenantMember.id());
-  }
-
-  private static TenantUserResult toTenantUser(final TenantMemberEntity tenantMember) {
-    return new TenantUserResult().username(tenantMember.id());
-  }
-
-  private static TenantClientResult toTenantClient(final TenantMemberEntity tenantMember) {
-    return new TenantClientResult().clientId(tenantMember.id());
-  }
-
-  private static List<RoleGroupResult> toRoleGroups(final List<RoleMemberEntity> members) {
-    return members.stream().map(SearchQueryResponseMapper::toRoleGroup).toList();
-  }
-
-  private static List<RoleUserResult> toRoleUsers(final List<RoleMemberEntity> members) {
-    return members.stream().map(SearchQueryResponseMapper::toRoleUser).toList();
-  }
-
-  private static List<RoleClientResult> toRoleClients(final List<RoleMemberEntity> members) {
-    return members.stream().map(SearchQueryResponseMapper::toRoleClient).toList();
-  }
-
-  private static RoleGroupResult toRoleGroup(final RoleMemberEntity roleMember) {
-    return new RoleGroupResult().groupId(roleMember.id());
-  }
-
-  private static RoleUserResult toRoleUser(final RoleMemberEntity roleMember) {
-    return new RoleUserResult().username(roleMember.id());
-  }
-
-  private static RoleClientResult toRoleClient(final RoleMemberEntity roleMember) {
-    return new RoleClientResult().clientId(roleMember.id());
-  }
-
-  private static List<MappingRuleResult> toMappingRules(
-      final List<MappingRuleEntity> mappingRules) {
-    return mappingRules.stream().map(SearchQueryResponseMapper::toMappingRule).toList();
-  }
-
-  public static MappingRuleResult toMappingRule(final MappingRuleEntity mappingRuleEntity) {
-    return new MappingRuleResult()
-        .claimName(mappingRuleEntity.claimName())
-        .claimValue(mappingRuleEntity.claimValue())
-        .mappingRuleId(mappingRuleEntity.mappingRuleId())
-        .name(mappingRuleEntity.name());
-  }
-
   private static List<DecisionDefinitionResult> toDecisionDefinitions(
       final List<DecisionDefinitionEntity> instances) {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionDefinition).toList();
@@ -1127,32 +839,33 @@ public final class SearchQueryResponseMapper {
         .tenantId(f.tenantId());
   }
 
-  public static List<UserResult> toUsers(final List<UserEntity> users) {
-    return users.stream().map(SearchQueryResponseMapper::toUser).toList();
+  @SuppressWarnings("unchecked")
+  public static CamundaUserResult toCamundaUser(final CamundaUserInfo camundaUser) {
+    final var result =
+        new CamundaUserResult()
+            .displayName(camundaUser.displayName())
+            .username(camundaUser.username())
+            .email(camundaUser.email())
+            .authorizedComponents(camundaUser.authorizedComponents())
+            .tenants(toTenantResults(camundaUser.tenants()))
+            .groups(camundaUser.groups())
+            .roles(camundaUser.roles())
+            .canLogout(camundaUser.canLogout());
+    final var metadata = camundaUser.metadata();
+    if (metadata.containsKey("salesPlanType")) {
+      result.salesPlanType((String) metadata.get("salesPlanType"));
+    }
+    if (metadata.containsKey("c8Links")) {
+      result.c8Links((Map<String, String>) metadata.get("c8Links"));
+    }
+    return result;
   }
 
-  public static UserResult toUser(final UserEntity user) {
-    return new UserResult().username(user.username()).email(user.email()).name(user.name());
-  }
-
-  public static CamundaUserResult toCamundaUser(final CamundaUserDTO camundaUser) {
-    return new CamundaUserResult()
-        .displayName(camundaUser.displayName())
-        .username(camundaUser.username())
-        .email(camundaUser.email())
-        .authorizedComponents(camundaUser.authorizedComponents())
-        .tenants(toTenants(camundaUser.tenants()))
-        .groups(camundaUser.groups())
-        .roles(camundaUser.roles())
-        .salesPlanType(camundaUser.salesPlanType())
-        .c8Links(toCamundaUserResultC8Links(camundaUser.c8Links()))
-        .canLogout(camundaUser.canLogout());
-  }
-
-  private static Map<String, String> toCamundaUserResultC8Links(
-      final Map<AppName, String> c8Links) {
-    return c8Links.entrySet().stream()
-        .collect(toMap(e -> e.getKey().getValue(), Map.Entry::getValue, (v1, v2) -> v1));
+  private static List<TenantResult> toTenantResults(
+      final List<io.camunda.auth.domain.model.TenantInfo> tenants) {
+    return tenants.stream()
+        .map(t -> new TenantResult().tenantId(t.tenantId()).name(t.name()))
+        .toList();
   }
 
   private static List<DecisionInstanceResult> toDecisionInstances(
@@ -1380,36 +1093,6 @@ public final class SearchQueryResponseMapper {
     return clusterVariableEntity.isPreview()
         ? clusterVariableEntity.fullValue()
         : clusterVariableEntity.value();
-  }
-
-  public static AuthorizationSearchResult toAuthorizationSearchQueryResponse(
-      final SearchQueryResult<AuthorizationEntity> result) {
-    return new AuthorizationSearchResult()
-        .page(toSearchQueryPageResponse(result))
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toAuthorizations)
-                .orElseGet(Collections::emptyList));
-  }
-
-  public static List<AuthorizationResult> toAuthorizations(
-      final List<AuthorizationEntity> authorizations) {
-    return authorizations.stream().map(SearchQueryResponseMapper::toAuthorization).toList();
-  }
-
-  public static AuthorizationResult toAuthorization(final AuthorizationEntity authorization) {
-    return new AuthorizationResult()
-        .authorizationKey(KeyUtil.keyToString(authorization.authorizationKey()))
-        .ownerId(authorization.ownerId())
-        .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
-        .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))
-        .resourceId(defaultIfEmpty(authorization.resourceId(), null))
-        .resourcePropertyName(defaultIfEmpty(authorization.resourcePropertyName(), null))
-        .permissionTypes(
-            authorization.permissionTypes().stream()
-                .map(PermissionType::name)
-                .map(PermissionTypeEnum::fromValue)
-                .toList());
   }
 
   public static AuditLogSearchQueryResult toAuditLogSearchQueryResponse(

@@ -23,9 +23,7 @@ import io.camunda.optimize.rest.security.AbstractSecurityConfigurerAdapter;
 import io.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
 import io.camunda.optimize.rest.security.oauth.AudienceValidator;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.CCSMTokenService;
-import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import io.camunda.optimize.tomcat.CCSMRequestAdjustmentFilter;
@@ -68,14 +66,8 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
       final ConfigurationService configurationService,
       final CustomPreAuthenticatedAuthenticationProvider
           customPreAuthenticatedAuthenticationProvider,
-      final SessionService sessionService,
-      final AuthCookieService authCookieService,
       final CCSMTokenService ccsmTokenService) {
-    super(
-        configurationService,
-        customPreAuthenticatedAuthenticationProvider,
-        sessionService,
-        authCookieService);
+    super(configurationService, customPreAuthenticatedAuthenticationProvider);
     this.ccsmTokenService = ccsmTokenService;
   }
 

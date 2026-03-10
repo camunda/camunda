@@ -21,11 +21,11 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.messaging.MessagingException.ConnectionClosed;
+import io.camunda.auth.domain.model.CamundaAuthentication;
+import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;

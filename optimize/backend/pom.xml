@@ -196,6 +196,17 @@
       <artifactId>spring-security-oauth2-core</artifactId>
     </dependency>
 
+    <!-- Auth Library -->
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-spring</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-domain</artifactId>
+    </dependency>
+
     <!-- Authentication -->
     <dependency>
       <groupId>com.auth0</groupId>

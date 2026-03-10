@@ -7,18 +7,19 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.setup;
 
+import io.camunda.auth.domain.model.AuthenticationMethod;
+import io.camunda.auth.domain.spi.CamundaAuthenticationProvider;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
-import io.camunda.gateway.mapping.http.ResponseMapper;
-import io.camunda.gateway.mapping.http.mapper.UserMapper;
-import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
+import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.validator.RequestValidator;
+import io.camunda.gateway.protocol.model.UserCreateResult;
 import io.camunda.gateway.protocol.model.UserRequest;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.UserValidator;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
+import io.camunda.service.UserServices.UserDTO;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
@@ -48,7 +49,7 @@ public class SetupController {
   private final RoleServices roleServices;
   private final SecurityConfiguration securityConfiguration;
   private final CamundaAuthenticationProvider authenticationProvider;
-  private final UserMapper userMapper;
+  private final UserValidator userValidator;
 
   public SetupController(
       final UserServices userServices,
@@ -60,7 +61,7 @@ public class SetupController {
     this.roleServices = roleServices;
     this.securityConfiguration = securityConfiguration;
     this.authenticationProvider = authenticationProvider;
-    userMapper = new UserMapper(new UserRequestValidator(new UserValidator(identifierValidator)));
+    this.userValidator = new UserValidator(identifierValidator);
   }
 
   @CamundaPostMapping(path = "/user")
@@ -81,8 +82,20 @@ public class SetupController {
           GatewayErrorMapper.mapErrorToProblem(exception));
     }
 
-    return userMapper
-        .toUserRequest(request)
+    return RequestMapper.getResult(
+            RequestValidator.validate(
+                () ->
+                    userValidator.validateCreateRequest(
+                        request.getUsername(),
+                        request.getPassword(),
+                        request.getName(),
+                        request.getEmail())),
+            () ->
+                new UserDTO(
+                    request.getUsername(),
+                    request.getName(),
+                    request.getEmail(),
+                    request.getPassword()))
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             dto ->
@@ -92,7 +105,11 @@ public class SetupController {
                             .withAuthentication(
                                 authenticationProvider.getAnonymousCamundaAuthentication())
                             .createInitialAdminUser(dto),
-                    ResponseMapper::toUserCreateResponse,
+                    record ->
+                        new UserCreateResult()
+                            .username(record.getUsername())
+                            .email(record.getEmail())
+                            .name(record.getName()),
                     HttpStatus.CREATED));
   }
 }

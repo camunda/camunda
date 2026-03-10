@@ -9,7 +9,7 @@ package io.camunda.optimize.rest.providers;
 
 import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.LocalizationService;
-import io.camunda.optimize.service.security.AuthCookieService;
+import io.camunda.optimize.service.security.ServiceTokenCookieHelper;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -43,7 +43,7 @@ public class GenericExceptionMapper {
           HttpStatus.UNAUTHORIZED, NOT_AUTHORIZED_ERROR_CODE);
 
   @Autowired private LocalizationService localizationService;
-  @Autowired private AuthCookieService cookieService;
+  @Autowired private ServiceTokenCookieHelper serviceTokenCookieHelper;
 
   @ExceptionHandler(Throwable.class)
   public ResponseEntity<ErrorResponseDto> handleThrowable(
@@ -57,7 +57,7 @@ public class GenericExceptionMapper {
     }
 
     if (status == HttpStatus.UNAUTHORIZED) {
-      cookieService.createDeleteOptimizeAuthNewCookie(true).forEach(response::addCookie);
+      serviceTokenCookieHelper.createDeleteAuthCookies(true).forEach(response::addCookie);
     }
 
     final String errorCode = HTTP_STATUS_TO_ERROR_CODE.getOrDefault(status, GENERIC_ERROR_CODE);

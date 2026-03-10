@@ -12,14 +12,13 @@ import static io.camunda.application.Profile.IDENTITY;
 import static io.camunda.application.Profile.OPERATE;
 import static io.camunda.application.Profile.STANDALONE;
 import static io.camunda.application.Profile.TASKLIST;
-import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
 
-import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.auth.domain.model.AuthenticationMethod;
 import io.camunda.configuration.helpers.WebappsHelper;
-import io.camunda.security.entity.AuthenticationMethod;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.boot.env.DefaultPropertiesPropertySource;
@@ -53,7 +52,17 @@ public class WebappsConfigurationInitializer
       propertyMap.put("spring.thymeleaf.prefix", DEFAULT_RESOURCES_LOCATION);
 
       propertyMap.put("camunda.webapps.login-delegated", isLoginDelegated(context));
-      propertyMap.put("server.servlet.session.cookie.name", WebSecurityConfig.SESSION_COOKIE);
+      propertyMap.put("server.servlet.session.cookie.name", "camunda-session");
+
+      // Enable the auth library's webapp security filter chain
+      propertyMap.put("camunda.auth.security.webapp-enabled", true);
+      // SPA webapps expect 204 No Content on login/logout success, not redirects
+      propertyMap.put("camunda.auth.security.login-success-status", 204);
+      // Bridge webapp paths to include app-specific routes
+      int idx = 0;
+      for (final String path : buildWebappPaths(activeProfiles)) {
+        propertyMap.put("camunda.auth.security.webapp-paths[" + idx++ + "]", path);
+      }
     }
 
     // locations and home page
@@ -120,9 +129,49 @@ public class WebappsConfigurationInitializer
     DefaultPropertiesPropertySource.addOrMerge(propertyMap, propertySources);
   }
 
+  private Set<String> buildWebappPaths(final List<String> activeProfiles) {
+    final var paths =
+        new HashSet<>(
+            Set.of(
+                "/login/**",
+                "/logout",
+                "/",
+                "/sso-callback/**",
+                "/oauth2/authorization/**",
+                "/default-ui.css"));
+    if (activeProfiles.contains(OPERATE.getId())) {
+      paths.add("/operate/**");
+      // old Operate routes
+      paths.addAll(
+          Set.of(
+              "/processes",
+              "/processes/*",
+              "/processes/*/start",
+              "/decisions",
+              "/decisions/*",
+              "/instances",
+              "/instances/*"));
+    }
+    if (activeProfiles.contains(TASKLIST.getId())) {
+      paths.add("/tasklist/**");
+      // old Tasklist routes
+      paths.addAll(Set.of("/new/*", "/{regex:[\\d]+}"));
+    }
+    if (activeProfiles.contains(IDENTITY.getId()) || activeProfiles.contains(ADMIN.getId())) {
+      paths.add("/identity/**");
+      paths.add("/admin/**");
+    }
+    return paths;
+  }
+
   private boolean isLoginDelegated(final ConfigurableApplicationContext context) {
-    final var authenticationMethodProperty = context.getEnvironment().getProperty(METHOD);
-    final var authenticationMethod = AuthenticationMethod.parse(authenticationMethodProperty);
+    final var env = context.getEnvironment();
+    // Support both old and new property names
+    var methodValue = env.getProperty("camunda.auth.method");
+    if (methodValue == null) {
+      methodValue = env.getProperty("camunda.security.authentication.method");
+    }
+    final var authenticationMethod = AuthenticationMethod.parse(methodValue);
     return authenticationMethod.isPresent()
         && AuthenticationMethod.OIDC.equals(authenticationMethod.get());
   }

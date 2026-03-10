@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.filter.Operation.eq;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.auth.domain.model.CamundaAuthentication;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchExistsQuery;
 import io.camunda.search.clients.query.SearchHasChildQuery;
@@ -29,7 +30,6 @@ import io.camunda.search.filter.UserTaskFilter.Builder;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.condition.AuthorizationConditions;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;

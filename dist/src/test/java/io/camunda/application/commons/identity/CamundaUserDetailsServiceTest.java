@@ -10,54 +10,59 @@ package io.camunda.application.commons.identity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.clients.reader.UserReader;
 import io.camunda.search.entities.UserEntity;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.UserServices;
-import io.camunda.service.exception.ServiceException;
-import io.camunda.service.exception.ServiceException.Status;
+import io.camunda.security.reader.ResourceAccessChecks;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
-public class CamundaUserDetailsServiceTest {
+class CamundaUserDetailsServiceTest {
 
   private static final String TEST_USER_ID = "username1";
 
-  @Mock private UserServices userService;
+  @Mock private UserReader userReader;
   private CamundaUserDetailsService userDetailsService;
 
   @BeforeEach
-  public void setup() throws Exception {
+  void setup() throws Exception {
     MockitoAnnotations.openMocks(this).close();
-    userDetailsService = new CamundaUserDetailsService(userService);
-    when(userService.withAuthentication(any(CamundaAuthentication.class))).thenReturn(userService);
+    userDetailsService = new CamundaUserDetailsService(userReader);
   }
 
   @Test
-  public void testUserDetailsIsLoaded() {
-    // given
-    when(userService.getUser(any()))
+  void shouldLoadUserDetails() {
+    when(userReader.getById(eq(TEST_USER_ID), any(ResourceAccessChecks.class)))
         .thenReturn(new UserEntity(100L, TEST_USER_ID, "Foo Bar", "email@tested", "password1"));
 
-    // when
     final var user = userDetailsService.loadUserByUsername(TEST_USER_ID);
 
-    // then
     assertThat(user.getUsername()).isEqualTo(TEST_USER_ID);
     assertThat(user.getPassword()).isEqualTo("password1");
   }
 
   @Test
-  public void testUserDetailsNotFound() {
-    // given
-    when(userService.getUser(any())).thenThrow(new ServiceException("not found", Status.NOT_FOUND));
+  void shouldThrowWhenUserNotFound() {
+    when(userReader.getById(eq(TEST_USER_ID), any(ResourceAccessChecks.class))).thenReturn(null);
 
-    // when/then
     assertThatThrownBy(() -> userDetailsService.loadUserByUsername(TEST_USER_ID))
+        .isInstanceOf(UsernameNotFoundException.class);
+  }
+
+  @Test
+  void shouldThrowWhenUsernameIsNull() {
+    assertThatThrownBy(() -> userDetailsService.loadUserByUsername(null))
+        .isInstanceOf(UsernameNotFoundException.class);
+  }
+
+  @Test
+  void shouldThrowWhenUsernameIsBlank() {
+    assertThatThrownBy(() -> userDetailsService.loadUserByUsername("  "))
         .isInstanceOf(UsernameNotFoundException.class);
   }
 }

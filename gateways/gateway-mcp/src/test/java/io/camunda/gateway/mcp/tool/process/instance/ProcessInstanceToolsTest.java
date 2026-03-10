@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.auth.domain.config.MultiTenancyConfiguration;
 import io.camunda.gateway.mcp.tool.ToolsTest;
 import io.camunda.gateway.protocol.model.CreateProcessInstanceResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceResult;
@@ -33,7 +34,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.exception.ServiceException;

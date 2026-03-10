@@ -37,6 +37,10 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-core</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda.auth</groupId>
+      <artifactId>camunda-auth-domain</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
@@ -361,10 +365,6 @@
       <groupId>org.jetbrains</groupId>
       <artifactId>annotations</artifactId>
       <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-authentication</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>

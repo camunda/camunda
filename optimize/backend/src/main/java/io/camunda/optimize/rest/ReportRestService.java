@@ -29,7 +29,7 @@ import io.camunda.optimize.rest.mapper.ReportRestMapper;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.report.ReportEvaluationService;
 import io.camunda.optimize.service.report.ReportService;
-import io.camunda.optimize.service.security.SessionService;
+import io.camunda.optimize.service.security.SecurityContextUtils;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -54,25 +54,21 @@ public class ReportRestService {
   public static final String REPORT_PATH = "/report";
   private final ReportService reportService;
   private final ReportEvaluationService reportEvaluationService;
-  private final SessionService sessionService;
   private final ReportRestMapper reportRestMapper;
 
   public ReportRestService(
       final ReportService reportService,
       final ReportEvaluationService reportEvaluationService,
-      final SessionService sessionService,
       final ReportRestMapper reportRestMapper) {
     this.reportService = reportService;
     this.reportEvaluationService = reportEvaluationService;
-    this.sessionService = sessionService;
     this.reportRestMapper = reportRestMapper;
   }
 
   @PostMapping("/process/single")
   public IdResponseDto createNewSingleProcessReport(
-      @Valid @RequestBody final SingleProcessReportDefinitionRequestDto definition,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @Valid @RequestBody final SingleProcessReportDefinitionRequestDto definition) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     if (definition != null
         && definition.getData() != null
         && (definition.getData().isManagementReport()
@@ -88,9 +84,8 @@ public class ReportRestService {
   @PostMapping("/decision/single/")
   public IdResponseDto createNewSingleDecisionReport(
       @Valid @RequestBody
-          final SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+          final SingleDecisionReportDefinitionRequestDto singleDecisionReportDefinitionDto) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return reportService.createNewSingleDecisionReport(
         userId,
         Optional.ofNullable(singleDecisionReportDefinitionDto)
@@ -99,9 +94,8 @@ public class ReportRestService {
 
   @PostMapping("/process/combined/")
   public IdResponseDto createNewCombinedProcessReport(
-      @RequestBody final CombinedReportDefinitionRequestDto combinedReportDefinitionDto,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @RequestBody final CombinedReportDefinitionRequestDto combinedReportDefinitionDto) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return reportService.createNewCombinedProcessReport(
         userId,
         Optional.ofNullable(combinedReportDefinitionDto)
@@ -112,9 +106,8 @@ public class ReportRestService {
   public IdResponseDto copyReport(
       @PathVariable("id") final String id,
       @RequestParam(name = "collectionId", required = false) String collectionId,
-      @RequestParam(name = "name", required = false) final String newReportName,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @RequestParam(name = "name", required = false) final String newReportName) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     if (collectionId == null) {
       return reportService.copyReport(id, userId, newReportName);
     } else {
@@ -127,7 +120,7 @@ public class ReportRestService {
   @GetMapping
   public List<AuthorizedReportDefinitionResponseDto> getAuthorizedPrivateReports(
       final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     final List<AuthorizedReportDefinitionResponseDto> reportDefinitions =
         reportService.findAndFilterPrivateReports(userId);
     reportDefinitions.forEach(
@@ -140,7 +133,7 @@ public class ReportRestService {
   @GetMapping("/{id}")
   public AuthorizedReportDefinitionResponseDto getReport(
       @PathVariable("id") final String reportId, final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     final AuthorizedReportDefinitionResponseDto reportDefinition =
         reportService.getReportDefinition(reportId, userId);
     reportRestMapper.prepareLocalizedRestResponse(
@@ -154,7 +147,7 @@ public class ReportRestService {
       @Valid final PaginationRequestDto paginationRequestDto,
       @RequestBody final AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
       final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     final ZoneId timezone = extractTimezone(request);
     final AuthorizedReportEvaluationResult reportEvaluationResult =
         reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
@@ -172,7 +165,7 @@ public class ReportRestService {
       @Valid @RequestBody final ReportDefinitionDto reportDefinitionDto,
       @Valid final PaginationRequestDto paginationRequestDto,
       final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     if (reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto
         && ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto)
             .getData()
@@ -194,9 +187,8 @@ public class ReportRestService {
   public void updateSingleProcessReport(
       @PathVariable("id") final String reportId,
       @RequestParam(name = "force", required = false) final boolean force,
-      @RequestBody @Valid final SingleProcessReportDefinitionRequestDto updatedReport,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @RequestBody @Valid final SingleProcessReportDefinitionRequestDto updatedReport) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     final @Valid ProcessReportDataDto reportData = updatedReport.getData();
     if (reportData != null
         && (reportData.isManagementReport() || reportData.isInstantPreviewReport())) {
@@ -213,9 +205,8 @@ public class ReportRestService {
   public void updateSingleDecisionReport(
       @PathVariable("id") final String reportId,
       @RequestParam(name = "force", required = false) final boolean force,
-      @RequestBody @Valid final SingleDecisionReportDefinitionRequestDto updatedReport,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @RequestBody @Valid final SingleDecisionReportDefinitionRequestDto updatedReport) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);
     updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
@@ -226,9 +217,8 @@ public class ReportRestService {
   public void updateCombinedProcessReport(
       @PathVariable("id") final String reportId,
       @RequestParam(name = "force", required = false) final boolean force,
-      @RequestBody final CombinedReportDefinitionRequestDto updatedReport,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @RequestBody final CombinedReportDefinitionRequestDto updatedReport) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);
     updatedReport.setLastModified(LocalDateUtil.getCurrentDateTime());
@@ -236,18 +226,16 @@ public class ReportRestService {
   }
 
   @GetMapping("/{id}/delete-conflicts")
-  public ConflictResponseDto getDeleteConflicts(
-      @PathVariable("id") final String reportId, final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+  public ConflictResponseDto getDeleteConflicts(@PathVariable("id") final String reportId) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     return reportService.getReportDeleteConflictingItems(userId, reportId);
   }
 
   @DeleteMapping("/{id}")
   public void deleteReport(
       @PathVariable("id") final String reportId,
-      @RequestParam(name = "force", required = false) final boolean force,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @RequestParam(name = "force", required = false) final boolean force) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     reportService.deleteReportAsUser(userId, reportId, force);
   }
 }

@@ -20,7 +20,7 @@ import io.camunda.optimize.rest.mapper.DashboardRestMapper;
 import io.camunda.optimize.service.dashboard.DashboardService;
 import io.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
-import io.camunda.optimize.service.security.SessionService;
+import io.camunda.optimize.service.security.SecurityContextUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.net.MalformedURLException;
@@ -51,25 +51,21 @@ public class DashboardRestService {
   public static final String INSTANT_PREVIEW_PATH = "/instant";
   private final DashboardService dashboardService;
   private final InstantPreviewDashboardService instantPreviewDashboardService;
-  private final SessionService sessionService;
   private final DashboardRestMapper dashboardRestMapper;
 
   public DashboardRestService(
       final DashboardService dashboardService,
       final InstantPreviewDashboardService instantPreviewDashboardService,
-      final SessionService sessionService,
       final DashboardRestMapper dashboardRestMapper) {
     this.dashboardService = dashboardService;
     this.instantPreviewDashboardService = instantPreviewDashboardService;
-    this.sessionService = sessionService;
     this.dashboardRestMapper = dashboardRestMapper;
   }
 
   @PostMapping()
   public IdResponseDto createNewDashboard(
-      @Valid @RequestBody final DashboardDefinitionRestDto dashboardDefinitionDto,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @Valid @RequestBody final DashboardDefinitionRestDto dashboardDefinitionDto) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     if (dashboardDefinitionDto != null) {
       if (dashboardDefinitionDto.isManagementDashboard()
           || dashboardDefinitionDto.isInstantPreviewDashboard()) {
@@ -87,9 +83,8 @@ public class DashboardRestService {
   public IdResponseDto copyDashboard(
       @PathVariable("id") final String dashboardId,
       @RequestParam(name = "collectionId", required = false) String collectionId,
-      @RequestParam(name = "name", required = false) final String newDashboardName,
-      final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+      @RequestParam(name = "name", required = false) final String newDashboardName) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
 
     if (collectionId == null) {
       return dashboardService.copyDashboard(dashboardId, userId, newDashboardName);
@@ -104,7 +99,7 @@ public class DashboardRestService {
   @GetMapping(path = "/{id}")
   public AuthorizedDashboardDefinitionResponseDto getDashboard(
       @PathVariable(name = "id") final String dashboardId, final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     final AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
         dashboardService.getDashboardDefinition(dashboardId, userId);
     dashboardRestMapper.prepareRestResponse(
@@ -117,7 +112,7 @@ public class DashboardRestService {
       @PathVariable("procDefKey") final String processDefinitionKey,
       @RequestParam(name = "template", required = false) final String dashboardJsonTemplateFilename,
       final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     final AuthorizedDashboardDefinitionResponseDto dashboardDefinition;
     dashboardDefinition =
         instantPreviewDashboardService.getInstantPreviewDashboard(
@@ -140,18 +135,16 @@ public class DashboardRestService {
   @PutMapping(path = "/{id}")
   public void updateDashboard(
       @PathVariable("id") final String dashboardId,
-      @Valid @RequestBody final DashboardDefinitionRestDto updatedDashboard,
-      final HttpServletRequest request) {
+      @Valid @RequestBody final DashboardDefinitionRestDto updatedDashboard) {
     updatedDashboard.setId(dashboardId);
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     validateDashboard(updatedDashboard);
     dashboardService.updateDashboard(updatedDashboard, userId);
   }
 
   @DeleteMapping(path = "/{id}")
-  public void deleteDashboard(
-      @PathVariable("id") final String dashboardId, final HttpServletRequest request) {
-    final String userId = sessionService.getRequestUserOrFailNotAuthorized(request);
+  public void deleteDashboard(@PathVariable("id") final String dashboardId) {
+    final String userId = SecurityContextUtils.getAuthenticatedUser();
     dashboardService.deleteDashboardAsUser(dashboardId, userId);
   }
 
