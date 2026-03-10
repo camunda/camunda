@@ -103,7 +103,6 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         usageMetricsSearchClient,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -121,7 +120,6 @@ public class CamundaServicesConfiguration {
         securityContextProvider,
         activateJobsHandler,
         jobSearchClient,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -139,7 +137,6 @@ public class CamundaServicesConfiguration {
         securityContextProvider,
         decisionDefinitionSearchClient,
         decisionRequirementsServices,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -155,7 +152,6 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         decisionInstanceSearchClient,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -173,7 +169,6 @@ public class CamundaServicesConfiguration {
         securityContextProvider,
         processDefinitionSearchClient,
         formServices,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -193,7 +188,6 @@ public class CamundaServicesConfiguration {
         processInstanceSearchClient,
         sequenceFlowSearchClient,
         incidentServices,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -209,7 +203,6 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         decisionRequirementSearchClient,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -229,7 +222,6 @@ public class CamundaServicesConfiguration {
         flowNodeInstanceSearchClient,
         processCache,
         incidentServices,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -243,7 +235,6 @@ public class CamundaServicesConfiguration {
     return new AdHocSubProcessActivityServices(
         brokerClient,
         securityContextProvider,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -259,7 +250,6 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         auditLogSearchClient,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -275,7 +265,6 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         incidentSearchClient,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -291,7 +280,6 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         roleSearchClient,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -307,7 +295,6 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         tenantSearchClient,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -323,7 +310,6 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         groupSearchClient,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -340,7 +326,6 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         userSearchClient,
-        null,
         passwordEncoder,
         executorProvider,
         brokerRequestAuthorizationConverter);
@@ -367,7 +352,6 @@ public class CamundaServicesConfiguration {
         variableServices,
         auditLogServices,
         processCache,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -383,7 +367,6 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         variableSearchClient,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -399,7 +382,6 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         clusterVariableSearchClient,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -413,7 +395,6 @@ public class CamundaServicesConfiguration {
     return new ExpressionServices(
         brokerClient,
         securityContextProvider,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -427,7 +408,6 @@ public class CamundaServicesConfiguration {
     return new MessageServices(
         brokerClient,
         securityContextProvider,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -443,7 +423,6 @@ public class CamundaServicesConfiguration {
     return new DocumentServices(
         brokerClient,
         securityContextProvider,
-        null,
         new SimpleDocumentStoreRegistry(new EnvironmentConfigurationLoader()),
         authorizationChecker,
         securityConfiguration,
@@ -462,7 +441,6 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         authorizationSearchClient,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -476,7 +454,6 @@ public class CamundaServicesConfiguration {
     return new ClockServices(
         brokerClient,
         securityContextProvider,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -492,7 +469,6 @@ public class CamundaServicesConfiguration {
     return new ResourceServices(
         brokerClient,
         securityContextProvider,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter,
         processDefinitionSearchClient,
@@ -508,7 +484,6 @@ public class CamundaServicesConfiguration {
     return new SignalServices(
         brokerClient,
         securityContextProvider,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -524,7 +499,6 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         batchOperationSearchClient,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -540,7 +514,6 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         formSearchClient,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -556,7 +529,6 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         mappingRuleSearchClient,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -572,7 +544,6 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         messageSubscriptionSearchClient,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -586,7 +557,6 @@ public class CamundaServicesConfiguration {
     return new ConditionalServices(
         brokerClient,
         securityContextProvider,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -600,7 +570,6 @@ public class CamundaServicesConfiguration {
     return new TopologyServices(
         brokerClient,
         securityContextProvider,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
@@ -616,7 +585,6 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         globalListenerSearchClient,
-        null,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
