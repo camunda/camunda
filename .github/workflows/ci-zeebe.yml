@@ -459,43 +459,34 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           user_description: "team-distributed-systems"
 
-  deploy-benchmark-images:
-    name: Deploy benchmark images
+  deploy-load-test-images:
+    name: Deploy load test images
     timeout-minutes: 5
     needs: [ test-summary ]
     runs-on: ubuntu-latest
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
-      group: deploy-benchmark-images
+      group: deploy-load-test-images
       cancel-in-progress: false
     permissions:
       contents: 'read'
       id-token: 'write'
+    env:
+      IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
     steps:
       - uses: actions/checkout@v6
-      - uses: google-github-actions/auth@v3
-        id: auth
-        with:
-          token_format: 'access_token'
-          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
-          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - name: Login to GCR
-        uses: docker/login-action@v3
-        with:
-          registry: gcr.io
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
+          harbor: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw -B -D skipTests -D skipChecks -pl load-tests/load-tester -am install
       - name: Build Starter Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P starter
+        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -D image="${{ env.IMAGE_REPOSITORY }}/starter:SNAPSHOT"
       - name: Build Worker Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P worker
+        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -D image="${{ env.IMAGE_REPOSITORY }}/worker:SNAPSHOT"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -505,7 +496,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-distributed-systems"
+          user_description: "team-reliability-testing"
 
   deploy-snyk-projects:
     name: Deploy Snyk development projects
