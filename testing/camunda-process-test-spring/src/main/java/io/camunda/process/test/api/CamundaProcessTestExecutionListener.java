@@ -24,7 +24,6 @@ import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
 import io.camunda.process.test.api.judge.JudgeConfigBootstrapProvider;
-import io.camunda.process.test.api.judge.JudgeConfigurationData;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
