@@ -13,6 +13,7 @@ import {
   type ProcessInstanceState,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {formatToISO} from 'modules/utils/date/formatDate';
+import {parseIds} from 'modules/utils/filter';
 
 function mapFiltersToRequest(
   filters: ProcessInstanceFilters,
@@ -56,9 +57,10 @@ function mapFiltersToRequest(
   }
 
   if (ids) {
-    request.filter.processInstanceKey = {
-      $in: ids.split(','),
-    };
+    const keys = parseIds(ids);
+    if (keys.length > 0) {
+      request.filter.processInstanceKey = {$in: keys};
+    }
   }
 
   if (parentInstanceId) {

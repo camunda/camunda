@@ -160,6 +160,50 @@ describe('useProcessInstanceFilters', () => {
     expect(result.current).toEqual(expectedRequest);
   });
 
+  it('should parse space-separated process instance keys', () => {
+    const mockFilters: ProcessInstanceFilters = {
+      ids: 'id1 id2 id3',
+    };
+
+    mockedUseFilters.mockReturnValue({
+      getFilters: () => mockFilters,
+      setFilters: vi.fn(),
+      areProcessInstanceStatesApplied: vi.fn(),
+      areDecisionInstanceStatesApplied: vi.fn(),
+    });
+
+    const {result} = renderHook(() => useProcessInstanceFilters());
+    expect(result.current).toEqual({
+      filter: {
+        processInstanceKey: {
+          $in: ['id1', 'id2', 'id3'],
+        },
+      },
+    });
+  });
+
+  it('should parse comma-and-space-separated process instance keys', () => {
+    const mockFilters: ProcessInstanceFilters = {
+      ids: 'id1, id2, id3',
+    };
+
+    mockedUseFilters.mockReturnValue({
+      getFilters: () => mockFilters,
+      setFilters: vi.fn(),
+      areProcessInstanceStatesApplied: vi.fn(),
+      areDecisionInstanceStatesApplied: vi.fn(),
+    });
+
+    const {result} = renderHook(() => useProcessInstanceFilters());
+    expect(result.current).toEqual({
+      filter: {
+        processInstanceKey: {
+          $in: ['id1', 'id2', 'id3'],
+        },
+      },
+    });
+  });
+
   it('should handle partial filters', () => {
     const mockFilters: ProcessInstanceFilters = {
       startDateAfter: '2023-01-01',
