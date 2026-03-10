@@ -19,8 +19,8 @@ import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useD
 import {isCamundaUserTask} from 'modules/bpmn-js/utils/isCamundaUserTask';
 import {getExecutionDuration} from './getExecutionDuration';
 import {EmptyMessageContainer, Container} from './styled';
-import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {StructuredList} from 'modules/components/StructuredList';
+import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 
 const DetailsTab: React.FC = () => {
   const {
@@ -30,9 +30,10 @@ const DetailsTab: React.FC = () => {
     isFetchingElement,
   } = useProcessInstanceElementSelection();
 
-  const {processInstanceId: processDefinitionKey} =
-    useProcessInstancePageParams();
-  const {data: xmlData} = useProcessInstanceXml({processDefinitionKey});
+  const {data: processInstance} = useProcessInstance();
+  const {data: xmlData} = useProcessInstanceXml({
+    processDefinitionKey: processInstance?.processDefinitionKey,
+  });
 
   const businessObject = selectedElementId
     ? xmlData?.businessObjects[selectedElementId]
