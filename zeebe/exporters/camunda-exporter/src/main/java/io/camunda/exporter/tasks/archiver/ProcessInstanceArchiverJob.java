@@ -68,12 +68,18 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
         .whenComplete(
             (batch, ex) -> {
               if (batch != null) {
-                for (final var id : batch.rootProcessInstanceKeys()) {
-                  if (recentlyArchivedProcessInstances.getIfPresent(id) == null) {
-                    recentlyArchivedProcessInstances.put(id, Boolean.TRUE);
-                  } else {
-                    exporterMetrics.processInstanceAlreadyArchived();
+                if (!batch.rootProcessInstanceKeys().isEmpty()) {
+                  final var rootKeys = new ArrayList<Long>(batch.rootProcessInstanceKeys().size());
+                  for (final var id : batch.rootProcessInstanceKeys()) {
+                    if (recentlyArchivedProcessInstances.getIfPresent(id) == null) {
+                      recentlyArchivedProcessInstances.put(id, Boolean.TRUE);
+                      rootKeys.add(id);
+                    } else {
+                      exporterMetrics.processInstanceAlreadyArchived();
+                    }
                   }
+                  batch.rootProcessInstanceKeys().clear();
+                  batch.rootProcessInstanceKeys().addAll(rootKeys);
                 }
               }
             });
