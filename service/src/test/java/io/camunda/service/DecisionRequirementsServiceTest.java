@@ -28,17 +28,16 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 
 public final class DecisionRequirementsServiceTest {
 
-  @Mock private CamundaAuthentication authentication;
-
+  private CamundaAuthentication authentication;
   private DecisionRequirementsServices services;
   private DecisionRequirementSearchClient client;
 
   @BeforeEach
   public void before() {
+    authentication = mock(CamundaAuthentication.class);
     client = mock(DecisionRequirementSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     services =
