@@ -836,16 +836,26 @@ public class ExpressionEvaluationIT {
   // ============ ERROR HANDLING TESTS ============
 
   @Test
-  void shouldRejectExpressionWithNonExistentClusterVariable() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                camundaClient
-                    .newEvaluateExpressionCommand()
-                    .expression("=camunda.vars.cluster.nonExistentVar_" + UUID.randomUUID())
-                    .send()
-                    .join())
-        .isInstanceOf(ProblemException.class);
+  void shouldEvaluateNonExistentClusterVariableAsNull() {
+    // when - accessing a non-existent cluster variable should evaluate to null (not throw)
+    final EvaluateExpressionResponse response =
+        camundaClient
+            .newEvaluateExpressionCommand()
+            .expression(
+                "=camunda.vars.cluster.nonExistentVar_"
+                    + UUID.randomUUID().toString().replace("-", ""))
+            .send()
+            .join();
+
+    // then - result is null and warnings are produced
+    assertThat(response).isNotNull();
+    assertThat(response.getResult()).isNull();
+    assertThat(response.getWarnings())
+        .anySatisfy(
+            warning ->
+                assertThat(warning)
+                    .contains("The context is empty")
+                    .contains("No context entry found with key"));
   }
 
   @Test
