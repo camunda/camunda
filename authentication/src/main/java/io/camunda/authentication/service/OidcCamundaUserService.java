@@ -181,8 +181,9 @@ public class OidcCamundaUserService implements CamundaUserService {
 
   protected List<TenantEntity> getTenants(final List<String> tenantIds) {
     return tenantServices
-        .withAuthentication(CamundaAuthentication.anonymous())
-        .search(TenantQuery.of(q -> q.filter(f -> f.tenantIds(tenantIds)).unlimited()))
+        .search(
+            TenantQuery.of(q -> q.filter(f -> f.tenantIds(tenantIds)).unlimited()),
+            CamundaAuthentication.anonymous())
         .items();
   }
 
