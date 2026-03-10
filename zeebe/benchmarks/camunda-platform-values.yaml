@@ -60,8 +60,11 @@ zeebe:
   # Image configuration to configure the zeebe image specifics
   image:
     # Image.repository defines which image repository to use
-    repository: registry.camunda.cloud/team-zeebe/camunda
-    tag: 8.7.0
+    repository: camunda/zeebe
+    # Image.registry defines which image registry to use
+    registry: docker.io
+    # Image.tag defines the tag / version which should be used in the chart
+    tag: 8.7-SNAPSHOT
   # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
   # PartitionCount defines how many zeebe partitions are set up in the cluster
