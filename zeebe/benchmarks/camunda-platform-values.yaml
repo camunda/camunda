@@ -182,8 +182,11 @@ zeebeGateway:
   # Image configuration to configure the zeebe-gateway image specifics
   image:
     # Image.repository defines which image repository to use
-    repository: registry.camunda.cloud/team-zeebe/zeebe
-    tag: 8.7.0
+    repository: camunda/zeebe
+    # Image.registry defines which image registry to use
+    registry: docker.io
+    # Image.tag defines the tag / version which should be used in the chart
+    tag: 8.7-SNAPSHOT
   # LogLevel defines the log level which is used by the gateway
   logLevel: debug
 
