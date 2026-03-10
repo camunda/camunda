@@ -28,7 +28,6 @@ import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
@@ -80,12 +79,6 @@ public class PartitionRestoreService {
    */
   public void restore(final long[] backupIds, final BackupValidator validator)
       throws IOException, FlushException {
-    if (!FileUtil.isEmpty(rootDirectory)) {
-      LOG.error(
-          "Partition's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
-          rootDirectory);
-      throw new DirectoryNotEmptyException(rootDirectory.toString());
-    }
     validateAndSortBackupIds(backupIds);
 
     try (final var restoredJournal =
