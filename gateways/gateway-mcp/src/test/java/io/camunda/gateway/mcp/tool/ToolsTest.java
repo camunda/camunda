@@ -7,13 +7,10 @@
  */
 package io.camunda.gateway.mcp.tool;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.service.ApiServices;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
@@ -51,9 +48,5 @@ public abstract class ToolsTest {
             .openConnectionOnStartup(false);
 
     return McpClient.sync(transportBuilder.build()).build();
-  }
-
-  protected <T extends ApiServices<?>> void mockApiServiceAuthentication(final T service) {
-    doReturn(service).when(service).withAuthentication(any(CamundaAuthentication.class));
   }
 }
