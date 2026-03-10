@@ -17,17 +17,17 @@ Make sure you have the following installed: docker, tsh (Teleport CLI), kubectl,
 
 ### How to set up a load test namespace
 
-Just run the `newLoadTest.sh` with your preferred new namespace name.
+Just run the `newBenchmark.sh` with your preferred new namespace name.
 
 Like:
 
 ```
-. ./newLoadTest.sh my-load-test-name
+. ./newBenchmark.sh my-load-test-name
 ```
 
-This will source and run the `newLoadTest.sh` script, which means it will
+This will source and run the `newBenchmark.sh` script, which means it will
 create a new k8 namespace and switch to it via `kubens`. Furthermore, a new folder
-will be created with the given name. If you used `.` before `./newLoadTest.sh`
+will be created with the given name. If you used `.` before `./newBenchmark.sh`
 the script will also change your directory after running, so you can directly start
 to configure your load test.
 
@@ -36,10 +36,10 @@ to configure your load test.
 You can specify a secondary storage type as the second argument:
 
 ```
-. ./newLoadTest.sh my-load-test-name elasticsearch  # Default - uses Elasticsearch
-. ./newLoadTest.sh my-load-test-name opensearch     # Uses OpenSearch
-. ./newLoadTest.sh my-load-test-name postgresql     # Uses PostgreSQL (RDBMS)
-. ./newLoadTest.sh my-load-test-name none           # No secondary storage
+. ./newBenchmark.sh my-load-test-name elasticsearch  # Default - uses Elasticsearch
+. ./newBenchmark.sh my-load-test-name opensearch     # Uses OpenSearch
+. ./newBenchmark.sh my-load-test-name postgresql     # Uses PostgreSQL (RDBMS)
+. ./newBenchmark.sh my-load-test-name none           # No secondary storage
 ```
 
 The `none` option runs load tests without any secondary storage, which disables Camunda exporters. This is useful for testing the core orchestration engine performance in isolation.
@@ -70,10 +70,10 @@ Update the `camunda-platform-values.yaml` file in your namespace folder and set 
 The changes should look similar to this:
 
 ```yaml
-global:
+zeebe:
   image:
     tag: SNAPSHOT-2024-01-15-abcd1234
-orchestration:
+zeebeGateway:
   image:
     tag: SNAPSHOT-2024-01-15-abcd1234
 ```
@@ -108,7 +108,7 @@ After you're done with your load test you should remove the remaining namespace.
 In order to do this easily, just run:
 
 ```
-./deleteLoadTest.sh my-load-test-name
+./deleteBenchmark.sh my-load-test-name
 ```
 
 This will switch to the default namespace, delete the given namespace, and delete the corresponding folder.

@@ -3,7 +3,7 @@ secondary_storage ?= __STORAGE_TYPE__
 helm_chart ?= camunda-platform-8.6
 enable_optimize ?= __ENABLE_OPTIMIZE__
 curl_image ?= curlimages/curl:7.87.0
-camunda_management_url ?= http://camunda:9600
+camunda_management_url ?= http://zeebe-gateway:9600
 prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
 # Optional: additional Helm configuration for the Camunda Platform release.
 # Use this to pass extra `--set`/`-f` flags, for example:
@@ -19,9 +19,7 @@ additional_load_test_configuration ?= --set global.image.repository=registry.cam
 platform_values := -f camunda-platform-values.yaml
 
 # Add secondary storage values
-ifeq ($(secondary_storage),postgresql)
-platform_values += -f camunda-platform-values-rdbms.yaml
-else ifeq ($(secondary_storage),opensearch)
+ifeq ($(secondary_storage),opensearch)
 platform_values += -f camunda-platform-values-opensearch.yaml
 else ifeq ($(secondary_storage),none)
 platform_values += -f camunda-platform-no-secondary-storage.yaml
@@ -44,16 +42,10 @@ install: install-storage create-credentials install-platform install-load-test i
 .PHONY: install-stable
 install-stable: install-storage create-credentials install-platform-stable install-load-test install-elasticsearch-exporter
 
-# Install PostgreSQL database if secondary_storage is postgresql, or OpenSearch if secondary_storage is opensearch
+# Install OpenSearch if secondary_storage is opensearch
 .PHONY: install-storage
 install-storage:
-ifeq ($(secondary_storage),postgresql)
-	@echo "Installing PostgreSQL database for namespace $(namespace)..."
-	# Install Postgres database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-rdbms.yaml
-	helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
-		--namespace $(namespace) \
-		$(platform_values)
-else ifeq ($(secondary_storage),opensearch)
+ifeq ($(secondary_storage),opensearch)
 	@echo "Installing OpenSearch cluster for namespace $(namespace)..."
 	helm upgrade --install opensearch opensearch/opensearch \
 		--version "2.31.0" \
@@ -153,11 +145,7 @@ clean:
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/instance=$(namespace)
 	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
 	-kubectl delete -n $(namespace) cronjob leader-balancer
-ifeq ($(secondary_storage),postgresql)
-	@echo "Cleaning up PostgreSQL database for namespace $(namespace)..."
-	-helm --namespace $(namespace) uninstall postgres
-	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=postgresql
-else ifeq ($(secondary_storage),opensearch)
+ifeq ($(secondary_storage),opensearch)
 	@echo "Cleaning up OpenSearch cluster for namespace $(namespace)..."
 	-helm --namespace $(namespace) uninstall opensearch
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=opensearch
