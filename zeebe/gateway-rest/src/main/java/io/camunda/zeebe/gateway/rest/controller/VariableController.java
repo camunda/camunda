@@ -52,9 +52,7 @@ public class VariableController {
   private ResponseEntity<Object> search(final VariableQuery query, final boolean truncateValues) {
     try {
       final var result =
-          variableServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
+          variableServices.search(query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(result, truncateValues));
     } catch (final Exception e) {
@@ -69,9 +67,8 @@ public class VariableController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toVariableItem(
-                  variableServices
-                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                      .getByKey(variableKey)));
+                  variableServices.getByKey(
+                      variableKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

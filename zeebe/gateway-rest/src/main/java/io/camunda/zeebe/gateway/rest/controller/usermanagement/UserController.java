@@ -69,12 +69,9 @@ public class UserController {
   @RequiresSecondaryStorage
   public ResponseEntity<Object> getUser(@PathVariable final String username) {
     try {
+      final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
-          .body(
-              SearchQueryResponseMapper.toUser(
-                  userServices
-                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                      .getUser(username)));
+          .body(SearchQueryResponseMapper.toUser(userServices.getUser(username, authentication)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -82,19 +79,15 @@ public class UserController {
 
   @CamundaDeleteMapping(path = "/{username}")
   public CompletableFuture<ResponseEntity<Object>> deleteUser(@PathVariable final String username) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () ->
-            userServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .deleteUser(username));
+        () -> userServices.deleteUser(username, authentication));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createUser(final UserDTO request) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () ->
-            userServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .createUser(request),
+        () -> userServices.createUser(request, authentication),
         ResponseMapper::toUserCreateResponse,
         HttpStatus.CREATED);
   }
@@ -108,11 +101,9 @@ public class UserController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateUser(final UserDTO request) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () ->
-            userServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .updateUser(request),
+        () -> userServices.updateUser(request, authentication),
         ResponseMapper::toUserUpdateResponse,
         HttpStatus.OK);
   }
@@ -127,10 +118,8 @@ public class UserController {
 
   private ResponseEntity<UserSearchResult> search(final UserQuery query) {
     try {
-      final var result =
-          userServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
+      final var authentication = authenticationProvider.getCamundaAuthentication();
+      final var result = userServices.search(query, authentication);
       return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);

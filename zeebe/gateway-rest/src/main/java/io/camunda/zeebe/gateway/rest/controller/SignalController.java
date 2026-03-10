@@ -51,11 +51,11 @@ public class SignalController {
 
   private CompletableFuture<ResponseEntity<Object>> broadcastSignal(
       final BroadcastSignalRequest request) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () ->
-            signalServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .broadcastSignal(request.signalName(), request.variables(), request.tenantId()),
+            signalServices.broadcastSignal(
+                request.signalName(), request.variables(), request.tenantId(), authentication),
         ResponseMapper::toSignalBroadcastResponse,
         HttpStatus.OK);
   }

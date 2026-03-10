@@ -76,9 +76,8 @@ public class DecisionDefinitionController {
     try {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionDefinition(
-              decisionDefinitionServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .getByKey(decisionDefinitionKey)));
+              decisionDefinitionServices.getByKey(
+                  decisionDefinitionKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -94,9 +93,8 @@ public class DecisionDefinitionController {
       return ResponseEntity.ok()
           .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
           .body(
-              decisionDefinitionServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .getDecisionDefinitionXml(decisionDefinitionKey));
+              decisionDefinitionServices.getDecisionDefinitionXml(
+                  decisionDefinitionKey, authenticationProvider.getCamundaAuthentication()));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -106,9 +104,8 @@ public class DecisionDefinitionController {
       final DecisionDefinitionQuery query) {
     try {
       final var result =
-          decisionDefinitionServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
+          decisionDefinitionServices.search(
+              query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -120,13 +117,12 @@ public class DecisionDefinitionController {
       final DecisionEvaluationRequest request) {
     return RequestExecutor.executeServiceMethod(
         () ->
-            decisionDefinitionServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .evaluateDecision(
-                    request.decisionId(),
-                    request.decisionKey(),
-                    request.variables(),
-                    request.tenantId()),
+            decisionDefinitionServices.evaluateDecision(
+                request.decisionId(),
+                request.decisionKey(),
+                request.variables(),
+                request.tenantId(),
+                authenticationProvider.getCamundaAuthentication()),
         ResponseMapper::toEvaluateDecisionResponse,
         HttpStatus.OK);
   }

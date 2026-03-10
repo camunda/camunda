@@ -65,9 +65,8 @@ public class ProcessDefinitionController {
       final ProcessDefinitionQuery query) {
     try {
       final var result =
-          processDefinitionServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
+          processDefinitionServices.search(
+              query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessDefinitionSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -85,9 +84,8 @@ public class ProcessDefinitionController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toProcessDefinition(
-                  processDefinitionServices
-                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                      .getByKey(processDefinitionKey)));
+                  processDefinitionServices.getByKey(
+                      processDefinitionKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -101,8 +99,8 @@ public class ProcessDefinitionController {
       @PathVariable("processDefinitionKey") final long processDefinitionKey) {
     try {
       return processDefinitionServices
-          .withAuthentication(authenticationProvider.getCamundaAuthentication())
-          .getProcessDefinitionXml(processDefinitionKey)
+          .getProcessDefinitionXml(
+              processDefinitionKey, authenticationProvider.getCamundaAuthentication())
           .map(
               s ->
                   ResponseEntity.ok()
@@ -120,8 +118,8 @@ public class ProcessDefinitionController {
       @PathVariable("processDefinitionKey") final long processDefinitionKey) {
     try {
       return processDefinitionServices
-          .withAuthentication(authenticationProvider.getCamundaAuthentication())
-          .getProcessDefinitionStartForm(processDefinitionKey)
+          .getProcessDefinitionStartForm(
+              processDefinitionKey, authenticationProvider.getCamundaAuthentication())
           .map(SearchQueryResponseMapper::toFormItem)
           .map(s -> ResponseEntity.ok().body(s))
           .orElseGet(() -> ResponseEntity.noContent().build());
@@ -173,9 +171,8 @@ public class ProcessDefinitionController {
       final ProcessDefinitionStatisticsFilter filter) {
     try {
       final var result =
-          processDefinitionServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .elementStatistics(filter);
+          processDefinitionServices.elementStatistics(
+              filter, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessDefinitionElementStatisticsResult(result));
     } catch (final Exception e) {
@@ -188,9 +185,8 @@ public class ProcessDefinitionController {
           final io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery query) {
     try {
       final var result =
-          processDefinitionServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .getProcessDefinitionInstanceStatistics(query);
+          processDefinitionServices.getProcessDefinitionInstanceStatistics(
+              query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessInstanceStatisticsQueryResult(result));
     } catch (final Exception e) {
@@ -203,9 +199,8 @@ public class ProcessDefinitionController {
           final io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery query) {
     try {
       final var result =
-          processDefinitionServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .getProcessDefinitionMessageSubscriptionStatistics(query);
+          processDefinitionServices.getProcessDefinitionMessageSubscriptionStatistics(
+              query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessDefinitionMessageSubscriptionStatisticsQueryResponse(
               result));
@@ -219,9 +214,8 @@ public class ProcessDefinitionController {
           final io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery query) {
     try {
       final var result =
-          processDefinitionServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .searchProcessDefinitionInstanceVersionStatistics(query);
+          processDefinitionServices.searchProcessDefinitionInstanceVersionStatistics(
+              query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessInstanceVersionStatisticsQueryResult(result));
     } catch (final Exception e) {

@@ -52,11 +52,9 @@ public class ExpressionController {
 
   private CompletableFuture<ResponseEntity<Object>> evaluateExpression(
       final ExpressionServices.ExpressionEvaluationRequest request) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () ->
-            expressionServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .evaluateExpression(request),
+        () -> expressionServices.evaluateExpression(request, authentication),
         ResponseMapper::toExpressionEvaluationResult,
         HttpStatus.OK);
   }

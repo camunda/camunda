@@ -61,10 +61,8 @@ public class MessageSubscriptionController {
   private ResponseEntity<CorrelatedMessageSubscriptionSearchQueryResult>
       searchCorrelatedMessageSubscriptions(final CorrelatedMessageSubscriptionQuery query) {
     try {
-      final var result =
-          messageSubscriptionServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .searchCorrelated(query);
+      final var authentication = authenticationProvider.getCamundaAuthentication();
+      final var result = messageSubscriptionServices.searchCorrelated(query, authentication);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toCorrelatedMessageSubscriptionSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -75,10 +73,8 @@ public class MessageSubscriptionController {
   private ResponseEntity<MessageSubscriptionSearchQueryResult> search(
       final MessageSubscriptionQuery query) {
     try {
-      final var result =
-          messageSubscriptionServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
+      final var authentication = authenticationProvider.getCamundaAuthentication();
+      final var result = messageSubscriptionServices.search(query, authentication);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toMessageSubscriptionSearchQueryResponse(result));
     } catch (final Exception e) {

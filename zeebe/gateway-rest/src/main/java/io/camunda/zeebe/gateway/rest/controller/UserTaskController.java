@@ -107,9 +107,7 @@ public class UserTaskController {
       @PathVariable("userTaskKey") final Long userTaskKey) {
     try {
       final var userTask =
-          userTaskServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .getByKey(userTaskKey);
+          userTaskServices.getByKey(userTaskKey, authenticationProvider.getCamundaAuthentication());
 
       return ResponseEntity.ok().body(SearchQueryResponseMapper.toUserTask(userTask));
     } catch (final Exception e) {
@@ -123,8 +121,7 @@ public class UserTaskController {
       @PathVariable("userTaskKey") final long userTaskKey) {
     try {
       return userTaskServices
-          .withAuthentication(authenticationProvider.getCamundaAuthentication())
-          .getUserTaskForm(userTaskKey)
+          .getUserTaskForm(userTaskKey, authenticationProvider.getCamundaAuthentication())
           .map(SearchQueryResponseMapper::toFormItem)
           .map(ResponseEntity::ok)
           .orElseGet(() -> ResponseEntity.noContent().build());
@@ -162,9 +159,7 @@ public class UserTaskController {
   private ResponseEntity<UserTaskSearchQueryResult> search(final UserTaskQuery query) {
     try {
       final var result =
-          userTaskServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
+          userTaskServices.search(query, authenticationProvider.getCamundaAuthentication());
 
       return ResponseEntity.ok(SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -176,9 +171,8 @@ public class UserTaskController {
       final long userTaskKey, final VariableQuery query, final boolean truncateValues) {
     try {
       final var result =
-          userTaskServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .searchUserTaskVariables(userTaskKey, query);
+          userTaskServices.searchUserTaskVariables(
+              userTaskKey, query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(result, truncateValues));
     } catch (final Exception e) {
@@ -190,9 +184,8 @@ public class UserTaskController {
       final long userTaskKey, final AuditLogQuery query) {
     try {
       final var result =
-          userTaskServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .searchUserTaskAuditLogs(userTaskKey, query);
+          userTaskServices.searchUserTaskAuditLogs(
+              userTaskKey, query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(SearchQueryResponseMapper.toAuditLogSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -203,39 +196,43 @@ public class UserTaskController {
       final AssignUserTaskRequest request) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            userTaskServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .assignUserTask(
-                    request.userTaskKey(),
-                    request.assignee(),
-                    request.action(),
-                    request.allowOverride()));
+            userTaskServices.assignUserTask(
+                request.userTaskKey(),
+                request.assignee(),
+                request.action(),
+                request.allowOverride(),
+                authenticationProvider.getCamundaAuthentication()));
   }
 
   private CompletableFuture<ResponseEntity<Object>> completeUserTask(
       final CompleteUserTaskRequest request) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            userTaskServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .completeUserTask(request.userTaskKey(), request.variables(), request.action()));
+            userTaskServices.completeUserTask(
+                request.userTaskKey(),
+                request.variables(),
+                request.action(),
+                authenticationProvider.getCamundaAuthentication()));
   }
 
   private CompletableFuture<ResponseEntity<Object>> unassignUserTask(
       final AssignUserTaskRequest request) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            userTaskServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .unassignUserTask(request.userTaskKey(), request.action()));
+            userTaskServices.unassignUserTask(
+                request.userTaskKey(),
+                request.action(),
+                authenticationProvider.getCamundaAuthentication()));
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateUserTask(
       final UpdateUserTaskRequest request) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            userTaskServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .updateUserTask(request.userTaskKey(), request.changeset(), request.action()));
+            userTaskServices.updateUserTask(
+                request.userTaskKey(),
+                request.changeset(),
+                request.action(),
+                authenticationProvider.getCamundaAuthentication()));
   }
 }
