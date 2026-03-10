@@ -140,6 +140,7 @@ jobs:
         with:
           directory: ./identity/client
           package-manager: "npm"
+          node-version: '24'
       - name: Upload Identity frontend artifact
         uses: actions/upload-artifact@v4
         with:
