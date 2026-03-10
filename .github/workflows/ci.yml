@@ -192,6 +192,79 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+<<<<<<< HEAD
+=======
+  dependency-cycle-check:
+    # Temporarily disabling the dependency-cycle-check as too brittle
+    if: ${{ false }} #if: needs.detect-changes.outputs.java-code-changes == 'true'
+    name: "Dependency Cycle Check"
+    needs: [ detect-changes ]
+    runs-on: gcp-core-16-default
+    timeout-minutes: 30
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    strategy:
+      fail-fast: false
+      # The matrix is necessary to run separate analyses
+      matrix:
+        project:
+        # Not necessary - this is a completely different module
+        # written in Go
+        # - name: c8run
+        #   path: ./c8run
+        - name: optimize
+          path: ./optimize
+          maven-config: |
+            -DskipQaBuild=true
+        - name: single-app
+          path: ./
+          maven-config: |
+            -Dquickly=true
+            -DskipQaBuild=true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: dependency-cycle-check
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+        # These steps have been taken from check-licenses.yml workflow
+      - name: Adjust pom.xml files for FOSSA
+        # if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
+        uses: ./.github/actions/adjust-pom-for-license-analysis
+      - name: Update Maven configs
+        if: matrix.project.maven-config != ''
+        env:
+          MAVEN_CONFIG: ${{ matrix.project.maven-config }}
+        run: |
+          echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
+      - name: Check for dependency cycles
+        # Command here is the same used by fossa analyze
+        # and found by enabling the `-debug` flag
+        env:
+          POM_PATH: ${{ matrix.project.path}}/pom.xml
+        run: |
+          ./mvnw com.github.ferstl:depgraph-maven-plugin:4.0.1:aggregate \
+            -f "$POM_PATH" \
+            -DgraphFormat=text \
+            -DmergeScopes \
+            -DreduceEdges=false \
+            -DshowVersions=true \
+            -DshowGroupIds=true \
+            -DshowOptional=true \
+            -DrepeatTransitiveDependenciesInTextGraph=true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "dependency-cycle-check/${{ matrix.project.name }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+>>>>>>> 885a663f (ci: temporarely disable the dependency-cycle-check)
   build-platform-frontend:
     if: needs.detect-changes.outputs.frontend-changes == 'true'
     needs: [ detect-changes ]
