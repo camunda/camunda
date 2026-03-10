@@ -47,6 +47,8 @@ import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.util.Either;
+import jakarta.servlet.http.HttpServletRequest;
+import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
@@ -129,8 +131,9 @@ public class JobController {
   public ResponseEntity<GlobalJobStatisticsQueryResult> getGlobalJobStatistics(
       @RequestParam final OffsetDateTime from,
       @RequestParam final OffsetDateTime to,
-      @RequestParam(required = false) final String jobType) {
-    return requireJobMetricsEnabled()
+      @RequestParam(required = false) final String jobType,
+      final HttpServletRequest request) {
+    return requireJobMetricsEnabled(request)
         .flatMap(ok -> SearchQueryRequestMapper.toGlobalJobStatisticsQuery(from, to, jobType))
         .fold(RestErrorMapper::mapProblemToResponse, this::getGlobalStatistics);
   }
@@ -138,8 +141,8 @@ public class JobController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/statistics/by-types")
   public ResponseEntity<JobTypeStatisticsQueryResult> getJobTypeStatistics(
-      @RequestBody final JobTypeStatisticsQuery request) {
-    return requireJobMetricsEnabled()
+      @RequestBody final JobTypeStatisticsQuery request, final HttpServletRequest httpRequest) {
+    return requireJobMetricsEnabled(httpRequest)
         .flatMap(ok -> SearchQueryRequestMapper.toJobTypeStatisticsQuery(request))
         .fold(RestErrorMapper::mapProblemToResponse, this::getTypeStatistics);
   }
@@ -147,8 +150,8 @@ public class JobController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/statistics/by-workers")
   public ResponseEntity<JobWorkerStatisticsQueryResult> getJobWorkerStatistics(
-      @RequestBody final JobWorkerStatisticsQuery request) {
-    return requireJobMetricsEnabled()
+      @RequestBody final JobWorkerStatisticsQuery request, final HttpServletRequest httpRequest) {
+    return requireJobMetricsEnabled(httpRequest)
         .flatMap(ok -> SearchQueryRequestMapper.toJobWorkerStatisticsQuery(request))
         .fold(RestErrorMapper::mapProblemToResponse, this::getWorkerStatistics);
   }
@@ -156,8 +159,9 @@ public class JobController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/statistics/time-series")
   public ResponseEntity<JobTimeSeriesStatisticsQueryResult> getJobTimeSeriesStatistics(
-      @RequestBody final JobTimeSeriesStatisticsQuery request) {
-    return requireJobMetricsEnabled()
+      @RequestBody final JobTimeSeriesStatisticsQuery request,
+      final HttpServletRequest httpRequest) {
+    return requireJobMetricsEnabled(httpRequest)
         .flatMap(ok -> SearchQueryRequestMapper.toJobTimeSeriesStatisticsQuery(request))
         .fold(RestErrorMapper::mapProblemToResponse, this::getTimeSeriesStatistics);
   }
@@ -312,12 +316,13 @@ public class JobController {
     }
   }
 
-  private Either<ProblemDetail, Void> requireJobMetricsEnabled() {
+  private Either<ProblemDetail, Void> requireJobMetricsEnabled(final HttpServletRequest request) {
     if (!gatewayRestConfiguration.getJobMetrics().isEnabled()) {
       final var problemDetail =
           CamundaProblemDetail.forStatusAndDetail(
               HttpStatus.FORBIDDEN, "Job metrics feature is disabled");
       problemDetail.setTitle("FORBIDDEN");
+      problemDetail.setInstance(URI.create(request.getRequestURI()));
       return Either.left(problemDetail);
     }
     return Either.right(null);
