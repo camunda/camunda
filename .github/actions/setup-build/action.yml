@@ -55,11 +55,6 @@ inputs:
       It will be merged with Camunda Nexus settings (if enabled), with precedence."
     required: false
     default: '[]'
-  maven-version:
-    description: |
-      Maven version to be used by the wrapper.
-      If not set, default version in .mvn/wrapper/maven-wrapper.properties will be used.
-    required: false
   time-zone:
     description: |
       Time zone to set for the build environment. Use TZ identifiers, e.g., 'Europe/Berlin'.
@@ -105,7 +100,7 @@ runs:
           }
         }
       IS_FORK: >-
-        ${{ 
+        ${{
           github.event.name == 'pull_request' &&
           github.event.pull_request.head.repo.full_name != 'camunda/camunda'
         }}
@@ -158,12 +153,6 @@ runs:
     with:
       distribution: ${{ inputs.java-distribution }}
       java-version: ${{ inputs.java-version }}
-  - name: Setup Maven
-    if: inputs.maven-version != ''
-    uses: ./.github/actions/setup-maven-dist
-    with:
-      maven-version: ${{ inputs.maven-version }}
-      set-mvnw: true
   - name: Configure Maven cache
     uses: ./.github/actions/setup-maven-cache
     with:
@@ -174,7 +163,7 @@ runs:
     env:
       # Camunda Nexus is disabled for fork PRs
       CAMUNDA_NEXUS_ENABLED: >-
-        ${{ 
+        ${{
           steps.checks.outputs.is-fork != 'true' &&
           inputs.camunda-nexus == 'true'
         }}
@@ -213,7 +202,7 @@ runs:
         --argjson maven_servers "${EXTRA_MAVEN_SERVERS}" \
         '[ $nexus_server + $maven_servers | group_by(.id)[] | add ]'
       )
-      
+
       echo mirrors=$mirrors >> $GITHUB_OUTPUT
       echo servers=$servers >> $GITHUB_OUTPUT
     shell: bash
@@ -230,7 +219,7 @@ runs:
     run: |
       # tzdata is not installed in self-hosted runners
       sudo apt-get update && sudo apt-get install -y tzdata
-      echo ${TZ_IDENTIFIER} | sudo tee /etc/timezone 
+      echo ${TZ_IDENTIFIER} | sudo tee /etc/timezone
       sudo rm -rf /etc/localtime
       sudo ln -s /usr/share/zoneinfo/${TZ_IDENTIFIER} /etc/localtime
     shell: bash

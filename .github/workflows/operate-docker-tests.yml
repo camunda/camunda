@@ -69,11 +69,6 @@ jobs:
         with:
           distribution: "adopt"
           java-version: "21"
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven-dist
-        with:
-          maven-version: "3.9.6"
-          set-mvnw: true
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: 'Create settings.xml'
         uses: s4u/maven-settings-action@v3.0.0
