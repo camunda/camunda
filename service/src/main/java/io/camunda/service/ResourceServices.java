@@ -34,7 +34,6 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
   public ResourceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
@@ -42,35 +41,23 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
     this.decisionRequirementSearchClient = decisionRequirementSearchClient;
   }
 
-  @Override
-  public ResourceServices withAuthentication(final CamundaAuthentication authentication) {
-    return new ResourceServices(
-        brokerClient,
-        securityContextProvider,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter,
-        processDefinitionSearchClient,
-        decisionRequirementSearchClient);
-  }
-
   public CompletableFuture<DeploymentRecord> deployResources(
-      final DeployResourcesRequest deployResourcesRequest) {
+      final DeployResourcesRequest deployResourcesRequest,
+      final CamundaAuthentication authentication) {
     final var brokerRequest = new BrokerDeployResourceRequest();
     deployResourcesRequest.resources().forEach(brokerRequest::addResource);
     brokerRequest.setTenantId(deployResourcesRequest.tenantId());
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<ResourceDeletionRecord> deleteResource(
-      final ResourceDeletionRequest request) {
+      final ResourceDeletionRequest request, final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerDeleteResourceRequest()
             .setResourceKey(request.resourceKey())
@@ -81,7 +68,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   /**
@@ -129,9 +116,10 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
     }
   }
 
-  public CompletableFuture<ResourceRecord> fetchResource(final ResourceFetchRequest request) {
+  public CompletableFuture<ResourceRecord> fetchResource(
+      final ResourceFetchRequest request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
-        new BrokerFetchResourceRequest().setResourceKey(request.resourceKey()));
+        new BrokerFetchResourceRequest().setResourceKey(request.resourceKey()), authentication);
   }
 
   public record DeployResourcesRequest(Map<String, byte[]> resources, String tenantId) {}

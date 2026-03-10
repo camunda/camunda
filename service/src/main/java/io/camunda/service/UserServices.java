@@ -37,14 +37,12 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserSearchClient userSearchClient,
-      final CamundaAuthentication authentication,
       final PasswordEncoder passwordEncoder,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.userSearchClient = userSearchClient;
@@ -52,7 +50,8 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
   }
 
   @Override
-  public SearchQueryResult<UserEntity> search(final UserQuery query) {
+  public SearchQueryResult<UserEntity> search(
+      final UserQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             userSearchClient
@@ -62,39 +61,31 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
                 .searchUsers(query));
   }
 
-  @Override
-  public UserServices withAuthentication(final CamundaAuthentication authentication) {
-    return new UserServices(
-        brokerClient,
-        securityContextProvider,
-        userSearchClient,
-        authentication,
-        passwordEncoder,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  public CompletableFuture<UserRecord> createUser(final UserDTO request) {
+  public CompletableFuture<UserRecord> createUser(
+      final UserDTO request, final CamundaAuthentication authentication) {
     final String encodedPassword = passwordEncoder.encode(request.password());
     return sendBrokerRequest(
         new BrokerUserCreateRequest()
             .setUsername(request.username())
             .setName(request.name())
             .setEmail(request.email())
-            .setPassword(encodedPassword));
+            .setPassword(encodedPassword),
+        authentication);
   }
 
-  public CompletableFuture<UserRecord> createInitialAdminUser(final UserDTO request) {
+  public CompletableFuture<UserRecord> createInitialAdminUser(
+      final UserDTO request, final CamundaAuthentication authentication) {
     final String encodedPassword = passwordEncoder.encode(request.password());
     return sendBrokerRequest(
         new BrokerUserCreateRequest(UserIntent.CREATE_INITIAL_ADMIN)
             .setUsername(request.username())
             .setName(request.name())
             .setEmail(request.email())
-            .setPassword(encodedPassword));
+            .setPassword(encodedPassword),
+        authentication);
   }
 
-  public UserEntity getUser(final String username) {
+  public UserEntity getUser(final String username, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             userSearchClient
@@ -104,7 +95,8 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
                 .getUser(username));
   }
 
-  public CompletableFuture<UserRecord> updateUser(final UserDTO request) {
+  public CompletableFuture<UserRecord> updateUser(
+      final UserDTO request, final CamundaAuthentication authentication) {
     final String encodedPassword =
         StringUtils.isEmpty(request.password) ? "" : passwordEncoder.encode(request.password());
     return sendBrokerRequest(
@@ -112,11 +104,13 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
             .setUsername(request.username())
             .setName(request.name())
             .setEmail(request.email())
-            .setPassword(encodedPassword));
+            .setPassword(encodedPassword),
+        authentication);
   }
 
-  public CompletableFuture<UserRecord> deleteUser(final String username) {
-    return sendBrokerRequest(new BrokerUserDeleteRequest().setUsername(username));
+  public CompletableFuture<UserRecord> deleteUser(
+      final String username, final CamundaAuthentication authentication) {
+    return sendBrokerRequest(new BrokerUserDeleteRequest().setUsername(username), authentication);
   }
 
   public record UserDTO(String username, String name, String email, String password) {}

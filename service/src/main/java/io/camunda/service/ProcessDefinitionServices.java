@@ -45,13 +45,11 @@ public class ProcessDefinitionServices
       final SecurityContextProvider securityContextProvider,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
       final FormServices formServices,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
@@ -59,7 +57,8 @@ public class ProcessDefinitionServices
   }
 
   @Override
-  public SearchQueryResult<ProcessDefinitionEntity> search(final ProcessDefinitionQuery query) {
+  public SearchQueryResult<ProcessDefinitionEntity> search(
+      final ProcessDefinitionQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             processDefinitionSearchClient
@@ -70,7 +69,7 @@ public class ProcessDefinitionServices
   }
 
   public List<ProcessFlowNodeStatisticsEntity> elementStatistics(
-      final ProcessDefinitionStatisticsFilter filter) {
+      final ProcessDefinitionStatisticsFilter filter, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             processDefinitionSearchClient
@@ -80,19 +79,8 @@ public class ProcessDefinitionServices
                 .processDefinitionFlowNodeStatistics(filter));
   }
 
-  @Override
-  public ProcessDefinitionServices withAuthentication(final CamundaAuthentication authentication) {
-    return new ProcessDefinitionServices(
-        brokerClient,
-        securityContextProvider,
-        processDefinitionSearchClient,
-        formServices,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  public ProcessDefinitionEntity getByKey(final Long processDefinitionKey) {
+  public ProcessDefinitionEntity getByKey(
+      final Long processDefinitionKey, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             processDefinitionSearchClient
@@ -106,7 +94,9 @@ public class ProcessDefinitionServices
   }
 
   public SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity>
-      getProcessDefinitionInstanceStatistics(final ProcessDefinitionInstanceStatisticsQuery query) {
+      getProcessDefinitionInstanceStatistics(
+          final ProcessDefinitionInstanceStatisticsQuery query,
+          final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             processDefinitionSearchClient
@@ -118,7 +108,8 @@ public class ProcessDefinitionServices
 
   public SearchQueryResult<ProcessDefinitionInstanceVersionStatisticsEntity>
       searchProcessDefinitionInstanceVersionStatistics(
-          final ProcessDefinitionInstanceVersionStatisticsQuery query) {
+          final ProcessDefinitionInstanceVersionStatisticsQuery query,
+          final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             processDefinitionSearchClient
@@ -128,18 +119,19 @@ public class ProcessDefinitionServices
                 .processDefinitionInstanceVersionStatistics(query));
   }
 
-  public Optional<FormEntity> getProcessDefinitionStartForm(final long processDefinitionKey) {
-    return Optional.ofNullable(getByKey(processDefinitionKey))
+  public Optional<FormEntity> getProcessDefinitionStartForm(
+      final long processDefinitionKey, final CamundaAuthentication authentication) {
+    return Optional.ofNullable(getByKey(processDefinitionKey, authentication))
         .filter(p -> p.formId() != null && !p.formId().isEmpty())
         .flatMap(
             p ->
-                formServices
-                    .withAuthentication(CamundaAuthentication.anonymous())
-                    .getLatestVersionByFormIdAndTenantId(p.formId(), p.tenantId()));
+                formServices.getLatestVersionByFormIdAndTenantId(
+                    p.formId(), p.tenantId(), CamundaAuthentication.anonymous()));
   }
 
-  public Optional<String> getProcessDefinitionXml(final Long processDefinitionKey) {
-    final var processDefinition = getByKey(processDefinitionKey);
+  public Optional<String> getProcessDefinitionXml(
+      final Long processDefinitionKey, final CamundaAuthentication authentication) {
+    final var processDefinition = getByKey(processDefinitionKey, authentication);
     return Optional.ofNullable(processDefinition)
         .map(ProcessDefinitionEntity::bpmnXml)
         .filter(xml -> !xml.isEmpty());
@@ -147,7 +139,8 @@ public class ProcessDefinitionServices
 
   public SearchQueryResult<ProcessDefinitionMessageSubscriptionStatisticsEntity>
       getProcessDefinitionMessageSubscriptionStatistics(
-          final ProcessDefinitionMessageSubscriptionStatisticsQuery query) {
+          final ProcessDefinitionMessageSubscriptionStatisticsQuery query,
+          final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             processDefinitionSearchClient
