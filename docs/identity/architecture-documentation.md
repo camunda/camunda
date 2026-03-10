@@ -1,17 +1,3 @@
-# Identity Module (Orchestration Cluster Identity)
-
-> Status: Draft
->
-> Scope: Cluster‑internal Orchestration Cluster Identity.
->
-> Out of scope: Management Identity (Web Modeler, Console, Optimize) except where explicitly mentioned.
->
-> Camunda Version: 8.9
-
-This documentation is based on [Arc42](https://arc42.org/).
-
----
-
 # 1. Introduction and goals
 
 ## 1.1 Overview
@@ -22,14 +8,14 @@ It provides:
 
 - Unified access management for cluster components: Zeebe, Operate, Tasklist, Orchestration Cluster REST/gRPC APIs.
 - Flexible authentication:
-  - OIDC with external IdPs (Keycloak, Okta, Auth0, Microsoft Entra ID, Amazon Cognito, and other OIDC providers).
+  - OIDC with external IdPs (Keycloak, Okta, Auth0, Microsoft Entra ID, Amazon Cognito and other OIDC providers).
   - Basic authentication.
   - Optional no‑auth for local and simple Self‑Managed setups.
 - Fine‑grained, resource‑based authorizations across runtime resources (for example PROCESS_DEFINITION, PROCESS_INSTANCE, USER_TASK).
-- Tenant management is handled directly in Orchestration Cluster Identity (Self‑Managed), allowing tenants per cluster for runtime data and access isolation.
+- Tenant management handled directly in Orchestration Cluster Identity (Self‑Managed), allowing tenants per cluster for runtime data and access isolation.
 - No dedicated identity database; Identity entities reuse Zeebe primary and secondary storage.
 
-### Goals:
+Goals:
 
 1. Provide a single identity surface per Orchestration Cluster that is independent of Management Identity.
 2. Enable least‑privilege, resource‑level authorization for both UI and API interactions.
@@ -41,19 +27,19 @@ It provides:
 Selected high‑level requirements:
 
 - R1 – Cluster‑scoped access control
-  Identity controls access to Zeebe, Operate, Tasklist, and Orchestration Cluster APIs per cluster.
+  Identity controls access to Zeebe, Operate, Tasklist and Orchestration Cluster APIs per cluster.
 
 - R2 – External IdP integration
-  OIDC integration with enterprise IdPs; mapping of token claims to users, groups, roles, tenants, and authorizations.
+  OIDC integration with enterprise IdPs; mapping of token claims to users, groups, roles, tenants and authorizations.
 
 - R3 – Fine‑grained authorizations
   Resource‑based permissions evaluated uniformly across UIs and APIs.
 
 - R4 – Multi‑tenancy (Self‑Managed)
-  Tenants created, assigned, and enforced at Orchestration Cluster level. Management Identity is no longer a source of truth for runtime tenants.
+  Tenants created, assigned and enforced at Orchestration Cluster level. Management Identity is no longer source of truth for runtime tenants.
 
 - R5 – Migration from Management Identity
-  Tooling and mappings to migrate users, groups, roles, tenants, mapping rules, and resource authorizations from Management Identity.
+  Tooling and mappings to migrate users, groups, roles, tenants, mapping rules and resource authorizations from Management Identity.
 
 ## 1.3 Quality goals (top level)
 
@@ -88,7 +74,7 @@ TBD
   Authorization checks use the shared framework and behaviors owned by the Identity team but extensible by feature teams.
 
 - No Management Identity dependency for runtime
-  Engine and runtime UIs should not depend on Management Identity. That component is reserved for Web Modeler, Console, and Optimize in Self‑Managed.
+  Engine and runtime UIs should not depend on Management Identity. That component is reserved for Web Modeler, Console and Optimize in Self‑Managed.
 
 - Reuse of existing storage
   No separate identity database; Identity entities reuse Zeebe primary and secondary storage.
@@ -107,13 +93,14 @@ flowchart TB
   WEB_UI("Camunda Web UI (Browser)")
   USER_APP("User Application")
   CAMUNDA_CLIENT("Camunda Client")
-  SAAS_OR_SM["Camunda 8 OC (SaaS / Self-Managed)"]
   IDP[["Enterprise IdP"]]
 
-  USER --> WEB_UI -->|"REST"| SAAS_OR_SM
-  USER_APP --> CAMUNDA_CLIENT -->|"REST/gRPC Call"| SAAS_OR_SM
-  USER_APP -->|"Direct REST/gRPC Call"| SAAS_OR_SM
-  SAAS_OR_SM -->|"OIDC SSO / tokens"| IDP
+  SAAS_OR_SM["Camunda 8 OC\n(SaaS / Self-Managed)"]
+
+  USER --> WEB_UI --> SAAS_OR_SM
+  USER_APP --> CAMUNDA_CLIENT --> SAAS_OR_SM
+  SAAS_OR_SM --> IDP
+  USER_APP --> SAAS_OR_SM
 ```
 
 Entities:
@@ -131,69 +118,36 @@ Entities:
 ---
 title: Identity - Technical Context
 ---
-flowchart LR
+flowchart TB
   CLIENTS("Clients (Webapp, Camunda Client, ...)")
-
-  subgraph CLUSTER["Orchestration Cluster"]
-    subgraph REST[REST APIs]
-
-    end
-
-    subgraph IDENTITY["Identity"]
-      AUTH["Authentication (Basic / OIDC via Spring Security)"]
-      AUTHZ["Authorization Engine (RBAC + resource-based)"]
-      ADMINUI["Admin UI (Identity / Admin)"]
-    end
-
-    subgraph RUNTIME["Cluster Components"]
-      ZB["Zeebe Engine"]
-      OP["Operate"]
-      TL["Tasklist"]
-      API["REST / gRPC APIs"]
-    end
-  end
-
-  IDP["OIDC IDP"]
+  IDP[("OIDC IDP")]
+  PRIMARY_DB[("Primary Database (RocksDB)")]
   SECONDARY_DB[("Secondary Database (ES/OS/RDBMS)")]
 
-  CLIENTS --> REST
+  SAAS_OR_SM["Camunda 8 OC\n(SaaS / Self-Managed)"]
 
 
-
-  HU -->|"Browser / UI"| OP
-  HU -->|"Browser / UI"| TL
-  HU -->|"Admin UI"| ADMINUI
-  SRV -->|"Client credentials"| API
-
-  IDP -->|"OIDC tokens (users & clients)"| AUTH
-  AUTH --> AUTHZ
-
-  ADMINUI -->|"Manage users, groups, roles, tenants, authorizations"| IDENTITY
-
-  OP  -->|"AuthZ check"| AUTHZ
-  TL  -->|"AuthZ check"| AUTHZ
-  API -->|"AuthZ check"| AUTHZ
-
-  AUTHZ -->|"permit/deny"| OP
-  AUTHZ -->|"permit/deny"| TL
-  AUTHZ -->|"permit/deny"| API
-  AUTHZ -->|"policies in engine"| ZB
+  CLIENTS -->|"rest/gRPC"| SAAS_OR_SM
+  SAAS_OR_SM -->|"history data, identity data"| SECONDARY_DB
+  SAAS_OR_SM -->|"runtime data, identity data"| PRIMARY_DB
+  SAAS_OR_SM -->|"authentication, tokens"| IDP
 ```
 
 Entities:
 - Clients: Web applications, Camunda clients, and other services interacting with the Orchestration Cluster
-- REST APIs: Orchestration Cluster REST API (v2), Administration API, Web Modeler API
-
-- Secondary Database: Elasticsearch, OpenSearch, or RDBMS used for search queries
-
+- Orchestration Cluster: runtime deployment containing Zeebe, Operate, Tasklist, Identity, REST/gRPC APIs.
+- Enterprise IdP: customer IdP providing SSO and tokens via OIDC/SAML (e.g. Okta, Entra, Keycloak, etc.).
+- Primary Database: RocksDB used for Zeebe Engine state.
+- Secondary Database: Elasticsearch, OpenSearch, or RDBMS used for search queries. Contains Runtime, History, and Identity data.
 
 External interfaces (technical):
 
 - Incoming:
   - Browser‑based UIs (Operate, Tasklist, Admin UI) using OIDC or Basic auth.
-  - REST/gRPC APIs for workers, service accounts, and applications (Bearer tokens from IdP).
+  - REST/gRPC APIs for workers, service accounts and applications (Bearer tokens from IdP).
 - Outgoing:
   - OIDC IdP for login redirects, token introspection, or validation depending on IdP use.
+  - Requests against secondary database for search queries.
 - Internal:
   - Calls from UIs and APIs to Authentication and Authorization engine.
   - Persistence of identity entities in primary and secondary storage.
@@ -206,7 +160,7 @@ External interfaces (technical):
 
 - Multi‑protocol authentication
   Basic for simple Self‑Managed setups and development.
-  OIDC for production with SSO, MFA, and centralized user lifecycle.
+  OIDC for production with SSO, MFA and centralized user lifecycle.
   Optional no‑auth for local or demo scenarios.
 
 - Resource‑based authorization
@@ -219,7 +173,7 @@ External interfaces (technical):
   Shared helpers and engine behaviors so feature teams can introduce new resource and permission types without re‑implementing authorization logic.
 
 - Reuse of Zeebe storage
-  Identity entities are stored using Zeebe’s existing primary (log) and secondary (search) storage instead of a separate identity database.
+  Identity entities are stored using Zeebe’s existing primary (RocksDB) and secondary (ES/OS/RDBMS) storage instead of a separate identity database.
 
 
 # 5. Building block view
@@ -228,67 +182,51 @@ External interfaces (technical):
 
 ```mermaid
 ---
-title: Identity - Whitebox View
+title: Identity - Technical Context
 ---
-flowchart TD
-  USER(["User / Client"])
-  IDP[("OIDC IdP")]
-
-  USER -->|"UI / API calls"| RESTGW
+flowchart TB
+  CLIENTS("Clients (Webapp, Camunda Client, ...)")
+  IDP[("OIDC IDP")]
+  PRIMARY_DB[("Primary Database (RocksDB)")]
+  SECONDARY_DB[("Secondary Database (ES/OS/RDBMS)")]
 
   subgraph CLUSTER["Orchestration Cluster"]
-    RESTGW["REST / gRPC Gateway"]
+    REST[REST APIs]
+    SPRING_SECURITY["Spring Security (Authentication)"]
+    CAMUNDA_SERVICES["Camunda Services"]
+    CAMUNDA_SEARCH_CLIENT["Camunda Search Client"]
+    AUTHENTICATION["Authentication (Basic, OIDC)"]
+    SECURITY["Security (Authorizations)"]
 
-    subgraph APP["Runtime Apps"]
-      OP[Operate]
-      TL[Tasklist]
+    subgraph ZEEBE["Zeebe"]
+        ENGINE["Engine"] -.->|"check authorizations"| ENGINE_IDENTITY["Engine Identity"]
     end
 
-    subgraph ENGINE["Zeebe Engine"]
-      CMD[Command Processing]
-    end
-
-    subgraph IDENTITY["Identity (cluster-embedded)"]
-      ADMINUI[Admin UI]
-      AUTH["Authentication\n(Basic / OIDC via Spring Security)"]
-      AUTHZ["Authorization Engine\n(resource-based RBAC)"]
-      ENT["Identity Entities\n(Users, Groups, Roles,\nClients, Tenants, MappingRules, Authorizations)"]
-      PSTORE["Primary Storage\n(Zeebe log)"]
-      SSTORE["Secondary Storage\n(Search DB)"]
-    end
+    SPRING_SECURITY -.-> AUTHENTICATION
+    SPRING_SECURITY -.-> SECURITY
+    REST --> CAMUNDA_SERVICES -->|"query"| CAMUNDA_SEARCH_CLIENT -.-> SECURITY -.->|"query authorizations"| CAMUNDA_SEARCH_CLIENT
+    CAMUNDA_SERVICES -->|"command"| ENGINE
   end
 
-  USER --> APP
-  USER --> ADMINUI
-  USER --> RESTGW
-
-  IDP -->|"OIDC tokens"| AUTH
-
-  RESTGW -->|"API call\n(with token)"| AUTH
-  APP    -->|"UI call\n(with token)"| AUTH
-
-  AUTH --> AUTHZ
-
-  ADMINUI -->|"CRUD identities\nand policies"| ENT
-  ENT --> PSTORE
-  ENT --> SSTORE
-
-  AUTHZ -->|"permit/deny"| OP
-  AUTHZ -->|"permit/deny"| TL
-  AUTHZ -->|"permit/deny"| RESTGW
-  AUTHZ -->|"policies"| CMD
+  CLIENTS --> SPRING_SECURITY --> REST
+  CAMUNDA_SEARCH_CLIENT --> SECONDARY_DB
+  ENGINE --> PRIMARY_DB
+  ENGINE_IDENTITY -.-> PRIMARY_DB
+  SPRING_SECURITY --> IDP
 ```
 
 Main building blocks:
 
-- REST / gRPC gateway: ingress for client APIs; forwards authenticated calls into engine and services.
-- Operate, Tasklist: web UIs; rely on Identity for login and resource‑level authorization.
-- Zeebe engine: processes commands; uses authorization helpers when executing operations on behalf of a user or client.
-- Identity Admin UI: web UI embedded in cluster for managing users, groups, roles, tenants, clients, mapping rules, and authorizations.
-- Authentication: Spring Security configuration for Basic and OIDC, including token validation and session handling.
-- Authorization engine: RBAC framework and resource‑based checks used by engine and service layer.
-- Identity entities: domain model for users, groups, roles, tenants, mapping rules, authorizations, clients.
-- Primary / secondary storage: persistent representation of identity entities in Zeebe log and search database.
+- REST APIs: Orchestration Cluster REST API (v2), Administration API, Web Modeler API
+- Camunda Services: Enhances the commands and queries with the given authentication and the necessary authorizations.
+- Camunda Search Client: Used for querying the secondary database against ES, OS, or RDBMS, depending on the configuration.
+- Authentication: Contains authentication-related converters, helpers, utils, and services among others for spring security.
+- Security: Authorization checks for queries against a secondary database are done via the shared RBAC framework. TODO: and there is also Authentication related stuff...
+- Zeebe: Is responsible for processing commands and storing state.
+- Engine: Processes commands and applies state changes. Uses (engine) identity to check permissions for user- or client-initiated operations.
+- Engine Identity: Shared RBAC engine used for authorization checks in the engine, lives directly in the engine.
+- Primary Database: RocksDB used for Zeebe Engine state.
+- Secondary Database: Elasticsearch, OpenSearch, or RDBMS used for search queries. Contains Runtime, History, and Identity data.
 
 ## 5.2 Internal structure: Orchestration Cluster Identity
 
@@ -302,21 +240,21 @@ Responsibilities:
 Key sub‑components:
 
 - Admin UI / Orchestration Cluster Admin
-  Management for users, groups, roles, tenants, mapping rules, and authorizations.
+  Management for users, groups, roles, tenants, mapping rules and authorizations.
 
 - Authentication
   - Basic: credentials stored and validated inside Identity; suitable for local and simple Self‑Managed setups.
-  - OIDC: login delegated to external IdP; mapping rules assign principals to roles, groups, tenants, and authorizations.
+  - OIDC: login delegated to external IdP; mapping rules assign principals to roles, groups, tenants and authorizations.
 
 - Identity entities
   - Users, groups, roles: core principal and grouping model; roles bundle permissions.
   - Authorizations: resource‑based permissions connecting principals to resource types and actions.
   - Tenants: data and access isolation within a cluster (Self‑Managed).
   - Clients: technical clients (M2M) mapped from IdP client registrations.
-  - Mapping rules: link IdP claims to groups, roles, tenants, and authorizations.
+  - Mapping rules: link IdP claims to groups, roles, tenants and authorizations.
 
 - Authorization engine
-  Shared framework that allows other teams to define resource and permission types and use them consistently. Integrated with Zeebe engine, REST gateway, and services.
+  Shared framework that allows other teams to define resource and permission types and use them consistently. Integrated with Zeebe engine, REST gateway and services.
 
 
 # 6. Runtime view
@@ -330,7 +268,7 @@ Scenario: human user logs into Operate or Tasklist via OIDC.
 3. IdP authenticates the user and returns ID/access tokens.
 4. Identity validates the token, extracts username and group or attribute claims, and applies mapping rules.
 5. Authorization engine evaluates authorizations to decide which UI features and data are accessible.
-6. Subsequent UI or API calls include the session or token and are checked by the authorization engine.
+6. Subsequent UI or API calls include the session or token and are checked by the authorization engine. Logout behavior, including RP‑initiated logout back to the IdP, is described in [RP‑initiated logout](https://github.com/camunda/camunda/blob/main/docs/identity/rp-initiated-logout.md).
 
 ## 6.2 Machine‑to‑machine access (workers and services)
 
@@ -374,7 +312,8 @@ For detailed infrastructure topologies, see the Camunda 8 reference architecture
 
 - Authorization and RBAC concept
   Central resource‑based authorization model, decoupled from individual UIs and services.
-  Shared checks used by engine, Operate, Tasklist, and APIs.
+  Shared checks used by engine, Operate, Tasklist and APIs.
+  For detailed behavior and examples, see the [Authorization concept](https://github.com/camunda/camunda/blob/main/docs/identity/authorizations/authorization-concept.md), [Engine authorization checks](https://github.com/camunda/camunda/blob/main/docs/identity/authorizations/engine-authorization.md), and [REST authorization checks](https://github.com/camunda/camunda/blob/main/docs/identity/authorizations/rest-authorization.md).
 
 - Tenant concept
   Cluster‑local tenants defined in Identity.
@@ -385,7 +324,7 @@ For detailed infrastructure topologies, see the Camunda 8 reference architecture
   Enables identity‑as‑code and external lifecycle via IdP.
 
 - Migration concept (from Management Identity)
-  Identity Migration tooling to move roles, groups, tenants, resource authorizations, and mapping rules.
+  Identity Migration tooling to move roles, groups, tenants, resource authorizations and mapping rules.
   Designed to be idempotent and re‑runnable.
 
 - Storage and consistency
@@ -408,7 +347,7 @@ For detailed infrastructure topologies, see the Camunda 8 reference architecture
 ## ADR‑ID‑2: OIDC as default production authentication
 
 - Status: accepted
-- Context: Basic authentication is simple but does not provide MFA, SSO, account lockout, or password policies.
+- Context: Basic authentication is simple but does not provide MFA, SSO, account lockout or password policies.
 - Decision: recommend OIDC as the default authentication method for production (SaaS and Self‑Managed).
 - Consequences:
   - Better security and user experience through SSO and MFA.
@@ -420,7 +359,7 @@ For detailed infrastructure topologies, see the Camunda 8 reference architecture
 - Context: the previous Management Identity model did not provide sufficient granularity for all runtime resources; Tasklist and Operate had separate access controls.
 - Decision: introduce flexible, resource‑based authorizations in Identity and migrate Management Identity permissions to this new model.
 - Consequences:
-  - Consistent authorization semantics across UIs, APIs, and resource types.
+  - Consistent authorization semantics across UIs, APIs and resource types.
   - Additional migration work, but a clearer long‑term model.
 
 
@@ -457,7 +396,7 @@ For detailed infrastructure topologies, see the Camunda 8 reference architecture
   Mitigation: dedicated Identity Migration App, idempotent runs, detailed logs; still requires careful testing in customer environments.
 
 - Dual identity model during transition
-  Management Identity remains for Web Modeler, Console, and Optimize (Self‑Managed) while Orchestration Cluster Identity serves runtime.
+  Management Identity remains for Web Modeler, Console and Optimize (Self‑Managed) while Orchestration Cluster Identity serves runtime.
   Risk of confusion about the source of truth and duplicated configuration until long‑term consolidation is complete.
 
 - IdP dependency
