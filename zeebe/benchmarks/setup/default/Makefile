@@ -44,16 +44,10 @@ install: install-storage create-credentials install-platform install-load-test i
 .PHONY: install-stable
 install-stable: install-storage create-credentials install-platform-stable install-load-test install-elasticsearch-exporter
 
-# Install PostgreSQL database if secondary_storage is postgresql, or OpenSearch if secondary_storage is opensearch
+# Install OpenSearch if secondary_storage is opensearch
 .PHONY: install-storage
 install-storage:
-ifeq ($(secondary_storage),postgresql)
-	@echo "Installing PostgreSQL database for namespace $(namespace)..."
-	# Install Postgres database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-rdbms.yaml
-	helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
-		--namespace $(namespace) \
-		$(platform_values)
-else ifeq ($(secondary_storage),opensearch)
+ifeq ($(secondary_storage),opensearch)
 	@echo "Installing OpenSearch cluster for namespace $(namespace)..."
 	helm upgrade --install opensearch opensearch/opensearch \
 		--version "2.31.0" \
@@ -153,11 +147,7 @@ clean:
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/instance=$(namespace)
 	-kubectl delete -n $(namespace) pvc -l app=elasticsearch-master
 	-kubectl delete -n $(namespace) cronjob leader-balancer
-ifeq ($(secondary_storage),postgresql)
-	@echo "Cleaning up PostgreSQL database for namespace $(namespace)..."
-	-helm --namespace $(namespace) uninstall postgres
-	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=postgresql
-else ifeq ($(secondary_storage),opensearch)
+ifeq ($(secondary_storage),opensearch)
 	@echo "Cleaning up OpenSearch cluster for namespace $(namespace)..."
 	-helm --namespace $(namespace) uninstall opensearch
 	-kubectl delete -n $(namespace) pvc -l app.kubernetes.io/name=opensearch
