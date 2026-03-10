@@ -67,6 +67,7 @@ import java.time.Duration;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -85,7 +86,7 @@ public final class BackgroundTaskManagerFactory {
   private final ObjectMapper objectMapper;
 
   private ScheduledThreadPoolExecutor executor;
-  private Semaphore reindexSemaphore;
+  private ReindexThrottler reindexThrottler;
   private ArchiverRepository archiverRepository;
   private IncidentUpdateRepository incidentRepository;
   private BatchOperationUpdateRepository batchOperationUpdateRepository;
@@ -119,7 +120,9 @@ public final class BackgroundTaskManagerFactory {
 
   public BackgroundTaskManager build() {
     executor = buildExecutor();
-    reindexSemaphore = new Semaphore(getMaxParallelArchiverReindexTasks());
+    reindexThrottler =
+        new ReindexThrottler(
+            getMaxParallelArchiverReindexTasks(), config.getConnect().getSocketTimeout(), logger);
 
     // initialize all repositories based on connection type to reuse clients
     if (config.getConnect().getTypeEnum().isOpenSearch()) {
@@ -427,7 +430,7 @@ public final class BackgroundTaskManagerFactory {
             metrics,
             logger,
             executor,
-            reindexSemaphore));
+            reindexThrottler));
   }
 
   private ReschedulingTask buildBatchOperationArchiverJob() {
@@ -445,7 +448,7 @@ public final class BackgroundTaskManagerFactory {
             metrics,
             logger,
             executor,
-            reindexSemaphore));
+            reindexThrottler));
   }
 
   private ReschedulingTask buildUsageMetricsArchiverJob() {
@@ -456,7 +459,7 @@ public final class BackgroundTaskManagerFactory {
             metrics,
             logger,
             executor,
-            reindexSemaphore));
+            reindexThrottler));
   }
 
   private ReschedulingTask buildUsageMetricsTUArchiverJob() {
@@ -467,7 +470,7 @@ public final class BackgroundTaskManagerFactory {
             metrics,
             logger,
             executor,
-            reindexSemaphore));
+            reindexThrottler));
   }
 
   private ReschedulingTask buildJobBatchMetricsArchiverJob() {
@@ -478,7 +481,7 @@ public final class BackgroundTaskManagerFactory {
             metrics,
             logger,
             executor,
-            reindexSemaphore));
+            reindexThrottler));
   }
 
   private ReschedulingTask buildStandaloneDecisionArchiverJob() {
@@ -495,7 +498,7 @@ public final class BackgroundTaskManagerFactory {
             metrics,
             logger,
             executor,
-            reindexSemaphore,
+            reindexThrottler,
             dependantTemplates));
   }
 
@@ -541,7 +544,7 @@ public final class BackgroundTaskManagerFactory {
             metrics,
             logger,
             executor,
-            reindexSemaphore));
+            reindexThrottler));
   }
 
   private ScheduledThreadPoolExecutor buildExecutor() {
@@ -558,5 +561,54 @@ public final class BackgroundTaskManagerFactory {
     executor.setKeepAliveTime(1, TimeUnit.MINUTES);
 
     return executor;
+  }
+
+  public static class ReindexThrottler {
+    private static final int ACQUIRE_RETRIES = 10;
+    private final Semaphore reindexThrottler;
+    private final int acquireTimeoutSeconds;
+    private final Logger logger;
+
+    public ReindexThrottler(
+        final int maxParallelArchiverReindexTasks,
+        final Integer socketTimeoutMs,
+        final Logger logger) {
+      reindexThrottler = new Semaphore(maxParallelArchiverReindexTasks);
+      acquireTimeoutSeconds =
+          (Math.max(Optional.ofNullable(socketTimeoutMs).orElse(0), 30_000) * 3) / 1000;
+      this.logger = logger;
+    }
+
+    public static ReindexThrottler unlimited(final Logger logger) {
+      return new ReindexThrottler(Integer.MAX_VALUE, 30000, logger);
+    }
+
+    public boolean acquirePermit() {
+      try {
+        // we will wait 30x of configured socket timeout (or minimum 30s) in total, which
+        // should be more than enough for a very large reindexing to finish with long timeout
+        for (int i = 0; i < ACQUIRE_RETRIES; i++) {
+          if (reindexThrottler.tryAcquire(acquireTimeoutSeconds, TimeUnit.SECONDS)) {
+            return true;
+          }
+          logger.debug(
+              "Another reindexing task in progress and no permit is available to acquire. "
+                  + "Waiting for permit to be available, retry attempt {}/10",
+              i + 1);
+        }
+        return false;
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return false;
+      }
+    }
+
+    public void releasePermit() {
+      reindexThrottler.release();
+    }
+
+    public int availablePermits() {
+      return reindexThrottler.availablePermits();
+    }
   }
 }

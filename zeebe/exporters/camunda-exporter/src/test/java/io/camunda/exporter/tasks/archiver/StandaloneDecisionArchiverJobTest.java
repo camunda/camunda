@@ -10,6 +10,7 @@ package io.camunda.exporter.tasks.archiver;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.BackgroundTaskManagerFactory.ReindexThrottler;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
 import io.camunda.webapps.schema.descriptors.DecisionInstanceDependant;
@@ -19,7 +20,6 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Semaphore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
       LoggerFactory.getLogger(StandaloneDecisionArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
-  private final Semaphore reindexSemaphore = new Semaphore(Integer.MAX_VALUE);
+  private final ReindexThrottler reindexThrottler = ReindexThrottler.unlimited(LOGGER);
 
   private final TestRepository repository = new TestRepository();
   private final DecisionInstanceTemplate decisionInstanceTemplate =
@@ -49,7 +49,7 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
           metrics,
           LOGGER,
           executor,
-          reindexSemaphore,
+          reindexThrottler,
           List.of(auditLogTemplate));
 
   @BeforeEach
@@ -88,7 +88,7 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
             metrics,
             LOGGER,
             executor,
-            reindexSemaphore,
+            reindexThrottler,
             List.of());
 
     // when
@@ -163,7 +163,7 @@ final class StandaloneDecisionArchiverJobTest extends ArchiverJobRecordingMetric
             metrics,
             LOGGER,
             executor,
-            reindexSemaphore,
+            reindexThrottler,
             List.of(dependant));
     repository.batch = new BasicArchiveBatch("2024-01-01", List.of("1", "2"));
 

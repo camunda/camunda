@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.BackgroundTaskManagerFactory.ReindexThrottler;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.AuditLogCleanupBatch;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
@@ -15,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 
 public class AuditLogArchiverJob extends ArchiverJob<AuditLogCleanupBatch> {
@@ -30,13 +30,13 @@ public class AuditLogArchiverJob extends ArchiverJob<AuditLogCleanupBatch> {
       final CamundaExporterMetrics exporterMetrics,
       final Logger logger,
       final Executor executor,
-      final Semaphore reindexSemaphore) {
+      final ReindexThrottler reindexThrottler) {
     super(
         archiverRepository,
         exporterMetrics,
         logger,
         executor,
-        reindexSemaphore,
+        reindexThrottler,
         exporterMetrics::recordAuditLogsArchiving,
         exporterMetrics::recordAuditLogsArchived);
     this.repository = repository;

@@ -8,13 +8,13 @@
 package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.BackgroundTaskManagerFactory.ReindexThrottler;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 
 public class UsageMetricTUArchiverJob extends ArchiverJob<ArchiveBatch.BasicArchiveBatch> {
@@ -27,13 +27,13 @@ public class UsageMetricTUArchiverJob extends ArchiverJob<ArchiveBatch.BasicArch
       final CamundaExporterMetrics metrics,
       final Logger logger,
       final Executor executor,
-      final Semaphore reindexSemaphore) {
+      final ReindexThrottler reindexThrottler) {
     super(
         repository,
         metrics,
         logger,
         executor,
-        reindexSemaphore,
+        reindexThrottler,
         metrics::recordUsageMetricsTUArchiving,
         metrics::recordUsageMetricsTUArchived);
     this.usageMetricTUTemplate = usageMetricTUTemplate;

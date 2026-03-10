@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.BackgroundTaskManagerFactory.ReindexThrottler;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -24,7 +25,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ final class ArchiverJobTest {
   private static final String ID_FIELD_NAME = "id-field";
 
   private final Executor executor = Executors.newSingleThreadExecutor();
-  private final Semaphore reindexSemaphore = new Semaphore(Integer.MAX_VALUE);
+  private final ReindexThrottler reindexThrottler = ReindexThrottler.unlimited(LOGGER);
 
   private final TestRepository repository = new TestRepository();
   private final CamundaExporterMetrics metrics = mock(CamundaExporterMetrics.class);
@@ -53,7 +53,7 @@ final class ArchiverJobTest {
   @Test
   void shouldReturnZeroIfNoBatchGiven() {
     // given no batch
-    final IdxTemplateArchiver job = getArchiverJob(reindexSemaphore);
+    final IdxTemplateArchiver job = getArchiverJob(reindexThrottler);
     repository.batch = null;
 
     // when
@@ -72,7 +72,7 @@ final class ArchiverJobTest {
   @Test
   void shouldReturnZeroIfNoBatchIdsGiven() {
     // given
-    final IdxTemplateArchiver job = getArchiverJob(reindexSemaphore);
+    final IdxTemplateArchiver job = getArchiverJob(reindexThrottler);
     repository.batch = new ArchiveBatch.BasicArchiveBatch("2024-01-01", List.of());
 
     // when
@@ -91,7 +91,7 @@ final class ArchiverJobTest {
   @Test
   void shouldMoveInstancesById() {
     // given
-    final IdxTemplateArchiver job = getArchiverJob(reindexSemaphore);
+    final IdxTemplateArchiver job = getArchiverJob(reindexThrottler);
     repository.batch = new ArchiveBatch.BasicArchiveBatch("2024-01-01", List.of("1", "2", "3"));
 
     // when
@@ -116,19 +116,19 @@ final class ArchiverJobTest {
   @Test
   void whenThrottlingWithSemaphore() {
     // given - start with 0 permits so both archives block until we release
-    final Semaphore limitingSemaphore = new Semaphore(0);
+    final ReindexThrottler reindexThrottler = new ReindexThrottler(0, 0, LOGGER);
     final Executor multiThreadExecutor = Executors.newFixedThreadPool(2);
     final ArchiverRepository archiverRepository = mock(ArchiverRepository.class);
     final BasicArchiveBatch batch = new BasicArchiveBatch("2024-01-01", List.of("1", "2", "3"));
 
     // given - setup jobs & response
     final IdxTemplateArchiver firstJob =
-        getArchiverJob(limitingSemaphore, archiverRepository, multiThreadExecutor);
+        getArchiverJob(reindexThrottler, archiverRepository, multiThreadExecutor);
     final CompletableFuture<Integer> firstJobFuture =
         firstJob.archive(firstJob.getTemplateDescriptor(), batch);
 
     final IdxTemplateArchiver secondJob =
-        getArchiverJob(limitingSemaphore, archiverRepository, multiThreadExecutor);
+        getArchiverJob(reindexThrottler, archiverRepository, multiThreadExecutor);
     final CompletableFuture<Integer> secondJobFuture =
         secondJob.archive(secondJob.getTemplateDescriptor(), batch);
 
@@ -145,16 +145,16 @@ final class ArchiverJobTest {
     // then - neither should have completed yet since no permits are available
     assertThat(firstJobFuture).isNotDone();
     assertThat(secondJobFuture).isNotDone();
-    assertThat(limitingSemaphore.availablePermits()).isEqualTo(0);
+    assertThat(reindexThrottler.availablePermits()).isEqualTo(0);
 
     // when - release one permit, allowing exactly one archive to proceed
-    limitingSemaphore.release();
+    reindexThrottler.releasePermit();
 
     // eventually no permits should be available since the released permit should be
     // acquired by the job waiting for repository
     Awaitility.await("Either job should complete after releasing one permit")
         .timeout(Duration.ofSeconds(5))
-        .untilAsserted(() -> assertThat(limitingSemaphore.availablePermits()).isEqualTo(0));
+        .untilAsserted(() -> assertThat(reindexThrottler.availablePermits()).isEqualTo(0));
 
     // then - return first repository response
     jobOneResponse.complete(null);
@@ -172,15 +172,15 @@ final class ArchiverJobTest {
     assertThat(secondJobFuture.join()).isEqualTo(3);
 
     // then - verify that the semaphore is released after both complete
-    assertThat(limitingSemaphore.availablePermits()).isEqualTo(1);
+    assertThat(reindexThrottler.availablePermits()).isEqualTo(1);
   }
 
-  private IdxTemplateArchiver getArchiverJob(final Semaphore reindexSemaphore) {
-    return getArchiverJob(reindexSemaphore, repository, executor);
+  private IdxTemplateArchiver getArchiverJob(final ReindexThrottler reindexThrottler) {
+    return getArchiverJob(reindexThrottler, repository, executor);
   }
 
   private IdxTemplateArchiver getArchiverJob(
-      final Semaphore reindexSemaphore,
+      final ReindexThrottler reindexThrottler,
       final ArchiverRepository archiverRepository,
       final Executor executor) {
     return new IdxTemplateArchiver(
@@ -188,7 +188,7 @@ final class ArchiverJobTest {
         metrics,
         LOGGER,
         executor,
-        reindexSemaphore,
+        reindexThrottler,
         recordArchiving,
         recordArchived);
   }
@@ -202,7 +202,7 @@ final class ArchiverJobTest {
         final CamundaExporterMetrics exporterMetrics,
         final Logger logger,
         final Executor executor,
-        final Semaphore reindexSemaphore,
+        final ReindexThrottler reindexThrottler,
         final Consumer<Integer> recordArchivingMetric,
         final Consumer<Integer> recordArchivedMetric) {
       super(
@@ -210,7 +210,7 @@ final class ArchiverJobTest {
           exporterMetrics,
           logger,
           executor,
-          reindexSemaphore,
+          reindexThrottler,
           recordArchivingMetric,
           recordArchivedMetric);
       indexTemplateDescriptor = mock(IndexTemplateDescriptor.class);
@@ -223,7 +223,7 @@ final class ArchiverJobTest {
         final CamundaExporterMetrics exporterMetrics,
         final Logger logger,
         final Executor executor,
-        final Semaphore reindexSemaphore,
+        final ReindexThrottler reindexThrottler,
         final Consumer<Integer> recordArchivingMetric,
         final Consumer<Integer> recordArchivedMetric,
         final String sourceIndexName) {
@@ -232,7 +232,7 @@ final class ArchiverJobTest {
           exporterMetrics,
           logger,
           executor,
-          reindexSemaphore,
+          reindexThrottler,
           recordArchivingMetric,
           recordArchivedMetric);
       indexTemplateDescriptor = mock(IndexTemplateDescriptor.class);

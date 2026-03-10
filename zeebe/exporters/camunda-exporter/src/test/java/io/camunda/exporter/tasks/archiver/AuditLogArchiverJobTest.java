@@ -10,13 +10,13 @@ package io.camunda.exporter.tasks.archiver;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.BackgroundTaskManagerFactory.ReindexThrottler;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.AuditLogCleanupBatch;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Semaphore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -27,7 +27,7 @@ public class AuditLogArchiverJobTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(AuditLogArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
-  private final Semaphore reindexSemaphore = new Semaphore(Integer.MAX_VALUE);
+  private final ReindexThrottler reindexThrottler = ReindexThrottler.unlimited(LOGGER);
 
   private final NoopAuditLogArchiverRepository auditLogArchiverRepository =
       new NoopAuditLogArchiverRepository();
@@ -43,7 +43,7 @@ public class AuditLogArchiverJobTest {
           metrics,
           LOGGER,
           executor,
-          reindexSemaphore);
+          reindexThrottler);
 
   @AfterEach
   void cleanUp() {
