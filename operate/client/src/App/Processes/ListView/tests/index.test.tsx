@@ -394,6 +394,9 @@ describe('Instances', () => {
     });
 
     expect(screen.getByText('Operation State')).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText('Sort by Operation State'),
+    ).not.toBeInTheDocument();
   });
 
   it('should show correct error message when error row is expanded', async () => {

@@ -67,14 +67,18 @@ const ColumnHeader: React.FC<Props> = ({
     <TableHeader
       {...rest}
       onClick={() => {
+        if (isDisabled) {
+          return;
+        }
+
         onSort?.(sortKey);
         navigate({
           search: toggleSorting(location.search, sortKey, currentSortOrder),
         });
       }}
       isSortHeader={!isDisabled}
-      title={`Sort by ${label}`}
-      aria-label={`Sort by ${label}`}
+      title={isDisabled ? undefined : `Sort by ${label}`}
+      aria-label={isDisabled ? undefined : `Sort by ${label}`}
       sortDirection={
         displaySortIcon
           ? currentSortOrder === 'asc'

@@ -247,6 +247,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
                   {
                     header: 'Operation State',
                     key: 'instanceOperationState',
+                    isDisabled: true,
                   },
                 ]
               : []),

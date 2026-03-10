@@ -385,7 +385,8 @@ test.describe('processes page', () => {
       'bf547ac3-9a35-45b9-ab06-b80b43785153',
     );
 
-    await expect(page.getByLabel('Sort by Operation State')).toBeInViewport();
+    await expect(page.getByText('Operation State')).toBeInViewport();
+    await expect(page.getByLabel('Sort by Operation State')).toHaveCount(0);
 
     await expect(page).toHaveScreenshot();
   });
