@@ -1016,8 +1016,8 @@ jobs:
     name: Send Slack notification on success
     runs-on: ubuntu-latest
     needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk]
-    # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
-    # else => send slack notification as an actual release succeeded
+    # Report release result to C8 always (including dry-runs)
+    # Slack notifications are skipped for dry-runs to reduce noise
     if: ${{ always() && (
       needs.release.result == 'success' &&
       needs.github.result == 'success' &&
@@ -1041,9 +1041,22 @@ jobs:
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
-
+            secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig
+      - name: Report release success to C8
+        continue-on-error: true
+        uses: camunda-community-hub/camunda-platform-8-github-action@8.3.0
+        with:
+          clientConfig: ${{ steps.secrets.outputs.clientConfig }}
+          operation: publishMessage
+          messageName: Release result in Camunda
+          correlationKey: ${{ inputs.releaseVersion }}
+          variables: |
+            {
+              "is_camunda_release_successful": "true",
+              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }      
       - name: Send success Slack notification
-        if: ${{ needs.github.outputs.releaseBodyUpdateOutcome != 'failure' }}
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome != 'failure' }}
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
@@ -1063,7 +1076,7 @@ jobs:
             }
 
       - name: Send success Slack notification with manual follow-up
-        if: ${{ needs.github.outputs.releaseBodyUpdateOutcome == 'failure' }}
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome == 'failure' }}
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
@@ -1093,8 +1106,8 @@ jobs:
     name: Send Slack notification on failure
     runs-on: ubuntu-latest
     needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk]
-    # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
-    # else => send slack notification as an actual release failed
+    # Report release result to C8 always (including dry-runs)
+    # Slack notifications are skipped for dry-runs to reduce noise
     if: ${{ always() && (
         needs.release.result == 'failure' ||
         needs.github.result == 'failure' ||
@@ -1118,9 +1131,24 @@ jobs:
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+            secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig
 
+      - name: Report release failure to C8
+        continue-on-error: true
+        uses: camunda-community-hub/camunda-platform-8-github-action@8.3.0
+        with:
+          clientConfig: ${{ steps.secrets.outputs.clientConfig }}
+          operation: publishMessage
+          messageName: Release result in Camunda
+          correlationKey: ${{ inputs.releaseVersion }}
+          variables: |
+            {
+              "is_camunda_release_successful": "false",
+              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }            
       - name: Send failure Slack notification
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook
