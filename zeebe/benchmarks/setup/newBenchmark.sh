@@ -50,7 +50,7 @@ fi
 
 # Validate secondaryStorage value
 secondaryStorage="${2:-elasticsearch}"
-if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "opensearch" && "$secondaryStorage" != "postgresql" && "$secondaryStorage" != "none" ]]; then
+if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "opensearch" && "$secondaryStorage" != "none" ]]; then
   echo "Error: Invalid secondary storage type '$secondaryStorage'"
   echo "Allowed values are: elasticsearch, opensearch, postgresql, none"
   exit 1
