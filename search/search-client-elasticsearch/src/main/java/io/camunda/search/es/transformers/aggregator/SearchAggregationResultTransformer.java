@@ -143,11 +143,15 @@ public class SearchAggregationResultTransformer<T>
                   case final LongTermsBucket b ->
                       b.keyAsString() != null ? b.keyAsString() : String.valueOf(b.key());
                   case final DateHistogramBucket b -> String.valueOf(b.key());
-                  case final CompositeBucket b ->
-                      SearchCompositeAggregator.joinKeys(
-                          b.key().values().stream()
-                              .map(SearchAggregationResultTransformer::fieldValueToString)
-                              .toArray(String[]::new));
+                  case final CompositeBucket b -> {
+                    final Map<String, String> keyMap = new HashMap<>();
+                    b.key()
+                        .forEach(
+                            (k, v) ->
+                                keyMap.put(
+                                    k, SearchAggregationResultTransformer.fieldValueToString(v)));
+                    yield SearchCompositeAggregator.joinKeys(keyMap);
+                  }
                   default ->
                       throw new IllegalStateException(
                           "Unsupported bucket type: " + bucket.getClass());

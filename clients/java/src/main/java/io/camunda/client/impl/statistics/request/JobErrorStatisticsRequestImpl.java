@@ -15,23 +15,23 @@
  */
 package io.camunda.client.impl.statistics.request;
 
-import static io.camunda.client.api.search.request.SearchRequestBuilders.jobTypeStatisticsFilter;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.jobErrorStatisticsFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.request.SearchRequestPage;
-import io.camunda.client.api.statistics.filter.JobTypeStatisticsFilter;
-import io.camunda.client.api.statistics.request.JobTypeStatisticsRequest;
-import io.camunda.client.api.statistics.response.JobTypeStatistics;
+import io.camunda.client.api.statistics.filter.JobErrorStatisticsFilter;
+import io.camunda.client.api.statistics.request.JobErrorStatisticsRequest;
+import io.camunda.client.api.statistics.response.JobErrorStatistics;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.statistics.response.StatisticsResponseMapper;
 import io.camunda.client.protocol.rest.CursorForwardPagination;
-import io.camunda.client.protocol.rest.JobTypeStatisticsQuery;
-import io.camunda.client.protocol.rest.JobTypeStatisticsQueryResult;
+import io.camunda.client.protocol.rest.JobErrorStatisticsQuery;
+import io.camunda.client.protocol.rest.JobErrorStatisticsQueryResult;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -40,87 +40,86 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class JobTypeStatisticsRequestImpl
-    extends TypedSearchRequestPropertyProvider<JobTypeStatisticsQuery>
-    implements JobTypeStatisticsRequest {
+public class JobErrorStatisticsRequestImpl
+    extends TypedSearchRequestPropertyProvider<JobErrorStatisticsQuery>
+    implements JobErrorStatisticsRequest {
 
-  private final JobTypeStatisticsQuery request;
+  private final JobErrorStatisticsQuery request;
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public JobTypeStatisticsRequestImpl(
+  public JobErrorStatisticsRequestImpl(
       final HttpClient httpClient,
       final JsonMapper jsonMapper,
       final OffsetDateTime from,
-      final OffsetDateTime to) {
-    request = new JobTypeStatisticsQuery();
+      final OffsetDateTime to,
+      final String jobType) {
+    request = new JobErrorStatisticsQuery();
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
 
-    // Set the time range in the filter
-    if (request.getFilter() == null) {
-      request.setFilter(new io.camunda.client.protocol.rest.JobTypeStatisticsFilter());
-    }
-    request
-        .getFilter()
-        .from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(from))
-        .to(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(to));
+    request.setFilter(
+        new io.camunda.client.protocol.rest.JobErrorStatisticsFilter()
+            .from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(from))
+            .to(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(to))
+            .jobType(jobType));
   }
 
   @Override
-  public FinalCommandStep<JobTypeStatistics> requestTimeout(final Duration requestTimeout) {
+  public FinalCommandStep<JobErrorStatistics> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<JobTypeStatistics> send() {
-    final HttpCamundaFuture<JobTypeStatistics> result = new HttpCamundaFuture<>();
+  public CamundaFuture<JobErrorStatistics> send() {
+    final HttpCamundaFuture<JobErrorStatistics> result = new HttpCamundaFuture<>();
     httpClient.post(
-        "/jobs/statistics/by-types",
+        "/jobs/statistics/errors",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        JobTypeStatisticsQueryResult.class,
-        StatisticsResponseMapper::toJobTypeStatisticsResponse,
+        JobErrorStatisticsQueryResult.class,
+        StatisticsResponseMapper::toJobErrorStatisticsResponse,
         result);
     return result;
   }
 
   @Override
-  public JobTypeStatisticsRequest filter(final JobTypeStatisticsFilter value) {
-    final io.camunda.client.protocol.rest.JobTypeStatisticsFilter filterProperty =
+  protected JobErrorStatisticsQuery getSearchRequestProperty() {
+    return request;
+  }
+
+  @Override
+  public JobErrorStatisticsRequest filter(final JobErrorStatisticsFilter value) {
+    final io.camunda.client.protocol.rest.JobErrorStatisticsFilter filterProperty =
         provideSearchRequestProperty(value);
-    // Preserve the from/to that were set in the constructor
+    // Preserve the from/to/jobType that were set in the constructor
     if (request.getFilter() != null) {
       final String fromValue = request.getFilter().getFrom();
       final String toValue = request.getFilter().getTo();
-      filterProperty.from(fromValue).to(toValue);
+      final String jobTypeValue = request.getFilter().getJobType();
+      filterProperty.from(fromValue).to(toValue).jobType(jobTypeValue);
     }
     request.setFilter(filterProperty);
     return this;
   }
 
   @Override
-  public JobTypeStatisticsRequest filter(final Consumer<JobTypeStatisticsFilter> fn) {
-    return filter(jobTypeStatisticsFilter(fn));
+  public JobErrorStatisticsRequest filter(final Consumer<JobErrorStatisticsFilter> fn) {
+    return filter(jobErrorStatisticsFilter(fn));
   }
 
   @Override
-  protected JobTypeStatisticsQuery getSearchRequestProperty() {
-    return request;
-  }
-
-  @Override
-  public JobTypeStatisticsRequest page(final SearchRequestPage value) {
+  public JobErrorStatisticsRequest page(final SearchRequestPage value) {
     final SearchQueryPageRequest page = provideSearchRequestProperty(value);
     request.setPage(new CursorForwardPagination().limit(page.getLimit()).after(page.getAfter()));
     return this;
   }
 
   @Override
-  public JobTypeStatisticsRequest page(final Consumer<SearchRequestPage> fn) {
+  public JobErrorStatisticsRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
   }
 }
