@@ -1,8 +1,9 @@
 # Camunda 8 Monorepo
 
-Camunda 8 is a distributed process automation platform. This monorepo contains: Zeebe (process
-engine), Operate (monitoring), Tasklist (user tasks), Identity/Admin (auth), Optimize (analytics),
-and supporting libraries. Java 21 backend, React/Carbon frontends.
+Camunda 8 delivers scalable, on-demand process automation as-a-service, with execution engines for
+BPMN processes and DMN decisions. This monorepo contains: Zeebe (process engine), Operate
+(monitoring), Tasklist (user tasks), Identity (auth), Optimize (analytics), and supporting
+libraries. Java 21 backend, React/Carbon frontends. Product documentation: https://docs.camunda.io
 
 You are a contributor to the Camunda 8 monorepo. Scope changes to individual Maven modules,
 follow established code conventions, and validate changes with module-scoped builds and tests
@@ -15,31 +16,36 @@ testing the entire project.
 
 Before modifying code in any module:
 
-1. Read the module's README.md and any documentation in its directory.
+1. Read the module's `README.md` (if present) and any documentation in its directory.
 2. Check `docs/` for cross-cutting guides (e.g., `docs/testing.md`, `docs/rest-controller.md`).
 3. If working on the workflow engine, read `zeebe/engine/README.md`.
 
+Not every module has a README yet — when one exists, treat it as the primary reference for that module.
+
 ### Key Modules
 
-|   Module    |                            Description                             |
-|-------------|--------------------------------------------------------------------|
-| `zeebe/`    | Core process engine (broker, engine, gateway, protocol, exporters) |
-| `operate/`  | Process monitoring webapp                                          |
-| `tasklist/` | User task management webapp                                        |
-| `identity/` | Authentication and authorization                                   |
-| `optimize/` | Process analytics (skipped with `-Dquickly`)                       |
-| `db/`       | Database layer (rdbms, rdbms-schema)                               |
-| `search/`   | Search client abstraction (Elasticsearch, OpenSearch)              |
-| `service/`  | Internal services                                                  |
-| `clients/`  | Client libraries (Java, Spring Boot starters)                      |
-| `gateways/` | Gateway implementations (HTTP mapping, MCP)                        |
-| `security/` | Security core, protocol, validation                                |
-| `qa/`       | Cross-component acceptance tests                                   |
-| `testing/`  | Process testing libraries                                          |
+| Module           | Description                                                   |
+|------------------|---------------------------------------------------------------|
+| `zeebe/`         | Core process engine (broker, engine, protocol, exporters)     |
+| `zeebe/gateway`  | gRPC gateway                                                  |
+| `operate/`       | Process monitoring webapp                                     |
+| `tasklist/`      | User task management webapp                                   |
+| `identity/`      | Authentication and authorization                              |
+| `optimize/`      | Process analytics (skipped with `-Dquickly`)                  |
+| `db/`            | Database layer (rdbms, rdbms-schema)                          |
+| `search/`        | Search client abstraction (Elasticsearch, OpenSearch)         |
+| `service/`       | Internal services                                             |
+| `clients/`       | Client libraries (Java, Spring Boot starters)                 |
+| `gateways/`      | Gateway implementations (HTTP mapping, MCP)                   |
+| `security/`      | Security core, protocol, validation                           |
+| `qa/`            | Cross-component acceptance tests                              |
+| `testing/`       | Process testing libraries                                     |
 
 ## Build Commands
 
-All builds use the Maven wrapper (`./mvnw`). Use `-T1C` for parallel module builds, or `-T2` if running builds alongside other resource-intensive processes.
+All builds use the Maven wrapper (`./mvnw`). Use `-T1C` (one thread per CPU core) for standalone
+builds. Use `-T2` (two threads total) when running builds alongside other resource-intensive
+processes (e.g., an IDE, Docker containers, or other concurrent builds).
 
 ### Module-scoped builds (preferred)
 
@@ -86,6 +92,7 @@ Note: `-Dquickly` skips tests, checks, and Optimize. Add `-DskipTests=false` to 
 
 ## Testing Conventions
 
+- Test behavior, not implementation — assert on observable outcomes rather than internal state.
 - Prefix test methods with `should` (e.g., `shouldRejectInvalidInput`).
 - Structure tests with `// given`, `// when`, `// then` comments.
 - Prefer AssertJ for assertions. Avoid introducing new JUnit or Hamcrest assertions unless the surrounding test already uses them.
@@ -153,16 +160,14 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 ## Before Submitting
 
 1. Format code: `./mvnw license:format spotless:apply -T1C`
-2. Build the changed module and its dependencies: `./mvnw install -pl <module> -am -Dquickly -T1C`
-3. Run tests only for the changed module: `./mvnw verify -pl <module> -DskipTests=false -DskipITs -Dquickly -T1C` (add `-DskipUTs` instead of `-DskipITs` for integration tests only)
-4. Verify tests pass (zero failures)
-5. Commit with conventional commit format
+2. Build the changed module (see "Module-scoped builds" above for commands)
+3. Run module tests and verify zero failures
+4. Commit with conventional commit format
 
 ## Scoped Instructions
 
 Additional instruction files are auto-loaded when you edit matching paths:
 
-- CI/workflow files (`*.yml` in `.github/`) → `.github/instructions/ci-workflows.instructions.md`
 - Frontend code (`client/` directories) → `.github/instructions/frontend.instructions.md`
 - MCP gateway (`gateways/gateway-mcp/`) → `.github/instructions/gateway-mcp-tools.instructions.md`
 
