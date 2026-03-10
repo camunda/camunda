@@ -356,6 +356,30 @@ class OperateProcessInstancePage {
     });
   }
 
+  getSelectedIncidentRow(incidentType: string | RegExp): Locator {
+    return this.getIncidentRow(incidentType, true);
+  }
+
+  getSelectedTreeItemsInHistory(name: string | RegExp): Locator {
+    return this.instanceHistory.getByRole('treeitem', {name, selected: true});
+  }
+
+  findTreeItemInHistory(name: string | RegExp): Locator {
+    return this.instanceHistory.getByRole('treeitem', {name});
+  }
+
+  async expandTreeItemInHistory(name: string | RegExp): Promise<void> {
+    await this.instanceHistory
+      .getByRole('treeitem', {name})
+      .first()
+      .click();
+    await this.page.keyboard.press('ArrowRight');
+  }
+
+  async gotoProcessInstancePage(options: {id: string}): Promise<void> {
+    await this.navigateToProcessInstance(options.id);
+  }
+
   getIncidentRowOperationSpinner(incidentType: string | RegExp): Locator {
     return this.getIncidentRow(incidentType).getByTestId('operation-spinner');
   }

@@ -54,6 +54,53 @@ export async function waitForIncidents(
   await sleep(2000);
 }
 
+export async function waitForFlowNodeIncidents(
+  _request: APIRequestContext,
+  processInstanceKey: string,
+  flowNodeId: string,
+  expectedCount: number,
+  timeout = 120000,
+): Promise<void> {
+  const baseURL =
+    process.env.CORE_APPLICATION_OPERATE_URL ?? 'http://localhost:8081';
+  const username = process.env.TEST_USERNAME || 'demo';
+  const password = process.env.TEST_PASSWORD || 'demo';
+
+  const apiContext = await request.newContext({baseURL});
+  await apiContext.post('/api/login', {
+    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+    form: {username, password},
+  });
+
+  try {
+    await expect
+      .poll(
+        async () => {
+          const response = await apiContext.post(
+            '/v1/flownode-instances/search',
+            {
+              data: {
+                filter: {
+                  processInstanceKey: parseInt(processInstanceKey),
+                  flowNodeId,
+                  incident: true,
+                },
+              },
+            },
+          );
+          const result: {total: number} = await response.json();
+          return result.total;
+        },
+        {timeout},
+      )
+      .toBe(expectedCount);
+  } finally {
+    await apiContext.dispose();
+  }
+
+  await sleep(2000);
+}
+
 export async function waitForProcessInstances(
   _request: APIRequestContext,
   instanceIds: string[],

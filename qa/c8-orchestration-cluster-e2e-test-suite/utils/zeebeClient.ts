@@ -67,6 +67,7 @@ const createWorker = (
         return job.complete(variables);
       }),
     pollInterval: 300,
+    loglevel: 'ERROR',
     ...(timeout ? {timeout} : {}),
   });
 };

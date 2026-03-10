@@ -254,7 +254,6 @@ test.describe('Process Instances Table', () => {
         maxRetries: 6,
       });
 
-      
       await expect
         .poll(() => instanceRows.nth(199).innerText())
         .toContain(descendingInstanceIds[199].toString());
