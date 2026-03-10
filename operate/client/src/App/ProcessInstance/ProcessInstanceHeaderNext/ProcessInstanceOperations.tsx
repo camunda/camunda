@@ -8,9 +8,8 @@
 
 import {useState, useEffect} from 'react';
 import {useNavigate} from 'react-router-dom';
-import type {MutationStatus} from '@tanstack/react-query';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
-import {MenuButton, MenuItem, type InlineLoadingProps} from '@carbon/react';
+import {Button, MenuButton, MenuItem} from '@carbon/react';
 import {
   Error,
   Tools,
@@ -31,21 +30,15 @@ import {type OperationEntityType} from 'modules/types/operate';
 import {MigrationHelperModal} from 'modules/components/HelperModal/MigrationHelperModal';
 import {CancelConfirmationModal} from 'modules/components/Operations/CancelConfirmationModal';
 import {DeleteConfirmationModal} from 'modules/components/Operations/DeleteConfirmationModal';
-import {AsyncActionButton} from 'modules/components/AsyncActionButton';
+import {
+  AsyncActionTrigger,
+  type AsyncActionTriggerProps,
+} from 'modules/components/AsyncActionTrigger';
 import {ModificationHelperModal} from './ModificationHelperModal';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {Locations} from 'modules/Routes';
 
 const COLLAPSE_BREAKPOINT = 1024;
-const LOADING_STATUS: Record<
-  MutationStatus,
-  NonNullable<InlineLoadingProps['status']>
-> = {
-  idle: 'inactive',
-  pending: 'active',
-  success: 'finished',
-  error: 'error',
-};
 
 type Props = {
   processInstance: ProcessInstance;
@@ -67,19 +60,22 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   const [isModificationHelperOpen, setModificationHelperOpen] = useState(false);
   const [isMigrationHelperOpen, setMigrationHelperOpen] = useState(false);
 
-  const {mutate: deleteProcessInstance, status: deleteStatus} =
-    useDeleteProcessInstance(processInstanceKey, {
-      shouldSkipResultCheck: true,
-      onSuccess: () => handleOperationSuccess('DELETE_PROCESS_INSTANCE'),
-      onError: (error) => {
-        notificationsStore.displayNotification({
-          kind: 'error',
-          title: 'Failed to delete process instance',
-          subtitle: error.message,
-          isDismissable: true,
-        });
-      },
-    });
+  const {
+    mutate: deleteProcessInstance,
+    reset: resetDelete,
+    status: deleteStatus,
+  } = useDeleteProcessInstance(processInstanceKey, {
+    shouldSkipResultCheck: true,
+    onSuccess: () => handleOperationSuccess('DELETE_PROCESS_INSTANCE'),
+    onError: (error) => {
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: 'Failed to delete process instance',
+        subtitle: error.message,
+        isDismissable: true,
+      });
+    },
+  });
   const {
     mutate: cancelProcessInstance,
     reset: resetCancel,
@@ -95,7 +91,6 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
         isDismissable: true,
       });
     },
-    onSettled: () => setTimeout(resetCancel, 2000),
   });
   const {
     mutate: resolveProcessInstanceIncidents,
@@ -105,7 +100,6 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
     shouldSkipResultCheck: true,
     onSuccess: () => handleOperationSuccess('RESOLVE_INCIDENT'),
     onError: ({status}) => handleOperationErrorUtil(status),
-    onSettled: () => setTimeout(resetResolve, 2000),
   });
 
   const handleOpenModificationHelper = () => {
@@ -176,6 +170,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
           pendingLabel="Deleting..."
           title={`Delete Instance ${processInstanceKey}`}
           onClick={() => setDeleteConfirmationOpen(true)}
+          onReset={resetDelete}
         />
         <DeleteConfirmationModal
           processInstanceKey={processInstance.processInstanceKey}
@@ -204,6 +199,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
                 icon={RetryFailed}
                 title={`Retry Instance ${processInstanceKey}`}
                 onClick={() => resolveProcessInstanceIncidents()}
+                onReset={resetResolve}
               />
             )}
             <CollapsibleOperationTrigger
@@ -214,9 +210,11 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
               icon={Error}
               title={`Cancel Instance ${processInstanceKey}`}
               onClick={() => setCancelConfirmationOpen(true)}
+              onReset={resetCancel}
             />
             <CollapsibleOperationTrigger
               isCollapsed={isCollapsed}
+              status="idle"
               label="Modify"
               icon={Tools}
               title={`Modify Instance ${processInstanceKey}`}
@@ -224,6 +222,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
             />
             <CollapsibleOperationTrigger
               isCollapsed={isCollapsed}
+              status="idle"
               label="Migrate"
               icon={MigrateAlt}
               title={`Migrate Instance ${processInstanceKey}`}
@@ -297,46 +296,45 @@ const CollapsibleOperationsToolbar: React.FC<{
   );
 };
 
-type CollapsibleOperationTriggerProps = {
-  status?: MutationStatus;
+interface CollapsibleOperationTriggerProps extends Omit<
+  AsyncActionTriggerProps,
+  'children'
+> {
   isCollapsed?: boolean;
   isDanger?: boolean;
   label: string;
-  pendingLabel?: string;
   title?: string;
   icon?: CarbonIconType;
   onClick: () => void;
-};
+}
 
 const CollapsibleOperationTrigger: React.FC<
   CollapsibleOperationTriggerProps
-> = (props) => {
-  if (props.isCollapsed) {
+> = ({isCollapsed, isDanger, label, title, icon, onClick, ...rest}) => {
+  if (isCollapsed) {
     return (
       <MenuItem
-        label={props.label}
-        renderIcon={props.icon}
-        onClick={props.onClick}
-        disabled={props.status === 'pending'}
+        label={label}
+        renderIcon={icon}
+        onClick={onClick}
+        disabled={rest.status === 'pending'}
       />
     );
   }
 
   return (
-    <AsyncActionButton
-      status={LOADING_STATUS[props.status ?? 'idle']}
-      inlineLoadingProps={{description: props.pendingLabel}}
-      buttonProps={{
-        kind: props.isDanger ? 'danger--ghost' : 'ghost',
-        renderIcon: props.icon,
-        title: props.title,
-        size: 'sm',
-        onClick: props.onClick,
-        disabled: props.status === 'pending',
-      }}
-    >
-      {props.label}
-    </AsyncActionButton>
+    <AsyncActionTrigger {...rest}>
+      <Button
+        kind={isDanger ? 'danger--ghost' : 'ghost'}
+        renderIcon={icon}
+        title={title}
+        size="sm"
+        onClick={onClick}
+        disabled={rest.status === 'pending'}
+      >
+        {label}
+      </Button>
+    </AsyncActionTrigger>
   );
 };
 

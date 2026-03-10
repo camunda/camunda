@@ -232,5 +232,4 @@ describe('ProcessInstanceOperations', () => {
       }),
     );
   });
-
 });
