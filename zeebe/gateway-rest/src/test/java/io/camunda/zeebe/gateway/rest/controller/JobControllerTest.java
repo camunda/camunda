@@ -2406,64 +2406,73 @@ public class JobControllerTest extends RestControllerTest {
     verifyNoInteractions(jobServices);
   }
 
-  @Test
-  void shouldReturn403ForGlobalStatisticsWhenJobMetricsDisabled() {
-    // given
-    final var disabledCfg = new GatewayRestConfiguration.JobMetricsConfiguration();
-    disabledCfg.setEnabled(false);
-    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(disabledCfg);
-
-    // when/then
-    webClient
-        .get()
-        .uri(
-            JOBS_BASE_URL
-                + "/statistics/global?from=2024-07-28T15:51:28.071Z&to=2024-07-29T15:51:28.071Z")
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isForbidden()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(
+  static Stream<Arguments> jobMetricsDisabledEndpoints() {
+    return Stream.of(
+        Arguments.of(
+            "/statistics/global?from=2024-07-28T15:51:28.071Z&to=2024-07-29T15:51:28.071Z",
+            "GET",
+            null,
+            "/v2/jobs/statistics/global"),
+        Arguments.of(
+            "/statistics/by-types",
+            "POST",
             """
-            {
-              "type": "about:blank",
-              "title": "FORBIDDEN",
-              "status": 403,
-              "detail": "Job metrics feature is disabled",
-              "instance": "/v2/jobs/statistics/global"
-            }
-            """,
-            JsonCompareMode.STRICT);
-
-    verifyNoInteractions(jobServices);
+                {
+                  "filter": {
+                    "from": "2024-07-28T15:51:28.071Z",
+                    "to": "2024-07-29T15:51:28.071Z"
+                  }
+                }""",
+            "/v2/jobs/statistics/by-types"),
+        Arguments.of(
+            "/statistics/by-workers",
+            "POST",
+            """
+                {
+                  "filter": {
+                    "from": "2024-07-28T15:51:28.071Z",
+                    "to": "2024-07-29T15:51:28.071Z"
+                  }
+                }""",
+            "/v2/jobs/statistics/by-workers"),
+        Arguments.of(
+            "/statistics/time-series",
+            "POST",
+            """
+                {
+                  "filter": {
+                    "from": "2024-07-28T15:51:28.071Z",
+                    "to": "2024-07-29T15:51:28.071Z",
+                    "jobType": "fetch-customer-data"
+                  }
+                }""",
+            "/v2/jobs/statistics/time-series"));
   }
 
-  @Test
-  void shouldReturn403ForJobTypeStatisticsWhenJobMetricsDisabled() {
+  @ParameterizedTest(name = "shouldReturn403For {0} statistics when job metrics disabled")
+  @MethodSource("jobMetricsDisabledEndpoints")
+  void shouldReturn403WhenJobMetricsDisabled(
+      final String uriSuffix,
+      final String httpMethod,
+      final String requestBody,
+      final String expectedInstance) {
     // given
     final var disabledCfg = new GatewayRestConfiguration.JobMetricsConfiguration();
     disabledCfg.setEnabled(false);
     when(gatewayRestConfiguration.getJobMetrics()).thenReturn(disabledCfg);
 
-    final var request =
-        """
-            {
-              "filter": {
-                "from": "2024-07-28T15:51:28.071Z",
-                "to": "2024-07-29T15:51:28.071Z"
-              }
-            }""";
-
     // when/then
-    webClient
-        .post()
-        .uri(JOBS_BASE_URL + "/statistics/by-types")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
+    final var requestSpec =
+        "GET".equals(httpMethod)
+            ? webClient.get().uri(JOBS_BASE_URL + uriSuffix).accept(MediaType.APPLICATION_JSON)
+            : webClient
+                .post()
+                .uri(JOBS_BASE_URL + uriSuffix)
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestBody);
+
+    requestSpec
         .exchange()
         .expectStatus()
         .isForbidden()
@@ -2477,98 +2486,10 @@ public class JobControllerTest extends RestControllerTest {
               "title": "FORBIDDEN",
               "status": 403,
               "detail": "Job metrics feature is disabled",
-              "instance": "/v2/jobs/statistics/by-types"
+              "instance": "%s"
             }
-            """,
-            JsonCompareMode.STRICT);
-
-    verifyNoInteractions(jobServices);
-  }
-
-  @Test
-  void shouldReturn403ForJobWorkerStatisticsWhenJobMetricsDisabled() {
-    // given
-    final var disabledCfg = new GatewayRestConfiguration.JobMetricsConfiguration();
-    disabledCfg.setEnabled(false);
-    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(disabledCfg);
-
-    final var request =
-        """
-            {
-              "filter": {
-                "from": "2024-07-28T15:51:28.071Z",
-                "to": "2024-07-29T15:51:28.071Z"
-              }
-            }""";
-
-    // when/then
-    webClient
-        .post()
-        .uri(JOBS_BASE_URL + "/statistics/by-workers")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isForbidden()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(
             """
-            {
-              "type": "about:blank",
-              "title": "FORBIDDEN",
-              "status": 403,
-              "detail": "Job metrics feature is disabled",
-              "instance": "/v2/jobs/statistics/by-workers"
-            }
-            """,
-            JsonCompareMode.STRICT);
-
-    verifyNoInteractions(jobServices);
-  }
-
-  @Test
-  void shouldReturn403ForJobTimeSeriesStatisticsWhenJobMetricsDisabled() {
-    // given
-    final var disabledCfg = new GatewayRestConfiguration.JobMetricsConfiguration();
-    disabledCfg.setEnabled(false);
-    when(gatewayRestConfiguration.getJobMetrics()).thenReturn(disabledCfg);
-
-    final var request =
-        """
-            {
-              "filter": {
-                "from": "2024-07-28T15:51:28.071Z",
-                "to": "2024-07-29T15:51:28.071Z",
-                "jobType": "fetch-customer-data"
-              }
-            }""";
-
-    // when/then
-    webClient
-        .post()
-        .uri(JOBS_BASE_URL + "/statistics/time-series")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isForbidden()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(
-            """
-            {
-              "type": "about:blank",
-              "title": "FORBIDDEN",
-              "status": 403,
-              "detail": "Job metrics feature is disabled",
-              "instance": "/v2/jobs/statistics/time-series"
-            }
-            """,
+                .formatted(expectedInstance),
             JsonCompareMode.STRICT);
 
     verifyNoInteractions(jobServices);
