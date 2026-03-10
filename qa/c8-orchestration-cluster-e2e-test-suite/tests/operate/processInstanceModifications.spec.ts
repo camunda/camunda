@@ -798,10 +798,9 @@ test.describe('Process Instance Modifications', () => {
     await test.step('Undo again and verify new variable field removed', async () => {
       await operateProcessInstancePage.undoModification();
 
-      // here might be needed change from hidden to add token operation
       await expect(
         operateProcessInstancePage.lastAddedModificationText,
-      ).toBeHidden();
+      ).toBeVisible();
       await expect(
         operateProcessInstancePage.getVariableTestId('newVariables[0]'),
       ).toBeHidden();
@@ -817,7 +816,7 @@ test.describe('Process Instance Modifications', () => {
       const addedTokenInHistory = `${neverFailsHistoryItem}, this element instance is planned to be added`;
       await operateProcessInstancePage.clickTreeItem(addedTokenInHistory);
       await expect(
-        page.getByText(/The Flow Node has no Variables/i),
+        page.getByText(/The element has no Variables/i),
       ).toBeVisible();
 
       await operateProcessInstancePage.addNewVariableModificationMode(

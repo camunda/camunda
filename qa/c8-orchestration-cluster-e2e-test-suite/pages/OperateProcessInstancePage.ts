@@ -371,6 +371,7 @@ class OperateProcessInstancePage {
   }
 
   async undoModification() {
+    await expect(this.undoModificationButton).toBeVisible();
     await this.undoModificationButton.click();
   }
 
