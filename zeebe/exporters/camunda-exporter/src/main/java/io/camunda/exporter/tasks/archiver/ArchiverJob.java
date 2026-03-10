@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundTask {
 
   // Virtual-thread executor used exclusively for blocking semaphore.acquire() calls.
-  // This prevent using main (platform-threaded) executor, avoiding thread starvation.
+  // This prevents using main (platform-threaded) executor, avoiding thread starvation.
   private static final ExecutorService SEMAPHORE_EXECUTOR =
       Executors.newVirtualThreadPerTaskExecutor();
 
@@ -97,6 +97,12 @@ public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundT
   }
 
   @Override
+  public void close() {
+    SEMAPHORE_EXECUTOR.close();
+    BackgroundTask.super.close();
+  }
+
+  @Override
   public String toString() {
     return String.format("%s archiver job", getJobName());
   }
@@ -148,9 +154,18 @@ public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundT
     // Note: Acquire the semaphore on a virtual thread to avoid blocking the main executor threads
     return CompletableFuture.supplyAsync(this::getReindexPermit, SEMAPHORE_EXECUTOR)
         .thenComposeAsync(
-            ignored ->
-                archiverRepository.moveDocuments(
-                    sourceIdxName, sourceIdxName + finishDate, idsMap, filters, executor),
+            permit -> {
+              if (!permit) {
+                return CompletableFuture.failedFuture(
+                    new IllegalStateException(
+                        "Could not acquire reindex permit. Abandoning archiving for index "
+                            + sourceIdxName
+                            + " and date "
+                            + finishDate));
+              }
+              return archiverRepository.moveDocuments(
+                  sourceIdxName, sourceIdxName + finishDate, idsMap, filters, executor);
+            },
             executor)
         .whenCompleteAsync((result, error) -> releaseReindexPermit(), SEMAPHORE_EXECUTOR)
         .thenApply(ok -> batch.size());
