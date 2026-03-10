@@ -57,11 +57,16 @@ public class SelfManagedOpenApiConfigurer extends OpenApiConfigurer {
     LOGGER.debug(
         "SelfManagedOpenApiConfigurer: Disabling CSRF for Swagger UI in unprotected API mode");
 
-    final var propertySource =
+    final var setCsrfDisabled =
         new MapPropertySource(
             "swaggerCsrfOverride", Map.of("springdoc.swagger-ui.csrf.enabled", "false"));
+    final var setCsrfSessionStorageDisabled =
+        new MapPropertySource(
+            "swaggerCsrfSessionStorageOverride",
+            Map.of("springdoc.swagger-ui.csrf.session-storage-enabled", "false"));
 
-    environment.getPropertySources().addFirst(propertySource);
+    environment.getPropertySources().addFirst(setCsrfDisabled);
+    environment.getPropertySources().addFirst(setCsrfSessionStorageDisabled);
 
     LOGGER.debug("SelfManagedOpenApiConfigurer: Successfully disabled CSRF for Swagger UI");
 
