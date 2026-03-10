@@ -30,6 +30,8 @@ type OnElementSelection = (
   isMultiInstance?: boolean,
 ) => void;
 
+type OnElementDoubleClick = (elementId: string) => void;
+
 type RenderOptions = {
   container: HTMLElement;
   xml: string;
@@ -40,6 +42,7 @@ type RenderOptions = {
   highlightedElementIds?: string[];
   nonSelectableNodeTooltipText?: string;
   hasOuterBorderOnSelection: boolean;
+  drilldownElements?: string[];
 };
 
 class BpmnJS {
@@ -52,15 +55,21 @@ class BpmnJS {
   #highlightedElementIds: string[] = [];
   selectedElement?: SVGGraphicsElement;
   onElementSelection?: OnElementSelection;
+  onElementDoubleClick?: OnElementDoubleClick;
   onViewboxChange?: (isChanging: boolean) => void;
   onRootChange?: (rootElementId: string) => void;
   #overlaysData: OverlayData[] = [];
   #hasOuterBorderOnSelection = false;
   #rootElement?: BpmnElement;
+  #drilldownElements: string[] = [];
 
   import = async (xml: string) => {
     // Cleanup before importing
     this.#navigatedViewer!.off('element.click', this.#handleElementClick);
+    this.#navigatedViewer!.off(
+      'element.dblclick',
+      this.#handleElementDoubleClick,
+    );
     this.#navigatedViewer!.off('canvas.viewbox.changing', () => {
       this.onViewboxChange?.(true);
     });
@@ -73,6 +82,7 @@ class BpmnJS {
     this.#selectableElements = [];
     this.#selectedElementIds = undefined;
     this.#hasOuterBorderOnSelection = false;
+    this.#drilldownElements = [];
     this.#rootElement = undefined;
 
     await this.#navigatedViewer!.importXML(xml);
@@ -80,6 +90,10 @@ class BpmnJS {
     // Initialize after importing
     this.zoomReset();
     this.#navigatedViewer!.on('element.click', this.#handleElementClick);
+    this.#navigatedViewer!.on(
+      'element.dblclick',
+      this.#handleElementDoubleClick,
+    );
     this.#navigatedViewer!.on('canvas.viewbox.changing', () => {
       this.onViewboxChange?.(true);
     });
@@ -102,6 +116,7 @@ class BpmnJS {
       highlightedElementIds: unfilteredHighlightedElementIds = [],
       nonSelectableNodeTooltipText,
       hasOuterBorderOnSelection,
+      drilldownElements: unfilteredDrilldownElements = [],
     } = options;
 
     if (this.#navigatedViewer === null) {
@@ -125,6 +140,8 @@ class BpmnJS {
       unfilteredHighlightedElementIds?.filter(doesElementExist);
     const selectableElements =
       unfilteredSelectableElements?.filter(doesElementExist);
+    const drilldownElements =
+      unfilteredDrilldownElements?.filter(doesElementExist);
 
     // if render is called a second time before importing has finished,
     // exit early because there is no root element yet.
@@ -229,6 +246,17 @@ class BpmnJS {
       });
 
       this.#highlightedElementIds = highlightedElementIds;
+    }
+
+    // handle op-drilldown markers
+    if (!isEqual(this.#drilldownElements, drilldownElements)) {
+      this.#drilldownElements.forEach((elementId) => {
+        this.#removeMarker(elementId, 'op-drilldown');
+      });
+      drilldownElements.forEach((elementId) => {
+        this.#addMarker(elementId, 'op-drilldown');
+      });
+      this.#drilldownElements = drilldownElements;
     }
 
     // handle overlays
@@ -406,6 +434,18 @@ class BpmnJS {
     }
   };
 
+  #handleElementDoubleClick = (event: Event) => {
+    const element = event.element;
+
+    if (element.type === 'label') {
+      return;
+    }
+
+    if (this.#drilldownElements.includes(element.id)) {
+      this.onElementDoubleClick?.(element.id);
+    }
+  };
+
   #handleRootChange = () => {
     this.#rootElement = this.#navigatedViewer?.get('canvas')?.getRootElement();
 
@@ -420,6 +460,7 @@ class BpmnJS {
 
   reset = () => {
     this.onElementSelection = undefined;
+    this.onElementDoubleClick = undefined;
     this.onViewboxChange = undefined;
     this.#destroy();
   };
@@ -483,5 +524,5 @@ class BpmnJS {
 }
 
 export {BpmnJS};
-export type {OnElementSelection};
+export type {OnElementSelection, OnElementDoubleClick};
 export type {OverlayData} from './overlayTypes';

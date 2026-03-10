@@ -16,6 +16,7 @@ import React, {
 import {
   BpmnJS,
   type OnElementSelection,
+  type OnElementDoubleClick,
   type OverlayData,
 } from 'modules/bpmn-js/BpmnJS';
 import DiagramControls from './DiagramControls';
@@ -50,6 +51,8 @@ type Props = {
   highlightedElementIds?: string[];
   nonSelectableNodeTooltipText?: string;
   hasOuterBorderOnSelection?: boolean;
+  onElementDoubleClick?: OnElementDoubleClick;
+  drilldownElements?: string[];
 };
 
 const useFullscreen = (
@@ -135,6 +138,8 @@ const Diagram: React.FC<Props> = observer(
     highlightedElementIds,
     nonSelectableNodeTooltipText,
     hasOuterBorderOnSelection = true,
+    onElementDoubleClick,
+    drilldownElements,
   }) => {
     const diagramCanvasRef = useRef<HTMLDivElement | null>(null);
     const diagramRef = useRef<HTMLDivElement | null>(null);
@@ -174,6 +179,7 @@ const Diagram: React.FC<Props> = observer(
             highlightedElementIds,
             nonSelectableNodeTooltipText,
             hasOuterBorderOnSelection,
+            drilldownElements,
           });
           setIsDiagramRendered(true);
           resetMinimap();
@@ -191,6 +197,7 @@ const Diagram: React.FC<Props> = observer(
       nonSelectableNodeTooltipText,
       hasOuterBorderOnSelection,
       resetMinimap,
+      drilldownElements,
     ]);
 
     useEffect(() => {
@@ -204,7 +211,9 @@ const Diagram: React.FC<Props> = observer(
           onRootChange?.(rootElementId, getSelectionRootId);
         };
       }
-    }, [viewer, onElementSelection, onRootChange]);
+
+      viewer.onElementDoubleClick = onElementDoubleClick;
+    }, [viewer, onElementSelection, onRootChange, onElementDoubleClick]);
 
     useEffect(() => {
       return () => {
