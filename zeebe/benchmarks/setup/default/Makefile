@@ -109,6 +109,7 @@ install-load-test:
 		--namespace $(namespace) \
 		--reuse-values \
 		--render-subchart-notes \
+		--set global.connect.serviceName=zeebe-gateway \
 		$(additional_load_test_configuration)
 
 # Setup leader balancing cronjob
