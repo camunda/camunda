@@ -25,12 +25,15 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
+import java.time.Duration;
 import java.util.Optional;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 final class InterPartitionCommandReceiverImpl {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
+  private final Logger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(15));
   private final Decoder decoder = new Decoder();
   private final LogStreamWriter logStreamWriter;
   private boolean diskSpaceAvailable = true;
@@ -82,12 +85,12 @@ final class InterPartitionCommandReceiverImpl {
 
   private void logWriteFailure(
       final MemberId memberId, final DecodedMessage decoded, final WriteFailure failure) {
-    LOG.warn(
-        "Failed to write command {} {} from {} to logstream (error = {})",
+    throttledLog.warn(
+        "Failed to write received command {}.{} to logstream (error = {}, sender = {})",
         decoded.metadata.getValueType(),
         decoded.metadata.getIntent(),
-        memberId,
-        failure);
+        failure,
+        memberId);
   }
 
   private Either<WriteFailure, Long> writeCheckpoint(final DecodedMessage decoded) {
