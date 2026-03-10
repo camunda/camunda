@@ -319,7 +319,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.ref }}
+          # When using official Docker images, the release tag may predate load-tests/load-tester
+          # being added to the Maven reactor. In that case we build the starter/worker from the
+          # current workflow SHA (main) which always has the module. For all other cases we
+          # honour inputs.ref so developers can test a specific load-tester branch.
+          ref: ${{ inputs.use-official-docker-images && '' || inputs.ref }}
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
