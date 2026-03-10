@@ -63,25 +63,6 @@ processes (e.g., an IDE, Docker containers, or other concurrent builds).
 ./mvnw verify -pl <module> -Dit.test=MyIT -DskipTests=false -DskipUTs -Dquickly
 ```
 
-### Full-repo builds
-
-```bash
-# Quick build (skips tests, checks, Optimize)
-./mvnw clean install -Dquickly -T1C
-
-# Lint and format check
-./mvnw license:check spotless:check -T1C
-
-# Auto-format (run before committing)
-./mvnw license:format spotless:apply -T1C
-
-# Unit tests only
-./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C
-
-# Integration tests only
-./mvnw verify -Dquickly -DskipTests=false -DskipUTs -T1C
-```
-
 Note: `-Dquickly` skips tests, checks, and Optimize. Add `-DskipTests=false` to re-enable tests.
 
 ## Code Style
