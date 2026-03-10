@@ -32,7 +32,6 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -48,11 +47,6 @@ class ClusterToolsTest extends ToolsTest {
 
   @MockitoBean private TopologyServices topologyServices;
   @Autowired private ObjectMapper objectMapper;
-
-  @BeforeEach
-  void mockApiServices() {
-    mockApiServiceAuthentication(topologyServices);
-  }
 
   @Nested
   class GetClusterStatus {

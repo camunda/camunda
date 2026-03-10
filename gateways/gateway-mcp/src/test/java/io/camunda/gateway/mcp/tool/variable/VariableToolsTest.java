@@ -11,6 +11,7 @@ import static io.camunda.gateway.mcp.tool.CallToolResultAssertions.assertTextCon
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -37,7 +38,6 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -84,11 +84,6 @@ class VariableToolsTest extends ToolsTest {
 
   @Captor private ArgumentCaptor<VariableQuery> queryCaptor;
 
-  @BeforeEach
-  void mockApiServices() {
-    mockApiServiceAuthentication(variableServices);
-  }
-
   private void assertExampleVariable(final VariableResult variable) {
     assertThat(variable.getVariableKey()).isEqualTo("123");
     assertThat(variable.getName()).isEqualTo("demoVar");
@@ -112,7 +107,7 @@ class VariableToolsTest extends ToolsTest {
     @Test
     void shouldGetVariableByKey() {
       // given
-      when(variableServices.getByKey(any())).thenReturn(VARIABLE_ENTITY);
+      when(variableServices.getByKey(any(), any())).thenReturn(VARIABLE_ENTITY);
 
       // when
       final CallToolResult result =
@@ -130,7 +125,7 @@ class VariableToolsTest extends ToolsTest {
           objectMapper.convertValue(result.structuredContent(), VariableResult.class);
       assertExampleVariable(variable);
 
-      verify(variableServices).getByKey(123L);
+      verify(variableServices).getByKey(eq(123L), any());
 
       assertTextContentFallback(result);
     }
@@ -138,7 +133,7 @@ class VariableToolsTest extends ToolsTest {
     @Test
     void shouldFailGetVariableByKeyOnException() {
       // given
-      when(variableServices.getByKey(any()))
+      when(variableServices.getByKey(any(), any()))
           .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
 
       // when
@@ -192,7 +187,8 @@ class VariableToolsTest extends ToolsTest {
     @Test
     void shouldSearchVariablesWithNonTruncatedValue() {
       // given
-      when(variableServices.search(any(VariableQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+      when(variableServices.search(any(VariableQuery.class), any()))
+          .thenReturn(SEARCH_QUERY_RESULT);
 
       // when
       final CallToolResult result =
@@ -238,7 +234,8 @@ class VariableToolsTest extends ToolsTest {
     @Test
     void shouldSearchVariablesWithFilterSortAndPaging() {
       // given
-      when(variableServices.search(any(VariableQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+      when(variableServices.search(any(VariableQuery.class), any()))
+          .thenReturn(SEARCH_QUERY_RESULT);
 
       // when
       final CallToolResult result =
@@ -276,7 +273,7 @@ class VariableToolsTest extends ToolsTest {
                 assertThat(variable.getValue()).isEqualTo(TRUNCATED_VALUE);
               });
 
-      verify(variableServices).search(queryCaptor.capture());
+      verify(variableServices).search(queryCaptor.capture(), any());
       final VariableQuery capturedQuery = queryCaptor.getValue();
 
       final VariableFilter filter = capturedQuery.filter();
@@ -305,7 +302,7 @@ class VariableToolsTest extends ToolsTest {
     @Test
     void shouldFailSearchVariablesOnException() {
       // given
-      when(variableServices.search(any(VariableQuery.class)))
+      when(variableServices.search(any(VariableQuery.class), any()))
           .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
 
       // when
