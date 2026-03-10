@@ -3,7 +3,7 @@ secondary_storage ?= __STORAGE_TYPE__
 helm_chart ?= camunda-platform-8.7
 enable_optimize ?= __ENABLE_OPTIMIZE__
 curl_image ?= curlimages/curl:7.87.0
-camunda_management_url ?= http://camunda:9600
+camunda_management_url ?= http://zeebe-gateway:9600
 prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
 # Optional: additional Helm configuration for the Camunda Platform release.
 # Use this to pass extra `--set`/`-f` flags, for example:
