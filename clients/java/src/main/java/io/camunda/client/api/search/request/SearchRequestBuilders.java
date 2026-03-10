@@ -29,7 +29,6 @@ import io.camunda.client.api.search.filter.GlobalTaskListenerFilter;
 import io.camunda.client.api.search.filter.GroupFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.JobFilter;
-import io.camunda.client.api.search.filter.JobTypeStatisticsFilter;
 import io.camunda.client.api.search.filter.MappingRuleFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
@@ -71,6 +70,8 @@ import io.camunda.client.api.search.sort.TenantUserSort;
 import io.camunda.client.api.search.sort.UserSort;
 import io.camunda.client.api.search.sort.UserTaskSort;
 import io.camunda.client.api.search.sort.VariableSort;
+import io.camunda.client.api.statistics.filter.JobErrorStatisticsFilter;
+import io.camunda.client.api.statistics.filter.JobTypeStatisticsFilter;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.client.impl.search.filter.AuthorizationFilterImpl;
 import io.camunda.client.impl.search.filter.BatchOperationFilterImpl;
@@ -128,6 +129,7 @@ import io.camunda.client.impl.search.sort.TenantUserSortImpl;
 import io.camunda.client.impl.search.sort.UserSortImpl;
 import io.camunda.client.impl.search.sort.UserTaskSortImpl;
 import io.camunda.client.impl.search.sort.VariableSortImpl;
+import io.camunda.client.impl.statistics.filter.JobErrorStatisticsFilterImpl;
 import io.camunda.client.impl.statistics.filter.JobTypeStatisticsFilterImpl;
 import io.camunda.client.impl.statistics.filter.ProcessDefinitionStatisticsFilterImpl;
 import java.util.function.Consumer;
@@ -295,6 +297,13 @@ public final class SearchRequestBuilders {
   public static JobTypeStatisticsFilter jobTypeStatisticsFilter(
       final Consumer<JobTypeStatisticsFilter> fn) {
     final JobTypeStatisticsFilter filter = new JobTypeStatisticsFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static JobErrorStatisticsFilter jobErrorStatisticsFilter(
+      final Consumer<JobErrorStatisticsFilter> fn) {
+    final JobErrorStatisticsFilter filter = new JobErrorStatisticsFilterImpl();
     fn.accept(filter);
     return filter;
   }
