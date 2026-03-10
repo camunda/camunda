@@ -14,12 +14,18 @@ import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {useCurrentPage} from 'modules/hooks/useCurrentPage';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
 
 const BottomPanelTabs: React.FC = () => {
   const {hasSelection} = useProcessInstanceElementSelection();
   const {data: processInstance} = useProcessInstance();
   const {processInstanceId} = useProcessInstancePageParams();
   const {currentPage} = useCurrentPage();
+  const hasIncident = processInstance?.hasIncident === true;
+  const incidentsCount = useProcessInstanceIncidentsCount(
+    processInstanceId ?? '',
+    {enabled: hasIncident},
+  );
   const tabItems = [
     {
       label: 'Details',
@@ -43,7 +49,8 @@ const BottomPanelTabs: React.FC = () => {
       key: 'incidents',
       selected: currentPage === 'process-details-incidents',
       title: 'Incidents',
-      visible: processInstance?.hasIncident === true,
+      visible: hasIncident,
+      count: incidentsCount,
     },
     {
       label: 'Input Mappings',
