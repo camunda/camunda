@@ -18,6 +18,7 @@ import {MigrationView} from './pages/Processes/MigrationView';
 import {DecisionInstance} from './pages/DecisionInstance';
 import {BatchOperations} from './pages/BatchOperations';
 import {BatchOperation} from './pages/BatchOperation';
+import {OperationsLog} from './pages/OperationsLog';
 
 type LoginFixture = {
   makeAxeBuilder: () => AxeBuilder;
@@ -37,6 +38,7 @@ type VisualFixture = {
   loginPage: Login;
   batchOperationsPage: BatchOperations;
   batchOperationPage: BatchOperation;
+  operationsLogPage: OperationsLog;
 };
 
 const loginTest = base.extend<LoginFixture>({
@@ -86,6 +88,9 @@ const test = base.extend<VisualFixture>({
   },
   batchOperationPage: async ({page}, use) => {
     await use(new BatchOperation(page));
+  },
+  operationsLogPage: async ({page}, use) => {
+    await use(new OperationsLog(page));
   },
 });
 
