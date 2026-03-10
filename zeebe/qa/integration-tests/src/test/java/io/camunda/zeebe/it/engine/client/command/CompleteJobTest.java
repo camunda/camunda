@@ -101,8 +101,7 @@ public final class CompleteJobTest {
           .hasMessageContaining("Failed to deserialize json '[]' to 'Map<String, Object>'");
     } else {
       assertThatThrownBy(() -> getCommand(client, useRest, jobKey).variables("[]").send().join())
-          .hasMessageContaining(
-              "Property 'variables' is invalid: Expected document to be a root level object, but was 'ARRAY'");
+          .hasMessageContaining("Expected variables to be valid msgpack, but it could not be read");
     }
   }
 
