@@ -66,7 +66,8 @@ class AuthorizationEntityValidatorTest {
     when(processingState.getGroupState()).thenReturn(groupState);
     when(processingState.getRoleState()).thenReturn(roleState);
 
-    checker = new AuthorizationEntityValidator(processingState);
+    // TODO: fix me
+    checker = new AuthorizationEntityValidator(processingState, null);
     lenient().when(userState.getUser("user1")).thenReturn(Optional.of(mock(PersistedUser.class)));
     lenient().when(roleState.getRole("role1")).thenReturn(Optional.of(mock(PersistedRole.class)));
     lenient().when(groupState.get("group1")).thenReturn(Optional.of(mock(PersistedGroup.class)));
