@@ -42,7 +42,7 @@ class InitializeRoleIT {
           "role1",
           "Role 1",
           "something to test",
-          List.of("test-user"),
+          List.of("test-user", ADMIN),
           List.of(TEST_CLIENT_ID),
           List.of(),
           List.of());
@@ -102,6 +102,8 @@ class InitializeRoleIT {
     assertThat(membersResponse.items()).hasSize(1);
     assertThat(membersResponse.items())
         .anyMatch(actual -> actual.getUsername().equals("test-user"));
+    // the admin user is created later on via API and should not be added as a member.
+    assertThat(membersResponse.items()).noneMatch(actual -> actual.getUsername().equals(ADMIN));
   }
 
   @Test

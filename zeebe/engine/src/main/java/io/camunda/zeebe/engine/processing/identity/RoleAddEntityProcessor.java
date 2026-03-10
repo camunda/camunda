@@ -7,9 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_GROUPS_ENABLED;
-import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_USERS_ENABLED;
-
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -34,7 +32,6 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.Map;
 
 public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
 
@@ -55,13 +52,15 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final SecurityConfiguration securityConfig;
 
   public RoleAddEntityProcessor(
       final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final SecurityConfiguration securityConfig) {
     roleState = processingState.getRoleState();
     mappingRuleState = processingState.getMappingRuleState();
     membershipState = processingState.getMembershipState();
@@ -73,6 +72,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.commandDistributionBehavior = commandDistributionBehavior;
+    this.securityConfig = securityConfig;
   }
 
   @Override
@@ -103,7 +103,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(command.getAuthorizations(), entityType, entityId)) {
+    if (!isEntityPresent(entityType, entityId)) {
       final var errorMessage =
           ENTITY_NOT_FOUND_ERROR_MESSAGE.formatted(entityId, entityType, record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
@@ -144,15 +144,10 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean isEntityPresent(
-      final Map<String, Object> authorizations,
-      final EntityType entityType,
-      final String entityId) {
+  private boolean isEntityPresent(final EntityType entityType, final String entityId) {
 
-    final boolean localUserEnabled =
-        (boolean) authorizations.getOrDefault(IS_CAMUNDA_USERS_ENABLED, false);
-    final boolean localGroupEnabled =
-        (boolean) authorizations.getOrDefault(IS_CAMUNDA_GROUPS_ENABLED, false);
+    final boolean localUserEnabled = securityConfig.getAuthentication().isCamundaUsersEnabled();
+    final boolean localGroupEnabled = securityConfig.getAuthentication().isCamundaGroupsEnabled();
     return switch (entityType) {
       case GROUP -> !localGroupEnabled || groupState.get(entityId).isPresent();
       case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();

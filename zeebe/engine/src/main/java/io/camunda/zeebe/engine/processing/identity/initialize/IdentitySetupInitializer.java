@@ -7,15 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.identity.initialize;
 
-import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_GROUPS_ENABLED;
-import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_USERS_ENABLED;
-
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentityInitializationException;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
@@ -25,12 +21,9 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.util.Either;
-import java.util.HashMap;
 import java.util.List;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
@@ -99,21 +92,9 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
             0L,
             (taskResultBuilder) -> {
               taskResultBuilder.appendCommandRecord(
-                  TaskResultBuilder.NULL_KEY,
-                  IdentitySetupIntent.INITIALIZE,
-                  buildSetupRecord(),
-                  buildFollowUpCommandMetadata());
+                  IdentitySetupIntent.INITIALIZE, buildSetupRecord());
               return taskResultBuilder.build();
             });
-  }
-
-  private FollowUpCommandMetadata buildFollowUpCommandMetadata() {
-    final var claims = new HashMap<String, Object>();
-    claims.put(
-        IS_CAMUNDA_GROUPS_ENABLED, securityConfig.getAuthentication().isCamundaGroupsEnabled());
-    claims.put(
-        IS_CAMUNDA_USERS_ENABLED, securityConfig.getAuthentication().isCamundaUsersEnabled());
-    return FollowUpCommandMetadata.of(b -> b.authInfo(new AuthInfo().setClaims(claims)));
   }
 
   private IdentitySetupRecord buildSetupRecord() {

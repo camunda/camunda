@@ -7,8 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_USERS_ENABLED;
-
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -32,7 +31,6 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.Map;
 
 public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
   private static final String ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE =
@@ -46,6 +44,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final SecurityConfiguration securityConfig;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
@@ -54,7 +53,8 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final SecurityConfiguration securityConfig) {
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.keyGenerator = keyGenerator;
     this.authCheckBehavior = authCheckBehavior;
@@ -65,6 +65,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
+    this.securityConfig = securityConfig;
   }
 
   @Override
@@ -98,7 +99,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     final var groupKey = persistedRecord.get().getGroupKey();
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(command.getAuthorizations(), entityId, entityType)) {
+    if (!isEntityPresent(entityId, entityType)) {
       final var errorMessage =
           "Expected to add an entity with ID '%s' and type '%s' to group with ID '%s', but the entity does not exist."
               .formatted(entityId, entityType, groupId);
@@ -141,12 +142,8 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean isEntityPresent(
-      final Map<String, Object> authorizations,
-      final String entityId,
-      final EntityType entityType) {
-    final boolean localUserEnabled =
-        (boolean) authorizations.getOrDefault(IS_CAMUNDA_USERS_ENABLED, false);
+  private boolean isEntityPresent(final String entityId, final EntityType entityType) {
+    final boolean localUserEnabled = securityConfig.getAuthentication().isCamundaUsersEnabled();
     return switch (entityType) {
       case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();
       case CLIENT -> true;
