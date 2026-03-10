@@ -60,7 +60,7 @@ zeebe:
   # Image configuration to configure the zeebe image specifics
   image:
     # Image.repository defines which image repository to use
-    repository: registry.camunda.cloud/team-zeebe/zeebe
+    repository: registry.camunda.cloud/team-zeebe/camunda
     tag: 8.7.0
   # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
@@ -131,14 +131,6 @@ zeebe:
 
   # Environment variables
   env:
-    - name: K8S_NAMESPACE
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.namespace
-    - name: K8S_NAME
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.name
     # Enable JSON logging for google cloud stackdriver
     - name: ZEEBE_LOG_APPENDER
       value: Stackdriver
@@ -150,8 +142,6 @@ zeebe:
           fieldPath: metadata.namespace
     - name: ATOMIX_LOG_LEVEL
       value: INFO
-    - name: ZEEBE_LOG_LEVEL
-      value: DEBUG
     # To be able to load a separate/additional configuration
     # See https://github.com/camunda/camunda-platform-helm/issues/2197
     - name: SPRING_CONFIG_ADDITIONALLOCATION
@@ -223,8 +213,6 @@ zeebeGateway:
           fieldPath: metadata.namespace
     - name: ATOMIX_LOG_LEVEL
       value: INFO
-    - name: ZEEBE_LOG_LEVEL
-      value: DEBUG
     # To be able to load a separate/additional configuration
     # See https://github.com/camunda/camunda-platform-helm/issues/2197
     - name: SPRING_CONFIG_ADDITIONALLOCATION
