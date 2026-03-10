@@ -67,9 +67,8 @@ public class VariableTools {
       final boolean shouldTruncate = truncateValues == null || truncateValues;
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(
-              variableServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .search(variableSearchQuery.get()),
+              variableServices.search(
+                  variableSearchQuery.get(), authenticationProvider.getCamundaAuthentication()),
               shouldTruncate));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
@@ -85,9 +84,8 @@ public class VariableTools {
     try {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toVariableItem(
-              variableServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .getByKey(variableKey)));
+              variableServices.getByKey(
+                  variableKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
