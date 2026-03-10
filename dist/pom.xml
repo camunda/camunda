@@ -343,15 +343,6 @@
       <artifactId>camunda-auth-spring</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>io.camunda.auth</groupId>
-      <artifactId>camunda-auth-persist-elasticsearch</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda.auth</groupId>
-      <artifactId>camunda-auth-persist-rdbms</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
@@ -1087,9 +1078,7 @@
             <!-- App Integrations Exporter -->
             <dependency>io.camunda:app-integrations-exporter</dependency>
 
-            <!-- Auth library persistence adapters — runtime only -->
-            <dependency>io.camunda.auth:camunda-auth-persist-elasticsearch</dependency>
-            <dependency>io.camunda.auth:camunda-auth-persist-rdbms</dependency>
+
             <dependency>org.springframework.session:spring-session-core</dependency>
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
