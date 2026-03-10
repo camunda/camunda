@@ -9,6 +9,7 @@ package io.camunda.it.rdbms.db.jobmetrics;
 
 import static io.camunda.it.rdbms.db.fixtures.JobMetricsBatchFixtures.NOW;
 import static io.camunda.it.rdbms.db.fixtures.JobMetricsBatchFixtures.PARTITION_ID;
+import static io.camunda.it.rdbms.db.fixtures.JobMetricsBatchFixtures.assertErrorStats;
 import static io.camunda.it.rdbms.db.fixtures.JobMetricsBatchFixtures.assertTimeSeriesStats;
 import static java.time.ZoneOffset.UTC;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,6 +20,7 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.JobMetricsBatchDbModel;
 import io.camunda.db.rdbms.write.service.JobMetricsBatchWriter;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
+import io.camunda.it.rdbms.db.fixtures.JobFixtures;
 import io.camunda.it.rdbms.db.fixtures.JobMetricsBatchFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -28,6 +30,7 @@ import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
+import io.camunda.search.query.JobErrorStatisticsQuery;
 import io.camunda.search.query.JobTimeSeriesStatisticsQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
 import io.camunda.search.query.JobWorkerStatisticsQuery;
@@ -1631,5 +1634,296 @@ public class JobMetricsBatchIT {
 
     // then
     assertThat(actual.items()).isEmpty();
+  }
+
+  // -----------------------------------------------------------------------
+  // getJobErrorStatistics
+  // -----------------------------------------------------------------------
+
+  @TestTemplate
+  public void shouldReturnErrorStatisticsGroupedByErrorCodeAndMessage() {
+    // given — two jobs with the same error, one job with a different error
+    final var uniqueTenant = "error-tenant-" + CommonFixtures.generateRandomString(8);
+    final var now = NOW;
+    final var jobType = "error-job-type-" + CommonFixtures.generateRandomString(6);
+
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .errorCode("IO_ERROR")
+                .errorMessage("Disk full")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(30)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .errorCode("IO_ERROR")
+                .errorMessage("Disk full")
+                .worker("worker-2")
+                .creationTime(now.minusMinutes(20)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .errorCode("TIMEOUT")
+                .errorMessage("Connection timed out")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(10)));
+
+    // when
+    final var result =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f -> f.from(now.minusHours(1)).to(now.plusMinutes(1)).jobType(jobType))),
+            ResourceAccessChecks.of(
+                AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(uniqueTenant))));
+
+    // then
+    assertThat(result.items()).hasSize(2);
+
+    final var ioError =
+        result.items().stream()
+            .filter(e -> "IO_ERROR".equals(e.errorCode()))
+            .findFirst()
+            .orElseThrow();
+    assertErrorStats(ioError, "IO_ERROR", "Disk full", 2);
+
+    final var timeout =
+        result.items().stream()
+            .filter(e -> "TIMEOUT".equals(e.errorCode()))
+            .findFirst()
+            .orElseThrow();
+    assertErrorStats(timeout, "TIMEOUT", "Connection timed out", 1);
+  }
+
+  @TestTemplate
+  public void shouldFilterErrorStatisticsByErrorCodePrefix() {
+    // given
+    final var uniqueTenant = "error-tenant-" + CommonFixtures.generateRandomString(8);
+    final var now = NOW;
+    final var jobType = "filter-error-job-" + CommonFixtures.generateRandomString(6);
+
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .errorCode("IO_ERROR")
+                .errorMessage("Disk full")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(30)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .errorCode("UNHANDLED_EXCEPTION")
+                .errorMessage("NPE")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(20)));
+
+    // when — filter to IO_ERROR only
+    final var result =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(now.minusHours(1))
+                                .to(now.plusMinutes(1))
+                                .jobType(jobType)
+                                .errorCodeOperations(Operation.eq("IO_ERROR")))),
+            ResourceAccessChecks.of(
+                AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(uniqueTenant))));
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertErrorStats(result.items().getFirst(), "IO_ERROR", "Disk full", 1);
+  }
+
+  @TestTemplate
+  public void shouldReturnEmptyErrorStatisticsWhenTenantNotAuthorized() {
+    // given
+    final var now = NOW;
+    final var jobType = "tenant-error-job-" + CommonFixtures.generateRandomString(6);
+
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(TENANT1)
+                .errorCode("IO_ERROR")
+                .errorMessage("msg")
+                .worker("w1")
+                .creationTime(now.minusMinutes(10)));
+
+    // when — authorized for TENANT2 only
+    final var result =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f -> f.from(now.minusHours(1)).to(now.plusMinutes(1)).jobType(jobType))),
+            ResourceAccessChecks.of(
+                AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(TENANT2))));
+
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldOnlyCountJobsFromAuthorizedTenants() {
+    // given — one job on TENANT1 (authorized), one on TENANT2 (not authorized), same error
+    final var now = NOW;
+    final var jobType = "multi-tenant-error-job-" + CommonFixtures.generateRandomString(6);
+
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(TENANT1)
+                .errorCode("IO_ERROR")
+                .errorMessage("Disk full")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(20)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(TENANT2)
+                .errorCode("IO_ERROR")
+                .errorMessage("Disk full")
+                .worker("worker-2")
+                .creationTime(now.minusMinutes(10)));
+
+    // when — authorized for TENANT1 only
+    final var result =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f -> f.from(now.minusHours(1)).to(now.plusMinutes(1)).jobType(jobType))),
+            ResourceAccessChecks.of(
+                AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(TENANT1))));
+
+    // then — only the TENANT1 job is visible: 1 bucket, 1 worker
+    assertThat(result.items()).hasSize(1);
+    assertErrorStats(result.items().getFirst(), "IO_ERROR", "Disk full", 1);
+  }
+
+  @TestTemplate
+  public void shouldExcludeJobsWithoutErrorCode() {
+    // given — one job with an error code, one job without
+    final var now = NOW;
+    final var uniqueTenant = "no-error-tenant-" + CommonFixtures.generateRandomString(8);
+    final var jobType = "no-error-job-" + CommonFixtures.generateRandomString(6);
+
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .errorCode("IO_ERROR")
+                .errorMessage("Disk full")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(20)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .errorCode(null)
+                .errorMessage(null)
+                .worker("worker-2")
+                .creationTime(now.minusMinutes(10)));
+
+    // when
+    final var result =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f -> f.from(now.minusHours(1)).to(now.plusMinutes(1)).jobType(jobType))),
+            ResourceAccessChecks.of(
+                AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(uniqueTenant))));
+
+    // then — only the job with an error code is returned
+    assertThat(result.items()).hasSize(1);
+    assertErrorStats(result.items().getFirst(), "IO_ERROR", "Disk full", 1);
+  }
+
+  @TestTemplate
+  public void shouldReturnSecondPageOfErrorStatisticsUsingCursor() {
+    // given — 3 jobs each with a distinct errorCode so each forms its own bucket
+    // errorCodes are chosen so alphabetical order is: ERR_A < ERR_B < ERR_C
+    final var now = NOW;
+    final var uniqueTenant = "paging-error-tenant-" + CommonFixtures.generateRandomString(8);
+    final var jobType = "paging-error-job-" + CommonFixtures.generateRandomString(6);
+
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .errorCode("ERR_A")
+                .errorMessage("msg-a")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(30)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .errorCode("ERR_B")
+                .errorMessage("msg-b")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(20)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .errorCode("ERR_C")
+                .errorMessage("msg-c")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(10)));
+
+    final var accessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(uniqueTenant)));
+
+    // fetch first page (size=2) — should return ERR_A and ERR_B
+    final var firstPage =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(f -> f.from(now.minusHours(1)).to(now.plusMinutes(1)).jobType(jobType))
+                        .page(p -> p.size(2))),
+            accessChecks);
+
+    assertThat(firstPage.items()).hasSize(2);
+    assertThat(firstPage.items().get(0).errorCode()).isEqualTo("ERR_A");
+    assertThat(firstPage.items().get(1).errorCode()).isEqualTo("ERR_B");
+    assertThat(firstPage.endCursor()).isNotNull();
+
+    // when — fetch second page using the end cursor
+    final var secondPage =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(f -> f.from(now.minusHours(1)).to(now.plusMinutes(1)).jobType(jobType))
+                        .page(p -> p.size(2).after(firstPage.endCursor()))),
+            accessChecks);
+
+    // then — only ERR_C is returned on the second page
+    assertThat(secondPage.items()).hasSize(1);
+    assertErrorStats(secondPage.items().getFirst(), "ERR_C", "msg-c", 1);
   }
 }
