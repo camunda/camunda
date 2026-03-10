@@ -1182,8 +1182,8 @@ jobs:
     name: Send Slack notification on success
     runs-on: ubuntu-latest
     needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker, snyk, fossa-release]
-    # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
-    # else => send slack notification as an actual release succeeded
+    # Report release result to C8 always (including dry-runs)
+    # Slack notifications are skipped for dry-runs to reduce noise
     if: ${{ always() && (
       needs.release.result == 'success' &&
       needs.github.result == 'success' &&
@@ -1194,7 +1194,7 @@ jobs:
       needs.camunda-docker.result == 'success' &&
       (needs.snyk.result == 'success' || needs.snyk.result == 'skipped') &&
       (needs.fossa-release.result == 'success' || needs.fossa-release.result == 'skipped')
-      ) && !inputs.dryRun && !inputs.releaseProcessDryRun }}
+      ) }}
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
@@ -1209,9 +1209,22 @@ jobs:
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
-
+            secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig
+      - name: Report release success to C8
+        continue-on-error: true
+        uses: camunda-community-hub/camunda-platform-8-github-action@8.3.0
+        with:
+          clientConfig: ${{ steps.secrets.outputs.clientConfig }}
+          operation: publishMessage
+          messageName: Release result in Camunda
+          correlationKey: ${{ inputs.releaseVersion }}
+          variables: |
+            {
+              "is_camunda_release_successful": "true",
+              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }      
       - name: Send success Slack notification
-        if: ${{ needs.github.outputs.releaseBodyUpdateOutcome != 'failure' }}
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome != 'failure' }}
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
@@ -1231,7 +1244,7 @@ jobs:
             }
 
       - name: Send success Slack notification with manual follow-up
-        if: ${{ needs.github.outputs.releaseBodyUpdateOutcome == 'failure' }}
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome == 'failure' }}
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
@@ -1261,8 +1274,8 @@ jobs:
     name: Send Slack notification on failure
     runs-on: ubuntu-latest
     needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker, snyk, fossa-release]
-    # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
-    # else => send slack notification as an actual release failed
+    # Report release result to C8 always (including dry-runs)
+    # Slack notifications are skipped for dry-runs to reduce noise
     if: ${{ always() && (
         needs.release.result == 'failure' ||
         needs.github.result == 'failure' ||
@@ -1273,7 +1286,7 @@ jobs:
         needs.camunda-docker.result == 'failure' ||
         needs.snyk.result == 'failure' ||
         needs.fossa-release.result == 'failure'
-        ) && !inputs.dryRun && !inputs.releaseProcessDryRun }}
+        ) }}
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
@@ -1288,8 +1301,23 @@ jobs:
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+            secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig
 
+      - name: Report release failure to C8
+        continue-on-error: true
+        uses: camunda-community-hub/camunda-platform-8-github-action@8.3.0
+        with:
+          clientConfig: ${{ steps.secrets.outputs.clientConfig }}
+          operation: publishMessage
+          messageName: Release result in Camunda
+          correlationKey: ${{ inputs.releaseVersion }}
+          variables: |
+            {
+              "is_camunda_release_successful": "false",
+              "camunda_workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }            
       - name: Send failure Slack notification
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
