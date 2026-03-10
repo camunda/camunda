@@ -55,7 +55,7 @@ jobs:
     with:
       releaseBranch: tmp-dryrun-8.9-${{ github.run_id }}
       # Uses fake tag for dry run testing without affecting real releases
-      releaseVersion: 0.0.0-dryrun-8.9
+      releaseVersion: 0.0.0-dryrun-89
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
@@ -69,7 +69,7 @@ jobs:
     with:
       releaseBranch: tmp-dryrun-8.8-${{ github.run_id }}
       # Uses fake tag for dry run testing without affecting real releases
-      releaseVersion: 0.0.0-dryrun-8.8
+      releaseVersion: 0.0.0-dryrun-88
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
@@ -83,7 +83,7 @@ jobs:
     with:
       releaseBranch: tmp-dryrun-8.7-${{ github.run_id }}
       # Uses fake tag for dry run testing without affecting real releases
-      releaseVersion: 0.0.0-dryrun-8.7
+      releaseVersion: 0.0.0-dryrun-87
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
@@ -97,7 +97,7 @@ jobs:
     with:
       releaseBranch: tmp-dryrun-8.6-${{ github.run_id }}
       # Uses fake tag for dry run testing without affecting real releases
-      releaseVersion: 0.0.0-dryrun-8.6
+      releaseVersion: 0.0.0-dryrun-86
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
