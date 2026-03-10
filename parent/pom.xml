@@ -185,7 +185,6 @@
 
     <version.elasticsearch-test-container>2.0.3</version.elasticsearch-test-container>
     <version.postgres-test-container>2.0.3</version.postgres-test-container>
-    <version.elasticsearch7>7.17.29</version.elasticsearch7>
     <version.lz4>1.10.4</version.lz4>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>
@@ -2098,30 +2097,6 @@
         <version>${version.jna-platform}</version>
       </dependency>
 
-      <dependency>
-        <groupId>org.elasticsearch.client</groupId>
-        <artifactId>elasticsearch-rest-high-level-client</artifactId>
-        <version>${version.elasticsearch7}</version>
-      </dependency>
-
-      <!-- START have to define this to override wrong version coming from spring-boot-dependencies BOM -->
-      <dependency>
-        <groupId>org.elasticsearch</groupId>
-        <artifactId>elasticsearch-x-content</artifactId>
-        <version>${version.elasticsearch7}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.elasticsearch</groupId>
-        <artifactId>elasticsearch</artifactId>
-        <version>${version.elasticsearch7}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.lz4</groupId>
-            <artifactId>lz4-java</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
       <!-- Override the transitive dependency from org.elasticsearch:elasticsearch,
       replacing the discontinued org.lz4:lz4-java with the maintained fork at.yawk.lz4:lz4-java.
       This override will remain necessary unless Elasticsearch itself adopts the maintained fork. -->
@@ -2129,17 +2104,6 @@
         <groupId>at.yawk.lz4</groupId>
         <artifactId>lz4-java</artifactId>
         <version>${version.lz4}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.elasticsearch</groupId>
-        <artifactId>elasticsearch-core</artifactId>
-        <version>${version.elasticsearch7}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.elasticsearch.plugin</groupId>
-        <artifactId>parent-join-client</artifactId>
-        <version>${version.elasticsearch7}</version>
       </dependency>
 
       <dependency>
