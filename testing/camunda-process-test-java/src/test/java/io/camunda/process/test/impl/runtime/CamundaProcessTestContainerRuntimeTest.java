@@ -21,6 +21,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.process.test.api.runtime.CamundaProcessTestContainerContext;
+import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
@@ -31,8 +33,11 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.testcontainers.containers.GenericContainer;
 
 @ExtendWith(MockitoExtension.class)
 public class CamundaProcessTestContainerRuntimeTest {
@@ -58,6 +63,14 @@ public class CamundaProcessTestContainerRuntimeTest {
 
   @Mock(answer = Answers.RETURNS_SELF)
   private ConnectorsContainer connectorsContainer;
+
+  @Mock private CamundaProcessTestContainerProvider containerProvider;
+
+  @SuppressWarnings("rawtypes")
+  @Mock(answer = Answers.RETURNS_SELF)
+  private GenericContainer customContainer;
+
+  @Captor private ArgumentCaptor<CamundaProcessTestContainerContext> containerProviderContext;
 
   @BeforeEach
   void configureMocks() {
@@ -245,5 +258,52 @@ public class CamundaProcessTestContainerRuntimeTest {
 
     // then
     verify(camundaContainer).withMultiTenancy();
+  }
+
+  @Test
+  void shouldAddCustomContainers() throws Exception {
+    // given
+    //noinspection unchecked
+    when(containerProvider.createContainer(any())).thenReturn(customContainer);
+    when(customContainer.getDockerImageName()).thenReturn("custom-container");
+
+    final CamundaProcessTestContainerRuntime runtime =
+        (CamundaProcessTestContainerRuntime)
+            CamundaProcessTestContainerRuntime.newBuilder()
+                .withContainerFactory(containerFactory)
+                .withContainerProvider(containerProvider)
+                .build();
+
+    // when
+    runtime.start();
+
+    // then
+    verify(customContainer).withNetwork(any());
+    verify(customContainer).start();
+
+    // and when
+    runtime.close();
+
+    // then
+    verify(customContainer).stop();
+  }
+
+  @Test
+  void shouldProvideContainerContext() throws Exception {
+    // given
+    //noinspection unchecked
+    when(containerProvider.createContainer(containerProviderContext.capture()))
+        .thenReturn(customContainer);
+
+    // when
+    CamundaProcessTestContainerRuntime.newBuilder()
+        .withContainerFactory(containerFactory)
+        .withContainerProvider(containerProvider)
+        .build();
+
+    // then
+    final CamundaProcessTestContainerContext containerContext = containerProviderContext.getValue();
+    assertThat(containerContext.getNetwork()).isNotNull();
+    assertThat(containerContext.getContainers()).contains(camundaContainer);
   }
 }
