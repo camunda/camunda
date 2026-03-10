@@ -359,4 +359,98 @@ class RocksDbSharedCacheTest {
             "Expected the memoryFraction for RocksDB FRACTION memory allocation strategy to be between 0 and 1, but was %s.",
             0.0);
   }
+
+  @Test
+  void shouldThrowIfRequestedMemoryExceedsTotalSystemMemory() {
+    // given - configure 512MB for RocksDB with only 256MB total system memory
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryLimit(DataSize.ofBytes(512L * 1024 * 1024)); // 512MB
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
+
+    // when/then
+    try (final var ignored = mockMemoryEnvironment(256L * 1024 * 1024)) { // 256MB total
+      final var throwable =
+          catchThrowable(
+              () ->
+                  RocksDbSharedCache.validateRocksDbMemory(
+                      brokerCfg.getExperimental().getRocksdb(), DEFAULT_PARTITION_COUNT));
+
+      assertThat(throwable)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Requested RocksDB memory")
+          .hasMessageContaining("exceeds total system memory")
+          .hasMessageContaining("512 MB")
+          .hasMessageContaining("256 MB")
+          .hasMessageContaining("PARTITION")
+          .hasMessageContaining(
+              "Consider reducing the value of CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYLIMIT");
+    }
+  }
+
+  @Test
+  void shouldThrowIfRequestedMemoryExceedsTotalSystemMemoryWithBrokerStrategy() {
+    // given - configure 512MB for RocksDB with only 256MB total system memory using BROKER strategy
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryLimit(DataSize.ofBytes(512L * 1024 * 1024)); // 512MB
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.BROKER);
+
+    // when/then
+    try (final var ignored = mockMemoryEnvironment(256L * 1024 * 1024)) { // 256MB total
+      final var throwable =
+          catchThrowable(
+              () ->
+                  RocksDbSharedCache.validateRocksDbMemory(
+                      brokerCfg.getExperimental().getRocksdb(), DEFAULT_PARTITION_COUNT));
+
+      assertThat(throwable)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Requested RocksDB memory")
+          .hasMessageContaining("exceeds total system memory")
+          .hasMessageContaining("BROKER")
+          .hasMessageContaining(
+              "Consider reducing the value of CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYLIMIT");
+    }
+  }
+
+  @Test
+  void shouldThrowIfRequestedMemoryExceedsTotalSystemMemoryWithMultiplePartitions() {
+    // given - configure 128MB per partition with 4 partitions = 512MB, but only 256MB total
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryLimit(DataSize.ofBytes(128L * 1024 * 1024)); // 128MB per partition
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
+    final int partitionsCount = 4;
+
+    // when/then
+    try (final var ignored = mockMemoryEnvironment(256L * 1024 * 1024)) { // 256MB total
+      final var throwable =
+          catchThrowable(
+              () ->
+                  RocksDbSharedCache.validateRocksDbMemory(
+                      brokerCfg.getExperimental().getRocksdb(), partitionsCount));
+
+      assertThat(throwable)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Requested RocksDB memory")
+          .hasMessageContaining("exceeds total system memory")
+          .hasMessageContaining("512 MB") // 128MB * 4 partitions
+          .hasMessageContaining("256 MB")
+          .hasMessageContaining("Partitions count: 4")
+          .hasMessageContaining("or the number of partitions");
+    }
+  }
 }
