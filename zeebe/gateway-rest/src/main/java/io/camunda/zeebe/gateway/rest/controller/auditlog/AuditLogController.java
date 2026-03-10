@@ -54,9 +54,8 @@ public class AuditLogController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toAuditLog(
-                  auditLogServices
-                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                      .getAuditLog(auditLogKey)));
+                  auditLogServices.getAuditLog(
+                      auditLogKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -65,9 +64,7 @@ public class AuditLogController {
   private ResponseEntity<AuditLogSearchQueryResult> search(final AuditLogQuery query) {
     try {
       final var result =
-          auditLogServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
+          auditLogServices.search(query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(SearchQueryResponseMapper.toAuditLogSearchQueryResponse(result));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);

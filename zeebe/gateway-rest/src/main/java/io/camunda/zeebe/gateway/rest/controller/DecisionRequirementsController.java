@@ -51,10 +51,8 @@ public class DecisionRequirementsController {
 
   private ResponseEntity<Object> search(final DecisionRequirementsQuery query) {
     try {
-      final var result =
-          decisionRequirementsServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
+      final var authentication = authenticationProvider.getCamundaAuthentication();
+      final var result = decisionRequirementsServices.search(query, authentication);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionRequirementsSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -66,12 +64,11 @@ public class DecisionRequirementsController {
   public ResponseEntity<DecisionRequirementsResult> getByKey(
       @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey) {
     try {
+      final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toDecisionRequirements(
-                  decisionRequirementsServices
-                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                      .getByKey(decisionRequirementsKey)));
+                  decisionRequirementsServices.getByKey(decisionRequirementsKey, authentication)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -83,12 +80,12 @@ public class DecisionRequirementsController {
   public ResponseEntity<String> getDecisionRequirementsXml(
       @PathVariable("decisionRequirementsKey") final Long decisionRequirementsKey) {
     try {
+      final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
           .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
           .body(
-              decisionRequirementsServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .getDecisionRequirementsXml(decisionRequirementsKey));
+              decisionRequirementsServices.getDecisionRequirementsXml(
+                  decisionRequirementsKey, authentication));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

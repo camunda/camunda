@@ -48,10 +48,8 @@ public class BatchOperationItemsController {
   private ResponseEntity<BatchOperationItemSearchQueryResult> search(
       final BatchOperationItemQuery query) {
     try {
-      final var result =
-          batchOperationServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .searchItems(query);
+      final var authentication = authenticationProvider.getCamundaAuthentication();
+      final var result = batchOperationServices.searchItems(query, authentication);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toBatchOperationItemSearchQueryResult(result));
     } catch (final Exception e) {
