@@ -105,8 +105,6 @@ public class StandaloneCamunda {
       defaultProperties.put(SPRING_PROFILES_ACTIVE_PROPERTY, DEFAULT_CAMUNDA_PROFILES);
     }
     defaultProperties.put("management.health.defaults.enabled", false);
-    defaultProperties.put("spring.web.resources.add-mappings", false);
-    defaultProperties.put("spring.thymeleaf.check-template-location", false);
     defaultProperties.put(
         "camunda.security.multiTenancy.checksEnabled",
         "${zeebe.broker.gateway.multiTenancy.enabled:false}");
