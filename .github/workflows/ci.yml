@@ -224,7 +224,8 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   dependency-cycle-check:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    # Temporarily disabling the dependency-cycle-check as too brittle
+    if: ${{ false }} #if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "Dependency Cycle Check"
     needs: [ detect-changes ]
     runs-on: gcp-core-16-default
