@@ -18,6 +18,8 @@ import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/c
 import {mockResolveProcessInstanceIncidents} from 'modules/mocks/api/v2/processInstances/resolveProcessInstanceIncidents';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockDeleteProcessInstance} from 'modules/mocks/api/v2/processInstances/deleteProcessInstance';
+import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
+import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -72,10 +74,18 @@ describe('ProcessInstanceOperations', () => {
       },
     );
 
-    expect(screen.getByTitle(/retry instance/i)).toBeInTheDocument();
-    expect(screen.getByTitle(/cancel instance/i)).toBeInTheDocument();
-    expect(screen.getByTitle(/modify instance/i)).toBeInTheDocument();
-    expect(screen.getByTitle(/migrate instance/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /Retry Instance/}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /Cancel Instance/}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /Modify Instance/}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /Migrate Instance/}),
+    ).toBeInTheDocument();
   });
 
   it('should render operations for active instance without incident', () => {
@@ -86,10 +96,18 @@ describe('ProcessInstanceOperations', () => {
       },
     );
 
-    expect(screen.queryByTitle(/retry instance/i)).not.toBeInTheDocument();
-    expect(screen.getByTitle(/cancel instance/i)).toBeInTheDocument();
-    expect(screen.getByTitle(/modify instance/i)).toBeInTheDocument();
-    expect(screen.getByTitle(/migrate instance/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /Retry Instance/}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /Cancel Instance/}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /Modify Instance/}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /Migrate Instance/}),
+    ).toBeInTheDocument();
   });
 
   it('should render delete operation for terminated instance', () => {
@@ -101,10 +119,18 @@ describe('ProcessInstanceOperations', () => {
       wrapper: getWrapper(),
     });
 
-    expect(screen.getByTitle(/delete instance/i)).toBeInTheDocument();
-    expect(screen.queryByTitle(/cancel instance/i)).not.toBeInTheDocument();
-    expect(screen.queryByTitle(/modify instance/i)).not.toBeInTheDocument();
-    expect(screen.queryByTitle(/migrate instance/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /Delete Instance/}),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /Cancel Instance/}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /Modify Instance/}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /Migrate Instance/}),
+    ).not.toBeInTheDocument();
   });
 
   it('should hide operations when modification mode is enabled', () => {
@@ -125,13 +151,21 @@ describe('ProcessInstanceOperations', () => {
       },
     );
 
-    expect(screen.queryByTitle(/retry instance/i)).not.toBeInTheDocument();
-    expect(screen.queryByTitle(/cancel instance/i)).not.toBeInTheDocument();
-    expect(screen.queryByTitle(/modify instance/i)).not.toBeInTheDocument();
-    expect(screen.queryByTitle(/migrate instance/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /Retry Instance/}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /Cancel Instance/}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /Modify Instance/}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /Migrate Instance/}),
+    ).not.toBeInTheDocument();
   });
 
-  it('should show notification on cancel error', async () => {
+  it('should show error notification on cancel error', async () => {
     mockCancelProcessInstance().withServerError();
 
     const {user} = render(
@@ -139,8 +173,8 @@ describe('ProcessInstanceOperations', () => {
       {wrapper: getWrapper()},
     );
 
-    await user.click(screen.getByTitle(/cancel instance/i));
-    await user.click(screen.getByRole('button', {name: /apply/i}));
+    await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
 
     await waitFor(() =>
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
@@ -152,7 +186,31 @@ describe('ProcessInstanceOperations', () => {
     );
   });
 
-  it('should show notification on resolve incident error', async () => {
+  it(
+    'should show success notification on cancel success',
+    {skip: !IS_NEW_PROCESS_INSTANCE_PAGE},
+    async () => {
+      mockCancelProcessInstance().withSuccess({});
+
+      const {user} = render(
+        <ProcessInstanceOperations processInstance={mockProcessInstance} />,
+        {wrapper: getWrapper()},
+      );
+
+      await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
+      await user.click(screen.getByRole('button', {name: 'Apply'}));
+
+      await waitFor(() =>
+        expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+          kind: 'success',
+          title: 'Instance is scheduled for cancellation',
+          isDismissable: true,
+        }),
+      );
+    },
+  );
+
+  it('should show error notification on resolve incident error', async () => {
     mockResolveProcessInstanceIncidents().withServerError();
     const instanceWithIncident = createProcessInstance({
       state: 'ACTIVE',
@@ -168,7 +226,7 @@ describe('ProcessInstanceOperations', () => {
       {wrapper: getWrapper()},
     );
 
-    await user.click(screen.getByTitle(/retry instance/i));
+    await user.click(screen.getByRole('button', {name: /Retry Instance/}));
 
     await waitFor(() =>
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
@@ -179,7 +237,38 @@ describe('ProcessInstanceOperations', () => {
     );
   });
 
-  it('should show notification on resolve incident permission error', async () => {
+  it(
+    'should show success notification on resolve incident success',
+    {skip: !IS_NEW_PROCESS_INSTANCE_PAGE},
+    async () => {
+      mockResolveProcessInstanceIncidents().withSuccess({});
+      const instanceWithIncident = createProcessInstance({
+        state: 'ACTIVE',
+        hasIncident: true,
+        parentProcessInstanceKey: null,
+        parentElementInstanceKey: null,
+        rootProcessInstanceKey: null,
+        tags: [],
+      });
+
+      const {user} = render(
+        <ProcessInstanceOperations processInstance={instanceWithIncident} />,
+        {wrapper: getWrapper()},
+      );
+
+      await user.click(screen.getByRole('button', {name: /Retry Instance/}));
+
+      await waitFor(() =>
+        expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+          kind: 'success',
+          title: 'Incidents are scheduled for retry',
+          isDismissable: true,
+        }),
+      );
+    },
+  );
+
+  it('should show error notification on resolve incident permission error', async () => {
     mockResolveProcessInstanceIncidents().withServerError(403);
     const instanceWithIncident = createProcessInstance({
       state: 'ACTIVE',
@@ -195,7 +284,7 @@ describe('ProcessInstanceOperations', () => {
       {wrapper: getWrapper()},
     );
 
-    await user.click(screen.getByTitle(/retry instance/i));
+    await user.click(screen.getByRole('button', {name: /Retry Instance/}));
 
     await waitFor(() =>
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
@@ -207,7 +296,7 @@ describe('ProcessInstanceOperations', () => {
     );
   });
 
-  it('should show notification on delete operation error', async () => {
+  it('should show error notification on delete operation error', async () => {
     mockDeleteProcessInstance().withServerError();
     const terminatedInstance = createProcessInstance({
       state: 'TERMINATED',
@@ -218,10 +307,8 @@ describe('ProcessInstanceOperations', () => {
       {wrapper: getWrapper()},
     );
 
-    await user.click(screen.getByTitle(/delete instance/i));
-    const modal = screen.getByTestId('confirm-deletion-modal');
-    const deleteButton = modal.querySelector('button[class*="btn--danger"]')!;
-    await user.click(deleteButton);
+    await user.click(screen.getByRole('button', {name: /Delete Instance/}));
+    await user.click(screen.getByRole('button', {name: 'danger Delete'}));
 
     await waitFor(() =>
       expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
@@ -232,4 +319,65 @@ describe('ProcessInstanceOperations', () => {
       }),
     );
   });
+
+  it('should show success notification on delete operation success', async () => {
+    mockDeleteProcessInstance().withSuccess({});
+    const terminatedInstance = createProcessInstance({
+      state: 'TERMINATED',
+    });
+
+    const {user} = render(
+      <ProcessInstanceOperations processInstance={terminatedInstance} />,
+      {wrapper: getWrapper()},
+    );
+
+    await user.click(screen.getByRole('button', {name: /Delete Instance/}));
+    await user.click(screen.getByRole('button', {name: 'danger Delete'}));
+
+    await waitFor(() =>
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'success',
+        title: 'Instance is scheduled for deletion',
+        isDismissable: true,
+      }),
+    );
+  });
+
+  // TODO: This test might be obsolete depending on the UX alignment. Do we want
+  // to continue reporting any running batch operation in the header? Not intended
+  // in the original prototype. https://github.com/camunda/camunda/issues/46750
+  it.todo(
+    'should show spinner when process instance has active operation items',
+    async () => {
+      mockQueryBatchOperationItems().withSuccess({
+        items: [
+          {
+            batchOperationKey: 'batch-123',
+            processInstanceKey: '123456789',
+            state: 'ACTIVE',
+            operationType: 'CANCEL_PROCESS_INSTANCE',
+            itemKey: '123456789',
+            rootProcessInstanceKey: null,
+            processedDate: null,
+            errorMessage: null,
+          },
+        ],
+        page: {
+          totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
+      });
+
+      render(
+        <ProcessInstanceOperations processInstance={mockProcessInstance} />,
+        {wrapper: getWrapper()},
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+      });
+    },
+  );
 });
