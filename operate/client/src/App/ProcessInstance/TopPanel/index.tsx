@@ -62,6 +62,8 @@ import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/usePro
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {isInstanceRunning} from 'modules/utils/instance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useDrillDownNavigation} from 'modules/hooks/useDrilldownNavigation';
+import {isDrillDownCandidate} from 'modules/utils/drilldown';
 import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram';
 import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
 
@@ -249,6 +251,29 @@ const TopPanel: React.FC = observer(() => {
 
   const {isModificationModeEnabled} = modificationsStore;
 
+  const {handleDrillDown} = useDrillDownNavigation(processInstanceId);
+
+  const drilldownElements = useMemo(() => {
+    if (
+      !IS_NEW_PROCESS_INSTANCE_PAGE ||
+      isModificationModeEnabled ||
+      !businessObjects ||
+      !totalRunningInstancesByElement
+    ) {
+      return [];
+    }
+
+    return Object.entries(businessObjects)
+      .filter(([elementId, bo]) =>
+        isDrillDownCandidate(elementId, bo, totalRunningInstancesByElement),
+      )
+      .map(([elementId]) => elementId);
+  }, [
+    businessObjects,
+    totalRunningInstancesByElement,
+    isModificationModeEnabled,
+  ]);
+
   useEffect(() => {
     if (!isModificationModeEnabled) {
       if (selectedElementId) {
@@ -393,6 +418,10 @@ const TopPanel: React.FC = observer(() => {
                   !isModificationModeEnabled ||
                   hasSelectedElementMultipleRunningInstances
                 }
+                drilldownElements={drilldownElements}
+                onElementDoubleClick={() => {
+                  handleDrillDown();
+                }}
               >
                 {stateOverlays.map((overlay) => {
                   const payload = overlay.payload as {
