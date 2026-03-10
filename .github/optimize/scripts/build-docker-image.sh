@@ -10,7 +10,9 @@ fi
 
 if [ "${IS_MAIN}" = "true" ]; then
     tags+=("${DOCKER_IMAGE_DOCKER_HUB}:8-SNAPSHOT")
-elif [ -n "${DOCKER_HUB_SNAPSHOT_TAG}" ]; then
+fi
+
+if [ -n "${DOCKER_HUB_SNAPSHOT_TAG}" ]; then
     tags+=("${DOCKER_IMAGE_DOCKER_HUB}:${DOCKER_HUB_SNAPSHOT_TAG}")
 fi
 
