@@ -9,7 +9,7 @@
 import {useMemo} from 'react';
 import {Callout, StructuredListSkeleton} from '@carbon/react';
 import {Link} from 'modules/components/Link';
-import {Paths} from 'modules/Routes';
+import {Paths, Locations} from 'modules/Routes';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
@@ -77,16 +77,17 @@ const DetailsTab: React.FC = () => {
     },
   );
 
-  const calledDecisionInstance = useMemo(
-    () =>
-      decisionInstanceSearchResult?.items?.find(
-        (instance) =>
-          instance.rootDecisionDefinitionKey === instance.decisionDefinitionKey,
-      ),
-    [decisionInstanceSearchResult],
+  const calledDecisionInstance = decisionInstanceSearchResult?.items?.find(
+    (instance) =>
+      instance.rootDecisionDefinitionKey === instance.decisionDefinitionKey,
   );
 
-  const calledProcessInstance = calledProcessInstancesSearchResult?.items?.[0];
+  const calledProcessInstancesCount =
+    calledProcessInstancesSearchResult?.page.totalItems ?? 0;
+  const calledProcessInstance =
+    calledProcessInstancesCount === 1
+      ? calledProcessInstancesSearchResult?.items?.[0]
+      : undefined;
   const job = jobSearchResult?.[0];
 
   const rows = useMemo(() => {
@@ -136,14 +137,59 @@ const DetailsTab: React.FC = () => {
 
     if (
       businessObject?.$type === 'bpmn:CallActivity' &&
-      resolvedElementType !== 'MULTI_INSTANCE_BODY'
+      calledProcessInstancesCount === 0
     ) {
       baseRows.push({
         key: 'called-process-instance',
         columns: [
           {cellContent: 'Called Process Instance'},
           {
-            cellContent: calledProcessInstance ? (
+            cellContent: 'None',
+          },
+        ],
+      });
+    }
+
+    if (
+      businessObject?.$type === 'bpmn:CallActivity' &&
+      calledProcessInstancesCount > 1
+    ) {
+      baseRows.push({
+        key: 'called-process-instance',
+        columns: [
+          {cellContent: 'Called Process Instance'},
+          {
+            cellContent: (
+              <Link
+                to={Locations.processes({
+                  parentInstanceId: processInstance!.processInstanceKey,
+                  active: true,
+                  incidents: true,
+                  completed: true,
+                  canceled: true,
+                })}
+                title={`View all called process instances`}
+                aria-label={`View all called process instances`}
+              >
+                {`View all (${calledProcessInstancesCount})`}
+              </Link>
+            ),
+          },
+        ],
+      });
+    }
+
+    if (
+      businessObject?.$type === 'bpmn:CallActivity' &&
+      calledProcessInstance !== undefined &&
+      calledProcessInstancesCount === 1
+    ) {
+      baseRows.push({
+        key: 'called-process-instance',
+        columns: [
+          {cellContent: 'Called Process Instance'},
+          {
+            cellContent: (
               <Link
                 to={Paths.processInstance(
                   calledProcessInstance.processInstanceKey,
@@ -153,8 +199,6 @@ const DetailsTab: React.FC = () => {
               >
                 {`${calledProcessInstance.processDefinitionName} - ${calledProcessInstance.processInstanceKey}`}
               </Link>
-            ) : (
-              'None'
             ),
           },
         ],
@@ -193,6 +237,8 @@ const DetailsTab: React.FC = () => {
     businessObject,
     resolvedElementType,
     calledProcessInstance,
+    calledProcessInstancesCount,
+    processInstance,
     calledDecisionInstance,
   ]);
 
