@@ -7,11 +7,11 @@ set -exo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize]
+Usage: newBenchmark.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize]
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
-  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, none. Default: elasticsearch.
+  secondaryStorage   Optional. One of: elasticsearch, opensearch, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: false.
 
@@ -19,8 +19,8 @@ Options:
   -h, --help         Show this help message.
 
 Examples:
-  ./newLoadTest.sh demo
-  ./newLoadTest.sh perf opensearch 3 true
+  ./newBenchmark.sh demo
+  ./newBenchmark.sh perf opensearch 3 true
 EOF
 }
 
@@ -50,9 +50,9 @@ fi
 
 # Validate secondaryStorage value
 secondaryStorage="${2:-elasticsearch}"
-if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "opensearch" && "$secondaryStorage" != "postgresql" && "$secondaryStorage" != "none" ]]; then
+if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "opensearch" && "$secondaryStorage" != "none" ]]; then
   echo "Error: Invalid secondary storage type '$secondaryStorage'"
-  echo "Allowed values are: elasticsearch, opensearch, postgresql, none"
+  echo "Allowed values are: elasticsearch, opensearch, none"
   exit 1
 fi
 

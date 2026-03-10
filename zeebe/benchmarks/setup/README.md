@@ -70,6 +70,9 @@ Update the `camunda-platform-values.yaml` file in your namespace folder and set 
 The changes should look similar to this:
 
 ```yaml
+global:
+  image:
+    tag: SNAPSHOT-2024-01-15-abcd1234
 zeebe:
   image:
     tag: SNAPSHOT-2024-01-15-abcd1234
