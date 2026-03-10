@@ -6,19 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled, {css} from 'styled-components';
-import {Button, InlineLoading} from '@carbon/react';
-
-const StyledButton = styled(Button)<{$isHidden?: boolean}>`
-  ${({$isHidden}) =>
-    $isHidden &&
-    css`
-      display: none;
-    `}
-`;
+import styled from 'styled-components';
+import {InlineLoading} from '@carbon/react';
 
 const FitContentInlineLoading = styled(InlineLoading)`
   width: fit-content;
 `;
 
-export {StyledButton, FitContentInlineLoading};
+export {FitContentInlineLoading};
