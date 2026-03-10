@@ -35,7 +35,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
 
   private UserEntity getUser(final String username) {
     try {
-      return userServices.withAuthentication(CamundaAuthentication.anonymous()).getUser(username);
+      return userServices.getUser(username, CamundaAuthentication.anonymous());
     } catch (final Exception e) {
       throw new UsernameNotFoundException(username, e);
     }
