@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
@@ -41,7 +42,8 @@ public class AuthorizationCreateProcessor
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
       final CommandDistributionBehavior distributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final SecurityConfiguration securityConfig) {
     this.keyGenerator = keyGenerator;
     this.distributionBehavior = distributionBehavior;
     stateWriter = writers.state();
@@ -50,7 +52,7 @@ public class AuthorizationCreateProcessor
     sideEffectWriter = writers.sideEffect();
     authorizationCheckBehavior = authCheckBehavior;
     permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
-    authorizationEntityChecker = new AuthorizationEntityValidator(processingState);
+    authorizationEntityChecker = new AuthorizationEntityValidator(processingState, securityConfig);
   }
 
   @Override

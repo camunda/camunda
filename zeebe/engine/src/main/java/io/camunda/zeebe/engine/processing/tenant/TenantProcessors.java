@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.tenant;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -24,7 +25,8 @@ public class TenantProcessors {
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final SecurityConfiguration securityConfig) {
     typedRecordProcessors
         .onCommand(
             ValueType.TENANT,
@@ -52,7 +54,8 @@ public class TenantProcessors {
                 authCheckBehavior,
                 keyGenerator,
                 writers,
-                commandDistributionBehavior))
+                commandDistributionBehavior,
+                securityConfig))
         .onCommand(
             ValueType.TENANT,
             TenantIntent.REMOVE_ENTITY,
