@@ -93,7 +93,11 @@ jobs:
       # start the required database service
       - name: Start Database service
         if: ${{ inputs.database-type != 'h2' }}
-        run: docker-compose -f db/docker-compose.yml up -d ${{ env.DATABASE_CONTAINER }}
+        run: |
+          docker compose -f db/docker-compose.yml up -d --wait ${{ env.DATABASE_CONTAINER }} || {
+            docker compose -f db/docker-compose.yml logs
+            exit 1
+          }
       # Build the platform before running the integration tests; skipping frontend
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
