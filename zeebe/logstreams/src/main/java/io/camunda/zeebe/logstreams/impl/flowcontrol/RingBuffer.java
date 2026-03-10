@@ -144,9 +144,9 @@ final class RingBuffer {
    * Used by {@code onProcessed} from the stream processor thread, which processes entries in order.
    *
    * <p>The scan starts from the last processed entry's sequential index and iterates forward in
-   * sequential index order (not slot order). Each entry's {@link InFlightEntry#position} is
-   * verified against the expected index to skip displaced entries (where the slot was overwritten
-   * by a newer {@link #put}).
+   * sequential index order. Each entry's {@link InFlightEntry#position} is verified against the
+   * expected index to skip displaced entries (where the slot was overwritten by a newer {@link
+   * #put}).
    *
    * <p>The scan range is {@code [max(lastProcessedIndex+1, nextIndex-capacity), nextIndex)}, which
    * is at most {@code capacity} iterations and in practice much less when the stream processor
