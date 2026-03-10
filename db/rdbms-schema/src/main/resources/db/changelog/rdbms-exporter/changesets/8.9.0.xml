@@ -1291,4 +1291,11 @@
     <renameColumn tableName="${prefix}GROUP_" oldColumnName="DESCRIPTION_CLOB" newColumnName="DESCRIPTION"/>
   </changeSet>
 
+  <changeSet id="create_audit_log_entity_key_index" author="camunda">
+    <!-- Index for ENTITY_KEY - optimizes history cleanup as the entityKey is a central column there -->
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_ENTITY_KEY">
+      <column name="ENTITY_KEY"/>
+    </createIndex>
+  </changeSet>
+
 </databaseChangeLog>
