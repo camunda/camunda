@@ -7,8 +7,6 @@
  */
 package io.camunda.operate.webapp.zeebe.operation.adapter;
 
-import static io.camunda.service.exception.ServiceException.Status.*;
-
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ConditionalOnOperateCompatibility;
@@ -88,11 +86,9 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
         (authentication) ->
             withOperationReference(
                 operationReference ->
-                    resourceServices
-                        .withAuthentication(authentication)
-                        .deleteResource(
-                            new ResourceDeletionRequest(
-                                resourceKey, operationReference, deleteHistory)),
+                    resourceServices.deleteResource(
+                        new ResourceDeletionRequest(resourceKey, operationReference, deleteHistory),
+                        authentication),
                 operationId));
   }
 
@@ -103,22 +99,19 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
         (authentication) ->
             withOperationReference(
                 operationReference ->
-                    processInstanceServices
-                        .withAuthentication(authentication)
-                        .migrateProcessInstance(
-                            new ProcessInstanceMigrateRequest(
-                                processInstanceKey,
-                                migrationPlan.getTargetProcessDefinitionKey(),
-                                migrationPlan.getMappingInstructions().stream()
-                                    .map(
-                                        instruction ->
-                                            new ProcessInstanceMigrationMappingInstruction()
-                                                .setSourceElementId(
-                                                    instruction.getSourceElementId())
-                                                .setTargetElementId(
-                                                    instruction.getTargetElementId()))
-                                    .toList(),
-                                operationReference)),
+                    processInstanceServices.migrateProcessInstance(
+                        new ProcessInstanceMigrateRequest(
+                            processInstanceKey,
+                            migrationPlan.getTargetProcessDefinitionKey(),
+                            migrationPlan.getMappingInstructions().stream()
+                                .map(
+                                    instruction ->
+                                        new ProcessInstanceMigrationMappingInstruction()
+                                            .setSourceElementId(instruction.getSourceElementId())
+                                            .setTargetElementId(instruction.getTargetElementId()))
+                                .toList(),
+                            operationReference),
+                        authentication),
                 operationId));
   }
 
@@ -131,11 +124,9 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
         (authentication) ->
             withOperationReference(
                 operationReference ->
-                    processInstanceServices
-                        .withAuthentication(authentication)
-                        .modifyProcessInstance(
-                            createModifyRequest(
-                                processInstanceKey, modifications, operationReference)),
+                    processInstanceServices.modifyProcessInstance(
+                        createModifyRequest(processInstanceKey, modifications, operationReference),
+                        authentication),
                 operationId));
   }
 
@@ -145,11 +136,9 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
         (authentication) ->
             withOperationReference(
                 operationReference ->
-                    processInstanceServices
-                        .withAuthentication(authentication)
-                        .cancelProcessInstance(
-                            new ProcessInstanceCancelRequest(
-                                processInstanceKey, operationReference)),
+                    processInstanceServices.cancelProcessInstance(
+                        new ProcessInstanceCancelRequest(processInstanceKey, operationReference),
+                        authentication),
                 operationId));
   }
 
@@ -159,10 +148,11 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
         (authentication) ->
             withOperationReference(
                 operationReference ->
-                    jobServices
-                        .withAuthentication(authentication)
-                        .updateJob(
-                            jobKey, operationReference, new UpdateJobChangeset(retries, null)),
+                    jobServices.updateJob(
+                        jobKey,
+                        operationReference,
+                        new UpdateJobChangeset(retries, null),
+                        authentication),
                 operationId));
   }
 
@@ -172,9 +162,8 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
         (authentication) ->
             withOperationReference(
                 operationReference ->
-                    incidentServices
-                        .withAuthentication(authentication)
-                        .resolveIncident(incidentKey, operationReference),
+                    incidentServices.resolveIncident(
+                        incidentKey, operationReference, authentication),
                 operationId));
   }
 
@@ -189,11 +178,9 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
             (authentication) ->
                 withOperationReference(
                     operationReference ->
-                        elementInstanceServices
-                            .withAuthentication(authentication)
-                            .setVariables(
-                                new SetVariablesRequest(
-                                    scopeKey, variables, local, operationReference)),
+                        elementInstanceServices.setVariables(
+                            new SetVariablesRequest(scopeKey, variables, local, operationReference),
+                            authentication),
                     operationId));
     return variableDocumentRecord.getScopeKey();
   }
