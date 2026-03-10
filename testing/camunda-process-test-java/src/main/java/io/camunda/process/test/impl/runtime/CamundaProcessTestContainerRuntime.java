@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.runtime;
 
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
+import io.camunda.process.test.api.runtime.CamundaProcessTestContainerContext;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
@@ -28,6 +29,8 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -73,6 +76,7 @@ public class CamundaProcessTestContainerRuntime
   private final boolean isMultiTenancyEnabled;
   private final boolean connectorsEnabled;
 
+  private final List<GenericContainer<?>> containers = new ArrayList<>();
   private boolean isStarted = false;
 
   public CamundaProcessTestContainerRuntime(
@@ -84,8 +88,16 @@ public class CamundaProcessTestContainerRuntime
     connectorsEnabled = builder.isConnectorsEnabled();
 
     network = Network.newNetwork();
+
     camundaContainer = createCamundaContainer(network, builder);
+    containers.add(camundaContainer);
+
     connectorsContainer = createConnectorsContainer(network, builder);
+    if (connectorsEnabled) {
+      containers.add(connectorsContainer);
+    }
+
+    createAdditionalContainers(builder);
 
     if (isMultiTenancyEnabled) {
       LOGGER.debug(
@@ -94,6 +106,18 @@ public class CamundaProcessTestContainerRuntime
           MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME,
           MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD);
     }
+  }
+
+  private void createAdditionalContainers(final CamundaProcessTestRuntimeBuilder builder) {
+    final ContainerContext containerContext = new ContainerContext(network, containers);
+    builder
+        .getContainerProviders()
+        .forEach(
+            containerProvider -> {
+              final GenericContainer<?> container =
+                  containerProvider.createContainer(containerContext).withNetwork(network);
+              containers.add(container);
+            });
   }
 
   /*
@@ -170,12 +194,6 @@ public class CamundaProcessTestContainerRuntime
 
   @Override
   public void start() {
-    final List<GenericContainer<?>> containers = new ArrayList<>();
-    containers.add(camundaContainer);
-    if (connectorsEnabled) {
-      containers.add(connectorsContainer);
-    }
-
     LOGGER.info(
         "Starting Camunda container runtime [{}]",
         containers.stream()
@@ -238,16 +256,18 @@ public class CamundaProcessTestContainerRuntime
     LOGGER.info("Stopping Camunda container runtime");
     final Instant startTime = Instant.now();
 
-    if (connectorsEnabled) {
-      connectorsContainer.stop();
-    }
+    // Stop containers in reverse order to ensure dependencies are stopped after the containers
+    // depending on them have been stopped
+    Collections.reverse(containers);
+    containers.forEach(GenericContainer::stop);
 
-    camundaContainer.stop();
     network.close();
 
     final Instant endTime = Instant.now();
     final Duration shutdownTime = Duration.between(startTime, endTime);
     LOGGER.info("Camunda container runtime stopped in {}", shutdownTime);
+
+    containers.clear();
   }
 
   public boolean isStarted() {
@@ -271,5 +291,27 @@ public class CamundaProcessTestContainerRuntime
 
   public static CamundaProcessTestRuntime newDefaultRuntime() {
     return newBuilder().build();
+  }
+
+  private static final class ContainerContext implements CamundaProcessTestContainerContext {
+
+    private final Network network;
+    private final Collection<GenericContainer<?>> containers;
+
+    public ContainerContext(
+        final Network network, final Collection<GenericContainer<?>> containers) {
+      this.network = network;
+      this.containers = containers;
+    }
+
+    @Override
+    public Network getNetwork() {
+      return network;
+    }
+
+    @Override
+    public Collection<GenericContainer<?>> getContainers() {
+      return Collections.unmodifiableCollection(containers);
+    }
   }
 }

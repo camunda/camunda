@@ -19,6 +19,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.net.URI;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +75,9 @@ public class CamundaProcessTestRuntimeBuilder {
   private boolean connectorsEnabled = CamundaProcessTestRuntimeDefaults.CONNECTORS_ENABLED;
   private final Map<String, String> connectorsSecrets =
       new HashMap<>(CamundaProcessTestRuntimeDefaults.CONNECTORS_SECRETS);
+
+  private final List<CamundaProcessTestContainerProvider> containerProviders = new ArrayList<>();
+  private boolean containerProvidersServiceLoaderEnabled = true;
 
   private CamundaProcessTestRuntimeMode runtimeMode =
       CamundaProcessTestRuntimeDefaults.RUNTIME_MODE;
@@ -271,9 +276,38 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
+  public CamundaProcessTestRuntimeBuilder withContainerProvider(
+      final CamundaProcessTestContainerProvider containerProvider) {
+    containerProviders.add(containerProvider);
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withContainerProvidersServiceLoaderEnabled(
+      final boolean enabled) {
+    containerProvidersServiceLoaderEnabled = enabled;
+    return this;
+  }
+
   // ============ Build =================
 
+  private void loadContainerProvidersFromServiceLoader() {
+    if (containerProvidersServiceLoaderEnabled
+        && runtimeMode != CamundaProcessTestRuntimeMode.REMOTE) {
+      ServiceLoader.load(CamundaProcessTestContainerProvider.class)
+          .forEach(
+              containerProvider -> {
+                LOGGER.debug(
+                    "Loaded container provider from service loader: {}",
+                    containerProvider.getClass().getName());
+
+                containerProviders.add(containerProvider);
+              });
+    }
+  }
+
   public CamundaProcessTestRuntime build() {
+    loadContainerProvidersFromServiceLoader();
+
     switch (runtimeMode) {
       case MANAGED:
         return new CamundaProcessTestContainerRuntime(this, containerFactory);
@@ -401,5 +435,13 @@ public class CamundaProcessTestRuntimeBuilder {
       camundaClientOverrides.accept(clientBuilder);
       return clientBuilder;
     };
+  }
+
+  public List<CamundaProcessTestContainerProvider> getContainerProviders() {
+    return containerProviders;
+  }
+
+  public boolean isContainerProvidersServiceLoaderEnabled() {
+    return containerProvidersServiceLoaderEnabled;
   }
 }

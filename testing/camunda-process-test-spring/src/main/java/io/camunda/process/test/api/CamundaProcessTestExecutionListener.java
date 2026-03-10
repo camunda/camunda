@@ -20,6 +20,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.properties.CamundaClientProperties;
+import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
@@ -48,6 +49,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -327,6 +329,12 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     final CamundaClientProperties clientProperties =
         testContext.getApplicationContext().getBean(CamundaClientProperties.class);
+
+    final Map<String, CamundaProcessTestContainerProvider> containerProviders =
+        testContext
+            .getApplicationContext()
+            .getBeansOfType(CamundaProcessTestContainerProvider.class);
+    containerProviders.values().forEach(containerRuntimeBuilder::withContainerProvider);
 
     return CamundaSpringProcessTestRuntimeBuilder.buildRuntime(
         containerRuntimeBuilder, runtimeConfiguration, clientProperties);
