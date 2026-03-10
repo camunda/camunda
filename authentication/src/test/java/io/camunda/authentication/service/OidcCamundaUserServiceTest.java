@@ -65,10 +65,7 @@ public class OidcCamundaUserServiceTest {
     SecurityContextHolder.setContext(securityContext);
 
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(camundaAuthentication);
-    when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(tenantServices);
-    when(resourceAccessProvider.resolveResourceAccess(
-            any(CamundaAuthentication.class), eq(COMPONENT_ACCESS_AUTHORIZATION)))
+    when(resourceAccessProvider.resolveResourceAccess(any(), eq(COMPONENT_ACCESS_AUTHORIZATION)))
         .thenReturn(ResourceAccess.allowed(withAuthorization(COMPONENT_ACCESS_AUTHORIZATION, "*")));
     userService =
         new OidcCamundaUserService(
@@ -143,7 +140,7 @@ public class OidcCamundaUserServiceTest {
   void shouldIncludeTenants() {
     // given
     when(camundaAuthentication.authenticatedTenantIds()).thenReturn(List.of("tenant1", "tenant2"));
-    when(tenantServices.search(any(TenantQuery.class)))
+    when(tenantServices.search(any(TenantQuery.class), any()))
         .thenReturn(
             SearchQueryResult.of(
                 new TenantEntity(1L, "tenant1", "name", "desc"),

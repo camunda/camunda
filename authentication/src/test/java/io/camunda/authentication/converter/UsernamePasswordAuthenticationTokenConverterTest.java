@@ -15,7 +15,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
@@ -38,13 +37,6 @@ public class UsernamePasswordAuthenticationTokenConverterTest {
   @BeforeEach
   void setup() throws Exception {
     MockitoAnnotations.openMocks(this).close();
-
-    when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(groupServices);
-    when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(roleServices);
-    when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(tenantServices);
 
     authenticationConverter =
         new UsernamePasswordAuthenticationTokenConverter(
@@ -90,7 +82,7 @@ public class UsernamePasswordAuthenticationTokenConverterTest {
   @Test
   void authenticationContainsGroups() {
     // given
-    when(groupServices.getGroupsByMemberTypeAndMemberIds(any()))
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
         .thenReturn(
             List.of(
                 new GroupEntity(1L, "group1", "group", "desc"),
@@ -108,7 +100,7 @@ public class UsernamePasswordAuthenticationTokenConverterTest {
   @Test
   void authenticationContainsRoles() {
     // given
-    when(roleServices.getRolesByMemberTypeAndMemberIds(any()))
+    when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any()))
         .thenReturn(
             List.of(
                 new RoleEntity(1L, "role1", "role", "desc"),
@@ -126,7 +118,7 @@ public class UsernamePasswordAuthenticationTokenConverterTest {
   @Test
   void authenticationContainsTenants() {
     // given
-    when(tenantServices.getTenantsByMemberTypeAndMemberIds(any()))
+    when(tenantServices.getTenantsByMemberTypeAndMemberIds(any(), any()))
         .thenReturn(
             List.of(
                 new TenantEntity(1L, "tenant1", "tenant", "desc"),
