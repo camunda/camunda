@@ -29,31 +29,19 @@ public final class VariableServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final VariableSearchClient variableSearchClient,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.variableSearchClient = variableSearchClient;
   }
 
   @Override
-  public VariableServices withAuthentication(final CamundaAuthentication authentication) {
-    return new VariableServices(
-        brokerClient,
-        securityContextProvider,
-        variableSearchClient,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Override
-  public SearchQueryResult<VariableEntity> search(final VariableQuery query) {
+  public SearchQueryResult<VariableEntity> search(
+      final VariableQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             variableSearchClient
@@ -63,7 +51,7 @@ public final class VariableServices
                 .searchVariables(query));
   }
 
-  public VariableEntity getByKey(final Long key) {
+  public VariableEntity getByKey(final Long key, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             variableSearchClient

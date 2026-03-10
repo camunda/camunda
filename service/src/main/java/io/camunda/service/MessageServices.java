@@ -24,46 +24,35 @@ public final class MessageServices extends ApiServices<MessageServices> {
   public MessageServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Override
-  public MessageServices withAuthentication(final CamundaAuthentication authentication) {
-    return new MessageServices(
-        brokerClient,
-        securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
 
   public CompletableFuture<MessageCorrelationRecord> correlateMessage(
-      final CorrelateMessageRequest correlationRequest) {
+      final CorrelateMessageRequest correlationRequest,
+      final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerCorrelateMessageRequest(
                 correlationRequest.name, correlationRequest.correlationKey)
             .setVariables(getDocumentOrEmpty(correlationRequest.variables))
             .setTenantId(correlationRequest.tenantId);
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<BrokerResponse<MessageRecord>> publishMessage(
-      final PublicationMessageRequest request) {
+      final PublicationMessageRequest request, final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerPublishMessageRequest(request.name, request.correlationKey)
             .setTimeToLive(request.timeToLive)
             .setMessageId(request.messageId)
             .setVariables(getDocumentOrEmpty(request.variables))
             .setTenantId(request.tenantId);
-    return sendBrokerRequestWithFullResponse(brokerRequest);
+    return sendBrokerRequestWithFullResponse(brokerRequest, authentication);
   }
 
   public record CorrelateMessageRequest(

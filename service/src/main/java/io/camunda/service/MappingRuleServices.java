@@ -38,20 +38,19 @@ public class MappingRuleServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final MappingRuleSearchClient mappingRuleSearchClient,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.mappingRuleSearchClient = mappingRuleSearchClient;
   }
 
   @Override
-  public SearchQueryResult<MappingRuleEntity> search(final MappingRuleQuery query) {
+  public SearchQueryResult<MappingRuleEntity> search(
+      final MappingRuleQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             mappingRuleSearchClient
@@ -61,36 +60,30 @@ public class MappingRuleServices
                 .searchMappingRules(query));
   }
 
-  @Override
-  public MappingRuleServices withAuthentication(final CamundaAuthentication authentication) {
-    return new MappingRuleServices(
-        brokerClient,
-        securityContextProvider,
-        mappingRuleSearchClient,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  public CompletableFuture<MappingRuleRecord> createMappingRule(final MappingRuleDTO request) {
+  public CompletableFuture<MappingRuleRecord> createMappingRule(
+      final MappingRuleDTO request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerMappingRuleCreateRequest()
             .setClaimName(request.claimName())
             .setClaimValue(request.claimValue())
             .setName(request.name())
-            .setMappingRuleId(request.mappingRuleId()));
+            .setMappingRuleId(request.mappingRuleId()),
+        authentication);
   }
 
-  public CompletableFuture<MappingRuleRecord> updateMappingRule(final MappingRuleDTO request) {
+  public CompletableFuture<MappingRuleRecord> updateMappingRule(
+      final MappingRuleDTO request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerMappingRuleUpdateRequest()
             .setClaimName(request.claimName())
             .setClaimValue(request.claimValue())
             .setName(request.name())
-            .setMappingRuleId(request.mappingRuleId()));
+            .setMappingRuleId(request.mappingRuleId()),
+        authentication);
   }
 
-  public MappingRuleEntity getMappingRule(final String mappingRuleId) {
+  public MappingRuleEntity getMappingRule(
+      final String mappingRuleId, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             mappingRuleSearchClient
@@ -101,13 +94,19 @@ public class MappingRuleServices
                 .getMappingRule(mappingRuleId));
   }
 
-  public CompletableFuture<MappingRuleRecord> deleteMappingRule(final String mappingRuleId) {
-    return sendBrokerRequest(new BrokerMappingRuleDeleteRequest().setMappingRuleId(mappingRuleId));
+  public CompletableFuture<MappingRuleRecord> deleteMappingRule(
+      final String mappingRuleId, final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        new BrokerMappingRuleDeleteRequest().setMappingRuleId(mappingRuleId), authentication);
   }
 
-  public Stream<MappingRuleEntity> getMatchingMappingRules(final Map<String, Object> claims) {
+  public Stream<MappingRuleEntity> getMatchingMappingRules(
+      final Map<String, Object> claims, final CamundaAuthentication authentication) {
     return MappingRuleMatcher.matchingRules(
-        search(MappingRuleQuery.of(AbstractQueryBuilder::unlimited)).items().stream(), claims);
+        search(MappingRuleQuery.of(AbstractQueryBuilder::unlimited), authentication)
+            .items()
+            .stream(),
+        claims);
   }
 
   public record MappingRuleDTO(

@@ -80,13 +80,11 @@ public final class UserTaskServices
       final VariableServices variableServices,
       final AuditLogServices auditLogServices,
       final ProcessCache processCache,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.userTaskSearchClient = userTaskSearchClient;
@@ -98,23 +96,8 @@ public final class UserTaskServices
   }
 
   @Override
-  public UserTaskServices withAuthentication(final CamundaAuthentication authentication) {
-    return new UserTaskServices(
-        brokerClient,
-        securityContextProvider,
-        userTaskSearchClient,
-        formServices,
-        elementInstanceServices,
-        variableServices,
-        auditLogServices,
-        processCache,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Override
-  public SearchQueryResult<UserTaskEntity> search(final UserTaskQuery query) {
+  public SearchQueryResult<UserTaskEntity> search(
+      final UserTaskQuery query, final CamundaAuthentication authentication) {
     return search(
         query,
         securityContextProvider.provideSecurityContext(authentication, USER_TASK_AUTHORIZATIONS));
@@ -167,41 +150,54 @@ public final class UserTaskServices
   }
 
   public SearchQueryResult<UserTaskEntity> search(
-      final Function<Builder, ObjectBuilder<UserTaskQuery>> fn) {
-    return search(userTaskSearchQuery(fn));
+      final Function<Builder, ObjectBuilder<UserTaskQuery>> fn,
+      final CamundaAuthentication authentication) {
+    return search(userTaskSearchQuery(fn), authentication);
   }
 
   public CompletableFuture<UserTaskRecord> assignUserTask(
       final long userTaskKey,
       final String assignee,
       final String action,
-      final boolean allowOverride) {
+      final boolean allowOverride,
+      final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerUserTaskAssignmentRequest(
             userTaskKey,
             assignee,
             action,
-            allowOverride ? UserTaskIntent.ASSIGN : UserTaskIntent.CLAIM));
+            allowOverride ? UserTaskIntent.ASSIGN : UserTaskIntent.CLAIM),
+        authentication);
   }
 
   public CompletableFuture<UserTaskRecord> completeUserTask(
-      final long userTaskKey, final Map<String, Object> variables, final String action) {
+      final long userTaskKey,
+      final Map<String, Object> variables,
+      final String action,
+      final CamundaAuthentication authentication) {
     return sendBrokerRequest(
-        new BrokerUserTaskCompletionRequest(userTaskKey, getDocumentOrEmpty(variables), action));
+        new BrokerUserTaskCompletionRequest(userTaskKey, getDocumentOrEmpty(variables), action),
+        authentication);
   }
 
   public CompletableFuture<UserTaskRecord> unassignUserTask(
-      final long userTaskKey, final String action) {
+      final long userTaskKey, final String action, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
-        new BrokerUserTaskAssignmentRequest(userTaskKey, "", action, UserTaskIntent.ASSIGN));
+        new BrokerUserTaskAssignmentRequest(userTaskKey, "", action, UserTaskIntent.ASSIGN),
+        authentication);
   }
 
   public CompletableFuture<UserTaskRecord> updateUserTask(
-      final long userTaskKey, final UserTaskRecord changeset, final String action) {
-    return sendBrokerRequest(new BrokerUserTaskUpdateRequest(userTaskKey, changeset, action));
+      final long userTaskKey,
+      final UserTaskRecord changeset,
+      final String action,
+      final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        new BrokerUserTaskUpdateRequest(userTaskKey, changeset, action), authentication);
   }
 
-  public UserTaskEntity getByKey(final long userTaskKey) {
+  public UserTaskEntity getByKey(
+      final long userTaskKey, final CamundaAuthentication authentication) {
     final var result =
         executeSearchRequest(
             () ->
@@ -215,21 +211,20 @@ public final class UserTaskServices
     return toCacheEnrichedUserTaskEntity(result, cachedItem);
   }
 
-  public Optional<FormEntity> getUserTaskForm(final long userTaskKey) {
-    return Optional.ofNullable(getByKey(userTaskKey))
+  public Optional<FormEntity> getUserTaskForm(
+      final long userTaskKey, final CamundaAuthentication authentication) {
+    return Optional.ofNullable(getByKey(userTaskKey, authentication))
         .map(UserTaskEntity::formKey)
-        .map(
-            formKey ->
-                formServices
-                    .withAuthentication(CamundaAuthentication.anonymous())
-                    .getByKey(formKey));
+        .map(formKey -> formServices.getByKey(formKey, CamundaAuthentication.anonymous()));
   }
 
   public SearchQueryResult<VariableEntity> searchUserTaskVariables(
-      final long userTaskKey, final VariableQuery variableQuery) {
+      final long userTaskKey,
+      final VariableQuery variableQuery,
+      final CamundaAuthentication authentication) {
 
     // Fetch the user task by key
-    final var userTask = getByKey(userTaskKey);
+    final var userTask = getByKey(userTaskKey, authentication);
 
     // Retrieve the tree path for the flow node instance associated to the user task
     final String treePath = fetchFlowNodeTreePath(userTask.elementInstanceKey());
@@ -251,14 +246,15 @@ public final class UserTaskServices
     // Execute the search
     return executeSearchRequest(
         () ->
-            variableServices
-                .withAuthentication(CamundaAuthentication.anonymous())
-                .search(variableQueryWithTreePathFilter));
+            variableServices.search(
+                variableQueryWithTreePathFilter, CamundaAuthentication.anonymous()));
   }
 
   public SearchQueryResult<AuditLogEntity> searchUserTaskAuditLogs(
-      final long userTaskKey, final AuditLogQuery auditLogQuery) {
-    getByKey(userTaskKey); // Ensure user task exists and is accessible
+      final long userTaskKey,
+      final AuditLogQuery auditLogQuery,
+      final CamundaAuthentication authentication) {
+    getByKey(userTaskKey, authentication); // Ensure user task exists and is accessible
 
     // Create an audit log query with user task key filter
     final var auditLogWithUserTaskKeyFilter =
@@ -271,17 +267,15 @@ public final class UserTaskServices
     // Execute the search
     return executeSearchRequest(
         () ->
-            auditLogServices
-                .withAuthentication(CamundaAuthentication.anonymous())
-                .search(auditLogWithUserTaskKeyFilter));
+            auditLogServices.search(
+                auditLogWithUserTaskKeyFilter, CamundaAuthentication.anonymous()));
   }
 
   private String fetchFlowNodeTreePath(final long flowNodeInstanceKey) {
     return executeSearchRequest(
             () ->
-                elementInstanceServices
-                    .withAuthentication(CamundaAuthentication.anonymous())
-                    .getByKey(flowNodeInstanceKey))
+                elementInstanceServices.getByKey(
+                    flowNodeInstanceKey, CamundaAuthentication.anonymous()))
         .treePath();
   }
 }
