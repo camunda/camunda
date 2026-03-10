@@ -38,81 +38,74 @@ public final class ClusterVariableServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ClusterVariableSearchClient clusterVariableSearchClient,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.clusterVariableSearchClient = clusterVariableSearchClient;
   }
 
-  @Override
-  public ClusterVariableServices withAuthentication(final CamundaAuthentication authentication) {
-    return new ClusterVariableServices(
-        brokerClient,
-        securityContextProvider,
-        clusterVariableSearchClient,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
   public CompletableFuture<ClusterVariableRecord> createGloballyScopedClusterVariable(
-      final ClusterVariableRequest request) {
+      final ClusterVariableRequest request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerCreateClusterVariableRequest()
             .setName(request.name())
             .setValue(toDirectBufferValue(request.value()))
-            .setGlobalScope());
+            .setGlobalScope(),
+        authentication);
   }
 
   public CompletableFuture<ClusterVariableRecord> createTenantScopedClusterVariable(
-      final ClusterVariableRequest request) {
+      final ClusterVariableRequest request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerCreateClusterVariableRequest()
             .setName(request.name())
             .setValue(toDirectBufferValue(request.value()))
-            .setTenantScope(request.tenantId()));
+            .setTenantScope(request.tenantId()),
+        authentication);
   }
 
   public CompletableFuture<ClusterVariableRecord> deleteGloballyScopedClusterVariable(
-      final ClusterVariableRequest request) {
+      final ClusterVariableRequest request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
-        new BrokerDeleteClusterVariableRequest().setName(request.name()).setGlobalScope());
+        new BrokerDeleteClusterVariableRequest().setName(request.name()).setGlobalScope(),
+        authentication);
   }
 
   public CompletableFuture<ClusterVariableRecord> deleteTenantScopedClusterVariable(
-      final ClusterVariableRequest request) {
+      final ClusterVariableRequest request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerDeleteClusterVariableRequest()
             .setName(request.name())
-            .setTenantScope(request.tenantId()));
+            .setTenantScope(request.tenantId()),
+        authentication);
   }
 
   public CompletableFuture<ClusterVariableRecord> updateGloballyScopedClusterVariable(
-      final ClusterVariableRequest request) {
+      final ClusterVariableRequest request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerUpdateClusterVariableRequest()
             .setName(request.name())
             .setValue(toDirectBufferValue(request.value()))
-            .setGlobalScope());
+            .setGlobalScope(),
+        authentication);
   }
 
   public CompletableFuture<ClusterVariableRecord> updateTenantScopedClusterVariable(
-      final ClusterVariableRequest request) {
+      final ClusterVariableRequest request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerUpdateClusterVariableRequest()
             .setName(request.name())
             .setValue(toDirectBufferValue(request.value()))
-            .setTenantScope(request.tenantId()));
+            .setTenantScope(request.tenantId()),
+        authentication);
   }
 
   public ClusterVariableEntity getGloballyScopedClusterVariable(
-      final ClusterVariableRequest request) {
+      final ClusterVariableRequest request, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             clusterVariableSearchClient
@@ -125,7 +118,7 @@ public final class ClusterVariableServices
   }
 
   public ClusterVariableEntity getTenantScopedClusterVariable(
-      final ClusterVariableRequest request) {
+      final ClusterVariableRequest request, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             clusterVariableSearchClient
@@ -138,7 +131,8 @@ public final class ClusterVariableServices
   }
 
   @Override
-  public SearchQueryResult<ClusterVariableEntity> search(final ClusterVariableQuery query) {
+  public SearchQueryResult<ClusterVariableEntity> search(
+      final ClusterVariableQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             clusterVariableSearchClient

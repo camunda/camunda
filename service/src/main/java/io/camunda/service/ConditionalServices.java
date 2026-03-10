@@ -22,36 +22,24 @@ public class ConditionalServices extends ApiServices<ConditionalServices> {
   public ConditionalServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Override
-  public ConditionalServices withAuthentication(final CamundaAuthentication authentication) {
-    return new ConditionalServices(
-        brokerClient,
-        securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
 
   public CompletableFuture<BrokerResponse<ConditionalEvaluationRecord>> evaluateConditional(
-      final EvaluateConditionalRequest request) {
+      final EvaluateConditionalRequest request, final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerEvaluateConditionalRequest()
             .setProcessDefinitionKey(request.processDefinitionKey())
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()));
 
-    return sendBrokerRequestWithFullResponse(brokerRequest);
+    return sendBrokerRequestWithFullResponse(brokerRequest, authentication);
   }
 
   public record EvaluateConditionalRequest(

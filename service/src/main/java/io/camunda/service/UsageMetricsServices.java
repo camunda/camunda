@@ -35,13 +35,11 @@ public final class UsageMetricsServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UsageMetricsSearchClient usageMetricsSearchClient,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.usageMetricsSearchClient = usageMetricsSearchClient;
@@ -49,7 +47,7 @@ public final class UsageMetricsServices
 
   @Override
   public SearchQueryResult<Tuple<UsageMetricStatisticsEntity, UsageMetricTUStatisticsEntity>>
-      search(final UsageMetricsQuery query) {
+      search(final UsageMetricsQuery query, final CamundaAuthentication authentication) {
     if (query == null) {
       throw new IllegalArgumentException("Query must not be null");
     }
@@ -68,16 +66,5 @@ public final class UsageMetricsServices
                     mapToUsageMetricsTUQuery(query)));
 
     return SearchQueryResult.of(Tuple.of(statsFuture.join(), tuStatsFuture.join()));
-  }
-
-  @Override
-  public UsageMetricsServices withAuthentication(final CamundaAuthentication authentication) {
-    return new UsageMetricsServices(
-        brokerClient,
-        securityContextProvider,
-        usageMetricsSearchClient,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
   }
 }

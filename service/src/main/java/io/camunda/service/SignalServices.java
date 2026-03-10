@@ -22,32 +22,24 @@ public class SignalServices extends ApiServices<SignalServices> {
   public SignalServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Override
-  public SignalServices withAuthentication(final CamundaAuthentication authentication) {
-    return new SignalServices(
-        brokerClient,
-        securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
 
   public CompletableFuture<BrokerResponse<SignalRecord>> broadcastSignal(
-      final String signalName, final Map<String, Object> variables, final String tenantId) {
+      final String signalName,
+      final Map<String, Object> variables,
+      final String tenantId,
+      final CamundaAuthentication authentication) {
     return sendBrokerRequestWithFullResponse(
         new BrokerBroadcastSignalRequest(signalName)
             .setVariables(getDocumentOrEmpty(variables))
-            .setTenantId(tenantId));
+            .setTenantId(tenantId),
+        authentication);
   }
 }

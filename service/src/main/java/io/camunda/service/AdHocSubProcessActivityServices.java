@@ -22,30 +22,18 @@ public class AdHocSubProcessActivityServices extends ApiServices<AdHocSubProcess
   public AdHocSubProcessActivityServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Override
-  public AdHocSubProcessActivityServices withAuthentication(
-      final CamundaAuthentication authentication) {
-    return new AdHocSubProcessActivityServices(
-        brokerClient,
-        securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
 
   public CompletableFuture<AdHocSubProcessInstructionRecord> activateActivities(
-      final AdHocSubProcessActivateActivitiesRequest request) {
+      final AdHocSubProcessActivateActivitiesRequest request,
+      final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerActivateAdHocSubProcessActivityRequest()
             .setAdHocSubProcessInstanceKey(request.adHocSubProcessInstanceKey());
@@ -59,7 +47,7 @@ public class AdHocSubProcessActivityServices extends ApiServices<AdHocSubProcess
 
     brokerRequest.cancelRemainingInstances(request.cancelRemainingInstances());
 
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public record AdHocSubProcessActivateActivitiesRequest(
