@@ -53,6 +53,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -79,6 +80,7 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.ContentTypeOptionsConfig;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.HstsConfig;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer.ProtectedResourceMetadataConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.config.observation.SecurityObservationSettings;
 import org.springframework.security.core.Authentication;
@@ -134,7 +136,8 @@ public class WebSecurityConfig {
   public static final String LOGIN_URL = "/login";
   public static final String LOGOUT_URL = "/logout";
   public static final String REDIRECT_URI = "/sso-callback";
-  public static final Set<String> API_PATHS = Set.of("/api/**", "/v1/**", "/v2/**", "/mcp/**");
+  public static final Set<String> API_PATHS =
+      Set.of("/api/**", "/v1/**", "/v2/**", "/mcp/**", "/.well-known/oauth-protected-resource/**");
   public static final Set<String> UNPROTECTED_API_PATHS =
       Set.of(
           // these v2 endpoints are public
@@ -142,7 +145,9 @@ public class WebSecurityConfig {
           "/v2/setup/user",
           "/v2/status",
           // deprecated Tasklist v1 Public Endpoints
-          "/v1/external/process/**");
+          "/v1/external/process/**",
+          // OAuth2 Protected Resource Metadata endpoint (RFC 9728)
+          "/.well-known/oauth-protected-resource/**");
   public static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           // endpoint for failure forwarding
@@ -672,6 +677,20 @@ public class WebSecurityConfig {
       }
     }
 
+    private List<ClientRegistration> extractClientRegistrations(
+        final ClientRegistrationRepository clientRegistrationRepository) {
+      if (!(clientRegistrationRepository instanceof final Iterable<?> iterableRepository)) {
+        throw new IllegalStateException(
+            "Unable to extract OAuth 2.0 client registrations as clientRegistrationRepository %s is not iterable"
+                .formatted(clientRegistrationRepository.getClass()));
+      }
+
+      return StreamSupport.stream(iterableRepository.spliterator(), false)
+          .filter(ClientRegistration.class::isInstance)
+          .map(ClientRegistration.class::cast)
+          .toList();
+    }
+
     @Bean
     public TokenValidatorFactory tokenValidatorFactory(
         final SecurityConfiguration securityConfiguration,
@@ -725,9 +744,7 @@ public class WebSecurityConfig {
         final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
         final ClientRegistrationRepository clientRegistrationRepository,
         final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
-      final var repository = (Iterable<ClientRegistration>) clientRegistrationRepository;
-      final var clientRegistrations =
-          StreamSupport.stream(repository.spliterator(), false).toList();
+      final var clientRegistrations = extractClientRegistrations(clientRegistrationRepository);
 
       final var additionalJwkSetUrisByIssuer =
           buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository);
@@ -861,6 +878,7 @@ public class WebSecurityConfig {
     public SecurityFilterChain oidcApiSecurity(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
+        final ClientRegistrationRepository clientRegistrationRepository,
         final JwtDecoder jwtDecoder,
         final SecurityConfiguration securityConfiguration,
         final CookieCsrfTokenRepository csrfTokenRepository,
@@ -900,6 +918,9 @@ public class WebSecurityConfig {
                   oauth2 ->
                       oauth2
                           .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder))
+                          .protectedResourceMetadata(
+                              oauthProtectedResourceMetadataCustomizer(
+                                  clientRegistrationRepository))
                           .withObjectPostProcessor(postProcessBearerTokenFailureHandler()))
               .oauth2Login(AbstractHttpConfigurer::disable)
               .oidcLogout(AbstractHttpConfigurer::disable)
@@ -985,6 +1006,9 @@ public class WebSecurityConfig {
                   oauth2 ->
                       oauth2
                           .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder))
+                          .protectedResourceMetadata(
+                              oauthProtectedResourceMetadataCustomizer(
+                                  clientRegistrationRepository))
                           .withObjectPostProcessor(postProcessBearerTokenFailureHandler()))
               .oauth2Login(
                   oauthLoginConfigurer -> {
@@ -1021,6 +1045,21 @@ public class WebSecurityConfig {
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
       return filterChainBuilder.build();
+    }
+
+    private Customizer<ProtectedResourceMetadataConfigurer>
+        oauthProtectedResourceMetadataCustomizer(
+            final ClientRegistrationRepository clientRegistrationRepository) {
+      final var issuerUris =
+          extractClientRegistrations(clientRegistrationRepository).stream()
+              .map(clientRegistration -> clientRegistration.getProviderDetails().getIssuerUri())
+              .filter(Objects::nonNull)
+              .distinct()
+              .toList();
+
+      return prmConfigurer ->
+          prmConfigurer.protectedResourceMetadataCustomizer(
+              prmBuilder -> issuerUris.forEach(prmBuilder::authorizationServer));
     }
 
     private OAuth2AuthorizationRequestResolver authorizationRequestResolver(

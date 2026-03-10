@@ -37,10 +37,14 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
@@ -251,7 +255,20 @@ public class SessionAuthenticationRefreshTest {
   @ActiveProfiles("consolidated-auth")
   class OidcAuthTest extends BaseTest {
     @MockitoBean private MembershipService membershipService;
-    @MockitoBean private ClientRegistrationRepository clientRegistrationRepository;
+    @TestBean private ClientRegistrationRepository clientRegistrationRepository;
     @MockitoBean private JwtDecoder jwtDecoder;
+
+    static ClientRegistrationRepository clientRegistrationRepository() {
+      final var dummyRegistration =
+          ClientRegistration.withRegistrationId("test")
+              .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+              .clientId("test-client")
+              .redirectUri("{baseUrl}/sso-callback")
+              .authorizationUri("https://example.com/authorize")
+              .tokenUri("https://example.com/token")
+              .issuerUri("https://example.com")
+              .build();
+      return new InMemoryClientRegistrationRepository(dummyRegistration);
+    }
   }
 }
