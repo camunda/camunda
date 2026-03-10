@@ -38,16 +38,16 @@ final class BedrockChatModelBuilder {
 
   private BedrockChatModelBuilder() {}
 
-  static ChatModel build(final JudgeConfigBootstrapData data) {
+  static ChatModel build(final JudgeConfigBootstrapData.AmazonBedrockConfig config) {
     LOG.debug("Building Amazon Bedrock chat model");
 
-    final String model = require(data.getModel(), "model", "amazon-bedrock");
+    final String model = require(config.getModel(), "model", "amazon-bedrock");
 
-    final boolean hasAccessKey = hasText(data.getCredentialsAccessKey());
-    final boolean hasSecretKey = hasText(data.getCredentialsSecretKey());
+    final boolean hasAccessKey = hasText(config.getCredentialsAccessKey());
+    final boolean hasSecretKey = hasText(config.getCredentialsSecretKey());
     final boolean hasKeyPairAuth = hasAccessKey && hasSecretKey;
     final boolean hasPartialKeyPair = hasAccessKey != hasSecretKey;
-    final boolean hasApiKeyAuth = hasText(data.getApiKey());
+    final boolean hasApiKeyAuth = hasText(config.getApiKey());
 
     if (hasPartialKeyPair) {
       throw new IllegalStateException(
@@ -63,9 +63,9 @@ final class BedrockChatModelBuilder {
 
     final BedrockRuntimeClientBuilder clientBuilder = BedrockRuntimeClient.builder();
 
-    if (hasText(data.getRegion())) {
-      LOG.debug("Using configured region '{}'", data.getRegion().trim());
-      clientBuilder.region(Region.of(data.getRegion().trim()));
+    if (hasText(config.getRegion())) {
+      LOG.debug("Using configured region '{}'", config.getRegion().trim());
+      clientBuilder.region(Region.of(config.getRegion().trim()));
     } else {
       LOG.debug("No region configured, falling back to AWS default region resolution");
     }
@@ -75,7 +75,8 @@ final class BedrockChatModelBuilder {
       clientBuilder.credentialsProvider(
           StaticCredentialsProvider.create(
               AwsBasicCredentials.create(
-                  data.getCredentialsAccessKey().trim(), data.getCredentialsSecretKey().trim())));
+                  config.getCredentialsAccessKey().trim(),
+                  config.getCredentialsSecretKey().trim())));
     } else if (hasApiKeyAuth) {
       LOG.debug("Using API key (Bearer token) authentication");
       clientBuilder
@@ -83,9 +84,8 @@ final class BedrockChatModelBuilder {
           .putAuthScheme(NoAuthAuthScheme.create());
 
       clientBuilder.overrideConfiguration(
-          config ->
-              config.headers(
-                  Map.of("Authorization", List.of("Bearer " + data.getApiKey().trim()))));
+          cfg ->
+              cfg.headers(Map.of("Authorization", List.of("Bearer " + config.getApiKey().trim()))));
     } else {
       LOG.debug("No explicit credentials configured, falling back to AWS default credential chain");
     }

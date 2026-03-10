@@ -18,54 +18,14 @@ package io.camunda.process.test.api.judge;
 /** Typed configuration data passed to a {@link JudgeConfigBootstrapProvider}. */
 public final class JudgeConfigBootstrapData {
 
-  private final String provider;
-  private final String model;
-  private final String apiKey;
-  private final String baseUrl;
-  private final String region;
-  private final String credentialsAccessKey;
-  private final String credentialsSecretKey;
   private final double threshold;
   private final String customPrompt;
+  private final ProviderConfig providerConfig;
 
   private JudgeConfigBootstrapData(final Builder builder) {
-    provider = builder.provider;
-    model = builder.model;
-    apiKey = builder.apiKey;
-    baseUrl = builder.baseUrl;
-    region = builder.region;
-    credentialsAccessKey = builder.credentialsAccessKey;
-    credentialsSecretKey = builder.credentialsSecretKey;
     threshold = builder.threshold;
     customPrompt = builder.customPrompt;
-  }
-
-  public String getProvider() {
-    return provider;
-  }
-
-  public String getModel() {
-    return model;
-  }
-
-  public String getApiKey() {
-    return apiKey;
-  }
-
-  public String getBaseUrl() {
-    return baseUrl;
-  }
-
-  public String getRegion() {
-    return region;
-  }
-
-  public String getCredentialsAccessKey() {
-    return credentialsAccessKey;
-  }
-
-  public String getCredentialsSecretKey() {
-    return credentialsSecretKey;
+    providerConfig = builder.providerConfig;
   }
 
   public double getThreshold() {
@@ -76,56 +36,19 @@ public final class JudgeConfigBootstrapData {
     return customPrompt;
   }
 
+  public ProviderConfig getProviderConfig() {
+    return providerConfig;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
 
   public static final class Builder {
 
-    private String provider;
-    private String model;
-    private String apiKey;
-    private String baseUrl;
-    private String region;
-    private String credentialsAccessKey;
-    private String credentialsSecretKey;
     private double threshold = JudgeConfig.DEFAULT_THRESHOLD;
     private String customPrompt;
-
-    public Builder provider(final String provider) {
-      this.provider = provider;
-      return this;
-    }
-
-    public Builder model(final String model) {
-      this.model = model;
-      return this;
-    }
-
-    public Builder apiKey(final String apiKey) {
-      this.apiKey = apiKey;
-      return this;
-    }
-
-    public Builder baseUrl(final String baseUrl) {
-      this.baseUrl = baseUrl;
-      return this;
-    }
-
-    public Builder region(final String region) {
-      this.region = region;
-      return this;
-    }
-
-    public Builder credentialsAccessKey(final String credentialsAccessKey) {
-      this.credentialsAccessKey = credentialsAccessKey;
-      return this;
-    }
-
-    public Builder credentialsSecretKey(final String credentialsSecretKey) {
-      this.credentialsSecretKey = credentialsSecretKey;
-      return this;
-    }
+    private ProviderConfig providerConfig;
 
     public Builder threshold(final double threshold) {
       this.threshold = threshold;
@@ -137,8 +60,122 @@ public final class JudgeConfigBootstrapData {
       return this;
     }
 
+    public Builder providerConfig(final ProviderConfig providerConfig) {
+      this.providerConfig = providerConfig;
+      return this;
+    }
+
     public JudgeConfigBootstrapData build() {
       return new JudgeConfigBootstrapData(this);
+    }
+  }
+
+  /** Base class for provider-specific configuration. */
+  public abstract static class ProviderConfig {
+
+    private final String provider;
+    private final String model;
+
+    protected ProviderConfig(final String provider, final String model) {
+      this.provider = provider;
+      this.model = model;
+    }
+
+    public String getProvider() {
+      return provider;
+    }
+
+    public String getModel() {
+      return model;
+    }
+  }
+
+  /** OpenAI provider configuration. */
+  public static final class OpenAiConfig extends ProviderConfig {
+
+    private final String apiKey;
+
+    public OpenAiConfig(final String model, final String apiKey) {
+      super("openai", model);
+      this.apiKey = apiKey;
+    }
+
+    public String getApiKey() {
+      return apiKey;
+    }
+  }
+
+  /** Anthropic provider configuration. */
+  public static final class AnthropicConfig extends ProviderConfig {
+
+    private final String apiKey;
+
+    public AnthropicConfig(final String model, final String apiKey) {
+      super("anthropic", model);
+      this.apiKey = apiKey;
+    }
+
+    public String getApiKey() {
+      return apiKey;
+    }
+  }
+
+  /** Amazon Bedrock provider configuration. */
+  public static final class AmazonBedrockConfig extends ProviderConfig {
+
+    private final String region;
+    private final String apiKey;
+    private final String credentialsAccessKey;
+    private final String credentialsSecretKey;
+
+    public AmazonBedrockConfig(
+        final String model,
+        final String region,
+        final String apiKey,
+        final String credentialsAccessKey,
+        final String credentialsSecretKey) {
+      super("amazon-bedrock", model);
+      this.region = region;
+      this.apiKey = apiKey;
+      this.credentialsAccessKey = credentialsAccessKey;
+      this.credentialsSecretKey = credentialsSecretKey;
+    }
+
+    public String getRegion() {
+      return region;
+    }
+
+    public String getApiKey() {
+      return apiKey;
+    }
+
+    public String getCredentialsAccessKey() {
+      return credentialsAccessKey;
+    }
+
+    public String getCredentialsSecretKey() {
+      return credentialsSecretKey;
+    }
+  }
+
+  /** OpenAI-compatible provider configuration. */
+  public static final class OpenAiCompatibleConfig extends ProviderConfig {
+
+    private final String baseUrl;
+    private final String apiKey;
+
+    public OpenAiCompatibleConfig(final String model, final String baseUrl, final String apiKey) {
+      super("openai-compatible", model);
+      this.baseUrl = baseUrl;
+      this.apiKey = apiKey;
+    }
+
+    public String getBaseUrl() {
+      return baseUrl;
+    }
+
+    public String getApiKey() {
+      return apiKey;
     }
   }
 }

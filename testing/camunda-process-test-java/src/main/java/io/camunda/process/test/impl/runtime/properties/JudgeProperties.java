@@ -89,45 +89,36 @@ public class JudgeProperties {
     return chatModelProvider != null;
   }
 
-  public String getChatModelProvider() {
-    return chatModelProvider;
-  }
-
-  public String getChatModelModel() {
-    return chatModelModel;
-  }
-
-  public String getChatModelApiKey() {
-    return chatModelApiKey;
-  }
-
-  public String getChatModelBaseUrl() {
-    return chatModelBaseUrl;
-  }
-
-  public String getChatModelRegion() {
-    return chatModelRegion;
-  }
-
-  public String getChatModelCredentialsAccessKey() {
-    return chatModelCredentialsAccessKey;
-  }
-
-  public String getChatModelCredentialsSecretKey() {
-    return chatModelCredentialsSecretKey;
-  }
-
   public JudgeConfigBootstrapData toJudgeConfigurationData() {
     return JudgeConfigBootstrapData.builder()
-        .provider(chatModelProvider)
-        .model(chatModelModel)
-        .apiKey(chatModelApiKey)
-        .baseUrl(chatModelBaseUrl)
-        .region(chatModelRegion)
-        .credentialsAccessKey(chatModelCredentialsAccessKey)
-        .credentialsSecretKey(chatModelCredentialsSecretKey)
+        .providerConfig(buildProviderConfig())
         .threshold(threshold)
         .customPrompt(customPrompt)
         .build();
+  }
+
+  private JudgeConfigBootstrapData.ProviderConfig buildProviderConfig() {
+    if (chatModelProvider == null) {
+      return null;
+    }
+    final String normalized = chatModelProvider.trim().toLowerCase();
+    switch (normalized) {
+      case "openai":
+        return new JudgeConfigBootstrapData.OpenAiConfig(chatModelModel, chatModelApiKey);
+      case "anthropic":
+        return new JudgeConfigBootstrapData.AnthropicConfig(chatModelModel, chatModelApiKey);
+      case "amazon-bedrock":
+        return new JudgeConfigBootstrapData.AmazonBedrockConfig(
+            chatModelModel,
+            chatModelRegion,
+            chatModelApiKey,
+            chatModelCredentialsAccessKey,
+            chatModelCredentialsSecretKey);
+      case "openai-compatible":
+        return new JudgeConfigBootstrapData.OpenAiCompatibleConfig(
+            chatModelModel, chatModelBaseUrl, chatModelApiKey);
+      default:
+        throw new IllegalArgumentException("Unknown provider: " + chatModelProvider);
+    }
   }
 }

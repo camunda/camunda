@@ -29,18 +29,18 @@ final class OpenAiCompatibleChatModelBuilder {
 
   private OpenAiCompatibleChatModelBuilder() {}
 
-  static ChatModel build(final JudgeConfigBootstrapData data) {
+  static ChatModel build(final JudgeConfigBootstrapData.OpenAiCompatibleConfig config) {
     LOG.debug("Building OpenAI-compatible chat model");
 
-    final String model = require(data.getModel(), "model", "openai-compatible");
-    final String baseUrl = require(data.getBaseUrl(), "baseUrl", "openai-compatible");
+    final String model = require(config.getModel(), "model", "openai-compatible");
+    final String baseUrl = require(config.getBaseUrl(), "baseUrl", "openai-compatible");
 
     final OpenAiChatModel.OpenAiChatModelBuilder builder =
         OpenAiChatModel.builder().baseUrl(baseUrl).modelName(model);
 
-    if (hasText(data.getApiKey())) {
+    if (hasText(config.getApiKey())) {
       LOG.debug("Using configured API key");
-      builder.apiKey(data.getApiKey().trim());
+      builder.apiKey(config.getApiKey().trim());
     } else {
       LOG.debug("No API key configured, building without authentication");
     }
