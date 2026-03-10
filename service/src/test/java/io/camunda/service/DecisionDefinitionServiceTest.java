@@ -32,18 +32,17 @@ import java.util.List;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 
 public final class DecisionDefinitionServiceTest {
 
-  @Mock private CamundaAuthentication authentication;
-
+  private CamundaAuthentication authentication;
   private DecisionDefinitionServices services;
   private DecisionDefinitionSearchClient client;
   private DecisionRequirementsServices decisionRequirementServices;
 
   @BeforeEach
   public void before() {
+    authentication = mock(CamundaAuthentication.class);
     client = mock(DecisionDefinitionSearchClient.class);
     decisionRequirementServices = mock(DecisionRequirementsServices.class);
     when(client.withSecurityContext(any())).thenReturn(client);
