@@ -19,9 +19,9 @@ public final class JobAuthorizationLogger {
 
   private static final Logger LOG = LoggerFactory.getLogger(JobAuthorizationLogger.class);
 
-  private final DeduplicationCache cache;
+  private final DeduplicationCache<UnauthorizedJobLogEntry> cache;
 
-  private JobAuthorizationLogger(final DeduplicationCache cache) {
+  private JobAuthorizationLogger(final DeduplicationCache<UnauthorizedJobLogEntry> cache) {
     this.cache = cache;
   }
 
@@ -35,7 +35,7 @@ public final class JobAuthorizationLogger {
     final String processId = jobRecord.getBpmnProcessId();
     final String workerName = BufferUtil.bufferAsString(jobActivationProperties.worker());
 
-    final var logKey = buildLogKey(ownerTenantId, processId, workerName);
+    final var logKey = new UnauthorizedJobLogEntry(ownerTenantId, workerName, processId);
     if (cache.isFirstOccurrence(logKey)) {
       LOG.warn(
           "Job stream for worker '{}' requesting jobs of type '{}' is not authorized to access tenant '{}'. "
@@ -54,7 +54,7 @@ public final class JobAuthorizationLogger {
     final String ownerTenantId = jobRecord.getTenantId();
     final String processId = jobRecord.getBpmnProcessId();
     final String workerName = BufferUtil.bufferAsString(jobActivationProperties.worker());
-    final var logKey = buildLogKey(ownerTenantId, processId, workerName);
+    final var logKey = new UnauthorizedJobLogEntry(ownerTenantId, workerName, processId);
     if (cache.isFirstOccurrence(logKey)) {
       LOG.warn(
           "Job stream for worker '{}' requesting jobs of type '{}' is not authorized to access process definition '{}' in tenant '{}'. "
@@ -67,8 +67,5 @@ public final class JobAuthorizationLogger {
     }
   }
 
-  private String buildLogKey(
-      final String ownerTenantId, final String processId, final String workerName) {
-    return String.format("tenant:%s:processId:%s:worker:%s", ownerTenantId, processId, workerName);
-  }
+  record UnauthorizedJobLogEntry(String tenant, String worker, String process) {}
 }

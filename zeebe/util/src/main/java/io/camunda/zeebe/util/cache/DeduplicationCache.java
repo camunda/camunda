@@ -22,22 +22,22 @@ import java.time.Duration;
  *   <li>Time-based eviction after the specified duration
  * </ul>
  */
-public final class DeduplicationCache {
+public final class DeduplicationCache<K> {
 
   private static final int DEFAULT_MAP_ENTRIES = 10_000;
   private static final Duration DEFAULT_EVICTION_DURATION = Duration.ofMinutes(30);
   private static final Object PRESENT = new Object();
 
-  private final Cache<String, Object> cache;
+  private final Cache<K, Object> cache;
 
-  private DeduplicationCache(final Cache<String, Object> cache) {
+  private DeduplicationCache(final Cache<K, Object> cache) {
     this.cache = cache;
   }
 
-  public static DeduplicationCache create(final int maxSize, final Duration expireAfter) {
-    final Cache<String, Object> caffeine =
+  public static <K> DeduplicationCache<K> create(final int maxSize, final Duration expireAfter) {
+    final Cache<K, Object> caffeine =
         Caffeine.newBuilder().maximumSize(maxSize).expireAfterWrite(expireAfter).build();
-    return new DeduplicationCache(caffeine);
+    return new DeduplicationCache<>(caffeine);
   }
 
   /**
@@ -45,7 +45,7 @@ public final class DeduplicationCache {
    *
    * @return a new deduplication cache
    */
-  public static DeduplicationCache createDefault() {
+  public static <K> DeduplicationCache<K> createDefault() {
     return create(DEFAULT_MAP_ENTRIES, DEFAULT_EVICTION_DURATION);
   }
 
@@ -59,7 +59,7 @@ public final class DeduplicationCache {
    * @return {@code true} if the key was not present and is now recorded as seen, {@code false} if
    *     the key was already present
    */
-  public boolean isFirstOccurrence(final String key) {
+  public boolean isFirstOccurrence(final K key) {
     return cache.asMap().putIfAbsent(key, PRESENT) == null;
   }
 

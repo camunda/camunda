@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 
 final class DeduplicationCacheTest {
 
-  private DeduplicationCache cache;
+  private DeduplicationCache<String> cache;
 
   @BeforeEach
   void setUp() {
