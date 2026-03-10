@@ -59,9 +59,7 @@ public class SessionAuthenticationRefreshTest {
 
     @BeforeEach
     public void setup() {
-      when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(roleServices);
-      when(roleServices.hasMembersOfType(any(), any())).thenReturn(true);
+      when(roleServices.hasMembersOfType(any(), any(), any())).thenReturn(true);
       refreshInterval =
           Duration.parse(
               securityConfiguration.getAuthentication().getAuthenticationRefreshInterval());
