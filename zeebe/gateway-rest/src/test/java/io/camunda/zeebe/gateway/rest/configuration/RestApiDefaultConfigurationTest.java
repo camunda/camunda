@@ -42,7 +42,7 @@ public class RestApiDefaultConfigurationTest extends RestApiConfigurationTest {
         .expectStatus()
         .isOk();
 
-    verify(processInstanceServices).search(any(ProcessInstanceQuery.class));
+    verify(processInstanceServices).search(any(ProcessInstanceQuery.class), any());
   }
 
   @Test

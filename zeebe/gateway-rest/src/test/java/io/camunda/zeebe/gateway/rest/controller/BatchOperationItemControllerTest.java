@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -19,7 +20,6 @@ import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -45,8 +45,6 @@ class BatchOperationItemControllerTest extends RestControllerTest {
   void setUpServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(batchOperationServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(batchOperationServices);
   }
 
   private static Stream<Arguments> provideAdvancedSearchParameters() {
@@ -107,7 +105,7 @@ class BatchOperationItemControllerTest extends RestControllerTest {
             .formatted(filterString);
 
     // when / then
-    when(batchOperationServices.searchItems(any(BatchOperationItemQuery.class)))
+    when(batchOperationServices.searchItems(any(BatchOperationItemQuery.class), any()))
         .thenReturn(new SearchQueryResult(1, false, List.of(entity), null, null));
 
     webClient
@@ -145,7 +143,7 @@ class BatchOperationItemControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     verify(batchOperationServices)
-        .searchItems(new BatchOperationItemQuery.Builder().filter(filter).build());
+        .searchItems(eq(new BatchOperationItemQuery.Builder().filter(filter).build()), any());
   }
 
   private static BatchOperationItemEntity getBatchOperationItemEntity(

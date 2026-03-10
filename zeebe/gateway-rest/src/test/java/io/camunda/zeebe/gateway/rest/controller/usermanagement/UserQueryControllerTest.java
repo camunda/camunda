@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -19,7 +20,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.UserSort;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.RoleServices;
@@ -81,8 +81,6 @@ public class UserQueryControllerTest extends RestControllerTest {
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(userServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(userServices);
     when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
@@ -90,7 +88,7 @@ public class UserQueryControllerTest extends RestControllerTest {
   void getUserShouldReturnOk() {
     // given
     final var user = new UserEntity(100L, "username", "User Name", "email@email.com", "password");
-    when(userServices.getUser(user.username())).thenReturn(user);
+    when(userServices.getUser(eq(user.username()), any())).thenReturn(user);
 
     // when
     webClient
@@ -111,7 +109,7 @@ public class UserQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(userServices, times(1)).getUser(user.username());
+    verify(userServices, times(1)).getUser(eq(user.username()), any());
   }
 
   @Test
@@ -119,7 +117,7 @@ public class UserQueryControllerTest extends RestControllerTest {
     // given
     final var username = Strings.newRandomValidIdentityId();
     final var path = "%s/%s".formatted("/v2/users", username);
-    when(userServices.getUser(username))
+    when(userServices.getUser(eq(username), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -147,13 +145,13 @@ public class UserQueryControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(userServices, times(1)).getUser(username);
+    verify(userServices, times(1)).getUser(eq(username), any());
   }
 
   @Test
   void shouldSearchUsersWithEmptyBody() {
     // given
-    when(userServices.search(any(UserQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    when(userServices.search(any(UserQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     webClient
         .post()
@@ -166,13 +164,13 @@ public class UserQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(userServices).search(new UserQuery.Builder().build());
+    verify(userServices).search(eq(new UserQuery.Builder().build()), any());
   }
 
   @Test
   void shouldSearchUsersWithEmptyQuery() {
     // given
-    when(userServices.search(any(UserQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    when(userServices.search(any(UserQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
     final String request = "{}";
     // when / then
     webClient
@@ -189,13 +187,13 @@ public class UserQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(userServices).search(new UserQuery.Builder().build());
+    verify(userServices).search(eq(new UserQuery.Builder().build()), any());
   }
 
   @Test
   void shouldSearchUsersWithSorting() {
     // given
-    when(userServices.search(any(UserQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    when(userServices.search(any(UserQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
             {
@@ -222,7 +220,9 @@ public class UserQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userServices)
-        .search(new UserQuery.Builder().sort(new UserSort.Builder().name().desc().build()).build());
+        .search(
+            eq(new UserQuery.Builder().sort(new UserSort.Builder().name().desc().build()).build()),
+            any());
   }
 
   @ParameterizedTest
@@ -244,7 +244,7 @@ public class UserQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(userServices, never()).search(any(UserQuery.class));
+    verify(userServices, never()).search(any(UserQuery.class), any());
   }
 
   public static Stream<Arguments> invalidUserSearchQueries() {

@@ -7,11 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.Broker;
 import io.camunda.service.TopologyServices.Health;
@@ -22,7 +17,6 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
@@ -35,22 +29,12 @@ import org.springframework.test.json.JsonCompareMode;
 public class TopologyControllerTest extends RestControllerTest {
 
   @MockitoBean TopologyServices topologyServices;
-  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
-
-  @BeforeEach
-  void setUp() {
-    when(authenticationProvider.getCamundaAuthentication())
-        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(topologyServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(topologyServices);
-  }
 
   @ParameterizedTest
   @ValueSource(strings = {"/v1/topology", "/v2/topology"})
   public void shouldGetTopology(final String baseUrl) {
     // given
     final var version = VersionUtil.getVersion();
-    final var clusterId = "cluster-id";
     final var expectedResponse =
         """
         {

@@ -7,10 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
@@ -35,8 +33,6 @@ public class FaultyControllerTest extends RestControllerTest {
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(processInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(processInstanceServices);
   }
 
   @Test
