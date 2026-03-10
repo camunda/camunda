@@ -60,11 +60,9 @@ public final class ElementInstanceServiceTest {
             client,
             processCache,
             incidentServices,
-            null,
             mock(ApiServicesExecutorProvider.class),
             null);
 
-    when(incidentServices.withAuthentication(authentication)).thenReturn(incidentServices);
     when(client.withSecurityContext(any())).thenReturn(client);
     when(processCache.getCacheItems(any())).thenReturn(ProcessCacheResult.EMPTY);
   }
@@ -80,7 +78,8 @@ public final class ElementInstanceServiceTest {
 
       // when
       final var searchQueryResult =
-          services.search(SearchQueryBuilders.flownodeInstanceSearchQuery().build());
+          services.search(
+              SearchQueryBuilders.flownodeInstanceSearchQuery().build(), authentication);
 
       // then
       assertThat(searchQueryResult.items()).contains(entity);
@@ -101,7 +100,8 @@ public final class ElementInstanceServiceTest {
                   entity.flowNodeId(),
                   "cached name"));
 
-      final var searchQueryResult = services.search(FlowNodeInstanceQuery.of(q -> q));
+      final var searchQueryResult =
+          services.search(FlowNodeInstanceQuery.of(q -> q), authentication);
 
       assertThat(searchQueryResult.items()).contains(entity.withFlowNodeName("cached name"));
     }
@@ -115,7 +115,8 @@ public final class ElementInstanceServiceTest {
 
       when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
 
-      final var searchQueryResult = services.search(FlowNodeInstanceQuery.of(q -> q));
+      final var searchQueryResult =
+          services.search(FlowNodeInstanceQuery.of(q -> q), authentication);
 
       assertThat(searchQueryResult.items()).contains(entity.withFlowNodeName(entity.flowNodeId()));
     }
@@ -131,7 +132,7 @@ public final class ElementInstanceServiceTest {
       when(client.getFlowNodeInstance(any(Long.class))).thenReturn(entity);
 
       // when
-      final var searchQueryResult = services.getByKey(entity.flowNodeInstanceKey());
+      final var searchQueryResult = services.getByKey(entity.flowNodeInstanceKey(), authentication);
 
       // then
       assertThat(searchQueryResult).isEqualTo(entity);
@@ -148,7 +149,7 @@ public final class ElementInstanceServiceTest {
 
       // when
       final ThrowingCallable executeGetByKey =
-          () -> services.getByKey(entity.flowNodeInstanceKey());
+          () -> services.getByKey(entity.flowNodeInstanceKey(), authentication);
       // then
       final var exception =
           (ServiceException)
@@ -173,7 +174,7 @@ public final class ElementInstanceServiceTest {
               new ProcessCacheItem("ProcessName", Map.of(entity.flowNodeId(), "cached name")));
 
       // when
-      final var foundEntity = services.getByKey(entity.flowNodeInstanceKey());
+      final var foundEntity = services.getByKey(entity.flowNodeInstanceKey(), authentication);
 
       // then
       assertThat(foundEntity.flowNodeName()).isEqualTo("cached name");
@@ -192,7 +193,7 @@ public final class ElementInstanceServiceTest {
           .thenReturn(new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name")));
 
       // when
-      final var foundEntity = services.getByKey(entity.flowNodeInstanceKey());
+      final var foundEntity = services.getByKey(entity.flowNodeInstanceKey(), authentication);
 
       // then
       assertThat(foundEntity.flowNodeName()).isEqualTo(entity.flowNodeId());
@@ -219,9 +220,10 @@ public final class ElementInstanceServiceTest {
                 .create();
 
         final SearchQueryResult<IncidentEntity> result = SearchQueryResult.of(incident);
-        when(incidentServices.search(any(IncidentQuery.class))).thenReturn(result);
+        when(incidentServices.search(any(IncidentQuery.class), any())).thenReturn(result);
         // when
-        final var searchResult = services.searchIncidents(elementInstanceKey, query);
+        final var searchResult =
+            services.searchIncidents(elementInstanceKey, query, authentication);
         // then
         assertThat(searchResult.items()).containsExactly(incident);
       }
@@ -234,9 +236,10 @@ public final class ElementInstanceServiceTest {
         final SearchQueryResult<IncidentEntity> result = SearchQueryResult.of();
         final var entity = Instancio.create(FlowNodeInstanceEntity.class);
         when(client.getFlowNodeInstance(any(Long.class))).thenReturn(entity);
-        when(incidentServices.search(any(IncidentQuery.class))).thenReturn(result);
+        when(incidentServices.search(any(IncidentQuery.class), any())).thenReturn(result);
         // when
-        final var searchResult = services.searchIncidents(elementInstanceKey, query);
+        final var searchResult =
+            services.searchIncidents(elementInstanceKey, query, authentication);
         // then
         assertThat(searchResult.items()).isEmpty();
       }

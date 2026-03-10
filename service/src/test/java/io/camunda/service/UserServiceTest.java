@@ -59,7 +59,6 @@ public class UserServiceTest {
             brokerClient,
             mock(SecurityContextProvider.class),
             client,
-            authentication,
             passwordEncoder,
             executorProvider,
             brokerRequestAuthorizationConverter);
@@ -75,7 +74,7 @@ public class UserServiceTest {
     final var searchQuery = SearchQueryBuilders.userSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery);
+    final var searchQueryResult = services.search(searchQuery, authentication);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -91,7 +90,7 @@ public class UserServiceTest {
     when(brokerClient.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(userRecord)));
 
-    services.deleteUser(username);
+    services.deleteUser(username, authentication);
 
     verify(brokerClient).sendRequest(userDeleteRequestArgumentCaptor.capture());
     final var request = userDeleteRequestArgumentCaptor.getValue().getRequestWriter();
@@ -107,7 +106,7 @@ public class UserServiceTest {
     when(client.getUser(eq("test"))).thenReturn(entity);
 
     // when
-    final var searchQueryResult = services.getUser(entity.username());
+    final var searchQueryResult = services.getUser(entity.username(), authentication);
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);

@@ -10,6 +10,7 @@ package io.camunda.service.cache;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,7 +19,6 @@ import static org.mockito.Mockito.when;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.cache.ProcessCache.Configuration;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -62,9 +62,8 @@ class ProcessCacheTest {
         new ProcessCache(
             configuration, processDefinitionServices, brokerTopologyManager, meterRegistry);
 
-    when(processDefinitionServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(processDefinitionServices);
-    when(processDefinitionServices.getByKey(entity.processDefinitionKey())).thenReturn(entity);
+    when(processDefinitionServices.getByKey(eq(entity.processDefinitionKey()), any()))
+        .thenReturn(entity);
   }
 
   @AfterEach
@@ -88,21 +87,21 @@ class ProcessCacheTest {
     final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey());
 
     // then - extractElementNames not called again
-    verify(processDefinitionServices, times(1)).getByKey(entity.processDefinitionKey());
+    verify(processDefinitionServices, times(1)).getByKey(eq(entity.processDefinitionKey()), any());
     assertThat(cacheItem).isNotEqualTo(ProcessCacheItem.EMPTY);
   }
 
   @Test
   void shouldNotPopulateCacheWhenNotFound() {
     // given
-    when(processDefinitionServices.getByKey(entity.processDefinitionKey()))
+    when(processDefinitionServices.getByKey(eq(entity.processDefinitionKey()), any()))
         .thenThrow(new NoSuchElementException());
 
     // when
     final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey());
 
     // then - extractElementNames not called again
-    verify(processDefinitionServices, times(1)).getByKey(entity.processDefinitionKey());
+    verify(processDefinitionServices, times(1)).getByKey(eq(entity.processDefinitionKey()), any());
     assertThat(cacheItem).isEqualTo(ProcessCacheItem.EMPTY);
   }
 
@@ -114,7 +113,7 @@ class ProcessCacheTest {
     processCache.getCacheItem(entity.processDefinitionKey());
 
     // then - extractElementNames not called again
-    verify(processDefinitionServices, times(1)).getByKey(entity.processDefinitionKey());
+    verify(processDefinitionServices, times(1)).getByKey(eq(entity.processDefinitionKey()), any());
   }
 
   @Test
@@ -125,7 +124,7 @@ class ProcessCacheTest {
             .set(field(ProcessDefinitionEntity::processDefinitionId), "parent_process_v1")
             .create();
 
-    when(processDefinitionServices.search(any()))
+    when(processDefinitionServices.search(any(), any()))
         .thenReturn(SearchQueryResult.of(entity, otherEntity));
 
     // when
@@ -134,7 +133,7 @@ class ProcessCacheTest {
             Set.of(entity.processDefinitionKey(), otherEntity.processDefinitionKey()));
 
     // then
-    verify(processDefinitionServices, times(1)).search(any());
+    verify(processDefinitionServices, times(1)).search(any(), any());
     final var cacheMap = getCacheMap();
     assertThat(cacheMap)
         .containsOnlyKeys(entity.processDefinitionKey(), otherEntity.processDefinitionKey());
@@ -199,7 +198,7 @@ class ProcessCacheTest {
               .set(field(ProcessDefinitionEntity::processDefinitionId), "parent_process_v1")
               .create();
 
-      when(processDefinitionServices.search(any()))
+      when(processDefinitionServices.search(any(), any()))
           .thenReturn(SearchQueryResult.of(entity, otherEntity));
 
       // when

@@ -48,6 +48,7 @@ public class TenantServiceTest {
   private TenantServices services;
   private TenantSearchClient client;
   private StubbedBrokerClient stubbedBrokerClient;
+  private CamundaAuthentication authentication;
   private final TenantEntity tenantEntity =
       new TenantEntity(100L, "tenant-id", "Tenant name", "Tenant description");
   private ApiServicesExecutorProvider executorProvider;
@@ -56,8 +57,7 @@ public class TenantServiceTest {
   @BeforeEach
   public void before() {
     stubbedBrokerClient = new StubbedBrokerClient();
-    final CamundaAuthentication authentication =
-        CamundaAuthentication.of(builder -> builder.user("foo"));
+    authentication = CamundaAuthentication.of(builder -> builder.user("foo"));
     client = mock(TenantSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     executorProvider = mock(ApiServicesExecutorProvider.class);
@@ -68,7 +68,6 @@ public class TenantServiceTest {
             stubbedBrokerClient,
             mock(SecurityContextProvider.class),
             client,
-            authentication,
             executorProvider,
             brokerRequestAuthorizationConverter);
   }
@@ -83,7 +82,7 @@ public class TenantServiceTest {
     final var searchQuery = SearchQueryBuilders.tenantSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery);
+    final var searchQueryResult = services.search(searchQuery, authentication);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -95,7 +94,7 @@ public class TenantServiceTest {
     when(client.getTenant(eq("tenant-id"))).thenReturn(tenantEntity);
 
     // when
-    final var searchQueryResult = services.getById("tenant-id");
+    final var searchQueryResult = services.getById("tenant-id", authentication);
 
     // then
     assertThat(searchQueryResult).isEqualTo(tenantEntity);
@@ -108,7 +107,7 @@ public class TenantServiceTest {
         new TenantRequest(100L, "NewTenantName", "NewTenantId", "NewTenantDescription");
 
     // when
-    services.createTenant(tenantDTO);
+    services.createTenant(tenantDTO, authentication);
 
     // then
     final BrokerTenantCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -127,7 +126,7 @@ public class TenantServiceTest {
         new TenantRequest(tenantEntity.key(), tenantEntity.tenantId(), "UpdatedTenantId", null);
 
     // when
-    services.updateTenant(tenantDTO);
+    services.updateTenant(tenantDTO, authentication);
 
     // then
     final BrokerTenantUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -147,7 +146,7 @@ public class TenantServiceTest {
             tenantEntity.key(), tenantEntity.tenantId(), "TenantName", "UpdatedTenantDescription");
 
     // when
-    services.updateTenant(tenantDTO);
+    services.updateTenant(tenantDTO, authentication);
 
     // then
     final BrokerTenantUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -161,7 +160,7 @@ public class TenantServiceTest {
   @Test
   public void shouldDeleteTenant() {
     // when
-    services.deleteTenant(tenantEntity.tenantId());
+    services.deleteTenant(tenantEntity.tenantId(), authentication);
 
     // then
     final BrokerTenantDeleteRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -181,7 +180,7 @@ public class TenantServiceTest {
     final var tenantMemberRequest = new TenantMemberRequest(tenantId, entityId, entityType);
 
     // when
-    services.addMember(tenantMemberRequest);
+    services.addMember(tenantMemberRequest, authentication);
 
     // then
     final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -204,7 +203,7 @@ public class TenantServiceTest {
     final var tenantMemberRequest = new TenantMemberRequest(tenantId, entityId, entityType);
 
     // when
-    services.removeMember(tenantMemberRequest);
+    services.removeMember(tenantMemberRequest, authentication);
 
     // then
     final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
@@ -223,7 +222,7 @@ public class TenantServiceTest {
 
     final var exception =
         (ServiceException)
-            assertThatThrownBy(() -> services.getById("tenant-id"))
+            assertThatThrownBy(() -> services.getById("tenant-id", authentication))
                 .isInstanceOf(ServiceException.class)
                 .actual();
     assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
