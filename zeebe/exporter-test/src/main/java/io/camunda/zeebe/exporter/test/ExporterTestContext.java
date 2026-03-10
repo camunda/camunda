@@ -30,6 +30,7 @@ public final class ExporterTestContext implements Context {
   private RecordFilter recordFilter;
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private int partitionId;
+  private InstantSource clock = InstantSource.system();
 
   @Override
   public MeterRegistry getMeterRegistry() {
@@ -43,7 +44,7 @@ public final class ExporterTestContext implements Context {
 
   @Override
   public InstantSource clock() {
-    return InstantSource.system();
+    return clock;
   }
 
   @Override
@@ -63,6 +64,11 @@ public final class ExporterTestContext implements Context {
 
   public ExporterTestContext setPartitionId(final int partitionId) {
     this.partitionId = partitionId;
+    return this;
+  }
+
+  public ExporterTestContext setClock(final InstantSource clock) {
+    this.clock = Objects.requireNonNull(clock, "must specify a clock");
     return this;
   }
 
