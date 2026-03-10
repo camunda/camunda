@@ -15,6 +15,7 @@ import {BottomPanelTabs} from './index';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {createProcessInstance, searchResult} from 'modules/testUtils';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
 import {LocationLog} from 'modules/utils/LocationLog';
 
 const PROCESS_INSTANCE_ID = '123';
@@ -149,6 +150,9 @@ describe('<BottomPanelTabs />', () => {
   });
 
   it('should show Incidents tab when process instance has an incident', async () => {
+    mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
+      searchResult([], 3),
+    );
     mockFetchProcessInstance().withSuccess(
       createProcessInstance({
         processInstanceKey: PROCESS_INSTANCE_ID,
@@ -165,6 +169,9 @@ describe('<BottomPanelTabs />', () => {
 
   it('should render all tabs in correct order when all are visible', async () => {
     mockSearchElementInstances().withSuccess(searchResult([]));
+    mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
+      searchResult([], 2),
+    );
 
     mockFetchProcessInstance().withSuccess(
       createProcessInstance({
@@ -267,6 +274,9 @@ describe('<BottomPanelTabs />', () => {
   });
 
   it('should navigate to the Incidents route when clicking the Incidents tab', async () => {
+    mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
+      searchResult([], 1),
+    );
     mockFetchProcessInstance().withSuccess(
       createProcessInstance({
         processInstanceKey: PROCESS_INSTANCE_ID,
@@ -355,5 +365,25 @@ describe('<BottomPanelTabs />', () => {
     expect(
       screen.getByRole('link', {name: /^Variables$/i}),
     ).not.toHaveAttribute('aria-current');
+  });
+
+  it('should display incident count badge on the Incidents tab', async () => {
+    mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
+      searchResult([], 5),
+    );
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: true,
+      }),
+    );
+
+    render(<BottomPanelTabs />, {wrapper: getWrapper()});
+
+    const incidentsTab = await screen.findByRole('link', {
+      name: /^Incidents$/i,
+    });
+    expect(incidentsTab).toBeVisible();
+    expect(await screen.findByText('5')).toBeVisible();
   });
 });
