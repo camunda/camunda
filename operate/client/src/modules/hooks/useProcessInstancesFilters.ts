@@ -7,6 +7,7 @@
  */
 
 import {type ProcessInstanceFilters} from 'modules/utils/filter/shared';
+import {parseIds} from 'modules/utils/filter';
 import {useFilters} from 'modules/hooks/useFilters';
 import {
   type GetProcessDefinitionStatisticsRequestBody,
@@ -57,7 +58,7 @@ function mapFiltersToRequest(
 
   if (ids) {
     request.filter.processInstanceKey = {
-      $in: ids.split(/[\s,]+/).filter(Boolean),
+      $in: parseIds(ids),
     };
   }
 
