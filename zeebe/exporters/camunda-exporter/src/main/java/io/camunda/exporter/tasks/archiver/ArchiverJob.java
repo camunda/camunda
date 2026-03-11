@@ -97,8 +97,11 @@ public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundT
 
   @Override
   public void close() {
-    semaphoreExecutor.close();
-    BackgroundTask.super.close();
+    try{
+      semaphoreExecutor.close();
+    }finally{
+      BackgroundTask.super.close();
+    }
   }
 
   @Override
