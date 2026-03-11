@@ -69,6 +69,9 @@
           "$ref": "#/definitions/AssertVariablesInstruction"
         },
         {
+          "$ref": "#/definitions/AssertVariableSimilarToInstruction"
+        },
+        {
           "$ref": "#/definitions/BroadcastSignalInstruction"
         },
         {
@@ -1086,6 +1089,46 @@
       "required": [
         "type",
         "processInstanceSelector"
+      ],
+      "additionalProperties": false
+    },
+    "AssertVariableSimilarToInstruction": {
+      "description": "An instruction to assert that a process variable is semantically similar to an expected value using text embeddings.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_VARIABLE_SIMILAR_TO"
+        },
+        "processInstanceSelector": {
+          "description": "The selector to identify the process instance.",
+          "$ref": "#/definitions/ProcessInstanceSelector"
+        },
+        "elementSelector": {
+          "description": "The selector to identify the element for local variable scope. Optional — when absent the variable is looked up as a global process-instance variable.",
+          "$ref": "#/definitions/ElementSelector"
+        },
+        "variableName": {
+          "description": "The name of the variable to assert.",
+          "type": "string"
+        },
+        "expectedValue": {
+          "description": "The expected value the variable should be semantically similar to.",
+          "type": "string"
+        },
+        "threshold": {
+          "description": "The minimum similarity score (0.0–1.0) for the assertion to pass. Optional — when absent the configured default threshold is used.",
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        }
+      },
+      "required": [
+        "type",
+        "processInstanceSelector",
+        "variableName",
+        "expectedValue"
       ],
       "additionalProperties": false
     },
