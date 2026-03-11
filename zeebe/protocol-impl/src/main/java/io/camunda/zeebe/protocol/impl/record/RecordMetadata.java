@@ -127,6 +127,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         authorization = new AuthInfo();
       }
       authorization.wrap(authBuffer);
+      authorization.freeze();
     } else {
       decoder.skipAuthorization();
     }
