@@ -209,11 +209,6 @@ public final class ProcessInstanceMigrationPreconditions {
       but joining gateway with id '%s' has a taken sequence flow with id '%s'. \
       Taken sequence flows must be mapped to a sequence flow in the target process definition.""";
 
-  private static final String ERROR_BUSINESS_ID_ALREADY_EXISTS_FOR_TARGET =
-      """
-      Expected to migrate instance '%s' with business id '%s' to process definition key '%s', \
-      but an active instance with this business id already exists for the target process definition""";
-
   private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
   private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
 
