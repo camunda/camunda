@@ -191,7 +191,7 @@ class JudgeAssertj extends AbstractAssert<JudgeAssertj, String> {
   private void assertJudgeConfigured() {
     if (judgeConfig == null) {
       throw new IllegalStateException(
-          "JudgeConfig is not set. Call CamundaAssert.setJudgeConfig(...) before using judge assertions.");
+          "JudgeConfig is not set. Ensure to provide a JudgeConfig instance to use judge assertions.");
     }
   }
 
