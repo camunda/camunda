@@ -168,6 +168,27 @@ final class AuthInfoTest {
     }
 
     @Test
+    void shouldReturnEmptyWhenOfClaimsCalledWithNull() {
+      assertThat(AuthInfo.ofClaims(null)).isSameAs(AuthInfo.empty());
+    }
+
+    @Test
+    void shouldReturnEmptyWhenOfClaimsCalledWithEmptyMap() {
+      assertThat(AuthInfo.ofClaims(Map.of())).isSameAs(AuthInfo.empty());
+    }
+
+    @Test
+    void shouldReturnFrozenAuthInfoWithClaims() {
+      final Map<String, Object> claims = Map.of("user", "admin", "role", "operator");
+
+      final AuthInfo result = AuthInfo.ofClaims(claims);
+
+      assertThat(result.isFrozen()).isTrue();
+      assertThat(result.getClaims()).isEqualTo(claims);
+      assertThat(result.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.UNKNOWN);
+    }
+
+    @Test
     void shouldCopyAuthInfoWhenOfCalledWithNonNull() {
       // given
       final AuthInfo original = new AuthInfo();
