@@ -7,12 +7,13 @@
  */
 package io.camunda.zeebe.backup.azure;
 
-import com.azure.core.util.BinaryData;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.models.BlobErrorCode;
+import com.azure.storage.blob.models.BlobHttpHeaders;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.models.ListBlobsOptions;
+import com.azure.storage.blob.models.ParallelTransferOptions;
 import com.azure.storage.blob.specialized.BlockBlobClient;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
@@ -25,6 +26,17 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 final class FileSetManager {
+  static final ParallelTransferOptions SNAPSHOT_FILES_OPTS =
+      new ParallelTransferOptions()
+          .setBlockSizeLong(1 * 1024L * 1024L)
+          .setMaxSingleUploadSizeLong(1 * 1024L * 1024L)
+          .setMaxConcurrency(1);
+  static final ParallelTransferOptions SEGMENT_FILES_OPTS =
+      new ParallelTransferOptions()
+          .setBlockSizeLong(4 * 1024L * 1024L)
+          .setMaxSingleUploadSizeLong(8 * 1024L * 1024L)
+          .setMaxConcurrency(2);
+
   // The path format is constructed by contents/partitionId/checkpointId/nodeId/nameOfFile
   private static final String PATH_FORMAT = "contents/%s/%s/%s/%s/";
   private final BlobContainerClient containerClient;
@@ -46,8 +58,16 @@ final class FileSetManager {
       final BlobClient blobClient = containerClient.getBlobClient(fileSetPath + fileName);
 
       try {
-        final BinaryData binaryData = BinaryData.fromFile(filePath);
-        blobClient.upload(binaryData, false);
+        blobClient.uploadFromFile(
+            filePath.toString(),
+            fileSetName.equals(AzureBackupStore.SNAPSHOT_FILESET_NAME)
+                ? SNAPSHOT_FILES_OPTS
+                : SEGMENT_FILES_OPTS,
+            new BlobHttpHeaders(),
+            null,
+            null,
+            null,
+            null);
       } catch (final BlobStorageException e) {
         if (e.getErrorCode() == BlobErrorCode.BLOB_ALREADY_EXISTS) {
           throw new BlobAlreadyExists("File already exists.", e.getCause());
