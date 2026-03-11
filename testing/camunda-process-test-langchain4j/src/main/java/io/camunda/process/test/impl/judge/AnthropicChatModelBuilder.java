@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.judge;
+package io.camunda.process.test.impl.judge;
 
-import static io.camunda.process.test.api.judge.ModelBuilderSupport.require;
+import static io.camunda.process.test.impl.judge.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.anthropic.AnthropicChatModel;
 import dev.langchain4j.model.chat.ChatModel;
+import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

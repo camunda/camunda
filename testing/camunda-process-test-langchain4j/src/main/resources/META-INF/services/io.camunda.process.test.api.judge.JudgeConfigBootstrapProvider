@@ -1,1 +1,1 @@
-io.camunda.process.test.api.judge.JudgeConfigBootstrap
+io.camunda.process.test.impl.judge.JudgeConfigBootstrap
