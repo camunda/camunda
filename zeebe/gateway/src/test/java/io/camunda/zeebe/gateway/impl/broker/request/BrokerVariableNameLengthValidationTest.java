@@ -55,6 +55,18 @@ final class BrokerVariableNameLengthValidationTest {
   }
 
   @Test
+  void shouldRejectCompleteUserTaskWithTooLongVariableName() {
+    // when/then
+    assertThatThrownBy(
+            () ->
+                new BrokerUserTaskCompletionRequest(
+                    1L, asMsgPack("x".repeat(MAX_VARIABLE_NAME_LENGTH + 1), 1), "", 5))
+        .isInstanceOf(InvalidVariableRequestException.class)
+        .hasMessageContaining("Expected variable names to be no longer than 5 characters")
+        .hasMessageContaining("length 6");
+  }
+
+  @Test
   void shouldAllowValidVariableNamesForCreateProcessInstanceWithResult() {
     // when/then
     assertThatCode(
