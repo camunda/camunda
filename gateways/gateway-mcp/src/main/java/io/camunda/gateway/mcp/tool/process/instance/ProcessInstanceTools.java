@@ -8,6 +8,7 @@
 package io.camunda.gateway.mcp.tool.process.instance;
 
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_INSTANCE_KEY_NOT_NULL_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_INSTANCE_KEY_POSITIVE_MESSAGE;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
@@ -24,6 +25,7 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
@@ -74,6 +76,7 @@ public class ProcessInstanceTools {
       @McpToolParam(
               description =
                   "The assigned key of the process instance, which acts as a unique identifier for this process instance.")
+          @NotNull(message = PROCESS_INSTANCE_KEY_NOT_NULL_MESSAGE)
           @Positive(message = PROCESS_INSTANCE_KEY_POSITIVE_MESSAGE)
           final Long processInstanceKey) {
     try {
