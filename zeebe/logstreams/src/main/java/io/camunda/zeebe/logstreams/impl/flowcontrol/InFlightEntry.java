@@ -23,9 +23,9 @@ public final class InFlightEntry {
 
   /**
    * The sequential ring buffer index assigned to this entry. Set by {@link RingBuffer#put} before
-   * the entry reference is published into the array. Used by {@link RingBuffer#get} to verify that
-   * the entry in a slot actually belongs to the requested index (guards against wraparound
-   * collisions).
+   * the entry reference is published into the array. Used by {@link RingBuffer#findAndRemove} to
+   * verify that the entry in a slot belongs to the expected sequential index (guards against
+   * wraparound collisions).
    *
    * <p>This field is intentionally <em>not</em> volatile. Visibility is guaranteed by the {@link
    * java.util.concurrent.atomic.AtomicReferenceArray} used in the ring buffer: {@code put} sets
@@ -38,8 +38,7 @@ public final class InFlightEntry {
   /**
    * The highest log position of the batch this entry belongs to. Set by {@link
    * FlowControl#registerEntry} before calling {@link RingBuffer#put}. Used by {@link
-   * RingBuffer#findAndRemove} to locate entries by log position (for {@code onProcessed}), and by
-   * {@link RingBuffer#get} as a secondary guard alongside the sequential index.
+   * RingBuffer#findAndRemove} to locate entries by log position (for {@code onProcessed}).
    *
    * <p>Same visibility contract as {@link #position}: written before the volatile publish in {@code
    * put()}.
