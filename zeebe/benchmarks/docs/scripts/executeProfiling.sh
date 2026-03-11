@@ -53,7 +53,7 @@ fi
 filename=flamegraph-$profiler_event-$(date +%Y-%m-%d_%H-%M-%S).html
 # Extracting the PID:
 #
-#  $ k exec camunda-0 -it -- ps -ax
+#  $ k exec zeebe-0 -it -- ps -ax
 #    PID TTY      STAT   TIME COMMAND
 #      1 ?        Ssl  570:26 /usr/lib/jvm/default-jvm/bin/java -XX:+ExitOnOutOfM
 #   5905 pts/0    Rs+    0:00 ps -ax

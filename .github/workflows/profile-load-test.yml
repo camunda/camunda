@@ -9,7 +9,7 @@ on:
         description: 'Specifies the name of the load test to profile'
         required: true
       pod:
-        description: 'Specifies the pod name to profile. Leave empty to profile all three pods (camunda-0, camunda-1, camunda-2) with different events, or specify a pod name for CPU profiling only.'
+        description: 'Specifies the pod name to profile. Leave empty to profile all three pods (zeebe-0, zeebe-1, zeebe-2) with different events, or specify a pod name for CPU profiling only.'
         default: ''
         required: false
       profiler_options:
@@ -23,7 +23,7 @@ on:
         required: true
         type: string
       pod:
-        description: 'Specifies the pod name to profile. Leave empty to profile all three pods with different events, or specify a pod name for CPU profiling only.'
+        description: 'Specifies the pod name to profile. Leave empty to profile all three pods (zeebe-0, zeebe-1, zeebe-2) with different events, or specify a pod name for CPU profiling only.'
         default: ''
         required: false
         type: string
@@ -56,11 +56,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - pod: camunda-0
+          - pod: zeebe-0
             event: cpu
-          - pod: camunda-1
+          - pod: zeebe-1
             event: wall
-          - pod: camunda-2
+          - pod: zeebe-2
             event: alloc
     steps:
       - uses: actions/checkout@v6
