@@ -63,7 +63,7 @@ final class FileSetManager {
       final BlobClient blobClient = containerClient.getBlobClient(fileSetPath + fileName);
 
       try {
-        upload(blobClient, filePath, fileSetPath);
+        upload(blobClient, filePath, fileSetName);
       } catch (final BlobStorageException e) {
         if (e.getErrorCode() == BlobErrorCode.BLOB_ALREADY_EXISTS) {
           throw new BlobAlreadyExists("File already exists.", e.getCause());
