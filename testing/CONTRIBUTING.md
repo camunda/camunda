@@ -164,3 +164,8 @@ generates the code during the `generate-sources` phase, unless you disabled it v
 `skipFrontendBuild` or the property `skip.fe.build`.
 
 Make sure to run the Maven build without the profile or property.
+
+```shell
+mvn clean compile -Dskip.fe.build=false -pl camunda-process-test-java
+```
+
