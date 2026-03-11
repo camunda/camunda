@@ -93,7 +93,7 @@ public class CamundaAssert {
   private static CamundaAssertJsonMapper jsonMapper =
       new CamundaAssertJsonMapper(DEFAULT_JSON_MAPPER);
 
-  private static final ThreadLocal<JudgeConfig> JUDGE_CONFIG = new ThreadLocal<>();
+  private static JudgeConfig judgeConfig;
 
   static {
     setAssertionTimeout(DEFAULT_ASSERTION_TIMEOUT);
@@ -169,7 +169,7 @@ public class CamundaAssert {
   }
 
   static JudgeConfig getJudgeConfig() {
-    return JUDGE_CONFIG.get();
+    return judgeConfig;
   }
 
   /**
@@ -179,11 +179,7 @@ public class CamundaAssert {
    * @see JudgeConfig
    */
   public static void setJudgeConfig(final JudgeConfig judgeConfig) {
-    if (judgeConfig == null) {
-      JUDGE_CONFIG.remove();
-    } else {
-      JUDGE_CONFIG.set(judgeConfig);
-    }
+    CamundaAssert.judgeConfig = judgeConfig;
   }
 
   // ======== Assertions ========
@@ -282,7 +278,7 @@ public class CamundaAssert {
         jsonMapper,
         processInstanceSelector,
         elementSelector,
-        JUDGE_CONFIG.get());
+        judgeConfig);
   }
 
   /**
@@ -305,7 +301,7 @@ public class CamundaAssert {
         jsonMapper,
         processInstanceKey,
         elementSelector,
-        JUDGE_CONFIG.get());
+        judgeConfig);
   }
 
   /**
@@ -399,6 +395,6 @@ public class CamundaAssert {
    */
   static void reset() {
     CamundaAssert.DATA_SOURCE.remove();
-    CamundaAssert.JUDGE_CONFIG.remove();
+    CamundaAssert.judgeConfig = null;
   }
 }
