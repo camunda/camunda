@@ -31,14 +31,14 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.assertj.core.api.AbstractAssert;
 
-class JudgeAssertj extends AbstractAssert<JudgeAssertj, String> {
+public class JudgeAssertj extends AbstractAssert<JudgeAssertj, String> {
 
   private final CamundaDataSource dataSource;
   private final CamundaAssertAwaitBehavior awaitBehavior;
   private final JudgeConfig judgeConfig;
   private final VariableFetcher variableFetcher;
 
-  JudgeAssertj(
+  public JudgeAssertj(
       final CamundaDataSource dataSource,
       final CamundaAssertAwaitBehavior awaitBehavior,
       final JudgeConfig judgeConfig,
