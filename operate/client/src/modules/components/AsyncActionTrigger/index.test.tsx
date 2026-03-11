@@ -130,7 +130,7 @@ describe('<AsyncActionTrigger />', () => {
     expect(onReset).toHaveBeenCalledTimes(1);
   });
 
-  it('does not call onReset for idle or pending status', () => {
+  it('should not call onReset for idle or pending status', () => {
     vi.useFakeTimers();
     const onReset = vi.fn();
 
