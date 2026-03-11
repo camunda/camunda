@@ -158,11 +158,33 @@ class VariableToolsTest extends ToolsTest {
     }
 
     @Test
-    void shouldFailGetVariableByKeyOnNullKey() {
+    void shouldFailGetVariableByKeyOnMissingKey() {
       // when
       final CallToolResult result =
           mcpClient.callTool(
               CallToolRequest.builder().name("getVariable").arguments(Map.of()).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("variableKey: Variable key must not be null."));
+    }
+
+    @Test
+    void shouldFailGetVariableByKeyOnNullKey() {
+      // when
+      final var arguments = new java.util.HashMap<String, Object>();
+      arguments.put("variableKey", null);
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("getVariable").arguments(arguments).build());
 
       // then
       assertThat(result.isError()).isTrue();
