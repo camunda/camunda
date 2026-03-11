@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -304,7 +303,7 @@ final class GlobalListenersInitializerIT {
   }
 
   private void waitForConfigurationDistributionComplete(final String expectedListenerId) {
-    Awaitility.await()
+    RecordingExporter.await(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
               // Wait for configuration to be applied on all partitions
