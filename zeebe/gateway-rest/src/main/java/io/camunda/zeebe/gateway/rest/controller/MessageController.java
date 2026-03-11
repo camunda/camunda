@@ -64,22 +64,18 @@ public class MessageController {
 
   private CompletableFuture<ResponseEntity<Object>> correlateMessage(
       final CorrelateMessageRequest correlationRequest) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () ->
-            messageServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .correlateMessage(correlationRequest),
+        () -> messageServices.correlateMessage(correlationRequest, authentication),
         ResponseMapper::toMessageCorrelationResponse,
         HttpStatus.OK);
   }
 
   private CompletableFuture<ResponseEntity<Object>> publishMessage(
       final PublicationMessageRequest request) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () ->
-            messageServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .publishMessage(request),
+        () -> messageServices.publishMessage(request, authentication),
         ResponseMapper::toMessagePublicationResponse,
         HttpStatus.OK);
   }

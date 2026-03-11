@@ -20,7 +20,6 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -28,7 +27,6 @@ public abstract class ApiServices<T extends ApiServices<T>> {
 
   protected final BrokerClient brokerClient;
   protected final SecurityContextProvider securityContextProvider;
-  protected final CamundaAuthentication authentication;
   protected final ApiServicesExecutorProvider executorProvider;
   protected final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private final ExecutorService executor;
@@ -36,37 +34,31 @@ public abstract class ApiServices<T extends ApiServices<T>> {
   protected ApiServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this.brokerClient = brokerClient;
     this.securityContextProvider = securityContextProvider;
-    this.authentication = authentication;
     this.executorProvider = executorProvider;
     executor = executorProvider.getExecutor();
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
   }
 
-  public abstract T withAuthentication(final CamundaAuthentication authentication);
-
-  public T withAuthentication(
-      final Function<CamundaAuthentication.Builder, CamundaAuthentication.Builder> fn) {
-    return withAuthentication(fn.apply(new CamundaAuthentication.Builder()).build());
-  }
-
-  protected <R> CompletableFuture<R> sendBrokerRequest(final BrokerRequest<R> brokerRequest) {
-    return sendBrokerRequestWithFullResponse(brokerRequest)
+  protected <R> CompletableFuture<R> sendBrokerRequest(
+      final BrokerRequest<R> brokerRequest, final CamundaAuthentication authentication) {
+    return sendBrokerRequestWithFullResponse(brokerRequest, authentication)
         .thenApplyAsync(BrokerResponse::getResponse, executor);
   }
 
   protected <R> CompletableFuture<R> sendBrokerRequest(
-      final BrokerRequest<R> brokerRequest, final Duration requestTimeout) {
-    return sendBrokerRequestWithFullResponse(brokerRequest, requestTimeout)
+      final BrokerRequest<R> brokerRequest,
+      final Duration requestTimeout,
+      final CamundaAuthentication authentication) {
+    return sendBrokerRequestWithFullResponse(brokerRequest, requestTimeout, authentication)
         .thenApplyAsync(BrokerResponse::getResponse, executor);
   }
 
   protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
-      final BrokerRequest<R> brokerRequest) {
+      final BrokerRequest<R> brokerRequest, final CamundaAuthentication authentication) {
     final var brokerRequestAuthorization =
         brokerRequestAuthorizationConverter.convert(authentication);
     brokerRequest.setAuthorization(brokerRequestAuthorization);
@@ -74,7 +66,9 @@ public abstract class ApiServices<T extends ApiServices<T>> {
   }
 
   protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
-      final BrokerRequest<R> brokerRequest, final Duration requestTimeout) {
+      final BrokerRequest<R> brokerRequest,
+      final Duration requestTimeout,
+      final CamundaAuthentication authentication) {
     final var brokerRequestAuthorization =
         brokerRequestAuthorizationConverter.convert(authentication);
     brokerRequest.setAuthorization(brokerRequestAuthorization);

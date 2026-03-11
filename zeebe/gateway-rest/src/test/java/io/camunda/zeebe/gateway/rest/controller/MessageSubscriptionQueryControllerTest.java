@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,7 +17,6 @@ import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -143,13 +143,12 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
   void setUp() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(services.withAuthentication(any(CamundaAuthentication.class))).thenReturn(services);
   }
 
   @Test
   public void shouldSearchMessageSubscriptionsWithEmptyBody() {
     // given
-    when(services.search(any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(services.search(any(), any())).thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient
@@ -163,13 +162,13 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(services).search(new MessageSubscriptionQuery.Builder().build());
+    verify(services).search(eq(new MessageSubscriptionQuery.Builder().build()), any());
   }
 
   @Test
   public void shouldSearchMessageSubscriptionsWithEmptyQuery() {
     // given
-    when(services.search(any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(services.search(any(), any())).thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient
@@ -185,13 +184,13 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(services).search(new MessageSubscriptionQuery.Builder().build());
+    verify(services).search(eq(new MessageSubscriptionQuery.Builder().build()), any());
   }
 
   @Test
   public void shouldSearchMessageSubscriptionsWithFilters() {
     // given
-    when(services.search(any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(services.search(any(), any())).thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient
@@ -225,27 +224,30 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
 
     verify(services)
         .search(
-            new MessageSubscriptionQuery.Builder()
-                .filter(
-                    f ->
-                        f.messageSubscriptionKeys(123L)
-                            .processDefinitionIds("gg_msg_receive_id")
-                            .processInstanceKeys(2251799813685849L)
-                            .flowNodeIds("Activity_1ludhs2")
-                            .flowNodeInstanceKeys(2251799813685853L)
-                            .messageSubscriptionStates(
-                                MessageSubscriptionEntity.MessageSubscriptionState.CREATED.name())
-                            .dateTimes(OffsetDateTime.parse("2025-07-05T12:11:00.975Z"))
-                            .correlationKeys("test")
-                            .messageNames("test-message")
-                            .tenantIds("test-tenant"))
-                .build());
+            eq(
+                new MessageSubscriptionQuery.Builder()
+                    .filter(
+                        f ->
+                            f.messageSubscriptionKeys(123L)
+                                .processDefinitionIds("gg_msg_receive_id")
+                                .processInstanceKeys(2251799813685849L)
+                                .flowNodeIds("Activity_1ludhs2")
+                                .flowNodeInstanceKeys(2251799813685853L)
+                                .messageSubscriptionStates(
+                                    MessageSubscriptionEntity.MessageSubscriptionState.CREATED
+                                        .name())
+                                .dateTimes(OffsetDateTime.parse("2025-07-05T12:11:00.975Z"))
+                                .correlationKeys("test")
+                                .messageNames("test-message")
+                                .tenantIds("test-tenant"))
+                    .build()),
+            any());
   }
 
   @Test
   public void shouldSearchMessageSubscriptionsWithSorting() {
     // given
-    when(services.search(any())).thenReturn(SEARCH_QUERY_RESULT);
+    when(services.search(any(), any())).thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient
@@ -309,36 +311,38 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
 
     verify(services)
         .search(
-            new MessageSubscriptionQuery.Builder()
-                .sort(
-                    s ->
-                        s.messageSubscriptionKey()
-                            .asc()
-                            .processDefinitionId()
-                            .desc()
-                            .processInstanceKey()
-                            .desc()
-                            .flowNodeId()
-                            .asc()
-                            .flowNodeInstanceKey()
-                            .desc()
-                            .messageSubscriptionState()
-                            .asc()
-                            .dateTime()
-                            .desc()
-                            .correlationKey()
-                            .asc()
-                            .messageName()
-                            .desc()
-                            .tenantId()
-                            .asc())
-                .build());
+            eq(
+                new MessageSubscriptionQuery.Builder()
+                    .sort(
+                        s ->
+                            s.messageSubscriptionKey()
+                                .asc()
+                                .processDefinitionId()
+                                .desc()
+                                .processInstanceKey()
+                                .desc()
+                                .flowNodeId()
+                                .asc()
+                                .flowNodeInstanceKey()
+                                .desc()
+                                .messageSubscriptionState()
+                                .asc()
+                                .dateTime()
+                                .desc()
+                                .correlationKey()
+                                .asc()
+                                .messageName()
+                                .desc()
+                                .tenantId()
+                                .asc())
+                    .build()),
+            any());
   }
 
   @Test
   public void shouldSearchCorrelatedWithEmptyBody() {
     // given
-    when(services.searchCorrelated(any())).thenReturn(SEARCH_CORRELATED_QUERY_RESULT);
+    when(services.searchCorrelated(any(), any())).thenReturn(SEARCH_CORRELATED_QUERY_RESULT);
 
     // when / then
     webClient
@@ -352,13 +356,14 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_CORRELATED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(services).searchCorrelated(new CorrelatedMessageSubscriptionQuery.Builder().build());
+    verify(services)
+        .searchCorrelated(eq(new CorrelatedMessageSubscriptionQuery.Builder().build()), any());
   }
 
   @Test
   public void shouldSearchCorrelatedWithEmptyQuery() {
     // given
-    when(services.searchCorrelated(any())).thenReturn(SEARCH_CORRELATED_QUERY_RESULT);
+    when(services.searchCorrelated(any(), any())).thenReturn(SEARCH_CORRELATED_QUERY_RESULT);
 
     // when / then
     webClient
@@ -374,13 +379,14 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_CORRELATED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(services).searchCorrelated(new CorrelatedMessageSubscriptionQuery.Builder().build());
+    verify(services)
+        .searchCorrelated(eq(new CorrelatedMessageSubscriptionQuery.Builder().build()), any());
   }
 
   @Test
   public void shouldSearchCorrelatedWithFilters() {
     // given
-    when(services.searchCorrelated(any())).thenReturn(SEARCH_CORRELATED_QUERY_RESULT);
+    when(services.searchCorrelated(any(), any())).thenReturn(SEARCH_CORRELATED_QUERY_RESULT);
 
     // when / then
     webClient
@@ -416,28 +422,30 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
 
     verify(services)
         .searchCorrelated(
-            new CorrelatedMessageSubscriptionQuery.Builder()
-                .filter(
-                    f ->
-                        f.correlationKeys("test")
-                            .correlationTimes(OffsetDateTime.parse("2025-07-05T12:11:00.975Z"))
-                            .flowNodeIds("Activity_1ludhs2")
-                            .flowNodeInstanceKeys(2251799813685853L)
-                            .messageKeys(2251799813685854L)
-                            .messageNames("Message_1f8cu1e")
-                            .partitionIds(3)
-                            .processDefinitionIds("gg_msg_receive_id")
-                            .processDefinitionKeys(2251799813685848L)
-                            .processInstanceKeys(2251799813685849L)
-                            .subscriptionKeys(2251799813685860L)
-                            .tenantIds("test-tenant"))
-                .build());
+            eq(
+                new CorrelatedMessageSubscriptionQuery.Builder()
+                    .filter(
+                        f ->
+                            f.correlationKeys("test")
+                                .correlationTimes(OffsetDateTime.parse("2025-07-05T12:11:00.975Z"))
+                                .flowNodeIds("Activity_1ludhs2")
+                                .flowNodeInstanceKeys(2251799813685853L)
+                                .messageKeys(2251799813685854L)
+                                .messageNames("Message_1f8cu1e")
+                                .partitionIds(3)
+                                .processDefinitionIds("gg_msg_receive_id")
+                                .processDefinitionKeys(2251799813685848L)
+                                .processInstanceKeys(2251799813685849L)
+                                .subscriptionKeys(2251799813685860L)
+                                .tenantIds("test-tenant"))
+                    .build()),
+            any());
   }
 
   @Test
   public void shouldSearchCorrelatedWithSorting() {
     // given
-    when(services.searchCorrelated(any())).thenReturn(SEARCH_CORRELATED_QUERY_RESULT);
+    when(services.searchCorrelated(any(), any())).thenReturn(SEARCH_CORRELATED_QUERY_RESULT);
 
     // when / then
     webClient
@@ -509,33 +517,35 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
 
     verify(services)
         .searchCorrelated(
-            new CorrelatedMessageSubscriptionQuery.Builder()
-                .sort(
-                    s ->
-                        s.correlationKey()
-                            .asc()
-                            .correlationTime()
-                            .desc()
-                            .flowNodeId()
-                            .asc()
-                            .flowNodeInstanceKey()
-                            .desc()
-                            .messageKey()
-                            .asc()
-                            .messageName()
-                            .desc()
-                            .partitionId()
-                            .asc()
-                            .processDefinitionId()
-                            .desc()
-                            .processDefinitionKey()
-                            .asc()
-                            .processInstanceKey()
-                            .desc()
-                            .subscriptionKey()
-                            .asc()
-                            .tenantId()
-                            .asc())
-                .build());
+            eq(
+                new CorrelatedMessageSubscriptionQuery.Builder()
+                    .sort(
+                        s ->
+                            s.correlationKey()
+                                .asc()
+                                .correlationTime()
+                                .desc()
+                                .flowNodeId()
+                                .asc()
+                                .flowNodeInstanceKey()
+                                .desc()
+                                .messageKey()
+                                .asc()
+                                .messageName()
+                                .desc()
+                                .partitionId()
+                                .asc()
+                                .processDefinitionId()
+                                .desc()
+                                .processDefinitionKey()
+                                .asc()
+                                .processInstanceKey()
+                                .desc()
+                                .subscriptionKey()
+                                .asc()
+                                .tenantId()
+                                .asc())
+                    .build()),
+            any());
   }
 }

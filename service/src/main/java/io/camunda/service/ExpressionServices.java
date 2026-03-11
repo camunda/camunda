@@ -21,34 +21,23 @@ public final class ExpressionServices extends ApiServices<ExpressionServices> {
   public ExpressionServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Override
-  public ExpressionServices withAuthentication(final CamundaAuthentication authentication) {
-    return new ExpressionServices(
-        brokerClient,
-        securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
 
   public CompletableFuture<ExpressionRecord> evaluateExpression(
-      final ExpressionEvaluationRequest request) {
+      final ExpressionEvaluationRequest request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerExpressionEvaluationRequest()
             .setExpression(request.expression())
             .setVariables(request.variables())
-            .setTenantId(request.tenantId()));
+            .setTenantId(request.tenantId()),
+        authentication);
   }
 
   public record ExpressionEvaluationRequest(

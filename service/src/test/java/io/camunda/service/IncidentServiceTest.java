@@ -42,20 +42,20 @@ public final class IncidentServiceTest {
 
   private IncidentServices services;
   private IncidentSearchClient client;
+  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     client = mock(IncidentSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     final SecurityContextProvider securityContextProvider = mock(SecurityContextProvider.class);
-    final CamundaAuthentication authentication = mock(CamundaAuthentication.class);
+    authentication = mock(CamundaAuthentication.class);
 
     services =
         new IncidentServices(
             mock(BrokerClient.class),
             securityContextProvider,
             client,
-            authentication,
             mock(ApiServicesExecutorProvider.class),
             null);
   }
@@ -69,7 +69,7 @@ public final class IncidentServiceTest {
     final var searchQuery = SearchQueryBuilders.incidentSearchQuery().build();
 
     // when
-    final var searchQueryResult = services.search(searchQuery);
+    final var searchQueryResult = services.search(searchQuery, authentication);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -81,7 +81,7 @@ public final class IncidentServiceTest {
     final var entity = Instancio.create(IncidentEntity.class);
     when(client.getIncident(any(Long.class))).thenReturn(entity);
     // when
-    final var searchQueryResult = services.getByKey(1L);
+    final var searchQueryResult = services.getByKey(1L, authentication);
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
@@ -93,7 +93,7 @@ public final class IncidentServiceTest {
     when(client.getIncident(any(Long.class)))
         .thenThrow(new ResourceAccessDeniedException(Authorizations.INCIDENT_READ_AUTHORIZATION));
     // when
-    final ThrowingCallable executeGetByKey = () -> services.getByKey(1L);
+    final ThrowingCallable executeGetByKey = () -> services.getByKey(1L, authentication);
     // then
     final var exception =
         (ServiceException)
@@ -116,7 +116,8 @@ public final class IncidentServiceTest {
         services.incidentProcessInstanceStatisticsByError(
             SearchQueryBuilders.incidentProcessInstanceStatisticsByErrorQuery()
                 .filter(f -> f.states(IncidentState.ACTIVE.name()))
-                .build());
+                .build(),
+            authentication);
 
     // then
     assertThat(searchQueryResult.items()).contains(entity);
@@ -145,7 +146,8 @@ public final class IncidentServiceTest {
         services.searchIncidentProcessInstanceStatisticsByDefinition(
             SearchQueryBuilders.incidentProcessInstanceStatisticsByDefinitionQuery()
                 .filter(f -> f.state(state).errorHashCode(errorHashCode))
-                .build());
+                .build(),
+            authentication);
 
     // then
     assertThat(searchQueryResult.items()).contains(entity);
@@ -174,7 +176,7 @@ public final class IncidentServiceTest {
             .build();
 
     // when
-    services.incidentProcessInstanceStatisticsByError(initialQuery);
+    services.incidentProcessInstanceStatisticsByError(initialQuery, authentication);
 
     // then
     final var queryCaptor =
@@ -196,7 +198,7 @@ public final class IncidentServiceTest {
         SearchQueryBuilders.incidentProcessInstanceStatisticsByErrorQuery().build();
 
     // when
-    services.incidentProcessInstanceStatisticsByError(initialQuery);
+    services.incidentProcessInstanceStatisticsByError(initialQuery, authentication);
 
     // then
     final var queryCaptor =

@@ -56,9 +56,9 @@ public class ProcessDefinitionTools {
 
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toProcessDefinitionSearchQueryResponse(
-              processDefinitionServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .search(processDefinitionQuery.get())));
+              processDefinitionServices.search(
+                  processDefinitionQuery.get(),
+                  authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -74,9 +74,8 @@ public class ProcessDefinitionTools {
     try {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toProcessDefinition(
-              processDefinitionServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .getByKey(processDefinitionKey)));
+              processDefinitionServices.getByKey(
+                  processDefinitionKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -92,8 +91,8 @@ public class ProcessDefinitionTools {
     try {
       final var xml =
           processDefinitionServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .getProcessDefinitionXml(processDefinitionKey)
+              .getProcessDefinitionXml(
+                  processDefinitionKey, authenticationProvider.getCamundaAuthentication())
               .orElseThrow(
                   () ->
                       new ServiceException(

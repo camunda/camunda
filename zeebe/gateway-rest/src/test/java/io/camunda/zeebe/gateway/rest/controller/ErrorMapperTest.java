@@ -17,6 +17,7 @@ import static io.camunda.service.exception.ServiceException.Status.UNAVAILABLE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -24,7 +25,6 @@ import io.atomix.cluster.messaging.MessagingException.ConnectionClosed;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.ErrorMapper;
@@ -72,14 +72,12 @@ public class ErrorMapperTest extends RestControllerTest {
   void setUp() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    Mockito.when(userTaskServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(userTaskServices);
   }
 
   @Test
   void shouldYieldNotFoundWhenBrokerErrorNotFound() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerError(
@@ -108,7 +106,7 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   void shouldYieldServiceUnavailableWhenBrokerErrorExhausted() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerError(
@@ -137,7 +135,7 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   void shouldYieldUnavailableWhenBrokerErrorLeaderMismatch() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerError(
@@ -177,7 +175,7 @@ public class ErrorMapperTest extends RestControllerTest {
       })
   public void shouldYieldInternalErrorWhenBrokerError(final ErrorCode errorCode) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerError(new BrokerError(errorCode, "Just an error"))));
@@ -212,7 +210,7 @@ public class ErrorMapperTest extends RestControllerTest {
       names = {"PROCESSING_ERROR", "EXCEEDED_BATCH_RECORD_SIZE"})
   public void shouldYieldInternalErrorWhenRejectionInternal(final RejectionType rejectionType) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -244,7 +242,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    Mockito.verify(userTaskServices).completeUserTask(1L, Map.of(), "");
+    Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any());
   }
 
   @ParameterizedTest
@@ -253,7 +251,7 @@ public class ErrorMapperTest extends RestControllerTest {
       names = {"SBE_UNKNOWN", "NULL_VAL"})
   public void shouldYieldInternalErrorWhenRejectionUnknown(final RejectionType rejectionType) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -285,13 +283,13 @@ public class ErrorMapperTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    Mockito.verify(userTaskServices).completeUserTask(1L, Map.of(), "");
+    Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any());
   }
 
   @Test
   public void shouldYieldInternalErrorWhenException() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapSearchError(
@@ -348,7 +346,7 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   public void shouldReturnGatewayTimeoutOnTimeoutException() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new TimeoutException("Oh noes, timeouts!"))));
@@ -381,7 +379,7 @@ public class ErrorMapperTest extends RestControllerTest {
   public void shouldReturnBadGatewayOnConnectionClosed() {
     // given
     final var errorMsg = "Oh noes, connection closed!";
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(ErrorMapper.mapError(new ConnectionClosed(errorMsg))));
 
@@ -413,7 +411,7 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   public void shouldReturnServiceUnavailableOnConnectTimeoutException() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(
@@ -446,7 +444,7 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   public void shouldReturnServiceUnavailableOnConnectException() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new ConnectException("Oh noes, connection timeouts!"))));
@@ -478,7 +476,7 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   public void shouldReturnServiceUnavailableOnPartitionNotFoundException() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new PartitionNotFoundException(1))));
@@ -510,7 +508,7 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   public void shouldReturnBadRequestOnMsgpackException() {
     // given;
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new MsgpackException("Oh noes, msg parsing!"))));
@@ -542,7 +540,7 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   public void shouldReturnBadRequestOnJsonParseException() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new JsonParseException("Oh noes, json parsing!"))));
@@ -573,7 +571,7 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   public void shouldReturnBadRequestOnIllegalArgumentException() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new IllegalArgumentException("Oh noes, illegal arguments!"))));
@@ -604,7 +602,7 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   public void shouldReturnServiceUnavailableOnRequestRetriesExhaustedException() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new RequestRetriesExhaustedException())));
@@ -636,7 +634,7 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   void shouldYieldUnavailableWhenPartitionPausesProcessing() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerError(
@@ -665,7 +663,7 @@ public class ErrorMapperTest extends RestControllerTest {
   @Test
   public void shouldYieldMaxMessageSizeExceededWhenRequestIsTooLarge() {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerError(

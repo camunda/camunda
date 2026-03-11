@@ -20,6 +20,7 @@ import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -30,11 +31,13 @@ import org.junit.jupiter.api.Test;
 
 public final class DecisionRequirementsServiceTest {
 
+  private CamundaAuthentication authentication;
   private DecisionRequirementsServices services;
   private DecisionRequirementSearchClient client;
 
   @BeforeEach
   public void before() {
+    authentication = mock(CamundaAuthentication.class);
     client = mock(DecisionRequirementSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     services =
@@ -42,7 +45,6 @@ public final class DecisionRequirementsServiceTest {
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,
-            null,
             mock(ApiServicesExecutorProvider.class),
             null);
   }
@@ -57,7 +59,7 @@ public final class DecisionRequirementsServiceTest {
     final var result = mock(SearchQueryResult.class);
     when(client.searchDecisionRequirements(any())).thenReturn(result);
     final SearchQueryResult<DecisionRequirementsEntity> searchQueryResult =
-        services.search(searchQuery);
+        services.search(searchQuery, authentication);
 
     // then
     assertThat(result).isEqualTo(searchQueryResult);
@@ -72,7 +74,7 @@ public final class DecisionRequirementsServiceTest {
     when(client.getDecisionRequirements(eq(124L), eq(false))).thenReturn(decisionRequirementEntity);
 
     // when
-    final var searchQueryResult = services.getByKey(124L);
+    final var searchQueryResult = services.getByKey(124L, authentication);
 
     // then
     final DecisionRequirementsEntity item = searchQueryResult;
@@ -90,7 +92,7 @@ public final class DecisionRequirementsServiceTest {
 
     // when
     final String expectedXml = "<xml/>";
-    final var searchQueryResult = services.getDecisionRequirementsXml(124L);
+    final var searchQueryResult = services.getDecisionRequirementsXml(124L, authentication);
 
     // then
     assertThat(searchQueryResult).isEqualTo(expectedXml);
@@ -110,7 +112,7 @@ public final class DecisionRequirementsServiceTest {
     // then
     final var exception =
         assertThatExceptionOfType(ServiceException.class)
-            .isThrownBy(() -> services.getByKey(124L))
+            .isThrownBy(() -> services.getByKey(124L, authentication))
             .actual();
     assertThat(exception.getMessage())
         .isEqualTo(
@@ -131,7 +133,7 @@ public final class DecisionRequirementsServiceTest {
     // then
     final var exception =
         assertThatExceptionOfType(ServiceException.class)
-            .isThrownBy(() -> services.getDecisionRequirementsXml(124L))
+            .isThrownBy(() -> services.getDecisionRequirementsXml(124L, authentication))
             .actual();
     assertThat(exception.getMessage())
         .isEqualTo(

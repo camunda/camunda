@@ -75,10 +75,9 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
       final String bpmnProcessId, final Map<String, Object> variables, final String tenantId) {
     return executeCamundaServiceAuthenticated(
         (authentication) ->
-            processInstanceServices
-                .withAuthentication(authentication)
-                .createProcessInstance(
-                    toProcessInstanceCreateRequest(bpmnProcessId, variables, tenantId)));
+            processInstanceServices.createProcessInstance(
+                toProcessInstanceCreateRequest(bpmnProcessId, variables, tenantId),
+                authentication));
   }
 
   @Override
@@ -86,10 +85,9 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
       final String bpmnProcessId, final Map<String, Object> variables, final String tenantId) {
     return executeCamundaServiceAnonymously(
         (authentication) ->
-            processInstanceServices
-                .withAuthentication(authentication)
-                .createProcessInstance(
-                    toProcessInstanceCreateRequest(bpmnProcessId, variables, tenantId)));
+            processInstanceServices.createProcessInstance(
+                toProcessInstanceCreateRequest(bpmnProcessId, variables, tenantId),
+                authentication));
   }
 
   @Override
@@ -128,9 +126,8 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
         final byte[] bytes = StreamUtil.readInputStream(resourceStream);
         executeCamundaServiceAnonymously(
             (authentication) ->
-                resourceServices
-                    .withAuthentication(authentication)
-                    .deployResources(toDeployResourcesRequest(classpathResource, bytes, tenantId)));
+                resourceServices.deployResources(
+                    toDeployResourcesRequest(classpathResource, bytes, tenantId), authentication));
       } else {
         throw new FileNotFoundException(classpathResource);
       }
@@ -148,9 +145,7 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
   private void assignCamundaUserTask(final TaskEntity task, final String assignee) {
     executeCamundaServiceAuthenticated(
         (authentication) ->
-            userTaskServices
-                .withAuthentication(authentication)
-                .assignUserTask(task.getKey(), assignee, "", true));
+            userTaskServices.assignUserTask(task.getKey(), assignee, "", true, authentication));
   }
 
   private boolean isNotAuthorizedToUnassignJobBasedUserTask(final TaskEntity task) {
@@ -159,10 +154,7 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
 
   private void unassignCamundaUserTask(final TaskEntity task) {
     executeCamundaServiceAuthenticated(
-        (authentication) ->
-            userTaskServices
-                .withAuthentication(authentication)
-                .unassignUserTask(task.getKey(), ""));
+        (authentication) -> userTaskServices.unassignUserTask(task.getKey(), "", authentication));
   }
 
   private boolean isNotAuthorizedToCompleteJobBasedUserTask(final TaskEntity task) {
@@ -177,17 +169,13 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
 
     executeCamundaServiceAnonymously(
         (authentication) ->
-            jobServices
-                .withAuthentication(authentication)
-                .completeJob(task.getKey(), variables, null));
+            jobServices.completeJob(task.getKey(), variables, null, authentication));
   }
 
   private void completeCamundaUserTask(final TaskEntity task, final Map<String, Object> variables) {
     executeCamundaServiceAuthenticated(
         (authentication) ->
-            userTaskServices
-                .withAuthentication(authentication)
-                .completeUserTask(task.getKey(), variables, ""));
+            userTaskServices.completeUserTask(task.getKey(), variables, "", authentication));
   }
 
   private ProcessInstanceCreateRequest toProcessInstanceCreateRequest(

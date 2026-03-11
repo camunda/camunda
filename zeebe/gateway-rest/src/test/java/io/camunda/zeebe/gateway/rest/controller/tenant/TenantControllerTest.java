@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller.tenant;
 import static io.camunda.security.configuration.SecurityConfiguration.DEFAULT_EXTERNAL_ID_REGEX;
 import static io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.TENANTS_API_DISABLED_ERROR_MESSAGE;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -17,7 +18,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.protocol.model.TenantCreateRequest;
 import io.camunda.gateway.protocol.model.TenantUpdateRequest;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
@@ -82,8 +82,6 @@ public class TenantControllerTest {
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-      when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(tenantServices);
     }
 
     @ParameterizedTest
@@ -92,7 +90,8 @@ public class TenantControllerTest {
       // given
       final var tenantName = "Test Tenant";
       final var tenantDescription = "Test description";
-      when(tenantServices.createTenant(new TenantRequest(null, id, tenantName, tenantDescription)))
+      when(tenantServices.createTenant(
+              eq(new TenantRequest(null, id, tenantName, tenantDescription)), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new TenantRecord()
@@ -117,7 +116,7 @@ public class TenantControllerTest {
 
       // then
       verify(tenantServices, times(1))
-          .createTenant(new TenantRequest(null, id, tenantName, tenantDescription));
+          .createTenant(eq(new TenantRequest(null, id, tenantName, tenantDescription)), any());
     }
 
     @Test
@@ -127,7 +126,7 @@ public class TenantControllerTest {
       final var tenantId = "tenantId";
       final var tenantDescription = "Test description";
       when(tenantServices.createTenant(
-              new TenantRequest(null, tenantId, tenantName, tenantDescription)))
+              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new TenantRecord()
@@ -163,7 +162,8 @@ public class TenantControllerTest {
 
       // then
       verify(tenantServices, times(1))
-          .createTenant(new TenantRequest(null, tenantId, tenantName, tenantDescription));
+          .createTenant(
+              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any());
     }
 
     @Test
@@ -277,7 +277,7 @@ public class TenantControllerTest {
       final var tenantId = "tenant-test-id";
       final var tenantDescription = "Updated description";
       when(tenantServices.updateTenant(
-              new TenantRequest(null, tenantId, tenantName, tenantDescription)))
+              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new TenantRecord()
@@ -309,7 +309,8 @@ public class TenantControllerTest {
 
       // then
       verify(tenantServices, times(1))
-          .updateTenant(new TenantRequest(null, tenantId, tenantName, tenantDescription));
+          .updateTenant(
+              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any());
     }
 
     @Test
@@ -353,7 +354,7 @@ public class TenantControllerTest {
       final var tenantDescription = "My tenant description";
       final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
       when(tenantServices.updateTenant(
-              new TenantRequest(null, tenantId, tenantName, tenantDescription)))
+              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -372,7 +373,8 @@ public class TenantControllerTest {
           .isNotFound();
 
       verify(tenantServices, times(1))
-          .updateTenant(new TenantRequest(null, tenantId, tenantName, tenantDescription));
+          .updateTenant(
+              eq(new TenantRequest(null, tenantId, tenantName, tenantDescription)), any());
     }
 
     @Test
@@ -382,7 +384,7 @@ public class TenantControllerTest {
 
       final var tenantRecord = new TenantRecord().setTenantId(tenantId);
 
-      when(tenantServices.deleteTenant(tenantId))
+      when(tenantServices.deleteTenant(eq(tenantId), any()))
           .thenReturn(CompletableFuture.completedFuture(tenantRecord));
 
       // when
@@ -395,7 +397,7 @@ public class TenantControllerTest {
           .isNoContent();
 
       // then
-      verify(tenantServices, times(1)).deleteTenant(tenantId);
+      verify(tenantServices, times(1)).deleteTenant(eq(tenantId), any());
     }
 
     @ParameterizedTest
@@ -406,7 +408,8 @@ public class TenantControllerTest {
       final var entityId = "some-entity-id";
       final var request = new TenantMemberRequest(tenantId, entityId, entityType);
 
-      when(tenantServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+      when(tenantServices.addMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
       webClient
@@ -418,7 +421,7 @@ public class TenantControllerTest {
           .isNoContent();
 
       // then
-      verify(tenantServices, times(1)).addMember(request);
+      verify(tenantServices, times(1)).addMember(eq(request), any());
     }
 
     @ParameterizedTest
@@ -430,7 +433,8 @@ public class TenantControllerTest {
       final var entityId = "some-entity-id";
       final var request = new TenantMemberRequest(tenantId, entityId, entityType);
 
-      when(tenantServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+      when(tenantServices.addMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
       final var uri = "%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantId, entityPath, entityId);
@@ -467,7 +471,8 @@ public class TenantControllerTest {
       final var entityId = "invalidEntityId!";
       final var request = new TenantMemberRequest(tenantId, entityId, entityType);
 
-      when(tenantServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+      when(tenantServices.addMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
       final var uri = "%s/%s/%s/%s".formatted(TENANT_BASE_URL, tenantId, entityPath, entityId);
@@ -503,7 +508,7 @@ public class TenantControllerTest {
       final var entityId = "entity-id";
       final var tenantMemberRequest = new TenantMemberRequest(tenantId, entityId, entityType);
 
-      when(tenantServices.removeMember(tenantMemberRequest))
+      when(tenantServices.removeMember(eq(tenantMemberRequest), any()))
           .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
@@ -516,7 +521,7 @@ public class TenantControllerTest {
           .isNoContent();
 
       // then
-      verify(tenantServices, times(1)).removeMember(tenantMemberRequest);
+      verify(tenantServices, times(1)).removeMember(eq(tenantMemberRequest), any());
     }
 
     @ParameterizedTest
@@ -528,7 +533,7 @@ public class TenantControllerTest {
       final var entityId = "some-entity-id";
       final var request = new TenantMemberRequest(tenantId, entityId, entityType);
 
-      when(tenantServices.removeMember(request))
+      when(tenantServices.removeMember(eq(request), any()))
           .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
@@ -566,7 +571,7 @@ public class TenantControllerTest {
       final var entityId = "invalidEntityId!";
       final var request = new TenantMemberRequest(tenantId, entityId, entityType);
 
-      when(tenantServices.removeMember(request))
+      when(tenantServices.removeMember(eq(request), any()))
           .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
@@ -628,8 +633,6 @@ public class TenantControllerTest {
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-      when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(tenantServices);
     }
 
     /**
@@ -643,7 +646,8 @@ public class TenantControllerTest {
       final var groupId = "group id";
       final var request = new TenantMemberRequest(tenantId, groupId, EntityType.GROUP);
 
-      when(tenantServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+      when(tenantServices.addMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
       webClient
@@ -655,7 +659,7 @@ public class TenantControllerTest {
           .isNoContent();
 
       // then
-      verify(tenantServices, times(1)).addMember(request);
+      verify(tenantServices, times(1)).addMember(eq(request), any());
     }
 
     /**
@@ -669,7 +673,7 @@ public class TenantControllerTest {
       final var groupId = "group id";
       final var request = new TenantMemberRequest(tenantId, groupId, EntityType.GROUP);
 
-      when(tenantServices.removeMember(request))
+      when(tenantServices.removeMember(eq(request), any()))
           .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
@@ -682,7 +686,7 @@ public class TenantControllerTest {
           .isNoContent();
 
       // then
-      verify(tenantServices, times(1)).removeMember(request);
+      verify(tenantServices, times(1)).removeMember(eq(request), any());
     }
 
     @TestConfiguration

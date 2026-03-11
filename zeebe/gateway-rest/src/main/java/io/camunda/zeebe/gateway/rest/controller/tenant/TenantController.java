@@ -102,12 +102,10 @@ public class TenantController {
   @CamundaGetMapping(path = "/{tenantId}")
   public ResponseEntity<TenantResult> getTenant(@PathVariable final String tenantId) {
     try {
+      final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
           .body(
-              SearchQueryResponseMapper.toTenant(
-                  tenantServices
-                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                      .getById(tenantId)));
+              SearchQueryResponseMapper.toTenant(tenantServices.getById(tenantId, authentication)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -184,11 +182,9 @@ public class TenantController {
   @CamundaDeleteMapping(path = "/{tenantId}")
   public CompletableFuture<ResponseEntity<Object>> deleteTenant(
       @PathVariable final String tenantId) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () ->
-            tenantServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .deleteTenant(tenantId));
+        () -> tenantServices.deleteTenant(tenantId, authentication));
   }
 
   @CamundaDeleteMapping(path = "/{tenantId}/users/{username}")
@@ -256,10 +252,10 @@ public class TenantController {
   private ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
       final String tenantId, final TenantMemberQuery query) {
     try {
+      final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result =
-          tenantServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .searchMembers(buildTenantMemberQuery(tenantId, EntityType.GROUP, query));
+          tenantServices.searchMembers(
+              buildTenantMemberQuery(tenantId, EntityType.GROUP, query), authentication);
       return ResponseEntity.ok(SearchQueryResponseMapper.toTenantGroupSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -290,39 +286,31 @@ public class TenantController {
 
   private CompletableFuture<ResponseEntity<Object>> createTenant(
       final TenantRequest tenantRequest) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () ->
-            tenantServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .createTenant(tenantRequest),
+        () -> tenantServices.createTenant(tenantRequest, authentication),
         ResponseMapper::toTenantCreateResponse,
         HttpStatus.CREATED);
   }
 
   private CompletableFuture<ResponseEntity<Object>> addMemberToTenant(
       final TenantMemberRequest request) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () ->
-            tenantServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .addMember(request));
+        () -> tenantServices.addMember(request, authentication));
   }
 
   private CompletableFuture<ResponseEntity<Object>> removeMemberFromTenant(
       final TenantMemberRequest request) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () ->
-            tenantServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .removeMember(request));
+        () -> tenantServices.removeMember(request, authentication));
   }
 
   private ResponseEntity<TenantSearchQueryResult> search(final TenantQuery query) {
     try {
-      final var result =
-          tenantServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
+      final var authentication = authenticationProvider.getCamundaAuthentication();
+      final var result = tenantServices.search(query, authentication);
       return ResponseEntity.ok(SearchQueryResponseMapper.toTenantSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -332,10 +320,10 @@ public class TenantController {
   private ResponseEntity<TenantUserSearchResult> searchUsersInTenant(
       final String tenantId, final TenantMemberQuery tenantMemberQuery) {
     try {
+      final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result =
-          tenantServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .searchMembers(buildTenantMemberQuery(tenantId, EntityType.USER, tenantMemberQuery));
+          tenantServices.searchMembers(
+              buildTenantMemberQuery(tenantId, EntityType.USER, tenantMemberQuery), authentication);
       return ResponseEntity.ok(SearchQueryResponseMapper.toTenantUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -345,10 +333,10 @@ public class TenantController {
   private ResponseEntity<TenantClientSearchResult> searchClientsInTenant(
       final String tenantId, final TenantMemberQuery query) {
     try {
+      final var authentication = authenticationProvider.getCamundaAuthentication();
       final var result =
-          tenantServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .searchMembers(buildTenantMemberQuery(tenantId, EntityType.CLIENT, query));
+          tenantServices.searchMembers(
+              buildTenantMemberQuery(tenantId, EntityType.CLIENT, query), authentication);
       return ResponseEntity.ok(SearchQueryResponseMapper.toTenantClientSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -358,11 +346,9 @@ public class TenantController {
   private ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesForTenant(
       final String tenantId, final MappingRuleQuery mappingRuleQuery) {
     try {
+      final var authentication = authenticationProvider.getCamundaAuthentication();
       final var composedMappingRuleQuery = buildMappingRuleQuery(tenantId, mappingRuleQuery);
-      final var result =
-          mappingRuleServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(composedMappingRuleQuery);
+      final var result = mappingRuleServices.search(composedMappingRuleQuery, authentication);
       return ResponseEntity.ok(SearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -372,11 +358,9 @@ public class TenantController {
   private ResponseEntity<UserSearchResult> searchUsersInTenant(
       final String tenantId, final UserQuery userQuery) {
     try {
+      final var authentication = authenticationProvider.getCamundaAuthentication();
       final var composedUserQuery = buildUserQuery(tenantId, userQuery);
-      final var result =
-          userServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(composedUserQuery);
+      final var result = userServices.search(composedUserQuery, authentication);
       return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -386,11 +370,9 @@ public class TenantController {
   private ResponseEntity<GroupSearchQueryResult> searchGroupsInTenant(
       final String tenantId, final GroupQuery groupQuery) {
     try {
+      final var authentication = authenticationProvider.getCamundaAuthentication();
       final var composedGroupQuery = buildGroupQuery(tenantId, groupQuery);
-      final var result =
-          groupServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(composedGroupQuery);
+      final var result = groupServices.search(composedGroupQuery, authentication);
       return ResponseEntity.ok(SearchQueryResponseMapper.toGroupSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -400,11 +382,9 @@ public class TenantController {
   private ResponseEntity<RoleSearchQueryResult> searchRolesInTenant(
       final String tenantId, final RoleQuery roleQuery) {
     try {
+      final var authentication = authenticationProvider.getCamundaAuthentication();
       final var composedRoleQuery = buildRoleQuery(tenantId, roleQuery);
-      final var result =
-          roleServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(composedRoleQuery);
+      final var result = roleServices.search(composedRoleQuery, authentication);
       return ResponseEntity.ok(SearchQueryResponseMapper.toRoleSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -445,11 +425,9 @@ public class TenantController {
 
   private CompletableFuture<ResponseEntity<Object>> updateTenant(
       final TenantRequest tenantRequest) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () ->
-            tenantServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .updateTenant(tenantRequest),
+        () -> tenantServices.updateTenant(tenantRequest, authentication),
         ResponseMapper::toTenantUpdateResponse,
         HttpStatus.OK);
   }

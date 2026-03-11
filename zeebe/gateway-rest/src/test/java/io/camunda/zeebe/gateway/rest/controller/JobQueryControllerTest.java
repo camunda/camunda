@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -19,7 +20,6 @@ import io.camunda.search.entities.JobEntity.ListenerEventType;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -126,14 +125,12 @@ public class JobQueryControllerTest extends RestControllerTest {
   void setupJobServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(jobServices.withAuthentication(ArgumentMatchers.any(CamundaAuthentication.class)))
-        .thenReturn(jobServices);
   }
 
   @Test
   void shouldSearchJobWithEmptyBody() {
     // given
-    when(jobServices.search(any(JobQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    when(jobServices.search(any(JobQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient
@@ -147,13 +144,13 @@ public class JobQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(jobServices).search(new JobQuery.Builder().build());
+    verify(jobServices).search(eq(new JobQuery.Builder().build()), any());
   }
 
   @Test
   void shouldSearchJobWithAllFilters() {
     // given
-    when(jobServices.search(any(JobQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    when(jobServices.search(any(JobQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
 
     final var request =
         """
@@ -202,39 +199,41 @@ public class JobQueryControllerTest extends RestControllerTest {
 
     verify(jobServices)
         .search(
-            new JobQuery.Builder()
-                .filter(
-                    new JobFilter.Builder()
-                        .deniedReasons("test denied reason")
-                        .deadlines(OffsetDateTime.parse("2025-06-05T09:05:00.000Z"))
-                        .elementIds("elementId")
-                        .elementInstanceKeys(4L)
-                        .endTimes(OffsetDateTime.parse("2025-06-05T10:05:00.000Z"))
-                        .errorCodes("123")
-                        .errorMessages("test error message")
-                        .hasFailedWithRetriesLeft(false)
-                        .isDenied(true)
-                        .jobKeys(1L)
-                        .kinds(JobEntity.JobKind.TASK_LISTENER.name())
-                        .listenerEventTypes(JobEntity.ListenerEventType.COMPLETING.name())
-                        .processDefinitionIds("processDefinitionId")
-                        .processDefinitionKeys(2L)
-                        .processInstanceKeys(3L)
-                        .retries(3)
-                        .states(JobEntity.JobState.COMPLETED.name())
-                        .tenantIds("<default>")
-                        .types("testJob")
-                        .workers("testWorker")
-                        .creationTimes(OffsetDateTime.parse("2025-06-05T09:00:00.000Z"))
-                        .lastUpdateTimes(OffsetDateTime.parse("2025-06-05T10:04:00.000Z"))
-                        .build())
-                .build());
+            eq(
+                new JobQuery.Builder()
+                    .filter(
+                        new JobFilter.Builder()
+                            .deniedReasons("test denied reason")
+                            .deadlines(OffsetDateTime.parse("2025-06-05T09:05:00.000Z"))
+                            .elementIds("elementId")
+                            .elementInstanceKeys(4L)
+                            .endTimes(OffsetDateTime.parse("2025-06-05T10:05:00.000Z"))
+                            .errorCodes("123")
+                            .errorMessages("test error message")
+                            .hasFailedWithRetriesLeft(false)
+                            .isDenied(true)
+                            .jobKeys(1L)
+                            .kinds(JobEntity.JobKind.TASK_LISTENER.name())
+                            .listenerEventTypes(JobEntity.ListenerEventType.COMPLETING.name())
+                            .processDefinitionIds("processDefinitionId")
+                            .processDefinitionKeys(2L)
+                            .processInstanceKeys(3L)
+                            .retries(3)
+                            .states(JobEntity.JobState.COMPLETED.name())
+                            .tenantIds("<default>")
+                            .types("testJob")
+                            .workers("testWorker")
+                            .creationTimes(OffsetDateTime.parse("2025-06-05T09:00:00.000Z"))
+                            .lastUpdateTimes(OffsetDateTime.parse("2025-06-05T10:04:00.000Z"))
+                            .build())
+                    .build()),
+            any());
   }
 
   @Test
   void shouldSearchJobWithFullSorting() {
     // given
-    when(jobServices.search(any(JobQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    when(jobServices.search(any(JobQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
 
     final var request =
         """
@@ -281,49 +280,51 @@ public class JobQueryControllerTest extends RestControllerTest {
 
     verify(jobServices)
         .search(
-            new JobQuery.Builder()
-                .sort(
-                    b ->
-                        b.jobKey()
-                            .asc()
-                            .type()
-                            .desc()
-                            .worker()
-                            .asc()
-                            .state()
-                            .desc()
-                            .jobKind()
-                            .asc()
-                            .listenerEventType()
-                            .desc()
-                            .retries()
-                            .asc()
-                            .isDenied()
-                            .desc()
-                            .deniedReason()
-                            .asc()
-                            .hasFailedWithRetriesLeft()
-                            .desc()
-                            .errorCode()
-                            .asc()
-                            .errorMessage()
-                            .desc()
-                            .deadline()
-                            .asc()
-                            .endTime()
-                            .desc()
-                            .processDefinitionId()
-                            .asc()
-                            .processDefinitionKey()
-                            .desc()
-                            .processInstanceKey()
-                            .asc()
-                            .elementId()
-                            .desc()
-                            .elementInstanceKey()
-                            .asc()
-                            .tenantId()
-                            .desc())
-                .build());
+            eq(
+                new JobQuery.Builder()
+                    .sort(
+                        s ->
+                            s.jobKey()
+                                .asc()
+                                .type()
+                                .desc()
+                                .worker()
+                                .asc()
+                                .state()
+                                .desc()
+                                .jobKind()
+                                .asc()
+                                .listenerEventType()
+                                .desc()
+                                .retries()
+                                .asc()
+                                .isDenied()
+                                .desc()
+                                .deniedReason()
+                                .asc()
+                                .hasFailedWithRetriesLeft()
+                                .desc()
+                                .errorCode()
+                                .asc()
+                                .errorMessage()
+                                .desc()
+                                .deadline()
+                                .asc()
+                                .endTime()
+                                .desc()
+                                .processDefinitionId()
+                                .asc()
+                                .processDefinitionKey()
+                                .desc()
+                                .processInstanceKey()
+                                .asc()
+                                .elementId()
+                                .desc()
+                                .elementInstanceKey()
+                                .asc()
+                                .tenantId()
+                                .desc())
+                    .build()),
+            any());
   }
 }

@@ -58,8 +58,7 @@ public class UsernamePasswordAuthenticationTokenConverter
 
     final var groups =
         groupServices
-            .withAuthentication(CamundaAuthentication.anonymous())
-            .getGroupsByMemberTypeAndMemberIds(ownerTypeToIds)
+            .getGroupsByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
             .stream()
             .map(GroupEntity::groupId)
             .collect(Collectors.toSet());
@@ -70,8 +69,7 @@ public class UsernamePasswordAuthenticationTokenConverter
 
     final var roles =
         roleServices
-            .withAuthentication(CamundaAuthentication.anonymous())
-            .getRolesByMemberTypeAndMemberIds(ownerTypeToIds)
+            .getRolesByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
             .stream()
             .map(RoleEntity::roleId)
             .collect(Collectors.toSet());
@@ -82,8 +80,7 @@ public class UsernamePasswordAuthenticationTokenConverter
 
     final var tenants =
         tenantServices
-            .withAuthentication(CamundaAuthentication.anonymous())
-            .getTenantsByMemberTypeAndMemberIds(ownerTypeToIds)
+            .getTenantsByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
             .stream()
             .map(TenantEntity::tenantId)
             .toList();

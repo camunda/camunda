@@ -8,11 +8,12 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.filter.DecisionInstanceFilter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -41,8 +42,6 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(decisionInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(decisionInstanceServices);
   }
 
   @Test
@@ -52,7 +51,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
     record.setResourceKey(123L);
     record.setResourceType(HistoryDeletionType.DECISION_INSTANCE);
 
-    when(decisionInstanceServices.deleteDecisionInstance(1L, 123L))
+    when(decisionInstanceServices.deleteDecisionInstance(eq(1L), eq(123L), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -72,7 +71,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    verify(decisionInstanceServices).deleteDecisionInstance(1L, 123L);
+    verify(decisionInstanceServices).deleteDecisionInstance(eq(1L), eq(123L), any());
   }
 
   @Test
@@ -82,7 +81,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
     record.setResourceKey(123L);
     record.setResourceType(HistoryDeletionType.DECISION_INSTANCE);
 
-    when(decisionInstanceServices.deleteDecisionInstance(2L, null))
+    when(decisionInstanceServices.deleteDecisionInstance(eq(2L), isNull(), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     // when / then
@@ -94,7 +93,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    verify(decisionInstanceServices).deleteDecisionInstance(2L, null);
+    verify(decisionInstanceServices).deleteDecisionInstance(eq(2L), isNull(), any());
   }
 
   @Test
@@ -104,7 +103,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
     record.setResourceKey(123L);
     record.setResourceType(HistoryDeletionType.DECISION_INSTANCE);
 
-    when(decisionInstanceServices.deleteDecisionInstance(3L, null))
+    when(decisionInstanceServices.deleteDecisionInstance(eq(3L), isNull(), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -122,13 +121,13 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    verify(decisionInstanceServices).deleteDecisionInstance(3L, null);
+    verify(decisionInstanceServices).deleteDecisionInstance(eq(3L), isNull(), any());
   }
 
   @Test
   void shouldRejectDeleteDecisionInstanceOnDecisionInstanceNotFound() {
     // given
-    when(decisionInstanceServices.deleteDecisionInstance(999L, null))
+    when(decisionInstanceServices.deleteDecisionInstance(eq(999L), isNull(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new io.camunda.service.exception.ServiceException(
@@ -159,13 +158,13 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    verify(decisionInstanceServices).deleteDecisionInstance(999L, null);
+    verify(decisionInstanceServices).deleteDecisionInstance(eq(999L), isNull(), any());
   }
 
   @Test
   void shouldRejectDeleteDecisionInstanceOnForbidden() {
     // given
-    when(decisionInstanceServices.deleteDecisionInstance(4L, null))
+    when(decisionInstanceServices.deleteDecisionInstance(eq(4L), isNull(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new io.camunda.service.exception.ServiceException(
@@ -196,7 +195,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    verify(decisionInstanceServices).deleteDecisionInstance(4L, null);
+    verify(decisionInstanceServices).deleteDecisionInstance(eq(4L), isNull(), any());
   }
 
   @Test
@@ -207,7 +206,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
     record.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
 
     when(decisionInstanceServices.deleteDecisionInstancesBatchOperation(
-            any(DecisionInstanceFilter.class)))
+            any(DecisionInstanceFilter.class), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -239,7 +238,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     verify(decisionInstanceServices)
-        .deleteDecisionInstancesBatchOperation(any(DecisionInstanceFilter.class));
+        .deleteDecisionInstancesBatchOperation(any(DecisionInstanceFilter.class), any());
   }
 
   @Test

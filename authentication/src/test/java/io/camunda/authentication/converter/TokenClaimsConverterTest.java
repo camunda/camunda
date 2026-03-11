@@ -11,6 +11,7 @@ import static io.camunda.security.auth.OidcGroupsLoader.DERIVED_GROUPS_ARE_NOT_S
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.service.DefaultMembershipService;
@@ -19,7 +20,6 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -71,15 +71,6 @@ public class TokenClaimsConverterTest {
       when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn(USERNAME_CLAIM);
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn(APPLICATION_ID_CLAIM);
-
-      when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(mappingRuleServices);
-      when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(tenantServices);
-      when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(roleServices);
-      when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(groupServices);
 
       membershipService =
           new DefaultMembershipService(
@@ -187,14 +178,6 @@ public class TokenClaimsConverterTest {
       when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn(USERNAME_CLAIM);
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn(APPLICATION_ID_CLAIM);
-      when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(mappingRuleServices);
-      when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(tenantServices);
-      when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(roleServices);
-      when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(groupServices);
 
       membershipService =
           new DefaultMembershipService(
@@ -248,7 +231,7 @@ public class TokenClaimsConverterTest {
               "email", "foo@camunda.test",
               "role", "R1",
               "group", "G1");
-      when(mappingRuleServices.getMatchingMappingRules(claims))
+      when(mappingRuleServices.getMatchingMappingRules(eq(claims), any()))
           .thenReturn(
               Stream.of(
                   new MappingRuleEntity("test-id", 5L, "role", "R1", "role-r1"),
@@ -256,36 +239,42 @@ public class TokenClaimsConverterTest {
 
       final var groupRole = new RoleEntity(3L, "roleGroup", "Role Group", "description");
       when(groupServices.getGroupsByMemberTypeAndMemberIds(
-              Map.of(
-                  EntityType.MAPPING_RULE,
-                  Set.of("test-id", "test-id-2"),
-                  EntityType.USER,
-                  Set.of("foo@camunda.test"))))
+              eq(
+                  Map.of(
+                      EntityType.MAPPING_RULE,
+                      Set.of("test-id", "test-id-2"),
+                      EntityType.USER,
+                      Set.of("foo@camunda.test"))),
+              any()))
           .thenReturn(List.of(new GroupEntity(1L, "group-g1", "G1", "Group G1")));
 
       final var roleR1 = new RoleEntity(8L, "roleR1", "Role R1", "R1 description");
       when(roleServices.getRolesByMemberTypeAndMemberIds(
-              Map.of(
-                  EntityType.MAPPING_RULE,
-                  Set.of("test-id", "test-id-2"),
-                  EntityType.USER,
-                  Set.of("foo@camunda.test"),
-                  EntityType.GROUP,
-                  Set.of("group-g1"))))
+              eq(
+                  Map.of(
+                      EntityType.MAPPING_RULE,
+                      Set.of("test-id", "test-id-2"),
+                      EntityType.USER,
+                      Set.of("foo@camunda.test"),
+                      EntityType.GROUP,
+                      Set.of("group-g1"))),
+              any()))
           .thenReturn(List.of(roleR1, groupRole));
 
       final var tenantT1 = new TenantEntity(100L, "t1", "Tenant One", "First Tenant");
       final var groupTenant = new TenantEntity(200L, "tenant1", "Tenant One", "First Tenant");
       when(tenantServices.getTenantsByMemberTypeAndMemberIds(
-              Map.of(
-                  EntityType.MAPPING_RULE,
-                  Set.of("test-id", "test-id-2"),
-                  EntityType.USER,
-                  Set.of("foo@camunda.test"),
-                  EntityType.GROUP,
-                  Set.of("group-g1"),
-                  EntityType.ROLE,
-                  Set.of("roleR1", "roleGroup"))))
+              eq(
+                  Map.of(
+                      EntityType.MAPPING_RULE,
+                      Set.of("test-id", "test-id-2"),
+                      EntityType.USER,
+                      Set.of("foo@camunda.test"),
+                      EntityType.GROUP,
+                      Set.of("group-g1"),
+                      EntityType.ROLE,
+                      Set.of("roleR1", "roleGroup"))),
+              any()))
           .thenReturn(List.of(tenantT1, groupTenant));
 
       // when
@@ -313,41 +302,47 @@ public class TokenClaimsConverterTest {
       final var mappingRule1 = new MappingRuleEntity("map-1", 1L, "role", "R1", "role-r1");
       final var mappingRule2 = new MappingRuleEntity("map-2", 2L, "group", "G1", "group-g1");
 
-      when(mappingRuleServices.getMatchingMappingRules(claims))
+      when(mappingRuleServices.getMatchingMappingRules(eq(claims), any()))
           .thenReturn(Stream.of(mappingRule1, mappingRule2));
 
       when(groupServices.getGroupsByMemberTypeAndMemberIds(
-              Map.of(
-                  EntityType.MAPPING_RULE,
-                  Set.of("map-1", "map-2"),
-                  EntityType.USER,
-                  Set.of("scooby-doo"))))
+              eq(
+                  Map.of(
+                      EntityType.MAPPING_RULE,
+                      Set.of("map-1", "map-2"),
+                      EntityType.USER,
+                      Set.of("scooby-doo"))),
+              any()))
           .thenReturn(List.of(new GroupEntity(1L, "group-g1", "G1", "Group G1")));
 
       final var roleR1 = new RoleEntity(10L, "roleR1", "Role R1", "R1 description");
       when(roleServices.getRolesByMemberTypeAndMemberIds(
-              Map.of(
-                  EntityType.MAPPING_RULE,
-                  Set.of("map-1", "map-2"),
-                  EntityType.GROUP,
-                  Set.of("group-g1"),
-                  EntityType.USER,
-                  Set.of("scooby-doo"))))
+              eq(
+                  Map.of(
+                      EntityType.MAPPING_RULE,
+                      Set.of("map-1", "map-2"),
+                      EntityType.GROUP,
+                      Set.of("group-g1"),
+                      EntityType.USER,
+                      Set.of("scooby-doo"))),
+              any()))
           .thenReturn(List.of(roleR1));
 
       final var tenantEntity1 = new TenantEntity(100L, "t1", "Tenant One", "First Tenant");
       final var tenantEntity2 = new TenantEntity(200L, "t2", "Tenant Two", "Second Tenant");
 
       when(tenantServices.getTenantsByMemberTypeAndMemberIds(
-              Map.of(
-                  EntityType.MAPPING_RULE,
-                  Set.of("map-1", "map-2"),
-                  EntityType.USER,
-                  Set.of("scooby-doo"),
-                  EntityType.GROUP,
-                  Set.of("group-g1"),
-                  EntityType.ROLE,
-                  Set.of("roleR1"))))
+              eq(
+                  Map.of(
+                      EntityType.MAPPING_RULE,
+                      Set.of("map-1", "map-2"),
+                      EntityType.USER,
+                      Set.of("scooby-doo"),
+                      EntityType.GROUP,
+                      Set.of("group-g1"),
+                      EntityType.ROLE,
+                      Set.of("roleR1"))),
+              any()))
           .thenReturn(List.of(tenantEntity1, tenantEntity2));
 
       // when
@@ -417,14 +412,6 @@ public class TokenClaimsConverterTest {
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn("not-tested");
       when(oidcAuthenticationConfiguration.isGroupsClaimConfigured()).thenReturn(true);
       when(oidcAuthenticationConfiguration.getGroupsClaim()).thenReturn(GROUPS_CLAIM);
-      when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(mappingRuleServices);
-      when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(tenantServices);
-      when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(roleServices);
-      when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(groupServices);
 
       membershipService =
           new DefaultMembershipService(

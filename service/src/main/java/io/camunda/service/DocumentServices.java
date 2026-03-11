@@ -48,7 +48,6 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   public DocumentServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication,
       final SimpleDocumentStoreRegistry registry,
       final AuthorizationChecker authorizationChecker,
       final SecurityConfiguration securityConfig,
@@ -57,7 +56,6 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.registry = registry;
@@ -65,24 +63,11 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     this.securityConfig = securityConfig;
   }
 
-  @Override
-  public DocumentServices withAuthentication(final CamundaAuthentication authentication) {
-    return new DocumentServices(
-        brokerClient,
-        securityContextProvider,
-        authentication,
-        registry,
-        authorizationChecker,
-        securityConfig,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
   /** Will return a failed future for any error returned by the store */
   public CompletableFuture<DocumentReferenceResponse> createDocument(
-      final DocumentCreateRequest request) {
+      final DocumentCreateRequest request, final CamundaAuthentication authentication) {
 
-    if (!hasDocumentPermission(PermissionType.CREATE)) {
+    if (!hasDocumentPermission(PermissionType.CREATE, authentication)) {
       return CompletableFuture.failedFuture(
           ErrorMapper.createForbiddenException(
               Authorization.of(a -> a.document().permissionType(PermissionType.CREATE))));
@@ -109,9 +94,10 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
   /** Will never return a failed future; an Either type is returned instead */
   public CompletableFuture<List<Either<DocumentErrorResponse, DocumentReferenceResponse>>>
-      createDocumentBatch(final List<DocumentCreateRequest> requests) {
+      createDocumentBatch(
+          final List<DocumentCreateRequest> requests, final CamundaAuthentication authentication) {
 
-    if (!hasDocumentPermission(PermissionType.CREATE)) {
+    if (!hasDocumentPermission(PermissionType.CREATE, authentication)) {
       return CompletableFuture.failedFuture(
           ErrorMapper.createForbiddenException(
               Authorization.of(a -> a.document().permissionType(PermissionType.CREATE))));
@@ -147,9 +133,12 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   }
 
   public CompletableFuture<DocumentContentResponse> getDocumentContent(
-      final String documentId, final String storeId, final String contentHash) {
+      final String documentId,
+      final String storeId,
+      final String contentHash,
+      final CamundaAuthentication authentication) {
 
-    if (!hasDocumentPermission(PermissionType.READ)) {
+    if (!hasDocumentPermission(PermissionType.READ, authentication)) {
       return CompletableFuture.failedFuture(
           ErrorMapper.createForbiddenException(
               Authorization.of(a -> a.document().permissionType(PermissionType.READ))));
@@ -173,9 +162,10 @@ public class DocumentServices extends ApiServices<DocumentServices> {
             });
   }
 
-  public CompletableFuture<Void> deleteDocument(final String documentId, final String storeId) {
+  public CompletableFuture<Void> deleteDocument(
+      final String documentId, final String storeId, final CamundaAuthentication authentication) {
 
-    if (!hasDocumentPermission(PermissionType.DELETE)) {
+    if (!hasDocumentPermission(PermissionType.DELETE, authentication)) {
       return CompletableFuture.failedFuture(
           ErrorMapper.createForbiddenException(
               Authorization.of(a -> a.document().permissionType(PermissionType.DELETE))));
@@ -191,9 +181,10 @@ public class DocumentServices extends ApiServices<DocumentServices> {
       final String documentId,
       final String storeId,
       final String contentHash,
-      final DocumentLinkParams params) {
+      final DocumentLinkParams params,
+      final CamundaAuthentication authentication) {
 
-    if (!hasDocumentPermission(PermissionType.CREATE)) {
+    if (!hasDocumentPermission(PermissionType.CREATE, authentication)) {
       return CompletableFuture.failedFuture(
           ErrorMapper.createForbiddenException(
               Authorization.of(a -> a.document().permissionType(PermissionType.CREATE))));
@@ -263,7 +254,8 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     }
   }
 
-  private boolean hasDocumentPermission(final PermissionType permission) {
+  private boolean hasDocumentPermission(
+      final PermissionType permission, final CamundaAuthentication authentication) {
     if (!securityConfig.getAuthorizations().isEnabled()) {
       return true;
     }

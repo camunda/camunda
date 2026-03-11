@@ -439,7 +439,6 @@ public class JobControllerLongPollingTest extends RestControllerTest {
           new SecurityContextProvider(),
           activateJobsHandler,
           null,
-          null,
           new ApiServicesExecutorProvider(1, 1, 1, 1),
           new BrokerRequestAuthorizationConverter(new SecurityConfiguration()));
     }
