@@ -251,9 +251,10 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
       // to use this in production code.
       Loggers.ACTOR_LOGGER.warn(
           """
-              [PotentiallyBlocking] No executor provided for ActorFuture#onComplete callback.\
+              [PotentiallyBlocking] No executor provided for ActorFuture#onComplete callback for {}.\
                This could block the actor that completes the future.\
-               Use onComplete(consumer, executor) instead.""");
+               Use onComplete(consumer, executor) instead.""",
+          consumer.getClass().getName());
       onComplete(consumer, Runnable::run);
     }
   }
@@ -387,9 +388,10 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
       // to use this in production code.
       Loggers.ACTOR_LOGGER.warn(
           """
-              [PotentiallyBlocking] No executor provided for ActorFuture#thenApply method.\
+              [PotentiallyBlocking] No executor provided for ActorFuture#thenApply method at {}.\
                This could block the actor that completes the future.\
-               Use thenApply(consumer, executor) instead.""");
+               Use thenApply(consumer, executor) instead.""",
+          next.getClass().getName());
       return thenApply(next, Runnable::run);
     }
   }
