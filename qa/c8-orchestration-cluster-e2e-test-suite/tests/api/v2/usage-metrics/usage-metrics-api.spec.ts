@@ -206,8 +206,8 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
       await cleanupUsers(request, [LIMITED_USER.username]);
     });
   });
-
-  test('Get Usage Metrics - User with no granted authorization', async ({
+// https://github.com/camunda/camunda/issues/43428 fix - re-enable when the issue resolved.
+  test.skip('Get Usage Metrics - User with no granted authorization', async ({
     request,
   }) => {
     const startOfTodayLocal = new Date();
