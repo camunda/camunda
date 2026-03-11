@@ -32,6 +32,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
@@ -166,6 +167,7 @@ public class UserTaskTools {
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchUserTaskVariables(
       @McpToolParam(description = USER_TASK_KEY_DESCRIPTION)
+          @NotNull(message = "User task key must not be null.")
           @Positive(message = USER_TASK_KEY_POSITIVE_MESSAGE)
           final Long userTaskKey,
       @McpToolParam(description = FILTER_DESCRIPTION, required = false)

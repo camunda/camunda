@@ -863,6 +863,29 @@ class UserTaskToolsTest extends ToolsTest {
     }
 
     @Test
+    void shouldFailSearchUserTaskVariablesOnNullKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchUserTaskVariables")
+                  .arguments(Map.of())
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("userTaskKey: User task key must not be null."));
+    }
+
+    @Test
     void shouldFailSearchUserTaskVariablesOnInvalidKey() {
       // when
       final CallToolResult result =
