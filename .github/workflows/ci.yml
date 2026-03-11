@@ -1644,7 +1644,9 @@ jobs:
         id: build-camunda-docker
         with:
           repository: camunda/camunda
-          version: ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
+          version: |
+            ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
+            ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.snapshot_tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile
