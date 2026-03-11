@@ -15,8 +15,8 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.protocol.impl.encoding.RecordMetadataBlock;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.RecordMetadataRecordTypeDecoder;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -120,13 +120,12 @@ public final class ProcessingStateMachine {
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
   private static final String ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED =
       "Expected to process command '{} {}' successfully on stream processor, but caught unexpected exception. Failed to handle the exception gracefully.";
-  private final RecordMetadataRecordTypeDecoder recordTypeDecoder =
-      new RecordMetadataRecordTypeDecoder();
+  private final RecordMetadataBlock recordTypeDecoder = new RecordMetadataBlock();
   private final EventFilter processingFilter;
   private final EventFilter isEventOrRejection =
       event -> {
-        final var recordType =
-            recordTypeDecoder.getRecordType(event.getMetadata(), event.getMetadataOffset());
+        recordTypeDecoder.wrap(event.getMetadata(), event.getMetadataOffset());
+        final var recordType = recordTypeDecoder.recordType();
         return recordType == RecordType.EVENT || recordType == RecordType.COMMAND_REJECTION;
       };
   private final MutableLastProcessedPositionState lastProcessedPositionState;
@@ -196,9 +195,10 @@ public final class ProcessingStateMachine {
     streamProcessorListener = context.getStreamProcessorListener();
     processingMetrics = new ProcessingMetrics(context.getMeterRegistry());
     final EventFilter commandFilter =
-        event ->
-            recordTypeDecoder.getRecordType(event.getMetadata(), event.getMetadataOffset())
-                == RecordType.COMMAND;
+        event -> {
+          recordTypeDecoder.wrap(event.getMetadata(), event.getMetadataOffset());
+          return recordTypeDecoder.recordType() == RecordType.COMMAND;
+        };
     processingFilter =
         commandFilter.and(record -> !record.shouldSkipProcessing()).and(context.processingFilter());
     clock = context.getClock();
