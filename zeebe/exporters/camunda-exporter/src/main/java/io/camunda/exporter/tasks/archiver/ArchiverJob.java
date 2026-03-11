@@ -163,11 +163,12 @@ public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundT
                             + finishDate));
               }
               exporterMetrics.beginArchiverReindexTask();
-              return archiverRepository.moveDocuments(
-                  sourceIdxName, sourceIdxName + finishDate, idsMap, filters, executor);
+              return archiverRepository
+                  .moveDocuments(
+                      sourceIdxName, sourceIdxName + finishDate, idsMap, filters, executor)
+                  .whenCompleteAsync((result, error) -> releaseReindexPermit());
             },
             executor)
-        .whenCompleteAsync((result, error) -> releaseReindexPermit(), semaphoreExecutor)
         .thenApply(ok -> batch.size());
   }
 
