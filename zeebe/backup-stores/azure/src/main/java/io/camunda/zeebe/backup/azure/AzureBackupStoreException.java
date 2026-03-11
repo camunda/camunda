@@ -28,4 +28,10 @@ public abstract class AzureBackupStoreException extends RuntimeException {
       super(message);
     }
   }
+
+  public static class UploadException extends AzureBackupStoreException {
+    public UploadException(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+  }
 }
