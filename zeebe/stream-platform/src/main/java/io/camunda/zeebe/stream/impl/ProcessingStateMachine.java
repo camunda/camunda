@@ -119,13 +119,15 @@ public final class ProcessingStateMachine {
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
   private static final String ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED =
       "Expected to process command '{} {}' successfully on stream processor, but caught unexpected exception. Failed to handle the exception gracefully.";
+  private final RecordMetadata.RecordTypeDecoder recordTypeDecoder =
+      new RecordMetadata.RecordTypeDecoder();
   private final EventFilter processingFilter;
   private final EventFilter isEventOrRejection =
-      new MetadataEventFilter(
-          recordMetadata -> {
-            final var recordType = recordMetadata.getRecordType();
-            return recordType == RecordType.EVENT || recordType == RecordType.COMMAND_REJECTION;
-          });
+      event -> {
+        final var recordType =
+            recordTypeDecoder.getRecordType(event.getMetadata(), event.getMetadataOffset());
+        return recordType == RecordType.EVENT || recordType == RecordType.COMMAND_REJECTION;
+      };
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final RecordMetadata metadata = new RecordMetadata();
   private final ActorControl actor;
@@ -192,11 +194,12 @@ public final class ProcessingStateMachine {
 
     streamProcessorListener = context.getStreamProcessorListener();
     processingMetrics = new ProcessingMetrics(context.getMeterRegistry());
+    final EventFilter commandFilter =
+        event ->
+            recordTypeDecoder.getRecordType(event.getMetadata(), event.getMetadataOffset())
+                == RecordType.COMMAND;
     processingFilter =
-        new MetadataEventFilter(
-                recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND)
-            .and(record -> !record.shouldSkipProcessing())
-            .and(context.processingFilter());
+        commandFilter.and(record -> !record.shouldSkipProcessing()).and(context.processingFilter());
     clock = context.getClock();
   }
 

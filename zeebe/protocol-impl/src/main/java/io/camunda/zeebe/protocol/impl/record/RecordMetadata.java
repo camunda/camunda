@@ -386,4 +386,17 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     builder.append('}');
     return builder.toString();
   }
+
+  /**
+   * Lightweight decoder that reads only fixed-length fields from the SBE-encoded metadata header
+   * without full deserialization. Reusable and allocation-free after construction.
+   */
+  public static final class RecordTypeDecoder {
+    private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+    private final RecordMetadataDecoder metadataDecoder = new RecordMetadataDecoder();
+
+    public RecordType getRecordType(final DirectBuffer buffer, final int metadataOffset) {
+      return metadataDecoder.wrapAndApplyHeader(buffer, metadataOffset, headerDecoder).recordType();
+    }
+  }
 }
