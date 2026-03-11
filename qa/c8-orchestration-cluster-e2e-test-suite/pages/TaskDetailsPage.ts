@@ -63,6 +63,8 @@ class TaskDetailsPage {
   readonly processTab: Locator;
   readonly bpmnDiagram: Locator;
   readonly assignedToMeText: Locator;
+  readonly historyTabButton: Locator;
+  readonly historyTable: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -112,6 +114,12 @@ class TaskDetailsPage {
     this.assignedToMeText = page
       .getByTestId('assignee')
       .getByText('Assigned to me');
+    this.historyTabButton = page.getByRole('link', {
+      name: 'Show task history',
+    });
+    this.historyTable = page
+      .getByTestId('task-details-history-view')
+      .getByRole('table');
   }
 
   async clickAssignToMeButton() {
@@ -362,6 +370,10 @@ class TaskDetailsPage {
 
   async clickProcessTab(): Promise<void> {
     await this.processTab.click();
+  }
+
+  async clickHistoryTab(): Promise<void> {
+    await this.historyTabButton.click();
   }
 }
 
