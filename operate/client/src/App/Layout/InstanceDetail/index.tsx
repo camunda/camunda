@@ -10,7 +10,7 @@ import {
   ResizablePanel,
   SplitDirection,
 } from 'modules/components/ResizablePanel';
-import {Container, PanelContainer} from './styled';
+import {OuterContainer, MainContent, Container, PanelContainer, RightPanelContainer} from './styled';
 import {observer} from 'mobx-react';
 import {useEffect, useRef, useState} from 'react';
 import {Loading} from '@carbon/react';
@@ -47,26 +47,34 @@ const InstanceDetail: React.FC<Props> = observer(
     const panelMinHeight = clientHeight / 4;
 
     return (
-      <Container
-        $hasBreadcrumb={breadcrumb !== undefined}
-        $hasFooter={footer !== undefined}
-      >
-        {hasLoadingOverlay && <Loading data-testid="loading-overlay" />}
-        {breadcrumb}
-        {header}
-        <PanelContainer ref={containerRef}>
-          <ResizablePanel
-            panelId={`${type}-detail-vertical-panel`}
-            direction={SplitDirection.Vertical}
-            minHeights={[panelMinHeight, panelMinHeight]}
+      <OuterContainer>
+        <MainContent>
+          <Container
+            $hasBreadcrumb={breadcrumb !== undefined}
+            $hasFooter={footer !== undefined}
           >
-            {topPanel}
-            {bottomPanel}
-          </ResizablePanel>
-        </PanelContainer>
-        {rightPanel}
-        {footer}
-      </Container>
+            {hasLoadingOverlay && <Loading data-testid="loading-overlay" />}
+            {breadcrumb}
+            {header}
+            <PanelContainer ref={containerRef}>
+              <ResizablePanel
+                panelId={`${type}-detail-vertical-panel`}
+                direction={SplitDirection.Vertical}
+                minHeights={[panelMinHeight, panelMinHeight]}
+              >
+                {topPanel}
+                {bottomPanel}
+              </ResizablePanel>
+            </PanelContainer>
+            {footer}
+          </Container>
+        </MainContent>
+        {rightPanel && (
+          <RightPanelContainer>
+            {rightPanel}
+          </RightPanelContainer>
+        )}
+      </OuterContainer>
     );
   },
 );

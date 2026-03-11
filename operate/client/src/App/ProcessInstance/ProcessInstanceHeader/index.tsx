@@ -33,9 +33,6 @@ import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessI
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
-import {useNavigate} from 'react-router-dom';
-import {Button} from '@carbon/react';
-import {ArrowLeft} from '@carbon/react/icons';
 import {styles} from '@carbon/elements';
 import {BREAKPOINTS} from 'modules/constants';
 
@@ -95,8 +92,6 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance, isBreadcrumbVi
   } = processInstance;
   const tenantsById = useAvailableTenants();
   const tenantName = tenantsById[tenantId] ?? tenantId;
-  const navigate = useNavigate();
-
   const [isMedium, setIsMedium] = useState(
     window.innerWidth >= BREAKPOINTS.md && window.innerWidth < BREAKPOINTS.lg,
   );
@@ -151,21 +146,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance, isBreadcrumbVi
   return (
     <InstanceHeader
       state={processInstanceState}
-      backButton={
-        isBreadcrumbVisible ? undefined : (
-          <Button
-            kind="ghost"
-            size="sm"
-            hasIconOnly
-            iconDescription="Back"
-            tooltipPosition="bottom"
-            aria-label="Back to processes"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft />
-          </Button>
-        )
-      }
+      backButton={undefined}
       headerColumns={headerColumns.filter((name) => {
         if (name === 'Tenant') {
           return isMultiTenancyEnabled;

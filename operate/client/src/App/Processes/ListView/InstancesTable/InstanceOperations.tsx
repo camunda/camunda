@@ -16,6 +16,9 @@ import {useDeleteProcessInstance} from 'modules/mutations/processInstance/useDel
 import {useResolveProcessInstanceIncidents} from 'modules/mutations/processInstance/useResolveProcessInstanceIncidents';
 import type {OperationConfig} from 'modules/components/Operations/types';
 import type {OperationEntityType} from 'modules/types/operate';
+import {Button} from '@carbon/react';
+import {copilotStore} from 'modules/stores/copilot';
+import AISparkle from 'modules/components/Icon/ai-sparkle.svg?react';
 
 type Props = {
   processInstanceKey: string;
@@ -154,12 +157,27 @@ const InstanceOperations: React.FC<Props> = ({
     isDeleteProcessInstancePending;
 
   return (
-    <Operations
-      operations={operations}
-      processInstanceKey={processInstanceKey}
-      isLoading={isLoading}
-      useIcons={true}
-    />
+    <div style={{display: 'flex', alignItems: 'center'}}>
+      {hasIncident && (
+        <Button
+          hasIconOnly
+          kind="ghost"
+          size="sm"
+          iconDescription="Analyze with Copilot"
+          tooltipPosition="left"
+          renderIcon={() => (
+            <AISparkle style={{width: '16px', height: '14px', color: '#8a3ffc'}} />
+          )}
+          onClick={() => copilotStore.openWithInstanceAnalysis(processInstanceKey)}
+        />
+      )}
+      <Operations
+        operations={operations}
+        processInstanceKey={processInstanceKey}
+        isLoading={isLoading}
+        useIcons={true}
+      />
+    </div>
   );
 };
 

@@ -18,6 +18,8 @@ import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryMo
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
+import {CoPilot} from './CoPilot';
+import {copilotStore} from 'modules/stores/copilot';
 import {TopPanel} from './TopPanel';
 import {BottomPanel, BottomPanelStacked, ModificationFooter, Buttons} from './styled';
 import {
@@ -324,6 +326,11 @@ const ProcessInstance: React.FC = observer(() => {
                     </ModalStateManager>
                   </Buttons>
                 </ModificationFooter>
+              ) : undefined
+            }
+            rightPanel={
+              copilotStore.isOpen ? (
+                <CoPilot onClose={copilotStore.close} />
               ) : undefined
             }
             type="process"

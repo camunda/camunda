@@ -16,78 +16,52 @@ import {useGetIncidentsByProcessInstancePaginated} from 'modules/queries/inciden
 import {useEnhancedIncidents, useIncidentsSort} from 'modules/hooks/incidents';
 import {getIncidentsSearchFilter} from 'modules/utils/incidents';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
-import {IncidentsTable} from '../../IncidentsWrapper/IncidentsTable';
+import {IncidentsList} from '../../IncidentsWrapper/IncidentsList';
 import {IncidentsFilter} from '../../IncidentsWrapper/IncidentsFilter';
 import {
   Content,
   FilterContainer,
   ViewAllIncidentsBar,
-  ResolvedIncidentsContainer,
+  ResolvedAccordionContainer,
 } from './IncidentsContent.styled';
-import {PanelHeader} from 'modules/components/PanelHeader';
 import {isInstanceRunning} from 'modules/utils/instance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
-import {Button} from '@carbon/react';
+import {Accordion, AccordionItem, Button} from '@carbon/react';
 import {Layer} from '@carbon/react';
 import type {InfiniteData, UseInfiniteQueryResult} from '@tanstack/react-query';
 import type {QueryIncidentsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
-const ROW_HEIGHT = 32;
+function computeDisplayState(
+  result: UseInfiniteQueryResult<InfiniteData<QueryIncidentsResponseBody>>,
+  totalItems: number,
+): React.ComponentProps<typeof IncidentsList>['state'] {
+  switch (true) {
+    case result.status === 'pending':
+      return 'skeleton';
+    case result.isFetching &&
+      !result.isRefetching &&
+      !result.isFetchingPreviousPage &&
+      !result.isFetchingNextPage:
+      return 'loading';
+    case result.status === 'error':
+      return 'error';
+    case result.status === 'success' && totalItems === 0:
+      return 'empty';
+    default:
+      return 'content';
+  }
+}
 
-function mapQueryResultToIncidentsHandle(
+function mapQueryResult(
   result: UseInfiniteQueryResult<InfiniteData<QueryIncidentsResponseBody>>,
 ) {
   const incidents = result.data?.pages.flatMap((p) => p.items) ?? [];
   const totalIncidentsCount = result.data?.pages[0]?.page.totalItems ?? 0;
-  const displayState = computeDisplayStateFromQueryResult(
-    result,
-    totalIncidentsCount,
-  );
-
   return {
     incidents,
-    totalIncidentsCount,
-    displayState,
-    handleScrollStartReach: async (scrollDown: (step: number) => void) => {
-      if (result.hasPreviousPage && !result.isFetchingPreviousPage) {
-        await result.fetchPreviousPage();
-        const SMOOTH_SCROLL_STEP_SIZE = 5 * ROW_HEIGHT;
-        scrollDown(SMOOTH_SCROLL_STEP_SIZE);
-      }
-    },
-    handleScrollEndReach: () => {
-      if (result.hasNextPage && !result.isFetchingNextPage) {
-        result.fetchNextPage();
-      }
-    },
+    displayState: computeDisplayState(result, totalIncidentsCount),
   };
-}
-
-function computeDisplayStateFromQueryResult(
-  result: UseInfiniteQueryResult<InfiniteData<unknown>>,
-  totalItems: number,
-): React.ComponentProps<typeof IncidentsTable>['state'] {
-  switch (true) {
-    case result.status === 'pending': {
-      return 'skeleton';
-    }
-    case result.isFetching &&
-      !result.isRefetching &&
-      !result.isFetchingPreviousPage &&
-      !result.isFetchingNextPage: {
-      return 'loading';
-    }
-    case result.status === 'error': {
-      return 'error';
-    }
-    case result.status === 'success' && totalItems === 0: {
-      return 'empty';
-    }
-    default: {
-      return 'content';
-    }
-  }
 }
 
 const IncidentsContent: React.FC = observer(() => {
@@ -125,35 +99,35 @@ const IncidentsContent: React.FC = observer(() => {
       },
     );
 
-    const handle = mapQueryResultToIncidentsHandle(result);
-    const enhancedIncidents = useEnhancedIncidents(handle.incidents);
+    const {incidents, displayState} = mapQueryResult(result);
+    const enhancedIncidents = useEnhancedIncidents(incidents);
 
     return (
       <Content>
         <FilterContainer>
           <IncidentsFilter />
         </FilterContainer>
-        <IncidentsTable
-          state={handle.displayState}
-          onVerticalScrollStartReach={handle.handleScrollStartReach}
-          onVerticalScrollEndReach={handle.handleScrollEndReach}
+        <IncidentsList
+          state={displayState}
           processInstanceKey={processInstance.processInstanceKey}
           incidents={enhancedIncidents}
         />
-        <ResolvedIncidentsContainer>
-          <PanelHeader title="Resolved incidents" size="sm" />
-        </ResolvedIncidentsContainer>
-        <IncidentsTable
-          state={handle.displayState}
-          processInstanceKey={processInstance.processInstanceKey}
-          incidents={enhancedIncidents}
-        />
+        <ResolvedAccordionContainer>
+          <Accordion>
+            <AccordionItem title="Resolved incidents">
+              <IncidentsList
+                state={displayState}
+                processInstanceKey={processInstance.processInstanceKey}
+                incidents={enhancedIncidents}
+              />
+            </AccordionItem>
+          </Accordion>
+        </ResolvedAccordionContainer>
       </Content>
     );
   }
 
   // For selected flow node: show incidents filtered by flow node with filters
-  // Show bar when we have a flowNodeId filter (not root, not specific element instance)
   if (isFlowNodeScoped && !isElementInstanceSelected && processInstance) {
     const filter = getIncidentsSearchFilter(
       incidentsPanelStore.state.selectedErrorTypes,
@@ -169,8 +143,8 @@ const IncidentsContent: React.FC = observer(() => {
       },
     );
 
-    const handle = mapQueryResultToIncidentsHandle(result);
-    const enhancedIncidents = useEnhancedIncidents(handle.incidents);
+    const {incidents, displayState} = mapQueryResult(result);
+    const enhancedIncidents = useEnhancedIncidents(incidents);
     const rootNode = useRootNode();
 
     const handleViewAllIncidents = () => {
@@ -184,30 +158,27 @@ const IncidentsContent: React.FC = observer(() => {
         <FilterContainer>
           <IncidentsFilter />
         </FilterContainer>
-        <IncidentsTable
-          state={handle.displayState}
-          onVerticalScrollStartReach={handle.handleScrollStartReach}
-          onVerticalScrollEndReach={handle.handleScrollEndReach}
+        <IncidentsList
+          state={displayState}
           processInstanceKey={processInstance.processInstanceKey}
           incidents={enhancedIncidents}
         />
-        <ResolvedIncidentsContainer>
-          <PanelHeader title="Resolved incidents" size="sm" />
-        </ResolvedIncidentsContainer>
-        <IncidentsTable
-          state={handle.displayState}
-          processInstanceKey={processInstance.processInstanceKey}
-          incidents={enhancedIncidents}
-        />
+        <ResolvedAccordionContainer>
+          <Accordion>
+            <AccordionItem title="Resolved incidents">
+              <IncidentsList
+                state={displayState}
+                processInstanceKey={processInstance.processInstanceKey}
+                incidents={enhancedIncidents}
+              />
+            </AccordionItem>
+          </Accordion>
+        </ResolvedAccordionContainer>
         <ViewAllIncidentsBar>
           <Layer>
             <div />
             <div />
-            <Button
-              kind="ghost"
-              size="md"
-              onClick={handleViewAllIncidents}
-            >
+            <Button kind="ghost" size="md" onClick={handleViewAllIncidents}>
               View all incidents
             </Button>
           </Layer>
@@ -217,7 +188,6 @@ const IncidentsContent: React.FC = observer(() => {
   }
 
   // For selected element instance: show only that element's incidents without filters
-  // But if it's scoped to a flow node, also show the bar
   if (isElementInstanceSelected && processInstance) {
     const filter = getIncidentsSearchFilter(
       incidentsPanelStore.state.selectedErrorTypes,
@@ -232,8 +202,8 @@ const IncidentsContent: React.FC = observer(() => {
       },
     );
 
-    const handle = mapQueryResultToIncidentsHandle(result);
-    const enhancedIncidents = useEnhancedIncidents(handle.incidents);
+    const {incidents, displayState} = mapQueryResult(result);
+    const enhancedIncidents = useEnhancedIncidents(incidents);
     const rootNode = useRootNode();
 
     const handleViewAllIncidents = () => {
@@ -244,31 +214,28 @@ const IncidentsContent: React.FC = observer(() => {
 
     return (
       <Content>
-        <IncidentsTable
-          state={handle.displayState}
-          onVerticalScrollStartReach={handle.handleScrollStartReach}
-          onVerticalScrollEndReach={handle.handleScrollEndReach}
+        <IncidentsList
+          state={displayState}
           processInstanceKey={processInstance.processInstanceKey}
           incidents={enhancedIncidents}
         />
-        <ResolvedIncidentsContainer>
-          <PanelHeader title="Resolved incidents" size="sm" />
-        </ResolvedIncidentsContainer>
-        <IncidentsTable
-          state={handle.displayState}
-          processInstanceKey={processInstance.processInstanceKey}
-          incidents={enhancedIncidents}
-        />
+        <ResolvedAccordionContainer>
+          <Accordion>
+            <AccordionItem title="Resolved incidents">
+              <IncidentsList
+                state={displayState}
+                processInstanceKey={processInstance.processInstanceKey}
+                incidents={enhancedIncidents}
+              />
+            </AccordionItem>
+          </Accordion>
+        </ResolvedAccordionContainer>
         {isFlowNodeScoped && (
           <ViewAllIncidentsBar>
             <Layer>
               <div />
               <div />
-              <Button
-                kind="ghost"
-                size="md"
-                onClick={handleViewAllIncidents}
-              >
+              <Button kind="ghost" size="md" onClick={handleViewAllIncidents}>
                 View all incidents
               </Button>
             </Layer>
@@ -282,4 +249,3 @@ const IncidentsContent: React.FC = observer(() => {
 });
 
 export {IncidentsContent};
-

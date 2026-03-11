@@ -7,10 +7,12 @@
  */
 
 import {useEffect, useState} from 'react';
+import {createPortal} from 'react-dom';
 import {observer} from 'mobx-react-lite';
 import {Link} from 'react-router-dom';
 import {ArrowRight} from '@carbon/react/icons';
 import {C3Navigation} from '@camunda/camunda-composite-components';
+import {HeaderGlobalAction} from '@carbon/react';
 import {Locations, Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {authenticationStore} from 'modules/stores/authentication';
@@ -19,6 +21,8 @@ import {licenseTagStore} from 'modules/stores/licenseTag';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {isForbidden} from 'modules/auth/isForbidden';
+import {copilotStore} from 'modules/stores/copilot';
+import AISparkle from 'modules/components/Icon/ai-sparkle.svg?react';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
   const BASE_INFO_SIDEBAR_ITEMS = [
@@ -87,6 +91,13 @@ const AppHeader: React.FC = observer(() => {
   const {currentPage} = useCurrentPage();
   const {theme, changeTheme} = currentTheme;
   const [isAppBarOpen, setIsAppBarOpen] = useState(false);
+  const [headerGlobalBar, setHeaderGlobalBar] = useState<Element | null>(null);
+
+  useEffect(() => {
+    // Find the Carbon HeaderGlobalBar after C3Navigation mounts and portal into it
+    const el = document.querySelector('.cds--header__global');
+    setHeaderGlobalBar(el);
+  }, []);
 
   useEffect(() => {
     if (currentUser !== undefined) {
@@ -105,6 +116,7 @@ const AppHeader: React.FC = observer(() => {
   }, []);
 
   return (
+    <>
     <C3Navigation
       toggleAppbar={(isAppBarOpen) => setIsAppBarOpen(isAppBarOpen)}
       notificationSideBar={IS_SAAS ? {} : undefined}
@@ -306,6 +318,19 @@ const AppHeader: React.FC = observer(() => {
           : undefined,
       }}
     />
+    {headerGlobalBar &&
+      createPortal(
+        <HeaderGlobalAction
+          aria-label="Open Copilot"
+          tooltipAlignment="end"
+          onClick={copilotStore.toggle}
+          style={{color: '#8a3ffc'}}
+        >
+          <AISparkle style={{width: '16px', height: '14px'}} />
+        </HeaderGlobalAction>,
+        headerGlobalBar,
+      )}
+    </>
   );
 });
 

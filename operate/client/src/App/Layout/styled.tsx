@@ -8,9 +8,24 @@
 
 import styled from 'styled-components';
 
-const PageContent = styled.main`
+const PageWrapper = styled.div`
+  display: flex;
+  flex-direction: row;
+  height: 100%;
   padding-top: var(--cds-spacing-09);
+  overflow: hidden;
+`;
+
+const PageContent = styled.main`
+  flex: 1;
+  min-width: 0;
   height: 100%;
 `;
 
-export {PageContent};
+const CopilotGlobalContainer = styled.div`
+  flex-shrink: 0;
+  height: 100%;
+  border-left: 1px solid var(--cds-border-subtle-01);
+`;
+
+export {PageWrapper, PageContent, CopilotGlobalContainer};

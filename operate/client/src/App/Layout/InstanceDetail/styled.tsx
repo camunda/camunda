@@ -8,6 +8,18 @@
 
 import styled, {css} from 'styled-components';
 
+const OuterContainer = styled.div`
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+`;
+
+const MainContent = styled.div`
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+`;
+
 type Props = {
   $hasFooter?: boolean;
   $hasBreadcrumb?: boolean;
@@ -21,7 +33,7 @@ const Container = styled.div<Props>`
       grid-template-rows: ${`
         ${
           $hasBreadcrumb ? 'var(--cds-spacing-07)' : ''
-        } var(--cds-spacing-09) 1fr ${$hasFooter ? 'var(--cds-spacing-09)' : ''}
+        } minmax(var(--cds-spacing-09), auto) 1fr ${$hasFooter ? 'var(--cds-spacing-09)' : ''}
       `};
     `;
   }}
@@ -31,4 +43,11 @@ const PanelContainer = styled.div`
   overflow: auto;
 `;
 
-export {Container, PanelContainer};
+const RightPanelContainer = styled.div`
+  flex-shrink: 0;
+  height: 100%;
+  overflow: hidden;
+  border-left: 1px solid var(--cds-border-subtle-01);
+`;
+
+export {OuterContainer, MainContent, Container, PanelContainer, RightPanelContainer};

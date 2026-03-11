@@ -23,7 +23,7 @@ const FilterContainer = styled.div`
 const ViewAllIncidentsBar = styled.div`
   margin-top: auto;
   border-top: 1px solid var(--cds-border-subtle-01);
-  
+
   .cds--layer {
     width: 100%;
     padding: var(--cds-spacing-02) var(--cds-spacing-07) var(--cds-spacing-02)
@@ -35,16 +35,18 @@ const ViewAllIncidentsBar = styled.div`
   }
 `;
 
-const ResolvedIncidentsContainer = styled.div`
-  padding-top: var(--cds-spacing-05);
+const ResolvedAccordionContainer = styled.div`
+  margin-top: auto;
   border-top: 1px solid var(--cds-border-subtle-01);
-  margin-top: var(--cds-spacing-05);
+
+  .cds--accordion__content {
+    padding: 0;
+  }
 `;
 
 export {
   Content,
   FilterContainer,
   ViewAllIncidentsBar,
-  ResolvedIncidentsContainer,
+  ResolvedAccordionContainer,
 };
-
