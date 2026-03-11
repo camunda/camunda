@@ -244,6 +244,28 @@ class UserTaskToolsTest extends ToolsTest {
                   assertThat(textContent.text())
                       .isEqualTo("userTaskKey: User task key must be a positive number."));
     }
+
+    @Test
+    void shouldFailGetUserTaskByKeyOnNullKey() {
+      // when
+      final var arguments = new LinkedHashMap<String, Object>();
+      arguments.put("userTaskKey", null);
+
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("getUserTask").arguments(arguments).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text()).isEqualTo("userTaskKey: must not be null"));
+    }
   }
 
   @Nested
@@ -705,6 +727,29 @@ class UserTaskToolsTest extends ToolsTest {
                   assertThat(textContent.text())
                       .isEqualTo("userTaskKey: User task key must be a positive number."));
     }
+
+    @Test
+    void shouldFailAssignUserTaskOnNullKey() {
+      // when
+      final var arguments = new LinkedHashMap<String, Object>();
+      arguments.put("userTaskKey", null);
+      arguments.put("assignee", "jane.doe");
+
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("assignUserTask").arguments(arguments).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text()).isEqualTo("userTaskKey: must not be null"));
+    }
   }
 
   @Nested
@@ -883,6 +928,31 @@ class UserTaskToolsTest extends ToolsTest {
               textContent ->
                   assertThat(textContent.text())
                       .isEqualTo("userTaskKey: User task key must be a positive number."));
+    }
+
+    @Test
+    void shouldFailSearchUserTaskVariablesOnNullKey() {
+      // when
+      final var arguments = new LinkedHashMap<String, Object>();
+      arguments.put("userTaskKey", null);
+
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchUserTaskVariables")
+                  .arguments(arguments)
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text()).isEqualTo("userTaskKey: must not be null"));
     }
   }
 }
