@@ -53,9 +53,9 @@ public class RestorePointResolver {
         to,
         exportedPositions);
     final var restorableCheckpoints =
-        findRestorableCheckpoints(metadataByPartition, from, exportedPositions);
+        findRestorableCheckpointsForPartition(metadataByPartition, from, exportedPositions);
     final var commonCheckpoint = findCommonCheckpoint(restorableCheckpoints, exportedPositions, to);
-    final var restorableBackups = findRestorableBackups(restorableCheckpoints, commonCheckpoint);
+    final var restorableBackups = findRequiredBackups(restorableCheckpoints, commonCheckpoint);
     LOG.atDebug().log(
         "Resolved restore point with globalCheckpointId={}",
         restorableBackups.globalCheckpointId());
@@ -63,7 +63,7 @@ public class RestorePointResolver {
   }
 
   /** Finds all backup-type checkpoints that are required to cover the common checkpoint. */
-  private static @NonNull RestorableBackups findRestorableBackups(
+  private static @NonNull RestorableBackups findRequiredBackups(
       @NonNull final List<RestorableCheckpoints> allRestorableCheckpoints,
       final long commonCheckpoint) {
     LOG.atDebug().log(
@@ -131,7 +131,7 @@ public class RestorePointResolver {
    * Finds a list of checkpoints for each partition that start from the given timestamp or exported
    * position.
    */
-  private static @NonNull List<RestorableCheckpoints> findRestorableCheckpoints(
+  private static @NonNull List<RestorableCheckpoints> findRestorableCheckpointsForPartition(
       @NonNull final List<BackupMetadata> metadataByPartition,
       @Nullable final Instant from,
       @Nullable final Map<Integer, Long> exportedPositions) {
@@ -140,7 +140,7 @@ public class RestorePointResolver {
             entry -> {
               final var exportedPosition =
                   exportedPositions != null ? exportedPositions.get(entry.partitionId()) : null;
-              return findRestorableCheckpoints(from, exportedPosition, entry);
+              return findRestorableCheckpointsForPartition(from, exportedPosition, entry);
             })
         .toList();
   }
@@ -149,12 +149,12 @@ public class RestorePointResolver {
    * For a given partition, finds a list of checkpoints that start from the given timestamp or
    * exported position.
    */
-  private static @NonNull RestorableCheckpoints findRestorableCheckpoints(
+  private static @NonNull RestorableCheckpoints findRestorableCheckpointsForPartition(
       @Nullable final Instant from,
       @Nullable final Long exportedPosition,
       @NonNull final BackupMetadata metadata) {
     final var restorableRange = findRestorableRange(from, exportedPosition, metadata);
-    final var restorableCheckpoints = findRestorableCheckpoints(metadata, restorableRange);
+    final var restorableCheckpoints = findRestorableCheckpointsInRange(metadata, restorableRange);
     return new RestorableCheckpoints(metadata.partitionId(), restorableCheckpoints);
   }
 
@@ -227,7 +227,7 @@ public class RestorePointResolver {
   }
 
   /** Finds all checkpoints that fit within the given range. */
-  private static @NonNull List<CheckpointEntry> findRestorableCheckpoints(
+  private static @NonNull List<CheckpointEntry> findRestorableCheckpointsInRange(
       @NonNull final BackupMetadata metadata, @NonNull final RestorableRange restorableRange) {
     return metadata.checkpoints().stream()
         .filter(
