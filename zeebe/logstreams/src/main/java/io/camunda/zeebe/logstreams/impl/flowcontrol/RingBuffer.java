@@ -171,6 +171,7 @@ final class RingBuffer {
         // Entry was skipped by the stream processor — clean it up
         buffer.compareAndExchange(slot, entry, null);
         entry.cleanup();
+        lastProcessedIndex = entry.position;
       }
     }
     return null;
