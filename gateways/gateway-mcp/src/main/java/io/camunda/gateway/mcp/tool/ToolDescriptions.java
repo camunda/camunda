@@ -38,6 +38,7 @@ public final class ToolDescriptions {
       "The assigned key of the process definition, which acts as a unique identifier for this process definition.";
 
   public static final String USER_TASK_KEY_DESCRIPTION = "The user task key.";
+  public static final String VARIABLE_KEY_DESCRIPTION = "The variable key.";
 
   /* Variable descriptions */
   public static final String VARIABLE_FILTER_FORMAT_NOTE =
