@@ -16,8 +16,9 @@ This document is the single reference for building, validating, and shipping RES
 6. [Camunda Client extension](#6-camunda-client-extension)
 7. [Testing strategy](#7-testing-strategy)
 8. [CI pipeline & merge checklist](#8-ci-pipeline--merge-checklist)
-9. [Common mistakes & how to fix them](#9-common-mistakes--how-to-fix-them)
-10. [Reference links](#10-reference-links)
+9. [Documentation generation](#9-documentation-generation)
+10. [Common mistakes & how to fix them](#10-common-mistakes--how-to-fix-them)
+11. [Reference links](#11-reference-links)
 
 ---
 
@@ -25,17 +26,17 @@ This document is the single reference for building, validating, and shipping RES
 
 Every new or modified endpoint must follow these stages in order:
 
-| # |          Stage          |                                Artefact                                 |                      Owner                       |
-|---|-------------------------|-------------------------------------------------------------------------|--------------------------------------------------|
+| # |          Stage          |                                Artefact                                 |                                                  Owner                                                   |
+|---|-------------------------|-------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
 | 1 | **Design**              | Endpoint contract (method, path, request/response shapes)               | Feature team + [`#top-c8-cluster-api-governance`](https://camunda.slack.com/archives/C0A154VV8DB) review |
-| 2 | **OpenAPI spec**        | YAML definition in `zeebe/gateway-protocol/src/main/proto/v2/`          | Feature team, reviewed by `@camunda/c8-api-team` |
-| 3 | **Spectral validation** | Pass local `spectral lint` (two passes)                                 | Feature team                                     |
-| 4 | **Model generation**    | Run `mvn clean install -Dquickly` on `gateway-model` / `gateway-rest`   | Feature team                                     |
-| 5 | **Controller**          | Spring `@CamundaRestController` in `zeebe/gateway-rest`                 | Feature team                                     |
-| 6 | **Service layer**       | Extend/create service in `service/` module                              | Feature team                                     |
-| 7 | **Client**              | New command/query in `clients/java`                                     | Feature team                                     |
-| 8 | **Tests**               | Unit + (optional) integration + acceptance tests                        | Feature team                                     |
-| 9 | **Documentation**       | Descriptions in the OpenAPI spec generate the public docs automatically | Feature team                                     |
+| 2 | **OpenAPI spec**        | YAML definition in `zeebe/gateway-protocol/src/main/proto/v2/`          | Feature team, reviewed by `@camunda/c8-api-team`                                                         |
+| 3 | **Spectral validation** | Pass local `spectral lint` (two passes)                                 | Feature team                                                                                             |
+| 4 | **Model generation**    | Run `mvn clean install -Dquickly` on `gateway-model` / `gateway-rest`   | Feature team                                                                                             |
+| 5 | **Controller**          | Spring `@CamundaRestController` in `zeebe/gateway-rest`                 | Feature team                                                                                             |
+| 6 | **Service layer**       | Extend/create service in `service/` module                              | Feature team                                                                                             |
+| 7 | **Client**              | New command/query in `clients/java`                                     | Feature team                                                                                             |
+| 8 | **Tests**               | Unit + (optional) integration + acceptance tests                        | Feature team                                                                                             |
+| 9 | **Documentation**       | Descriptions in the OpenAPI spec generate the public docs automatically | Feature team                                                                                             |
 
 > **Tip:** Share your endpoint design early in [`#top-c8-cluster-api-governance`](https://camunda.slack.com/archives/C0A154VV8DB) (Slack) to catch issues before you write code.
 
@@ -63,6 +64,8 @@ v2/
 **When adding a new domain**, create a new `<domain>.yaml` file following the same pattern and add path `$ref`s to `rest-api.yaml`.
 
 ### 2.2 Naming and terminology
+
+All descriptive text (summaries, descriptions, property docs) should follow the [Camunda style guide](https://confluence.camunda.com/display/HAN/Camunda+style+guide).
 
 |                           Rule                           |                              Example                               |
 |----------------------------------------------------------|--------------------------------------------------------------------|
@@ -431,17 +434,17 @@ MyStatusEnum:
 
 Use consistent response codes across endpoints. Reuse `common-responses.yaml` definitions:
 
-| Code  |           When to use           |                                Definition                                 |
-|-------|---------------------------------|---------------------------------------------------------------------------|
-| `200` | Successful response with body   | Inline per endpoint                                                       |
-| `204` | Successful command with no body | Inline (e.g., `completeUserTask`)                                         |
-| `400` | Invalid request data            | `$ref: 'common-responses.yaml#/components/responses/InvalidData'`         |
-| `401` | Missing/invalid authentication  | `$ref: 'common-responses.yaml#/components/responses/Unauthorized'`        |
+| Code  |               When to use                |                                Definition                                 |
+|-------|------------------------------------------|---------------------------------------------------------------------------|
+| `200` | Successful response with body            | Inline per endpoint                                                       |
+| `204` | Successful command with no body          | Inline (e.g., `completeUserTask`)                                         |
+| `400` | Invalid request data                     | `$ref: 'common-responses.yaml#/components/responses/InvalidData'`         |
+| `401` | Missing/invalid authentication           | `$ref: 'common-responses.yaml#/components/responses/Unauthorized'`        |
 | `403` | Authorization failure / disabled feature | `$ref: 'common-responses.yaml#/components/responses/Forbidden'`           |
-| `404` | Resource not found              | Inline with `ProblemDetail` schema                                        |
-| `409` | Conflict / wrong state          | Inline with `ProblemDetail` schema                                        |
-| `500` | Internal server error           | `$ref: 'common-responses.yaml#/components/responses/InternalServerError'` |
-| `503` | Backpressure / unavailable      | `$ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'`  |
+| `404` | Resource not found                       | Inline with `ProblemDetail` schema                                        |
+| `409` | Conflict / wrong state                   | Inline with `ProblemDetail` schema                                        |
+| `500` | Internal server error                    | `$ref: 'common-responses.yaml#/components/responses/InternalServerError'` |
+| `503` | Backpressure / unavailable               | `$ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'`  |
 
 All error responses use `application/problem+json` with the `ProblemDetail` schema (RFC 9457).
 
@@ -1016,7 +1019,31 @@ Before opening a PR:
 
 ---
 
-## 9. Common mistakes & how to fix them
+## 9. Documentation generation
+
+[The public REST API reference documentation](https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/orchestration-cluster-rest-api/) is generated from the OpenAPI spec.
+
+### 9.1 Automatic synchronization
+
+A [weekly workflow](https://github.com/camunda/camunda-docs/actions/workflows/sync-rest-api-docs.yaml) in the `camunda-docs` repository automatically syncs the OpenAPI spec into the docs:
+
+- **"next" version:** Pulled from the `main` branch.
+- **Older supported versions** (e.g., 8.6, 8.7, 8.8): Pulled from the corresponding `stable/<version>` branches (based on `versions.json` in `camunda-docs`). See [#8177](https://github.com/camunda/camunda-docs/pull/8177).
+
+This means **backported spec fixes to `stable/*` branches are picked up automatically** — you no longer need to manually sync docs for older versions.
+
+If your changes are not urgent, you can wait for the next scheduled run. Otherwise, trigger the workflow manually (see §9.2).
+
+### 9.2 Manual synchronization
+
+1. Trigger a manual run of the [synchronization workflow](https://github.com/camunda/camunda-docs/actions/workflows/sync-rest-api-docs.yaml). This syncs both `main` ("next") and all `stable/*` branches at once.
+2. If you need to tweak the generated output beyond what the spec provides, follow the [documentation generation guide](https://github.com/camunda/camunda-docs/blob/main/howtos/interactive-api-explorers.md) and create a docs PR following the [documentation team's guidelines](https://github.com/camunda/camunda-docs/blob/main/CONTRIBUTING.MD).
+
+> **Important:** The OpenAPI spec in `zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml` is the **single source of truth**. Never edit the generated docs directly — always fix the spec and regenerate.
+
+---
+
+## 10. Common mistakes & how to fix them
 
 ### ❌ `required: false` on a property
 
@@ -1148,25 +1175,31 @@ MySchema:
 
 ---
 
-## 10. Reference links
+## 11. Reference links
 
-|         Resource          |                                   Location                                   |
-|---------------------------|------------------------------------------------------------------------------|
-| OpenAPI spec (v2)         | `zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml`                     |
-| Spectral ruleset          | `zeebe/gateway-protocol/.spectral.yaml`                                      |
-| Custom Spectral functions | `zeebe/gateway-protocol/spectral-functions/`                                 |
-| Spectral tests            | `zeebe/gateway-protocol/spectral-tests/`                                     |
-| OpenAPI validation guide  | `zeebe/gateway-protocol/OPENAPI_VALIDATION.md`                               |
-| REST controller guide     | `docs/rest-controller.md`                                                    |
-| Testing guide             | `docs/testing.md`                                                            |
-| Unit test guide           | `docs/testing/unit.md`                                                       |
-| Acceptance test guide     | `docs/testing/acceptance.md`                                                 |
-| Controllers               | `zeebe/gateway-rest/src/main/java/io/camunda/zeebe/gateway/rest/controller/` |
-| Request/Response mappers  | `gateways/gateway-mapping-http/`                                             |
-| Generated models          | `gateways/gateway-model/` (generated from OpenAPI spec)                      |
-| Service layer             | `service/`                                                                   |
-| Camunda Java Client       | `clients/java/`                                                              |
-| CI OpenAPI lint job       | `.github/workflows/ci.yml` (job: `openapi-lint`)                             |
-| Slack channel             | [`#top-c8-cluster-api-governance`](https://camunda.slack.com/archives/C0A154VV8DB) |
-| API team (reviewers)      | `@camunda/c8-api-team`                                                       |
+|          Resource           |                                                                   Location                                                                    |
+|-----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| Public REST API reference   | [docs.camunda.io](https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/orchestration-cluster-rest-api/) |
+| OpenAPI 3.0.3 specification | [spec.openapis.org](https://spec.openapis.org/oas/v3.0.3)                                                                                     |
+| OpenAPI guide               | [learn.openapis.org](https://learn.openapis.org/)                                                                                             |
+| Camunda style guide         | [Confluence](https://confluence.camunda.com/display/HAN/Camunda+style+guide)                                                                  |
+| OpenAPI spec (v2)           | `zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml`                                                                                      |
+| Spectral ruleset            | `zeebe/gateway-protocol/.spectral.yaml`                                                                                                       |
+| Custom Spectral functions   | `zeebe/gateway-protocol/spectral-functions/`                                                                                                  |
+| Spectral tests              | `zeebe/gateway-protocol/spectral-tests/`                                                                                                      |
+| OpenAPI validation guide    | `zeebe/gateway-protocol/OPENAPI_VALIDATION.md`                                                                                                |
+| REST controller guide       | `docs/rest-controller.md`                                                                                                                     |
+| Testing guide               | `docs/testing.md`                                                                                                                             |
+| Unit test guide             | `docs/testing/unit.md`                                                                                                                        |
+| Acceptance test guide       | `docs/testing/acceptance.md`                                                                                                                  |
+| Docs sync workflow          | [sync-rest-api-docs.yaml](https://github.com/camunda/camunda-docs/actions/workflows/sync-rest-api-docs.yaml)                                  |
+| Docs generation guide       | [interactive-api-explorers.md](https://github.com/camunda/camunda-docs/blob/main/howtos/interactive-api-explorers.md)                         |
+| Controllers                 | `zeebe/gateway-rest/src/main/java/io/camunda/zeebe/gateway/rest/controller/`                                                                  |
+| Request/Response mappers    | `gateways/gateway-mapping-http/`                                                                                                              |
+| Generated models            | `gateways/gateway-model/` (generated from OpenAPI spec)                                                                                       |
+| Service layer               | `service/`                                                                                                                                    |
+| Camunda Java Client         | `clients/java/`                                                                                                                               |
+| CI OpenAPI lint job         | `.github/workflows/ci.yml` (job: `openapi-lint`)                                                                                              |
+| Slack channel               | [`#top-c8-cluster-api-governance`](https://camunda.slack.com/archives/C0A154VV8DB)                                                            |
+| API team (reviewers)        | `@camunda/c8-api-team`                                                                                                                        |
 
