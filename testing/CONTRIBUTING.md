@@ -163,8 +163,8 @@ Example: Add a new assertion method `assertProcessInstance(..).isAwesome(true)`.
 
 Example: Add a new instruction `HAVE_FUN` to the JSON test case.
 
-- Add the new instruction `HAVE_FUN` to the JSON schema of the
-  DSL [cpt-test-cases.schema.json](camunda-process-test-json-test-cases/src/main/resources/schema/cpt-test-cases.schema.json)
+- Add the new instruction `HAVE_FUN` to the
+  [JSON schema](camunda-process-test-json-test-cases/src/main/resources/schema/cpt-test-cases/schema.json)
   under the `TestCaseInstruction`
   definition. Define its
   required and optional properties. Add descriptions for the instruction and its properties.
