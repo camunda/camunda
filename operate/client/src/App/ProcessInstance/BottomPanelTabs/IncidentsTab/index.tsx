@@ -15,7 +15,6 @@ import type {InfiniteData, UseInfiniteQueryResult} from '@tanstack/react-query';
 import {useEnhancedIncidents, useIncidentsSort} from 'modules/hooks/incidents';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
-import {useElementSelectionInstanceKey} from 'modules/hooks/useElementSelectionInstanceKey';
 import {useGetIncidentsByProcessInstancePaginated} from 'modules/queries/incidents/useGetIncidentsByProcessInstancePaginated';
 import {useGetIncidentsByElementInstancePaginated} from 'modules/queries/incidents/useGetIncidentsByElementInstancePaginated';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
@@ -26,13 +25,17 @@ import {IncidentsFilter} from './IncidentsFilter';
 import {IncidentsTable} from './IncidentsTable';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {Container} from './styled';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 const ROW_HEIGHT = 32;
 
 const IncidentsTab: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const {data: processInstance} = useProcessInstance();
-  const elementInstanceKey = useElementSelectionInstanceKey();
+  const {selectedElementId, resolvedElementInstance} =
+    useProcessInstanceElementSelection();
+  const resolvedElementInstanceKey =
+    resolvedElementInstance?.elementInstanceKey;
 
   const enablePeriodicRefetch =
     processInstance !== undefined &&
@@ -42,29 +45,31 @@ const IncidentsTab: React.FC = observer(() => {
   const sort = useIncidentsSort();
   const filter = getIncidentsSearchFilter(
     incidentsPanelStore.state.selectedErrorTypes,
-    elementInstanceKey !== null && elementInstanceKey !== processInstanceId
-      ? undefined
-      : undefined,
+    selectedElementId ?? undefined,
   );
 
   const isElementInstanceSelected =
-    elementInstanceKey !== null && elementInstanceKey !== processInstanceId;
+    resolvedElementInstanceKey !== undefined &&
+    resolvedElementInstanceKey !== processInstanceId;
 
   const processInstanceResult = useGetIncidentsByProcessInstancePaginated(
     processInstanceId,
     {
-      enabled: !isElementInstanceSelected,
+      enabled: !isElementInstanceSelected && processInstance !== undefined,
       enablePeriodicRefetch,
       payload: {sort, filter},
     },
   );
 
   const elementInstanceResult = useGetIncidentsByElementInstancePaginated(
-    elementInstanceKey ?? '',
+    resolvedElementInstanceKey ?? '',
     {
-      enabled: isElementInstanceSelected,
+      enabled: isElementInstanceSelected && processInstance !== undefined,
       enablePeriodicRefetch,
-      payload: {sort, filter},
+      payload: {
+        sort,
+        filter,
+      },
     },
   );
 
