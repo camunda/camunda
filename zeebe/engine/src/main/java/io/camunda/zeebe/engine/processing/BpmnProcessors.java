@@ -133,8 +133,7 @@ public final class BpmnProcessors {
         partitionId,
         routingInfo,
         authCheckBehavior,
-        keyGenerator,
-        config);
+        keyGenerator);
     addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
     addAdHocSubProcessActivityStreamProcessors(
         typedRecordProcessors, processingState, writers, authCheckBehavior, bpmnBehaviors);
@@ -320,8 +319,7 @@ public final class BpmnProcessors {
       final int partitionId,
       final RoutingInfo routingInfo,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final KeyGenerator keyGenerator,
-      final EngineConfiguration config) {
+      final KeyGenerator keyGenerator) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         ProcessInstanceMigrationIntent.MIGRATE,
@@ -333,8 +331,7 @@ public final class BpmnProcessors {
             partitionId,
             routingInfo,
             authCheckBehavior,
-            keyGenerator,
-            config.isBusinessIdUniquenessEnabled()));
+            keyGenerator));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(
