@@ -16,7 +16,9 @@ import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Meter.Type;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 final class SequencerMetrics {
   private final DistributionSummary batchSize;
   private final DistributionSummary batchLengthBytes;

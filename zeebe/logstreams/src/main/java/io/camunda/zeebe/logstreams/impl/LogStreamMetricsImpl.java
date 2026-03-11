@@ -49,7 +49,9 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.concurrent.atomic.AtomicLong;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public final class LogStreamMetricsImpl implements LogStreamMetrics {
   private final AtomicLong inflightAppends = new AtomicLong();
   private final AtomicLong inflightRequests = new AtomicLong();
@@ -97,46 +99,57 @@ public final class LogStreamMetricsImpl implements LogStreamMetrics {
         .register(registry);
   }
 
+  @Override
   public void increaseInflightAppends() {
     inflightAppends.incrementAndGet();
   }
 
+  @Override
   public void decreaseInflightAppends() {
     inflightAppends.decrementAndGet();
   }
 
+  @Override
   public void setInflightRequests(final int count) {
     inflightRequests.set(count);
   }
 
+  @Override
   public void setRequestLimit(final int limit) {
     requestLimit.set(limit);
   }
 
+  @Override
   public void increaseInflightRequests() {
     inflightRequests.incrementAndGet();
   }
 
+  @Override
   public void decreaseInflightRequests() {
     inflightRequests.decrementAndGet();
   }
 
+  @Override
   public CloseableSilently startWriteTimer() {
     return MicrometerUtil.timer(appendLatency, Timer.start(registry));
   }
 
+  @Override
   public CloseableSilently startCommitTimer() {
     return MicrometerUtil.timer(commitLatency, Timer.start(registry));
   }
 
+  @Override
   public void setLastWrittenPosition(final long position) {
     lastWritten.set(position);
   }
 
+  @Override
   public void setLastCommittedPosition(final long position) {
     lastCommitted.set(position);
   }
 
+  @Override
   public void recordAppendedEntry(
       final int amount,
       final RecordType recordType,
@@ -147,6 +160,7 @@ public final class LogStreamMetricsImpl implements LogStreamMetrics {
         .increment(amount);
   }
 
+  @Override
   public void flowControlAccepted(final WriteContext context, final int size) {
     triedAppends.increment();
 
@@ -162,6 +176,7 @@ public final class LogStreamMetricsImpl implements LogStreamMetrics {
         .increment(size);
   }
 
+  @Override
   public void flowControlRejected(
       final WriteContext context, final int size, final Rejection reason) {
     triedAppends.increment();
@@ -180,18 +195,22 @@ public final class LogStreamMetricsImpl implements LogStreamMetrics {
         .increment(size);
   }
 
+  @Override
   public void setExportingRate(final long value) {
     exportingRate.set(value);
   }
 
+  @Override
   public void setWriteRateMaxLimit(final long value) {
     writeRateMaxLimit.set(value);
   }
 
+  @Override
   public void setPartitionLoad(final double load) {
     partitionLoad.set(Double.doubleToLongBits(load));
   }
 
+  @Override
   public void setWriteRateLimit(final double value) {
     writeRateLimit.set(Double.doubleToLongBits(value));
   }

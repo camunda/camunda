@@ -9,6 +9,8 @@ package io.camunda.zeebe.logstreams.log;
 
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBuilderImpl;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a stream of events. New events are append to the end of the log. With {@link
@@ -17,6 +19,7 @@ import io.camunda.zeebe.logstreams.impl.log.LogStreamBuilderImpl;
  *
  * <p>To read events, the {@link LogStream#newLogStreamReader()} ()} can be used.
  */
+@NullMarked
 public interface LogStream extends AutoCloseable {
 
   @Override
@@ -39,7 +42,7 @@ public interface LogStream extends AutoCloseable {
    *
    * @return the log stream name
    */
-  String getLogName();
+  @Nullable String getLogName();
 
   /**
    * @return a future, when successfully completed it returns a newly created log stream reader
