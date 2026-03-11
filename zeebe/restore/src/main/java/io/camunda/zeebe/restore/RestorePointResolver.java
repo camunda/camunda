@@ -55,7 +55,8 @@ public class RestorePointResolver {
     final var restorableCheckpoints =
         findRestorableCheckpointsForPartition(metadataByPartition, from, exportedPositions);
     final var commonCheckpoint = findCommonCheckpoint(restorableCheckpoints, exportedPositions, to);
-    final var restorableBackups = findRequiredBackups(restorableCheckpoints, commonCheckpoint);
+    final var restorableBackups =
+        findRequiredBackups(restorableCheckpoints, commonCheckpoint, from, exportedPositions);
     LOG.atDebug().log(
         "Resolved restore point with globalCheckpointId={}",
         restorableBackups.globalCheckpointId());
@@ -65,13 +66,16 @@ public class RestorePointResolver {
   /** Finds all backup-type checkpoints that are required to cover the common checkpoint. */
   private static @NonNull RestorableBackups findRequiredBackups(
       @NonNull final List<RestorableCheckpoints> allRestorableCheckpoints,
-      final long commonCheckpoint) {
+      final long commonCheckpoint,
+      final @Nullable Instant from,
+      final @Nullable Map<Integer, Long> exportedPositions) {
     LOG.atDebug().log(
         "Finding restorable backups with commonCheckpoint={}, partitionCount={}",
         commonCheckpoint,
         allRestorableCheckpoints.size());
     final var backupsByPartitionId = new HashMap<Integer, List<CheckpointEntry>>();
     for (final var restorableCheckpoints : allRestorableCheckpoints) {
+      final var partitionId = restorableCheckpoints.partitionId();
       final var backups = new ArrayList<CheckpointEntry>();
       for (final var checkpoint : restorableCheckpoints.checkpoints()) {
         if (checkpoint.checkpointType().shouldCreateBackup()) {
@@ -80,7 +84,7 @@ public class RestorePointResolver {
           if (checkpoint.checkpointId() >= commonCheckpoint) {
             // Found the last required backup that contains the common checkpoint
             LOG.atTrace()
-                .addKeyValue("partition", restorableCheckpoints.partitionId())
+                .addKeyValue("partition", partitionId)
                 .log("Reached commonCheckpoint at checkpointId={}", checkpoint.checkpointId());
             break;
           }
@@ -90,16 +94,85 @@ public class RestorePointResolver {
         throw new IllegalStateException(
             String.format(
                 "Last restorable backup %d for partition %d does not cover the common checkpoint %d",
-                backups.getLast().checkpointId(),
-                restorableCheckpoints.partitionId(),
-                commonCheckpoint));
+                backups.getLast().checkpointId(), partitionId, commonCheckpoint));
       }
+      discardUnnecessaryBackups(
+          backups, from, exportedPositions != null ? exportedPositions.get(partitionId) : null);
       LOG.atDebug()
-          .addKeyValue("partition", restorableCheckpoints.partitionId())
+          .addKeyValue("partition", partitionId)
           .log("Found required backups: requiredBackups={}", backups.size());
-      backupsByPartitionId.put(restorableCheckpoints.partitionId(), backups);
+      backupsByPartitionId.put(partitionId, backups);
     }
     return new RestorableBackups(commonCheckpoint, backupsByPartitionId);
+  }
+
+  /**
+   * Discards backups that are not necessary for restoring. A backup is not necessary if it is from
+   * before the {@code from} timestamp or before the exported position. Retains at least one backup,
+   * even if it is unnecessary according to these rules. If both {@code from} and {@code
+   * exportedPosition} are provided, we only trim based on {@code from} because the user
+   * specifically requested it.
+   */
+  private static void discardUnnecessaryBackups(
+      final ArrayList<CheckpointEntry> backups,
+      final @Nullable Instant from,
+      final @Nullable Long exportedPosition) {
+    // For 'from': remove all backups whose timestamp is before 'from'.
+    if (from != null) {
+      discardUnnecessaryBackupsBeforeTimestamp(backups, from, exportedPosition);
+    }
+
+    // For 'exportedPosition': keep the last backup whose position is below exportedPosition and
+    // remove everything before it.
+    else if (exportedPosition != null) {
+      discardUnnecessaryBackupsBelowExporterPosition(backups, exportedPosition);
+    }
+  }
+
+  /**
+   * Retains the last backup whose position is below the exported position. Discards all previous
+   * backups because they are not needed for resuming exporting after restore.
+   */
+  private static void discardUnnecessaryBackupsBelowExporterPosition(
+      final ArrayList<CheckpointEntry> backups, final @NonNull Long exportedPosition) {
+    int lastBeforeExported = -1;
+    for (int i = 0; i < backups.size(); i++) {
+      if (backups.get(i).checkpointPosition() <= exportedPosition) {
+        lastBeforeExported = i;
+      } else {
+        break;
+      }
+    }
+    if (lastBeforeExported > 0) {
+      backups.subList(0, lastBeforeExported).clear();
+    }
+  }
+
+  /**
+   * Removes all backups before the given timestamp. Throws if the exported position is not covered
+   * by the remaining backups.
+   */
+  private static void discardUnnecessaryBackupsBeforeTimestamp(
+      final ArrayList<CheckpointEntry> backups,
+      final @NonNull Instant from,
+      final @Nullable Long exportedPosition) {
+    final var iterator = backups.iterator();
+    while (iterator.hasNext()) {
+      final var checkpoint = iterator.next();
+      if (!checkpoint.checkpointTimestamp().isBefore(from)) {
+        break;
+      }
+      // Always retain at least one backup.
+      if (iterator.hasNext()) {
+        iterator.remove();
+      }
+    }
+    if (exportedPosition != null && backups.getFirst().checkpointPosition() > exportedPosition) {
+      throw new IllegalStateException(
+          String.format(
+              "After discarding backups before %s, the exporter position %d is not covered by the first remaining backup %s",
+              from, exportedPosition, backups.getFirst()));
+    }
   }
 
   /**
