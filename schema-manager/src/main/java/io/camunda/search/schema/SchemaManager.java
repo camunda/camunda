@@ -461,10 +461,13 @@ public class SchemaManager implements CloseableSilently {
 
   private IndexConfiguration getIndexTemplateSettingsFromConfig(final String indexName) {
     final var settings = getIndexSettingsFromConfig(indexName);
-    settings.setNumberOfShards(
-        Optional.ofNullable(System.getenv("TEMPLATE_NUMBER_OF_SHARDS"))
-            .map(Integer::parseInt)
-            .orElse(settings.getNumberOfShards()));
+    if (IndexConfiguration.BIG_INDEX_NAMES.contains(indexName)) {
+      final int shards =
+          Optional.ofNullable(System.getenv("BIG_TEMPLATE_NUMBER_OF_SHARDS"))
+              .map(Integer::parseInt)
+              .orElse(settings.getNumberOfShards());
+      settings.setNumberOfShards(shards);
+    }
     return settings;
   }
 
