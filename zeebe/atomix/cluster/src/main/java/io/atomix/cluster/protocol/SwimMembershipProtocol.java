@@ -597,7 +597,7 @@ public class SwimMembershipProtocol
     PROBE_LOGGER.trace(
         "{} - Received probe {} from {}", this.localMember.id(), localMember, remoteMember);
 
-    if (localMember.id().equals(this.localMember.id())) {
+    if (Objects.equals(this.localMember.id(), localMember.id())) {
       // id can be just the host address if the probe uses the configured initial contact points. In
       // that case do not compare nodeVersion as it will be always 0.
       if (localMember.nodeVersion() < this.localMember.nodeVersion()) {
