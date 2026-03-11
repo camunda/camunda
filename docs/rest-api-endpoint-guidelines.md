@@ -27,7 +27,7 @@ Every new or modified endpoint must follow these stages in order:
 
 | # |          Stage          |                                Artefact                                 |                      Owner                       |
 |---|-------------------------|-------------------------------------------------------------------------|--------------------------------------------------|
-| 1 | **Design**              | Endpoint contract (method, path, request/response shapes)               | Feature team + `#prj-c8-rest-api` review         |
+| 1 | **Design**              | Endpoint contract (method, path, request/response shapes)               | Feature team + [`#top-c8-cluster-api-governance`](https://camunda.slack.com/archives/C0A154VV8DB) review |
 | 2 | **OpenAPI spec**        | YAML definition in `zeebe/gateway-protocol/src/main/proto/v2/`          | Feature team, reviewed by `@camunda/c8-api-team` |
 | 3 | **Spectral validation** | Pass local `spectral lint` (two passes)                                 | Feature team                                     |
 | 4 | **Model generation**    | Run `mvn clean install -Dquickly` on `gateway-model` / `gateway-rest`   | Feature team                                     |
@@ -37,7 +37,7 @@ Every new or modified endpoint must follow these stages in order:
 | 8 | **Tests**               | Unit + (optional) integration + acceptance tests                        | Feature team                                     |
 | 9 | **Documentation**       | Descriptions in the OpenAPI spec generate the public docs automatically | Feature team                                     |
 
-> **Tip:** Share your endpoint design early in `#prj-c8-rest-api` (Slack) to catch issues before you write code.
+> **Tip:** Share your endpoint design early in [`#top-c8-cluster-api-governance`](https://camunda.slack.com/archives/C0A154VV8DB) (Slack) to catch issues before you write code.
 
 ---
 
@@ -437,7 +437,7 @@ Use consistent response codes across endpoints. Reuse `common-responses.yaml` de
 | `204` | Successful command with no body | Inline (e.g., `completeUserTask`)                                         |
 | `400` | Invalid request data            | `$ref: 'common-responses.yaml#/components/responses/InvalidData'`         |
 | `401` | Missing/invalid authentication  | `$ref: 'common-responses.yaml#/components/responses/Unauthorized'`        |
-| `403` | Authorization failure           | `$ref: 'common-responses.yaml#/components/responses/Forbidden'`           |
+| `403` | Authorization failure / disabled feature | `$ref: 'common-responses.yaml#/components/responses/Forbidden'`           |
 | `404` | Resource not found              | Inline with `ProblemDetail` schema                                        |
 | `409` | Conflict / wrong state          | Inline with `ProblemDetail` schema                                        |
 | `500` | Internal server error           | `$ref: 'common-responses.yaml#/components/responses/InternalServerError'` |
@@ -1167,6 +1167,6 @@ MySchema:
 | Service layer             | `service/`                                                                   |
 | Camunda Java Client       | `clients/java/`                                                              |
 | CI OpenAPI lint job       | `.github/workflows/ci.yml` (job: `openapi-lint`)                             |
-| Slack channel             | `#prj-c8-rest-api`                                                           |
+| Slack channel             | [`#top-c8-cluster-api-governance`](https://camunda.slack.com/archives/C0A154VV8DB) |
 | API team (reviewers)      | `@camunda/c8-api-team`                                                       |
 
