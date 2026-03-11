@@ -1,5 +1,7 @@
 # Developer Handbook
 
+# Developer Handbook
+
 This document contains instructions for developers who want to contribute to this project.
 
 ## How to extend the Gateway Protocol?
@@ -220,4 +222,4 @@ or using the equivalent [platform property of docker-compose](https://docs.docke
 
 ## How to create a new REST endpoint
 
-Follow the [REST endpoint guide](../rest-controller.md). It will walk you through the required steps to consider.
+Follow the [REST endpoint guide](../rest-api-endpoint-guidelines.md). It will walk you through the required steps to consider.
