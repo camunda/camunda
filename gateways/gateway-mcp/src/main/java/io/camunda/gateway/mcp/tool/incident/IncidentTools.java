@@ -9,6 +9,7 @@ package io.camunda.gateway.mcp.tool.incident;
 
 import static io.camunda.gateway.mcp.mapper.CallToolResultMapper.mapErrorToResult;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.INCIDENT_KEY_NOT_NULL_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.INCIDENT_KEY_POSITIVE_MESSAGE;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
@@ -81,6 +83,7 @@ public class IncidentTools {
       @McpToolParam(
               description =
                   "The assigned key of the incident, which acts as a unique identifier for this incident.")
+          @NotNull(message = INCIDENT_KEY_NOT_NULL_MESSAGE)
           @Positive(message = INCIDENT_KEY_POSITIVE_MESSAGE)
           final Long incidentKey) {
     try {
@@ -96,6 +99,7 @@ public class IncidentTools {
   @CamundaMcpTool(description = "Resolve incident by key. " + EVENTUAL_CONSISTENCY_NOTE)
   public CallToolResult resolveIncident(
       @McpToolParam(description = "Key of the incident to resolve.")
+          @NotNull(message = INCIDENT_KEY_NOT_NULL_MESSAGE)
           @Positive(message = INCIDENT_KEY_POSITIVE_MESSAGE)
           final Long incidentKey) {
     try {

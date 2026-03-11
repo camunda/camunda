@@ -58,12 +58,18 @@ public final class ToolDescriptions {
 
   public static final String INCIDENT_KEY_POSITIVE_MESSAGE =
       "Incident key " + POSITIVE_NUMBER_MESSAGE;
+  public static final String INCIDENT_KEY_NOT_NULL_MESSAGE = "Incident key " + NOT_NULL_MESSAGE;
   public static final String PROCESS_INSTANCE_KEY_POSITIVE_MESSAGE =
       "Process instance key " + POSITIVE_NUMBER_MESSAGE;
+  public static final String PROCESS_INSTANCE_KEY_NOT_NULL_MESSAGE =
+      "Process instance key " + NOT_NULL_MESSAGE;
   public static final String VARIABLE_KEY_POSITIVE_MESSAGE =
       "Variable key " + POSITIVE_NUMBER_MESSAGE;
+  public static final String VARIABLE_KEY_NOT_NULL_MESSAGE = "Variable key " + NOT_NULL_MESSAGE;
   public static final String PROCESS_DEFINITION_KEY_POSITIVE_MESSAGE =
       "Process definition key " + POSITIVE_NUMBER_MESSAGE;
+  public static final String PROCESS_DEFINITION_KEY_NOT_NULL_MESSAGE =
+      "Process definition key " + NOT_NULL_MESSAGE;
   public static final String USER_TASK_KEY_POSITIVE_MESSAGE =
       "User task key " + POSITIVE_NUMBER_MESSAGE;
   public static final String USER_TASK_KEY_NOT_NULL_MESSAGE = "User task key " + NOT_NULL_MESSAGE;
