@@ -305,6 +305,45 @@ final class AuthInfoTest {
       assertThat(copy.isFrozen()).isTrue();
       assertThat(original.isFrozen()).isFalse();
     }
+
+    @Test
+    void shouldCacheLengthWhenFrozen() {
+      final AuthInfo authInfo = new AuthInfo();
+      authInfo.setClaims(Map.of("key", "value"));
+
+      final int lengthBeforeFreeze = authInfo.getLength();
+      authInfo.freeze();
+
+      // calling getLength() multiple times should return the same cached value
+      assertThat(authInfo.getLength()).isEqualTo(lengthBeforeFreeze);
+      assertThat(authInfo.getLength()).isEqualTo(lengthBeforeFreeze);
+    }
+
+    @Test
+    void shouldCacheLengthConsistentWithWrite() {
+      final AuthInfo authInfo = new AuthInfo();
+      authInfo.setFormat(AuthInfo.AuthDataFormat.JWT);
+      authInfo.setAuthData("some-token");
+      authInfo.setClaims(Map.of("a", "b", "c", "d"));
+      authInfo.freeze();
+
+      final int length = authInfo.getLength();
+      final var buffer = new UnsafeBuffer(new byte[length]);
+      final int written = authInfo.write(buffer, 0);
+      final var bb = authInfo.toDirectBuffer();
+
+      assertThat(bb.capacity()).isEqualTo(length);
+      assertThat(written).isEqualTo(length);
+    }
+
+    @Test
+    void shouldCacheLengthForEmptyFrozenAuthInfo() {
+      final AuthInfo authInfo = new AuthInfo();
+      authInfo.freeze();
+
+      assertThat(authInfo.getLength()).isEqualTo(new AuthInfo().getLength());
+      assertThat(authInfo.getLength()).isEqualTo(AuthInfo.empty().getLength());
+    }
   }
 
   @Nested
