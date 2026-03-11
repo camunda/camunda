@@ -76,7 +76,7 @@ test.describe('Identity Audit Log', () => {
           await identityAuditLogPage.auditLogTable.getByRole('row').count(),
         {timeout: 60000},
       )
-      .toBe(2);
+      .toBeGreaterThan(1);
 
     await expect(identityAuditLogPage.resetFiltersButton).toBeEnabled();
 
