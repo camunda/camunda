@@ -206,7 +206,7 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
       await cleanupUsers(request, [LIMITED_USER.username]);
     });
   });
-// https://github.com/camunda/camunda/issues/43428 fix - re-enable when the issue resolved.
+//Skipped due to bug 43428: https://github.com/camunda/camunda/issues/43428
   test.skip('Get Usage Metrics - User with no granted authorization', async ({
     request,
   }) => {
