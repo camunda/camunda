@@ -341,20 +341,20 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     final JudgeConfiguration.CredentialsConfiguration credentials = chatModel.getCredentials();
     final String provider = chatModel.getProvider().trim().toLowerCase();
     switch (provider) {
-      case "openai":
+      case JudgeConfigBootstrapData.ProviderConfig.PROVIDER_OPENAI:
         return new JudgeConfigBootstrapData.OpenAiConfig(
             chatModel.getModel(), chatModel.getApiKey());
-      case "anthropic":
+      case JudgeConfigBootstrapData.ProviderConfig.PROVIDER_ANTHROPIC:
         return new JudgeConfigBootstrapData.AnthropicConfig(
             chatModel.getModel(), chatModel.getApiKey());
-      case "amazon-bedrock":
+      case JudgeConfigBootstrapData.ProviderConfig.PROVIDER_AMAZON_BEDROCK:
         return new JudgeConfigBootstrapData.AmazonBedrockConfig(
             chatModel.getModel(),
             chatModel.getRegion(),
             chatModel.getApiKey(),
             credentials != null ? credentials.getAccessKey() : null,
             credentials != null ? credentials.getSecretKey() : null);
-      case "openai-compatible":
+      case JudgeConfigBootstrapData.ProviderConfig.PROVIDER_OPENAI_COMPATIBLE:
         return new JudgeConfigBootstrapData.OpenAiCompatibleConfig(
             chatModel.getModel(), chatModel.getBaseUrl(), chatModel.getApiKey());
       default:

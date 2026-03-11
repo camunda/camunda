@@ -73,6 +73,11 @@ public final class JudgeConfigBootstrapData {
   /** Base class for provider-specific configuration. */
   public abstract static class ProviderConfig {
 
+    public static final String PROVIDER_OPENAI = "openai";
+    public static final String PROVIDER_ANTHROPIC = "anthropic";
+    public static final String PROVIDER_AMAZON_BEDROCK = "amazon-bedrock";
+    public static final String PROVIDER_OPENAI_COMPATIBLE = "openai-compatible";
+
     private final String provider;
     private final String model;
 
@@ -96,7 +101,7 @@ public final class JudgeConfigBootstrapData {
     private final String apiKey;
 
     public OpenAiConfig(final String model, final String apiKey) {
-      super("openai", model);
+      super(PROVIDER_OPENAI, model);
       this.apiKey = apiKey;
     }
 
@@ -111,7 +116,7 @@ public final class JudgeConfigBootstrapData {
     private final String apiKey;
 
     public AnthropicConfig(final String model, final String apiKey) {
-      super("anthropic", model);
+      super(PROVIDER_ANTHROPIC, model);
       this.apiKey = apiKey;
     }
 
@@ -134,7 +139,7 @@ public final class JudgeConfigBootstrapData {
         final String apiKey,
         final String credentialsAccessKey,
         final String credentialsSecretKey) {
-      super("amazon-bedrock", model);
+      super(PROVIDER_AMAZON_BEDROCK, model);
       this.region = region;
       this.apiKey = apiKey;
       this.credentialsAccessKey = credentialsAccessKey;
@@ -165,7 +170,7 @@ public final class JudgeConfigBootstrapData {
     private final String apiKey;
 
     public OpenAiCompatibleConfig(final String model, final String baseUrl, final String apiKey) {
-      super("openai-compatible", model);
+      super(PROVIDER_OPENAI_COMPATIBLE, model);
       this.baseUrl = baseUrl;
       this.apiKey = apiKey;
     }
