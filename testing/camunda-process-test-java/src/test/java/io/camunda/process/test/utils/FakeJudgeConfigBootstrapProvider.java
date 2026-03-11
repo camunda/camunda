@@ -26,9 +26,11 @@ import io.camunda.process.test.api.judge.JudgeConfigBootstrapProvider;
  */
 public class FakeJudgeConfigBootstrapProvider implements JudgeConfigBootstrapProvider {
 
+  public static final String FAKE_REASONING = "{\"score\": 1.0, \"reasoning\": \"fake\"}";
+
   @Override
   public JudgeConfig bootstrap(final JudgeConfigBootstrapData data) {
-    return JudgeConfig.of(prompt -> "{\"score\": 1.0, \"reasoning\": \"fake\"}")
+    return JudgeConfig.of(prompt -> FAKE_REASONING)
         .withCustomPrompt(data.getCustomPrompt())
         .withThreshold(data.getThreshold());
   }
