@@ -93,6 +93,38 @@ public final class TimerValidationTest {
         process, expect(TimerEventDefinition.class, "failed to parse expression '!'"));
   }
 
+  @ParameterizedTest(name = "[{index}] {0}")
+  @MethodSource("timerEvents")
+  @DisplayName("static timer expression with duration that causes overflow")
+  void durationCausesOverflow(
+      final String timerEventElementId, final AbstractCatchEventBuilder<?, ?> timerEventBuilder) {
+
+    // PT2562047788015215H parses successfully but causes overflow when converting to millis
+    final var process = timerEventBuilder.timerWithDuration("PT2562047788015215H").done();
+
+    ProcessValidationUtil.validateProcess(
+        process,
+        expect(
+            timerEventElementId,
+            "Invalid timer duration expression (Timer duration is too large and results in arithmetic overflow. Please use a smaller duration value.)"));
+  }
+
+  @ParameterizedTest(name = "[{index}] {0}")
+  @MethodSource("timerEvents")
+  @DisplayName("static timer cycle expression with duration that causes overflow")
+  void cycleDurationCausesOverflow(
+      final String timerEventElementId, final AbstractCatchEventBuilder<?, ?> timerEventBuilder) {
+
+    // R3/PT2562047788015215H - repeating interval with duration that causes overflow
+    final var process = timerEventBuilder.timerWithCycle("R3/PT2562047788015215H").done();
+
+    ProcessValidationUtil.validateProcess(
+        process,
+        expect(
+            timerEventElementId,
+            "Invalid timer cycle expression (Timer duration is too large and results in arithmetic overflow. Please use a smaller duration value.)"));
+  }
+
   private static Stream<Arguments> timerEvents() {
     return Stream.of(
         Arguments.of(
