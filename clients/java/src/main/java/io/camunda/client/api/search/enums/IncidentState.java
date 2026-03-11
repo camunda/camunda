@@ -20,6 +20,5 @@ public enum IncidentState {
   MIGRATED,
   RESOLVED,
   PENDING,
-  UNKNOWN,
   UNKNOWN_ENUM_VALUE;
 }
