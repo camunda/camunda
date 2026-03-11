@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
+import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.testkit.support.TestBackupProvider;
 import io.camunda.zeebe.backup.testkit.support.WildcardBackupProvider;
 import io.camunda.zeebe.backup.testkit.support.WildcardBackupProvider.WildcardTestParameter;
@@ -23,6 +24,7 @@ import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -72,6 +74,45 @@ public interface ListingBackups {
     assertThat(result)
         .map(BackupStatus::id)
         .containsExactlyInAnyOrderElementsOf(parameter.expectedIds());
+  }
+
+  @Test
+  default void canListManyBackups() throws IOException {
+    // given
+    final int backupCount = 2_000;
+    final var ids =
+        IntStream.rangeClosed(1, backupCount)
+            .mapToObj(i -> new BackupIdentifierImpl(1, 1, i))
+            .toList();
+    final var backupTemplate = getBackup(ids.getFirst());
+
+    CompletableFuture.allOf(
+            ids.stream()
+                .map(
+                    id ->
+                        getStore()
+                            .save(
+                                new BackupImpl(
+                                    id,
+                                    backupTemplate.descriptor(),
+                                    backupTemplate.snapshot(),
+                                    backupTemplate.segments())))
+                .toArray(CompletableFuture[]::new))
+        .join();
+
+    // when
+    final var status =
+        getStore()
+            .list(
+                new BackupIdentifierWildcardImpl(
+                    Optional.empty(), Optional.of(1), CheckpointPattern.any()));
+
+    // then
+    assertThat(status)
+        // Deliberately a lower timeout than the default response timeout of 15 seconds.
+        // If this is not enough, we might need to improve the implementation.
+        .succeedsWithin(Duration.ofSeconds(10))
+        .satisfies(statuses -> assertThat(statuses).hasSize(backupCount));
   }
 
   default Backup getBackup(final BackupIdentifierImpl id) throws IOException {
