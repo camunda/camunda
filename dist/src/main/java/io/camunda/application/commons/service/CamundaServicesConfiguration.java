@@ -349,7 +349,9 @@ public class CamundaServicesConfiguration {
       final AuditLogServices auditLogServices,
       final ProcessCache processCache,
       final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      @Value("${zeebe.broker.experimental.engine.validators.maxNameFieldLength:32768}")
+          final int maxVariableNameLength) {
     return new UserTaskServices(
         brokerClient,
         securityContextProvider,
@@ -360,7 +362,8 @@ public class CamundaServicesConfiguration {
         auditLogServices,
         processCache,
         executorProvider,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        maxVariableNameLength);
   }
 
   @Bean
