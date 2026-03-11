@@ -25,6 +25,8 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Maintains a view of in-flight entries as they are being appended, written, committed and finally
@@ -78,20 +80,21 @@ import java.util.List;
  * RateMeasurements to update the cluster load and the exporting rate metrics.
  */
 @SuppressWarnings("UnstableApiUsage")
+@NullMarked
 public final class FlowControl implements AppendListener {
 
   private final LogStreamMetrics metrics;
-  private RateLimit writeRateLimit;
-  private Limit requestLimit;
+  @Nullable private RateLimit writeRateLimit;
+  @Nullable private Limit requestLimit;
   private Limiter<Intent> processingLimiter;
-  private RateLimiter writeRateLimiter;
+  @Nullable private RateLimiter writeRateLimiter;
   private final RateMeasurement exportingRate =
       new RateMeasurement(
           ActorClock::currentTimeMillis, Duration.ofMinutes(5), Duration.ofSeconds(10));
   private final RateMeasurement writeRate =
       new RateMeasurement(
           ActorClock::currentTimeMillis, Duration.ofMinutes(5), Duration.ofSeconds(10));
-  private RateLimitThrottle writeRateThrottle;
+  @Nullable private RateLimitThrottle writeRateThrottle;
   private volatile long lastWrittenPosition = -1;
   private volatile long lastExportedPosition;
 
@@ -108,8 +111,8 @@ public final class FlowControl implements AppendListener {
 
   public FlowControl(
       final LogStreamMetrics metrics,
-      final Limit requestLimit,
-      final RateLimit writeRateLimit,
+      final @Nullable Limit requestLimit,
+      final @Nullable RateLimit writeRateLimit,
       final int inFlightCapacity) {
     this.metrics = metrics;
     inFlight = new RingBuffer(inFlightCapacity);
@@ -193,7 +196,10 @@ public final class FlowControl implements AppendListener {
     if (inFlightEntry != null) {
       inFlightEntry.onWrite();
     }
-    if (writeRate.observe(highestPosition) && writeRateLimit != null && writeRateLimit.enabled()) {
+    if (writeRate.observe(highestPosition)
+        && writeRateLimit != null
+        && writeRateLimit.enabled()
+        && writeRateLimiter != null) {
       metrics.setPartitionLoad(
           Math.min((float) (writeRate.rate() / writeRateLimiter.getRate() * 100L), 100));
     }
@@ -235,11 +241,11 @@ public final class FlowControl implements AppendListener {
     }
   }
 
-  public Limit getRequestLimit() {
+  public @Nullable Limit getRequestLimit() {
     return requestLimit;
   }
 
-  public void setRequestLimit(final Limit requestLimit) {
+  public void setRequestLimit(final @Nullable Limit requestLimit) {
     this.requestLimit = requestLimit;
     processingLimiter =
         requestLimit != null
@@ -247,11 +253,11 @@ public final class FlowControl implements AppendListener {
             : new NoopLimiter<>();
   }
 
-  public RateLimit getWriteRateLimit() {
+  public @Nullable RateLimit getWriteRateLimit() {
     return writeRateLimit;
   }
 
-  public void setWriteRateLimit(final RateLimit writeRateLimit) {
+  public void setWriteRateLimit(final @Nullable RateLimit writeRateLimit) {
     this.writeRateLimit = writeRateLimit;
     writeRateLimiter = writeRateLimit == null ? null : writeRateLimit.limiter();
     writeRateThrottle =
