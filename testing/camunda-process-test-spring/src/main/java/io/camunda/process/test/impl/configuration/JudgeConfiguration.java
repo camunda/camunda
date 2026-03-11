@@ -53,10 +53,8 @@ public class JudgeConfiguration {
     this.chatModel = chatModel;
   }
 
-  public boolean isExplicitlyConfigured() {
-    return Double.compare(threshold, DEFAULT_THRESHOLD) != 0
-        || StringUtils.hasText(customPrompt)
-        || StringUtils.hasText(chatModel.getProvider());
+  public boolean hasProviderConfigured() {
+    return StringUtils.hasText(chatModel.getProvider());
   }
 
   public static class ChatModelConfiguration {

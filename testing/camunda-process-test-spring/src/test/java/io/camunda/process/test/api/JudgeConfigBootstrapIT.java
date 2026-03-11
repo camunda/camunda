@@ -20,10 +20,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.JudgeConfig;
-import io.camunda.process.test.impl.judge.JudgeConfigBootstrap;
 import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
 import io.camunda.process.test.api.judge.JudgeConfigBootstrapData.OpenAiConfig;
 import io.camunda.process.test.api.judge.JudgeConfigBootstrapData.ProviderConfig;
+import io.camunda.process.test.impl.judge.JudgeConfigBootstrap;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

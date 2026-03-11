@@ -19,6 +19,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
 import io.camunda.process.test.api.judge.JudgeConfigBootstrapProvider;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
@@ -229,7 +230,7 @@ public class CamundaProcessTestExtension
       return;
     }
 
-    if (!CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.isExplicitlyConfigured()) {
+    if (!CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.hasProviderConfigured()) {
       return;
     }
 
@@ -237,13 +238,13 @@ public class CamundaProcessTestExtension
   }
 
   private Optional<JudgeConfig> tryBootstrappingJudgeConfig() {
+    final JudgeConfigBootstrapData judgeConfigurationData =
+        CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.toJudgeConfigurationData();
     for (final JudgeConfigBootstrapProvider provider :
         ServiceLoader.load(
             JudgeConfigBootstrapProvider.class,
             JudgeConfigBootstrapProvider.class.getClassLoader())) {
-      final JudgeConfig bootstrapped =
-          provider.bootstrap(
-              CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.toJudgeConfigurationData());
+      final JudgeConfig bootstrapped = provider.bootstrap(judgeConfigurationData);
       if (bootstrapped != null) {
         return Optional.of(bootstrapped);
       }

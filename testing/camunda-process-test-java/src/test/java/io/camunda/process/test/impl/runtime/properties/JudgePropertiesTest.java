@@ -34,7 +34,7 @@ public class JudgePropertiesTest {
     // then
     assertThat(judgeProperties.getThreshold()).isEqualTo(0.5);
     assertThat(judgeProperties.getCustomPrompt()).isNull();
-    assertThat(judgeProperties.isChatModelConfigured()).isFalse();
+    assertThat(judgeProperties.hasProviderConfigured()).isFalse();
   }
 
   @Test
@@ -62,7 +62,7 @@ public class JudgePropertiesTest {
     final JudgeProperties judgeProperties = new JudgeProperties(properties);
 
     // then
-    assertThat(judgeProperties.isChatModelConfigured()).isTrue();
+    assertThat(judgeProperties.hasProviderConfigured()).isTrue();
   }
 
   @Test
@@ -103,6 +103,6 @@ public class JudgePropertiesTest {
     // then
     assertThat(judgeProperties.getThreshold()).isEqualTo(0.5);
     assertThat(judgeProperties.getCustomPrompt()).isNull();
-    assertThat(judgeProperties.isChatModelConfigured()).isFalse();
+    assertThat(judgeProperties.hasProviderConfigured()).isFalse();
   }
 }

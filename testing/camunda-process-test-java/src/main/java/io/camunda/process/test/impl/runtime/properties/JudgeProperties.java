@@ -71,10 +71,8 @@ public class JudgeProperties {
         getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_CREDENTIALS_SECRET_KEY);
   }
 
-  public boolean isExplicitlyConfigured() {
-    return Double.compare(threshold, DEFAULT_THRESHOLD) != 0
-        || isNotBlank(customPrompt)
-        || isNotBlank(chatModelProvider);
+  public boolean hasProviderConfigured() {
+    return isNotBlank(chatModelProvider);
   }
 
   public double getThreshold() {
@@ -83,10 +81,6 @@ public class JudgeProperties {
 
   public String getCustomPrompt() {
     return customPrompt;
-  }
-
-  public boolean isChatModelConfigured() {
-    return chatModelProvider != null;
   }
 
   public JudgeConfigBootstrapData toJudgeConfigurationData() {
