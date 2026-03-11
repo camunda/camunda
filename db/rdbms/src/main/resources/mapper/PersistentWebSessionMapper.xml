@@ -27,7 +27,7 @@
                     CAST(#{creationTime} AS BIGINT)                        AS CREATION_TIME,
                     CAST(#{lastAccessedTime} AS BIGINT)                    AS LAST_ACCESSED_TIME,
                     CAST(#{maxInactiveIntervalInSeconds} AS BIGINT)        AS MAX_INACTIVE_INTERVAL_IN_SECONDS,
-                    CAST(#{attributes, typeHandler=io.camunda.db.rdbms.typehandler.MapByteArrayJsonTypeHandler} AS BLOB) AS ATTRIBUTES
+                    CAST(#{attributes, typeHandler=io.camunda.db.rdbms.typehandler.MapByteArrayJsonTypeHandler} AS BINARY LARGE OBJECT) AS ATTRIBUTES
       ) source
       ON (target.SESSION_ID = source.SESSION_ID)
       WHEN MATCHED THEN
