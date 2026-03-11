@@ -7,11 +7,13 @@
  */
 package io.camunda.optimize.service.importing.engine.service.zeebe;
 
+import static io.camunda.optimize.MetricEnum.PI_EVENTS_COALESCED_PER_WRITE;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_INSTANCE_INDEX_NAME;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
+import io.camunda.optimize.OptimizeMetrics;
 import io.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.process.FlowNodeInstanceDto;
@@ -109,6 +111,14 @@ public class ZeebeProcessInstanceImportService
 
     updateProcessStateAndDateProperties(instanceToAdd, recordsForInstance);
     updateFlowNodeEventsForProcess(instanceToAdd, recordsForInstance);
+
+    OptimizeMetrics.getDistributionSummary(
+            PI_EVENTS_COALESCED_PER_WRITE,
+            firstRecord.getValueType().name(),
+            partitionId,
+            firstRecordValue.getBpmnProcessId())
+        .record(recordsForInstance.size());
+
     return instanceToAdd;
   }
 

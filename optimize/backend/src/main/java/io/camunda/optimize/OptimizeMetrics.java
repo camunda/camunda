@@ -12,6 +12,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
+import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import java.time.OffsetDateTime;
@@ -21,6 +22,7 @@ public class OptimizeMetrics {
 
   public static final String RECORD_TYPE_TAG = "RECORD_TYPE";
   public static final String PARTITION_ID_TAG = "PARTITION_ID";
+  public static final String PROCESS_DEFINITION_KEY_TAG = "PROCESS_DEFINITION_KEY";
   public static final String METRICS_ENDPOINT = "metrics";
 
   public static <T extends ZeebeRecordDto<?, ?>> void recordOverallEntitiesImportTime(
@@ -42,6 +44,21 @@ public class OptimizeMetrics {
         .description(metric.getDescription())
         .tag(RECORD_TYPE_TAG, recordType)
         .tag(PARTITION_ID_TAG, String.valueOf(partitionId))
+        .register(Metrics.globalRegistry);
+  }
+
+  public static DistributionSummary getDistributionSummary(
+      final MetricEnum metric,
+      final String recordType,
+      final Integer partitionId,
+      final String processDefinitionKey) {
+    return DistributionSummary.builder(metric.getName())
+        .description(metric.getDescription())
+        .tag(RECORD_TYPE_TAG, recordType)
+        .tag(PARTITION_ID_TAG, String.valueOf(partitionId))
+        .tag(PROCESS_DEFINITION_KEY_TAG, processDefinitionKey)
+        .publishPercentiles(0.5, 0.95, 0.99)
+        .publishPercentileHistogram()
         .register(Metrics.globalRegistry);
   }
 }

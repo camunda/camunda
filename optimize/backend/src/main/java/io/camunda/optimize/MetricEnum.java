@@ -16,7 +16,13 @@ public enum MetricEnum {
       "Records the time spent indexing data from Zeebe into Optimize Elasticsearch indexes"),
   NEW_PAGE_FETCH_TIME_METRIC(
       "newPageFetchTime",
-      "Records the time spent for fetching next import page from Zeebe Elasticsearch");
+      "Records the time spent for fetching next import page from Zeebe Elasticsearch"),
+  PI_EVENTS_COALESCED_PER_WRITE(
+      "piEventsCoalescedPerWrite",
+      "Distribution of Zeebe event records merged into a single Elasticsearch write per process"
+          + " instance per batch. A value of 1 means no coalescing (every event triggers a"
+          + " separate ES write). Higher values indicate better batching and lower write"
+          + " amplification.");
   private static final String IMPORT_METRICS_PREFIX = "optimize.import";
   private final String id;
   private final String name;
