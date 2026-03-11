@@ -56,15 +56,11 @@ import java.util.Objects;
  *       stream processor actor.
  * </ol>
  *
- * The entry is registered in the {@link #inFlight} ring buffer via {@link #registerEntry(long,
- * InFlightEntry)} inside the sequencer lock, before {@code logStorage.append} is called. This
- * guarantees that the entry is present in the buffer when {@link AppendListener#onWrite} and {@link
- * AppendListener#onCommit} callbacks fire.
- *
- * <p>Each {@link #registerEntry(long, InFlightEntry)} call returns a unique {@link
- * PerEntryAppendListener} that captures the ring buffer index assigned to that entry. This allows
- * {@code onWrite} and {@code onCommit} to look up the entry directly by index (O(1)), rather than
- * searching by log position.
+ * Each {@link #registerEntry(long, InFlightEntry)} call returns a unique {@link
+ * PerEntryAppendListener} that captures the {@link InFlightEntry} reference directly. The {@code
+ * onWrite} and {@code onCommit} callbacks operate on the captured reference without any ring buffer
+ * lookup. The ring buffer is only needed for {@link #onProcessed(long)}, which searches by {@code
+ * highestPosition} via {@link RingBuffer#findAndRemove}.
  *
  * <p>The {@link #inFlight} ring buffer is a fixed-capacity {@link RingBuffer} with sequential
  * indexing. It is modified by {@link #registerEntry(long, InFlightEntry)} (under the sequencer
@@ -181,7 +177,7 @@ public final class FlowControl {
 
   /**
    * Registers an in-flight entry in the ring buffer and returns a per-entry {@link AppendListener}
-   * that captures the assigned ring buffer index for direct O(1) lookup on write/commit callbacks.
+   * that captures the entry reference directly for write/commit callbacks.
    *
    * <p>Must be called under the sequencer lock.
    *
@@ -258,9 +254,9 @@ public final class FlowControl {
   }
 
   /**
-   * A per-entry {@link AppendListener} that captures the ring buffer index assigned during {@link
-   * #registerEntry}. This allows {@code onWrite} and {@code onCommit} to look up the entry directly
-   * by index + highestPosition (O(1) with collision guard), rather than scanning by log position.
+   * A per-entry {@link AppendListener} that captures the {@link InFlightEntry} reference directly.
+   * The {@code onWrite} and {@code onCommit} callbacks operate on the captured reference without
+   * any ring buffer lookup.
    */
   private final class PerEntryAppendListener implements AppendListener {
     private final InFlightEntry entry;
@@ -276,12 +272,12 @@ public final class FlowControl {
       updateWriteRateThrottle();
       metrics.setLastWrittenPosition(highestPosition);
 
-      // Per-entry: verify both index and highestPosition match
       entry.onWrite();
 
       if (writeRate.observe(highestPosition)
           && writeRateLimit != null
-          && writeRateLimit.enabled()) {
+          && writeRateLimit.enabled()
+          && writeRateLimiter != null) {
         metrics.setPartitionLoad(
             Math.min((float) (writeRate.rate() / writeRateLimiter.getRate() * 100L), 100));
       }
