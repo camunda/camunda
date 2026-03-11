@@ -36,6 +36,7 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
@@ -180,7 +181,7 @@ class VariableToolsTest extends ToolsTest {
     @Test
     void shouldFailGetVariableByKeyOnNullKey() {
       // when
-      final var arguments = new java.util.HashMap<String, Object>();
+      final var arguments = new HashMap<String, Object>();
       arguments.put("variableKey", null);
       final CallToolResult result =
           mcpClient.callTool(

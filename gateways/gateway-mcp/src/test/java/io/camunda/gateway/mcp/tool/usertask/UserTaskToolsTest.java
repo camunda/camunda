@@ -47,6 +47,7 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -245,7 +246,7 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldFailGetUserTaskByKeyOnNullKey() {
       // when
-      final var arguments = new java.util.HashMap<String, Object>();
+      final var arguments = new HashMap<String, Object>();
       arguments.put("userTaskKey", null);
       final CallToolResult result =
           mcpClient.callTool(
@@ -751,7 +752,7 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldFailAssignUserTaskOnNullKey() {
       // when
-      final var arguments = new java.util.HashMap<String, Object>();
+      final var arguments = new HashMap<String, Object>();
       arguments.put("userTaskKey", null);
       arguments.put("assignee", "jane.doe");
       final CallToolResult result =
@@ -976,7 +977,7 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldFailSearchUserTaskVariablesOnNullKey() {
       // when
-      final var arguments = new java.util.HashMap<String, Object>();
+      final var arguments = new HashMap<String, Object>();
       arguments.put("userTaskKey", null);
       final CallToolResult result =
           mcpClient.callTool(
