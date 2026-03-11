@@ -17,6 +17,7 @@ package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.process.test.utils.FakeJudgeConfigBootstrapProvider;
 import org.junit.jupiter.api.Test;
 
 @CamundaProcessTest
@@ -27,6 +28,10 @@ public class JudgeAssertBootstrapIT {
     assertThat(CamundaAssert.getJudgeConfig())
         .as("JudgeConfig should be auto-bootstrapped via SPI")
         .isNotNull()
+        .satisfies(
+            judgeConfig ->
+                assertThat(judgeConfig.getChatModel().generate("anything"))
+                    .isEqualTo(FakeJudgeConfigBootstrapProvider.FAKE_REASONING))
         .satisfies(judgeConfig -> assertThat(judgeConfig.getThreshold()).isEqualTo(0.8));
   }
 }
