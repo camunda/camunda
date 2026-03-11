@@ -55,7 +55,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
    * Cached JSON representation of the value. Lazily computed on first call to {@link #getValue()}
    * and invalidated when the underlying value changes via {@link #setValue} or {@link #wrap}.
    */
-  private String cachedJsonValue;
+  private transient String cachedJsonValue;
 
   public VariableRecord() {
     super(9);
