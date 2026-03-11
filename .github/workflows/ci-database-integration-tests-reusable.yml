@@ -93,8 +93,8 @@ jobs:
       # start the required database service
       - name: Start Database service
         if: ${{ inputs.database-type != 'h2' }}
-        run: >
-          docker-compose -f db/docker-compose.yml up -d --wait ${{ env.DATABASE_CONTAINER }} || {
+        run: |
+          docker compose -f db/docker-compose.yml up -d --wait ${{ env.DATABASE_CONTAINER }} || {
             docker compose -f db/docker-compose.yml logs
             exit 1
           }
