@@ -24,7 +24,6 @@ import {
   deploy,
 } from '../../../../utils/zeebeClient';
 import {defaultAssertionOptions} from '../../../../utils/constants';
-import {sleep} from '../../../../utils/sleep';
 
 test.describe('Correlate Message API Tests', () => {
   const state: Record<string, unknown> = {};
