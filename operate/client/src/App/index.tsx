@@ -103,7 +103,11 @@ const routes = createRoutesFromElements(
             />
             <Route
               path={Paths.processInstanceDetails({isRelative: true})}
-              element={null}
+              lazy={async () => {
+                const {DetailsTab} =
+                  await import('./ProcessInstance/BottomPanelTabs/DetailsTab/index');
+                return {Component: DetailsTab};
+              }}
             />
             <Route
               path={Paths.processInstanceIncidents({isRelative: true})}
