@@ -51,14 +51,7 @@ export class LoginPage {
   }
 
   async login(username: string, password: string) {
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(this.usernameInput).toBeVisible({timeout: 30000});
-      },
-      onFailure: async () => {
-        await this.page.reload();
-      },
-    });
+    await expect(this.usernameInput).toBeVisible({timeout: 30000});
     await this.clickUsername();
     await this.fillUsername(username);
     await this.fillPassword(password);
