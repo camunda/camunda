@@ -31,6 +31,8 @@ class HistoryCleanupServiceTest {
 
   private static final int PARTITION_ID = 1;
   private static final OffsetDateTime CLEANUP_DATE = OffsetDateTime.now();
+  private static final int PROCESS_INSTANCE_BATCH_SIZE = 100;
+  private static final int CHILD_ENTITY_BATCH_SIZE = 1000;
 
   private RdbmsWriterConfig config;
   private ProcessInstanceWriter processInstanceWriter;
@@ -106,8 +108,9 @@ class HistoryCleanupServiceTest {
     when(historyConfig.batchOperationResolveIncidentHistoryTTL()).thenReturn(Duration.ofDays(5));
     when(historyConfig.minHistoryCleanupInterval()).thenReturn(Duration.ofHours(1));
     when(historyConfig.maxHistoryCleanupInterval()).thenReturn(Duration.ofDays(1));
-    when(historyConfig.historyCleanupBatchSize()).thenReturn(100);
-    when(historyConfig.historyCleanupProcessInstanceBatchSize()).thenReturn(100);
+    when(historyConfig.historyCleanupBatchSize()).thenReturn(CHILD_ENTITY_BATCH_SIZE);
+    when(historyConfig.historyCleanupProcessInstanceBatchSize())
+        .thenReturn(PROCESS_INSTANCE_BATCH_SIZE);
     when(historyConfig.usageMetricsCleanup()).thenReturn(Duration.ofDays(1));
     when(historyConfig.usageMetricsTTL()).thenReturn(Duration.ofDays(730));
 
@@ -158,31 +161,36 @@ class HistoryCleanupServiceTest {
     // then
     assertThat(nextCleanupInterval).isEqualTo(Duration.ofHours(1));
     verify(processInstanceReader)
-        .selectExpiredRootProcessInstances(PARTITION_ID, CLEANUP_DATE, 100);
+        .selectExpiredRootProcessInstances(PARTITION_ID, CLEANUP_DATE, PROCESS_INSTANCE_BATCH_SIZE);
     // Each writer called once per cleanup cycle
     verify(flowNodeInstanceWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
-    verify(incidentWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
-    verify(userTaskWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
+    verify(incidentWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
+    verify(userTaskWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(variableInstanceWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(decisionInstanceWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
-    verify(jobWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
+    verify(jobWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(sequenceFlowWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(messageSubscriptionWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(correlatedMessageSubscriptionWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
-    verify(auditLogWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
+    verify(auditLogWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     // PIs deleted since no child entities were found
     verify(processInstanceWriter)
-        .deleteChildrenByRootProcessInstances(expiredProcessInstanceKeys, 100);
+        .deleteChildrenByRootProcessInstances(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(processInstanceWriter).deleteByKeys(expiredProcessInstanceKeys);
-    verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);
-    verify(decisionInstanceWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
-    verify(auditLogWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
+    verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, CHILD_ENTITY_BATCH_SIZE);
+    verify(decisionInstanceWriter)
+        .cleanupHistory(PARTITION_ID, CLEANUP_DATE, CHILD_ENTITY_BATCH_SIZE);
+    verify(auditLogWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, CHILD_ENTITY_BATCH_SIZE);
   }
 
   @Test
@@ -196,7 +204,7 @@ class HistoryCleanupServiceTest {
         .thenReturn(10);
     when(incidentWriter.deleteRootProcessInstanceRelatedData(any(), anyInt())).thenReturn(5);
     when(variableInstanceWriter.deleteRootProcessInstanceRelatedData(any(), anyInt()))
-        .thenReturn(100);
+        .thenReturn(CHILD_ENTITY_BATCH_SIZE);
 
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(1);
 
@@ -207,29 +215,33 @@ class HistoryCleanupServiceTest {
     // then
     assertThat(nextCleanupInterval).isEqualTo(Duration.ofHours(1));
     verify(processInstanceReader)
-        .selectExpiredRootProcessInstances(PARTITION_ID, CLEANUP_DATE, 100);
+        .selectExpiredRootProcessInstances(PARTITION_ID, CLEANUP_DATE, PROCESS_INSTANCE_BATCH_SIZE);
     // Each writer called once
     verify(flowNodeInstanceWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
-    verify(incidentWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
-    verify(userTaskWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
+    verify(incidentWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
+    verify(userTaskWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(variableInstanceWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(decisionInstanceWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
-    verify(jobWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
+    verify(jobWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(sequenceFlowWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(messageSubscriptionWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(correlatedMessageSubscriptionWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
-    verify(auditLogWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
+    verify(auditLogWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     // PIs NOT deleted because child entities were found
     verify(processInstanceWriter, Mockito.never())
         .deleteChildrenByRootProcessInstances(any(), anyInt());
     verify(processInstanceWriter, Mockito.never()).deleteByKeys(any());
-    verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);
+    verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, CHILD_ENTITY_BATCH_SIZE);
   }
 
   @Test
@@ -246,7 +258,7 @@ class HistoryCleanupServiceTest {
 
     // but dependent processes were not fully deleted (as batch size was hit)
     when(processInstanceWriter.deleteChildrenByRootProcessInstances(any(), anyInt()))
-        .thenReturn(100);
+        .thenReturn(CHILD_ENTITY_BATCH_SIZE);
 
     // when
     final Duration nextCleanupInterval =
@@ -255,29 +267,33 @@ class HistoryCleanupServiceTest {
     // then
     assertThat(nextCleanupInterval).isEqualTo(Duration.ofHours(1));
     verify(processInstanceReader)
-        .selectExpiredRootProcessInstances(PARTITION_ID, CLEANUP_DATE, 100);
+        .selectExpiredRootProcessInstances(PARTITION_ID, CLEANUP_DATE, PROCESS_INSTANCE_BATCH_SIZE);
     // Each writer called once
     verify(flowNodeInstanceWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
-    verify(incidentWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
-    verify(userTaskWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
+    verify(incidentWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
+    verify(userTaskWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(variableInstanceWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(decisionInstanceWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
-    verify(jobWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
+    verify(jobWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(sequenceFlowWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(messageSubscriptionWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(correlatedMessageSubscriptionWriter)
-        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
-    verify(auditLogWriter).deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, 100);
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
+    verify(auditLogWriter)
+        .deleteRootProcessInstanceRelatedData(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     verify(processInstanceWriter)
-        .deleteChildrenByRootProcessInstances(expiredProcessInstanceKeys, 100);
+        .deleteChildrenByRootProcessInstances(expiredProcessInstanceKeys, CHILD_ENTITY_BATCH_SIZE);
     // Root PIs NOT deleted because dependent process instance entities were found
     verify(processInstanceWriter, Mockito.never()).deleteByKeys(any());
-    verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);
+    verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, CHILD_ENTITY_BATCH_SIZE);
   }
 
   @Test
@@ -293,16 +309,18 @@ class HistoryCleanupServiceTest {
     // then
     assertThat(nextCleanupInterval).isEqualTo(Duration.ofDays(1));
     verify(usageMetricWriter)
-        .cleanupMetrics(PARTITION_ID, CLEANUP_DATE.minus(Duration.ofDays(730)), 100);
+        .cleanupMetrics(
+            PARTITION_ID, CLEANUP_DATE.minus(Duration.ofDays(730)), CHILD_ENTITY_BATCH_SIZE);
     verify(usageMetricTUWriter)
-        .cleanupMetrics(PARTITION_ID, CLEANUP_DATE.minus(Duration.ofDays(730)), 100);
+        .cleanupMetrics(
+            PARTITION_ID, CLEANUP_DATE.minus(Duration.ofDays(730)), CHILD_ENTITY_BATCH_SIZE);
   }
 
   @Test
   void testCalculateNewDurationWhenDeletedNothing() {
     // given
     final Map<String, Integer> numDeletedRecords = new java.util.HashMap<>();
-    numDeletedRecords.put("processInstance", 0);
+    numDeletedRecords.put("rootProcessInstance", 0);
     numDeletedRecords.put("flowNodeInstance", 0);
     numDeletedRecords.put("incident", 0);
     numDeletedRecords.put("userTask", 0);
@@ -325,22 +343,12 @@ class HistoryCleanupServiceTest {
   }
 
   @Test
-  void testCalculateNewDurationWhenExceededBatchSize() {
+  void testCalculateNewDurationWhenRootPIsExceededBatchSize() {
     // given
     final Map<String, Integer> numDeletedRecords = new java.util.HashMap<>();
-    numDeletedRecords.put("processInstance", 100);
-    numDeletedRecords.put("flowNodeInstance", 100);
-    numDeletedRecords.put("incident", 100);
-    numDeletedRecords.put("userTask", 100);
-    numDeletedRecords.put("variable", 100);
-    numDeletedRecords.put("decisionInstance", 100);
-    numDeletedRecords.put("job", 100);
-    numDeletedRecords.put("sequenceFlow", 100);
-    numDeletedRecords.put("batchOperationItem", 100);
-    numDeletedRecords.put("batchOperation", 100);
-    numDeletedRecords.put("messageSubscription", 100);
-    numDeletedRecords.put("correlatedMessageSubscription", 100);
-    numDeletedRecords.put("auditLog", 100);
+    numDeletedRecords.put("rootProcessInstance", PROCESS_INSTANCE_BATCH_SIZE);
+
+    numDeletedRecords.put("auditLog", PROCESS_INSTANCE_BATCH_SIZE);
 
     // when
     final Duration nextDuration =
@@ -355,17 +363,8 @@ class HistoryCleanupServiceTest {
   void testCalculateNewDurationWhenNormalCleanup() {
     // given
     final var numDeletedRecords = new java.util.HashMap<String, Integer>();
-    numDeletedRecords.put("processInstance", 50);
-    numDeletedRecords.put("flowNodeInstance", 50);
-    numDeletedRecords.put("incident", 50);
-    numDeletedRecords.put("userTask", 50);
-    numDeletedRecords.put("variable", 50);
-    numDeletedRecords.put("decisionInstance", 50);
-    numDeletedRecords.put("job", 50);
-    numDeletedRecords.put("sequenceFlow", 50);
-    numDeletedRecords.put("batchOperation", 50);
-    numDeletedRecords.put("messageSubscription", 50);
-    numDeletedRecords.put("correlatedMessageSubscription", 50);
+    numDeletedRecords.put("rootProcessInstance", 50);
+
     numDeletedRecords.put("auditLog", 50);
 
     // when
@@ -381,17 +380,8 @@ class HistoryCleanupServiceTest {
   void testCalculateNewDurationWhenLowCleanup() {
     // given
     final var numDeletedRecords = new java.util.HashMap<String, Integer>();
-    numDeletedRecords.put("processInstance", 20);
-    numDeletedRecords.put("flowNodeInstance", 20);
-    numDeletedRecords.put("incident", 20);
-    numDeletedRecords.put("userTask", 20);
-    numDeletedRecords.put("variable", 20);
-    numDeletedRecords.put("decisionInstance", 20);
-    numDeletedRecords.put("job", 20);
-    numDeletedRecords.put("sequenceFlow", 20);
-    numDeletedRecords.put("batchOperation", 20);
-    numDeletedRecords.put("messageSubscription", 20);
-    numDeletedRecords.put("correlatedMessageSubscription", 20);
+    numDeletedRecords.put("rootProcessInstance", 20);
+
     numDeletedRecords.put("auditLog", 20);
 
     // when
@@ -439,17 +429,18 @@ class HistoryCleanupServiceTest {
 
     // then
     assertThat(nextCleanupInterval).isEqualTo(Duration.ofHours(1));
-    verify(decisionInstanceWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
-    verify(auditLogWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
+    verify(decisionInstanceWriter)
+        .cleanupHistory(PARTITION_ID, CLEANUP_DATE, CHILD_ENTITY_BATCH_SIZE);
+    verify(auditLogWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, CHILD_ENTITY_BATCH_SIZE);
   }
 
   @Test
   void testCalculateNewDurationWhenStandaloneDecisionsHitLimit() {
     // given - standalone decision instances hit the cleanup batch size limit
     final var numDeletedRecords = new java.util.HashMap<String, Integer>();
-    numDeletedRecords.put("processInstance", 0);
-    numDeletedRecords.put("standaloneDecisionInstance", 100); // hit the limit
-    numDeletedRecords.put("standaloneDecisionAuditLog", 50);
+    numDeletedRecords.put("rootProcessInstance", 0);
+    numDeletedRecords.put("standaloneDecisionInstance", CHILD_ENTITY_BATCH_SIZE); // hit the limit
+    numDeletedRecords.put("standaloneDecisionAuditLog", 500);
 
     // when
     final Duration nextDuration =
@@ -463,9 +454,9 @@ class HistoryCleanupServiceTest {
   void testCalculateNewDurationWhenStandaloneAuditLogsHitLimit() {
     // given - standalone audit logs hit the cleanup batch size limit
     final var numDeletedRecords = new java.util.HashMap<String, Integer>();
-    numDeletedRecords.put("processInstance", 0);
-    numDeletedRecords.put("standaloneDecisionInstance", 50);
-    numDeletedRecords.put("standaloneDecisionAuditLog", 100); // hit the limit
+    numDeletedRecords.put("rootProcessInstance", 0);
+    numDeletedRecords.put("standaloneDecisionInstance", 500);
+    numDeletedRecords.put("standaloneDecisionAuditLog", CHILD_ENTITY_BATCH_SIZE); // hit the limit
 
     // when
     final Duration nextDuration =
@@ -478,11 +469,12 @@ class HistoryCleanupServiceTest {
   @Test
   void testCalculateNewDurationWithStandaloneRecordsButNoLimit() {
     // given - some standalone records deleted but not hitting limit
-    // processInstance: 10 (< 50 threshold for PI batch size 100)
-    // max(standaloneDecision=20, auditLog=15) = 20 (< 50 threshold for cleanup batch size 100)
+    // processInstance: 10 (< 50 threshold for PI batch size PROCESS_INSTANCE_BATCH_SIZE)
+    // max(standaloneDecision=20, auditLog=15) = 20 (< 50 threshold for cleanup batch size
+    // PROCESS_INSTANCE_BATCH_SIZE)
     // Both are below their respective thresholds, so interval should be doubled
     final var numDeletedRecords = new java.util.HashMap<String, Integer>();
-    numDeletedRecords.put("processInstance", 10);
+    numDeletedRecords.put("rootProcessInstance", 10);
     numDeletedRecords.put("standaloneDecisionInstance", 20);
     numDeletedRecords.put("standaloneDecisionAuditLog", 15);
 
@@ -497,11 +489,11 @@ class HistoryCleanupServiceTest {
   @Test
   void testCalculateNewDurationWithHighProcessInstancesOnly() {
     // given - process instances above threshold but other entities below
-    // processInstance: 60 (>= 50 threshold but < 100 limit)
+    // processInstance: 60 (>= 50 threshold but < PROCESS_INSTANCE_BATCH_SIZE limit)
     // max(standaloneDecision=10, auditLog=5) = 10 (< 50 threshold)
     // PIs are above threshold, so interval should remain unchanged
     final var numDeletedRecords = new java.util.HashMap<String, Integer>();
-    numDeletedRecords.put("processInstance", 60);
+    numDeletedRecords.put("rootProcessInstance", 60);
     numDeletedRecords.put("standaloneDecisionInstance", 10);
     numDeletedRecords.put("standaloneDecisionAuditLog", 5);
 
@@ -517,12 +509,13 @@ class HistoryCleanupServiceTest {
   void testCalculateNewDurationWithHighOtherEntitiesOnly() {
     // given - other entities above threshold but PIs below
     // processInstance: 10 (< 50 threshold)
-    // max(standaloneDecision=60, auditLog=30) = 60 (>= 50 threshold but < 100 limit)
+    // max(standaloneDecision=600, auditLog=300) = 600 (>= 500 threshold but <
+    // CHILD_ENTITY_BATCH_SIZE limit)
     // Other entities are above threshold, so interval should remain unchanged
     final var numDeletedRecords = new java.util.HashMap<String, Integer>();
-    numDeletedRecords.put("processInstance", 10);
-    numDeletedRecords.put("standaloneDecisionInstance", 60);
-    numDeletedRecords.put("standaloneDecisionAuditLog", 30);
+    numDeletedRecords.put("rootProcessInstance", 10);
+    numDeletedRecords.put("standaloneDecisionInstance", 600);
+    numDeletedRecords.put("standaloneDecisionAuditLog", 300);
 
     // when
     final Duration nextDuration =
