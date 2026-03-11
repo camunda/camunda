@@ -292,7 +292,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       return;
     }
 
-    if (!judgeConfiguration.isExplicitlyConfigured()) {
+    if (!judgeConfiguration.hasProviderConfigured()) {
       return;
     }
 
