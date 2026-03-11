@@ -674,7 +674,7 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
 
   @Test
   public void
-      shouldRejectMigrationWhenTargetProcessDefinitionAlreadyHasActiveInstanceWithSameBusinessId() {
+      shouldAllowMigrationWhenTargetProcessDefinitionAlreadyHasActiveInstanceWithSameBusinessId() {
     final String sourceProcessId = helper.getBpmnProcessId() + "_source";
     final String targetProcessId = helper.getBpmnProcessId() + "_target";
     final String businessId = "biz-123";
@@ -714,27 +714,18 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
             .withBusinessId(businessId)
             .create();
 
-    // when - try to migrate the source instance to the target process definition
-    final var rejection =
+    // when - migrate the source instance to the target process definition
+    final var event =
         ENGINE
             .processInstance()
             .withInstanceKey(processInstanceKey)
             .migration()
             .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
             .addMappingInstruction("task", "task")
-            .expectRejection()
             .migrate();
 
-    // then - should be rejected because the target process definition already has an active
-    // instance with the same business id
-    assertThat(rejection)
-        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
-        .hasRejectionType(RejectionType.INVALID_STATE)
-        .hasRejectionReason(
-            """
-            Expected to migrate instance '%s' with business id '%s' to process definition key '%s', \
-            but an active instance with this business id already exists for the target process definition"""
-                .formatted(processInstanceKey, businessId, targetProcessDefinitionKey));
+    // then - migration should succeed because business-id uniqueness is not enforced on migration
+    assertThat(event).hasIntent(ProcessInstanceMigrationIntent.MIGRATED);
   }
 
   @Test
@@ -812,7 +803,7 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
   }
 
   @Test
-  public void shouldRejectVersionMigrationWhenAnotherInstanceOfSameProcessHasSameBusinessId() {
+  public void shouldAllowVersionMigrationWhenAnotherInstanceOfSameProcessHasSameBusinessId() {
     final String processId = helper.getBpmnProcessId();
     final String businessId = "biz-123";
 
@@ -867,26 +858,17 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
     ENGINE.withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true));
     ENGINE.start();
 
-    // when - try to migrate the v1 instance to v2
-    final var rejection =
+    // when - migrate the v1 instance to v2
+    final var event =
         ENGINE
             .processInstance()
             .withInstanceKey(v1ProcessInstanceKey)
             .migration()
             .withTargetProcessDefinitionKey(v2ProcessDefinitionKey)
             .addMappingInstruction("task", "task")
-            .expectRejection()
             .migrate();
 
-    // then - should be rejected because the v2 instance already holds the business id
-    // for the same process definition
-    assertThat(rejection)
-        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
-        .hasRejectionType(RejectionType.INVALID_STATE)
-        .hasRejectionReason(
-            """
-            Expected to migrate instance '%s' with business id '%s' to process definition key '%s', \
-            but an active instance with this business id already exists for the target process definition"""
-                .formatted(v1ProcessInstanceKey, businessId, v2ProcessDefinitionKey));
+    // then - migration should succeed because business-id uniqueness is not enforced on migration
+    assertThat(event).hasIntent(ProcessInstanceMigrationIntent.MIGRATED);
   }
 }
