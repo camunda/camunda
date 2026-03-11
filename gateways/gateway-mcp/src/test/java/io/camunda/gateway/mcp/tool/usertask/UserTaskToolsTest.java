@@ -223,11 +223,33 @@ class UserTaskToolsTest extends ToolsTest {
     }
 
     @Test
-    void shouldFailGetUserTaskByKeyOnNullKey() {
+    void shouldFailGetUserTaskByKeyOnMissingKey() {
       // when
       final CallToolResult result =
           mcpClient.callTool(
               CallToolRequest.builder().name("getUserTask").arguments(Map.of()).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("userTaskKey: User task key must not be null."));
+    }
+
+    @Test
+    void shouldFailGetUserTaskByKeyOnNullKey() {
+      // when
+      final var arguments = new java.util.HashMap<String, Object>();
+      arguments.put("userTaskKey", null);
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("getUserTask").arguments(arguments).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -704,7 +726,7 @@ class UserTaskToolsTest extends ToolsTest {
     }
 
     @Test
-    void shouldFailAssignUserTaskOnNullKey() {
+    void shouldFailAssignUserTaskOnMissingKey() {
       // when
       final CallToolResult result =
           mcpClient.callTool(
@@ -712,6 +734,29 @@ class UserTaskToolsTest extends ToolsTest {
                   .name("assignUserTask")
                   .arguments(Map.of("assignee", "jane.doe"))
                   .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("userTaskKey: User task key must not be null."));
+    }
+
+    @Test
+    void shouldFailAssignUserTaskOnNullKey() {
+      // when
+      final var arguments = new java.util.HashMap<String, Object>();
+      arguments.put("userTaskKey", null);
+      arguments.put("assignee", "jane.doe");
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("assignUserTask").arguments(arguments).build());
 
       // then
       assertThat(result.isError()).isTrue();
@@ -906,13 +951,38 @@ class UserTaskToolsTest extends ToolsTest {
     }
 
     @Test
-    void shouldFailSearchUserTaskVariablesOnNullKey() {
+    void shouldFailSearchUserTaskVariablesOnMissingKey() {
       // when
       final CallToolResult result =
           mcpClient.callTool(
               CallToolRequest.builder()
                   .name("searchUserTaskVariables")
                   .arguments(Map.of())
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("userTaskKey: User task key must not be null."));
+    }
+
+    @Test
+    void shouldFailSearchUserTaskVariablesOnNullKey() {
+      // when
+      final var arguments = new java.util.HashMap<String, Object>();
+      arguments.put("userTaskKey", null);
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchUserTaskVariables")
+                  .arguments(arguments)
                   .build());
 
       // then
