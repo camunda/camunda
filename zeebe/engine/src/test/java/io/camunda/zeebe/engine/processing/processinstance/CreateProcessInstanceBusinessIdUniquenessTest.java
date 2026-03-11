@@ -828,7 +828,7 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
   }
 
   @Test
-  public void shouldRejectVersionMigrationWhenAnotherInstanceOfSameProcessHasSameBusinessId() {
+  public void shouldAllowVersionMigrationWhenAnotherInstanceOfSameProcessHasSameBusinessId() {
     final String processId = helper.getBpmnProcessId();
     final String businessId = "biz-123";
 
@@ -883,26 +883,46 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
     ENGINE.withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true));
     ENGINE.start();
 
-    // when - try to migrate the v1 instance to v2
-    final var rejection =
-        ENGINE
-            .processInstance()
-            .withInstanceKey(v1ProcessInstanceKey)
-            .migration()
-            .withTargetProcessDefinitionKey(v2ProcessDefinitionKey)
-            .addMappingInstruction("task", "task")
-            .expectRejection()
-            .migrate();
+    // when - migrate the v1 instance to v2
+    ENGINE
+        .processInstance()
+        .withInstanceKey(v1ProcessInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(v2ProcessDefinitionKey)
+        .addMappingInstruction("task", "task")
+        .migrate();
 
-    // then - should be rejected because the v2 instance already holds the business id
-    // for the same process definition
-    assertThat(rejection)
-        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
-        .hasRejectionType(RejectionType.INVALID_STATE)
+    // then - migration should succeed because uniqueness is only checked on instance creation,
+    // not during migration
+    assertThat(
+            RecordingExporter.processInstanceMigrationRecords()
+                .withIntent(ProcessInstanceMigrationIntent.MIGRATED)
+                .withProcessInstanceKey(v1ProcessInstanceKey)
+                .getFirst())
+        .isNotNull();
+
+    // and - creating a new instance with the same business id should still be rejected because
+    // both instances still hold the business id for this process definition
+    ENGINE
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withVersion(1)
+        .withBusinessId(businessId)
+        .withTags("rejectedInstance")
+        .expectRejection()
+        .create();
+
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .onlyCommandRejections()
+                .withTags("rejectedInstance")
+                .withBpmnProcessId(processId)
+                .getFirst())
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
             """
-            Expected to migrate instance '%s' with business id '%s' to process definition key '%s', \
-            but an active instance with this business id already exists for the target process definition"""
-                .formatted(v1ProcessInstanceKey, businessId, v2ProcessDefinitionKey));
+            Expected to create instance of process with business id '%s', \
+            but an instance with this business id already exists for process definition '%s'"""
+                .formatted(businessId, processId));
   }
 }
