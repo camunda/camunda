@@ -242,8 +242,7 @@ public final class EngineProcessors {
             bpmnBehaviors,
             writers,
             asyncRequestBehavior,
-            authCheckBehavior,
-            config.getMaxNameFieldLength());
+            authCheckBehavior);
     addUserTaskProcessors(typedRecordProcessors, userTaskProcessor);
 
     addIncidentProcessors(
@@ -410,8 +409,7 @@ public final class EngineProcessors {
       final BpmnBehaviorsImpl bpmnBehaviors,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final int maxVariableNameLength) {
+      final AuthorizationCheckBehavior authCheckBehavior) {
     return new UserTaskProcessor(
         processingState,
         processingState.getUserTaskState(),
@@ -419,8 +417,7 @@ public final class EngineProcessors {
         bpmnBehaviors,
         writers,
         asyncRequestBehavior,
-        authCheckBehavior,
-        maxVariableNameLength);
+        authCheckBehavior);
   }
 
   private static BpmnBehaviorsImpl createBehaviors(
