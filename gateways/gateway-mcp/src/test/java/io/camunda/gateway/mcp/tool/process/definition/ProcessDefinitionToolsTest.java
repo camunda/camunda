@@ -34,6 +34,7 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -115,6 +116,48 @@ class ProcessDefinitionToolsTest extends ToolsTest {
       assertExampleProcessDefinitionResult(processDefinition);
 
       assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldFailGetProcessDefinitionByKeyOnMissingKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("getProcessDefinition").arguments(Map.of()).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("processDefinitionKey: Process definition key must not be null."));
+    }
+
+    @Test
+    void shouldFailGetProcessDefinitionByKeyOnNullKey() {
+      // when
+      final var arguments = new HashMap<String, Object>();
+      arguments.put("processDefinitionKey", null);
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("getProcessDefinition").arguments(arguments).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("processDefinitionKey: Process definition key must not be null."));
     }
 
     @Test
@@ -249,6 +292,78 @@ class ProcessDefinitionToolsTest extends ToolsTest {
 
   @Nested
   class GetProcessDefinitionXml {
+
+    @Test
+    void shouldFailGetProcessDefinitionXmlByKeyOnMissingKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("getProcessDefinitionXml")
+                  .arguments(Map.of())
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("processDefinitionKey: Process definition key must not be null."));
+    }
+
+    @Test
+    void shouldFailGetProcessDefinitionXmlByKeyOnNullKey() {
+      // when
+      final var arguments = new HashMap<String, Object>();
+      arguments.put("processDefinitionKey", null);
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("getProcessDefinitionXml")
+                  .arguments(arguments)
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("processDefinitionKey: Process definition key must not be null."));
+    }
+
+    @Test
+    void shouldFailGetProcessDefinitionXmlByKeyOnInvalidKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("getProcessDefinitionXml")
+                  .arguments(Map.of("processDefinitionKey", -3L))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo(
+                          "processDefinitionKey: Process definition key must be a positive number."));
+    }
 
     @Test
     void shouldGetProcessDefinitionXmlByKey() {
