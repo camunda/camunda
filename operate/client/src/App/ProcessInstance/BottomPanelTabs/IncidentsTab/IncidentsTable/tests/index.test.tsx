@@ -199,7 +199,7 @@ describe('IncidentsTable', () => {
     expect(withinSecondRow.getByText('More')).toBeInTheDocument();
   });
 
-  it('should open an modal when clicking on the more button', async () => {
+  it('should open a modal when clicking on the more button', async () => {
     const {user} = render(
       <IncidentsTable
         state="content"
