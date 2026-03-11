@@ -15,14 +15,17 @@ import {
 } from '@carbon/react/icons';
 
 const WarningFilled = styled(BaseWarningFilled)`
+  flex-shrink: 0;
   fill: var(--cds-support-error);
 `;
 
 const CheckmarkOutline = styled(BaseCheckmarkOutline)`
+  flex-shrink: 0;
   fill: var(--cds-icon-secondary);
 `;
 
 const RadioButtonChecked = styled(BaseRadioButtonChecked)`
+  flex-shrink: 0;
   fill: var(--cds-support-success);
 `;
 
