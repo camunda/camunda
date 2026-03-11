@@ -12,6 +12,37 @@ import {unassignedTask} from '@/mocks/v2/task';
 import {auditLog, auditLogs} from '@/mocks/v2/auditLogs';
 
 test.describe('task history tab', () => {
+  test('error state', async ({
+    page,
+    tasksPage,
+    mockQueryUserTasksRequest,
+    mockGetUserTaskRequest,
+    mockQueryVariablesByUserTaskRequest,
+    mockGetProcessDefinitionXmlRequest,
+    mockQueryUserTaskAuditLogsRequest,
+  }) => {
+    const TASK = unassignedTask();
+
+    mockQueryUserTasksRequest([TASK]);
+    mockGetUserTaskRequest(TASK);
+    mockQueryVariablesByUserTaskRequest({
+      userTaskKey: TASK.userTaskKey,
+    });
+    mockGetProcessDefinitionXmlRequest({
+      processDefinitionKey: TASK.processDefinitionKey,
+    });
+    mockQueryUserTaskAuditLogsRequest({
+      userTaskKey: TASK.userTaskKey,
+      status: 500,
+    });
+
+    await tasksPage.gotoTaskDetailsHistoryTab(TASK.userTaskKey);
+
+    await expect(page.getByText('Something went wrong')).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
   test('empty state', async ({
     page,
     tasksPage,
