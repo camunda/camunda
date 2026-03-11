@@ -46,8 +46,7 @@ public final class MessageServices extends ApiServices<MessageServices> {
         brokerClient,
         securityContextProvider,
         executorProvider,
-        brokerRequestAuthorizationConverter,
-        maxVariableNameLength);
+        brokerRequestAuthorizationConverter);
     this.maxVariableNameLength = maxVariableNameLength;
   }
 
