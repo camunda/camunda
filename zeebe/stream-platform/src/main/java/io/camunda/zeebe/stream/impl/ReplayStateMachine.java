@@ -26,7 +26,6 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.stream.api.EventFilter;
-import io.camunda.zeebe.stream.api.MetadataFilter;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
@@ -49,9 +48,6 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   private static final String ERROR_MSG_EXPECTED_TO_READ_METADATA =
       "Expected to read the metadata for the record '%s', but an exception was thrown.";
 
-  private static final MetadataFilter REPLAY_FILTER =
-      recordMetadata -> recordMetadata.getRecordType() == RecordType.EVENT;
-
   private final RecordMetadata metadata = new RecordMetadata();
   private final KeyGeneratorControls keyGeneratorControls;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
@@ -60,7 +56,12 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
 
   private final RecordValues recordValues;
 
-  private final EventFilter eventFilter = new MetadataEventFilter(REPLAY_FILTER);
+  private final RecordMetadata.RecordTypeDecoder recordTypeDecoder =
+      new RecordMetadata.RecordTypeDecoder();
+  private final EventFilter eventFilter =
+      event ->
+          recordTypeDecoder.getRecordType(event.getMetadata(), event.getMetadataOffset())
+              == RecordType.EVENT;
 
   private final LogStreamBatchReader logStreamBatchReader;
 
