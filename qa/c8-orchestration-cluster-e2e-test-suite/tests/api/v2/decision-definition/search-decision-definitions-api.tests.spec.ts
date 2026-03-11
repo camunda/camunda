@@ -370,12 +370,12 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
         (it: {decisionDefinitionId: string}) => it.decisionDefinitionId,
       );
 
-      const index1 = ids.indexOf(decisionDefinition2.decisionDefinitionId);
-      const index2 = ids.indexOf(decisionDefinition1.decisionDefinitionId);
+      const index1 = ids.indexOf(decisionDefinition1.decisionDefinitionId);
+      const index2 = ids.indexOf(decisionDefinition2.decisionDefinitionId);
 
       expect(index1).toBeGreaterThan(-1);
       expect(index2).toBeGreaterThan(-1);
-      expect(index2).toBeGreaterThan(index1);
+      expect(index1).toBeLessThan(index2);
       assertDecisionDefinitionInResponse(
         json,
         expectedBody1,
@@ -416,8 +416,8 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
         (it: {decisionDefinitionId: string}) => it.decisionDefinitionId,
       );
 
-      const index1 = ids.indexOf(decisionDefinition2.decisionDefinitionId);
-      const index2 = ids.indexOf(decisionDefinition1.decisionDefinitionId);
+      const index1 = ids.indexOf(decisionDefinition1.decisionDefinitionId);
+      const index2 = ids.indexOf(decisionDefinition2.decisionDefinitionId);
 
       expect(index1).toBeGreaterThan(-1);
       expect(index2).toBeGreaterThan(-1);
