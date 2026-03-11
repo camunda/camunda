@@ -6,9 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator} from '@playwright/test';
+import {Page, Locator, expect} from '@playwright/test';
+import {sleep} from '../utils/sleep';
 
 export class IdentityHeader {
+  readonly page: Page;
   readonly openSettingsButton: Locator;
   readonly logoutButton: Locator;
   readonly rolesTab: Locator;
@@ -18,6 +20,7 @@ export class IdentityHeader {
   readonly groupsTab: Locator;
 
   constructor(page: Page) {
+    this.page = page;
     this.openSettingsButton = page.getByRole('button', {
       name: 'Open Settings',
     });
@@ -37,6 +40,13 @@ export class IdentityHeader {
   async logout() {
     await this.openSettingsButton.click();
     await this.logoutButton.click();
+    await expect(this.page.getByText('logged out...')).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(this.page.getByText('logged out...')).not.toBeVisible({
+      timeout: 15000,
+    });
+    await sleep(2000);
   }
 
   async navigateToRoles() {

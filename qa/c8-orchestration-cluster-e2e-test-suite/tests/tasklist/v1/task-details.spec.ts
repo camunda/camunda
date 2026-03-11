@@ -189,9 +189,16 @@ test.describe('task details page', () => {
     await taskDetailsPageV1.clickCompleteTaskButton();
     await expect(taskDetailsPageV1.taskCompletedBanner).toBeVisible();
 
-    await taskPanelPageV1.openTask('JobWorker_user_task');
-    await expect(taskDetailsPageV1.completeTaskButton).toBeDisabled({
-      timeout: 60000,
+    await waitForAssertion({
+      assertion: async () => {
+        await taskPanelPageV1.openTask('JobWorker_user_task');
+        await expect(taskDetailsPageV1.completeTaskButton).toBeDisabled({
+          timeout: 60000,
+        });
+      },
+      onFailure: async () => {
+        await page.reload();
+      },
     });
     await taskDetailsPageV1.clickAssignToMeButton();
     await expect(taskDetailsPageV1.completeTaskButton).toBeEnabled();
@@ -219,11 +226,10 @@ test.describe('task details page', () => {
     await expect(taskDetailsPageV1.unassignButton).toBeHidden();
     await expect(taskDetailsPageV1.completeTaskButton).toBeHidden();
 
-    await taskPanelPageV1.openTask('JobWorker_user_task');
-
     // this is necessary because sometimes the importer takes some time to receive the variables
     await waitForAssertion({
       assertion: async () => {
+        await taskPanelPageV1.openTask('JobWorker_user_task');
         await expect(
           page.getByRole('cell', {name: 'jobWorkerVar'}),
         ).toBeVisible();
