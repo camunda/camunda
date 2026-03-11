@@ -287,7 +287,7 @@ On the Java controller side, query endpoints that read from the secondary storag
 - If a spec operation has `x-eventually-consistent: true`, the corresponding controller method should have `@RequiresSecondaryStorage`.
 - If you add `@RequiresSecondaryStorage` to a controller method, set `x-eventually-consistent: true` on the matching spec operation.
 
-A mismatch means SDK consumers get incorrect consistency guarantees. See §2.14 for more details on controller–spec alignment.
+A mismatch means SDK consumers get incorrect consistency guarantees. See §2.15 for more details on controller–spec alignment.
 
 ### 2.6 Component reuse and schema organisation
 
@@ -383,6 +383,7 @@ We guarantee **forward-compatibility of the API between minor versions**. Any br
 | Removing an endpoint                                                       | 🔴 **Yes**                  | Obvious                                                                                       |
 | Removing an enum value                                                     | 🔴 **Yes**                  | Clients matching on it will fail                                                              |
 | Hardening a type (e.g., `string` → branded `ProcessDefinitionKey`)         | 🟡 **SDK breaking**         | Generated SDKs produce stricter types; runtime payloads may still work                        |
+| Making a search filter criterion advanced (e.g., `string` → `oneOf[string, StringFilterProperty]`) | 🟡 **SDK breaking** | Prior plain-value requests still work at runtime, but generated SDKs change the filter type from a primitive to a union/object, breaking compilation |
 | Adding a new **enum value**                                                | 🟡 **Potentially breaking** | Clients with exhaustive switches/pattern matching and no default branch break at compile time |
 | Adding a new optional response property                                    | 🟢 No                       | Additive                                                                                      |
 | Adding a new optional request field                                        | 🟢 No                       | Additive                                                                                      |
@@ -430,7 +431,60 @@ MyStatusEnum:
       deprecatedInVersion: "8.9.0"
 ```
 
-### 2.8 Response codes
+### 2.8 Alpha endpoints and properties
+
+Some endpoints or individual properties are released as **alpha features** — they are functional but may change or be removed in future releases without following the standard deprecation process.
+
+#### Marking an entire endpoint as alpha
+
+Append `(alpha)` to the `summary` and add the **exact** sentinel paragraph to the `description`:
+
+```yaml
+/clock:
+  put:
+    operationId: pinClock
+    summary: Pin internal clock (alpha)
+    description: |
+      Set a precise, static time for the Zeebe engine's internal clock.
+
+      This endpoint is an alpha feature and may be subject to change
+      in future releases.
+```
+
+#### Marking an individual property as alpha
+
+Use the same sentinel text in the property's `description`:
+
+```yaml
+runtimeInstructions:
+  description: |
+    Runtime instructions (alpha). List of instructions that affect the
+    runtime behavior of the process instance.
+
+    This parameter is an alpha feature and may be subject to change
+    in future releases.
+  type: array
+  items:
+    $ref: '#/components/schemas/ProcessInstanceCreationRuntimeInstruction'
+```
+
+#### Why the exact wording matters
+
+The `camunda-docs` generation pipeline uses **regex-based transforms** to:
+
+1. **Wrap** the sentinel text in a Docusaurus `:::note` admonition, producing a visible banner.
+2. **Linkify** "alpha feature" to the [alpha features reference page](https://docs.camunda.io/docs/next/components/early-access/alpha/alpha-features/).
+
+The detection regex matches the literal string:
+
+> `This endpoint is an alpha feature and may be subject to change`
+> `in future releases.`
+
+If you rephrase or reformat this text, the automation will **not** pick it up and no banner will appear in the docs. Use the exact two-line format shown above.
+
+See §9.3 for more details on the docs-side automation.
+
+### 2.9 Response codes
 
 Use consistent response codes across endpoints. Reuse `common-responses.yaml` definitions:
 
@@ -448,7 +502,7 @@ Use consistent response codes across endpoints. Reuse `common-responses.yaml` de
 
 All error responses use `application/problem+json` with the `ProblemDetail` schema (RFC 9457).
 
-### 2.9 Search endpoint conventions
+### 2.10 Search endpoint conventions
 
 Search endpoints follow a standard pattern. Use these shared models:
 
@@ -507,7 +561,7 @@ MyResourceSearchQueryResult:
         $ref: '#/components/schemas/MyResourceResult'
 ```
 
-### 2.10 Advanced search filters
+### 2.11 Advanced search filters
 
 New search endpoints should feature **advanced search capabilities** for all attributes (except `boolean`). Use the filter types from `filters.yaml`:
 
@@ -543,7 +597,7 @@ MyResourceFilter:
       description: Whether the resource is active.
 ```
 
-### 2.11 Deprecated enum members
+### 2.12 Deprecated enum members
 
 When deprecating enum values, use the `x-deprecated-enum-members` vendor extension:
 
@@ -565,7 +619,7 @@ Rules enforced by the `valid-deprecated-enum-members` Spectral rule:
 - No duplicate names.
 - No extra keys beyond `name` and `deprecatedInVersion`.
 
-### 2.12 Polymorphic union types (`x-polymorphic-schema`)
+### 2.13 Polymorphic union types (`x-polymorphic-schema`)
 
 When a request body accepts **mutually exclusive** sets of properties — e.g., identify a process by `processDefinitionId` **or** by `processDefinitionKey`, but never both — model this as a `oneOf` composition and annotate the wrapper schema with `x-polymorphic-schema: true`.
 
@@ -675,11 +729,11 @@ Omit the discriminator when:
 | `AuthorizationPatchInstruction`                   | `authorizations.yaml`       | (permission variants)                                                          |
 | `SearchQueryPageRequest`                          | `search-models.yaml`        | `LimitPagination`, `OffsetPagination`, `CursorForward...`, `CursorBackward...` |
 
-### 2.13 Security schemes
+### 2.14 Security schemes
 
 Ensure that `securitySchemes` in the OpenAPI YAML mirrors the security schemes defined in `OpenApiResourceConfig.java`. Any changes to the security config must be reflected in both places for SDK generators to produce correct authentication boilerplate.
 
-### 2.14 Controller–spec alignment and the `@Hidden` annotation
+### 2.15 Controller–spec alignment and the `@Hidden` annotation
 
 Every public endpoint in a REST controller **must** have a corresponding path/operation in the OpenAPI spec. Conversely, every spec operation must be backed by a controller method.
 
@@ -1040,6 +1094,15 @@ If your changes are not urgent, you can wait for the next scheduled run. Otherwi
 2. If you need to tweak the generated output beyond what the spec provides, follow the [documentation generation guide](https://github.com/camunda/camunda-docs/blob/main/howtos/interactive-api-explorers.md) and create a docs PR following the [documentation team's guidelines](https://github.com/camunda/camunda-docs/blob/main/CONTRIBUTING.MD).
 
 > **Important:** The OpenAPI spec in `zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml` is the **single source of truth**. Never edit the generated docs directly — always fix the spec and regenerate.
+
+### 9.3 Alpha feature banners
+
+The docs generation pipeline automatically detects the alpha sentinel text (see §2.8) and applies two transforms before generating the MDX pages:
+
+1. **Admonition wrapping** — The paragraph is wrapped in a `:::note` block, rendering as a visible callout banner.
+2. **Link injection** — The phrase "alpha feature" is turned into a link to the [alpha features reference page](https://docs.camunda.io/docs/next/components/early-access/alpha/alpha-features/). The link target varies by version.
+
+This happens in the `preGenerateDocs` step of the version-specific generation strategies in `camunda-docs`. No manual docs edits are needed — just use the exact sentinel text in your OpenAPI description and the banner will appear automatically.
 
 ---
 
