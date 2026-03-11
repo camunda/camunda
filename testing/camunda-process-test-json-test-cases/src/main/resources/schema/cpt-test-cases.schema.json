@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://camunda.org/schema/cpt-test-cases/1.0/cpt-test-cases.schema.json",
+  "$id": "https://camunda.com/json-schema/cpt-test-cases/8.9/schema.json",
   "title": "CPT JSON test cases",
   "description": "A collection of test cases to validate the business process in a JSON format compatible with Camunda Process Test (CPT).",
   "type": "object",
