@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.zeebe.engine.loggers.JobAuthorizationLogger;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -53,6 +54,7 @@ public class BpmnJobActivationBehavior {
   private final JobProcessingMetrics jobMetrics;
   private final InstantSource clock;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
+  private final JobAuthorizationLogger jobAuthorizationLogger;
 
   public BpmnJobActivationBehavior(
       final JobStreamer jobStreamer,
@@ -70,6 +72,7 @@ public class BpmnJobActivationBehavior {
     sideEffectWriter = writers.sideEffect();
     this.clock = clock;
     authorizationCheckBehavior = authCheckBehavior;
+    this.jobAuthorizationLogger = JobAuthorizationLogger.createDefault();
   }
 
   public void publishWork(final long jobKey, final JobRecord jobRecord) {
@@ -175,20 +178,27 @@ public class BpmnJobActivationBehavior {
         };
     if (!isTenantAuthorized) {
       // don't push jobs to workers that don't request them from the job's tenant
+      jobAuthorizationLogger.logUnauthorizedTenantAccess(jobActivationProperties, jobRecord);
       return false;
     }
 
     final var claims = jobActivationProperties.claims();
-    return authorizationCheckBehavior
-        .isAuthorized(
+    final var authorizationResult =
+        authorizationCheckBehavior.isAuthorized(
             AuthorizationRequest.builder()
                 .authorizationClaims(claims)
                 .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                 .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
                 .addResourceId(jobRecord.getBpmnProcessId())
                 .tenantId(ownerTenantId)
-                .build())
-        .isRight(); // we only care if the job stream is authorized, not why it isn't
+                .build());
+
+    authorizationResult.ifLeft(
+        ignored ->
+            jobAuthorizationLogger.logUnauthorizedResourceAccess(
+                jobActivationProperties, jobRecord));
+
+    return authorizationResult.isRight();
   }
 
   private boolean isAuthorizedForJob(
