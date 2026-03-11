@@ -81,8 +81,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final int maxVariableNameLength) {
+      final AuthorizationCheckBehavior authCheckBehavior) {
     commandProcessors =
         new UserTaskCommandProcessors(
             state,
@@ -90,8 +89,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
             bpmnBehaviors,
             writers,
             asyncRequestBehavior,
-            authCheckBehavior,
-            maxVariableNameLength);
+            authCheckBehavior);
     processState = state.getProcessState();
     this.userTaskState = userTaskState;
     elementInstanceState = state.getElementInstanceState();
