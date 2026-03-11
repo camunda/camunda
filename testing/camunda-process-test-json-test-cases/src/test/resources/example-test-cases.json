@@ -1,4 +1,5 @@
 {
+  "$schema": "https://camunda.com/json-schema/cpt-test-cases/8.9/schema.json",
   "testCases": [
     {
       "name": "Happy path order processing",
