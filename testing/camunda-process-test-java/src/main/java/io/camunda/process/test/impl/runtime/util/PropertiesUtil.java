@@ -30,7 +30,8 @@ public class PropertiesUtil {
   private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{.*}");
 
   /**
-   * Reads a property and returns null if it doesn't exist or the value is a placeholder.
+   * Reads a property and returns null if it doesn't exist or the value is a placeholder. Falls back
+   * to the corresponding environment variable if the property is not set.
    *
    * @param properties the properties object containing the property
    * @param propertyName the property key
@@ -42,7 +43,10 @@ public class PropertiesUtil {
   }
 
   /**
-   * Reads a property and returns a default if it doesn't exist or the value is a placeholder.
+   * Reads a property and returns a default if it doesn't exist or the value is a placeholder. Falls
+   * back to the corresponding environment variable by replacing dots with underscores, removing
+   * hyphens, and uppercasing (e.g. {@code judge.chatModel.apiKey} maps to {@code
+   * JUDGE_CHATMODEL_APIKEY}).
    *
    * @param properties the properties object containing the property
    * @param propertyName the property key
@@ -54,6 +58,10 @@ public class PropertiesUtil {
 
     final String propertyValue = properties.getProperty(propertyName);
     if (propertyValue == null || isPlaceholder(propertyValue)) {
+      final String envValue = System.getenv(toEnvVarName(propertyName));
+      if (envValue != null && !envValue.isEmpty()) {
+        return envValue;
+      }
       return defaultValue;
 
     } else {
@@ -95,6 +103,10 @@ public class PropertiesUtil {
 
     final String propertyValue = properties.getProperty(propertyName);
     if (propertyValue == null || isPlaceholder(propertyValue)) {
+      final String envValue = System.getenv(toEnvVarName(propertyName));
+      if (envValue != null && !envValue.isEmpty()) {
+        return converter.apply(envValue);
+      }
       return defaultValue;
     } else {
       return converter.apply(propertyValue);
@@ -103,6 +115,27 @@ public class PropertiesUtil {
 
   private static boolean isPlaceholder(final String propertyValue) {
     return PLACEHOLDER_PATTERN.matcher(propertyValue).matches();
+  }
+
+  /**
+   * Converts a property name to an environment variable name by replacing dots with underscores,
+   * removing hyphens, and uppercasing everything.
+   *
+   * <p>Example: {@code judge.chatModel.apiKey} becomes {@code JUDGE_CHATMODEL_APIKEY}.
+   */
+  static String toEnvVarName(final String propertyName) {
+    final StringBuilder result = new StringBuilder();
+    for (int i = 0; i < propertyName.length(); i++) {
+      final char c = propertyName.charAt(i);
+      if (c == '.') {
+        result.append('_');
+      } else if (c == '-') {
+        // hyphens are removed per Spring relaxed binding
+      } else {
+        result.append(Character.toUpperCase(c));
+      }
+    }
+    return result.toString();
   }
 
   /**
