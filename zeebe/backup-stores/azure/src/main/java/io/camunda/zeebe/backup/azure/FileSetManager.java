@@ -11,10 +11,12 @@ import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.models.BlobErrorCode;
 import com.azure.storage.blob.models.BlobHttpHeaders;
+import com.azure.storage.blob.models.BlobRequestConditions;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.blob.models.ParallelTransferOptions;
 import com.azure.storage.blob.specialized.BlockBlobClient;
+import com.azure.storage.common.implementation.Constants;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.BlobAlreadyExists;
@@ -26,16 +28,19 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 final class FileSetManager {
-  static final ParallelTransferOptions SNAPSHOT_FILES_OPTS =
+  private static final long MB = 1024 * 1024;
+  private static final ParallelTransferOptions SNAPSHOT_FILES_OPTS =
       new ParallelTransferOptions()
-          .setBlockSizeLong(1 * 1024L * 1024L)
-          .setMaxSingleUploadSizeLong(1 * 1024L * 1024L)
+          .setBlockSizeLong(MB)
+          .setMaxSingleUploadSizeLong(MB)
           .setMaxConcurrency(1);
-  static final ParallelTransferOptions SEGMENT_FILES_OPTS =
+  private static final ParallelTransferOptions SEGMENT_FILES_OPTS =
       new ParallelTransferOptions()
-          .setBlockSizeLong(4 * 1024L * 1024L)
-          .setMaxSingleUploadSizeLong(8 * 1024L * 1024L)
+          .setBlockSizeLong(4 * MB)
+          .setMaxSingleUploadSizeLong(8 * MB)
           .setMaxConcurrency(2);
+  private static final BlobRequestConditions NO_OVERWRITE_CONDITION =
+      new BlobRequestConditions().setIfNoneMatch(Constants.HeaderConstants.ETAG_WILDCARD);
 
   // The path format is constructed by contents/partitionId/checkpointId/nodeId/nameOfFile
   private static final String PATH_FORMAT = "contents/%s/%s/%s/%s/";
@@ -58,16 +63,7 @@ final class FileSetManager {
       final BlobClient blobClient = containerClient.getBlobClient(fileSetPath + fileName);
 
       try {
-        blobClient.uploadFromFile(
-            filePath.toString(),
-            fileSetName.equals(AzureBackupStore.SNAPSHOT_FILESET_NAME)
-                ? SNAPSHOT_FILES_OPTS
-                : SEGMENT_FILES_OPTS,
-            new BlobHttpHeaders(),
-            null,
-            null,
-            null,
-            null);
+        upload(blobClient, filePath, fileSetPath);
       } catch (final BlobStorageException e) {
         if (e.getErrorCode() == BlobErrorCode.BLOB_ALREADY_EXISTS) {
           throw new BlobAlreadyExists("File already exists.", e.getCause());
@@ -123,6 +119,19 @@ final class FileSetManager {
         containerCreationLock.unlock();
       }
     }
+  }
+
+  private void upload(final BlobClient blobClient, final Path filePath, final String fileSetName) {
+    blobClient.uploadFromFile(
+        filePath.toString(),
+        fileSetName.equals(AzureBackupStore.SNAPSHOT_FILESET_NAME)
+            ? SNAPSHOT_FILES_OPTS
+            : SEGMENT_FILES_OPTS,
+        new BlobHttpHeaders(),
+        null,
+        null,
+        NO_OVERWRITE_CONDITION,
+        null);
   }
 
   private String fileSetPath(final BackupIdentifier id, final String fileSetName) {
