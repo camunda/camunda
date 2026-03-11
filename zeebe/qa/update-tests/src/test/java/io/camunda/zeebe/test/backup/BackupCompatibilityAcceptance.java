@@ -127,6 +127,7 @@ public interface BackupCompatibilityAcceptance {
 
       // then
       Awaitility.await("until backup is deleted")
+          .ignoreExceptions()
           .atMost(Duration.ofSeconds(30))
           .untilAsserted(() -> assertThat(backupActuator.list()).isEmpty());
     }
