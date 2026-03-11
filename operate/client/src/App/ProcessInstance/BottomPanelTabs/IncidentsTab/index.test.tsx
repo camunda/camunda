@@ -178,8 +178,8 @@ describe('IncidentsTab', () => {
   });
 
   it('should fetch incidents by element instance when scoped to an element', async () => {
-    mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
-      searchResult([]),
+    mockSearchIncidentsByElementInstance(':elementInstanceId').withSuccess(
+      searchResult([secondIncident]),
     );
     mockSearchElementInstances().withSuccess({
       items: [
@@ -208,10 +208,6 @@ describe('IncidentsTab', () => {
       },
     });
 
-    mockSearchIncidentsByElementInstance(':elementInstanceId').withSuccess(
-      searchResult([secondIncident]),
-    );
-
     render(<IncidentsTab />, {
       wrapper: getWrapper({elementId: secondIncident.elementId}),
     });
@@ -235,7 +231,7 @@ describe('IncidentsTab', () => {
 
     expect(
       await screen.findByText(
-        'There are no Instances matching this filter set',
+        'There are no incidents matching this filter set',
       ),
     ).toBeInTheDocument();
   });
