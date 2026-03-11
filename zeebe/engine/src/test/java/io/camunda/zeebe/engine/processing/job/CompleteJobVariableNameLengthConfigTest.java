@@ -11,7 +11,9 @@ import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -46,14 +48,24 @@ public final class CompleteJobVariableNameLengthConfigTest {
     engine.processInstance().ofBpmnProcessId(processId).create();
     RecordingExporter.await(Duration.ofSeconds(30))
         .until(() -> RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).exists());
-
-    final var activatedBatch = engine.jobs().withType(jobType).activate().getValue();
-    final var jobKey = activatedBatch.getJobKeys().get(0);
+    final var createdJobRecord =
+        RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).getFirst();
+    final var jobKey = createdJobRecord.getKey();
     final String variableName = "x".repeat(CUSTOM_MAX_NAME_FIELD_LENGTH + 1);
 
     // when
+    final var completeCommand = new JobRecord().setVariables(asMsgPack(variableName, "bar"));
+    engine.writeRecords(
+        RecordToWrite.command().key(jobKey).job(JobIntent.COMPLETE, completeCommand));
+
+    RecordingExporter.await(Duration.ofSeconds(30))
+        .until(
+            () ->
+                RecordingExporter.jobRecords(JobIntent.COMPLETED)
+                    .withRecordKey(jobKey)
+                    .exists());
     final var completedRecord =
-        engine.job().withKey(jobKey).withVariables(asMsgPack(variableName, "bar")).complete();
+        RecordingExporter.jobRecords(JobIntent.COMPLETED).withRecordKey(jobKey).getFirst();
 
     // then
     Assertions.assertThat(completedRecord).hasIntent(JobIntent.COMPLETED);
