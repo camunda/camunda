@@ -179,8 +179,14 @@ public class AuthInfo extends UnpackedObject {
 
     final var auth = new AuthInfo();
     auth.copyFrom(info);
-    auth.freeze();
-    return auth;
+    return auth.freeze();
+  }
+
+  public static AuthInfo ofClaims(final Map<String, Object> claims) {
+    if (claims == null || claims.isEmpty()) {
+      return empty();
+    }
+    return new AuthInfo().setClaims(Map.copyOf(claims)).freeze();
   }
 
   public boolean hasAnyClaims() {
