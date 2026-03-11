@@ -110,7 +110,7 @@ test.describe.parallel('Process Definition Search API', () => {
         data: {
           filter: {
             isLatestVersion: true,
-            resourceName: 'process_definition_api_tests_2.bpmn',
+            resourceName: 'process_definition_tests_2.bpmn',
           },
         },
       });
@@ -120,7 +120,7 @@ test.describe.parallel('Process Definition Search API', () => {
       expect(body.page.totalItems).toBe(1);
       expect(body.items[0].version).toBe(1);
       expect(body.items[0].processDefinitionId).toBe(
-        'process_definition_api_tests_2',
+        'process_definition_tests_2',
       );
     }).toPass(defaultAssertionOptions);
   });
