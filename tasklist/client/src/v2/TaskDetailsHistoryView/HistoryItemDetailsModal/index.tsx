@@ -6,7 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type LoaderFunctionArgs, redirect, useNavigate} from 'react-router-dom';
+import {
+  type LoaderFunctionArgs,
+  redirect,
+  useNavigate,
+  useLocation,
+} from 'react-router-dom';
 import {useSuspenseQuery, type InfiniteData} from '@tanstack/react-query';
 import {t} from 'i18next';
 import type {QueryUserTaskAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
@@ -64,12 +69,16 @@ async function loader({params}: LoaderFunctionArgs) {
 const HistoryItemDetailsModal: React.FC = () => {
   const {id, auditLogKey} = useHistoryItemDetailsParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const {data: auditLog} = useSuspenseQuery(
     getAuditLogQueryOptions(auditLogKey),
   );
 
   const handleClose = () => {
-    navigate(pages.taskDetailsHistory(id));
+    navigate({
+      ...location,
+      pathname: pages.taskDetailsHistory(id),
+    });
   };
 
   return <DetailsModal auditLog={auditLog} onClose={handleClose} />;
