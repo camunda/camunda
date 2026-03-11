@@ -48,7 +48,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private long requestId;
   private short intentValue = Intent.NULL_VAL;
   private int requestStreamId;
-  private final AuthInfo authorization = new AuthInfo();
+  private AuthInfo authorization = AuthInfo.empty();
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
   private AgentInfo agent;
@@ -115,6 +115,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     if (authorizationLength > 0) {
       final DirectBuffer authBuffer = new UnsafeBuffer();
       decoder.wrapAuthorization(authBuffer);
+      if (authorization.isFrozen()) {
+        authorization = new AuthInfo();
+      }
       authorization.wrap(authBuffer);
     } else {
       decoder.skipAuthorization();
@@ -265,13 +268,26 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public RecordMetadata authorization(final AuthInfo authorization) {
-    this.authorization.copyFrom(authorization);
+    this.authorization = AuthInfo.of(authorization);
     return this;
   }
 
   public RecordMetadata authorization(final DirectBuffer buffer) {
-    authorization.wrap(buffer);
+    authorization(buffer, 0, buffer.capacity());
     return this;
+  }
+
+  public RecordMetadata authorization(
+      final DirectBuffer buffer, final int offset, final int length) {
+    if (authorization.isFrozen()) {
+      authorization = new AuthInfo();
+    }
+    authorization.wrap(buffer, offset, length);
+    return this;
+  }
+
+  public void emptyAuthorization() {
+    authorization = AuthInfo.empty();
   }
 
   public AuthInfo getAuthorization() {
@@ -333,7 +349,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     intent = null;
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
-    authorization.reset();
+    authorization = AuthInfo.empty();
     agent = null;
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;

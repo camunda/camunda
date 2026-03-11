@@ -219,7 +219,7 @@ final class InterPartitionCommandReceiverImpl {
         return;
       }
       final var offset = messageDecoder.limit() + InterPartitionMessageDecoder.authHeaderLength();
-      recordMetadata.getAuthorization().wrap(messageDecoder.buffer(), offset, length);
+      recordMetadata.authorization(messageDecoder.buffer(), offset, length);
       messageDecoder.skipAuth();
     }
   }
