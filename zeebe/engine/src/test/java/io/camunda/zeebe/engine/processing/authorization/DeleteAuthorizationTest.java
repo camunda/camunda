@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -25,6 +26,11 @@ public class DeleteAuthorizationTest {
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
+
+  @Before
+  public void setup() {
+    engine.user().newUser("ownerId").create();
+  }
 
   @Test
   public void shouldDeleteIdBasedAuthorization() {
