@@ -20,11 +20,7 @@ public class BrokerUserTaskCompletionRequest extends BrokerExecuteCommand<UserTa
 
   public BrokerUserTaskCompletionRequest(
       final long key, final DirectBuffer variables, final String action) {
-    this(
-        key,
-        variables,
-        action,
-        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
+    this(key, variables, action, VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
   }
 
   public BrokerUserTaskCompletionRequest(
