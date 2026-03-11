@@ -54,6 +54,7 @@ const Locations = {
     } else {
       params.set('active', 'true');
       params.set('incidents', 'true');
+      params.set('suspended', 'true');
     }
 
     return {

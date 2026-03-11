@@ -26,7 +26,7 @@ import {
   ListContainer,
   ExpandedPanel,
   ErrorLabel,
-  ErrorText,
+  ErrorCodeSnippet,
   MetaRow,
   MetaLabel,
   MetaValue,
@@ -40,14 +40,13 @@ type Props = {
 };
 
 const HEADERS = [
-  {key: 'errorType', header: 'Incident Type', width: '30%'},
-  {key: 'elementName', header: 'Failing Element', width: '30%'},
-  {key: 'creationTime', header: 'Created', width: '40%'},
+  {key: 'errorType', header: 'Incident Type', width: '28%'},
+  {key: 'elementName', header: 'Failing Element', width: '28%'},
+  {key: 'creationTime', header: 'Created', width: '32%'},
+  {key: 'operations', header: 'Operations', width: '12%'},
 ];
 
-const ExpandedDetail: React.FC<{
-  incident: EnhancedIncident;
-}> = ({incident}) => {
+const OperationCell: React.FC<{incident: EnhancedIncident}> = ({incident}) => {
   const {isPending, mutate: resolveIncident} = useResolveIncident({
     incidentKey: incident.incidentKey,
     jobKey: incident.jobKey ?? undefined,
@@ -64,16 +63,40 @@ const ExpandedDetail: React.FC<{
   });
 
   return (
-    <ExpandedPanel>
-      <ErrorLabel>Error message</ErrorLabel>
-      <ErrorText>{incident.errorMessage ?? '—'}</ErrorText>
-
-      {incident.jobKey && (
-        <MetaRow>
-          <MetaLabel>Job ID</MetaLabel>
-          <MetaValue>{incident.jobKey}</MetaValue>
-        </MetaRow>
+    <>
+      {isPending ? (
+        <InlineLoading data-testid="operation-spinner" />
+      ) : (
+        <Button
+          kind="ghost"
+          size="sm"
+          hasIconOnly
+          iconDescription="Retry"
+          renderIcon={RetryFailed}
+          onClick={(e) => {
+            e.stopPropagation();
+            resolveIncident();
+          }}
+          disabled={isPending}
+          data-testid="retry-incident"
+        />
       )}
+    </>
+  );
+};
+
+const ExpandedDetail: React.FC<{
+  incident: EnhancedIncident;
+}> = ({incident}) => {
+  return (
+    <ExpandedPanel>
+      <MetaLabel>Job ID</MetaLabel>
+      <MetaValue>{incident.jobKey ?? '—'}</MetaValue>
+
+      <ErrorLabel>Error message</ErrorLabel>
+      <ErrorCodeSnippet type="multi" wrapText copyButtonDescription="Copy">
+        {incident.errorMessage ?? '—'}
+      </ErrorCodeSnippet>
 
       <ActionsRow>
         <Button
@@ -85,20 +108,6 @@ const ExpandedDetail: React.FC<{
           onClick={() => copilotStore.openWithIncidentExplanation()}
         >
           Explain with Copilot
-        </Button>
-        {isPending && <InlineLoading data-testid="operation-spinner" />}
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={RetryFailed}
-          onClick={(e) => {
-            e.stopPropagation();
-            resolveIncident();
-          }}
-          disabled={isPending}
-          data-testid="retry-incident"
-        >
-          Retry
         </Button>
       </ActionsRow>
     </ExpandedPanel>
@@ -167,6 +176,7 @@ const IncidentsList: React.FC<Props> = observer(function IncidentsList({
               </Link>
             ),
           creationTime: formatDate(incident.creationTime),
+          operations: <OperationCell incident={incident} />,
         }))}
         expandedContents={expandedContents}
       />

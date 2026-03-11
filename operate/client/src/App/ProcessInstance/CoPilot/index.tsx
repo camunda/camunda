@@ -53,9 +53,9 @@ function useContext(): CopilotContext {
 // ─── Suggestion prompts ───────────────────────────────────────────────────────
 
 const PROCESS_INSTANCE_PROMPTS = [
+  'Walk me through what happened',
   'Why does this instance have an incident?',
   'How can I resolve this incident?',
-  'Walk me through what happened',
 ];
 
 const OPERATE_PROMPTS = [
@@ -75,28 +75,71 @@ const PLACEHOLDER: Record<CopilotContext, string> = {
 // ─── Mock incident explanation (triggered from "Explain with Copilot") ────────
 
 const INCIDENT_MOCK_PROMPT =
-  'Explain the active incidents on this process instance.';
+  'Explain this error: EXTRACT_VALUE_ERROR on gateway "Route by Flow Type".';
 
 const INCIDENT_EXPLANATION_MESSAGE =
-  'I found an active incident on this process instance. The error is JOB_NO_RETRIES — the service task "Process Payment" exhausted all 3 retry attempts.\n\n' +
-  'Error details:\n' +
-  '• Error type: Job worker failure\n' +
-  '• Affected element: Process Payment (service task)\n' +
-  '• Job type: io.camunda.connector.http.outbound\n' +
-  '• Error message: Connection timeout — unable to reach https://payments.internal/api/v2/charge\n\n' +
-  'This typically indicates that the external payment service is unreachable or returned an unexpected response.';
+  'The error EXTRACT_VALUE_ERROR means the FEEL expression on gateway "Route by Flow Type" could not be evaluated — it returned NULL instead of the expected BOOLEAN.\n\n' +
+  '### Error details\n' +
+  '• Error type: Expression evaluation failure\n' +
+  '• Affected element: Route by Flow Type (exclusive gateway)\n' +
+  '• Expression: `list contains(flows,"2")`\n' +
+  '• Expected type: BOOLEAN\n' +
+  '• Actual result: NULL\n\n' +
+  '### Evaluation warnings\n' +
+  '• NO_VARIABLE_FOUND: No variable found with name `flows`\n' +
+  '• FUNCTION_INVOCATION_FAILURE: Failed to invoke `list contains` — illegal arguments: null, "2"\n\n' +
+  'This indicates that `flows` was not in scope when the gateway was reached. The function received null as its first argument and could not return a valid boolean result.';
 
 const INCIDENT_RESOLUTION_MESSAGE =
-  'Here are the recommended next steps:\n\n' +
-  '1. Verify the payment service is running — confirm the service at payments.internal is accessible from your job worker environment.\n' +
-  '2. Check the job worker logs — look for connection errors, authentication failures, or timeouts.\n' +
-  '3. Review the `paymentGatewayUrl` variable — the current value may point to an incorrect or outdated endpoint.\n' +
-  '4. Retry the incident — once the service is back online, use the button below to retry directly from here.\n' +
-  '5. Increase the retry count — if this endpoint has transient failures, more retries in your BPMN model can improve resilience.';
+  '### Recommended steps\n' +
+  '1. Check that `flows` is set before this gateway — verify the upstream task or event that should populate the variable actually ran and produced a value.\n' +
+  '2. Confirm the variable name — FEEL expressions are case-sensitive; ensure the variable is named exactly `flows` and not `flow`, `Flows`, or similar.\n' +
+  '3. Add a null guard to the expression — consider using `flows != null and list contains(flows,"2")` to prevent NULL propagation if the variable may sometimes be absent.\n' +
+  '4. Retry the incident — once `flows` is correctly in scope, use the button below to retry the gateway evaluation.\n' +
+  '5. Review the process model — if `flows` should always be set by this point, the upstream task that populates it may itself be failing silently.';
 
 const RETRY_SUGGESTED_ACTIONS: SuggestedAction[] = [
   {label: 'Retry', icon: RetryFailed},
 ];
+
+// ─── Simulated response: Incidents by error message (dashboard) ──────────────
+
+const INCIDENTS_BY_ERROR_MOCK_PROMPT =
+  'Explain the top process incidents by error message.';
+
+const INCIDENTS_BY_ERROR_MESSAGE =
+  'Here is a breakdown of the current incidents grouped by error message:\n\n' +
+  '### Active error messages\n' +
+  '1. Connection timeout — unable to reach https://payments.internal/api/v2/charge — 47 instances across Order Fulfillment (32) and Payment Processing (15)\n' +
+  '2. NullPointerException in CustomerOnboardingConnector — 12 instances in Customer Onboarding\n' +
+  '3. Job worker unavailable — type: invoice-generator — 8 instances in Invoice Generation\n\n' +
+  'Errors 1 and 3 both started spiking approximately 2 hours ago and are likely related to the same infrastructure or deployment change. Error 2 is a recurring pattern — 12 instances is within its usual range and is not a new spike.';
+
+// Sentinel returned by getProcessInstanceResponse to signal a two-message walk-through
+const WALK_THROUGH_SENTINEL = '__WALK_THROUGH__';
+
+// ─── Shared audit log content (reused across walk-through and instance analysis) ──
+
+const WALK_THROUGH_PART_1 =
+  '### Overview\n' +
+  'Started: March 5, 2026 at 09:14 AM\n' +
+  'Status: Incident — waiting for manual intervention\n\n' +
+  '### Execution path\n' +
+  '1. Start Event — completed\n' +
+  '2. Validate Request — completed (0.2s)\n' +
+  '3. Enrich Request Data — completed (1.4s)\n' +
+  '4. Route by Flow Type — failed (EXTRACT_VALUE_ERROR: `flows` not in scope)';
+
+const WALK_THROUGH_PART_2 =
+  '### User operations\n' +
+  '>>> 09:15:02  anna@example.com  Modified variable `flows` | Set to: ["1","3"]\n' +
+  '>>> 09:16:30  anna@example.com  Retried incident on "Route by Flow Type" | Outcome: incident persisted\n\n' +
+  '### Variables at time of failure\n' +
+  '• `requestId`: "REQ-2024-4491"\n' +
+  '• `customerId`: "CUST-4472"\n' +
+  '• `requestType`: "TRANSFER"\n' +
+  '• `flows`: null\n\n' +
+  'The process completed 3 steps successfully before failing at the routing gateway. The `flows` variable was null at that point, which prevented the FEEL expression from evaluating. Total time before incident: 1 minute 46 seconds.';
 
 // ─── Simulated response: Instance analysis from dashboard ────────────────────
 
@@ -104,18 +147,16 @@ const RETRY_SUGGESTED_ACTIONS: SuggestedAction[] = [
 function getAnalyzeInstanceResponse(instanceId: string | null): string {
   return (
     `I found an active incident on process instance ${instanceId ?? 'unknown'}.\n\n` +
-    'Execution path:\n' +
+    '### Execution path\n' +
     '1. Start Event — completed\n' +
-    '2. Validate Order — completed (0.3s)\n' +
-    '3. Check Inventory — completed (1.2s)\n' +
-    '4. Reserve Stock — completed (0.8s)\n' +
-    '5. Process Payment — failed after 3 retries (45s)\n\n' +
-    'Operator activity:\n' +
-    '>>> 09:15:02  anna@example.com  changed `paymentGatewayUrl` "…/api/v1/charge" → "…/api/v2/charge"\n' +
-    '>>> 09:16:30  anna@example.com  retried "Process Payment" — incident persisted\n' +
-    '>>> 09:17:45  system  instance moved to INCIDENT state after max retries exceeded\n\n' +
-    'The variable change at 09:15 suggests the endpoint was being updated, but the retry at 09:16 still failed — the payment service may still be unreachable.\n\n' +
-    'Open the instance to retry the incident or investigate the variables in detail.'
+    '2. Validate Request — completed (0.2s)\n' +
+    '3. Enrich Request Data — completed (1.4s)\n' +
+    '4. Route by Flow Type — failed (EXTRACT_VALUE_ERROR: `flows` not in scope)\n\n' +
+    '### User operations\n' +
+    '>>> 09:15:02  anna@example.com  Modified variable `flows` | Set to: ["1","3"]\n' +
+    '>>> 09:16:30  anna@example.com  Retried incident on "Route by Flow Type" | Outcome: incident persisted\n\n' +
+    'The variable was set at 09:15 but the retry at 09:16 still failed — the value ["1","3"] may not satisfy the expression, or `flows` is being overwritten or lost before the gateway is re-evaluated.\n\n' +
+    'Open the instance to inspect the current variable scope or retry the incident after correcting `flows`.'
   );
 }
 
@@ -128,8 +169,8 @@ function getProcessInstanceResponse(input: string): AIResponse {
   if (lower === 'retry') {
     return {
       text:
-        'Retry triggered. "Process Payment" has been re-queued with 1 retry attempt.\n\n' +
-        'If the payment service is now reachable, the instance will resume automatically. A new incident will appear here if the job fails again.',
+        'Retry triggered. The incident on "Route by Flow Type" has been re-queued.\n\n' +
+        'If `flows` is now correctly set in scope, the gateway expression will be re-evaluated and the instance will continue. A new incident will appear here if the expression still cannot be resolved.',
     };
   }
 
@@ -140,13 +181,13 @@ function getProcessInstanceResponse(input: string): AIResponse {
   ) {
     return {
       text:
-        'This instance has an active incident on the service task "Process Payment". The error is JOB_NO_RETRIES — the job worker exhausted all 3 retry attempts.\n\n' +
-        'Error details:\n' +
-        '• Error type: Job worker failure\n' +
-        '• Affected element: Process Payment (service task)\n' +
-        '• Job type: io.camunda.connector.http.outbound\n' +
-        '• Error message: Connection timeout — unable to reach https://payments.internal/api/v2/charge\n\n' +
-        'This type of error indicates that the external payment service is unreachable. The worker retried 3 times over 45 seconds before giving up.',
+        'This instance has an active incident on the exclusive gateway "Route by Flow Type". The error is EXTRACT_VALUE_ERROR — the FEEL expression `list contains(flows,"2")` returned NULL instead of BOOLEAN.\n\n' +
+        '### Error details\n' +
+        '• Error type: Expression evaluation failure\n' +
+        '• Affected element: Route by Flow Type (exclusive gateway)\n' +
+        '• Expression: `list contains(flows,"2")`\n' +
+        '• Cause: Variable `flows` was not found in scope — `list contains` received null as its first argument\n\n' +
+        'This type of error occurs when a required variable is missing at the point where a FEEL expression is evaluated on a gateway.',
     };
   }
 
@@ -157,17 +198,18 @@ function getProcessInstanceResponse(input: string): AIResponse {
   ) {
     return {
       text:
-        'Based on the incident details, here are the recommended next steps:\n\n' +
-        '1. Verify the payment service is running — confirm the service at payments.internal is accessible from your job worker.\n' +
-        '2. Check the job worker logs — look for connection errors or authentication failures.\n' +
-        '3. Review the `paymentGatewayUrl` variable — the current value may point to an incorrect endpoint.\n' +
-        '4. Retry the incident — once the service is back online, use the button below to retry directly from here.\n' +
-        '5. Increase the retry count — if this endpoint has transient failures, more retries in your BPMN model can improve resilience.\n\n' +
-        'Would you like me to check the worker status or help you update a variable value?',
+        '### Recommended steps\n' +
+        '1. Check that `flows` is set before this gateway — verify the upstream task that should populate the variable actually ran and produced a value.\n' +
+        '2. Confirm the variable name — FEEL is case-sensitive; ensure the variable is named exactly `flows` and not `flow`, `Flows`, or similar.\n' +
+        '3. Add a null guard to the expression — consider `flows != null and list contains(flows,"2")` to avoid NULL propagation if the variable may sometimes be absent.\n' +
+        '4. Retry the incident — once `flows` is correctly in scope, use the button below to retry the gateway evaluation.\n' +
+        '5. Review the process model — if `flows` should always be set by this point, the upstream task that populates it may itself be failing silently.\n\n' +
+        'Would you like me to check the current variable values or help you update `flows` directly?',
       suggestedActions: RETRY_SUGGESTED_ACTIONS,
     };
   }
 
+  // Walk-through is handled as a two-message sequence in onSubmit — see WALK_THROUGH_SENTINEL
   if (
     lower.includes('walk') ||
     lower.includes('happened') ||
@@ -175,28 +217,7 @@ function getProcessInstanceResponse(input: string): AIResponse {
     lower.includes('summary') ||
     lower.includes('through')
   ) {
-    return {
-      text:
-        'Here is a summary of this process execution:\n\n' +
-        'Started: March 5, 2026 at 09:14 AM\n' +
-        'Status: Incident — waiting for manual intervention\n\n' +
-        'Execution path:\n' +
-        '1. Start Event — completed\n' +
-        '2. Validate Order — completed (0.3s)\n' +
-        '3. Check Inventory — completed (1.2s)\n' +
-        '4. Reserve Stock — completed (0.8s)\n' +
-        '5. Process Payment — failed after 3 retries (45s)\n\n' +
-        'Operator activity:\n' +
-        '>>> 09:15:02  anna@example.com  changed `paymentGatewayUrl` "…/api/v1/charge" → "…/api/v2/charge"\n' +
-        '>>> 09:16:30  anna@example.com  retried "Process Payment" — incident persisted\n' +
-        '>>> 09:17:45  system  instance moved to INCIDENT state after max retries exceeded\n\n' +
-        'Variables at time of failure:\n' +
-        '• `orderId`: "ORD-2024-8821"\n' +
-        '• `amount`: 149.99\n' +
-        '• `currency`: "EUR"\n' +
-        '• `customerId`: "CUST-4472"\n\n' +
-        'The process ran successfully through 4 steps before failing at the payment task. Total time before incident: 2 minutes 34 seconds.',
-    };
+    return {text: WALK_THROUGH_SENTINEL};
   }
 
   if (lower.includes('state') || lower.includes('status')) {
@@ -211,13 +232,12 @@ function getProcessInstanceResponse(input: string): AIResponse {
   if (lower.includes('variable')) {
     return {
       text:
-        'Variables set on this instance at the current scope:\n\n' +
-        '• `orderId`: "ORD-2024-8821"\n' +
-        '• `amount`: 149.99\n' +
-        '• `currency`: "EUR"\n' +
+        '### Current variables\n' +
+        '• `requestId`: "REQ-2024-4491"\n' +
         '• `customerId`: "CUST-4472"\n' +
-        '• `paymentGatewayUrl`: https://payments.internal/api/v2/charge\n\n' +
-        'You can view and edit these in the Variables panel at the bottom of this page. Select a specific flow node to see locally scoped variables.',
+        '• `requestType`: "TRANSFER"\n' +
+        '• `flows`: null\n\n' +
+        'The key variable here is `flows` — it is currently null, which is why the gateway expression `list contains(flows,"2")` cannot be evaluated. You can edit it directly in the Variables panel at the bottom of this page.',
     };
   }
 
@@ -265,11 +285,11 @@ function getOperateResponse(input: string): AIResponse {
     return {
       text:
         'I detected 3 potential anomalies in the last 6 hours:\n\n' +
-        '1. Payment service worker failures (High severity)\n' +
+        '### 1. Payment service worker failures · High severity\n' +
         '47 job failures across 3 processes in the last 2 hours — 8x above the hourly average. Likely a shared connectivity issue with the payment gateway.\n\n' +
-        '2. Long-running user tasks in Customer Onboarding (Medium severity)\n' +
+        '### 2. Long-running user tasks in Customer Onboarding · Medium severity\n' +
         '12 instances have been waiting at a user task for over 48 hours. This may indicate a staffing gap or an assignment issue.\n\n' +
-        '3. Rising incident rate in Order Fulfillment (Medium severity)\n' +
+        '### 3. Rising incident rate in Order Fulfillment · Medium severity\n' +
         'Incident rate up 34% compared to the 7-day average. Failure pattern points to connection timeouts with an external service.\n\n' +
         'Would you like to drill into any of these?',
     };
@@ -283,7 +303,7 @@ function getOperateResponse(input: string): AIResponse {
   ) {
     return {
       text:
-        'Week-over-week comparison (March 3–9 vs February 24 – March 2):\n\n' +
+        'Here is a week-over-week comparison (March 3–9 vs February 24 – March 2):\n\n' +
         '• Process instances started: 1,842 vs 1,756 (+5%)\n' +
         '• Completed successfully: 1,614 (87.6%) vs 1,689 (96.2%) — down 8.6 percentage points\n' +
         '• Active incidents: 95 vs 31 — up 206%\n' +
@@ -334,15 +354,15 @@ function renderInline(text: string, keyBase: string): React.ReactNode {
       );
     } else if (value.startsWith('`')) {
       parts.push(
-        <Layer key={key}>
-          <CodeSnippet type="inline">{value.slice(1, -1)}</CodeSnippet>
-        </Layer>,
+        <CodeSnippet key={key} type="inline">
+          {value.slice(1, -1)}
+        </CodeSnippet>,
       );
     } else {
       parts.push(
-        <Layer key={key}>
-          <CodeSnippet type="inline">{value}</CodeSnippet>
-        </Layer>,
+        <CodeSnippet key={key} type="inline">
+          {value}
+        </CodeSnippet>,
       );
     }
 
@@ -356,6 +376,7 @@ function renderInline(text: string, keyBase: string): React.ReactNode {
   return <>{parts}</>;
 }
 
+const SECTION_HEADER = /^###\s+/;
 const ORDERED_ITEM = /^\d+\.\s+/;
 const UNORDERED_ITEM = /^[•\-]\s+/;
 const AUDIT_ENTRY = /^>>>\s+/;
@@ -378,11 +399,43 @@ const MessageContent: React.FC<{text: string}> = ({text}) => {
       }
       blocks.push(
         <Styled.MessageContentWrapper key={blockKey++}>
-          {entries.map((entry, idx) => (
-            <Styled.AuditEntry key={idx}>{entry}</Styled.AuditEntry>
-          ))}
+          {entries.map((entry, idx) => {
+            // Parse "09:15:02  anna@example.com  changed `paymentGatewayUrl` ..."
+            const parts = entry.split(/  +/);
+            const time = parts[0] ?? '';
+            const actor = parts[1] ?? '';
+            const action = parts.slice(2).join(' ');
+            const actionLines = action.split('|').map((s) => s.trim());
+            return (
+              <Styled.AuditEntry key={idx}>
+                <Styled.AuditEntryMeta>
+                  {time} · {actor}
+                </Styled.AuditEntryMeta>
+                <Styled.AuditEntryAction>
+                  {renderInline(actionLines[0] ?? '', `audit-${blockKey}-${idx}-0`)}
+                </Styled.AuditEntryAction>
+                {actionLines.slice(1).map((detail, didx) => (
+                  <Styled.AuditEntryDetail key={didx}>
+                    {renderInline(detail, `audit-${blockKey}-${idx}-d${didx}`)}
+                  </Styled.AuditEntryDetail>
+                ))}
+              </Styled.AuditEntry>
+            );
+          })}
         </Styled.MessageContentWrapper>,
       );
+      continue;
+    }
+
+    // Section heading (### )
+    if (SECTION_HEADER.test(line)) {
+      const headerText = line.replace(SECTION_HEADER, '');
+      blocks.push(
+        <Styled.MessageSectionHeader key={blockKey++}>
+          {renderInline(headerText, `h-${blockKey}`)}
+        </Styled.MessageSectionHeader>,
+      );
+      i++;
       continue;
     }
 
@@ -619,6 +672,28 @@ const CoPilot: React.FC<Props> = ({onClose}) => {
     return () => clearTimeout(t);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Trigger mock incidents-by-error analysis when opened from the dashboard
+  useEffect(() => {
+    if (!copilotStore.analyzeIncidentsByErrorMode) return;
+
+    copilotStore.clearAnalyzeIncidentsByErrorMode();
+    setMessages([
+      {id: 'iby-err-0', type: 'human', text: INCIDENTS_BY_ERROR_MOCK_PROMPT},
+    ]);
+    setIsProcessing(true);
+
+    // TODO: Replace with actual API call — fetch incidents grouped by error message
+    const t = setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        {id: 'iby-err-1', type: 'ai', text: INCIDENTS_BY_ERROR_MESSAGE},
+      ]);
+      setIsProcessing(false);
+    }, 1800);
+
+    return () => clearTimeout(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Trigger mock incident explanation when opened from the incidents panel
   useEffect(() => {
     if (!copilotStore.incidentExplanationMode) return;
@@ -670,17 +745,36 @@ const CoPilot: React.FC<Props> = ({onClose}) => {
       setText('');
 
       // TODO: Replace with actual API call to copilot service
-      const timeoutId = setTimeout(() => {
-        const response = getResponse(textPrompt);
-        addMessage({
-          type: 'ai',
-          text: response.text,
-          suggestedActions: response.suggestedActions,
-        });
-        setIsProcessing(false);
-      }, 1000);
+      const response = getResponse(textPrompt);
 
-      cancelRef.current = () => clearTimeout(timeoutId);
+      if (response.text === WALK_THROUGH_SENTINEL) {
+        // Two-message sequence with staggered delays, matching the incident explanation UX
+        const t1 = setTimeout(() => {
+          addMessage({type: 'ai', text: WALK_THROUGH_PART_1});
+        }, 2000);
+        const t2 = setTimeout(() => {
+          addMessage({
+            type: 'ai',
+            text: WALK_THROUGH_PART_2,
+            suggestedActions: RETRY_SUGGESTED_ACTIONS,
+          });
+          setIsProcessing(false);
+        }, 4500);
+        cancelRef.current = () => {
+          clearTimeout(t1);
+          clearTimeout(t2);
+        };
+      } else {
+        const timeoutId = setTimeout(() => {
+          addMessage({
+            type: 'ai',
+            text: response.text,
+            suggestedActions: response.suggestedActions,
+          });
+          setIsProcessing(false);
+        }, 1000);
+        cancelRef.current = () => clearTimeout(timeoutId);
+      }
     },
     [text, addMessage, getResponse],
   );
@@ -693,7 +787,9 @@ const CoPilot: React.FC<Props> = ({onClose}) => {
   const textAreaAndSubmit = (variant: 'intro' | 'chat' = 'chat') => (
     <TextAreaAndSubmit
       text={text}
-      placeholder={placeholder}
+      placeholder={
+        variant === 'chat' ? 'Ask a follow-up question...' : placeholder
+      }
       onChangeText={setText}
       onSubmit={onSubmit}
       onCancel={cancel}

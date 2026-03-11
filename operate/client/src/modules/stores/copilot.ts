@@ -13,6 +13,7 @@ class CopilotStore {
   incidentExplanationMode = false;
   analyzeInstanceMode = false;
   analyzedInstanceId: string | null = null;
+  analyzeIncidentsByErrorMode = false;
 
   constructor() {
     makeAutoObservable(this);
@@ -24,6 +25,7 @@ class CopilotStore {
       this.incidentExplanationMode = false;
       this.analyzeInstanceMode = false;
       this.analyzedInstanceId = null;
+      this.analyzeIncidentsByErrorMode = false;
     }
   };
 
@@ -36,6 +38,7 @@ class CopilotStore {
     this.incidentExplanationMode = false;
     this.analyzeInstanceMode = false;
     this.analyzedInstanceId = null;
+    this.analyzeIncidentsByErrorMode = false;
   };
 
   openWithIncidentExplanation = () => {
@@ -56,6 +59,15 @@ class CopilotStore {
   clearAnalyzeInstanceMode = () => {
     this.analyzeInstanceMode = false;
     this.analyzedInstanceId = null;
+  };
+
+  openWithIncidentsByError = () => {
+    this.isOpen = true;
+    this.analyzeIncidentsByErrorMode = true;
+  };
+
+  clearAnalyzeIncidentsByErrorMode = () => {
+    this.analyzeIncidentsByErrorMode = false;
   };
 }
 

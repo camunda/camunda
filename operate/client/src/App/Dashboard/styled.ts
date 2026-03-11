@@ -59,6 +59,17 @@ const TileTitle = styled.h2`
   margin-bottom: var(--cds-spacing-06);
 `;
 
+const TileTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--cds-spacing-06);
+
+  ${TileTitle} {
+    margin-bottom: 0;
+  }
+`;
+
 const LinkWrapper = styled(Link)`
   display: block;
   text-decoration: none !important;
@@ -86,6 +97,7 @@ export {
   ScrollableContent,
   Tile,
   TileTitle,
+  TileTitleRow,
   LinkWrapper,
   ErrorMessage,
   Li,

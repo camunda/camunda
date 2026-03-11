@@ -20,6 +20,7 @@ const PageContent = styled.main`
   flex: 1;
   min-width: 0;
   height: 100%;
+  overflow: hidden;
 `;
 
 const CopilotGlobalContainer = styled.div`

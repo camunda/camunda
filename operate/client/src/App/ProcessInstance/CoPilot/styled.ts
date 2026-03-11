@@ -24,6 +24,13 @@ const MessageParagraph = styled.p`
   margin: 0;
 `;
 
+const MessageSectionHeader = styled.p`
+  ${styles.bodyLong01};
+  font-weight: 600;
+  color: var(--cds-text-primary);
+  margin: 0;
+`;
+
 const listStyles = css`
   padding-left: var(--cds-spacing-06);
   margin: 0;
@@ -126,6 +133,7 @@ const MessagesBody = styled.div`
   padding: var(--cds-spacing-04) var(--cds-spacing-05);
   overflow-y: auto;
   height: 100%;
+  width: 100%;
 `;
 
 const MessagesStack = styled(Stack)`
@@ -274,15 +282,9 @@ const ChatboxForm = styled.div<ChatboxFormProps>`
   ${({$variant}) =>
     $variant === 'chat' &&
     `
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: ${BUTTON_WRAPPER_SIZE};
-      height: 1px;
-      background-color: var(--cds-border-strong-03);
-    }
+    margin: var(--cds-spacing-04);
+    width: calc(100% - 2 * var(--cds-spacing-04));
+    border: 1px solid var(--cds-border-subtle-03);
   `}
 `;
 
@@ -304,9 +306,6 @@ type StyledTextAreaProps = {
 const StyledTextArea = styled.textarea<StyledTextAreaProps>`
   background: var(--cds-field-01);
   border: 0 none;
-  ${({$variant}) =>
-    $variant === 'chat' &&
-    `border-top: 1px solid var(--cds-border-subtle-03);`}
   padding: var(--cds-spacing-04);
   width: 100%;
   resize: none;
@@ -329,14 +328,30 @@ const StyledTextArea = styled.textarea<StyledTextAreaProps>`
 
 const AuditEntry = styled.div`
   display: flex;
+  flex-direction: column;
+  gap: var(--cds-spacing-01);
   background-color: var(--cds-layer-02);
   border-left: 2px solid var(--cds-border-interactive);
   border-radius: 0 2px 2px 0;
   padding: var(--cds-spacing-02) var(--cds-spacing-03);
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.75rem;
-  color: var(--cds-text-secondary);
   word-break: break-word;
+`;
+
+const AuditEntryMeta = styled.span`
+  font-size: 0.7rem;
+  color: var(--cds-text-secondary);
+  letter-spacing: 0.01em;
+`;
+
+const AuditEntryAction = styled.span`
+  font-size: 0.75rem;
+  color: var(--cds-text-primary);
+`;
+
+const AuditEntryDetail = styled.span`
+  font-size: 0.7rem;
+  color: var(--cds-text-secondary);
 `;
 
 // Copilot sparkle icon styled for the panel header
@@ -355,6 +370,7 @@ export {
   MAX_TEXTAREA_HEIGHT,
   MessageContentWrapper,
   MessageParagraph,
+  MessageSectionHeader,
   MessageOrderedList,
   MessageUnorderedList,
   SuggestedActionsBar,
@@ -383,4 +399,7 @@ export {
   StyledTextArea,
   CopilotIconWrapper,
   AuditEntry,
+  AuditEntryMeta,
+  AuditEntryAction,
+  AuditEntryDetail,
 };

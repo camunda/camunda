@@ -7,6 +7,7 @@
  */
 
 import styled from 'styled-components';
+import {CodeSnippet} from '@carbon/react';
 import {styles} from '@carbon/elements';
 
 const ListContainer = styled.div`
@@ -20,7 +21,6 @@ const ExpandedPanel = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--cds-spacing-03);
-  padding: var(--cds-spacing-03) var(--cds-spacing-05);
 `;
 
 const ErrorLabel = styled.span`
@@ -28,11 +28,19 @@ const ErrorLabel = styled.span`
   color: var(--cds-text-secondary);
 `;
 
-const ErrorText = styled.p`
-  ${styles.bodyLong01};
-  color: var(--cds-text-primary);
-  margin: 0;
-  word-break: break-word;
+const ErrorCodeSnippet = styled(CodeSnippet)`
+  &&.cds--snippet--multi {
+    background-color: var(--cds-layer-02);
+  }
+  && pre {
+    padding-bottom: var(--cds-spacing-03);
+  }
+  && .cds--copy-btn {
+    background-color: transparent;
+    &:hover {
+      background-color: var(--cds-layer-hover-02);
+    }
+  }
 `;
 
 const MetaRow = styled.div`
@@ -64,7 +72,7 @@ export {
   ListContainer,
   ExpandedPanel,
   ErrorLabel,
-  ErrorText,
+  ErrorCodeSnippet,
   MetaRow,
   MetaLabel,
   MetaValue,
