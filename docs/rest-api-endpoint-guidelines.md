@@ -373,22 +373,22 @@ We guarantee **forward-compatibility of the API between minor versions**. Any br
 
 #### What counts as a breaking change?
 
-|                                   Change                                   |          Breaking?          |                                              Why                                              |
-|----------------------------------------------------------------------------|-----------------------------|-----------------------------------------------------------------------------------------------|
-| Removing a response property                                               | 🔴 **Yes**                  | Clients that read it will fail                                                                |
-| Making a previously optional request field **required**                    | 🔴 **Yes**                  | Existing requests without the field will be rejected                                          |
-| Making a previously required response field **optional/nullable**          | 🔴 **Yes**                  | Clients assuming non-null will fail                                                           |
-| Changing a property type (e.g., `string` → `object`, `integer` → `string`) | 🔴 **Yes**                  | Serialisation/deserialisation breaks                                                          |
-| Renaming a schema used by generated clients                                | 🔴 **Yes**                  | Generated type names change, breaking compilation                                             |
-| Removing an endpoint                                                       | 🔴 **Yes**                  | Obvious                                                                                       |
-| Removing an enum value                                                     | 🔴 **Yes**                  | Clients matching on it will fail                                                              |
-| Hardening a type (e.g., `string` → branded `ProcessDefinitionKey`)         | 🟡 **SDK breaking**         | Generated SDKs produce stricter types; runtime payloads may still work                        |
-| Making a search filter criterion advanced (e.g., `string` → `oneOf[string, StringFilterProperty]`) | 🟡 **SDK breaking** | Prior plain-value requests still work at runtime, but generated SDKs change the filter type from a primitive to a union/object, breaking compilation |
-| Adding a new **enum value**                                                | 🟡 **Potentially breaking** | Clients with exhaustive switches/pattern matching and no default branch break at compile time |
-| Adding a new optional response property                                    | 🟢 No                       | Additive                                                                                      |
-| Adding a new optional request field                                        | 🟢 No                       | Additive                                                                                      |
-| Removing `null` from a response union (hardening)                          | 🟢 No                       | Existing null-checks still work at runtime                                                    |
-| Adding a new endpoint                                                      | 🟢 No                       | Additive                                                                                      |
+|                                               Change                                               |          Breaking?          |                                                                         Why                                                                          |
+|----------------------------------------------------------------------------------------------------|-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Removing a response property                                                                       | 🔴 **Yes**                  | Clients that read it will fail                                                                                                                       |
+| Making a previously optional request field **required**                                            | 🔴 **Yes**                  | Existing requests without the field will be rejected                                                                                                 |
+| Making a previously required response field **optional/nullable**                                  | 🔴 **Yes**                  | Clients assuming non-null will fail                                                                                                                  |
+| Changing a property type (e.g., `string` → `object`, `integer` → `string`)                         | 🔴 **Yes**                  | Serialisation/deserialisation breaks                                                                                                                 |
+| Renaming a schema used by generated clients                                                        | 🔴 **Yes**                  | Generated type names change, breaking compilation                                                                                                    |
+| Removing an endpoint                                                                               | 🔴 **Yes**                  | Obvious                                                                                                                                              |
+| Removing an enum value                                                                             | 🔴 **Yes**                  | Clients matching on it will fail                                                                                                                     |
+| Hardening a type (e.g., `string` → branded `ProcessDefinitionKey`)                                 | 🟡 **SDK breaking**         | Generated SDKs produce stricter types; runtime payloads may still work                                                                               |
+| Making a search filter criterion advanced (e.g., `string` → `oneOf[string, StringFilterProperty]`) | 🟡 **SDK breaking**         | Prior plain-value requests still work at runtime, but generated SDKs change the filter type from a primitive to a union/object, breaking compilation |
+| Adding a new **enum value**                                                                        | 🟡 **Potentially breaking** | Clients with exhaustive switches/pattern matching and no default branch break at compile time                                                        |
+| Adding a new optional response property                                                            | 🟢 No                       | Additive                                                                                                                                             |
+| Adding a new optional request field                                                                | 🟢 No                       | Additive                                                                                                                                             |
+| Removing `null` from a response union (hardening)                                                  | 🟢 No                       | Existing null-checks still work at runtime                                                                                                           |
+| Adding a new endpoint                                                                              | 🟢 No                       | Additive                                                                                                                                             |
 
 #### Rules to prevent accidental breaking changes
 
@@ -1026,6 +1026,49 @@ Awaitility.await("should receive data from ES")
     });
 ```
 
+### 7.4 E2E API test suite (Playwright)
+
+A Playwright-based E2E test suite validates REST API v2 endpoints against a real running Camunda instance. Tests are organised by resource under `qa/c8-orchestration-cluster-e2e-test-suite/tests/api/v2/<resource>/` and run in CI via the dedicated **`api-tests`** Playwright project.
+
+The suite uses `assert-json-body` to automatically validate response shapes against the OpenAPI spec, ensuring that actual responses match the contract defined in the spec.
+
+> ℹ️ For full setup, utilities reference, and contribution instructions see the [E2E test suite README](../qa/c8-orchestration-cluster-e2e-test-suite/README.md).
+
+### 7.5 Auto-generated request validation tests
+
+Machine-generated negative tests (expected HTTP 400) cover every endpoint in the OpenAPI spec. They live under `qa/c8-orchestration-cluster-e2e-test-suite/v2-stateless-tests/tests/request-validation/` and are produced by the request validation test generator. Scenarios include missing required fields, type mismatches, enum violations, `oneOf` ambiguities, constraint breaches, and more.
+
+> ⚠️ Generated test files must not be edited manually — they are overwritten on regeneration.
+>
+> ℹ️ For details see the [generator README](../qa/c8-orchestration-cluster-e2e-test-suite/v2-stateless-tests/request-validation-test-generator/README.md).
+
+### 7.6 Forward compatibility tests (nightly)
+
+A **nightly CI workflow** verifies that newer server versions remain compatible with API tests written for older versions. This catches accidental breaking changes that would otherwise only surface after release.
+
+**Workflow:** [`c8-orchestration-cluster-forward-compatibility-tests.yml`](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-forward-compatibility-tests.yml)
+
+**How it works:**
+
+1. Discovers all `stable/X.Y` branches ≥ 8.8.
+2. Builds a dynamic matrix of server → test branch pairs:
+   - `main` server → newest `stable/X.Y` tests
+   - Each consecutive `stable/X.Y` server → `stable/X.(Y-1)` tests
+3. For each pair, pulls the server Docker image from the **server branch** and runs the API tests from the **test branch**.
+
+Because the _tests_ come from an older branch, any endpoint that previously worked must still produce a compatible response on the newer server. A failure signals a **forward-incompatible (breaking) change**.
+
+**Manual dispatch** is also supported — you can specify a custom `server_branch` / `test_branch` pair via the GitHub Actions UI.
+
+Failures are reported to Slack and visible in the [Actions tab](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-forward-compatibility-tests.yml).
+
+**What this means for contributors:**
+
+- If you change an endpoint's response shape, remove a field, or alter error codes, the forward compatibility tests will detect it.
+- If your PR intentionally introduces a breaking change (see §2.7), coordinate with `@camunda/camunda-ex` to update the test expectations on the affected older branches _before_ merging.
+
+There is also an **on-demand workflow** ([`c8-orchestration-cluster-e2e-api-test-branch-on-demand.yml`](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-api-test-branch-on-demand.yml)) that builds the server _and_ runs the tests from the same branch. This is useful for verifying that a feature branch passes all API tests — both against Elasticsearch _and_ H2/RDBMS — before merging. It also detects differential behavior between storage engines.
+
 ---
 
 ## 8. CI pipeline & merge checklist
@@ -1240,29 +1283,35 @@ MySchema:
 
 ## 11. Reference links
 
-|          Resource           |                                                                   Location                                                                    |
-|-----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| Public REST API reference   | [docs.camunda.io](https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/orchestration-cluster-rest-api/) |
-| OpenAPI 3.0.3 specification | [spec.openapis.org](https://spec.openapis.org/oas/v3.0.3)                                                                                     |
-| OpenAPI guide               | [learn.openapis.org](https://learn.openapis.org/)                                                                                             |
-| Camunda style guide         | [Confluence](https://confluence.camunda.com/display/HAN/Camunda+style+guide)                                                                  |
-| OpenAPI spec (v2)           | `zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml`                                                                                      |
-| Spectral ruleset            | `zeebe/gateway-protocol/.spectral.yaml`                                                                                                       |
-| Custom Spectral functions   | `zeebe/gateway-protocol/spectral-functions/`                                                                                                  |
-| Spectral tests              | `zeebe/gateway-protocol/spectral-tests/`                                                                                                      |
-| OpenAPI validation guide    | `zeebe/gateway-protocol/OPENAPI_VALIDATION.md`                                                                                                |
-| REST controller guide       | `docs/rest-controller.md`                                                                                                                     |
-| Testing guide               | `docs/testing.md`                                                                                                                             |
-| Unit test guide             | `docs/testing/unit.md`                                                                                                                        |
-| Acceptance test guide       | `docs/testing/acceptance.md`                                                                                                                  |
-| Docs sync workflow          | [sync-rest-api-docs.yaml](https://github.com/camunda/camunda-docs/actions/workflows/sync-rest-api-docs.yaml)                                  |
-| Docs generation guide       | [interactive-api-explorers.md](https://github.com/camunda/camunda-docs/blob/main/howtos/interactive-api-explorers.md)                         |
-| Controllers                 | `zeebe/gateway-rest/src/main/java/io/camunda/zeebe/gateway/rest/controller/`                                                                  |
-| Request/Response mappers    | `gateways/gateway-mapping-http/`                                                                                                              |
-| Generated models            | `gateways/gateway-model/` (generated from OpenAPI spec)                                                                                       |
-| Service layer               | `service/`                                                                                                                                    |
-| Camunda Java Client         | `clients/java/`                                                                                                                               |
-| CI OpenAPI lint job         | `.github/workflows/ci.yml` (job: `openapi-lint`)                                                                                              |
-| Slack channel               | [`#top-c8-cluster-api-governance`](https://camunda.slack.com/archives/C0A154VV8DB)                                                            |
-| API team (reviewers)        | `@camunda/c8-api-team`                                                                                                                        |
+|           Resource           |                                                                                   Location                                                                                    |
+|------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Public REST API reference    | [docs.camunda.io](https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/orchestration-cluster-rest-api/)                                 |
+| OpenAPI 3.0.3 specification  | [spec.openapis.org](https://spec.openapis.org/oas/v3.0.3)                                                                                                                     |
+| OpenAPI guide                | [learn.openapis.org](https://learn.openapis.org/)                                                                                                                             |
+| Camunda style guide          | [Confluence](https://confluence.camunda.com/display/HAN/Camunda+style+guide)                                                                                                  |
+| OpenAPI spec (v2)            | `zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml`                                                                                                                      |
+| Spectral ruleset             | `zeebe/gateway-protocol/.spectral.yaml`                                                                                                                                       |
+| Custom Spectral functions    | `zeebe/gateway-protocol/spectral-functions/`                                                                                                                                  |
+| Spectral tests               | `zeebe/gateway-protocol/spectral-tests/`                                                                                                                                      |
+| OpenAPI validation guide     | `zeebe/gateway-protocol/OPENAPI_VALIDATION.md`                                                                                                                                |
+| REST controller guide        | `docs/rest-controller.md`                                                                                                                                                     |
+| Testing guide                | `docs/testing.md`                                                                                                                                                             |
+| Unit test guide              | `docs/testing/unit.md`                                                                                                                                                        |
+| Acceptance test guide        | `docs/testing/acceptance.md`                                                                                                                                                  |
+| E2E API test suite           | `qa/c8-orchestration-cluster-e2e-test-suite/`                                                                                                                                 |
+| E2E test suite README        | `qa/c8-orchestration-cluster-e2e-test-suite/README.md`                                                                                                                        |
+| Request validation generator | `qa/c8-orchestration-cluster-e2e-test-suite/v2-stateless-tests/request-validation-test-generator/README.md`                                                                   |
+| Forward compat tests         | [c8-orchestration-cluster-forward-compatibility-tests.yml](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-forward-compatibility-tests.yml)     |
+| On-demand API tests          | [c8-orchestration-cluster-e2e-api-test-branch-on-demand.yml](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-api-test-branch-on-demand.yml) |
+| Nightly API tests            | [c8-orchestration-cluster-e2e-tests-nightly.yml](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-nightly.yml)                         |
+| Docs sync workflow           | [sync-rest-api-docs.yaml](https://github.com/camunda/camunda-docs/actions/workflows/sync-rest-api-docs.yaml)                                                                  |
+| Docs generation guide        | [interactive-api-explorers.md](https://github.com/camunda/camunda-docs/blob/main/howtos/interactive-api-explorers.md)                                                         |
+| Controllers                  | `zeebe/gateway-rest/src/main/java/io/camunda/zeebe/gateway/rest/controller/`                                                                                                  |
+| Request/Response mappers     | `gateways/gateway-mapping-http/`                                                                                                                                              |
+| Generated models             | `gateways/gateway-model/` (generated from OpenAPI spec)                                                                                                                       |
+| Service layer                | `service/`                                                                                                                                                                    |
+| Camunda Java Client          | `clients/java/`                                                                                                                                                               |
+| CI OpenAPI lint job          | `.github/workflows/ci.yml` (job: `openapi-lint`)                                                                                                                              |
+| Slack channel                | [`#top-c8-cluster-api-governance`](https://camunda.slack.com/archives/C0A154VV8DB)                                                                                            |
+| API team (reviewers)         | `@camunda/c8-api-team`                                                                                                                                                        |
 
