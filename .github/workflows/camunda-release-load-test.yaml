@@ -45,11 +45,11 @@ jobs:
       - id: sanitize
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
         with:
-          branch: ${{ inputs.name || 'dry-run-release-8-8-x' }}
+          branch: ${{ inputs.name || 'dry-run-release-8-6-x' }}
           max_length: 50  # reduced to account for load-test prefix "c8-" and potential suffixes for uniqueness
       # We prepare the tag to default to '8.8.3' if not provided, to ensure that the load test creation can proceed with a valid tag even in the case of missing input (e.g., during schedule runs)
       - id: prepare_tag
-        run: echo "test-tag=${{ inputs.tag || '8.8.3' }}" >> "$GITHUB_OUTPUT"
+        run: echo "test-tag=${{ inputs.tag || '8.6.3' }}" >> "$GITHUB_OUTPUT"
       - name: Observe build status
         if: always()
         continue-on-error: true
