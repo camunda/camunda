@@ -99,7 +99,7 @@ final class RingBuffer {
    *
    * <p>Must be called under the sequencer lock.
    *
-   * @return the assigned sequential index (captured by per-entry listeners for direct lookup)
+   * @return the assigned sequential index
    */
   long put(final InFlightEntry entry) {
     final long index = nextIndex++;
@@ -125,8 +125,6 @@ final class RingBuffer {
    * Returns the entry at the given sequential index, but only if both the index and the
    * highestPosition match. Returns null if the slot is empty, holds an entry for a different index
    * (wraparound), or holds an entry with a different highestPosition (defense-in-depth).
-   *
-   * <p>Used by per-entry listeners for onWrite/onCommit lookups from the raft thread.
    */
   @VisibleForTesting
   InFlightEntry get(final long index, final long highestPosition) {
