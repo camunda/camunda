@@ -331,13 +331,13 @@ public class HistoryCleanupService {
    * <ul>
    *   <li>If this is the first run ({@code lastDuration} is {@code null}), use {@code
    *       minCleanupInterval}.
-   *   <li>If deleted process instances are fewer than half of {@code processInstanceBatchSize} AND
-   *       other entities (standalone decisions, audit logs, batch operations) are fewer than half
-   *       of {@code cleanupBatchSize}, double the interval, but do not exceed {@code
+   *   <li>If deleted root process instances are fewer than half of {@code processInstanceBatchSize}
+   *       AND other entities (standalone decisions, audit logs, batch operations) are fewer than
+   *       half of {@code cleanupBatchSize}, double the interval, but do not exceed {@code
    *       maxCleanupInterval}.
-   *   <li>If process instances hit or exceed {@code processInstanceBatchSize} OR any other entity
-   *       type hits or exceeds {@code cleanupBatchSize}, halve the interval, but do not go below
-   *       {@code minCleanupInterval}.
+   *   <li>If deleted root process instances hit or exceed {@code processInstanceBatchSize} OR any
+   *       other entity type hits or exceeds {@code cleanupBatchSize}, halve the interval, but do
+   *       not go below {@code minCleanupInterval}.
    *   <li>Otherwise, keep the interval unchanged.
    * </ul>
    *
@@ -348,21 +348,14 @@ public class HistoryCleanupService {
   @VisibleForTesting
   Duration calculateNewDuration(
       final Duration lastDuration, final Map<String, Integer> numDeletedRecords) {
-    final int deletedProcessInstances = numDeletedRecords.getOrDefault("processInstance", 0);
-    final int deletedStandaloneDecisions =
-        numDeletedRecords.getOrDefault("standaloneDecisionInstance", 0);
-    final int deletedStandaloneAuditLogs =
-        numDeletedRecords.getOrDefault("standaloneDecisionAuditLog", 0);
-    final int deletedBatchOperations = numDeletedRecords.getOrDefault("batchOperation", 0);
+    final int deletedProcessInstances = numDeletedRecords.getOrDefault("rootProcessInstance", 0);
 
     // Check if process instances hit their batch size limit
     final boolean processInstancesHitLimit = deletedProcessInstances >= processInstanceBatchSize;
 
     // Check if any other entity type hit the cleanup batch size limit
     final int maxOtherEntityDeleted =
-        Math.max(
-            deletedStandaloneDecisions,
-            Math.max(deletedStandaloneAuditLogs, deletedBatchOperations));
+        numDeletedRecords.values().stream().mapToInt(Integer::intValue).max().orElse(0);
     final boolean otherEntitiesHitLimit = maxOtherEntityDeleted >= cleanupBatchSize;
 
     Duration nextDuration;
