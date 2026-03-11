@@ -11,9 +11,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.auth.JwtDecoder;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
@@ -25,11 +25,12 @@ public class AuthInfo extends UnpackedObject {
 
   private final EnumProperty<AuthDataFormat> formatProp =
       new EnumProperty<>("format", AuthDataFormat.class, AuthDataFormat.UNKNOWN);
-
   private final StringProperty authDataProp = new StringProperty("authData", "").sanitized();
   private final DocumentProperty claimsProp = new DocumentProperty("claims").sanitized();
 
+  // fields  for caching
   private transient boolean frozen;
+  private transient int cachedLength = -1;
   private transient Map<String, Object> cachedDecodedMap;
 
   public AuthInfo() {
@@ -86,21 +87,28 @@ public class AuthInfo extends UnpackedObject {
   }
 
   @Override
+  public void read(final MsgPackReader reader) {
+    ensureMutable();
+    super.read(reader);
+  }
+
+  @Override
   @JsonIgnore
   public int getEncodedLength() {
-    return super.getEncodedLength();
+    if (frozen) {
+      if (cachedLength < 0) {
+        cachedLength = super.getEncodedLength();
+      }
+      return cachedLength;
+    } else {
+      return super.getEncodedLength();
+    }
   }
 
   @Override
   @JsonIgnore
   public boolean isEmpty() {
     return super.isEmpty();
-  }
-
-  @Override
-  public void read(final MsgPackReader reader) {
-    ensureMutable();
-    super.read(reader);
   }
 
   @Override
@@ -112,7 +120,7 @@ public class AuthInfo extends UnpackedObject {
   @Override
   @JsonIgnore
   public int getLength() {
-    return super.getLength();
+    return getEncodedLength();
   }
 
   /** Marks this instance as frozen. A frozen AuthInfo rejects mutation and caches decoded maps. */
@@ -156,6 +164,11 @@ public class AuthInfo extends UnpackedObject {
     return result;
   }
 
+  /**
+   * @param info the AuthInfo to copy if necessary
+   * @return Creates a new AuthInfo if the argument is not frozen by copying it. The returned value
+   *     is always frozen
+   */
   public static AuthInfo of(final AuthInfo info) {
     if (info == null) {
       return null;
