@@ -37,8 +37,7 @@ public final class UserTaskCommandProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final int maxVariableNameLength) {
+      final AuthorizationCheckBehavior authCheckBehavior) {
     final EventHandle eventHandle =
         new EventHandle(
             keyGenerator,
@@ -76,8 +75,7 @@ public final class UserTaskCommandProcessors {
                     eventHandle,
                     writers,
                     asyncRequestBehavior,
-                    authCheckBehavior,
-                    maxVariableNameLength),
+                    authCheckBehavior),
                 UserTaskIntent.CANCEL,
                 new UserTaskCancelProcessor(processingState, writers)));
     validateProcessorsSetup(commandToProcessor);
