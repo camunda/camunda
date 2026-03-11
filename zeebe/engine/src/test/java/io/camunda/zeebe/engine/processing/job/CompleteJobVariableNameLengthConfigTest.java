@@ -11,9 +11,11 @@ import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -26,16 +28,25 @@ public final class CompleteJobVariableNameLengthConfigTest {
       EngineRule.singlePartition()
           .withEngineConfig(config -> config.setMaxNameFieldLength(CUSTOM_MAX_NAME_FIELD_LENGTH));
 
-  @Rule
-  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
-
   @Test
   public void shouldCompleteJobIfVariableNameExceedsConfiguredMaxLength() {
     // given
     final var jobType = "test";
-    final var processId = "process";
-    engine.createJob(jobType, processId);
+    final var processId = "proc";
+    engine
+        .deployment()
+        .withXmlResource(
+            processId + ".bpmn",
+            Bpmn.createExecutableProcess(processId)
+                .startEvent("start")
+                .serviceTask("task", b -> b.zeebeJobType(jobType).done())
+                .endEvent("end")
+                .done())
+        .deploy();
+    engine.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.await(Duration.ofSeconds(30))
+        .until(() -> RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).exists());
+
     final var activatedBatch = engine.jobs().withType(jobType).activate().getValue();
     final var jobKey = activatedBatch.getJobKeys().get(0);
     final String variableName = "x".repeat(CUSTOM_MAX_NAME_FIELD_LENGTH + 1);
