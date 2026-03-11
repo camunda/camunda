@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
@@ -96,6 +97,7 @@ public class IncidentTools {
   @CamundaMcpTool(description = "Resolve incident by key. " + EVENTUAL_CONSISTENCY_NOTE)
   public CallToolResult resolveIncident(
       @McpToolParam(description = "Key of the incident to resolve.")
+          @NotNull(message = "Incident key must not be null.")
           @Positive(message = INCIDENT_KEY_POSITIVE_MESSAGE)
           final Long incidentKey) {
     try {
