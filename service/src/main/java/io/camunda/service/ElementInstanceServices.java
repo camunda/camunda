@@ -46,13 +46,11 @@ public final class ElementInstanceServices
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
       final ProcessCache processCache,
       final IncidentServices incidentServices,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.flowNodeInstanceSearchClient = flowNodeInstanceSearchClient;
@@ -61,27 +59,16 @@ public final class ElementInstanceServices
   }
 
   @Override
-  public ElementInstanceServices withAuthentication(final CamundaAuthentication authentication) {
-    return new ElementInstanceServices(
-        brokerClient,
-        securityContextProvider,
-        flowNodeInstanceSearchClient,
-        processCache,
-        incidentServices,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Override
-  public SearchQueryResult<FlowNodeInstanceEntity> search(final FlowNodeInstanceQuery query) {
+  public SearchQueryResult<FlowNodeInstanceEntity> search(
+      final FlowNodeInstanceQuery query, final CamundaAuthentication authentication) {
     return search(
         query,
         securityContextProvider.provideSecurityContext(
             authentication, ELEMENT_INSTANCE_READ_AUTHORIZATION));
   }
 
-  public FlowNodeInstanceEntity getByKey(final Long key) {
+  public FlowNodeInstanceEntity getByKey(
+      final Long key, final CamundaAuthentication authentication) {
     final var result =
         executeSearchRequest(
             () ->
@@ -112,7 +99,8 @@ public final class ElementInstanceServices
   }
 
   public CompletableFuture<VariableDocumentRecord> setVariables(
-      final ElementInstanceServices.SetVariablesRequest request) {
+      final ElementInstanceServices.SetVariablesRequest request,
+      final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerSetVariablesRequest()
             .setElementInstanceKey(request.elementInstanceKey())
@@ -122,7 +110,7 @@ public final class ElementInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   private SearchQueryResult<FlowNodeInstanceEntity> toCacheEnrichedResult(
@@ -156,13 +144,11 @@ public final class ElementInstanceServices
   }
 
   public SearchQueryResult<IncidentEntity> searchIncidents(
-      final long elementInstanceKey, final IncidentQuery query) {
-    final var authenticatedIncidentServices = incidentServices.withAuthentication(authentication);
-    if (authenticatedIncidentServices == null) {
-      return SearchQueryResult.of();
-    }
-    final var elementInstance = getByKey(elementInstanceKey);
-    return authenticatedIncidentServices.search(
+      final long elementInstanceKey,
+      final IncidentQuery query,
+      final CamundaAuthentication authentication) {
+    final var elementInstance = getByKey(elementInstanceKey, authentication);
+    return incidentServices.search(
         IncidentQuery.of(
             b ->
                 b.filter(
@@ -174,7 +160,8 @@ public final class ElementInstanceServices
                                         elementInstance.flowNodeInstanceKey())))
                             .build())
                     .sort(query.sort())
-                    .page(query.page())));
+                    .page(query.page())),
+        authentication);
   }
 
   public record SetVariablesRequest(

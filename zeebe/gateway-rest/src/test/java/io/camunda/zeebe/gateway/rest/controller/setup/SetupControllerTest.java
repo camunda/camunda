@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.setup;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -59,8 +61,6 @@ class SetupControllerTest extends RestControllerTest {
     final var anonymousAuthentication = CamundaAuthentication.anonymous();
     when(authenticationProvider.getAnonymousCamundaAuthentication())
         .thenReturn(anonymousAuthentication);
-    when(userServices.withAuthentication(anonymousAuthentication)).thenReturn(userServices);
-    when(roleServices.withAuthentication(anonymousAuthentication)).thenReturn(roleServices);
     when(securityConfiguration.getAuthentication().getMethod())
         .thenReturn(AuthenticationMethod.BASIC);
     when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
@@ -87,7 +87,7 @@ class SetupControllerTest extends RestControllerTest {
             .setEmail(dto.email())
             .setPassword(dto.password());
     whenNoAdminUserExists();
-    when(userServices.createInitialAdminUser(dto))
+    when(userServices.createInitialAdminUser(eq(dto), any()))
         .thenReturn(CompletableFuture.completedFuture(userRecord));
 
     // when
@@ -113,7 +113,7 @@ class SetupControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(userServices, times(1)).createInitialAdminUser(dto);
+    verify(userServices, times(1)).createInitialAdminUser(eq(dto), any());
   }
 
   @Test
@@ -253,7 +253,7 @@ class SetupControllerTest extends RestControllerTest {
     final var dto = new UserDTO("foo", null, null, "zabraboof");
     final var userRecord = new UserRecord().setUsername(dto.username()).setPassword(dto.password());
     whenNoAdminUserExists();
-    when(userServices.createInitialAdminUser(dto))
+    when(userServices.createInitialAdminUser(eq(dto), any()))
         .thenReturn(CompletableFuture.completedFuture(userRecord));
 
     // when
@@ -279,7 +279,7 @@ class SetupControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     // then
-    verify(userServices, times(1)).createInitialAdminUser(dto);
+    verify(userServices, times(1)).createInitialAdminUser(eq(dto), any());
   }
 
   @Test
@@ -351,12 +351,12 @@ class SetupControllerTest extends RestControllerTest {
   }
 
   private void whenNoAdminUserExists() {
-    when(roleServices.hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER))
+    when(roleServices.hasMembersOfType(eq(DefaultRole.ADMIN.getId()), eq(EntityType.USER), any()))
         .thenReturn(false);
   }
 
   private void whenAdminUserExists() {
-    when(roleServices.hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER))
+    when(roleServices.hasMembersOfType(eq(DefaultRole.ADMIN.getId()), eq(EntityType.USER), any()))
         .thenReturn(true);
   }
 

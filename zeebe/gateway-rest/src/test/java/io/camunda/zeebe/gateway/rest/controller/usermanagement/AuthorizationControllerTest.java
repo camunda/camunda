@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -21,7 +22,6 @@ import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.OwnerTypeEnum;
 import io.camunda.gateway.protocol.model.PermissionTypeEnum;
 import io.camunda.gateway.protocol.model.ResourceTypeEnum;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.AuthorizationServices;
@@ -62,8 +62,6 @@ public class AuthorizationControllerTest extends RestControllerTest {
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(authorizationServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(authorizationServices);
   }
 
   @ParameterizedTest
@@ -73,7 +71,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
       final CreateAuthorizationRequest expectedCreateRequest) {
     final var authorizationKey = 1L;
 
-    when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
+    when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class), any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new AuthorizationRecord().setAuthorizationKey(authorizationKey)));
@@ -92,7 +90,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             new AuthorizationCreateResult().authorizationKey(String.valueOf(authorizationKey)));
 
     final var captor = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
-    verify(authorizationServices).createAuthorization(captor.capture());
+    verify(authorizationServices).createAuthorization(captor.capture(), any());
     final var capturedCreateRequest = captor.getValue();
     assertThat(capturedCreateRequest).isEqualTo(expectedCreateRequest);
   }
@@ -188,7 +186,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
     final var record = new AuthorizationRecord().setAuthorizationKey(authorizationKey);
 
-    when(authorizationServices.deleteAuthorization(authorizationKey))
+    when(authorizationServices.deleteAuthorization(eq(authorizationKey), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     // when
@@ -201,7 +199,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
         .isNoContent();
 
     // then
-    verify(authorizationServices).deleteAuthorization(authorizationKey);
+    verify(authorizationServices).deleteAuthorization(eq(authorizationKey), any());
   }
 
   @ParameterizedTest
@@ -212,7 +210,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
     // given
     final long authorizationKey = expectedUpdateRequest.authorizationKey();
 
-    when(authorizationServices.updateAuthorization(any()))
+    when(authorizationServices.updateAuthorization(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
 
     // when
@@ -228,7 +226,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
     // then
     final var captor = ArgumentCaptor.forClass(UpdateAuthorizationRequest.class);
-    verify(authorizationServices).updateAuthorization(captor.capture());
+    verify(authorizationServices).updateAuthorization(captor.capture(), any());
     final var capturedUpdateRequest = captor.getValue();
     assertThat(capturedUpdateRequest).isEqualTo(expectedUpdateRequest);
   }

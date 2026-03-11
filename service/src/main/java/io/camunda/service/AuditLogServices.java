@@ -46,20 +46,19 @@ public class AuditLogServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final AuditLogSearchClient auditLogSearchClient,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.auditLogSearchClient = auditLogSearchClient;
   }
 
   @Override
-  public SearchQueryResult<AuditLogEntity> search(final AuditLogQuery query) {
+  public SearchQueryResult<AuditLogEntity> search(
+      final AuditLogQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             auditLogSearchClient
@@ -69,18 +68,8 @@ public class AuditLogServices
                 .searchAuditLogs(query));
   }
 
-  @Override
-  public AuditLogServices withAuthentication(final CamundaAuthentication authentication) {
-    return new AuditLogServices(
-        brokerClient,
-        securityContextProvider,
-        auditLogSearchClient,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  public AuditLogEntity getAuditLog(final String auditLogKey) {
+  public AuditLogEntity getAuditLog(
+      final String auditLogKey, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             auditLogSearchClient

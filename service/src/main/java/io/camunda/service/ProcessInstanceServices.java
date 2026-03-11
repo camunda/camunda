@@ -88,60 +88,23 @@ public final class ProcessInstanceServices
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
       final IncidentServices incidentServices,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    this(
-        brokerClient,
-        securityContextProvider,
-        processInstanceSearchClient,
-        sequenceFlowSearchClient,
-        incidentServices,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter,
-        new RequestRetryHandler(brokerClient, brokerClient.getTopologyManager()));
-  }
-
-  public ProcessInstanceServices(
-      final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final ProcessInstanceSearchClient processInstanceSearchClient,
-      final SequenceFlowSearchClient sequenceFlowSearchClient,
-      final IncidentServices incidentServices,
-      final CamundaAuthentication authentication,
-      final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
-      final RequestRetryHandler requestRetryHandler) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.processInstanceSearchClient = processInstanceSearchClient;
     this.sequenceFlowSearchClient = sequenceFlowSearchClient;
     this.incidentServices = incidentServices;
-    this.requestRetryHandler = requestRetryHandler;
     executor = executorProvider.getExecutor();
+    requestRetryHandler = new RequestRetryHandler(brokerClient, brokerClient.getTopologyManager());
   }
 
   @Override
-  public ProcessInstanceServices withAuthentication(final CamundaAuthentication authentication) {
-    return new ProcessInstanceServices(
-        brokerClient,
-        securityContextProvider,
-        processInstanceSearchClient,
-        sequenceFlowSearchClient,
-        incidentServices,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter,
-        requestRetryHandler);
-  }
-
-  @Override
-  public SearchQueryResult<ProcessInstanceEntity> search(final ProcessInstanceQuery query) {
+  public SearchQueryResult<ProcessInstanceEntity> search(
+      final ProcessInstanceQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             processInstanceSearchClient
@@ -152,11 +115,13 @@ public final class ProcessInstanceServices
   }
 
   public SearchQueryResult<ProcessInstanceEntity> search(
-      final Function<ProcessInstanceQuery.Builder, ObjectBuilder<ProcessInstanceQuery>> fn) {
-    return search(processInstanceSearchQuery(fn));
+      final Function<ProcessInstanceQuery.Builder, ObjectBuilder<ProcessInstanceQuery>> fn,
+      final CamundaAuthentication authentication) {
+    return search(processInstanceSearchQuery(fn), authentication);
   }
 
-  public List<ProcessFlowNodeStatisticsEntity> elementStatistics(final long processInstanceKey) {
+  public List<ProcessFlowNodeStatisticsEntity> elementStatistics(
+      final long processInstanceKey, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             processInstanceSearchClient
@@ -166,8 +131,9 @@ public final class ProcessInstanceServices
                 .processInstanceFlowNodeStatistics(processInstanceKey));
   }
 
-  public List<ProcessInstanceEntity> callHierarchy(final long processInstanceKey) {
-    final var rootInstance = getByKey(processInstanceKey);
+  public List<ProcessInstanceEntity> callHierarchy(
+      final long processInstanceKey, final CamundaAuthentication authentication) {
+    final var rootInstance = getByKey(processInstanceKey, authentication);
 
     final var treePath = rootInstance.treePath();
     if (treePath == null || treePath.isBlank()) {
@@ -204,7 +170,8 @@ public final class ProcessInstanceServices
     return orderedKeys.stream().map(resultsByKey::get).filter(Objects::nonNull).toList();
   }
 
-  public List<SequenceFlowEntity> sequenceFlows(final long processInstanceKey) {
+  public List<SequenceFlowEntity> sequenceFlows(
+      final long processInstanceKey, final CamundaAuthentication authentication) {
     return executeSearchRequest(
             () ->
                 sequenceFlowSearchClient
@@ -219,7 +186,8 @@ public final class ProcessInstanceServices
         .items();
   }
 
-  public ProcessInstanceEntity getByKey(final Long processInstanceKey) {
+  public ProcessInstanceEntity getByKey(
+      final Long processInstanceKey, final CamundaAuthentication authentication) {
     return getByKey(
         processInstanceKey,
         securityContextProvider.provideSecurityContext(
@@ -228,7 +196,7 @@ public final class ProcessInstanceServices
                 PROCESS_INSTANCE_READ_AUTHORIZATION, ProcessInstanceEntity::processDefinitionId)));
   }
 
-  public ProcessInstanceEntity getByKey(
+  private ProcessInstanceEntity getByKey(
       final Long processInstanceKey, final SecurityContext securityContext) {
     return executeSearchRequest(
         () ->
@@ -238,7 +206,7 @@ public final class ProcessInstanceServices
   }
 
   public CompletableFuture<ProcessInstanceCreationRecord> createProcessInstance(
-      final ProcessInstanceCreateRequest request) {
+      final ProcessInstanceCreateRequest request, final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerCreateProcessInstanceRequest()
             .setBpmnProcessId(request.bpmnProcessId())
@@ -260,11 +228,11 @@ public final class ProcessInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
-    return sendRequestWithRetryPartitions(brokerRequest);
+    return sendRequestWithRetryPartitions(brokerRequest, authentication);
   }
 
   public CompletableFuture<ProcessInstanceResultRecord> createProcessInstanceWithResult(
-      final ProcessInstanceCreateRequest request) {
+      final ProcessInstanceCreateRequest request, final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerCreateProcessInstanceWithResultRequest()
             .setBpmnProcessId(request.bpmnProcessId())
@@ -287,13 +255,13 @@ public final class ProcessInstanceServices
     // Use custom request timeout if provided, otherwise use default
     if (request.requestTimeout() != null && request.requestTimeout() > 0) {
       return sendRequestWithRetryPartitions(
-          brokerRequest, Duration.ofMillis(request.requestTimeout()));
+          brokerRequest, authentication, Duration.ofMillis(request.requestTimeout()));
     }
-    return sendRequestWithRetryPartitions(brokerRequest);
+    return sendRequestWithRetryPartitions(brokerRequest, authentication);
   }
 
   public CompletableFuture<ProcessInstanceRecord> cancelProcessInstance(
-      final ProcessInstanceCancelRequest request) {
+      final ProcessInstanceCancelRequest request, final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerCancelProcessInstanceRequest()
             .setProcessInstanceKey(request.processInstanceKey());
@@ -301,22 +269,23 @@ public final class ProcessInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<BatchOperationCreationRecord>
-      cancelProcessInstanceBatchOperationWithResult(final ProcessInstanceFilter filter) {
+      cancelProcessInstanceBatchOperationWithResult(
+          final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
             .setFilter(filter)
             .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
             .setAuthentication(authentication);
 
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<BatchOperationCreationRecord> resolveProcessInstanceIncidents(
-      final long processInstanceKey) {
+      final long processInstanceKey, final CamundaAuthentication authentication) {
     // internal read, no user permissions needed
     final var processInstance =
         getByKey(
@@ -334,22 +303,23 @@ public final class ProcessInstanceServices
                 Authorization.withAuthorization(
                     PROCESS_INSTANCE_UPDATE_AUTHORIZATION, processInstance.processDefinitionId()));
 
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<BatchOperationCreationRecord> resolveIncidentsBatchOperationWithResult(
-      final ProcessInstanceFilter filter) {
+      final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
             .setFilter(filter)
             .setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT)
             .setAuthentication(authentication);
 
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<BatchOperationCreationRecord> migrateProcessInstancesBatchOperation(
-      final ProcessInstanceMigrateBatchOperationRequest request) {
+      final ProcessInstanceMigrateBatchOperationRequest request,
+      final CamundaAuthentication authentication) {
     final var migrationPlan = new BatchOperationProcessInstanceMigrationPlan();
     migrationPlan.setTargetProcessDefinitionKey(request.targetProcessDefinitionKey);
     request.mappingInstructions.forEach(migrationPlan::addMappingInstruction);
@@ -361,11 +331,11 @@ public final class ProcessInstanceServices
             .setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE)
             .setAuthentication(authentication);
 
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<ProcessInstanceMigrationRecord> migrateProcessInstance(
-      final ProcessInstanceMigrateRequest request) {
+      final ProcessInstanceMigrateRequest request, final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerMigrateProcessInstanceRequest()
             .setProcessInstanceKey(request.processInstanceKey())
@@ -375,11 +345,11 @@ public final class ProcessInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<ProcessInstanceModificationRecord> modifyProcessInstance(
-      final ProcessInstanceModifyRequest request) {
+      final ProcessInstanceModifyRequest request, final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerModifyProcessInstanceRequest()
             .setProcessInstanceKey(request.processInstanceKey())
@@ -390,11 +360,12 @@ public final class ProcessInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<BatchOperationCreationRecord> modifyProcessInstancesBatchOperation(
-      final ProcessInstanceModifyBatchOperationRequest request) {
+      final ProcessInstanceModifyBatchOperationRequest request,
+      final CamundaAuthentication authentication) {
     final var rootInstanceFilter =
         request.filter.toBuilder()
             // It is only possible to modify active processes in zeebe
@@ -410,21 +381,23 @@ public final class ProcessInstanceServices
             .setBatchOperationType(BatchOperationType.MODIFY_PROCESS_INSTANCE)
             .setAuthentication(authentication);
 
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<BatchOperationCreationRecord> deleteProcessInstancesBatchOperation(
-      final ProcessInstanceFilter filter) {
+      final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
             .setFilter(filter)
             .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE)
             .setAuthentication(authentication);
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<HistoryDeletionRecord> deleteProcessInstance(
-      final Long processInstanceKey, final Long operationReference) {
+      final Long processInstanceKey,
+      final Long operationReference,
+      final CamundaAuthentication authentication) {
 
     // make sure process instance exists before deletion, otherwise return not found
     final var processInstance =
@@ -445,34 +418,37 @@ public final class ProcessInstanceServices
       brokerRequest.setOperationReference(operationReference);
     }
 
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public SearchQueryResult<IncidentEntity> searchIncidents(
-      final long processInstanceKey, final IncidentQuery query) {
-    final var processInstance = getByKey(processInstanceKey);
+      final long processInstanceKey,
+      final IncidentQuery query,
+      final CamundaAuthentication authentication) {
+    final var processInstance = getByKey(processInstanceKey, authentication);
     final var treePath = processInstance.treePath();
 
-    return incidentServices
-        .withAuthentication(authentication)
-        .search(
-            IncidentQuery.of(
-                b ->
-                    b.filter(
-                            query.filter().toBuilder()
-                                .treePathOperations(Operation.like("*" + treePath + "*"))
-                                .build())
-                        .page(query.page())
-                        .sort(query.sort())));
+    return incidentServices.search(
+        IncidentQuery.of(
+            b ->
+                b.filter(
+                        query.filter().toBuilder()
+                            .treePathOperations(Operation.like("*" + treePath + "*"))
+                            .build())
+                    .page(query.page())
+                    .sort(query.sort())),
+        authentication);
   }
 
   private <R> CompletableFuture<R> sendRequestWithRetryPartitions(
-      final BrokerRequest<R> brokerRequest) {
-    return sendRequestWithRetryPartitions(brokerRequest, null);
+      final BrokerRequest<R> brokerRequest, final CamundaAuthentication authentication) {
+    return sendRequestWithRetryPartitions(brokerRequest, authentication, null);
   }
 
   private <R> CompletableFuture<R> sendRequestWithRetryPartitions(
-      final BrokerRequest<R> brokerRequest, final Duration requestTimeout) {
+      final BrokerRequest<R> brokerRequest,
+      final CamundaAuthentication authentication,
+      final Duration requestTimeout) {
     final var brokerRequestAuthorization =
         brokerRequestAuthorizationConverter.convert(authentication);
     brokerRequest.setAuthorization(brokerRequestAuthorization);

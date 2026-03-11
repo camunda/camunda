@@ -46,12 +46,11 @@ public class BatchOperationController {
   public ResponseEntity<BatchOperationResponse> getById(
       @PathVariable("batchOperationKey") final String batchOperationKey) {
     try {
+      final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toBatchOperation(
-                  batchOperationServices
-                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                      .getById(batchOperationKey)));
+                  batchOperationServices.getById(batchOperationKey, authentication)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -68,11 +67,9 @@ public class BatchOperationController {
       path = "/{batchOperationKey}/cancellation",
       consumes = {})
   public ResponseEntity<Object> cancelBatchOperation(@PathVariable final String batchOperationKey) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-            () ->
-                batchOperationServices
-                    .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                    .cancel(batchOperationKey))
+            () -> batchOperationServices.cancel(batchOperationKey, authentication))
         .join();
   }
 
@@ -81,11 +78,9 @@ public class BatchOperationController {
       consumes = {})
   public ResponseEntity<Object> suspendBatchOperation(
       @PathVariable final String batchOperationKey) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-            () ->
-                batchOperationServices
-                    .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                    .suspend(batchOperationKey))
+            () -> batchOperationServices.suspend(batchOperationKey, authentication))
         .join();
   }
 
@@ -93,20 +88,16 @@ public class BatchOperationController {
       path = "/{batchOperationKey}/resumption",
       consumes = {})
   public ResponseEntity<Object> resumeBatchOperation(@PathVariable final String batchOperationKey) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-            () ->
-                batchOperationServices
-                    .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                    .resume(batchOperationKey))
+            () -> batchOperationServices.resume(batchOperationKey, authentication))
         .join();
   }
 
   private ResponseEntity<BatchOperationSearchQueryResult> search(final BatchOperationQuery query) {
     try {
-      final var result =
-          batchOperationServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
+      final var authentication = authenticationProvider.getCamundaAuthentication();
+      final var result = batchOperationServices.search(query, authentication);
       return ResponseEntity.ok(SearchQueryResponseMapper.toBatchOperationSearchQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);

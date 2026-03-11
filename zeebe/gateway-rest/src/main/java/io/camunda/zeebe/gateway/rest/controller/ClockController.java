@@ -47,18 +47,14 @@ public class ClockController {
       path = "/reset",
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> resetClock() {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () ->
-            clockServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .resetClock());
+        () -> clockServices.resetClock(authentication));
   }
 
   private CompletableFuture<ResponseEntity<Object>> pinClock(final long pinnedEpoch) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () ->
-            clockServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .pinClock(pinnedEpoch));
+        () -> clockServices.pinClock(pinnedEpoch, authentication));
   }
 }

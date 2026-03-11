@@ -20,6 +20,7 @@ import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableFilter.Builder;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -34,17 +35,18 @@ public class VariableServiceTest {
 
   private VariableServices services;
   private VariableSearchClient client;
+  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     client = mock(VariableSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    authentication = mock(CamundaAuthentication.class);
     services =
         new VariableServices(
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,
-            null,
             mock(ApiServicesExecutorProvider.class),
             null);
   }
@@ -59,7 +61,7 @@ public class VariableServiceTest {
     final var searchQuery = SearchQueryBuilders.variableSearchQuery((b) -> b.filter(filter));
 
     // when
-    final var searchQueryResult = services.search(searchQuery);
+    final var searchQueryResult = services.search(searchQuery, authentication);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);
@@ -82,7 +84,7 @@ public class VariableServiceTest {
     when(client.getVariable(any(Long.class))).thenReturn(entity);
 
     // when
-    final var searchQueryResult = services.getByKey(1L);
+    final var searchQueryResult = services.getByKey(1L, authentication);
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
@@ -97,7 +99,7 @@ public class VariableServiceTest {
     when(client.getVariable(any(Long.class)))
         .thenThrow(new ResourceAccessDeniedException(Authorizations.VARIABLE_READ_AUTHORIZATION));
     // when
-    final ThrowingCallable executeGetByKey = () -> services.getByKey(1L);
+    final ThrowingCallable executeGetByKey = () -> services.getByKey(1L, authentication);
 
     // then
     final var exception =

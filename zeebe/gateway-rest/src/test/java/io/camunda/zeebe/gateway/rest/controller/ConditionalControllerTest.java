@@ -13,7 +13,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ConditionalServices;
@@ -56,8 +55,6 @@ public class ConditionalControllerTest extends RestControllerTest {
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(conditionalServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(conditionalServices);
   }
 
   @ParameterizedTest
@@ -68,7 +65,7 @@ public class ConditionalControllerTest extends RestControllerTest {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
 
-    when(conditionalServices.evaluateConditional(any(EvaluateConditionalRequest.class)))
+    when(conditionalServices.evaluateConditional(any(EvaluateConditionalRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -95,7 +92,7 @@ public class ConditionalControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedApiResponse, JsonCompareMode.STRICT);
 
-    verify(conditionalServices).evaluateConditional(requestCaptor.capture());
+    verify(conditionalServices).evaluateConditional(requestCaptor.capture(), any());
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.variables()).containsEntry("x", 100).containsEntry("y", 50);
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(-1);
@@ -184,7 +181,7 @@ public class ConditionalControllerTest extends RestControllerTest {
 
     final var expectedError = "This is an expected error";
 
-    when(conditionalServices.evaluateConditional(any(EvaluateConditionalRequest.class)))
+    when(conditionalServices.evaluateConditional(any(EvaluateConditionalRequest.class), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new ServiceException(expectedError, ServiceException.Status.INVALID_ARGUMENT)));
@@ -267,7 +264,7 @@ public class ConditionalControllerTest extends RestControllerTest {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
 
-    when(conditionalServices.evaluateConditional(any(EvaluateConditionalRequest.class)))
+    when(conditionalServices.evaluateConditional(any(EvaluateConditionalRequest.class), any()))
         .thenThrow(
             ErrorMapper.createForbiddenException(
                 Authorization.of(a -> a.processDefinition().createProcessInstance())));

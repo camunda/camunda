@@ -9,10 +9,11 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.exception.ErrorMapper;
@@ -43,14 +44,12 @@ public class IncidentControllerTest extends RestControllerTest {
   void setUp() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(incidentServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(incidentServices);
   }
 
   @Test
   void shouldResolveIncident() {
     // given
-    when(incidentServices.resolveIncident(anyLong(), any()))
+    when(incidentServices.resolveIncident(anyLong(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new IncidentRecord()));
 
     final String request =
@@ -70,13 +69,13 @@ public class IncidentControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    verify(incidentServices).resolveIncident(1L, 12345678L);
+    verify(incidentServices).resolveIncident(eq(1L), eq(12345678L), any());
   }
 
   @Test
   void shouldReturnNotFoundIfIncidentNotFound() {
     // given
-    Mockito.when(incidentServices.resolveIncident(anyLong(), any()))
+    Mockito.when(incidentServices.resolveIncident(anyLong(), any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -111,6 +110,6 @@ public class IncidentControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    verify(incidentServices).resolveIncident(1L, null);
+    verify(incidentServices).resolveIncident(eq(1L), isNull(), any());
   }
 }

@@ -43,13 +43,11 @@ public final class DecisionDefinitionServices
       final SecurityContextProvider securityContextProvider,
       final DecisionDefinitionSearchClient decisionDefinitionSearchClient,
       final DecisionRequirementsServices decisionRequirementServices,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.decisionDefinitionSearchClient = decisionDefinitionSearchClient;
@@ -57,19 +55,8 @@ public final class DecisionDefinitionServices
   }
 
   @Override
-  public DecisionDefinitionServices withAuthentication(final CamundaAuthentication authentication) {
-    return new DecisionDefinitionServices(
-        brokerClient,
-        securityContextProvider,
-        decisionDefinitionSearchClient,
-        decisionRequirementServices,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Override
-  public SearchQueryResult<DecisionDefinitionEntity> search(final DecisionDefinitionQuery query) {
+  public SearchQueryResult<DecisionDefinitionEntity> search(
+      final DecisionDefinitionQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             decisionDefinitionSearchClient
@@ -80,18 +67,19 @@ public final class DecisionDefinitionServices
   }
 
   public SearchQueryResult<DecisionDefinitionEntity> search(
-      final Function<DecisionDefinitionQuery.Builder, ObjectBuilder<DecisionDefinitionQuery>> fn) {
-    return search(decisionDefinitionSearchQuery(fn));
+      final Function<DecisionDefinitionQuery.Builder, ObjectBuilder<DecisionDefinitionQuery>> fn,
+      final CamundaAuthentication authentication) {
+    return search(decisionDefinitionSearchQuery(fn), authentication);
   }
 
-  public String getDecisionDefinitionXml(final long decisionKey) {
-    return Optional.ofNullable(getByKey(decisionKey))
+  public String getDecisionDefinitionXml(
+      final long decisionKey, final CamundaAuthentication authentication) {
+    return Optional.ofNullable(getByKey(decisionKey, authentication))
         .map(DecisionDefinitionEntity::decisionRequirementsKey)
         .map(
             k ->
-                decisionRequirementServices
-                    .withAuthentication(CamundaAuthentication.anonymous())
-                    .getDecisionRequirementsXml(k))
+                decisionRequirementServices.getDecisionRequirementsXml(
+                    k, CamundaAuthentication.anonymous()))
         .orElseThrow(
             () ->
                 new ServiceException(
@@ -99,7 +87,8 @@ public final class DecisionDefinitionServices
                     Status.NOT_FOUND));
   }
 
-  public DecisionDefinitionEntity getByKey(final long decisionKey) {
+  public DecisionDefinitionEntity getByKey(
+      final long decisionKey, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             decisionDefinitionSearchClient
@@ -116,12 +105,14 @@ public final class DecisionDefinitionServices
       final String definitionId,
       final Long definitionKey,
       final Map<String, Object> variables,
-      final String tenantId) {
+      final String tenantId,
+      final CamundaAuthentication authentication) {
     return sendBrokerRequestWithFullResponse(
         new BrokerEvaluateDecisionRequest()
             .setDecisionId(definitionId)
             .setDecisionKey(definitionKey)
             .setVariables(getDocumentOrEmpty(variables))
-            .setTenantId(tenantId));
+            .setTenantId(tenantId),
+        authentication);
   }
 }

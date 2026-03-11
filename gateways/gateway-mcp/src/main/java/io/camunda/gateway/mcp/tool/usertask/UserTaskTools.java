@@ -68,9 +68,8 @@ public class UserTaskTools {
 
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toUserTaskSearchQueryResponse(
-              userTaskServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .search(userTaskSearchQuery.get())));
+              userTaskServices.search(
+                  userTaskSearchQuery.get(), authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -86,9 +85,8 @@ public class UserTaskTools {
     try {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toUserTask(
-              userTaskServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .getByKey(userTaskKey)));
+              userTaskServices.getByKey(
+                  userTaskKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -137,13 +135,12 @@ public class UserTaskTools {
 
     final var assignmentRequest = mappedRequest.get();
     return CallToolResultMapper.fromPrimitive(
-        userTaskServices
-            .withAuthentication(authenticationProvider.getCamundaAuthentication())
-            .assignUserTask(
-                assignmentRequest.userTaskKey(),
-                assignmentRequest.assignee(),
-                assignmentRequest.action(),
-                assignmentRequest.allowOverride()),
+        userTaskServices.assignUserTask(
+            assignmentRequest.userTaskKey(),
+            assignmentRequest.assignee(),
+            assignmentRequest.action(),
+            assignmentRequest.allowOverride(),
+            authenticationProvider.getCamundaAuthentication()),
         r ->
             "User task with key %s assigned to %s."
                 .formatted(assignmentRequest.userTaskKey(), assignmentRequest.assignee()));
@@ -153,9 +150,10 @@ public class UserTaskTools {
     final var unassignRequest = RequestMapper.toUserTaskUnassignmentRequest(userTaskKey);
 
     return CallToolResultMapper.fromPrimitive(
-        userTaskServices
-            .withAuthentication(authenticationProvider.getCamundaAuthentication())
-            .unassignUserTask(unassignRequest.userTaskKey(), unassignRequest.action()),
+        userTaskServices.unassignUserTask(
+            unassignRequest.userTaskKey(),
+            unassignRequest.action(),
+            authenticationProvider.getCamundaAuthentication()),
         r -> "User task with key %s unassigned.".formatted(unassignRequest.userTaskKey()));
   }
 
@@ -189,9 +187,10 @@ public class UserTaskTools {
       final boolean shouldTruncate = truncateValues == null || truncateValues;
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(
-              userTaskServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .searchUserTaskVariables(userTaskKey, variableSearchQuery.get()),
+              userTaskServices.searchUserTaskVariables(
+                  userTaskKey,
+                  variableSearchQuery.get(),
+                  authenticationProvider.getCamundaAuthentication()),
               shouldTruncate));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);

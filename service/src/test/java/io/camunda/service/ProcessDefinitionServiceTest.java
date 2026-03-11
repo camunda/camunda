@@ -57,7 +57,6 @@ public class ProcessDefinitionServiceTest {
             securityContextProvider,
             processDefinitionSearchClient,
             formServices,
-            authentication,
             executorProvider,
             authorizationConverter);
   }
@@ -81,7 +80,7 @@ public class ProcessDefinitionServiceTest {
     final var query = new ProcessDefinitionInstanceStatisticsQuery.Builder().build();
 
     // when
-    final var result = services.getProcessDefinitionInstanceStatistics(query);
+    final var result = services.getProcessDefinitionInstanceStatistics(query, authentication);
 
     // then
     assertThat(result).isEqualTo(statsResult);
@@ -111,7 +110,8 @@ public class ProcessDefinitionServiceTest {
             b -> b.filter(f -> f.processDefinitionId(processDefinitionId)));
 
     // when
-    final var result = services.searchProcessDefinitionInstanceVersionStatistics(query);
+    final var result =
+        services.searchProcessDefinitionInstanceVersionStatistics(query, authentication);
 
     // then
     assertThat(result).isEqualTo(statsResult);

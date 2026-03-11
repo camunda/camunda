@@ -178,9 +178,11 @@ public class JobController {
       final ActivateJobsRequest activationRequest) {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
     final var responseObserver = responseObserverProvider.apply(result);
-    jobServices
-        .withAuthentication(authenticationProvider.getCamundaAuthentication())
-        .activateJobs(activationRequest, responseObserver, responseObserver::setCancelationHandler);
+    jobServices.activateJobs(
+        activationRequest,
+        responseObserver,
+        responseObserver::setCancelationHandler,
+        authenticationProvider.getCamundaAuthentication());
     return result.handleAsync(
         (res, ex) -> {
           responseObserver.invokeCancelationHandler();
@@ -191,59 +193,53 @@ public class JobController {
   private CompletableFuture<ResponseEntity<Object>> failJob(final FailJobRequest failJobRequest) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            jobServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .failJob(
-                    failJobRequest.jobKey(),
-                    failJobRequest.retries(),
-                    failJobRequest.errorMessage(),
-                    failJobRequest.retryBackoff(),
-                    failJobRequest.variables()));
+            jobServices.failJob(
+                failJobRequest.jobKey(),
+                failJobRequest.retries(),
+                failJobRequest.errorMessage(),
+                failJobRequest.retryBackoff(),
+                failJobRequest.variables(),
+                authenticationProvider.getCamundaAuthentication()));
   }
 
   private CompletableFuture<ResponseEntity<Object>> errorJob(
       final ErrorJobRequest errorJobRequest) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            jobServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .errorJob(
-                    errorJobRequest.jobKey(),
-                    errorJobRequest.errorCode(),
-                    errorJobRequest.errorMessage(),
-                    errorJobRequest.variables()));
+            jobServices.errorJob(
+                errorJobRequest.jobKey(),
+                errorJobRequest.errorCode(),
+                errorJobRequest.errorMessage(),
+                errorJobRequest.variables(),
+                authenticationProvider.getCamundaAuthentication()));
   }
 
   private CompletableFuture<ResponseEntity<Object>> completeJob(
       final CompleteJobRequest completeJobRequest) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            jobServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .completeJob(
-                    completeJobRequest.jobKey(),
-                    completeJobRequest.variables(),
-                    completeJobRequest.result()));
+            jobServices.completeJob(
+                completeJobRequest.jobKey(),
+                completeJobRequest.variables(),
+                completeJobRequest.result(),
+                authenticationProvider.getCamundaAuthentication()));
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateJob(
       final UpdateJobRequest updateJobRequest) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            jobServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .updateJob(
-                    updateJobRequest.jobKey(),
-                    updateJobRequest.operationReference(),
-                    updateJobRequest.changeset()));
+            jobServices.updateJob(
+                updateJobRequest.jobKey(),
+                updateJobRequest.operationReference(),
+                updateJobRequest.changeset(),
+                authenticationProvider.getCamundaAuthentication()));
   }
 
   private ResponseEntity<JobSearchQueryResult> search(final JobQuery query) {
     try {
       final var result =
-          jobServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
+          jobServices.search(query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(SearchQueryResponseMapper.toJobSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -254,9 +250,7 @@ public class JobController {
       final io.camunda.search.query.GlobalJobStatisticsQuery query) {
     try {
       final var result =
-          jobServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .getGlobalStatistics(query);
+          jobServices.getGlobalStatistics(query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(SearchQueryResponseMapper.toGlobalJobStatisticsQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -267,9 +261,8 @@ public class JobController {
       final io.camunda.search.query.JobTypeStatisticsQuery query) {
     try {
       final var result =
-          jobServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .getJobTypeStatistics(query);
+          jobServices.getJobTypeStatistics(
+              query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(SearchQueryResponseMapper.toJobTypeStatisticsQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -280,9 +273,8 @@ public class JobController {
       final io.camunda.search.query.JobWorkerStatisticsQuery query) {
     try {
       final var result =
-          jobServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .getJobWorkerStatistics(query);
+          jobServices.getJobWorkerStatistics(
+              query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(SearchQueryResponseMapper.toJobWorkerStatisticsQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -293,9 +285,8 @@ public class JobController {
       final io.camunda.search.query.JobTimeSeriesStatisticsQuery query) {
     try {
       final var result =
-          jobServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .getJobTimeSeriesStatistics(query);
+          jobServices.getJobTimeSeriesStatistics(
+              query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toJobTimeSeriesStatisticsQueryResult(result));
     } catch (final Exception e) {
@@ -307,9 +298,8 @@ public class JobController {
       final io.camunda.search.query.JobErrorStatisticsQuery query) {
     try {
       final var result =
-          jobServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .getJobErrorStatistics(query);
+          jobServices.getJobErrorStatistics(
+              query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(SearchQueryResponseMapper.toJobErrorStatisticsQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);

@@ -60,9 +60,10 @@ public class IncidentController {
             : incidentResolutionRequest.getOperationReference();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            incidentServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .resolveIncident(incidentKey, operationReference));
+            incidentServices.resolveIncident(
+                incidentKey,
+                operationReference,
+                authenticationProvider.getCamundaAuthentication()));
   }
 
   @RequiresSecondaryStorage
@@ -81,9 +82,8 @@ public class IncidentController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toIncident(
-                  incidentServices
-                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                      .getByKey(incidentKey)));
+                  incidentServices.getByKey(
+                      incidentKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -115,9 +115,7 @@ public class IncidentController {
   private ResponseEntity<IncidentSearchQueryResult> search(final IncidentQuery query) {
     try {
       final var result =
-          incidentServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
+          incidentServices.search(query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
     } catch (final ValidationException e) {
       final var problemDetail =
@@ -136,9 +134,8 @@ public class IncidentController {
           final io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery query) {
     try {
       final var result =
-          incidentServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .incidentProcessInstanceStatisticsByError(query);
+          incidentServices.incidentProcessInstanceStatisticsByError(
+              query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toIncidentProcessInstanceStatisticsByErrorResult(result));
     } catch (final ValidationException e) {
@@ -158,9 +155,8 @@ public class IncidentController {
           final io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery query) {
     try {
       final var result =
-          incidentServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .searchIncidentProcessInstanceStatisticsByDefinition(query);
+          incidentServices.searchIncidentProcessInstanceStatisticsByDefinition(
+              query, authenticationProvider.getCamundaAuthentication());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toIncidentProcessInstanceStatisticsByDefinitionQueryResult(
               result));

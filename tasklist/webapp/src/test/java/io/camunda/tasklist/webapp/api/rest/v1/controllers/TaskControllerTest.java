@@ -1143,9 +1143,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         setAuthenticatedUser("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
-        when(groupServices.withAuthentication(CamundaAuthentication.anonymous()))
-            .thenReturn(groupServices);
-        when(groupServices.search(any()))
+        when(groupServices.search(any(), any()))
             .thenReturn(SearchQueryResult.of(new GroupEntity(1L, "Admins", "Admins", "default")));
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
         when(taskService.getTasks(searchQuery, Set.of(TASK_DESCRIPTION), false))
@@ -1264,9 +1262,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         setAuthenticatedUser("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
-        when(groupServices.withAuthentication(CamundaAuthentication.anonymous()))
-            .thenReturn(groupServices);
-        when(groupServices.search(any()))
+        when(groupServices.search(any(), any()))
             .thenReturn(SearchQueryResult.of(new GroupEntity(1L, "Admins", "Admins", "default")));
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
         when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
@@ -1331,9 +1327,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         setAuthenticatedUser("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
-        when(groupServices.withAuthentication(CamundaAuthentication.anonymous()))
-            .thenReturn(groupServices);
-        when(groupServices.search(any()))
+        when(groupServices.search(any(), any()))
             .thenReturn(SearchQueryResult.of(new GroupEntity(1L, "Admins", "Admins", "default")));
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
         when(taskService.getTasks(searchQuery, Set.of(TASK_DESCRIPTION), false))
@@ -1374,9 +1368,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         setAuthenticatedUser("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
-        when(groupServices.withAuthentication(CamundaAuthentication.anonymous()))
-            .thenReturn(groupServices);
-        when(groupServices.search(any()))
+        when(groupServices.search(any(), any()))
             .thenReturn(SearchQueryResult.of(new GroupEntity(1L, "Admins", "Admins", "default")));
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
 
@@ -1425,9 +1417,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         setAuthenticatedUser("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
-        when(groupServices.withAuthentication(CamundaAuthentication.anonymous()))
-            .thenReturn(groupServices);
-        when(groupServices.search(any()))
+        when(groupServices.search(any(), any()))
             .thenReturn(SearchQueryResult.of(new GroupEntity(1L, "Admins", "Admins", "default")));
         when(taskService.getTask(taskId)).thenReturn(taskDto);
         when(taskService.completeTask(taskId, variables, true)).thenReturn(taskDto);
@@ -1476,9 +1466,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         setAuthenticatedUser("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Demo"));
-        when(groupServices.withAuthentication(CamundaAuthentication.anonymous()))
-            .thenReturn(groupServices);
-        when(groupServices.search(any()))
+        when(groupServices.search(any(), any()))
             .thenReturn(SearchQueryResult.of(new GroupEntity(1L, "Demo", "Demo", "default")));
         when(taskService.getTask(taskId)).thenReturn(taskDto);
         when(taskService.completeTask(taskId, variables, true)).thenReturn(taskDto);
@@ -1532,9 +1520,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         setAuthenticatedUser("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
-        when(groupServices.withAuthentication(CamundaAuthentication.anonymous()))
-            .thenReturn(groupServices);
-        when(groupServices.search(any()))
+        when(groupServices.search(any(), any()))
             .thenReturn(SearchQueryResult.of(new GroupEntity(1L, "Admins", "Admins", "default")));
         when(taskService.getTask(taskId)).thenReturn(providedTask);
         when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
@@ -1585,9 +1571,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         setAuthenticatedUser("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
-        when(groupServices.withAuthentication(CamundaAuthentication.anonymous()))
-            .thenReturn(groupServices);
-        when(groupServices.search(any()))
+        when(groupServices.search(any(), any()))
             .thenReturn(SearchQueryResult.of(new GroupEntity(1L, "Admins", "Admins", "default")));
         when(taskService.getTask(taskId)).thenReturn(providedTask);
         when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
@@ -1640,9 +1624,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         setAuthenticatedUser("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Test"));
-        when(groupServices.withAuthentication(CamundaAuthentication.anonymous()))
-            .thenReturn(groupServices);
-        when(groupServices.search(any()))
+        when(groupServices.search(any(), any()))
             .thenReturn(SearchQueryResult.of(new GroupEntity(1L, "Test", "Test", "default")));
         when(taskService.getTask(taskId)).thenReturn(providedTask);
         when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
@@ -1697,9 +1679,7 @@ class TaskControllerTest {
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
         setAuthenticatedUser("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
-        when(groupServices.withAuthentication(CamundaAuthentication.anonymous()))
-            .thenReturn(groupServices);
-        when(groupServices.search(any()))
+        when(groupServices.search(any(), any()))
             .thenReturn(SearchQueryResult.of(new GroupEntity(1L, "Admins", "Admins", "default")));
         when(tasklistPermissionServices.hasPermissionToUpdateUserTask(any())).thenReturn(true);
 

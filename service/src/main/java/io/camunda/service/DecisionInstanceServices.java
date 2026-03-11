@@ -42,27 +42,10 @@ public final class DecisionInstanceServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityHandler,
       final DecisionInstanceSearchClient decisionInstanceSearchClient,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-    super(
-        brokerClient,
-        securityHandler,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
+    super(brokerClient, securityHandler, executorProvider, brokerRequestAuthorizationConverter);
     this.decisionInstanceSearchClient = decisionInstanceSearchClient;
-  }
-
-  @Override
-  public DecisionInstanceServices withAuthentication(final CamundaAuthentication authentication) {
-    return new DecisionInstanceServices(
-        brokerClient,
-        securityContextProvider,
-        decisionInstanceSearchClient,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
   }
 
   /**
@@ -72,7 +55,8 @@ public final class DecisionInstanceServices
    * Instances.
    */
   @Override
-  public SearchQueryResult<DecisionInstanceEntity> search(final DecisionInstanceQuery query) {
+  public SearchQueryResult<DecisionInstanceEntity> search(
+      final DecisionInstanceQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             decisionInstanceSearchClient
@@ -92,7 +76,8 @@ public final class DecisionInstanceServices
    * @throws CamundaSearchException unless the decision instance with the given ID exists exactly
    *     once
    */
-  public DecisionInstanceEntity getById(final String decisionInstanceId) {
+  public DecisionInstanceEntity getById(
+      final String decisionInstanceId, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             decisionInstanceSearchClient
@@ -114,13 +99,16 @@ public final class DecisionInstanceServices
    * @throws CamundaSearchException if no decision instance with the given key exists
    */
   public CompletableFuture<HistoryDeletionRecord> deleteDecisionInstance(
-      final long decisionInstanceKey, final Long operationReference) {
+      final long decisionInstanceKey,
+      final Long operationReference,
+      final CamundaAuthentication authentication) {
 
     // make sure decision instance exists before deletion, otherwise return not found
     final var searchResult =
         search(
             decisionInstanceSearchQuery(
-                q -> q.filter(f -> f.decisionInstanceKeys(decisionInstanceKey))));
+                q -> q.filter(f -> f.decisionInstanceKeys(decisionInstanceKey))),
+            authentication);
 
     if (searchResult.items().isEmpty()) {
       throw ErrorMapper.mapSearchError(
@@ -142,16 +130,16 @@ public final class DecisionInstanceServices
       brokerRequest.setOperationReference(operationReference);
     }
 
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<BatchOperationCreationRecord> deleteDecisionInstancesBatchOperation(
-      final DecisionInstanceFilter filter) {
+      final DecisionInstanceFilter filter, final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
             .setFilter(filter)
             .setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE)
             .setAuthentication(authentication);
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 }

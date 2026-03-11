@@ -33,33 +33,19 @@ public final class DecisionRequirementsServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final DecisionRequirementSearchClient decisionRequirementSearchClient,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.decisionRequirementSearchClient = decisionRequirementSearchClient;
   }
 
   @Override
-  public DecisionRequirementsServices withAuthentication(
-      final CamundaAuthentication authentication) {
-    return new DecisionRequirementsServices(
-        brokerClient,
-        securityContextProvider,
-        decisionRequirementSearchClient,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Override
   public SearchQueryResult<DecisionRequirementsEntity> search(
-      final DecisionRequirementsQuery query) {
+      final DecisionRequirementsQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             decisionRequirementSearchClient
@@ -71,11 +57,13 @@ public final class DecisionRequirementsServices
                         q -> q.filter(query.filter()).sort(query.sort()).page(query.page()))));
   }
 
-  public DecisionRequirementsEntity getByKey(final Long key) {
-    return getByKey(key, false);
+  public DecisionRequirementsEntity getByKey(
+      final Long key, final CamundaAuthentication authentication) {
+    return getByKey(key, false, authentication);
   }
 
-  public DecisionRequirementsEntity getByKey(final Long key, final boolean includeXml) {
+  public DecisionRequirementsEntity getByKey(
+      final Long key, final boolean includeXml, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             decisionRequirementSearchClient
@@ -90,11 +78,13 @@ public final class DecisionRequirementsServices
 
   public SearchQueryResult<DecisionRequirementsEntity> search(
       final Function<DecisionRequirementsQuery.Builder, ObjectBuilder<DecisionRequirementsQuery>>
-          fn) {
-    return search(decisionRequirementsSearchQuery(fn));
+          fn,
+      final CamundaAuthentication authentication) {
+    return search(decisionRequirementsSearchQuery(fn), authentication);
   }
 
-  public String getDecisionRequirementsXml(final Long decisionRequirementsKey) {
-    return getByKey(decisionRequirementsKey, true).xml();
+  public String getDecisionRequirementsXml(
+      final Long decisionRequirementsKey, final CamundaAuthentication authentication) {
+    return getByKey(decisionRequirementsKey, true, authentication).xml();
   }
 }

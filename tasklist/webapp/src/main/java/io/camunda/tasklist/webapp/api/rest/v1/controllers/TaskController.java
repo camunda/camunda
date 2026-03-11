@@ -539,11 +539,10 @@ public class TaskController extends ApiErrorController {
     }
     final Set<String> setOfUserGroupIds = userGroupIds.stream().collect(Collectors.toSet());
     final var groups =
-        groupServices
-            .withAuthentication(CamundaAuthentication.anonymous())
-            .search(
-                GroupQuery.of(
-                    groupQuery -> groupQuery.filter(filter -> filter.groupIds(setOfUserGroupIds))));
+        groupServices.search(
+            GroupQuery.of(
+                groupQuery -> groupQuery.filter(filter -> filter.groupIds(setOfUserGroupIds))),
+            CamundaAuthentication.anonymous());
     return groups.items().stream().map(g -> g.name()).collect(Collectors.toSet());
   }
 
