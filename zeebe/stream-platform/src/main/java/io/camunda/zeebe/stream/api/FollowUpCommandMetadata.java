@@ -46,7 +46,7 @@ public record FollowUpCommandMetadata(
     }
 
     public Builder claims(final Map<String, Object> claims) {
-      authInfo = new AuthInfo().setClaims(claims).freeze();
+      authInfo = AuthInfo.ofClaims(claims);
       return this;
     }
 
