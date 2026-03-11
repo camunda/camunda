@@ -674,7 +674,7 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
 
   @Test
   public void
-      shouldRejectMigrationWhenTargetProcessDefinitionAlreadyHasActiveInstanceWithSameBusinessId() {
+      shouldAllowMigrationWhenTargetProcessDefinitionAlreadyHasActiveInstanceWithSameBusinessId() {
     final String sourceProcessId = helper.getBpmnProcessId() + "_source";
     final String targetProcessId = helper.getBpmnProcessId() + "_target";
     final String businessId = "biz-123";
@@ -714,27 +714,43 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
             .withBusinessId(businessId)
             .create();
 
-    // when - try to migrate the source instance to the target process definition
-    final var rejection =
+    // when - migrate the source instance to the target process definition
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("task", "task")
+        .migrate();
+
+    // then - migration should succeed even though the target already has an instance with the
+    // same business id
+    assertThat(
+            RecordingExporter.processInstanceMigrationRecords()
+                .withIntent(ProcessInstanceMigrationIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst())
+        .isNotNull();
+
+    // and - creating a new instance of the source process with the same business id should succeed
+    // since the business id is no longer associated with the source process definition
+    final var newProcessInstanceKey =
         ENGINE
             .processInstance()
-            .withInstanceKey(processInstanceKey)
-            .migration()
-            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-            .addMappingInstruction("task", "task")
-            .expectRejection()
-            .migrate();
+            .ofBpmnProcessId(sourceProcessId)
+            .withBusinessId(businessId)
+            .withTags("newInstance")
+            .create();
 
-    // then - should be rejected because the target process definition already has an active
-    // instance with the same business id
-    assertThat(rejection)
-        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
-        .hasRejectionType(RejectionType.INVALID_STATE)
-        .hasRejectionReason(
-            """
-            Expected to migrate instance '%s' with business id '%s' to process definition key '%s', \
-            but an active instance with this business id already exists for the target process definition"""
-                .formatted(processInstanceKey, businessId, targetProcessDefinitionKey));
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .withBpmnProcessId(sourceProcessId)
+                .withTags("newInstance")
+                .getFirst()
+                .getValue())
+        .hasBusinessId(businessId)
+        .hasProcessInstanceKey(newProcessInstanceKey);
   }
 
   @Test
