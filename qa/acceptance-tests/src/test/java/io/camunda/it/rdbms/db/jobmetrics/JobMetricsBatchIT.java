@@ -26,6 +26,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
+import io.camunda.search.entities.JobEntity.JobState;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.filter.Operation;
@@ -1652,6 +1653,7 @@ public class JobMetricsBatchIT {
         b ->
             b.type(jobType)
                 .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
                 .errorCode("IO_ERROR")
                 .errorMessage("Disk full")
                 .worker("worker-1")
@@ -1661,6 +1663,7 @@ public class JobMetricsBatchIT {
         b ->
             b.type(jobType)
                 .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
                 .errorCode("IO_ERROR")
                 .errorMessage("Disk full")
                 .worker("worker-2")
@@ -1670,6 +1673,7 @@ public class JobMetricsBatchIT {
         b ->
             b.type(jobType)
                 .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
                 .errorCode("TIMEOUT")
                 .errorMessage("Connection timed out")
                 .worker("worker-1")
@@ -1715,6 +1719,7 @@ public class JobMetricsBatchIT {
         b ->
             b.type(jobType)
                 .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
                 .errorCode("IO_ERROR")
                 .errorMessage("Disk full")
                 .worker("worker-1")
@@ -1724,6 +1729,7 @@ public class JobMetricsBatchIT {
         b ->
             b.type(jobType)
                 .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
                 .errorCode("UNHANDLED_EXCEPTION")
                 .errorMessage("NPE")
                 .worker("worker-1")
@@ -1759,6 +1765,7 @@ public class JobMetricsBatchIT {
         b ->
             b.type(jobType)
                 .tenantId(TENANT1)
+                .state(JobState.ERROR_THROWN)
                 .errorCode("IO_ERROR")
                 .errorMessage("msg")
                 .worker("w1")
@@ -1789,6 +1796,7 @@ public class JobMetricsBatchIT {
         b ->
             b.type(jobType)
                 .tenantId(TENANT1)
+                .state(JobState.ERROR_THROWN)
                 .errorCode("IO_ERROR")
                 .errorMessage("Disk full")
                 .worker("worker-1")
@@ -1798,6 +1806,7 @@ public class JobMetricsBatchIT {
         b ->
             b.type(jobType)
                 .tenantId(TENANT2)
+                .state(JobState.ERROR_THROWN)
                 .errorCode("IO_ERROR")
                 .errorMessage("Disk full")
                 .worker("worker-2")
@@ -1819,29 +1828,42 @@ public class JobMetricsBatchIT {
   }
 
   @TestTemplate
-  public void shouldExcludeJobsWithoutErrorCode() {
-    // given — one job with an error code, one job without
+  public void shouldIncludeFailedStateAndExcludeCompletedState() {
+    // given — one ERROR_THROWN job (with errorCode), one FAILED job (no errorCode),
+    //         one COMPLETED job (must be excluded by the state filter)
     final var now = NOW;
-    final var uniqueTenant = "no-error-tenant-" + CommonFixtures.generateRandomString(8);
-    final var jobType = "no-error-job-" + CommonFixtures.generateRandomString(6);
+    final var uniqueTenant = "state-filter-tenant-" + CommonFixtures.generateRandomString(8);
+    final var jobType = "state-filter-job-" + CommonFixtures.generateRandomString(6);
 
     JobFixtures.createAndSaveJob(
         rdbmsWriters,
         b ->
             b.type(jobType)
                 .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
                 .errorCode("IO_ERROR")
                 .errorMessage("Disk full")
                 .worker("worker-1")
+                .creationTime(now.minusMinutes(30)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .state(JobState.FAILED)
+                .errorCode("")
+                .errorMessage("Transient failure")
+                .worker("worker-2")
                 .creationTime(now.minusMinutes(20)));
     JobFixtures.createAndSaveJob(
         rdbmsWriters,
         b ->
             b.type(jobType)
                 .tenantId(uniqueTenant)
-                .errorCode(null)
-                .errorMessage(null)
-                .worker("worker-2")
+                .state(JobState.COMPLETED)
+                .errorCode("")
+                .errorMessage("")
+                .worker("worker-3")
                 .creationTime(now.minusMinutes(10)));
 
     // when
@@ -1854,24 +1876,65 @@ public class JobMetricsBatchIT {
             ResourceAccessChecks.of(
                 AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(uniqueTenant))));
 
-    // then — only the job with an error code is returned
-    assertThat(result.items()).hasSize(1);
-    assertErrorStats(result.items().getFirst(), "IO_ERROR", "Disk full", 1);
+    // then — ERROR_THROWN and FAILED are both included; COMPLETED is excluded
+    assertThat(result.items()).hasSize(2);
+
+    final var errorThrown =
+        result.items().stream()
+            .filter(e -> "IO_ERROR".equals(e.errorCode()))
+            .findFirst()
+            .orElseThrow();
+    assertErrorStats(errorThrown, "IO_ERROR", "Disk full", 1);
+
+    final var failed =
+        result.items().stream()
+            .filter(e -> e.errorCode() == null || e.errorCode().isEmpty())
+            .findFirst()
+            .orElseThrow();
+    assertThat(failed.errorMessage()).isEqualTo("Transient failure");
+    assertThat(failed.errorCode()).isNullOrEmpty();
+    assertThat(failed.workers()).isEqualTo(1);
   }
 
   @TestTemplate
-  public void shouldReturnSecondPageOfErrorStatisticsUsingCursor() {
-    // given — 3 jobs each with a distinct errorCode so each forms its own bucket
-    // errorCodes are chosen so alphabetical order is: ERR_A < ERR_B < ERR_C
+  public void shouldReturnPagesOfErrorStatisticsUsingCursor() throws InterruptedException {
+    // given — 5 jobs: two FAILED with empty errorCode and three ERROR_THROWN with distinct codes.
+    // Sort order is errorCode ASC NULLS FIRST, then errorMessage ASC, so:
+    //   page 1 (size=2): ("", "fail-msg") and ("", "fail-msg-2")  ← both FAILED
+    //   page 2 (size=2): ("ERR_A", "msg-a") and ("ERR_B", "msg-b")
+    //   page 3 (size=2): ("ERR_C", "msg-c") — then empty on page 4
     final var now = NOW;
     final var uniqueTenant = "paging-error-tenant-" + CommonFixtures.generateRandomString(8);
     final var jobType = "paging-error-job-" + CommonFixtures.generateRandomString(6);
 
+    // FAILED job 1 — empty errorCode, message "fail-msg"
     JobFixtures.createAndSaveJob(
         rdbmsWriters,
         b ->
             b.type(jobType)
                 .tenantId(uniqueTenant)
+                .state(JobState.FAILED)
+                .errorCode("")
+                .errorMessage("fail-msg")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(50)));
+    // FAILED job 2 — empty errorCode, message "fail-msg-2" (sorts after "fail-msg")
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .state(JobState.FAILED)
+                .errorCode("")
+                .errorMessage("fail-msg-2")
+                .worker("worker-2")
+                .creationTime(now.minusMinutes(40)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
                 .errorCode("ERR_A")
                 .errorMessage("msg-a")
                 .worker("worker-1")
@@ -1881,6 +1944,7 @@ public class JobMetricsBatchIT {
         b ->
             b.type(jobType)
                 .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
                 .errorCode("ERR_B")
                 .errorMessage("msg-b")
                 .worker("worker-1")
@@ -1890,6 +1954,7 @@ public class JobMetricsBatchIT {
         b ->
             b.type(jobType)
                 .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
                 .errorCode("ERR_C")
                 .errorMessage("msg-c")
                 .worker("worker-1")
@@ -1899,7 +1964,7 @@ public class JobMetricsBatchIT {
         ResourceAccessChecks.of(
             AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(uniqueTenant)));
 
-    // fetch first page (size=2) — should return ERR_A and ERR_B
+    // fetch first page (size=2) — both FAILED buckets (empty errorCode, sorted by message)
     final var firstPage =
         jobMetricsBatchReader.getJobErrorStatistics(
             JobErrorStatisticsQuery.of(
@@ -1909,11 +1974,13 @@ public class JobMetricsBatchIT {
             accessChecks);
 
     assertThat(firstPage.items()).hasSize(2);
-    assertThat(firstPage.items().get(0).errorCode()).isEqualTo("ERR_A");
-    assertThat(firstPage.items().get(1).errorCode()).isEqualTo("ERR_B");
+    assertThat(firstPage.items().get(0).errorCode()).isNullOrEmpty();
+    assertThat(firstPage.items().get(0).errorMessage()).isEqualTo("fail-msg");
+    assertThat(firstPage.items().get(1).errorCode()).isNullOrEmpty();
+    assertThat(firstPage.items().get(1).errorMessage()).isEqualTo("fail-msg-2");
     assertThat(firstPage.endCursor()).isNotNull();
 
-    // when — fetch second page using the end cursor
+    // fetch second page — ERR_A and ERR_B
     final var secondPage =
         jobMetricsBatchReader.getJobErrorStatistics(
             JobErrorStatisticsQuery.of(
@@ -1922,8 +1989,33 @@ public class JobMetricsBatchIT {
                         .page(p -> p.size(2).after(firstPage.endCursor()))),
             accessChecks);
 
-    // then — only ERR_C is returned on the second page
-    assertThat(secondPage.items()).hasSize(1);
-    assertErrorStats(secondPage.items().getFirst(), "ERR_C", "msg-c", 1);
+    assertThat(secondPage.items()).hasSize(2);
+    assertErrorStats(secondPage.items().get(0), "ERR_A", "msg-a", 1);
+    assertErrorStats(secondPage.items().get(1), "ERR_B", "msg-b", 1);
+    assertThat(secondPage.endCursor()).isNotNull();
+
+    // fetch third page — only ERR_C remains
+    final var thirdPage =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(f -> f.from(now.minusHours(1)).to(now.plusMinutes(1)).jobType(jobType))
+                        .page(p -> p.size(2).after(secondPage.endCursor()))),
+            accessChecks);
+
+    assertThat(thirdPage.items()).hasSize(1);
+    assertErrorStats(thirdPage.items().getFirst(), "ERR_C", "msg-c", 1);
+    assertThat(thirdPage.endCursor()).isNotNull();
+
+    // fetch fourth page — cursor exhausted, no more results
+    final var fourthPage =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(f -> f.from(now.minusHours(1)).to(now.plusMinutes(1)).jobType(jobType))
+                        .page(p -> p.size(2).after(thirdPage.endCursor()))),
+            accessChecks);
+
+    assertThat(fourthPage.items()).isEmpty();
   }
 }

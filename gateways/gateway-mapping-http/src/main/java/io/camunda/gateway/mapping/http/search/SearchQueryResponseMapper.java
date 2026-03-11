@@ -1654,7 +1654,7 @@ public final class SearchQueryResponseMapper {
     }
 
     return new JobErrorStatisticsItem()
-        .errorCode(entity.errorCode())
+        .errorCode(ofNullable(entity.errorCode()).orElse(""))
         .errorMessage(entity.errorMessage())
         .workers(entity.workers());
   }
