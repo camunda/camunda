@@ -68,10 +68,10 @@ final class RingBuffer {
    * Subsequent scans start from {@code lastProcessedIndex + 1}, avoiding re-scanning already
    * processed slots.
    *
-   * <p>Written by the stream processor thread in {@link #findAndRemove}. Read by the sequencer
-   * thread indirectly (not currently used outside {@code findAndRemove}).
+   * <p>Only accessed by the stream processor thread in {@link #findAndRemove}. Not volatile because
+   * no other thread reads or writes this field.
    */
-  private volatile long lastProcessedIndex = -1;
+  private long lastProcessedIndex = -1;
 
   /**
    * Creates a new ring buffer with at least the given capacity. The actual capacity is rounded up
