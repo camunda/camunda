@@ -80,7 +80,17 @@ public class Interval implements TemporalAmount {
 
     if (epochMilli <= fromEpochMilli) {
       if (!isCalendarBased()) {
-        return fromEpochMilli + getDuration().toMillis();
+        final long durationMillis = getDuration().toMillis(); // Can throw ArithmeticException
+        // Check for overflow in addition
+        if (fromEpochMilli > 0 && durationMillis > Long.MAX_VALUE - fromEpochMilli) {
+          throw new ArithmeticException(
+              "Timer duration causes overflow when added to current time");
+        }
+        if (fromEpochMilli < 0 && durationMillis < Long.MIN_VALUE - fromEpochMilli) {
+          throw new ArithmeticException(
+              "Timer duration causes overflow when added to current time");
+        }
+        return fromEpochMilli + durationMillis;
       }
 
       return ZonedDateTime.ofInstant(Instant.ofEpochMilli(fromEpochMilli), ZoneId.systemDefault())

@@ -300,4 +300,100 @@ public final class TimerIncidentTest {
         .describedAs("Expect that element was activated")
         .isPresent();
   }
+
+  @Test
+  public void shouldCreateIncidentIfDurationCausesOverflow() {
+    // when - using a duration that parses but causes overflow when converting to millis
+    // PT2562047788015215H parses successfully but toMillis() throws ArithmeticException
+    ENGINE.deployment().withXmlResource(createProcess(DURATION_EXPRESSION)).deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(DURATION_VARIABLE, "PT2562047788015215H") // Max hours before overflow
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementId(ELEMENT_ID)
+            .getFirst();
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Timer duration is too large and resulted in arithmetic overflow. "
+                + "Please use a smaller duration value.");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfDurationInSecondsCausesOverflow() {
+    // when - using PT followed by a very large number of seconds that causes overflow
+    ENGINE.deployment().withXmlResource(createProcess(DURATION_EXPRESSION)).deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(
+                DURATION_VARIABLE,
+                "PT153722867280912930S") // Very large seconds value that will overflow
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementId(ELEMENT_ID)
+            .getFirst();
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Timer duration is too large and resulted in arithmetic overflow. "
+                + "Please use a smaller duration value.");
+  }
+
+  @Test
+  public void shouldResolveIncidentAfterOverflow() {
+    // given - create an incident due to overflow
+    ENGINE.deployment().withXmlResource(createProcess(DURATION_EXPRESSION)).deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(DURATION_VARIABLE, "PT2562047788015215H")
+            .create();
+
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when - fix the variable with a valid duration
+    ENGINE
+        .variables()
+        .ofScope(incident.getValue().getVariableScopeKey())
+        .withDocument(Collections.singletonMap(DURATION_VARIABLE, Duration.ofMinutes(5).toString()))
+        .update();
+
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then - element should be activated
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withRecordKey(incident.getValue().getElementInstanceKey())
+                .findAny())
+        .describedAs("Expect that element was activated after resolving overflow incident")
+        .isPresent();
+  }
 }
