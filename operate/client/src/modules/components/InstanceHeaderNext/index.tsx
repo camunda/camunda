@@ -52,7 +52,7 @@ const InstanceHeader: React.FC<Props> = ({
     >
       <StateIcon state={state} size={24} data-testid={`${state}-icon`} />
 
-      <NameContainer>
+      <NameContainer title={instanceName}>
         <InstanceName>{instanceName}</InstanceName>
         {incidentsCount > 0 && (
           <IncidentCount>

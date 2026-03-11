@@ -59,6 +59,7 @@ const Container = styled.header<ContainerProps>`
   ${({$hideBottomBorder}) => {
     return css`
       display: flex;
+      min-width: 0;
       align-items: center;
       gap: var(--cds-spacing-05);
       background-color: var(--cds-layer-01);
@@ -74,12 +75,15 @@ const Container = styled.header<ContainerProps>`
 
 const AdditionalContent = styled.div`
   margin-left: auto;
+  flex-shrink: 0;
 `;
 
 const NameContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--cds-spacing-01);
+  min-width: 0;
+  flex-shrink: 1;
   margin-right: var(--cds-spacing-05);
 `;
 
