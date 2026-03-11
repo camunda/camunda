@@ -11,13 +11,16 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.CREATION_TIME;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.ERROR_CODE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.ERROR_MESSAGE;
+import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_STATE;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.JOB_TYPE;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.entities.JobEntity.JobState;
 import io.camunda.search.filter.JobErrorStatisticsFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.security.auth.Authorization;
@@ -28,6 +31,14 @@ import java.util.List;
 public class JobErrorStatisticsFilterTransformer
     extends IndexFilterTransformer<JobErrorStatisticsFilter> {
 
+  /** Only these job states are relevant for error statistics. */
+  private static final List<String> ERROR_STATES =
+      List.of(
+          JobState.ERROR_THROWN.name(),
+          JobState.FAILED.name(),
+          JobState.CANCELED.name(),
+          JobState.TIMED_OUT.name());
+
   public JobErrorStatisticsFilterTransformer(final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
   }
@@ -35,6 +46,9 @@ public class JobErrorStatisticsFilterTransformer
   @Override
   public SearchQuery toSearchQuery(final JobErrorStatisticsFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
+
+    // Always restrict to the relevant job states
+    queries.add(stringTerms(JOB_STATE, ERROR_STATES));
 
     if (filter.from() != null) {
       queries.addAll(dateTimeOperations(CREATION_TIME, List.of(Operation.gte(filter.from()))));
@@ -56,7 +70,7 @@ public class JobErrorStatisticsFilterTransformer
       queries.addAll(stringOperations(ERROR_MESSAGE, filter.errorMessageOperations()));
     }
 
-    return queries.isEmpty() ? matchAll() : and(queries);
+    return and(queries);
   }
 
   @Override
