@@ -23,6 +23,7 @@ import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
+import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.protocol.Protocol;
@@ -40,12 +41,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "es")
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "os")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class ClusterMultiplePartitionsBatchOperationIT {
-
-  private static CamundaClient camundaClient;
 
   @MultiDbTestApplication
   private static final TestStandaloneApplication<?> APPLICATION =
@@ -62,7 +59,7 @@ public class ClusterMultiplePartitionsBatchOperationIT {
   private static final List<ProcessInstanceEvent> ACTIVE_PROCESS_INSTANCES = new ArrayList<>();
 
   @BeforeAll
-  public static void beforeAll() {
+  public static void beforeAll(@Authenticated final CamundaClient camundaClient) {
     Objects.requireNonNull(camundaClient);
 
     // Deploy process definitions
@@ -100,7 +97,8 @@ public class ClusterMultiplePartitionsBatchOperationIT {
   }
 
   @Test
-  void shouldCancelProcessInstancesOnSeveralPartitionsWithBatch() {
+  void shouldCancelProcessInstancesOnSeveralPartitionsWithBatch(
+      @Authenticated final CamundaClient camundaClient) {
     // when
     final var result =
         camundaClient
