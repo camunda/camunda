@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.api.judge;
 
+import io.camunda.process.test.impl.judge.JudgeConfigImpl;
+
 /**
  * Configuration for the LLM judge used in judge assertions.
  *
@@ -27,21 +29,10 @@ package io.camunda.process.test.api.judge;
  *   CamundaAssert.setJudgeConfig(config);
  * </pre>
  */
-public final class JudgeConfig {
+public interface JudgeConfig {
 
   /** The default threshold score (0-1) above which a judge evaluation passes. */
-  public static final double DEFAULT_THRESHOLD = 0.5;
-
-  private final ChatModelAdapter chatModel;
-  private final double threshold;
-  private final String customPrompt;
-
-  private JudgeConfig(
-      final ChatModelAdapter chatModel, final double threshold, final String customPrompt) {
-    this.chatModel = chatModel;
-    this.threshold = threshold;
-    this.customPrompt = customPrompt;
-  }
+  double DEFAULT_THRESHOLD = 0.5;
 
   /**
    * Creates a new JudgeConfig with the given chat model and default threshold.
@@ -49,11 +40,11 @@ public final class JudgeConfig {
    * @param chatModel the chat model adapter to use for judge evaluations
    * @return a new JudgeConfig instance
    */
-  public static JudgeConfig of(final ChatModelAdapter chatModel) {
+  static JudgeConfig of(final ChatModelAdapter chatModel) {
     if (chatModel == null) {
       throw new IllegalArgumentException("chatModel must not be null");
     }
-    return new JudgeConfig(chatModel, DEFAULT_THRESHOLD, null);
+    return new JudgeConfigImpl(chatModel, DEFAULT_THRESHOLD, null);
   }
 
   /**
@@ -64,7 +55,7 @@ public final class JudgeConfig {
    * @param customPrompt the custom evaluation criteria prompt, or {@code null} to use the default
    * @return a new JudgeConfig instance
    */
-  public static JudgeConfig of(
+  static JudgeConfig of(
       final ChatModelAdapter chatModel, final double threshold, final String customPrompt) {
     return of(chatModel).withThreshold(threshold).withCustomPrompt(customPrompt);
   }
@@ -75,13 +66,7 @@ public final class JudgeConfig {
    * @param threshold the threshold score (0-1) above which a judge evaluation passes
    * @return a new JudgeConfig instance with the updated threshold
    */
-  public JudgeConfig withThreshold(final double threshold) {
-    if (threshold < 0.0 || threshold > 1.0) {
-      throw new IllegalArgumentException(
-          "threshold must be between 0.0 and 1.0, was: " + threshold);
-    }
-    return new JudgeConfig(chatModel, threshold, customPrompt);
-  }
+  JudgeConfig withThreshold(double threshold);
 
   /**
    * Returns a new JudgeConfig with the given custom prompt, keeping all other settings. The custom
@@ -92,34 +77,26 @@ public final class JudgeConfig {
    * @param customPrompt the custom evaluation criteria prompt, or {@code null} to use the default
    * @return a new JudgeConfig instance with the custom prompt
    */
-  public JudgeConfig withCustomPrompt(final String customPrompt) {
-    return new JudgeConfig(chatModel, threshold, customPrompt);
-  }
+  JudgeConfig withCustomPrompt(String customPrompt);
 
   /**
    * Returns the chat model adapter.
    *
    * @return the chat model adapter
    */
-  public ChatModelAdapter getChatModel() {
-    return chatModel;
-  }
+  ChatModelAdapter getChatModel();
 
   /**
    * Returns the threshold score.
    *
    * @return the threshold score (0-1)
    */
-  public double getThreshold() {
-    return threshold;
-  }
+  double getThreshold();
 
   /**
    * Returns the custom prompt, or {@code null} if the default should be used.
    *
    * @return the custom prompt, or {@code null}
    */
-  public String getCustomPrompt() {
-    return customPrompt;
-  }
+  String getCustomPrompt();
 }
