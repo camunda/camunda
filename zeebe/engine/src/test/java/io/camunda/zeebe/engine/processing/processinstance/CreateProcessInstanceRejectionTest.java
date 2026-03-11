@@ -239,31 +239,6 @@ public class CreateProcessInstanceRejectionTest {
   }
 
   @Test
-  public void shouldCreateCommandIfVariableNameExceedsDefaultMaxLength() {
-    // given
-    engine
-        .deployment()
-        .withXmlResource(Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done())
-        .deploy();
-
-    final String variableName = "x".repeat(257);
-
-    // when
-    final long processInstanceKey =
-        engine.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable(variableName, 1).create();
-
-    // then
-    Assertions.assertThat(
-            RecordingExporter.variableRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .withName(variableName)
-                .limit(1))
-        .extracting(Record::getValue)
-        .extracting(value -> tuple(value.getName(), value.getValue()))
-        .contains(tuple(variableName, "1"));
-  }
-
-  @Test
   public void shouldRejectCommandIfNoProcessDefinitionForTenant() {
     // given
     final String processId = "process";

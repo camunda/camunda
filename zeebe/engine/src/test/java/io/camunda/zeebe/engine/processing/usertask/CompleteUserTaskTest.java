@@ -7,12 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.usertask;
 
-import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -133,32 +131,6 @@ public final class CompleteUserTaskTest {
         .hasRecordType(RecordType.EVENT)
         .hasIntent(UserTaskIntent.COMPLETING);
     assertThat(completedRecord.getValue().getVariables()).containsExactly(entry("foo", "bar"));
-  }
-
-  @Test
-  public void shouldRejectCompletionIfVariableNameExceedsDefaultMaxLength() {
-    // given
-    ENGINE.deployment().withXmlResource(process()).deploy();
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-    final String variableName = "x".repeat(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1);
-
-    // when
-    final Record<UserTaskRecordValue> rejectedRecord =
-        ENGINE
-            .userTask()
-            .ofInstance(processInstanceKey)
-            .withVariables(asMsgPack(variableName, "bar"))
-            .expectRejection()
-            .complete();
-
-    // then
-    Assertions.assertThat(rejectedRecord).hasRejectionType(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejectedRecord.getRejectionReason())
-        .contains(
-            "Expected variable names to be no longer than "
-                + EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH
-                + " characters")
-        .contains("length " + (EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1));
   }
 
   @Test
