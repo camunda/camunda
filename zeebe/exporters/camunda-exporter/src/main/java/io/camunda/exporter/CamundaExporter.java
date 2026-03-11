@@ -337,7 +337,7 @@ public class CamundaExporter implements Exporter {
         writer.flush(batchRequest);
         metrics.recordFlushOccurrence(Instant.now());
         metrics.stopFlushLatencyMeasurement();
-        lastFlushTimestamp = System.currentTimeMillis();
+        lastFlushTimestamp = context.clock().millis();
       } catch (final PersistenceException ex) {
         metrics.recordFailedFlush();
         throw new ExporterException(ex.getMessage(), ex);
