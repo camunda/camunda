@@ -151,3 +151,4 @@
 
 # C8 REST OpenAPI specification
 /zeebe/gateway-protocol/src/main/proto/v2/ @camunda/c8-api-team
+/docs/rest-api-endpoint-guidelines.md @camunda/c8-api-team
