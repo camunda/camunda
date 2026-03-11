@@ -54,6 +54,8 @@ public final class ToolDescriptions {
   /** Validation constraint messages */
   public static final String POSITIVE_NUMBER_MESSAGE = "must be a positive number.";
 
+  public static final String NOT_NULL_MESSAGE = "must not be null.";
+
   public static final String INCIDENT_KEY_POSITIVE_MESSAGE =
       "Incident key " + POSITIVE_NUMBER_MESSAGE;
   public static final String PROCESS_INSTANCE_KEY_POSITIVE_MESSAGE =
@@ -64,6 +66,7 @@ public final class ToolDescriptions {
       "Process definition key " + POSITIVE_NUMBER_MESSAGE;
   public static final String USER_TASK_KEY_POSITIVE_MESSAGE =
       "User task key " + POSITIVE_NUMBER_MESSAGE;
+  public static final String USER_TASK_KEY_NOT_NULL_MESSAGE = "User task key " + NOT_NULL_MESSAGE;
 
   private ToolDescriptions() {
     // Utility class
