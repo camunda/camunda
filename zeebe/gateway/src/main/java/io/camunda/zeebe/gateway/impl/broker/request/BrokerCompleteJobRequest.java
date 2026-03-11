@@ -30,8 +30,8 @@ public final class BrokerCompleteJobRequest extends BrokerExecuteCommand<JobReco
       final JobResult result,
       final int maxVariableNameLength) {
     super(ValueType.JOB, JobIntent.COMPLETE);
-    request.setKey(key);
     VariableNameLengthValidator.validateVariableNameLength(variables, maxVariableNameLength);
+    request.setKey(key);
     requestDto.setVariables(variables);
     requestDto.setResult(result);
   }
