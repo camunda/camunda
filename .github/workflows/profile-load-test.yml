@@ -1,0 +1,153 @@
+# description: This workflow allows to profile more easily running load tests
+# type: CI
+# owner: @camunda/zeebe-distributed-platform
+name: Profile running load test
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Specifies the name of the load test to profile'
+        required: true
+      pod:
+        description: 'Specifies the pod name to profile. Leave empty to profile all three pods (zeebe-0, zeebe-1, zeebe-2) with different events, or specify a pod name for CPU profiling only.'
+        default: ''
+        required: false
+      profiler_options:
+        description: 'Optional additional flags for async-profiler (e.g., "-t" for flamegraph format)'
+        default: ''
+        required: false
+  workflow_call:
+    inputs:
+      name:
+        description: 'Specifies the name of the load test to profile'
+        required: true
+        type: string
+      pod:
+        description: 'Specifies the pod name to profile. Leave empty to profile all three pods (zeebe-0, zeebe-1, zeebe-2) with different events, or specify a pod name for CPU profiling only.'
+        default: ''
+        required: false
+        type: string
+      profiler_options:
+        description: 'Optional additional flags for async-profiler (e.g., "-t" for flamegraph format)'
+        default: ''
+        required: false
+        type: string
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  CLUSTER: camunda-benchmark-prod
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+
+jobs:
+  profile-all-pods:
+    name: Profile ${{ matrix.event }} on ${{ matrix.pod }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ inputs.pod == '' }}
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pod: zeebe-0
+            event: cpu
+          - pod: zeebe-1
+            event: wall
+          - pod: zeebe-2
+            event: alloc
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Teleport
+        uses: teleport-actions/setup@v1
+        with:
+          version: 17.2.2
+
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@v2
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+
+      - name: Set right namespace
+        run: |
+          kubectl config set-context --current --namespace=${{ inputs.name }}
+      - name: Execute profiling
+        run: >
+          ./zeebe/benchmarks/docs/scripts/executeProfiling.sh ${{ matrix.pod }} ${{ matrix.event }} "${{ inputs.profiler_options }}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: flamegraph-${{ matrix.event }}-${{ matrix.pod }}
+          path: ${{ matrix.pod }}*
+      - name: Summarize profiling
+        if: success()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+            ## Profiling \`${{ inputs.name }}\` - ${{ matrix.event }} on ${{ matrix.pod }}
+            Async profiling (${{ matrix.event }}) has been executed on ${{ inputs.name }}-${{ matrix.pod }}. Please download the artifact.
+          EOF
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "Profile ${{ matrix.event }} on ${{ matrix.pod }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  profile-single-pod:
+    name: Profile CPU on single pod ${{ inputs.pod }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ inputs.pod != '' }}
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Teleport
+        uses: teleport-actions/setup@v1
+        with:
+          version: 17.2.2
+
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@v2
+        with:
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+      - name: Set right namespace
+        run: |
+          kubectl config set-context --current --namespace=${{ inputs.name }}
+      - name: Execute profiling
+        run: >
+          ./zeebe/benchmarks/docs/scripts/executeProfiling.sh ${{ inputs.pod }} cpu "${{ inputs.profiler_options }}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: flamegraph-cpu-${{ inputs.pod }}
+          path: ${{ inputs.pod }}*
+      - name: Summarize profiling
+        if: success()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+            ## Profiling \`${{ inputs.name }}\` - CPU on ${{ inputs.pod }}
+            Async profiling (CPU) has been executed on ${{ inputs.name }}-${{ inputs.pod }}. Please download the artifact.
+          EOF
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
