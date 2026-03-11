@@ -34,6 +34,7 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -140,7 +141,7 @@ class ProcessDefinitionToolsTest extends ToolsTest {
     @Test
     void shouldFailGetProcessDefinitionByKeyOnNullKey() {
       // when
-      final var arguments = new java.util.HashMap<String, Object>();
+      final var arguments = new HashMap<String, Object>();
       arguments.put("processDefinitionKey", null);
       final CallToolResult result =
           mcpClient.callTool(
@@ -318,7 +319,7 @@ class ProcessDefinitionToolsTest extends ToolsTest {
     @Test
     void shouldFailGetProcessDefinitionXmlByKeyOnNullKey() {
       // when
-      final var arguments = new java.util.HashMap<String, Object>();
+      final var arguments = new HashMap<String, Object>();
       arguments.put("processDefinitionKey", null);
       final CallToolResult result =
           mcpClient.callTool(
