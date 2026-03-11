@@ -179,6 +179,26 @@ class ProcessInstanceToolsTest extends ToolsTest {
     }
 
     @Test
+    void shouldFailGetProcessInstanceByKeyOnNullKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("getProcessInstance").arguments(Map.of()).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("processInstanceKey: Process instance key must not be null."));
+    }
+
+    @Test
     void shouldFailGetProcessInstanceByKeyOnInvalidKey() {
       // when
       final CallToolResult result =

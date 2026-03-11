@@ -170,6 +170,26 @@ class IncidentToolsTest extends ToolsTest {
     }
 
     @Test
+    void shouldFailGetIncidentByKeyOnNullKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("getIncident").arguments(Map.of()).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("incidentKey: Incident key must not be null."));
+    }
+
+    @Test
     void shouldFailGetIncidentByKeyOnInvalidKey() {
       // when
       final CallToolResult result =
@@ -423,6 +443,26 @@ class IncidentToolsTest extends ToolsTest {
       verify(jobServices).updateJob(eq(4L), isNull(), eq(new UpdateJobChangeset(1, null)), any());
 
       assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldFailResolveIncidentByKeyOnNullKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("resolveIncident").arguments(Map.of()).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("incidentKey: Incident key must not be null."));
     }
 
     @Test
