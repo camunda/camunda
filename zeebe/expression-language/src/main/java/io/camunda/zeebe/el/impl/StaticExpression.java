@@ -19,6 +19,7 @@ import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -80,6 +81,11 @@ public final class StaticExpression implements Expression, EvaluationResult {
   @Override
   public Optional<String> getVariableName() {
     return Optional.empty();
+  }
+
+  @Override
+  public Set<String> getVariableNames() {
+    return Set.of();
   }
 
   @Override

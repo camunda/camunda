@@ -67,7 +67,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .withCatchEventId(CATCH_ID)
                 .withCondition("=x > 10")
-                .withVariableNames(List.of())
+                .withVariableNames(List.of("x"))
                 .withVariableEvents(List.of())
                 .limit(1))
         .hasSize(1);
@@ -123,7 +123,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .withCatchEventId(CATCH_ID)
                 .withCondition("=x > 10")
-                .withVariableNames(List.of())
+                .withVariableNames(List.of("x"))
                 .withVariableEvents(List.of())
                 .limit(1))
         .isEmpty();
@@ -162,7 +162,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .withCatchEventId(CATCH_ID)
                 .withCondition("=x > 10")
-                .withVariableNames(List.of())
+                .withVariableNames(List.of("x"))
                 .withVariableEvents(List.of())
                 .limit(1))
         .hasSize(1);
@@ -233,7 +233,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .withCatchEventId(CATCH_ID)
                 .withCondition("=x > 10")
-                .withVariableNames(List.of())
+                .withVariableNames(List.of("x"))
                 .withVariableEvents(List.of())
                 .limit(1))
         .isEmpty();
@@ -281,7 +281,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .withCatchEventId(CATCH_ID)
                 .withCondition("=x > 10")
-                .withVariableNames(List.of())
+                .withVariableNames(List.of("x"))
                 .withVariableEvents(List.of())
                 .limit(1))
         .isEmpty();
@@ -319,7 +319,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .withCatchEventId(CATCH_ID)
                 .withCondition("=x > 10")
-                .withVariableNames(List.of())
+                .withVariableNames(List.of("x"))
                 .withVariableEvents(List.of())
                 .limit(2))
         .hasSize(2);
@@ -369,7 +369,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .withCatchEventId(CATCH_ID)
                 .withCondition("=x > 10")
-                .withVariableNames(List.of())
+                .withVariableNames(List.of("x"))
                 .withVariableEvents(List.of())
                 .limit(2))
         .hasSize(2);
@@ -400,10 +400,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                 .moveToProcess(processId)
                 .eventSubProcess(
                     SUB_ID,
-                    b ->
-                        b.startEvent(CATCH_ID)
-                            .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
-                            .endEvent())
+                    b -> b.startEvent(CATCH_ID).condition(c -> c.condition("=x > 10")).endEvent())
                 .done())
         .deploy();
 
@@ -432,7 +429,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
   }
 
   @Test
-  public void shouldTriggerOnlyMatchingEventSubprocessStartEventWhenMultipleVariableNameFilters() {
+  public void shouldTriggerOnlyMatchingEventSubprocessStartEvent() {
     // given
     final String processId = helper.getBpmnProcessId();
     engine
@@ -445,16 +442,10 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                 .moveToProcess(processId)
                 .eventSubProcess(
                     "sub_x",
-                    b ->
-                        b.startEvent("catch_x")
-                            .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
-                            .endEvent())
+                    b -> b.startEvent("catch_x").condition(c -> c.condition("=x > 10")).endEvent())
                 .eventSubProcess(
                     "sub_y",
-                    b ->
-                        b.startEvent("catch_y")
-                            .condition(c -> c.condition("=y > 10").zeebeVariableNames("y"))
-                            .endEvent())
+                    b -> b.startEvent("catch_y").condition(c -> c.condition("=y > 10")).endEvent())
                 .done())
         .deploy();
 
@@ -509,7 +500,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
   }
 
   @Test
-  public void shouldTriggerEventSubprocessStartEventWithoutVariableNameFilterOnAnyVariableChange() {
+  public void shouldOnlyTriggerEventSubprocessStartEventForExtractedVariableNames() {
     // given
     final String processId = helper.getBpmnProcessId();
     engine
@@ -528,21 +519,28 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
 
     final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
 
-    // when (change variable y; since there is no filter, evaluation must run and trigger)
+    // when - change variable x (referenced in condition), condition becomes true
     engine.variables().ofScope(processInstanceKey).withDocument(Map.of("x", 11)).update();
+    // when - change unrelated variable y (NOT referenced in condition)
     engine.variables().ofScope(processInstanceKey).withDocument(Map.of("y", 0)).update();
 
-    // then
+    engine.signal().withSignalName("testSpeedUp").broadcast();
+
+    // then - only 1 trigger (from x=11); y=0 does NOT trigger because y is not in variableNames
     assertThat(
-            RecordingExporter.conditionalSubscriptionRecords()
+            RecordingExporter.records()
+                .between(
+                    r -> r.getIntent() == DeploymentIntent.CREATED,
+                    r -> r.getIntent() == SignalIntent.BROADCASTED)
+                .conditionalSubscriptionRecords()
                 .withIntent(ConditionalSubscriptionIntent.TRIGGERED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withCatchEventId(CATCH_ID)
                 .withCondition("=x > 10")
-                .withVariableNames(List.of())
+                .withVariableNames(List.of("x"))
                 .withVariableEvents(List.of())
                 .limit(2))
-        .hasSize(2);
+        .hasSize(1);
   }
 
   @Test
@@ -561,11 +559,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                     SUB_ID,
                     b ->
                         b.startEvent(CATCH_ID)
-                            .condition(
-                                c ->
-                                    c.condition("=x > 10")
-                                        .zeebeVariableNames("x")
-                                        .zeebeVariableEvents("create"))
+                            .condition(c -> c.condition("=x > 10").zeebeVariableEvents("create"))
                             .endEvent())
                 .done())
         .deploy();
@@ -619,11 +613,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                     SUB_ID,
                     b ->
                         b.startEvent(CATCH_ID)
-                            .condition(
-                                c ->
-                                    c.condition("=x > 10")
-                                        .zeebeVariableNames("x")
-                                        .zeebeVariableEvents("create"))
+                            .condition(c -> c.condition("=x > 10").zeebeVariableEvents("create"))
                             .endEvent())
                 .done())
         .deploy();
@@ -669,11 +659,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                     SUB_ID,
                     b ->
                         b.startEvent(CATCH_ID)
-                            .condition(
-                                c ->
-                                    c.condition("=x > 10")
-                                        .zeebeVariableNames("x")
-                                        .zeebeVariableEvents("update"))
+                            .condition(c -> c.condition("=x > 10").zeebeVariableEvents("update"))
                             .endEvent())
                 .done())
         .deploy();
@@ -748,10 +734,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                         b.startEvent(CATCH_ID)
                             .interrupting(false)
                             .condition(
-                                c ->
-                                    c.condition("=x > 10")
-                                        .zeebeVariableNames("x")
-                                        .zeebeVariableEvents("create,update"))
+                                c -> c.condition("=x > 10").zeebeVariableEvents("create,update"))
                             .endEvent())
                 .done())
         .deploy();
@@ -794,14 +777,14 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                     b ->
                         b.startEvent("catch_a")
                             .interrupting(false)
-                            .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                            .condition(c -> c.condition("=x > 10"))
                             .endEvent())
                 .eventSubProcess(
                     "sub_b",
                     b ->
                         b.startEvent("catch_b")
                             .interrupting(false)
-                            .condition(c -> c.condition("=x > 5").zeebeVariableNames("x"))
+                            .condition(c -> c.condition("=x > 5"))
                             .endEvent())
                 .done())
         .deploy();
@@ -849,8 +832,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                                 "inner",
                                 b ->
                                     b.startEvent("inner_catch")
-                                        .condition(
-                                            c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                                        .condition(c -> c.condition("=x > 10"))
                                         .endEvent()))
                 .endEvent()
                 .moveToProcess(processId)
@@ -858,7 +840,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                     "outer",
                     b ->
                         b.startEvent("outer_catch")
-                            .condition(c -> c.condition("=x > 100").zeebeVariableNames("x"))
+                            .condition(c -> c.condition("=x > 100"))
                             .endEvent())
                 .done())
         .deploy();
@@ -932,8 +914,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                                 "inner",
                                 b ->
                                     b.startEvent("inner_catch")
-                                        .condition(
-                                            c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                                        .condition(c -> c.condition("=x > 10"))
                                         .endEvent()))
                 .endEvent()
                 .moveToProcess(processId)
@@ -941,7 +922,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                     "outer",
                     b ->
                         b.startEvent("outer_catch")
-                            .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                            .condition(c -> c.condition("=x > 10"))
                             .endEvent())
                 .done())
         .deploy();
@@ -1017,8 +998,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                                 b ->
                                     b.startEvent("inner_catch")
                                         .interrupting(false)
-                                        .condition(
-                                            c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                                        .condition(c -> c.condition("=x > 10"))
                                         .endEvent()))
                 .endEvent()
                 .moveToProcess(processId)
@@ -1027,7 +1007,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                     b ->
                         b.startEvent("outer_catch")
                             .interrupting(false)
-                            .condition(c -> c.condition("=x > 5").zeebeVariableNames("x"))
+                            .condition(c -> c.condition("=x > 5"))
                             .endEvent())
                 .done())
         .deploy();
@@ -1075,8 +1055,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                                 "eventSub1",
                                 b ->
                                     b.startEvent("eventSub1Start")
-                                        .condition(
-                                            c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                                        .condition(c -> c.condition("=x > 10"))
                                         .endEvent()))
                 .parallelGateway("join")
                 .endEvent()
@@ -1093,8 +1072,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                                 "eventSub2",
                                 b ->
                                     b.startEvent("eventSub2Start")
-                                        .condition(
-                                            c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                                        .condition(c -> c.condition("=x > 10"))
                                         .endEvent()))
                 .connectTo("join")
                 .done())
@@ -1169,7 +1147,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                     b ->
                         b.startEvent(CATCH_ID)
                             .interrupting(false)
-                            .condition(c -> c.condition("=x > 0").zeebeVariableNames("x"))
+                            .condition(c -> c.condition("=x > 0"))
                             .endEvent())
                 .done())
         .deploy();
@@ -1238,8 +1216,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                                 "eventSubProcess",
                                 b ->
                                     b.startEvent(CATCH_ID)
-                                        .condition(
-                                            c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                                        .condition(c -> c.condition("=x > 10"))
                                         .endEvent()))
                 .endEvent()
                 .done())
@@ -1306,8 +1283,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                                 "eventSubProcess",
                                 b ->
                                     b.startEvent(CATCH_ID)
-                                        .condition(
-                                            c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                                        .condition(c -> c.condition("=x > 10"))
                                         .endEvent()))
                 .endEvent()
                 .done())
@@ -1373,10 +1349,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                 .moveToProcess(processId)
                 .eventSubProcess(
                     "event",
-                    b ->
-                        b.startEvent(CATCH_ID)
-                            .condition(c -> c.condition("=sum > 10").zeebeVariableNames("sum"))
-                            .endEvent())
+                    b -> b.startEvent(CATCH_ID).condition(c -> c.condition("=sum > 10")).endEvent())
                 .done())
         .deploy();
 
@@ -1450,7 +1423,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .withCatchEventId(CATCH_ID)
                 .withCondition("=x > 10")
-                .withVariableNames(List.of())
+                .withVariableNames(List.of("x"))
                 .withVariableEvents(List.of())
                 .limit(1))
         .hasSize(1);
@@ -1488,7 +1461,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .withCatchEventId(CATCH_ID)
                 .withCondition("=x > 10")
-                .withVariableNames(List.of())
+                .withVariableNames(List.of("x"))
                 .withVariableEvents(List.of())
                 .limit(1))
         .hasSize(1);
@@ -1542,7 +1515,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
                     SUB_ID,
                     b ->
                         b.startEvent(CATCH_ID)
-                            .condition(c -> c.condition("=x + y > 10").zeebeVariableNames("x,y"))
+                            .condition(c -> c.condition("=x + y > 10"))
                             .endEvent("subEnd"))
                 .done())
         .deploy();

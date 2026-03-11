@@ -44,7 +44,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .intermediateCatchEvent(CATCH_ID)
-                .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                .condition(c -> c.condition("=x > 10"))
                 .endEvent()
                 .done())
         .deploy();
@@ -86,7 +86,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .intermediateCatchEvent(CATCH_ID)
-                .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                .condition(c -> c.condition("=x > 10"))
                 .endEvent()
                 .done())
         .deploy();
@@ -126,7 +126,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .intermediateCatchEvent(CATCH_ID)
-                .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                .condition(c -> c.condition("=x > 10"))
                 .endEvent()
                 .done())
         .deploy();
@@ -168,7 +168,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .intermediateCatchEvent(CATCH_ID)
-                .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                .condition(c -> c.condition("=x > 10"))
                 .zeebeInputExpression("= 20", "x")
                 .endEvent()
                 .done())
@@ -212,7 +212,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .intermediateCatchEvent(CATCH_ID)
-                .condition(c -> c.condition("=x > 10 or y > 10").zeebeVariableNames("x,y"))
+                .condition(c -> c.condition("=x > 10 or y > 10"))
                 .zeebeOutputExpression("= 30", "x")
                 .endEvent()
                 .done())
@@ -242,49 +242,6 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
   }
 
   @Test
-  public void shouldTriggerIntermediateCatchEventWithoutVariableNameFilter() {
-    // given
-    final String processId = helper.getBpmnProcessId();
-    engine
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(processId)
-                .startEvent()
-                .intermediateCatchEvent(CATCH_ID)
-                .condition(c -> c.condition("=x > 10"))
-                .endEvent()
-                .done())
-        .deploy();
-
-    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
-    final long elementInstanceKey = awaitElementInstance(processInstanceKey, CATCH_ID);
-
-    // when
-    engine.variables().ofScope(elementInstanceKey).withDocument(Map.of("x", 20)).update();
-
-    // then
-    assertThat(
-            RecordingExporter.records()
-                .conditionalSubscriptionRecords()
-                .withIntent(ConditionalSubscriptionIntent.TRIGGERED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withCatchEventId(CATCH_ID)
-                .withCondition("=x > 10")
-                .withVariableNames(List.of())
-                .withVariableEvents(List.of())
-                .limit(1))
-        .hasSize(1);
-
-    assertThat(
-            RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementId(CATCH_ID)
-                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-                .limit(1))
-        .hasSize(1);
-  }
-
-  @Test
   public void shouldNotTriggerIntermediateCatchEventWhenNonFilteredVariableChanges() {
     // given
     final String processId = helper.getBpmnProcessId();
@@ -294,7 +251,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .intermediateCatchEvent(CATCH_ID)
-                .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                .condition(c -> c.condition("=x > 10"))
                 .endEvent()
                 .done())
         .deploy();
@@ -335,11 +292,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .intermediateCatchEvent(CATCH_ID)
-                .condition(
-                    c ->
-                        c.condition("=x > 10")
-                            .zeebeVariableNames("x")
-                            .zeebeVariableEvents("create"))
+                .condition(c -> c.condition("=x > 10").zeebeVariableEvents("create"))
                 .endEvent()
                 .done())
         .deploy();
@@ -373,11 +326,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .intermediateCatchEvent(CATCH_ID)
-                .condition(
-                    c ->
-                        c.condition("=x > 10")
-                            .zeebeVariableNames("x")
-                            .zeebeVariableEvents("update"))
+                .condition(c -> c.condition("=x > 10").zeebeVariableEvents("update"))
                 .endEvent()
                 .done())
         .deploy();
@@ -417,11 +366,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .intermediateCatchEvent(CATCH_ID)
-                .condition(
-                    c ->
-                        c.condition("=x > 10")
-                            .zeebeVariableNames("x")
-                            .zeebeVariableEvents("create"))
+                .condition(c -> c.condition("=x > 10").zeebeVariableEvents("create"))
                 .endEvent()
                 .done())
         .deploy();
@@ -462,11 +407,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .intermediateCatchEvent(CATCH_ID)
-                .condition(
-                    c ->
-                        c.condition("=x > 10")
-                            .zeebeVariableNames("x")
-                            .zeebeVariableEvents("create,update"))
+                .condition(c -> c.condition("=x > 10").zeebeVariableEvents("create,update"))
                 .endEvent()
                 .done())
         .deploy();
@@ -518,7 +459,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
                         b.embeddedSubProcess()
                             .startEvent()
                             .intermediateCatchEvent(CATCH_ID)
-                            .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                            .condition(c -> c.condition("=x > 10"))
                             .endEvent())
                 .endEvent()
                 .done())
@@ -565,7 +506,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
                     b.embeddedSubProcess()
                         .startEvent()
                         .intermediateCatchEvent("catch_1")
-                        .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                        .condition(c -> c.condition("=x > 10"))
                         .endEvent())
             .parallelGateway("join")
             .endEvent()
@@ -576,7 +517,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
                     b.embeddedSubProcess()
                         .startEvent()
                         .intermediateCatchEvent("catch_2")
-                        .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                        .condition(c -> c.condition("=x > 10"))
                         .endEvent())
             .connectTo("join")
             .done();
@@ -639,7 +580,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
                         b.embeddedSubProcess()
                             .startEvent()
                             .intermediateCatchEvent(CATCH_ID)
-                            .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                            .condition(c -> c.condition("=x > 10"))
                             .endEvent())
                 .endEvent()
                 .done())
@@ -687,12 +628,12 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
                         b.embeddedSubProcess()
                             .startEvent()
                             .intermediateCatchEvent("inner")
-                            .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                            .condition(c -> c.condition("=x > 10"))
                             .endEvent())
                 .parallelGateway("join")
                 .moveToNode("fork")
                 .intermediateCatchEvent("outer")
-                .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                .condition(c -> c.condition("=x > 10"))
                 .connectTo("join")
                 .endEvent()
                 .done())
@@ -735,7 +676,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
                             .embeddedSubProcess()
                             .startEvent()
                             .intermediateCatchEvent(CATCH_ID)
-                            .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                            .condition(c -> c.condition("=x > 10"))
                             .endEvent())
                 .endEvent()
                 .done())
@@ -784,7 +725,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
                             .embeddedSubProcess()
                             .startEvent()
                             .intermediateCatchEvent(CATCH_ID)
-                            .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                            .condition(c -> c.condition("=x > 10"))
                             .endEvent())
                 .endEvent()
                 .done())
@@ -862,7 +803,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .intermediateCatchEvent(CATCH_ID)
-                .condition(c -> c.condition("=x + y > 10").zeebeVariableNames("x,y"))
+                .condition(c -> c.condition("=x + y > 10"))
                 .endEvent()
                 .done())
         .deploy();
@@ -911,7 +852,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .intermediateCatchEvent(CATCH_ID)
-                .condition(c -> c.condition("=x > 10").zeebeVariableNames("x"))
+                .condition(c -> c.condition("=x > 10"))
                 .zeebeOutputExpression("= loopCounter + 1", "loopCounter")
                 .exclusiveGateway("fork")
                 .defaultFlow()
@@ -974,7 +915,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .intermediateCatchEvent(CATCH_ID)
-                .condition(c -> c.condition("= 10 / x > 2").zeebeVariableNames("x"))
+                .condition(c -> c.condition("= 10 / x > 2"))
                 .endEvent()
                 .done())
         .deploy();
@@ -1017,7 +958,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
             .endEvent("end")
             .moveToNode("fork")
             .intermediateCatchEvent(CATCH_ID)
-            .condition(c -> c.condition("= x > 10").zeebeVariableNames("x"))
+            .condition(c -> c.condition("= x > 10"))
             .endEvent()
             .moveToNode(CATCH_ID)
             .connectTo("join")
@@ -1076,7 +1017,7 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
                         .endEvent()
                         .subProcessDone())
             .intermediateCatchEvent(CATCH_ID)
-            .condition(c -> c.condition("=sum > 10").zeebeVariableNames("sum"))
+            .condition(c -> c.condition("=sum > 10"))
             .endEvent()
             .done();
 
