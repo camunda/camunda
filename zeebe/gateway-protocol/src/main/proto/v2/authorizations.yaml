@@ -186,7 +186,6 @@ components:
           type: string
         resourceType:
           description: The type of resource to add permissions to.
-          type: string
           allOf:
             - $ref: '#/components/schemas/ResourceTypeEnum'
         permissionTypes:
@@ -216,7 +215,6 @@ components:
           type: string
         resourceType:
           description: The type of resource to add permissions to.
-          type: string
           allOf:
             - $ref: '#/components/schemas/ResourceTypeEnum'
         permissionTypes:
@@ -296,7 +294,6 @@ components:
             type: string
         resourceType:
           description: The type of resource to search permissions for.
-          type: string
           allOf:
             - $ref: '#/components/schemas/ResourceTypeEnum'
 
@@ -318,7 +315,6 @@ components:
           $ref: '#/components/schemas/OwnerTypeEnum'
         resourceType:
           description: The type of resource that the permissions relate to.
-          type: string
           allOf:
             - $ref: '#/components/schemas/ResourceTypeEnum'
         resourceId:
