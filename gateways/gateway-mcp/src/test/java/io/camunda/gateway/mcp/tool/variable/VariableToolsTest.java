@@ -36,6 +36,7 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
@@ -155,6 +156,48 @@ class VariableToolsTest extends ToolsTest {
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
 
       assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldFailGetVariableByKeyOnMissingKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("getVariable").arguments(Map.of()).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("variableKey: Variable key must not be null."));
+    }
+
+    @Test
+    void shouldFailGetVariableByKeyOnNullKey() {
+      // when
+      final var arguments = new HashMap<String, Object>();
+      arguments.put("variableKey", null);
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("getVariable").arguments(arguments).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("variableKey: Variable key must not be null."));
     }
 
     @Test

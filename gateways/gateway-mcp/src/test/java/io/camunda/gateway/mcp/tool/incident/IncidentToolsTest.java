@@ -49,6 +49,7 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -167,6 +168,48 @@ class IncidentToolsTest extends ToolsTest {
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
 
       assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldFailGetIncidentByKeyOnMissingKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("getIncident").arguments(Map.of()).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("incidentKey: Incident key must not be null."));
+    }
+
+    @Test
+    void shouldFailGetIncidentByKeyOnNullKey() {
+      // when
+      final var arguments = new HashMap<String, Object>();
+      arguments.put("incidentKey", null);
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("getIncident").arguments(arguments).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("incidentKey: Incident key must not be null."));
     }
 
     @Test
@@ -423,6 +466,48 @@ class IncidentToolsTest extends ToolsTest {
       verify(jobServices).updateJob(eq(4L), isNull(), eq(new UpdateJobChangeset(1, null)), any());
 
       assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldFailResolveIncidentByKeyOnMissingKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("resolveIncident").arguments(Map.of()).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("incidentKey: Incident key must not be null."));
+    }
+
+    @Test
+    void shouldFailResolveIncidentByKeyOnNullKey() {
+      // when
+      final var arguments = new HashMap<String, Object>();
+      arguments.put("incidentKey", null);
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("resolveIncident").arguments(arguments).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("incidentKey: Incident key must not be null."));
     }
 
     @Test

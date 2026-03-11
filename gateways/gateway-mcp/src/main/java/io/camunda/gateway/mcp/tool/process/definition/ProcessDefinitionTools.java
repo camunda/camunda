@@ -9,6 +9,7 @@ package io.camunda.gateway.mcp.tool.process.definition;
 
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_DEFINITION_KEY_DESCRIPTION;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_DEFINITION_KEY_NOT_NULL_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_DEFINITION_KEY_POSITIVE_MESSAGE;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
@@ -23,6 +24,7 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
@@ -69,6 +71,7 @@ public class ProcessDefinitionTools {
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult getProcessDefinition(
       @McpToolParam(description = PROCESS_DEFINITION_KEY_DESCRIPTION)
+          @NotNull(message = PROCESS_DEFINITION_KEY_NOT_NULL_MESSAGE)
           @Positive(message = PROCESS_DEFINITION_KEY_POSITIVE_MESSAGE)
           final Long processDefinitionKey) {
     try {
@@ -86,6 +89,7 @@ public class ProcessDefinitionTools {
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult getProcessDefinitionXml(
       @McpToolParam(description = PROCESS_DEFINITION_KEY_DESCRIPTION)
+          @NotNull(message = PROCESS_DEFINITION_KEY_NOT_NULL_MESSAGE)
           @Positive(message = PROCESS_DEFINITION_KEY_POSITIVE_MESSAGE)
           final Long processDefinitionKey) {
     try {
