@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState, useEffect} from 'react';
+import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {Button, MenuButton, MenuItem} from '@carbon/react';
@@ -38,13 +38,15 @@ import {ModificationHelperModal} from './ModificationHelperModal';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {Locations} from 'modules/Routes';
 
-const COLLAPSE_BREAKPOINT = 1024;
-
 type Props = {
+  isCollapsed?: boolean;
   processInstance: ProcessInstance;
 };
 
-const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
+const ProcessInstanceOperations: React.FC<Props> = ({
+  isCollapsed,
+  processInstance,
+}) => {
   const processInstanceKey = processInstance.processInstanceKey;
   const navigate = useNavigate();
   const handleOperationSuccessUtil = useHandleOperationSuccess();
@@ -187,49 +189,45 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
 
   return (
     <>
-      <CollapsibleOperationsToolbar breakpoint={COLLAPSE_BREAKPOINT}>
-        {(isCollapsed) => (
-          <>
-            {processInstance.hasIncident && (
-              <CollapsibleOperationTrigger
-                isCollapsed={isCollapsed}
-                status={resolveStatus}
-                label="Retry"
-                pendingLabel="Retrying..."
-                icon={RetryFailed}
-                title={`Retry Instance ${processInstanceKey}`}
-                onClick={() => resolveProcessInstanceIncidents()}
-                onReset={resetResolve}
-              />
-            )}
-            <CollapsibleOperationTrigger
-              isCollapsed={isCollapsed}
-              status={cancelStatus}
-              label="Cancel"
-              pendingLabel="Canceling..."
-              icon={Error}
-              title={`Cancel Instance ${processInstanceKey}`}
-              onClick={() => setCancelConfirmationOpen(true)}
-              onReset={resetCancel}
-            />
-            <CollapsibleOperationTrigger
-              isCollapsed={isCollapsed}
-              status="idle"
-              label="Modify"
-              icon={Tools}
-              title={`Modify Instance ${processInstanceKey}`}
-              onClick={handleOpenModificationHelper}
-            />
-            <CollapsibleOperationTrigger
-              isCollapsed={isCollapsed}
-              status="idle"
-              label="Migrate"
-              icon={MigrateAlt}
-              title={`Migrate Instance ${processInstanceKey}`}
-              onClick={handleOpenMigrationHelper}
-            />
-          </>
+      <CollapsibleOperationsToolbar isCollapsed={isCollapsed}>
+        {processInstance.hasIncident && (
+          <CollapsibleOperationTrigger
+            isCollapsed={isCollapsed}
+            status={resolveStatus}
+            label="Retry"
+            pendingLabel="Retrying..."
+            icon={RetryFailed}
+            title={`Retry Instance ${processInstanceKey}`}
+            onClick={() => resolveProcessInstanceIncidents()}
+            onReset={resetResolve}
+          />
         )}
+        <CollapsibleOperationTrigger
+          isCollapsed={isCollapsed}
+          status={cancelStatus}
+          label="Cancel"
+          pendingLabel="Canceling..."
+          icon={Error}
+          title={`Cancel Instance ${processInstanceKey}`}
+          onClick={() => setCancelConfirmationOpen(true)}
+          onReset={resetCancel}
+        />
+        <CollapsibleOperationTrigger
+          isCollapsed={isCollapsed}
+          status="idle"
+          label="Modify"
+          icon={Tools}
+          title={`Modify Instance ${processInstanceKey}`}
+          onClick={handleOpenModificationHelper}
+        />
+        <CollapsibleOperationTrigger
+          isCollapsed={isCollapsed}
+          status="idle"
+          label="Migrate"
+          icon={MigrateAlt}
+          title={`Migrate Instance ${processInstanceKey}`}
+          onClick={handleOpenMigrationHelper}
+        />
       </CollapsibleOperationsToolbar>
       {isModificationHelperOpen && (
         <ModificationHelperModal
@@ -267,23 +265,11 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
 };
 
 const CollapsibleOperationsToolbar: React.FC<{
-  breakpoint: number;
-  children: (isCollapsed: boolean) => React.ReactNode;
-}> = ({breakpoint, children}) => {
-  const [isCollapsed, setIsCollapsed] = useState(
-    window.innerWidth < breakpoint,
-  );
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsCollapsed(window.innerWidth < breakpoint);
-    };
-    window.addEventListener('resize', handleResize, {passive: true});
-    return () => window.removeEventListener('resize', handleResize);
-  }, [breakpoint]);
-
+  children: React.ReactNode;
+  isCollapsed?: boolean;
+}> = ({children, isCollapsed}) => {
   return !isCollapsed ? (
-    children(isCollapsed)
+    children
   ) : (
     <MenuButton
       size="sm"
@@ -291,7 +277,7 @@ const CollapsibleOperationsToolbar: React.FC<{
       label="Actions"
       menuAlignment="bottom-end"
     >
-      {children(isCollapsed)}
+      {children}
     </MenuButton>
   );
 };

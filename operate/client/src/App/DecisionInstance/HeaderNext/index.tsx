@@ -116,14 +116,11 @@ const Header: React.FC<HeaderProps> = ({
               </Link>
             ),
           },
-          ...(isMultiTenancyEnabled
-            ? [
-                {
-                  title: tenantName,
-                  content: tenantName,
-                },
-              ]
-            : []),
+          {
+            hidden: !isMultiTenancyEnabled,
+            title: tenantName,
+            content: tenantName,
+          },
           {
             title: formatDate(decisionInstance.evaluationDate),
             content: formatDate(decisionInstance.evaluationDate),
