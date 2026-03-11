@@ -39,14 +39,25 @@ public class RecordGoldenFilesTest {
   private static final String RECORD_COMPONENTS_TEMPLATE = "record\\s+%s\\s*\\(([^)]*)\\)";
   private static final String NULL_CHECK_TEMPLATE = "if\\s*\\(\\s*%s\\s*==\\s*null\\s*\\)";
 
-  // FIELD_DECLARATION_PATTERN matches declarations such as:
+  // FIELD_DECLARATION_PATTERN matches private instance field declarations, both final and
+  // non-final.
+  // Fields marked `transient` or `static` are excluded — use the `transient` keyword to opt out
+  // of golden-file tracking for caching or internal bookkeeping fields.
+  //
+  // Examples of matched declarations:
   //     private final List<String> names = new ArrayList<>();
   //     private final int count;
-  //     private final SomeType<?>[] values = new SomeType[0];
+  //     private AuthInfo authorization = AuthInfo.empty();
+  //     private AgentInfo agent;
   //     private final @Nullable Map<String, Integer> map;
+  //
+  // Examples of excluded declarations:
+  //     private transient boolean frozen;       (transient — internal state)
+  //     private transient int cachedLength;      (transient — cached value)
+  //     private static final int CONST = 1;      (static — class-level constant)
   private static final Pattern FIELD_DECLARATION_PATTERN =
       Pattern.compile(
-          "private\\s+final\\s+([\\w<>,?\\s.\\[\\]@]+?)\\s+(\\w+)\\s*(=\\s*[^;]+)?;",
+          "private\\s+(?:final\\s+)?(?!static\\s|transient\\s)([\\w<>,?\\s.\\[\\]@]+?)\\s+(\\w+)\\s*(=\\s*[^;]+)?;",
           Pattern.DOTALL);
 
   // PROPERTY_CTOR_PATTERN matches constructor expressions such as:
@@ -300,6 +311,9 @@ public class RecordGoldenFilesTest {
 
         3) Golden file is missing for a new record:
            - Create the golden file after careful review.
+
+        4) You added a field that should NOT be tracked (e.g. caching, internal state):
+           - Mark it `transient`. Transient and static fields are excluded from tracking.
 
         To update the golden file, use the command printed by the test logs (see
         printGoldenFileCommand) to copy or create the golden file. Always double-check
