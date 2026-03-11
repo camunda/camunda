@@ -15,6 +15,10 @@
  */
 package io.camunda.process.test.impl.runtime.properties;
 
+import static io.camunda.process.test.api.judge.JudgeConfigBootstrapData.ProviderConfig.PROVIDER_AMAZON_BEDROCK;
+import static io.camunda.process.test.api.judge.JudgeConfigBootstrapData.ProviderConfig.PROVIDER_ANTHROPIC;
+import static io.camunda.process.test.api.judge.JudgeConfigBootstrapData.ProviderConfig.PROVIDER_OPENAI;
+import static io.camunda.process.test.api.judge.JudgeConfigBootstrapData.ProviderConfig.PROVIDER_OPENAI_COMPATIBLE;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -97,18 +101,18 @@ public class JudgeProperties {
     }
     final String normalized = chatModelProvider.trim().toLowerCase();
     switch (normalized) {
-      case "openai":
+      case PROVIDER_OPENAI:
         return new JudgeConfigBootstrapData.OpenAiConfig(chatModelModel, chatModelApiKey);
-      case "anthropic":
+      case PROVIDER_ANTHROPIC:
         return new JudgeConfigBootstrapData.AnthropicConfig(chatModelModel, chatModelApiKey);
-      case "amazon-bedrock":
+      case PROVIDER_AMAZON_BEDROCK:
         return new JudgeConfigBootstrapData.AmazonBedrockConfig(
             chatModelModel,
             chatModelRegion,
             chatModelApiKey,
             chatModelCredentialsAccessKey,
             chatModelCredentialsSecretKey);
-      case "openai-compatible":
+      case PROVIDER_OPENAI_COMPATIBLE:
         return new JudgeConfigBootstrapData.OpenAiCompatibleConfig(
             chatModelModel, chatModelBaseUrl, chatModelApiKey);
       default:
