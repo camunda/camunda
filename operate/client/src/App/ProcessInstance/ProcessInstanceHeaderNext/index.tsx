@@ -24,6 +24,10 @@ import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessI
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {getClientConfig} from 'modules/utils/getClientConfig';
+import {
+  isWidthBelowBreakpoint,
+  useMatchMedia,
+} from 'modules/hooks/useMatchMedia';
 
 const headerColumns = [
   'Process Instance Key',
@@ -73,9 +77,10 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
     hasIncident,
     processDefinitionId,
   } = processInstance;
+  const showReducedContent = useMatchMedia(isWidthBelowBreakpoint('lg'));
+
   const tenantsById = useAvailableTenants();
   const tenantName = tenantsById[tenantId] ?? tenantId;
-
   const isMultiTenancyEnabled = getClientConfig().multiTenancyEnabled;
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
@@ -111,7 +116,10 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
           return hasVersionTag;
         }
         if (name === 'End Date') {
-          return endDate !== null;
+          return endDate !== null && !showReducedContent;
+        }
+        if (name === 'Start Date' || name === 'Called Instances') {
+          return !showReducedContent;
         }
         return true;
       })}
@@ -145,42 +153,34 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
             </Link>
           ),
         },
-        ...(hasVersionTag
-          ? [
-              {
-                title: 'User-defined label identifying a definition.',
-                content: (
-                  <VersionTag size="sm" type="outline">
-                    {processDefinitionVersionTag}
-                  </VersionTag>
-                ),
-              },
-            ]
-          : []),
-        ...(isMultiTenancyEnabled
-          ? [
-              {
-                title: tenantName,
-                content: tenantName,
-              },
-            ]
-          : []),
         {
+          hidden: !hasVersionTag,
+          title: 'User-defined label identifying a definition.',
+          content: (
+            <VersionTag size="sm" type="outline">
+              {processDefinitionVersionTag}
+            </VersionTag>
+          ),
+        },
+        {
+          hidden: !isMultiTenancyEnabled,
+          title: tenantName,
+          content: tenantName,
+        },
+        {
+          hidden: showReducedContent,
           title: formatDate(startDate),
           content: formatDate(startDate),
           dataTestId: 'start-date',
         },
-        ...(endDate !== null
-          ? [
-              {
-                title: formatDate(endDate),
-                content: formatDate(endDate),
-                dataTestId: 'end-date',
-              },
-            ]
-          : []),
-
         {
+          hidden: endDate === null || showReducedContent,
+          title: formatDate(endDate),
+          content: formatDate(endDate),
+          dataTestId: 'end-date',
+        },
+        {
+          hidden: showReducedContent,
           hideOverflowingContent: false,
           content: (
             <>
@@ -215,7 +215,10 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
         },
       ]}
       additionalContent={
-        <ProcessInstanceOperations processInstance={processInstance} />
+        <ProcessInstanceOperations
+          isCollapsed={showReducedContent}
+          processInstance={processInstance}
+        />
       }
     />
   );

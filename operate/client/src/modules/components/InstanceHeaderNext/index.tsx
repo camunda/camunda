@@ -24,6 +24,7 @@ type Column = {
   content: React.ReactNode;
   dataTestId?: string;
   hideOverflowingContent?: boolean;
+  hidden?: boolean;
 };
 
 type Props = {
@@ -70,20 +71,21 @@ const InstanceHeader: React.FC<Props> = ({
         </thead>
         <tbody>
           <tr>
-            {bodyColumns.map(
-              ({title, content, dataTestId, hideOverflowingContent}, index) => {
-                return (
-                  <Td
-                    key={index}
-                    title={title}
-                    data-testid={dataTestId}
-                    $hideOverflowingContent={hideOverflowingContent}
-                  >
-                    {content}
-                  </Td>
-                );
-              },
-            )}
+            {bodyColumns.map((column, index) => {
+              if (column.hidden) {
+                return null;
+              }
+              return (
+                <Td
+                  key={index}
+                  title={column.title}
+                  data-testid={column.dataTestId}
+                  $hideOverflowingContent={column.hideOverflowingContent}
+                >
+                  {column.content}
+                </Td>
+              );
+            })}
           </tr>
         </tbody>
       </Table>
