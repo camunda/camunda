@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
@@ -210,11 +209,6 @@ public final class ProcessInstanceMigrationPreconditions {
       but joining gateway with id '%s' has a taken sequence flow with id '%s'. \
       Taken sequence flows must be mapped to a sequence flow in the target process definition.""";
 
-  private static final String ERROR_BUSINESS_ID_ALREADY_EXISTS_FOR_TARGET =
-      """
-      Expected to migrate instance '%s' with business id '%s' to process definition key '%s', \
-      but an active instance with this business id already exists for the target process definition""";
-
   private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
   private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
 
@@ -299,48 +293,6 @@ public final class ProcessInstanceMigrationPreconditions {
               processInstance.getKey(),
               targetProcessDefinition.getKey(),
               BufferUtil.bufferAsString(correlationKey));
-      throw new ProcessInstanceMigrationPreconditionFailedException(
-          reason, RejectionType.INVALID_STATE);
-    }
-  }
-
-  /**
-   * Checks whether the target process definition already has an active process instance with the
-   * same business id. Throws an exception if a conflict is found.
-   *
-   * @param processInstance the process instance being migrated
-   * @param targetProcessDefinitionKey the key of the target process definition
-   * @param targetProcessDefinitionId the BPMN process id of the target process definition
-   * @param elementInstanceState the element instance state to query for active instances
-   * @param businessIdUniquenessEnabled whether business id uniqueness checking is enabled
-   * @param ignoreWhen a predicate to ignore certain process instances (e.g. banned ones)
-   */
-  public static void requireNoBusinessIdConflictForTargetProcess(
-      final ElementInstance processInstance,
-      final long targetProcessDefinitionKey,
-      final String targetProcessDefinitionId,
-      final ElementInstanceState elementInstanceState,
-      final boolean businessIdUniquenessEnabled,
-      final Predicate<Long> ignoreWhen) {
-    if (!businessIdUniquenessEnabled) {
-      return;
-    }
-
-    final var processInstanceRecord = processInstance.getValue();
-    final String businessId = processInstanceRecord.getBusinessId();
-    if (businessId.isEmpty()) {
-      return;
-    }
-
-    final String tenantId = processInstanceRecord.getTenantId();
-    if (elementInstanceState.hasActiveProcessInstanceWithBusinessId(
-        businessId, targetProcessDefinitionId, tenantId, ignoreWhen)) {
-      final String reason =
-          String.format(
-              ERROR_BUSINESS_ID_ALREADY_EXISTS_FOR_TARGET,
-              processInstance.getKey(),
-              businessId,
-              targetProcessDefinitionKey);
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
     }
