@@ -53,6 +53,12 @@ identity:
 
 optimize:
   enabled: true
+  extraConfiguration:
+    - file: application.yml
+      content: |
+        historyCleanup:
+          cronTrigger: '0 1 * * *'
+          ttl: 'P1D'
 
 identityKeycloak:
   enabled: true
