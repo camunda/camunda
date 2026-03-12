@@ -10,7 +10,8 @@ import styled from 'styled-components';
 import {InlineLoading} from '@carbon/react';
 
 const FitContentInlineLoading = styled(InlineLoading)`
-  width: fit-content;
+  display: inline-flex;
+  inline-size: fit-content;
 `;
 
 export {FitContentInlineLoading};
