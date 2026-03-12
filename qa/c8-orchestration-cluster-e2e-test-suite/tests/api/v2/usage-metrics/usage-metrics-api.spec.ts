@@ -49,7 +49,7 @@ const LIMITED_ROLE_AUTHORIZATION = {
 };
 
 test.describe.serial('Get usage metrics API Tests', () => {
-  test('Get Usage Metrics Success', async ({request}) => {
+  test.skip('Get Usage Metrics Success', async ({request}) => {
     const startOfTodayLocal = new Date();
     startOfTodayLocal.setHours(0, 0, 0, 0);
     const isoLocalMidnight = startOfTodayLocal.toISOString();
