@@ -17,7 +17,7 @@ import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
-import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.encoding.RecordMetadataBlock;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -97,6 +97,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   // The actor is still running, but it is not actively doing any work.
   private boolean idle;
   private final InstantSource clock;
+  private final RecordMetadataBlock skipRecordDecoder = new RecordMetadataBlock();
 
   public ExporterDirector(
       final ExporterDirectorContext context, final ExporterPhase exporterPhase) {
@@ -635,11 +636,10 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void skipRecord(final LoggedEvent currentEvent) {
-    final RecordMetadata metadata = new RecordMetadata();
     final long eventPosition = currentEvent.getPosition();
 
-    currentEvent.readMetadata(metadata);
-    metrics.eventSkipped(metadata.getValueType());
+    skipRecordDecoder.wrap(currentEvent.getMetadata(), currentEvent.getMetadataOffset());
+    metrics.eventSkipped(skipRecordDecoder.valueType());
 
     // increase position of all up to date exporters - an up to date exporter is one which has
     // acknowledged the last record we passed to it
@@ -758,7 +758,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private static class ExporterEventFilter implements EventFilter {
 
-    private final RecordMetadata metadata = new RecordMetadata();
+    private final RecordMetadataBlock decoder = new RecordMetadataBlock();
     private final Map<RecordType, Boolean> acceptRecordTypes;
     private final Map<ValueType, Boolean> acceptValueTypes;
     private final Map<Intent, Boolean> acceptIntents;
@@ -774,11 +774,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
     @Override
     public boolean applies(final LoggedEvent event) {
-      event.readMetadata(metadata);
+      decoder.wrap(event.getMetadata(), event.getMetadataOffset());
 
-      final RecordType recordType = metadata.getRecordType();
-      final ValueType valueType = metadata.getValueType();
-      final Intent intent = metadata.getIntent();
+      final RecordType recordType = decoder.recordType();
+      final ValueType valueType = decoder.valueType();
+      final Intent intent = decoder.intent();
 
       try {
         return acceptRecordTypes.get(recordType)
@@ -789,12 +789,14 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         LOG.error(
             """
                 NPE when applying event filter for event: {}
-                - metadata: {}
+                - recordType={}, valueType={}, intent={}
                 - acceptRecordTypes: {}
                 - acceptValueTypes: {}
                 - acceptIntents: {}""",
             event,
-            metadata,
+            recordType,
+            valueType,
+            intent,
             acceptRecordTypes,
             acceptValueTypes,
             acceptIntents.entrySet().stream()

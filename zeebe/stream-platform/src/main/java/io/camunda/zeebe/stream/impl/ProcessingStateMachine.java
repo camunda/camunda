@@ -15,6 +15,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.protocol.impl.encoding.RecordMetadataBlock;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -119,13 +120,14 @@ public final class ProcessingStateMachine {
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
   private static final String ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED =
       "Expected to process command '{} {}' successfully on stream processor, but caught unexpected exception. Failed to handle the exception gracefully.";
+  private final RecordMetadataBlock recordTypeDecoder = new RecordMetadataBlock();
   private final EventFilter processingFilter;
   private final EventFilter isEventOrRejection =
-      new MetadataEventFilter(
-          recordMetadata -> {
-            final var recordType = recordMetadata.getRecordType();
-            return recordType == RecordType.EVENT || recordType == RecordType.COMMAND_REJECTION;
-          });
+      event -> {
+        recordTypeDecoder.wrap(event.getMetadata(), event.getMetadataOffset());
+        final var recordType = recordTypeDecoder.recordType();
+        return recordType == RecordType.EVENT || recordType == RecordType.COMMAND_REJECTION;
+      };
   private final MutableLastProcessedPositionState lastProcessedPositionState;
   private final RecordMetadata metadata = new RecordMetadata();
   private final ActorControl actor;
@@ -192,11 +194,13 @@ public final class ProcessingStateMachine {
 
     streamProcessorListener = context.getStreamProcessorListener();
     processingMetrics = new ProcessingMetrics(context.getMeterRegistry());
+    final EventFilter commandFilter =
+        event -> {
+          recordTypeDecoder.wrap(event.getMetadata(), event.getMetadataOffset());
+          return recordTypeDecoder.recordType() == RecordType.COMMAND;
+        };
     processingFilter =
-        new MetadataEventFilter(
-                recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND)
-            .and(record -> !record.shouldSkipProcessing())
-            .and(context.processingFilter());
+        commandFilter.and(record -> !record.shouldSkipProcessing()).and(context.processingFilter());
     clock = context.getClock();
   }
 
