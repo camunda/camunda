@@ -89,6 +89,9 @@ public class CamundaExporter implements Exporter {
   private SearchEngineClient searchEngineClient;
   private int partitionId;
   private Context context;
+  private long lastFlushTimestamp = 0L;
+
+  private long delayMs;
 
   public CamundaExporter() {
     // the metadata will be initialized on open
@@ -110,6 +113,7 @@ public class CamundaExporter implements Exporter {
   public void configure(final Context context) {
     this.context = context;
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
+    delayMs = configuration.getBulk().getDelay() * 1000L;
     partitionId = context.getPartitionId();
 
     LOG.info("Configuring exporter with {}", configuration);
@@ -135,7 +139,7 @@ public class CamundaExporter implements Exporter {
       writer = createBatchWriter();
       controller.readMetadata().ifPresent(metadata::deserialize);
       taskManager.start();
-      scheduleDelayedFlush();
+      scheduleDelayedFlush(context.clock().millis());
 
       LOG.info("Exporter opened");
     } catch (final Exception e) {
@@ -307,18 +311,24 @@ public class CamundaExporter implements Exporter {
     return builder.build();
   }
 
-  private void scheduleDelayedFlush() {
-    controller.scheduleCancellableTask(
-        Duration.ofSeconds(configuration.getBulk().getDelay()), this::flushAndReschedule);
+  private void scheduleDelayedFlush(final long now) {
+    if (lastFlushTimestamp > 0) {
+      delayMs = Math.max(0, delayMs - (now - lastFlushTimestamp));
+    }
+
+    controller.scheduleCancellableTask(Duration.ofMillis(delayMs), this::flushAndReschedule);
   }
 
   private void flushAndReschedule() {
+    final var now = context.clock().millis();
     try {
-      flush();
+      if (now - lastFlushTimestamp >= configuration.getBulk().getDelay() * 1000L) {
+        flush();
+      }
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
     }
-    scheduleDelayedFlush();
+    scheduleDelayedFlush(now);
   }
 
   private void flush() {
@@ -329,12 +339,15 @@ public class CamundaExporter implements Exporter {
         writer.flush(batchRequest);
         metrics.recordFlushOccurrence(Instant.now());
         metrics.stopFlushLatencyMeasurement();
+        lastFlushTimestamp = context.clock().millis();
       } catch (final PersistenceException ex) {
         metrics.recordFailedFlush();
         throw new ExporterException(ex.getMessage(), ex);
       }
     }
 
+    // Update the record counters only after the flush was successful. If the synchronous flush
+    // fails then the exporter will be invoked with the same record again.
     updateLastExportedPosition(lastPosition);
   }
 

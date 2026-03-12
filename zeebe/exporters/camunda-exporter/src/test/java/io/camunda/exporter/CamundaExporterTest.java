@@ -33,7 +33,12 @@ import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
@@ -168,8 +173,7 @@ final class CamundaExporterTest {
 
     @Override
     public BatchRequest createBatchRequest() {
-      return mock(
-          BatchRequest.class, Mockito.withSettings().defaultAnswer(Answers.RETURNS_SMART_NULLS));
+      return mock(BatchRequest.class, Mockito.withSettings().defaultAnswer(Answers.RETURNS_SELF));
     }
 
     @Override
@@ -179,6 +183,23 @@ final class CamundaExporterTest {
 
     @Override
     public void close() {}
+  }
+
+  private static final class MutableClock implements InstantSource {
+    private long millis;
+
+    MutableClock(final long initialMillis) {
+      millis = initialMillis;
+    }
+
+    @Override
+    public Instant instant() {
+      return Instant.ofEpochMilli(millis);
+    }
+
+    void advance(final long addMillis) {
+      millis += addMillis;
+    }
   }
 
   @Nested
@@ -231,6 +252,61 @@ final class CamundaExporterTest {
       assertThat(actual.getLastIncidentUpdatePosition()).isEqualTo(5);
       assertThat(actual.getFirstUserTaskKey(TaskImplementation.JOB_WORKER)).isEqualTo(10);
       assertThat(actual.getFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK)).isEqualTo(10);
+    }
+  }
+
+  @Nested
+  final class ScheduledFlushTest {
+
+    private Record<?> stubRecord() {
+      return new ProtocolFactory().generateRecord(ValueType.VARIABLE);
+    }
+
+    @Test
+    void shouldScheduleInitialFlushAtConfiguredDelay() {
+      // given
+      configuration.getBulk().setDelay(5);
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+
+      // when
+      exporter.configure(testContext);
+      exporter.open(testController);
+
+      // then — delay(5) means 5 seconds, not 5 milliseconds
+      final var tasks = testController.getScheduledTasks();
+      assertThat(tasks).hasSize(1);
+      assertThat(tasks.getFirst().getDelay()).isEqualTo(Duration.ofSeconds(5));
+    }
+
+    @Test
+    void shouldNotFlushBeforeDelayElapses() {
+      // given — use a controllable clock so we can verify timing
+      final var clock = new MutableClock(0);
+      testContext.setClock(clock);
+      // bulk size = 1 so that export() triggers an immediate size-based flush,
+      // which sets lastFlushTimestamp without needing the scheduled task to flush
+      configuration.getBulk().setSize(1);
+      configuration.getBulk().setDelay(1);
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController);
+
+      // export at t=500 — triggers immediate size-based flush, setting lastFlushTimestamp=500
+      clock.advance(500);
+      exporter.export(stubRecord());
+
+      // run the scheduled task at t=800 — only 300ms since last flush, guard should skip
+      clock.advance(300);
+      testController.runScheduledTasks(Duration.ofSeconds(2));
+
+      // then — the rescheduled task should have the remaining 700ms delay
+      final var tasks = testController.getScheduledTasks();
+      final var lastTask = tasks.getLast();
+      assertThat(lastTask.getDelay()).isEqualTo(Duration.ofMillis(700));
     }
   }
 }
