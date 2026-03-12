@@ -34,7 +34,7 @@ public final class RequestValidator {
 
   /** Compiled pattern for a valid BPMN process definition ID, matching the OpenAPI spec. */
   public static final Pattern PROCESS_DEFINITION_ID_PATTERN =
-      Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_\\-.]*$");
+      Pattern.compile("^[\\p{L}_][\\p{L}\\p{N}_\\-.]*$");
 
   /** Maximum allowed length for a business ID, matching the engine-side constraint. */
   public static final int MAX_BUSINESS_ID_LENGTH = 256;
