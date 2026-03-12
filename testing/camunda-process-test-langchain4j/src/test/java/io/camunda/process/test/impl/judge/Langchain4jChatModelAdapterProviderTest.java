@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.judge;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.process.test.api.judge.BaseProviderConfig;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.ChatModelAdapterProvider;
 import io.camunda.process.test.api.judge.ProviderConfig;
@@ -43,13 +44,13 @@ public class Langchain4jChatModelAdapterProviderTest {
 
   static Stream<Arguments> providerConfigurations() {
     return Stream.of(
-        Arguments.of("openai", new ProviderConfig.OpenAiConfig("gpt-4o", "test-key")),
+        Arguments.of("openai", new BaseProviderConfig.OpenAiConfig("gpt-4o", "test-key")),
         Arguments.of(
             "anthropic",
-            new ProviderConfig.AnthropicConfig("claude-3-5-sonnet-20241022", "test-key")),
+            new BaseProviderConfig.AnthropicConfig("claude-3-5-sonnet-20241022", "test-key")),
         Arguments.of(
             "amazon-bedrock",
-            new ProviderConfig.AmazonBedrockConfig(
+            new BaseProviderConfig.AmazonBedrockConfig(
                 "anthropic.claude-3-5-sonnet-20241022-v2:0",
                 "us-east-1",
                 null,
@@ -57,14 +58,15 @@ public class Langchain4jChatModelAdapterProviderTest {
                 "test-secret-key")),
         Arguments.of(
             "openai-compatible",
-            new ProviderConfig.OpenAiCompatibleConfig(
+            new BaseProviderConfig.OpenAiCompatibleConfig(
                 "mistral-7b", "http://localhost:11434/v1", null)));
   }
 
   @Test
   void shouldReturnEmptyForUnknownProvider() {
     // given
-    final ProviderConfig unknownConfig = new ProviderConfig("unknown-provider", "test-model") {};
+    final ProviderConfig unknownConfig =
+        new BaseProviderConfig.GenericConfig("unknown-provider", "test-model");
 
     // when
     final Optional<ChatModelAdapter> adapter = provider.create(unknownConfig);

@@ -19,7 +19,7 @@ import static io.camunda.process.test.impl.judge.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.anthropic.AnthropicChatModel;
 import dev.langchain4j.model.chat.ChatModel;
-import io.camunda.process.test.api.judge.ProviderConfig;
+import io.camunda.process.test.api.judge.BaseProviderConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +29,7 @@ final class AnthropicChatModelBuilder {
 
   private AnthropicChatModelBuilder() {}
 
-  static ChatModel build(final ProviderConfig.AnthropicConfig config) {
+  static ChatModel build(final BaseProviderConfig.AnthropicConfig config) {
     LOG.debug("Building Anthropic chat model");
 
     final String model = require(config.getModel(), "model", "anthropic");
