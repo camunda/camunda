@@ -56,6 +56,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -118,6 +119,11 @@ public class ExecutionListenerTest {
 
   @Mock private CamundaProcessTestContainerProvider containerProvider;
   @Mock private CamundaProcessTestContainerProvider anotherContainerProvider;
+
+  @AfterEach
+  void resetJudgeConfig() {
+    CamundaAssert.setJudgeConfig(null);
+  }
 
   @BeforeEach
   void configureMocks() {

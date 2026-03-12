@@ -329,6 +329,10 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
   // --- Judge evaluation methods ---
 
+  JudgeConfig getJudgeConfig() {
+    return judgeConfig;
+  }
+
   void setJudgeConfig(final JudgeConfig judgeConfig) {
     this.judgeConfig = judgeConfig;
   }
@@ -336,7 +340,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   public void hasVariableSatisfiesJudge(
       final long processInstanceKey, final String variableName, final String expectation) {
 
-    assertJudgeConfigured();
+    assertJudgeHasAllRequiredSettings();
     hasVariableSatisfiesJudge(
         processInstanceKey, variableName, expectation, judgeConfig.getThreshold());
   }
@@ -347,7 +351,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final String expectation,
       final double threshold) {
 
-    assertJudgeConfigured();
+    assertJudgeHasAllRequiredSettings();
     assertExpectationNotEmpty(expectation);
     assertThresholdInRange(threshold);
 
@@ -375,7 +379,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final String variableName,
       final String expectation) {
 
-    assertJudgeConfigured();
+    assertJudgeHasAllRequiredSettings();
     hasLocalVariableSatisfiesJudge(
         processInstanceKey, selector, variableName, expectation, judgeConfig.getThreshold());
   }
@@ -387,7 +391,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final String expectation,
       final double threshold) {
 
-    assertJudgeConfigured();
+    assertJudgeHasAllRequiredSettings();
     assertExpectationNotEmpty(expectation);
     assertThresholdInRange(threshold);
 
@@ -449,10 +453,15 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     }
   }
 
-  private void assertJudgeConfigured() {
+  private void assertJudgeHasAllRequiredSettings() {
     if (judgeConfig == null) {
       throw new IllegalStateException(
           "JudgeConfig is not set. Ensure to provide a JudgeConfig instance to use judge assertions.");
+    }
+    if (judgeConfig.getChatModel() == null) {
+      throw new IllegalStateException(
+          "JudgeConfig has no ChatModelAdapter configured. "
+              + "Use JudgeConfig.of(chatModel) or withJudgeConfig(config -> config.withChatModelAdapter(chatModel)).");
     }
   }
 
