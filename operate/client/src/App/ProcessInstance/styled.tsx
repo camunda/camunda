@@ -9,10 +9,14 @@
 import styled from 'styled-components';
 import {Stack} from '@carbon/react';
 
-const BottomPanel = styled.div<{$shouldExpandPanel?: boolean}>`
+const BottomPanelGrid = styled.div<{$shouldExpandPanel?: boolean}>`
   display: grid;
   grid-template-columns: ${({$shouldExpandPanel}) =>
     $shouldExpandPanel ? '1.1fr 1.9fr' : '1fr 1fr'};
+  height: 100%;
+`;
+
+const ResizableBottomPanelContainer = styled.div`
   height: 100%;
 `;
 
@@ -28,4 +32,9 @@ const Buttons = styled(Stack)`
   margin-left: auto;
 `;
 
-export {BottomPanel, ModificationFooter, Buttons};
+export {
+  BottomPanelGrid,
+  ResizableBottomPanelContainer,
+  ModificationFooter,
+  Buttons,
+};

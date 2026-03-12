@@ -11,9 +11,10 @@ import {styled} from 'styled-components';
 const Container = styled.div`
   display: flex;
   flex-direction: column;
+  min-height: 0;
   height: 100%;
   overflow: hidden;
-  background-color: var(--cds-layer);
+  background-color: var(--cds-layer-01);
 `;
 
 export {Container};

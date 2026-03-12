@@ -19,15 +19,13 @@ import {elementTimeStampStore} from 'modules/stores/elementTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {ProcessInstanceHeader as ProcessInstanceHeaderNext} from './ProcessInstanceHeaderNext';
 import {TopPanel} from './TopPanel';
-import {BottomPanel, ModificationFooter, Buttons} from './styled';
-import {ElementInstanceLog} from './ElementInstanceLog';
+import {ModificationFooter, Buttons} from './styled';
 import {Button, Modal} from '@carbon/react';
 import {tracking} from 'modules/tracking';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {ModificationSummaryModal} from './ModificationSummaryModal';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import {LastModification} from './LastModification';
-import {VariablePanel} from './BottomPanel/VariablePanel';
 import {Forbidden} from 'modules/components/Forbidden';
 import {Frame} from 'modules/components/Frame';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
@@ -41,7 +39,7 @@ import {useNavigate, matchPath, type Location} from 'react-router-dom';
 import {Locations, Paths} from 'modules/Routes';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
-import {BottomPanelTabs} from './BottomPanelTabs';
+import {BottomPanel} from './BottomPanel';
 
 const onProcessInstanceTabTransition = ({
   currentLocation,
@@ -195,19 +193,9 @@ const ProcessInstance: React.FC = observer(() => {
             topPanel={<TopPanel />}
             bottomPanel={
               <BottomPanel
-                $shouldExpandPanel={
-                  IS_NEW_PROCESS_INSTANCE_PAGE ? false : isListenerTabSelected
-                }
-              >
-                <ElementInstanceLog />
-                {IS_NEW_PROCESS_INSTANCE_PAGE ? (
-                  <BottomPanelTabs />
-                ) : (
-                  <VariablePanel
-                    setListenerTabVisibility={setListenerTabVisibility}
-                  />
-                )}
-              </BottomPanel>
+                isListenerTabSelected={isListenerTabSelected}
+                setListenerTabVisibility={setListenerTabVisibility}
+              />
             }
             footer={
               isModificationModeEnabled ? (

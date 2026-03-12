@@ -8,6 +8,7 @@
 
 import styled, {css} from 'styled-components';
 import {EmptyMessage as BaseEmptyMessage} from 'modules/components/EmptyMessage';
+import {ActionableNotification} from '@carbon/react';
 
 type ContentProps = {
   $isInfoBannerVisible: boolean;
@@ -28,9 +29,17 @@ const Content = styled.div<ContentProps>`
   }}
 `;
 
+const FullSizeActionableNotification = styled(ActionableNotification)`
+  max-inline-size: unset;
+
+  .cds--actionable-notification__text-wrapper {
+    max-inline-size: 80ch; // Keep text at a readable length
+  }
+`;
+
 const EmptyMessage = styled(BaseEmptyMessage)`
   align-self: center;
   margin: auto;
 `;
 
-export {Content, EmptyMessage};
+export {Content, EmptyMessage, FullSizeActionableNotification};
