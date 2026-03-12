@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Release Process | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/release/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Process | Camunda Platform"><meta data-rh="true" name="description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><meta data-rh="true" property="og:description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><link data-rh="true" rel="icon" href="/camunda/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/release/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/release/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/release/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://camunda.github.io/camunda/release"}]}</script><link rel="stylesheet" href="/camunda/assets/css/styles.9181a4df.css">
-<script src="/camunda/assets/js/runtime~main.326f87f8.js" defer="defer"></script>
-<script src="/camunda/assets/js/main.1fcef6af.js" defer="defer"></script>
+<script src="/camunda/assets/js/runtime~main.8ad5a5fe.js" defer="defer"></script>
+<script src="/camunda/assets/js/main.b55bdf61.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -388,11 +388,17 @@
 </li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="feature-freeze-vs-code-freeze-minor-releases">Feature Freeze vs Code Freeze (Minor Releases)<a href="#feature-freeze-vs-code-freeze-minor-releases" class="hash-link" aria-label="Direct link to Feature Freeze vs Code Freeze (Minor Releases)" title="Direct link to Feature Freeze vs Code Freeze (Minor Releases)" translate="no">​</a></h3>
+<p>Terminology:</p>
+<ul>
+<li class=""><strong>Release date</strong>: (in scope of the Monorepo) The day on which final Monorepo artifacts should be tested and available for a release</li>
+<li class=""><strong>Code freeze date</strong>: The day on which the release branch will be forked from the base branch</li>
+<li class=""><strong>Press release date</strong>: (out of scope of the Monorepo) The day on which the whole C8 release train should be finished</li>
+</ul>
 <p>For C8 monorepo minor releases, we enforce two distinct stages to ensure quality and predictable delivery:</p>
 <p><strong>🔒 Feature Freeze (Minor Releases)</strong></p>
 <ul>
 <li class=""><strong>Purpose</strong>: Lock in the feature scope for the upcoming minor release</li>
-<li class=""><strong>Timing</strong>: Occurs with the <strong>last alpha</strong> before the minor release (e.g., for <code>8.9.0</code>, this would be <code>8.9.0-alpha5</code>)</li>
+<li class=""><strong>Timing</strong>: Occurs with the <strong>last alpha</strong> before the minor release (e.g., for <code>8.9.0</code>, this would be <code>8.9.0-alpha5</code>), on the day of the code freeze of the last alpha</li>
 <li class=""><strong>What Changes</strong>:</li>
 <li class="">✅ All cross-component features targeted for the minor must be fully implemented, documented, and working end-to-end</li>
 <li class="">❌ No new features, scope extensions, or risky changes after this point</li>
@@ -405,7 +411,7 @@
 <p><strong>🚫 Code Freeze (Minor Releases)</strong></p>
 <ul>
 <li class=""><strong>Purpose</strong>: Minimize code changes to ensure release stability</li>
-<li class=""><strong>Timing</strong>: On the day of the official minor release start date</li>
+<li class=""><strong>Timing</strong>: Three weeks before the press release (e.g., release branch creation and thus code freeze for <code>8.9.0</code> is on March 24th since press release is on April 14th)</li>
 <li class=""><strong>What Changes</strong>:</li>
 <li class="">✅ Only <strong>critical</strong> changes allowed (release blockers, severe regressions, security issues)</li>
 <li class="">❌ Non-critical changes deferred to future alphas or patch releases</li>
