@@ -597,6 +597,7 @@ public class ExecutionListenerTest {
     // given
     final CamundaProcessTestRuntimeConfiguration configuration =
         new CamundaProcessTestRuntimeConfiguration();
+    configuration.getJudge().getChatModel().setProvider("openai-compatible");
     configuration.getJudge().setThreshold(0.7);
     when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
         .thenReturn(configuration);
