@@ -62,6 +62,8 @@ import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/usePro
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {isInstanceRunning} from 'modules/utils/instance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useDrillDownNavigation} from 'modules/hooks/useDrilldownNavigation';
+import {isDrillDownCandidate} from 'modules/utils/drilldown';
 import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram';
 import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
 
@@ -249,6 +251,42 @@ const TopPanel: React.FC = observer(() => {
 
   const {isModificationModeEnabled} = modificationsStore;
 
+  const {handleDrillDown, pendingDrillDownElementId} =
+    useDrillDownNavigation(processInstanceId);
+
+  const customElementClasses = useMemo<
+    [elementId: string, className: string][]
+  >(() => {
+    if (
+      !IS_NEW_PROCESS_INSTANCE_PAGE ||
+      isModificationModeEnabled ||
+      !businessObjects ||
+      !totalRunningInstancesByElement
+    ) {
+      return [];
+    }
+
+    const drilldownClasses: [string, string][] = Object.entries(businessObjects)
+      .filter(([elementId, bo]) =>
+        isDrillDownCandidate(elementId, bo, totalRunningInstancesByElement),
+      )
+      .map(([elementId]) => [elementId, 'op-drilldown'] as const);
+
+    if (pendingDrillDownElementId !== null) {
+      drilldownClasses.push([
+        pendingDrillDownElementId,
+        'op-drilldown-loading',
+      ]);
+    }
+
+    return drilldownClasses;
+  }, [
+    businessObjects,
+    totalRunningInstancesByElement,
+    isModificationModeEnabled,
+    pendingDrillDownElementId,
+  ]);
+
   useEffect(() => {
     if (!isModificationModeEnabled) {
       if (selectedElementId) {
@@ -393,6 +431,10 @@ const TopPanel: React.FC = observer(() => {
                   !isModificationModeEnabled ||
                   hasSelectedElementMultipleRunningInstances
                 }
+                customElementClasses={customElementClasses}
+                onElementDoubleClick={(elementId) => {
+                  handleDrillDown(elementId);
+                }}
               >
                 {stateOverlays.map((overlay) => {
                   const payload = overlay.payload as {
