@@ -171,6 +171,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v6
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
       - name: Download distribution artifact
         uses: actions/download-artifact@v4
         with:
