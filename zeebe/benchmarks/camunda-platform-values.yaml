@@ -288,11 +288,11 @@ elasticsearch:
         cpu: 7000m
         memory: 8Gi
     nodeSelector:
-      component: benchmark-n2-standard-4
+      component: benchmark-n2-standard-8
     tolerations:
       - key: nodepool
         operator: Equal
-        value: n2-standard-4
+        value: n2-standard-8
         effect: NoSchedule
   extraConfig:
     logger.org.elasticsearch.deprecation: "OFF"
