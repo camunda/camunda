@@ -31,7 +31,8 @@ public class GatewayRestConfiguration {
   }
 
   /**
-   * Maximum allowed length for message names in REST requests.
+   * Maximum allowed length for name-type fields (e.g. message names, variable names) validated
+   * across REST and gRPC gateway requests.
    *
    * <p>Defaults to {@link #DEFAULT_MAX_NAME_FIELD_LENGTH}.
    */
