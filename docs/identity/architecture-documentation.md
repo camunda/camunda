@@ -237,6 +237,60 @@ Responsibilities:
 - Authentication for web UIs and machine APIs.
 - Authorization checks for all cluster components via the shared RBAC engine.
 
+```mermaid
+---
+title: Orchestration Cluster Identity - Internal Structure
+---
+flowchart TB
+  subgraph OC_IDENTITY["Orchestration Cluster Identity"]
+    ADMIN_UI["Admin UI / Orchestration Cluster Admin\n(users, groups, roles, tenants, mapping rules, authorizations)"]
+
+    subgraph AUTHN["Authentication"]
+      WEB_SEC_CFG["Spring Security Config\n(WebSecurityConfig)"]
+      BASIC_CONV["Basic Auth Converter\n(UsernamePasswordAuthenticationTokenConverter)"]
+      OIDC_CONV["OIDC Converters\n(OidcUserAuthenticationConverter,\nOidcTokenAuthenticationConverter)"]
+      CLAIMS_CONV["Claims Converter\n(TokenClaimsConverter)"]
+      MAPPING_MATCHER["Mapping Rule Matcher\n(MappingRuleMatcher)"]
+      AUTHN_PROVIDER["Authentication Provider\n(DefaultCamundaAuthenticationProvider)"]
+      SESSION_REPO["Session Repository\n(WebSessionRepository)"]
+    end
+
+    subgraph IDENTITY_ENTITIES["Identity Entities"]
+      USERS["Users"]
+      GROUPS["Groups"]
+      ROLES["Roles"]
+      AUTHORIZATIONS["Authorizations"]
+      TENANTS["Tenants"]
+      CLIENTS_ENT["Clients (M2M)"]
+      MAPPING_RULES["Mapping Rules"]
+    end
+
+    subgraph SECURITY_BB["Security"]
+      SC_PROVIDER["SecurityContextProvider"]
+      RESOURCE_ACCESS["ResourceAccessProvider"]
+    end
+
+    ADMIN_UI --> IDENTITY_ENTITIES
+    WEB_SEC_CFG --> BASIC_CONV
+    WEB_SEC_CFG --> OIDC_CONV
+    BASIC_CONV --> CLAIMS_CONV
+    OIDC_CONV --> CLAIMS_CONV
+    CLAIMS_CONV --> MAPPING_MATCHER --> AUTHN_PROVIDER --> SESSION_REPO
+    RESOURCE_ACCESS --> AUTHORIZATIONS
+    RESOURCE_ACCESS --> ROLES
+  end
+
+  IDP[("OIDC IdP")]
+  PRIMARY_DB[("Primary Database (RocksDB)")]
+  SECONDARY_DB[("Secondary Database (ES/OS/RDBMS)")]
+
+  WEB_SEC_CFG -.->|"OIDC / JWKS"| IDP
+  IDENTITY_ENTITIES --> PRIMARY_DB
+  IDENTITY_ENTITIES --> SECONDARY_DB
+  MAPPING_MATCHER --> SECONDARY_DB
+  BASIC_CONV --> SECONDARY_DB
+```
+
 Key sub‑components:
 
 - Admin UI / Orchestration Cluster Admin
@@ -256,6 +310,137 @@ Key sub‑components:
 - Authorization engine
   Shared framework that allows other teams to define resource and permission types and use them consistently. Integrated with Zeebe engine, REST gateway and services.
 
+## 5.3 Authentication
+
+The Authentication building block provides configuration classes, converters, and helpers that extend Spring Security.
+Spring Security itself manages the OIDC / OAuth2 filter chain, token exchange, and IdP communication.
+Authentication classes enrich the resulting principal with Camunda-specific claims (groups, roles, tenants) and persist sessions.
+
+```mermaid
+---
+title: Authentication - Building Block
+---
+flowchart TB
+  subgraph AUTHENTICATION["Authentication"]
+    WEB_SEC_CFG["Spring Security Configuration\n(WebSecurityConfig)"]
+    BASIC_CONV["Basic Auth Converter\n(UsernamePasswordAuthenticationTokenConverter)"]
+    OIDC_USER_CONV["OIDC User Converter\n(OidcUserAuthenticationConverter)"]
+    OIDC_TOKEN_CONV["OIDC Token Converter\n(OidcTokenAuthenticationConverter)"]
+    CLAIMS_CONV["Claims Converter\n(TokenClaimsConverter)"]
+    MAPPING_RULES_PROC["Mapping Rules Processor\n(MappingRuleMatcher)"]
+    AUTH_PROVIDER["Authentication Provider\n(DefaultCamundaAuthenticationProvider)"]
+    SESSION_MGR["Session Repository\n(WebSessionRepository)"]
+
+    WEB_SEC_CFG --> BASIC_CONV
+    WEB_SEC_CFG --> OIDC_USER_CONV
+    WEB_SEC_CFG --> OIDC_TOKEN_CONV
+    BASIC_CONV --> CLAIMS_CONV
+    OIDC_USER_CONV --> CLAIMS_CONV
+    OIDC_TOKEN_CONV --> CLAIMS_CONV
+    CLAIMS_CONV --> MAPPING_RULES_PROC
+    MAPPING_RULES_PROC --> AUTH_PROVIDER
+    AUTH_PROVIDER --> SESSION_MGR
+  end
+
+  IDP[("OIDC IdP")]
+  SPRING_SECURITY["Spring Security\n(OAuth2 filter chain)"]
+  SECONDARY_DB[("Secondary Database\n(users, mapping rules)")]
+
+  SPRING_SECURITY -->|"configured by"| WEB_SEC_CFG
+  SPRING_SECURITY -->|"OIDC / JWKS validation"| IDP
+  BASIC_CONV -->|"load user"| SECONDARY_DB
+  MAPPING_RULES_PROC -->|"load mapping rules"| SECONDARY_DB
+  SESSION_MGR -->|"CamundaAuthentication principal"| SPRING_SECURITY
+```
+
+Key responsibilities:
+
+- `WebSecurityConfig`: configures the Spring Security filter chains for Basic auth, OIDC browser login, and Bearer token validation.
+- `UsernamePasswordAuthenticationTokenConverter`: converts Basic auth credentials into a `CamundaAuthentication` by loading user data from secondary storage.
+- `OidcUserAuthenticationConverter`: post-processes OIDC browser login tokens to extract Camunda-specific claims.
+- `OidcTokenAuthenticationConverter`: converts Bearer JWTs (M2M) into a `CamundaAuthentication`.
+- `TokenClaimsConverter`: core converter that extracts username / clientId from token claims and loads group / role / tenant memberships.
+- `MappingRuleMatcher`: evaluates JSONPath mapping rules against IdP claims to assign roles, groups, tenants and authorizations.
+- `DefaultCamundaAuthenticationProvider`: bridges Spring Security to the Camunda authentication context via `CamundaAuthentication`.
+- `WebSessionRepository`: creates and invalidates server‑side sessions backed by secondary storage.
+
+## 5.4 Security
+
+The Security building block provides authorization checks for REST queries executed via the Camunda Search Client.
+It implements the shared RBAC framework for data access control, ensuring that search results are filtered according to the caller's permissions.
+
+```mermaid
+---
+title: Security - Building Block
+---
+flowchart TB
+  subgraph SECURITY["Security"]
+    SC_PROVIDER["Security Context Provider\n(SecurityContextProvider)"]
+    AUTHZ_CHECKER["Authorization Checker\n(ResourceAccessProvider)"]
+    RESOURCE_FILTER["Resource Filter Builder\n(construct search filter)"]
+    PERMISSION_EVALUATOR["Permission Evaluator\n(role and authorization lookup)"]
+
+    SC_PROVIDER --> AUTHZ_CHECKER
+    AUTHZ_CHECKER --> PERMISSION_EVALUATOR
+    PERMISSION_EVALUATOR --> RESOURCE_FILTER
+  end
+
+  CAMUNDA_SERVICES["Camunda Services"]
+  CAMUNDA_SEARCH_CLIENT["Camunda Search Client"]
+  SECONDARY_DB[("Secondary Database\n(ES / OS / RDBMS)")]
+
+  CAMUNDA_SERVICES -->|"SecurityContext (CamundaAuthentication)"| SC_PROVIDER
+  CAMUNDA_SEARCH_CLIENT -->|"query with auth context"| AUTHZ_CHECKER
+  RESOURCE_FILTER -->|"enriched query with resource filter"| CAMUNDA_SEARCH_CLIENT
+  CAMUNDA_SEARCH_CLIENT -->|"filtered query"| SECONDARY_DB
+  PERMISSION_EVALUATOR -->|"read authorizations, roles"| SECONDARY_DB
+```
+
+Key responsibilities:
+
+- `SecurityContextProvider`: builds a `SecurityContext` combining the `CamundaAuthentication` with authorization requirements before a query is executed.
+- `ResourceAccessProvider`: entry point for checking whether the caller is allowed to perform a given action on a resource type.
+- Permission Evaluator: resolves the effective permissions of a principal by combining direct authorizations and role‑based authorizations.
+- Resource Filter Builder: translates the effective permissions into a search‑engine filter that restricts query results to authorized resources.
+
+## 5.5 Engine Identity
+
+Engine Identity is the RBAC authorization engine embedded directly inside the Zeebe Engine.
+It intercepts engine commands (such as creating process instances or completing user tasks) and enforces authorization before the command is applied.
+
+```mermaid
+---
+title: Engine Identity - Building Block
+---
+flowchart TB
+  subgraph ENGINE_IDENTITY["Engine Identity"]
+    AUTHZ_BEHAVIOR["RBAC Authorization Engine\n(AuthorizationCheckBehavior)"]
+    AUTHZ_REQUEST["Permission Check\n(AuthorizationRequest)"]
+    TENANT_RESOLVER["Tenant Resolver\n(TenantResolver)"]
+    CLAIMS_EXTRACTOR["Claims Extractor\n(ClaimsExtractor)"]
+
+    AUTHZ_BEHAVIOR --> AUTHZ_REQUEST
+    AUTHZ_BEHAVIOR --> TENANT_RESOLVER
+    AUTHZ_BEHAVIOR --> CLAIMS_EXTRACTOR
+    CLAIMS_EXTRACTOR --> AUTHZ_REQUEST
+    TENANT_RESOLVER --> AUTHZ_REQUEST
+  end
+
+  ENGINE["Engine\n(Zeebe command processing)"]
+  PRIMARY_DB[("Primary Database (RocksDB)\n(authorizations, roles, users)")]
+
+  ENGINE -->|"check authorization before applying command"| AUTHZ_BEHAVIOR
+  AUTHZ_REQUEST -->|"authorized / denied"| ENGINE
+  AUTHZ_BEHAVIOR -->|"read identity state"| PRIMARY_DB
+```
+
+Key responsibilities:
+
+- `AuthorizationCheckBehavior`: main entry point; receives the principal and the requested resource + action and decides whether to allow or deny the command.
+- `AuthorizationRequest`: record holding the resource type, required permission, tenant ID and property constraints for a single authorization check.
+- `ClaimsExtractor`: extracts username, clientId, and groups from the raw claims in an authorization request.
+- `TenantResolver`: resolves the set of tenants the principal is authorized for, using membership state and mapping rules read from primary storage.
+
 
 # 6. Runtime view
 
@@ -270,7 +455,69 @@ Scenario: human user logs into Operate or Tasklist via OIDC.
 5. Authorization engine evaluates authorizations to decide which UI features and data are accessible.
 6. Subsequent UI or API calls include the session or token and are checked by the authorization engine. Logout behavior, including RP‑initiated logout back to the IdP, is described in [RP‑initiated logout](https://github.com/camunda/camunda/blob/main/docs/identity/rp-initiated-logout.md).
 
-## 6.2 Machine‑to‑machine access (workers and services)
+```mermaid
+sequenceDiagram
+  participant USER as User (Browser)
+  participant UI as Camunda Web UI<br/>(Operate / Tasklist)
+  participant SS as Spring Security<br/>(WebSecurityConfig)
+  participant IDP as OIDC IdP
+  participant CLAIMS as TokenClaimsConverter
+  participant MAPPING as MappingRuleMatcher
+  participant AUTHN_PROVIDER as DefaultCamundaAuthenticationProvider
+  participant SESSION as WebSessionRepository
+  participant SECONDARY_DB as Secondary Database
+
+  USER->>UI: Navigate to UI
+  UI->>SS: Unauthenticated request
+  SS-->>USER: Redirect to IdP login page (OAuth2AuthorizationRequestRedirectFilter)
+  USER->>IDP: Enter credentials
+  IDP-->>USER: Redirect with authorization code
+  USER->>SS: Authorization code callback (OAuth2LoginAuthenticationFilter)
+  SS->>IDP: Exchange code for tokens (token endpoint)
+  IDP-->>SS: ID token + access token
+  SS->>CLAIMS: Convert token — extract username, groups, attributes
+  CLAIMS->>SECONDARY_DB: Load user and membership data
+  SECONDARY_DB-->>CLAIMS: User entity, roles, tenants
+  CLAIMS->>MAPPING: Apply mapping rules against IdP claims
+  MAPPING->>SECONDARY_DB: Load mapping rules
+  SECONDARY_DB-->>MAPPING: Mapping rule entries
+  MAPPING-->>CLAIMS: Resolved roles / groups / tenants
+  CLAIMS->>AUTHN_PROVIDER: Build CamundaAuthentication
+  AUTHN_PROVIDER->>SESSION: Store session
+  SESSION-->>SS: Session established
+  SS-->>UI: Authenticated session
+  UI-->>USER: Dashboard rendered
+```
+
+## 6.2 User logout
+
+Scenario: human user logs out of a cluster UI; RP‑initiated logout propagates the logout back to the external IdP.
+
+```mermaid
+sequenceDiagram
+  participant USER as User (Browser)
+  participant UI as Camunda Web UI<br/>(Operate / Tasklist)
+  participant SS as Spring Security<br/>(LogoutFilter)
+  participant LOGOUT_HANDLER as CamundaOidcLogoutSuccessHandler
+  participant SESSION as WebSessionRepository
+  participant IDP as OIDC IdP
+  participant POST_LOGOUT as PostLogoutController
+
+  USER->>UI: Click Logout
+  UI->>SS: Logout request
+  SS->>SESSION: Invalidate local session
+  SESSION-->>SS: Session removed
+  SS->>LOGOUT_HANDLER: Handle logout success (RP-initiated logout)
+  LOGOUT_HANDLER-->>USER: Redirect to IdP end-session endpoint
+  USER->>IDP: End-session request with logout_hint
+  IDP->>IDP: Invalidate SSO session
+  IDP-->>USER: Redirect to post-logout URL
+  USER->>POST_LOGOUT: Post-logout callback
+  POST_LOGOUT->>POST_LOGOUT: Validate and resolve post-logout redirect URI
+  POST_LOGOUT-->>USER: Redirect to application login page
+```
+
+## 6.3 Machine‑to‑machine access (workers and services)
 
 Scenario: worker or backend service calls REST or gRPC APIs.
 
@@ -279,6 +526,105 @@ Scenario: worker or backend service calls REST or gRPC APIs.
 3. Identity validates the token and maps the client to an Identity client entity and associated roles or authorizations.
 4. Authorization engine checks permissions for each requested operation (for example deploying processes, completing tasks).
 5. Engine and services execute or reject operations based on the authorization decision.
+
+```mermaid
+sequenceDiagram
+  participant WORKER as Worker / Service
+  participant IDP as OIDC IdP
+  participant REST as REST APIs
+  participant SS as Spring Security<br/>(BearerTokenAuthenticationFilter)
+  participant IDP_JWKS as OIDC IdP (JWKS endpoint)
+  participant TOKEN_CONV as OidcTokenAuthenticationConverter
+  participant CLAIMS as TokenClaimsConverter
+  participant MAPPING as MappingRuleMatcher
+  participant CAMUNDA_SERVICES as Camunda Services
+  participant ENGINE as Engine
+  participant ENGINE_IDENTITY as Engine Identity<br/>(AuthorizationCheckBehavior)
+
+  WORKER->>IDP: Request token (client credentials grant)
+  IDP-->>WORKER: JWT access token
+  WORKER->>REST: API request + Bearer token
+  REST->>SS: Authenticate Bearer token
+  SS->>IDP_JWKS: Validate token signature (JWKS)
+  IDP_JWKS-->>SS: Token valid
+  SS->>TOKEN_CONV: Convert JWT to CamundaAuthentication
+  TOKEN_CONV->>CLAIMS: Extract clientId, groups, claims
+  CLAIMS->>MAPPING: Apply mapping rules
+  MAPPING-->>CLAIMS: Resolved roles / groups / tenants
+  CLAIMS-->>TOKEN_CONV: CamundaAuthentication
+  TOKEN_CONV-->>SS: Client principal authenticated
+  SS->>REST: Authorized request
+  REST->>CAMUNDA_SERVICES: Process request
+  CAMUNDA_SERVICES->>ENGINE: Issue command
+  ENGINE->>ENGINE_IDENTITY: Check authorization for command (AuthorizationRequest)
+  ENGINE_IDENTITY-->>ENGINE: Authorized
+  ENGINE-->>CAMUNDA_SERVICES: Command result
+  CAMUNDA_SERVICES-->>REST: Response
+  REST-->>WORKER: API response
+```
+
+## 6.4 Sending a command via REST
+
+Scenario: a client starts a process instance via the REST API; the Zeebe Engine enforces RBAC via Engine Identity before applying the command.
+
+```mermaid
+sequenceDiagram
+  participant CLIENT as Client (User / Service)
+  participant REST as REST APIs
+  participant SS as Spring Security
+  participant CAMUNDA_SERVICES as Camunda Services
+  participant ENGINE as Engine
+  participant AUTHZ_BEHAVIOR as AuthorizationCheckBehavior
+  participant PRIMARY_DB as Primary Database (RocksDB)
+
+  CLIENT->>REST: POST /v2/process-instances (start process)
+  REST->>SS: Authenticate and authorize request
+  SS-->>REST: CamundaAuthentication principal
+  REST->>CAMUNDA_SERVICES: CreateProcessInstance command
+  CAMUNDA_SERVICES->>ENGINE: Issue CreateProcessInstance command
+  ENGINE->>AUTHZ_BEHAVIOR: Check PROCESS_DEFINITION:CREATE_PROCESS_INSTANCE (AuthorizationRequest)
+  AUTHZ_BEHAVIOR->>PRIMARY_DB: Read authorizations, roles for principal
+  PRIMARY_DB-->>AUTHZ_BEHAVIOR: Authorization entries
+  AUTHZ_BEHAVIOR-->>ENGINE: Permission granted
+  ENGINE->>PRIMARY_DB: Write process instance state
+  PRIMARY_DB-->>ENGINE: State written
+  ENGINE-->>CAMUNDA_SERVICES: Command accepted
+  CAMUNDA_SERVICES-->>REST: CreateProcessInstanceResponse
+  REST-->>CLIENT: 200 OK with process instance key
+```
+
+## 6.5 Reading resources via REST
+
+Scenario: a client queries process instances via the REST API; the Camunda Search Client uses Security to filter results to authorized resources only.
+
+```mermaid
+sequenceDiagram
+  participant CLIENT as Client (User / Service)
+  participant REST as REST APIs
+  participant SS as Spring Security
+  participant CAMUNDA_SERVICES as Camunda Services
+  participant SC_PROVIDER as SecurityContextProvider
+  participant CAMUNDA_SEARCH_CLIENT as Camunda Search Client
+  participant RESOURCE_ACCESS as ResourceAccessProvider
+  participant SECONDARY_DB as Secondary Database (ES/OS/RDBMS)
+
+  CLIENT->>REST: GET /v2/process-instances (search)
+  REST->>SS: Authenticate and authorize request
+  SS-->>REST: CamundaAuthentication principal
+  REST->>CAMUNDA_SERVICES: SearchProcessInstances query
+  CAMUNDA_SERVICES->>SC_PROVIDER: Build SecurityContext for principal
+  SC_PROVIDER-->>CAMUNDA_SERVICES: SecurityContext (CamundaAuthentication + authorization)
+  CAMUNDA_SERVICES->>CAMUNDA_SEARCH_CLIENT: Execute search query with SecurityContext
+  CAMUNDA_SEARCH_CLIENT->>RESOURCE_ACCESS: Get authorization filter for principal
+  RESOURCE_ACCESS->>SECONDARY_DB: Query authorizations and roles for principal
+  SECONDARY_DB-->>RESOURCE_ACCESS: Authorization entries
+  RESOURCE_ACCESS-->>CAMUNDA_SEARCH_CLIENT: Resource filter (allowed process definitions / tenants)
+  CAMUNDA_SEARCH_CLIENT->>SECONDARY_DB: Search query with applied resource filter
+  SECONDARY_DB-->>CAMUNDA_SEARCH_CLIENT: Filtered process instances
+  CAMUNDA_SEARCH_CLIENT-->>CAMUNDA_SERVICES: Search results
+  CAMUNDA_SERVICES-->>REST: SearchProcessInstancesResponse
+  REST-->>CLIENT: 200 OK with process instances
+```
 
 
 # 7. Deployment view
@@ -299,9 +645,61 @@ Identity‑specific aspects:
 
 - SaaS deployments
   - Orchestration Clusters are hosted by Camunda.
-  - Identity is included per cluster and integrated with Camunda’s SaaS control plane and IdP setup.
+  - Identity is included per cluster and integrated with Camunda's SaaS control plane and IdP setup.
 
 For detailed infrastructure topologies, see the Camunda 8 reference architectures listed in the sources appendix.
+
+```mermaid
+---
+title: Identity - Deployment View
+---
+flowchart TB
+  subgraph EXTERNAL["External"]
+    CLIENTS["Clients\n(Browser, Camunda Client, Worker, ...)"]
+    IDP[("OIDC IdP\n(Keycloak, Okta, Entra ID, ...)")]
+  end
+
+  subgraph K8S["Kubernetes Cluster (Self-Managed) / Camunda SaaS"]
+    subgraph OC_POD["Orchestration Cluster Pod (JAR / Container)"]
+      REST_API["REST / gRPC APIs"]
+
+      subgraph IDENTITY_RUNTIME["Identity Runtime"]
+        SPRING_SECURITY["Spring Security\n(Authentication filter chain)"]
+        AUTHENTICATION["Authentication\n(Basic, OIDC)"]
+        SECURITY["Security\n(Authorization checks)"]
+      end
+
+      CAMUNDA_SERVICES["Camunda Services"]
+      CAMUNDA_SEARCH_CLIENT["Camunda Search Client"]
+
+      subgraph ZEEBE["Zeebe"]
+        ENGINE["Engine\n(command processing)"]
+        ENGINE_IDENTITY["Engine Identity\n(RBAC for commands)"]
+      end
+
+      REST_API --> SPRING_SECURITY
+      SPRING_SECURITY --> IDENTITY_RUNTIME
+      SPRING_SECURITY --> REST_API
+      REST_API --> CAMUNDA_SERVICES
+      CAMUNDA_SERVICES --> ENGINE
+      CAMUNDA_SERVICES --> CAMUNDA_SEARCH_CLIENT
+      CAMUNDA_SEARCH_CLIENT --> SECURITY
+      ENGINE --> ENGINE_IDENTITY
+    end
+
+    subgraph STORAGE["Storage"]
+      PRIMARY_DB[("Primary Storage\n(RocksDB)")]
+      SECONDARY_DB[("Secondary Storage\n(ES / OS / RDBMS)")]
+    end
+  end
+
+  CLIENTS -->|"REST / gRPC / Browser"| REST_API
+  AUTHENTICATION -->|"token validation / login redirect"| IDP
+  ENGINE --> PRIMARY_DB
+  ENGINE_IDENTITY --> PRIMARY_DB
+  CAMUNDA_SEARCH_CLIENT --> SECONDARY_DB
+  SECURITY --> SECONDARY_DB
+```
 
 
 # 8. Crosscutting concepts
@@ -328,7 +726,7 @@ For detailed infrastructure topologies, see the Camunda 8 reference architecture
   Designed to be idempotent and re‑runnable.
 
 - Storage and consistency
-  Identity state follows Zeebe’s durability and snapshot mechanisms via shared storage.
+  Identity state follows Zeebe's durability and snapshot mechanisms via shared storage.
   Secondary storage ensures efficient querying for Admin UI and APIs.
 
 
@@ -425,7 +823,7 @@ Appendix A – sources
 
 - docs: Rename Orchestration Cluster Identity to Admin (8.9)
 - Introduction to Identity – Camunda 8 Docs
-- What’s new in Camunda 8.8 – Camunda 8 Docs
+- What's new in Camunda 8.8 – Camunda 8 Docs
 - Identity and access management in Camunda 8 – Camunda 8 Docs
 - Orchestration Cluster authentication in Self‑Managed – Camunda 8 Docs
 - Identity – Ownership (internal)
