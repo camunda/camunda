@@ -28,7 +28,6 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockMe} from 'modules/mocks/api/v2/me';
-import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockDeleteProcessInstance} from 'modules/mocks/api/v2/processInstances/deleteProcessInstance';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
 import {mockIncidents} from 'App/ProcessInstance/IncidentsWrapper/tests/mocks';
@@ -167,77 +166,6 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });
-
-  // TODO: This test might be obsolete depending on the UX alignment. Do we want
-  // to continue reporting any running batch operation in the header? Not intended
-  // in the original prototype. https://github.com/camunda/camunda/issues/46750
-  it.todo(
-    'should show spinner when instance has active operations',
-    async () => {
-      mockQueryBatchOperationItems().withSuccess({
-        items: [
-          {
-            batchOperationKey: '1',
-            itemKey: '1',
-            processInstanceKey: mockInstance.processInstanceKey,
-            rootProcessInstanceKey: null,
-            processedDate: null,
-            errorMessage: null,
-            state: 'ACTIVE',
-            operationType: 'CANCEL_PROCESS_INSTANCE',
-          },
-        ],
-        page: {
-          totalItems: 1,
-          startCursor: null,
-          endCursor: null,
-          hasMoreTotalItems: false,
-        },
-      });
-      mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-      render(<ProcessInstanceHeader processInstance={mockInstance} />, {
-        wrapper: Wrapper,
-      });
-
-      await waitForElementToBeRemoved(
-        screen.queryByTestId('instance-header-skeleton'),
-      );
-
-      expect(
-        await screen.findByTestId('operation-spinner'),
-      ).toBeInTheDocument();
-    },
-  );
-
-  // TODO: This test might be obsolete depending on the UX alignment. Do we want
-  // to continue reporting any running batch operation in the header? Not intended
-  // in the original prototype. https://github.com/camunda/camunda/issues/46750
-  it.todo(
-    'should not show spinner when instance has no active operations',
-    async () => {
-      mockQueryBatchOperationItems().withSuccess({
-        items: [],
-        page: {
-          totalItems: 0,
-          startCursor: null,
-          endCursor: null,
-          hasMoreTotalItems: false,
-        },
-      });
-      mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-      render(<ProcessInstanceHeader processInstance={mockInstance} />, {
-        wrapper: Wrapper,
-      });
-
-      await waitForElementToBeRemoved(
-        screen.queryByTestId('instance-header-skeleton'),
-      );
-
-      expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
-    },
-  );
 
   it('should show operation buttons for running process instances', async () => {
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
