@@ -194,6 +194,31 @@ jobs:
             exit 1
           }
 
+      - name: Wait for database readiness
+        run: |
+          case "${{ matrix.database-type }}" in
+            postgres) PORT=5432 ;;
+            mysql|mariadb) PORT=3306 ;;
+            mssql) PORT=1433 ;;
+            oracle*) PORT=1521 ;;
+            *) echo "Unknown DB type"; exit 1 ;;
+          esac
+
+          echo "Waiting for database on port $PORT..."
+
+          for i in $(seq 1 90); do
+            if nc -z localhost $PORT; then
+              echo "Database port is open"
+              exit 0
+            fi
+            echo "Attempt $i: DB not ready"
+            sleep 2
+          done
+
+          echo "Database never became ready"
+          docker compose -f db/docker-compose.yml logs
+          exit 1
+
       - name: Install JDBC driver
         run: |
           mkdir -p dev-dist/lib
