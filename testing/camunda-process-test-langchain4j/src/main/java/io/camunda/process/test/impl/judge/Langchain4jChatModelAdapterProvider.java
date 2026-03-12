@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.judge;
 
 import dev.langchain4j.model.chat.ChatModel;
+import io.camunda.process.test.api.judge.BaseProviderConfig;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.ChatModelAdapterProvider;
 import io.camunda.process.test.api.judge.ProviderConfig;
@@ -45,13 +46,13 @@ public class Langchain4jChatModelAdapterProvider implements ChatModelAdapterProv
   }
 
   private ChatModel createChatModel(final ProviderConfig providerConfig) {
-    if (providerConfig instanceof ProviderConfig.OpenAiConfig openAi) {
+    if (providerConfig instanceof BaseProviderConfig.OpenAiConfig openAi) {
       return OpenAiChatModelBuilder.build(openAi);
-    } else if (providerConfig instanceof ProviderConfig.AnthropicConfig anthropic) {
+    } else if (providerConfig instanceof BaseProviderConfig.AnthropicConfig anthropic) {
       return AnthropicChatModelBuilder.build(anthropic);
-    } else if (providerConfig instanceof ProviderConfig.AmazonBedrockConfig bedrock) {
+    } else if (providerConfig instanceof BaseProviderConfig.AmazonBedrockConfig bedrock) {
       return BedrockChatModelBuilder.build(bedrock);
-    } else if (providerConfig instanceof ProviderConfig.OpenAiCompatibleConfig compatible) {
+    } else if (providerConfig instanceof BaseProviderConfig.OpenAiCompatibleConfig compatible) {
       return OpenAiCompatibleChatModelBuilder.build(compatible);
     } else {
       return null;

@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.langchain4j.model.chat.ChatModel;
-import io.camunda.process.test.api.judge.ProviderConfig;
+import io.camunda.process.test.api.judge.BaseProviderConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -30,8 +30,8 @@ class OpenAiChatModelBuilderTest {
   @Test
   void shouldBuildChatModel() {
     // given
-    final ProviderConfig.OpenAiConfig config =
-        new ProviderConfig.OpenAiConfig("gpt-4o", "test-api-key");
+    final BaseProviderConfig.OpenAiConfig config =
+        new BaseProviderConfig.OpenAiConfig("gpt-4o", "test-api-key");
 
     // when
     final ChatModel chatModel = OpenAiChatModelBuilder.build(config);
@@ -45,7 +45,8 @@ class OpenAiChatModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenApiKeyMissingOrBlank(final String apiKey) {
     // given
-    final ProviderConfig.OpenAiConfig config = new ProviderConfig.OpenAiConfig("gpt-4o", apiKey);
+    final BaseProviderConfig.OpenAiConfig config =
+        new BaseProviderConfig.OpenAiConfig("gpt-4o", apiKey);
 
     // when / then
     assertThatThrownBy(() -> OpenAiChatModelBuilder.build(config))
@@ -59,8 +60,8 @@ class OpenAiChatModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
-    final ProviderConfig.OpenAiConfig config =
-        new ProviderConfig.OpenAiConfig(model, "test-api-key");
+    final BaseProviderConfig.OpenAiConfig config =
+        new BaseProviderConfig.OpenAiConfig(model, "test-api-key");
 
     // when / then
     assertThatThrownBy(() -> OpenAiChatModelBuilder.build(config))

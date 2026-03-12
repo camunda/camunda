@@ -15,116 +15,15 @@
  */
 package io.camunda.process.test.api.judge;
 
-/** Base class for provider-specific configuration. */
-public abstract class ProviderConfig {
+/** Interface for provider-specific configuration. */
+public interface ProviderConfig {
 
-  public static final String PROVIDER_OPENAI = "openai";
-  public static final String PROVIDER_ANTHROPIC = "anthropic";
-  public static final String PROVIDER_AMAZON_BEDROCK = "amazon-bedrock";
-  public static final String PROVIDER_OPENAI_COMPATIBLE = "openai-compatible";
+  String PROVIDER_OPENAI = "openai";
+  String PROVIDER_ANTHROPIC = "anthropic";
+  String PROVIDER_AMAZON_BEDROCK = "amazon-bedrock";
+  String PROVIDER_OPENAI_COMPATIBLE = "openai-compatible";
 
-  private final String provider;
-  private final String model;
+  String getProvider();
 
-  protected ProviderConfig(final String provider, final String model) {
-    this.provider = provider;
-    this.model = model;
-  }
-
-  public String getProvider() {
-    return provider;
-  }
-
-  public String getModel() {
-    return model;
-  }
-
-  /** OpenAI provider configuration. */
-  public static final class OpenAiConfig extends ProviderConfig {
-
-    private final String apiKey;
-
-    public OpenAiConfig(final String model, final String apiKey) {
-      super(PROVIDER_OPENAI, model);
-      this.apiKey = apiKey;
-    }
-
-    public String getApiKey() {
-      return apiKey;
-    }
-  }
-
-  /** Anthropic provider configuration. */
-  public static final class AnthropicConfig extends ProviderConfig {
-
-    private final String apiKey;
-
-    public AnthropicConfig(final String model, final String apiKey) {
-      super(PROVIDER_ANTHROPIC, model);
-      this.apiKey = apiKey;
-    }
-
-    public String getApiKey() {
-      return apiKey;
-    }
-  }
-
-  /** Amazon Bedrock provider configuration. */
-  public static final class AmazonBedrockConfig extends ProviderConfig {
-
-    private final String region;
-    private final String apiKey;
-    private final String credentialsAccessKey;
-    private final String credentialsSecretKey;
-
-    public AmazonBedrockConfig(
-        final String model,
-        final String region,
-        final String apiKey,
-        final String credentialsAccessKey,
-        final String credentialsSecretKey) {
-      super(PROVIDER_AMAZON_BEDROCK, model);
-      this.region = region;
-      this.apiKey = apiKey;
-      this.credentialsAccessKey = credentialsAccessKey;
-      this.credentialsSecretKey = credentialsSecretKey;
-    }
-
-    public String getRegion() {
-      return region;
-    }
-
-    public String getApiKey() {
-      return apiKey;
-    }
-
-    public String getCredentialsAccessKey() {
-      return credentialsAccessKey;
-    }
-
-    public String getCredentialsSecretKey() {
-      return credentialsSecretKey;
-    }
-  }
-
-  /** OpenAI-compatible provider configuration. */
-  public static final class OpenAiCompatibleConfig extends ProviderConfig {
-
-    private final String baseUrl;
-    private final String apiKey;
-
-    public OpenAiCompatibleConfig(final String model, final String baseUrl, final String apiKey) {
-      super(PROVIDER_OPENAI_COMPATIBLE, model);
-      this.baseUrl = baseUrl;
-      this.apiKey = apiKey;
-    }
-
-    public String getBaseUrl() {
-      return baseUrl;
-    }
-
-    public String getApiKey() {
-      return apiKey;
-    }
-  }
+  String getModel();
 }
