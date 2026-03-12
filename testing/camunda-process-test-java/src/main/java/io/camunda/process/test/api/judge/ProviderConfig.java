@@ -15,84 +15,28 @@
  */
 package io.camunda.process.test.api.judge;
 
-/** Typed configuration data passed to a {@link JudgeConfigBootstrapProvider}. */
-public final class JudgeConfigBootstrapData {
+/** Base class for provider-specific configuration. */
+public abstract class ProviderConfig {
 
-  private final double threshold;
-  private final String customPrompt;
-  private final ProviderConfig providerConfig;
+  public static final String PROVIDER_OPENAI = "openai";
+  public static final String PROVIDER_ANTHROPIC = "anthropic";
+  public static final String PROVIDER_AMAZON_BEDROCK = "amazon-bedrock";
+  public static final String PROVIDER_OPENAI_COMPATIBLE = "openai-compatible";
 
-  private JudgeConfigBootstrapData(final Builder builder) {
-    threshold = builder.threshold;
-    customPrompt = builder.customPrompt;
-    providerConfig = builder.providerConfig;
+  private final String provider;
+  private final String model;
+
+  protected ProviderConfig(final String provider, final String model) {
+    this.provider = provider;
+    this.model = model;
   }
 
-  public double getThreshold() {
-    return threshold;
+  public String getProvider() {
+    return provider;
   }
 
-  public String getCustomPrompt() {
-    return customPrompt;
-  }
-
-  public ProviderConfig getProviderConfig() {
-    return providerConfig;
-  }
-
-  public static Builder builder() {
-    return new Builder();
-  }
-
-  public static final class Builder {
-
-    private double threshold = JudgeConfig.DEFAULT_THRESHOLD;
-    private String customPrompt;
-    private ProviderConfig providerConfig;
-
-    public Builder threshold(final double threshold) {
-      this.threshold = threshold;
-      return this;
-    }
-
-    public Builder customPrompt(final String customPrompt) {
-      this.customPrompt = customPrompt;
-      return this;
-    }
-
-    public Builder providerConfig(final ProviderConfig providerConfig) {
-      this.providerConfig = providerConfig;
-      return this;
-    }
-
-    public JudgeConfigBootstrapData build() {
-      return new JudgeConfigBootstrapData(this);
-    }
-  }
-
-  /** Base class for provider-specific configuration. */
-  public abstract static class ProviderConfig {
-
-    public static final String PROVIDER_OPENAI = "openai";
-    public static final String PROVIDER_ANTHROPIC = "anthropic";
-    public static final String PROVIDER_AMAZON_BEDROCK = "amazon-bedrock";
-    public static final String PROVIDER_OPENAI_COMPATIBLE = "openai-compatible";
-
-    private final String provider;
-    private final String model;
-
-    protected ProviderConfig(final String provider, final String model) {
-      this.provider = provider;
-      this.model = model;
-    }
-
-    public String getProvider() {
-      return provider;
-    }
-
-    public String getModel() {
-      return model;
-    }
+  public String getModel() {
+    return model;
   }
 
   /** OpenAI provider configuration. */

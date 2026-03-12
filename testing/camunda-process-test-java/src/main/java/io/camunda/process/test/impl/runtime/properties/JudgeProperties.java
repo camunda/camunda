@@ -15,16 +15,16 @@
  */
 package io.camunda.process.test.impl.runtime.properties;
 
-import static io.camunda.process.test.api.judge.JudgeConfigBootstrapData.ProviderConfig.PROVIDER_AMAZON_BEDROCK;
-import static io.camunda.process.test.api.judge.JudgeConfigBootstrapData.ProviderConfig.PROVIDER_ANTHROPIC;
-import static io.camunda.process.test.api.judge.JudgeConfigBootstrapData.ProviderConfig.PROVIDER_OPENAI;
-import static io.camunda.process.test.api.judge.JudgeConfigBootstrapData.ProviderConfig.PROVIDER_OPENAI_COMPATIBLE;
+import static io.camunda.process.test.api.judge.ProviderConfig.PROVIDER_AMAZON_BEDROCK;
+import static io.camunda.process.test.api.judge.ProviderConfig.PROVIDER_ANTHROPIC;
+import static io.camunda.process.test.api.judge.ProviderConfig.PROVIDER_OPENAI;
+import static io.camunda.process.test.api.judge.ProviderConfig.PROVIDER_OPENAI_COMPATIBLE;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import io.camunda.process.test.api.judge.JudgeConfig;
-import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
+import io.camunda.process.test.api.judge.ProviderConfig;
 import java.util.Properties;
 
 public class JudgeProperties {
@@ -87,33 +87,25 @@ public class JudgeProperties {
     return customPrompt;
   }
 
-  public JudgeConfigBootstrapData toJudgeConfigurationData() {
-    return JudgeConfigBootstrapData.builder()
-        .providerConfig(buildProviderConfig())
-        .threshold(threshold)
-        .customPrompt(customPrompt)
-        .build();
-  }
-
-  private JudgeConfigBootstrapData.ProviderConfig buildProviderConfig() {
+  public ProviderConfig toProviderConfig() {
     if (chatModelProvider == null) {
       return null;
     }
     final String normalized = chatModelProvider.trim().toLowerCase();
     switch (normalized) {
       case PROVIDER_OPENAI:
-        return new JudgeConfigBootstrapData.OpenAiConfig(chatModelModel, chatModelApiKey);
+        return new ProviderConfig.OpenAiConfig(chatModelModel, chatModelApiKey);
       case PROVIDER_ANTHROPIC:
-        return new JudgeConfigBootstrapData.AnthropicConfig(chatModelModel, chatModelApiKey);
+        return new ProviderConfig.AnthropicConfig(chatModelModel, chatModelApiKey);
       case PROVIDER_AMAZON_BEDROCK:
-        return new JudgeConfigBootstrapData.AmazonBedrockConfig(
+        return new ProviderConfig.AmazonBedrockConfig(
             chatModelModel,
             chatModelRegion,
             chatModelApiKey,
             chatModelCredentialsAccessKey,
             chatModelCredentialsSecretKey);
       case PROVIDER_OPENAI_COMPATIBLE:
-        return new JudgeConfigBootstrapData.OpenAiCompatibleConfig(
+        return new ProviderConfig.OpenAiCompatibleConfig(
             chatModelModel, chatModelBaseUrl, chatModelApiKey);
       default:
         throw new IllegalArgumentException("Unknown provider: " + chatModelProvider);
