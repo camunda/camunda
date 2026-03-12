@@ -63,7 +63,6 @@ import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {isInstanceRunning} from 'modules/utils/instance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useDrillDownNavigation} from 'modules/hooks/useDrilldownNavigation';
-import {isDrillDownCandidate} from 'modules/utils/drilldown';
 import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram';
 import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
 
@@ -266,9 +265,12 @@ const TopPanel: React.FC = observer(() => {
       return [];
     }
 
+    const DRILLDOWN_TYPES = ['bpmn:CallActivity', 'bpmn:BusinessRuleTask'];
     const drilldownClasses: [string, string][] = Object.entries(businessObjects)
-      .filter(([elementId, bo]) =>
-        isDrillDownCandidate(elementId, bo, totalRunningInstancesByElement),
+      .filter(
+        ([elementId, bo]) =>
+          DRILLDOWN_TYPES.includes(bo.$type) &&
+          (totalRunningInstancesByElement[elementId] ?? 0) > 0,
       )
       .map(([elementId]) => [elementId, 'op-drilldown'] as const);
 
@@ -433,7 +435,10 @@ const TopPanel: React.FC = observer(() => {
                 }
                 customElementClasses={customElementClasses}
                 onElementDoubleClick={(elementId) => {
-                  handleDrillDown(elementId);
+                  const elementType = businessObjects?.[elementId]?.$type;
+                  if (elementType) {
+                    handleDrillDown(elementId, elementType);
+                  }
                 }}
               >
                 {stateOverlays.map((overlay) => {
