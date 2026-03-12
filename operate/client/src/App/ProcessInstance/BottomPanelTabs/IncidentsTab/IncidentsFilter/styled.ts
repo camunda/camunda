@@ -6,14 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {styled} from 'styled-components';
+import styled from 'styled-components';
+import {Stack as BaseStack, Layer as BaseLayer} from '@carbon/react';
 
 const Container = styled.div`
   display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background-color: var(--cds-layer);
+  width: 100%;
+  justify-content: flex-end;
+  padding: var(--cds-spacing-01) var(--cds-spacing-05);
 `;
 
-export {Container};
+const Stack = styled(BaseStack)`
+  align-items: center;
+`;
+
+const Layer = styled(BaseLayer)`
+  margin-left: auto;
+`;
+
+export {Container, Stack, Layer};

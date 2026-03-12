@@ -6,14 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {styled} from 'styled-components';
+import styled from 'styled-components';
 
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+const ErrorMessageCell = styled.div`
+  max-width: 404px;
+  white-space: nowrap;
   overflow: hidden;
-  background-color: var(--cds-layer);
+  text-overflow: ellipsis;
 `;
 
-export {Container};
+const FlexContainer = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+export {ErrorMessageCell, FlexContainer};
