@@ -6,7 +6,6 @@
   "type": "module",
   "scripts": {
     "collect-tests": "node collect-tests.js",
-    "test-metrics": "node calculate-metrics.js",
     "test": "node --test lib/*.test.js"
   },
   "keywords": [

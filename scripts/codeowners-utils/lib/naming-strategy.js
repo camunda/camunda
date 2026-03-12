@@ -7,6 +7,7 @@
  */
 
 import { TestClassifierStrategy } from './classifier-strategy.js';
+import { basename } from 'path';
 
 // Test naming conventions (Maven defaults + custom patterns)
 const UNIT_TEST_PATTERNS = [
@@ -104,7 +105,9 @@ export class NamingStrategy extends TestClassifierStrategy {
    * Returns independent opinion without seeing previous classifier results
    */
   async classify(file) {
-    const fileName = file.path.split('/').pop();
+    // Use basename to extract filename in a cross-platform way
+    // Since test-finder normalizes paths to forward slashes, we can safely split
+    const fileName = basename(file.path);
 
     // Check for interfaces first (they override everything)
     if (isInterface(fileName)) {

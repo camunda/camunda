@@ -6,7 +6,7 @@
  */
 
 import { readdirSync, statSync } from 'fs';
-import { join } from 'path';
+import { join, sep } from 'path';
 
 // Directories to skip during traversal
 const SKIP_DIRS = new Set([
@@ -46,12 +46,16 @@ export function findTestFiles(rootDir) {
         if (stat.isDirectory()) {
           walk(fullPath, relPath);
         } else if (stat.isFile() && entry.endsWith('.java')) {
+          // Normalize path to use forward slashes for consistent matching
+          const normalizedPath = relPath.split(sep).join('/');
+
           // Check if it's in a test directory
-          if (!relPath.includes('/src/test/java/')) {
+          if (!normalizedPath.includes('/src/test/java/')) {
             continue;
           }
 
-          testFiles.push({ path: relPath, fullPath });
+          // Store normalized path for consistent downstream processing
+          testFiles.push({ path: normalizedPath, fullPath });
         }
       }
     } catch (error) {

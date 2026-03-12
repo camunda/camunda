@@ -9,10 +9,11 @@ import { writeFileSync, mkdtempSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
-test('isCodeownersCliAvailable - returns false when codeowners-cli is not available', () => {
-  // This test environment doesn't have codeowners-cli installed
+test('isCodeownersCliAvailable - returns a boolean', () => {
+  // Test that the function returns a boolean value without assuming its state
+  // The actual value depends on whether codeowners-cli is installed in the environment
   const isAvailable = isCodeownersCliAvailable();
-  assert.equal(isAvailable, false);
+  assert.equal(typeof isAvailable, 'boolean');
 });
 
 test('getCodeowners - throws error when no .codeowners file is found', () => {

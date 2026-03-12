@@ -58,8 +58,9 @@ async function classifyAllFiles(allFiles, combinedStrategy, verbose) {
     const file = allFiles[i];
 
     if (verbose && (i % 500 === 0 || i === allFiles.length - 1)) {
-      const percent = Math.round((i / allFiles.length) * 100);
-      console.error(`   Progress: ${i}/${allFiles.length} (${percent}%)`);
+      const processed = i + 1;
+      const percent = Math.round((processed / allFiles.length) * 100);
+      console.error(`   Progress: ${processed}/${allFiles.length} (${percent}%)`);
     }
 
     try {
