@@ -965,7 +965,6 @@
       <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="TENANT_SCOPE" type="VARCHAR(50)"/>
       <column name="RESULT" type="VARCHAR(50)"/>
-      <column name="ANNOTATION" type="VARCHAR(4000)"/>
       <column name="CATEGORY" type="VARCHAR(50)"/>
       <column name="PROCESS_DEFINITION_ID" type="NVARCHAR(${userCharColumnSize})"/>
       <column name="DECISION_REQUIREMENTS_ID" type="NVARCHAR(${userCharColumnSize})"/>

@@ -96,7 +96,6 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
             .entityValueType(log.getEntityValueType())
             .entityOperationIntent(log.getEntityOperationIntent())
             .timestamp(log.getTimestamp())
-            .annotation(log.getAnnotation())
             // Transformer specific fields
             .result(log.getResult())
             .processDefinitionId(log.getProcessDefinitionId())

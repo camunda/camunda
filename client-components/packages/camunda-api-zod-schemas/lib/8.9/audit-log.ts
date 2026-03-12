@@ -88,7 +88,6 @@ const auditLogSchema = z.object({
 	actorType: auditLogActorTypeSchema,
 	tenantId: z.string().nullable(),
 	result: auditLogResultSchema,
-	annotation: z.string().nullable(),
 	category: auditLogCategorySchema,
 	processDefinitionId: z.string().nullable(),
 	processDefinitionKey: z.string().nullable(),
@@ -138,7 +137,6 @@ const auditLogFilterSchema = z
 const auditLogSortFieldEnum = z.enum([
 	'actorId',
 	'actorType',
-	'annotation',
 	'auditLogKey',
 	'batchOperationKey',
 	'batchOperationType',

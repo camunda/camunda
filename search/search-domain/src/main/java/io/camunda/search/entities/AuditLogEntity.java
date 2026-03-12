@@ -26,7 +26,6 @@ public record AuditLogEntity(
     String tenantId,
     AuditLogTenantScope tenantScope,
     AuditLogOperationResult result,
-    String annotation,
     AuditLogOperationCategory category,
     String processDefinitionId,
     Long processDefinitionKey,
@@ -68,7 +67,6 @@ public record AuditLogEntity(
     private String tenantId;
     private AuditLogTenantScope tenantScope;
     private AuditLogOperationResult result;
-    private String annotation;
     private AuditLogOperationCategory category;
     private String processDefinitionId;
     private Long processDefinitionKey;
@@ -152,11 +150,6 @@ public record AuditLogEntity(
 
     public Builder result(final AuditLogOperationResult result) {
       this.result = result;
-      return this;
-    }
-
-    public Builder annotation(final String annotation) {
-      this.annotation = annotation;
       return this;
     }
 
@@ -276,7 +269,6 @@ public record AuditLogEntity(
           tenantId,
           tenantScope,
           result,
-          annotation,
           category,
           processDefinitionId,
           processDefinitionKey,

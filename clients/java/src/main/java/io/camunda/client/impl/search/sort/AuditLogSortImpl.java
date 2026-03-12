@@ -31,11 +31,6 @@ public class AuditLogSortImpl extends SearchRequestSortBase<AuditLogSort> implem
   }
 
   @Override
-  public AuditLogSort annotation() {
-    return field("annotation");
-  }
-
-  @Override
   public AuditLogSort auditLogKey() {
     return field("auditLogKey");
   }

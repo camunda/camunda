@@ -156,8 +156,7 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
         .setEntityVersion(log.getEntityVersion())
         .setEntityValueType(log.getEntityValueType())
         .setEntityOperationIntent(log.getEntityOperationIntent())
-        .setTimestamp(log.getTimestamp())
-        .setAnnotation(log.getAnnotation());
+        .setTimestamp(log.getTimestamp());
 
     // transformer specific fields
     entity

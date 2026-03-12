@@ -229,8 +229,6 @@ public class SearchAuditLogTest extends ClientRestTest {
                     .asc()
                     .actorType()
                     .desc()
-                    .annotation()
-                    .asc()
                     .auditLogKey()
                     .asc()
                     .batchOperationKey()
@@ -282,31 +280,30 @@ public class SearchAuditLogTest extends ClientRestTest {
     final List<SearchRequestSort> sorts =
         SearchRequestSortMapper.fromAuditLogSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
-    assertThat(sorts).hasSize(24);
+    assertThat(sorts).hasSize(23);
     assertSort(sorts.get(0), "actorId", SortOrderEnum.ASC);
     assertSort(sorts.get(1), "actorType", SortOrderEnum.DESC);
-    assertSort(sorts.get(2), "annotation", SortOrderEnum.ASC);
-    assertSort(sorts.get(3), "auditLogKey", SortOrderEnum.ASC);
-    assertSort(sorts.get(4), "batchOperationKey", SortOrderEnum.DESC);
-    assertSort(sorts.get(5), "batchOperationType", SortOrderEnum.DESC);
-    assertSort(sorts.get(6), "category", SortOrderEnum.ASC);
-    assertSort(sorts.get(7), "decisionDefinitionId", SortOrderEnum.ASC);
-    assertSort(sorts.get(8), "decisionDefinitionKey", SortOrderEnum.ASC);
-    assertSort(sorts.get(9), "decisionEvaluationKey", SortOrderEnum.ASC);
-    assertSort(sorts.get(10), "decisionRequirementsId", SortOrderEnum.ASC);
-    assertSort(sorts.get(11), "decisionRequirementsKey", SortOrderEnum.DESC);
-    assertSort(sorts.get(12), "elementInstanceKey", SortOrderEnum.ASC);
-    assertSort(sorts.get(13), "entityKey", SortOrderEnum.DESC);
-    assertSort(sorts.get(14), "entityType", SortOrderEnum.ASC);
-    assertSort(sorts.get(15), "jobKey", SortOrderEnum.DESC);
-    assertSort(sorts.get(16), "operationType", SortOrderEnum.ASC);
-    assertSort(sorts.get(17), "processDefinitionId", SortOrderEnum.ASC);
-    assertSort(sorts.get(18), "processDefinitionKey", SortOrderEnum.ASC);
-    assertSort(sorts.get(19), "processInstanceKey", SortOrderEnum.ASC);
-    assertSort(sorts.get(20), "result", SortOrderEnum.ASC);
-    assertSort(sorts.get(21), "tenantId", SortOrderEnum.ASC);
-    assertSort(sorts.get(22), "timestamp", SortOrderEnum.DESC);
-    assertSort(sorts.get(23), "userTaskKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(2), "auditLogKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(3), "batchOperationKey", SortOrderEnum.DESC);
+    assertSort(sorts.get(4), "batchOperationType", SortOrderEnum.DESC);
+    assertSort(sorts.get(5), "category", SortOrderEnum.ASC);
+    assertSort(sorts.get(6), "decisionDefinitionId", SortOrderEnum.ASC);
+    assertSort(sorts.get(7), "decisionDefinitionKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(8), "decisionEvaluationKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(9), "decisionRequirementsId", SortOrderEnum.ASC);
+    assertSort(sorts.get(10), "decisionRequirementsKey", SortOrderEnum.DESC);
+    assertSort(sorts.get(11), "elementInstanceKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(12), "entityKey", SortOrderEnum.DESC);
+    assertSort(sorts.get(13), "entityType", SortOrderEnum.ASC);
+    assertSort(sorts.get(14), "jobKey", SortOrderEnum.DESC);
+    assertSort(sorts.get(15), "operationType", SortOrderEnum.ASC);
+    assertSort(sorts.get(16), "processDefinitionId", SortOrderEnum.ASC);
+    assertSort(sorts.get(17), "processDefinitionKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(18), "processInstanceKey", SortOrderEnum.ASC);
+    assertSort(sorts.get(19), "result", SortOrderEnum.ASC);
+    assertSort(sorts.get(20), "tenantId", SortOrderEnum.ASC);
+    assertSort(sorts.get(21), "timestamp", SortOrderEnum.DESC);
+    assertSort(sorts.get(22), "userTaskKey", SortOrderEnum.ASC);
   }
 
   @Test
