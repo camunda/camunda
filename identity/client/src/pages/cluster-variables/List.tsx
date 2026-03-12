@@ -9,7 +9,10 @@
 import useTranslate from "src/utility/localization";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
-import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
+import {
+  InlineNotification,
+  TranslatedErrorInlineNotification,
+} from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import { usePaginatedApi } from "src/utility/api";
 import { searchClusterVariables } from "src/utility/api/cluster-variables";
@@ -18,6 +21,7 @@ import { AddModal } from "./modals/add-modal";
 import DeleteModal from "./modals/DeleteModal";
 import DetailsModal from "./modals/DetailsModal";
 import EditModal from "./modals/EditModal";
+import { usePollingReload } from "./usePollingReload";
 
 export default function List() {
   const { t } = useTranslate("clusterVariables");
@@ -30,13 +34,23 @@ export default function List() {
     ...paginationProps
   } = usePaginatedApi(searchClusterVariables);
 
+  const { startPolling, pollingStatus, resetPollingStatus, isPolling } =
+    usePollingReload(reload);
+
+  const isInitialLoad = loading && !isPolling;
+
+  const reloadWithPolling = () => {
+    const snapshot = clusterVariables?.items ?? [];
+    startPolling(snapshot);
+  };
+
   const [addClusterVariable, addClusterVariableModal] = useModal(
     AddModal,
-    reload,
+    reloadWithPolling,
   );
   const [deleteClusterVariable, deleteClusterVariableModal] = useEntityModal(
     DeleteModal,
-    reload,
+    reloadWithPolling,
   );
   const [viewClusterVariable, viewClusterVariableModal] = useEntityModal(
     DetailsModal,
@@ -44,7 +58,7 @@ export default function List() {
   );
   const [editClusterVariable, editClusterVariableModal] = useEntityModal(
     EditModal,
-    reload,
+    reloadWithPolling,
   );
 
   const shouldShowEmptyState =
@@ -96,7 +110,7 @@ export default function List() {
         ]}
         addEntityLabel={t("createClusterVariable")}
         onAddEntity={addClusterVariable}
-        loading={loading}
+        loading={isInitialLoad}
         menuItems={[
           {
             label: t("view"),
@@ -138,6 +152,19 @@ export default function List() {
         <TranslatedErrorInlineNotification
           title={t("clusterVariablesCouldNotLoad")}
           actionButton={{ label: t("retry"), onClick: reload }}
+        />
+      )}
+      {pollingStatus === "timeout" && (
+        <InlineNotification
+          kind="warning"
+          title={t("clusterVariableUpdateTakingLonger")}
+          actionButton={{
+            label: t("retry"),
+            onClick: () => {
+              resetPollingStatus();
+              void reload();
+            },
+          }}
         />
       )}
       {addClusterVariableModal}
