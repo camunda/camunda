@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, waitFor} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {ProcessInstanceOperations} from './ProcessInstanceOperations';
 import {createProcessInstance} from 'modules/testUtils';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -18,7 +18,6 @@ import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/c
 import {mockResolveProcessInstanceIncidents} from 'modules/mocks/api/v2/processInstances/resolveProcessInstanceIncidents';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockDeleteProcessInstance} from 'modules/mocks/api/v2/processInstances/deleteProcessInstance';
-import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
 
 vi.mock('modules/stores/notifications', () => ({
@@ -328,42 +327,4 @@ describe('ProcessInstanceOperations', () => {
       isDismissable: true,
     });
   });
-
-  // TODO: This test might be obsolete depending on the UX alignment. Do we want
-  // to continue reporting any running batch operation in the header? Not intended
-  // in the original prototype. https://github.com/camunda/camunda/issues/46750
-  it.todo(
-    'should show spinner when process instance has active operation items',
-    async () => {
-      mockQueryBatchOperationItems().withSuccess({
-        items: [
-          {
-            batchOperationKey: 'batch-123',
-            processInstanceKey: '123456789',
-            state: 'ACTIVE',
-            operationType: 'CANCEL_PROCESS_INSTANCE',
-            itemKey: '123456789',
-            rootProcessInstanceKey: null,
-            processedDate: null,
-            errorMessage: null,
-          },
-        ],
-        page: {
-          totalItems: 1,
-          startCursor: null,
-          endCursor: null,
-          hasMoreTotalItems: false,
-        },
-      });
-
-      render(
-        <ProcessInstanceOperations processInstance={mockProcessInstance} />,
-        {wrapper: getWrapper()},
-      );
-
-      await waitFor(() => {
-        expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
-      });
-    },
-  );
 });
