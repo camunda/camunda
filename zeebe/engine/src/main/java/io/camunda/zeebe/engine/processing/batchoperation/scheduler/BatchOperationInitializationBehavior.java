@@ -10,6 +10,9 @@ package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 import com.google.common.base.Strings;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult.BufferFull;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult.Continue;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult.Finished;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -99,18 +102,20 @@ public class BatchOperationInitializationBehavior {
       try {
         final var page = itemProvider.fetchItemPage(context.currentCursor(), context.pageSize());
         final var result =
-            pageProcessor.processPage(batchOperation.getKey(), page, taskResultBuilder);
+            pageProcessor.processPage(context.operation().getKey(), page, taskResultBuilder);
 
-        if (result.chunksAppended()) {
-          context = context.withNextPage(result.endCursor(), result.itemsProcessed(), true);
-
-          if (result.isLastPage()) {
+        switch (result) {
+          case Continue(final var endCursor, final int itemsProcessed) ->
+              context = context.withNextPage(endCursor, itemsProcessed, true);
+          case Finished(final var endCursor, final int itemsProcessed) -> {
+            context = context.withNextPage(endCursor, itemsProcessed, true);
             finishInitialization(batchOperation, taskResultBuilder);
             startExecutionPhase(taskResultBuilder, context);
             return new BatchOperationInitializationResult(batchOperation.getKey(), "finished");
           }
-        } else {
-          return handleFailedChunkAppend(taskResultBuilder, context, result.itemsProcessed());
+          case BufferFull(final int itemCount) -> {
+            return handleFailedChunkAppend(taskResultBuilder, context, itemCount);
+          }
         }
       } catch (final BatchOperationInitializationException e) {
         throw e;

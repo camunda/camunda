@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
@@ -54,10 +55,10 @@ class BatchOperationPageProcessorTest {
     final var result = processor.processPage(BATCH_OPERATION_KEY, page, mockTaskResultBuilder);
 
     // then
-    assertThat(result.chunksAppended()).isTrue();
-    assertThat(result.endCursor()).isEqualTo("cursor123");
-    assertThat(result.itemsProcessed()).isEqualTo(2);
-    assertThat(result.isLastPage()).isFalse();
+    assertThat(result).isInstanceOf(PageProcessingResult.Continue.class);
+    final var continueResult = (PageProcessingResult.Continue) result;
+    assertThat(continueResult.endCursor()).isEqualTo("cursor123");
+    assertThat(continueResult.itemsProcessed()).isEqualTo(2);
 
     verify(mockTaskResultBuilder, times(1))
         .appendCommandRecord(
@@ -85,10 +86,10 @@ class BatchOperationPageProcessorTest {
     final var result = processor.processPage(BATCH_OPERATION_KEY, page, mockTaskResultBuilder);
 
     // then
-    assertThat(result.chunksAppended()).isTrue();
-    assertThat(result.endCursor()).isEqualTo("cursor456");
-    assertThat(result.itemsProcessed()).isEqualTo(5);
-    assertThat(result.isLastPage()).isTrue();
+    assertThat(result).isInstanceOf(PageProcessingResult.Finished.class);
+    final var finishedResult = (PageProcessingResult.Finished) result;
+    assertThat(finishedResult.endCursor()).isEqualTo("cursor456");
+    assertThat(finishedResult.itemsProcessed()).isEqualTo(5);
 
     // Should create 3 chunks: [2 items], [2 items], [1 item]
     verify(mockTaskResultBuilder, times(3))
@@ -113,10 +114,9 @@ class BatchOperationPageProcessorTest {
     final var result = processor.processPage(BATCH_OPERATION_KEY, page, mockTaskResultBuilder);
 
     // then
-    assertThat(result.chunksAppended()).isFalse();
-    assertThat(result.endCursor()).isEqualTo("cursor789");
-    assertThat(result.itemsProcessed()).isEqualTo(2);
-    assertThat(result.isLastPage()).isFalse();
+    assertThat(result).isInstanceOf(PageProcessingResult.BufferFull.class);
+    final var bufferFullResult = (PageProcessingResult.BufferFull) result;
+    assertThat(bufferFullResult.itemsProcessed()).isEqualTo(2);
 
     verify(mockTaskResultBuilder, never())
         .appendCommandRecord(
@@ -139,10 +139,10 @@ class BatchOperationPageProcessorTest {
     final var result = processor.processPage(BATCH_OPERATION_KEY, page, mockTaskResultBuilder);
 
     // then
-    assertThat(result.chunksAppended()).isTrue();
-    assertThat(result.endCursor()).isNull();
-    assertThat(result.itemsProcessed()).isZero();
-    assertThat(result.isLastPage()).isTrue();
+    assertThat(result).isInstanceOf(PageProcessingResult.Finished.class);
+    final var finishedResult = (PageProcessingResult.Finished) result;
+    assertThat(finishedResult.endCursor()).isNull();
+    assertThat(finishedResult.itemsProcessed()).isZero();
 
     // Should not append any chunks for empty page
     verify(mockTaskResultBuilder, never())
@@ -202,8 +202,9 @@ class BatchOperationPageProcessorTest {
         largeChunkProcessor.processPage(BATCH_OPERATION_KEY, page, mockTaskResultBuilder);
 
     // then
-    assertThat(result.chunksAppended()).isTrue();
-    assertThat(result.itemsProcessed()).isEqualTo(3);
+    assertThat(result).isInstanceOf(PageProcessingResult.Continue.class);
+    final var continueResult = (PageProcessingResult.Continue) result;
+    assertThat(continueResult.itemsProcessed()).isEqualTo(3);
 
     // Should create only 1 chunk since all items fit in chunk size 10
     verify(mockTaskResultBuilder, times(1))
