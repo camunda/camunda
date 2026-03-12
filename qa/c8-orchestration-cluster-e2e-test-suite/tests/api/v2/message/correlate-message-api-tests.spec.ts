@@ -15,26 +15,34 @@ import {
   paginatedResponseFields,
 } from '../../../../utils/http';
 import {
-  CORRELATE_MESSAGE,
+  CORRELATE_MESSAGE4,
   correlateMessageRequiredFields,
 } from '../../../../utils/beans/requestBeans';
-import {createInstances, deploy} from '../../../../utils/zeebeClient';
+import {
+  cancelProcessInstance,
+  createInstances,
+  deploy,
+} from '../../../../utils/zeebeClient';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 
 test.describe('Correlate Message API Tests', () => {
   const state: Record<string, unknown> = {};
 
   test.beforeAll(async () => {
-    await deploy(['./resources/messageCatchEvent3.bpmn']);
-    const processes = await createInstances('messageCatchEvent3', 1, 1);
+    await deploy(['./resources/messageCatchEvent4.bpmn']);
+    const processes = await createInstances('messageCatchEvent4', 1, 1);
     expect(processes.length).toBe(1);
     state['processInstanceKey'] = processes[0].processInstanceKey;
+  });
+
+  test.afterAll(async () => {
+    await cancelProcessInstance(state['processInstanceKey'] as string);
   });
 
   test('Correlate Message Unauthorized', async ({request}) => {
     const res = await request.post(buildUrl('/messages/correlation'), {
       headers: {},
-      data: CORRELATE_MESSAGE,
+      data: CORRELATE_MESSAGE4,
     });
     expect(res.status()).toBe(401);
   });
@@ -68,8 +76,8 @@ test.describe('Correlate Message API Tests', () => {
 
   test('Correlate Message Invalid Tenant', async ({request}) => {
     const updatedBody = {
-      ...CORRELATE_MESSAGE,
-      tenantId: 'invaliTenant',
+      ...CORRELATE_MESSAGE4,
+      tenantId: 'invalidTenant',
     };
     const res = await request.post(buildUrl('/messages/correlation'), {
       headers: jsonHeaders(),
@@ -88,7 +96,7 @@ test.describe('Correlate Message API Tests', () => {
     await test.step('Correlate Message', async () => {
       const res = await request.post(buildUrl('/messages/correlation'), {
         headers: jsonHeaders(),
-        data: CORRELATE_MESSAGE,
+        data: CORRELATE_MESSAGE4,
       });
       expect(res.status()).toBe(200);
       const json = await res.json();
@@ -119,7 +127,8 @@ test.describe('Correlate Message API Tests', () => {
         expect(res.status()).toBe(200);
         const json = await res.json();
         assertRequiredFields(json, paginatedResponseFields);
-        expect(json.page.totalItems).toBe(0);
+        expect(json.page.totalItems).toBe(1);
+        expect(json.items[0].messageSubscriptionState).toBe('CORRELATED');
       }).toPass(defaultAssertionOptions);
     });
   });

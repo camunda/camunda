@@ -23,10 +23,10 @@ test.describe.parallel('Process Definition Search API', () => {
   const state: Record<string, unknown> = {};
   test.beforeAll(async () => {
     await deploy([
-      './resources/process_definition_api_tests.bpmn',
-      './resources/process_definition_api_tests_2.bpmn',
+      './resources/process_definition_tests_1.bpmn',
+      './resources/process_definition_tests_2.bpmn',
     ]);
-    await createInstances('process_definition_api_tests', 1, 1).then(
+    await createInstances('process_definition_tests_1', 1, 1).then(
       (instances) => {
         state['processDefinitionKey'] = instances[0].processDefinitionKey;
         state['processDefinitionId'] = instances[0].processDefinitionId;
@@ -110,7 +110,7 @@ test.describe.parallel('Process Definition Search API', () => {
         data: {
           filter: {
             isLatestVersion: true,
-            resourceName: 'process_definition_api_tests_2.bpmn',
+            resourceName: 'process_definition_tests_2.bpmn',
           },
         },
       });
@@ -120,7 +120,7 @@ test.describe.parallel('Process Definition Search API', () => {
       expect(body.page.totalItems).toBe(1);
       expect(body.items[0].version).toBe(1);
       expect(body.items[0].processDefinitionId).toBe(
-        'process_definition_api_tests_2',
+        'process_definition_tests_2',
       );
     }).toPass(defaultAssertionOptions);
   });

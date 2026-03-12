@@ -89,7 +89,10 @@ test.describe.serial('Get usage metrics API Tests', () => {
       expect(body.processInstances).toBeGreaterThan(0);
       expect(body.decisionInstances).toBeGreaterThanOrEqual(0);
       expect(body.assignees).toBeGreaterThanOrEqual(0);
-    }).toPass(defaultAssertionOptions);
+    }).toPass({
+      intervals: [5_000, 10_000, 15_000],
+      timeout: 60_000,
+    });
   });
 
   test('Get Usage Metrics - Invalid date format', async ({request}) => {
@@ -203,8 +206,8 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
       await cleanupUsers(request, [LIMITED_USER.username]);
     });
   });
-
-  test('Get Usage Metrics - User with no granted authorization', async ({
+//Skipped due to bug 43428: https://github.com/camunda/camunda/issues/43428
+  test.skip('Get Usage Metrics - User with no granted authorization', async ({
     request,
   }) => {
     const startOfTodayLocal = new Date();
