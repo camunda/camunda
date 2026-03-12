@@ -10,21 +10,30 @@ package io.camunda.zeebe.broker.system.configuration;
 import static io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.DEFAULT_DISTRIBUTION_INTERVAL;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * Exporting component configuration. This configuration pertains to configurations that are common
  * to all exporters.
  */
-public record ExportingCfg(Set<Long> skipRecords, Duration distributionInterval) {
+public record ExportingCfg(
+    Set<Long> skipRecords,
+    Duration distributionInterval,
+    Map<Integer, Set<Long>> skipRecordsForPartitions) {
 
-  public ExportingCfg(final Set<Long> skipRecords, final Duration distributionInterval) {
+  public ExportingCfg(
+      final Set<Long> skipRecords,
+      final Duration distributionInterval,
+      final Map<Integer, Set<Long>> skipRecordsForPartitions) {
     this.skipRecords = skipRecords == null ? Set.of() : skipRecords;
     this.distributionInterval =
         distributionInterval == null ? DEFAULT_DISTRIBUTION_INTERVAL : distributionInterval;
+    this.skipRecordsForPartitions =
+        skipRecordsForPartitions == null ? Map.of() : skipRecordsForPartitions;
   }
 
   public static ExportingCfg defaultExportingCfg() {
-    return new ExportingCfg(null, null);
+    return new ExportingCfg(null, null, null);
   }
 }
