@@ -66,10 +66,10 @@ class TaskDetailsPage {
   readonly historyTabButton: Locator;
   readonly historyTable: Locator;
   readonly historyTableRow: Locator;
-  readonly historyTableOperationHeader: Locator;
-  readonly historyTablePropertyHeader: Locator;
+  readonly historyTableOperationTypeHeader: Locator;
+  readonly historyTableDetailsHeader: Locator;
   readonly historyTableActorHeader: Locator;
-  readonly historyTableTimeHeader: Locator;
+  readonly historyTableDateHeader: Locator;
   readonly historyTableAssignCell: Locator;
 
   constructor(page: Page) {
@@ -127,23 +127,23 @@ class TaskDetailsPage {
       .getByTestId('task-details-history-view')
       .getByRole('table');
     this.historyTableRow = this.historyTable.getByRole('row');
-    this.historyTableOperationHeader = this.historyTable.getByRole(
+    this.historyTableOperationTypeHeader = this.historyTable.getByRole(
       'columnheader',
       {
-        name: 'Operation',
+        name: 'Operation type',
       },
     );
-    this.historyTablePropertyHeader = this.historyTable.getByRole(
+    this.historyTableDetailsHeader = this.historyTable.getByRole(
       'columnheader',
       {
-        name: 'Property',
+        name: 'Details',
       },
     );
     this.historyTableActorHeader = this.historyTable.getByRole('columnheader', {
       name: 'Actor',
     });
-    this.historyTableTimeHeader = this.historyTable.getByRole('columnheader', {
-      name: 'Time',
+    this.historyTableDateHeader = this.historyTable.getByRole('columnheader', {
+      name: 'Date',
     });
     this.historyTableAssignCell = this.historyTable.getByRole('cell', {
       name: 'Assign task',

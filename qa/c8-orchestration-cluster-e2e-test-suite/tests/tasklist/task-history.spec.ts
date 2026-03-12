@@ -11,26 +11,41 @@ import {expect} from '@playwright/test';
 import {deploy, createSingleInstance} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
+import {findUserTask} from '@requestHelpers';
+
+type ProcessInstance = {
+  processInstanceKey: string;
+};
 
 test.describe('Task History Audit Log', () => {
+  let processInstance: ProcessInstance;
+
   test.beforeAll(async () => {
     await deploy(['./resources/usertask_to_be_completed.bpmn']);
-    await createSingleInstance('usertask_to_be_completed', 1);
+    processInstance = await createSingleInstance('usertask_to_be_completed', 1);
   });
 
-  test.beforeEach(async ({page, loginPage, taskPanelPage, taskDetailsPage}) => {
-    await navigateToApp(page, 'tasklist');
-    await loginPage.login('demo', 'demo');
-    await expect(page).toHaveURL('/tasklist');
+  test.beforeEach(
+    async ({page, loginPage, taskPanelPage, taskDetailsPage, request}) => {
+      await navigateToApp(page, 'tasklist');
+      await loginPage.login('demo', 'demo');
+      await expect(page).toHaveURL('/tasklist');
 
-    await taskPanelPage.openTask('usertask_to_be_completed');
+      const taskKey = await findUserTask(
+        request,
+        processInstance.processInstanceKey,
+        'CREATED',
+      );
 
-    await taskDetailsPage.assignToMeButton.click();
-    await expect(taskDetailsPage.unassignButton).toBeVisible();
-  });
+      await taskPanelPage.goToTaskDetails(taskKey);
+
+      await taskDetailsPage.clickAssignToMeButton();
+      await expect(taskDetailsPage.unassignButton).toBeVisible();
+    },
+  );
 
   test.afterEach(async ({page, taskDetailsPage}, testInfo) => {
-    await taskDetailsPage.unassignButton.click();
+    await taskDetailsPage.clickUnassignButton();
     await expect(taskDetailsPage.assignToMeButton).toBeVisible();
 
     await captureScreenshot(page, testInfo);
@@ -58,10 +73,10 @@ test.describe('Task History Audit Log', () => {
   }) => {
     await taskDetailsPage.clickHistoryTab();
 
-    await expect(taskDetailsPage.historyTableOperationHeader).toBeVisible();
-    await expect(taskDetailsPage.historyTablePropertyHeader).toBeVisible();
+    await expect(taskDetailsPage.historyTableOperationTypeHeader).toBeVisible();
+    await expect(taskDetailsPage.historyTableDetailsHeader).toBeVisible();
     await expect(taskDetailsPage.historyTableActorHeader).toBeVisible();
-    await expect(taskDetailsPage.historyTableTimeHeader).toBeVisible();
+    await expect(taskDetailsPage.historyTableDateHeader).toBeVisible();
   });
 
   test('Task history shows assign task entry', async ({taskDetailsPage}) => {
