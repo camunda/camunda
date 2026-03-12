@@ -7,10 +7,11 @@
  */
 
 import styled from 'styled-components';
-import {ListItem as BaseListItem} from '@carbon/react';
+import {InlineLoading} from '@carbon/react';
 
-const ListItem = styled(BaseListItem)`
-  list-style: decimal;
+const FitContentInlineLoading = styled(InlineLoading)`
+  display: inline-flex;
+  inline-size: fit-content;
 `;
 
-export {ListItem};
+export {FitContentInlineLoading};

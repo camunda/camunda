@@ -6,13 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {rem} from '@carbon/elements';
 import {zNotificationContainer} from 'modules/constants/componentHierarchy';
 import styled from 'styled-components';
 
 const Container = styled.div`
   position: absolute;
-  top: ${rem(56)};
+  top: 6rem; // Below app header + content header
   z-index: ${zNotificationContainer};
   right: var(--cds-spacing-03);
 `;
