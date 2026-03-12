@@ -308,17 +308,14 @@ describe('InstanceHeader', () => {
 
     await user.click(screen.getByRole('button', {name: /danger delete/i}));
 
-    await waitFor(() =>
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'success',
-        title: 'Instance is scheduled for deletion',
-        isDismissable: true,
-      }),
-    );
-
-    await waitFor(() => {
-      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'info',
+      title: 'Instance is scheduled for deletion',
+      isDismissable: true,
     });
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/),
+    );
   });
 
   it('should configure the migration store and redirect when "Migrate Instance" is clicked', async () => {
@@ -388,11 +385,11 @@ describe('InstanceHeader', () => {
     await user.click(screen.getByRole('button', {name: /Modify Instance/}));
     await user.click(screen.getByRole('button', {name: 'Continue'}));
 
-    await waitFor(() => {
-      expect(modificationsStore.isModificationModeEnabled).toBe(true);
+    expect(modificationsStore.isModificationModeEnabled).toBe(true);
+    await waitFor(() =>
       expect(
         screen.queryByRole('button', {name: /Modify Instance/}),
-      ).not.toBeInTheDocument();
-    });
+      ).not.toBeInTheDocument(),
+    );
   });
 });

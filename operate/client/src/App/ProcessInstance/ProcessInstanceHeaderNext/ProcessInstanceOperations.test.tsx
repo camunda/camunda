@@ -176,14 +176,12 @@ describe('ProcessInstanceOperations', () => {
     await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
-    await waitFor(() =>
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'error',
-        title: 'Failed to cancel process instance',
-        subtitle: 'Internal Server Error',
-        isDismissable: true,
-      }),
-    );
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'Failed to cancel process instance',
+      subtitle: 'Internal Server Error',
+      isDismissable: true,
+    });
   });
 
   it(
@@ -200,13 +198,11 @@ describe('ProcessInstanceOperations', () => {
       await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
       await user.click(screen.getByRole('button', {name: 'Apply'}));
 
-      await waitFor(() =>
-        expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-          kind: 'success',
-          title: 'Instance is scheduled for cancellation',
-          isDismissable: true,
-        }),
-      );
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'info',
+        title: 'Instance is scheduled for cancellation',
+        isDismissable: true,
+      });
     },
   );
 
@@ -228,13 +224,11 @@ describe('ProcessInstanceOperations', () => {
 
     await user.click(screen.getByRole('button', {name: /Retry Instance/}));
 
-    await waitFor(() =>
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'error',
-        title: 'Operation could not be created',
-        isDismissable: true,
-      }),
-    );
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'Operation could not be created',
+      isDismissable: true,
+    });
   });
 
   it(
@@ -258,13 +252,11 @@ describe('ProcessInstanceOperations', () => {
 
       await user.click(screen.getByRole('button', {name: /Retry Instance/}));
 
-      await waitFor(() =>
-        expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-          kind: 'success',
-          title: 'Incidents are scheduled for retry',
-          isDismissable: true,
-        }),
-      );
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'info',
+        title: 'Incidents are scheduled for retry',
+        isDismissable: true,
+      });
     },
   );
 
@@ -286,14 +278,12 @@ describe('ProcessInstanceOperations', () => {
 
     await user.click(screen.getByRole('button', {name: /Retry Instance/}));
 
-    await waitFor(() =>
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'warning',
-        title: "You don't have permission to perform this operation",
-        subtitle: 'Please contact the administrator if you need access.',
-        isDismissable: true,
-      }),
-    );
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'warning',
+      title: "You don't have permission to perform this operation",
+      subtitle: 'Please contact the administrator if you need access.',
+      isDismissable: true,
+    });
   });
 
   it('should show error notification on delete operation error', async () => {
@@ -310,14 +300,12 @@ describe('ProcessInstanceOperations', () => {
     await user.click(screen.getByRole('button', {name: /Delete Instance/}));
     await user.click(screen.getByRole('button', {name: 'danger Delete'}));
 
-    await waitFor(() =>
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'error',
-        title: 'Failed to delete process instance',
-        subtitle: 'Internal Server Error',
-        isDismissable: true,
-      }),
-    );
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'Failed to delete process instance',
+      subtitle: 'Internal Server Error',
+      isDismissable: true,
+    });
   });
 
   it('should show success notification on delete operation success', async () => {
@@ -334,13 +322,11 @@ describe('ProcessInstanceOperations', () => {
     await user.click(screen.getByRole('button', {name: /Delete Instance/}));
     await user.click(screen.getByRole('button', {name: 'danger Delete'}));
 
-    await waitFor(() =>
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'success',
-        title: 'Instance is scheduled for deletion',
-        isDismissable: true,
-      }),
-    );
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'info',
+      title: 'Instance is scheduled for deletion',
+      isDismissable: true,
+    });
   });
 
   // TODO: This test might be obsolete depending on the UX alignment. Do we want
