@@ -397,7 +397,7 @@ Key responsibilities:
 
 # 6. Runtime view
 
-## 6.1 User login (Basic Auth)
+## 6.1.1 User login (Basic Auth)
 
 Scenario: human user logs into Operate or Tasklist using username and password (Basic Auth).
 
@@ -427,7 +427,7 @@ sequenceDiagram
   UI-->>USER: Dashboard rendered
 ```
 
-## 6.2 User login (OIDC)
+## 6.1.2 User login (OIDC)
 
 Scenario: human user logs into Operate or Tasklist via OIDC.
 
@@ -473,7 +473,7 @@ sequenceDiagram
   UI-->>USER: Dashboard rendered
 ```
 
-## 6.3 User logout (OIDC)
+## 6.2 User logout (OIDC)
 
 Scenario: human user logs out of a cluster UI; RP‑initiated logout propagates the logout back to the external IdP.
 
@@ -501,7 +501,7 @@ sequenceDiagram
   POST_LOGOUT-->>USER: Redirect to application login page
 ```
 
-## 6.4 Machine‑to‑machine access (workers and services)
+## 6.3 Machine‑to‑machine access (workers and services)
 
 Scenario: worker or backend service calls REST or gRPC APIs using a Bearer token (OIDC client credentials).
 
@@ -538,7 +538,7 @@ sequenceDiagram
   SS-->>REST: Authorized request continues
 ```
 
-## 6.5 Sending a command via REST
+## 6.4 Sending a command via REST
 
 Scenario: a client starts a process instance via the REST API; the Zeebe Engine enforces RBAC via Engine Identity before applying the command.
 
@@ -568,7 +568,7 @@ sequenceDiagram
   REST-->>CLIENT: 200 OK with process instance key
 ```
 
-## 6.6 Reading resources via REST
+## 6.5 Reading resources via REST
 
 Scenario: a client queries process instances via the REST API; the Camunda Search Client uses Security to filter results to authorized resources only.
 
