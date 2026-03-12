@@ -40,6 +40,15 @@ public class Export {
    */
   private Map<Integer, Set<Long>> skipRecords = Map.of();
 
+  /**
+   * Enable the exporters to skip record positions per partition. Allows to skip certain records by
+   * their position for a specific partition. This is useful for debugging or skipping a record that
+   * is preventing processing or exporting to continue. Record positions defined to skip in this
+   * definition will be skipped only for the specified partition. The value is a map of partition id
+   * to a comma-separated list of records ids to skip. Whitespace is ignored.
+   */
+  private Map<Integer, Set<Long>> skipRecordsForPartitions = Map.of();
+
   public Duration getDistributionInterval() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + ".distribution-interval",
@@ -59,5 +68,13 @@ public class Export {
 
   public void setSkipRecords(final Map<Integer, Set<Long>> skipRecords) {
     this.skipRecords = skipRecords;
+  }
+
+  public Map<Integer, Set<Long>> getSkipRecordsForPartitions() {
+    return skipRecordsForPartitions;
+  }
+
+  public void setSkipRecordsForPartitions(final Map<Integer, Set<Long>> skipRecordsForPartitions) {
+    this.skipRecordsForPartitions = skipRecordsForPartitions;
   }
 }

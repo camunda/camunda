@@ -1,6 +1,12 @@
 zeebe:
   broker:
     exporting:
+<<<<<<< HEAD
+=======
+      skipRecords: 112233, 445566
+      skipRecordsForPartitions:
+        1: 999
+>>>>>>> 33733d74 (feat: support per-partition skip record positions for ExporterDirector)
       distributionInterval: 5s
     exporters:
       elasticsearch:

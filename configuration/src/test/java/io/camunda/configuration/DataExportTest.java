@@ -107,4 +107,29 @@ public class DataExportTest {
       assertThat(brokerCfg.getExporting().skipRecords()).containsEntry(2, Set.of(30L));
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.export.skip-records-for-partitions.1=10,20",
+        "camunda.data.export.skip-records-for-partitions.2=30",
+      })
+  class WithPerPartitionSkipRecordsSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithPerPartitionSkipRecordsSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetSkipRecordsForPartition1() {
+      assertThat(brokerCfg.getExporting().skipRecordsForPartitions())
+          .containsEntry(1, Set.of(10L, 20L));
+    }
+
+    @Test
+    void shouldSetSkipRecordsForPartition2() {
+      assertThat(brokerCfg.getExporting().skipRecordsForPartitions()).containsEntry(2, Set.of(30L));
+    }
+  }
 }
