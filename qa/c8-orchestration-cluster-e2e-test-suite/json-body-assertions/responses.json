@@ -40,11 +40,6 @@
                   "nullable": true
                 },
                 {
-                  "name": "annotation",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
                   "name": "auditLogKey",
                   "type": "string"
                 },
@@ -278,11 +273,6 @@
           },
           {
             "name": "agentElementId",
-            "type": "string",
-            "nullable": true
-          },
-          {
-            "name": "annotation",
             "type": "string",
             "nullable": true
           },
@@ -7717,11 +7707,6 @@
                 },
                 {
                   "name": "agentElementId",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "annotation",
                   "type": "string",
                   "nullable": true
                 },

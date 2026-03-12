@@ -44,7 +44,6 @@ public class AuditLogEntityMapperTest {
             .tenantId("tenant-id")
             .tenantScope(AuditLogTenantScope.TENANT)
             .result(AuditLogOperationResult.SUCCESS)
-            .annotation("test annotation")
             .category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
             .processDefinitionId("process-id")
             .decisionRequirementsId("decision-requirements-id")
@@ -89,7 +88,6 @@ public class AuditLogEntityMapperTest {
             .tenantId(null)
             .tenantScope(null)
             .result(AuditLogOperationResult.FAIL)
-            .annotation(null)
             .category(AuditLogOperationCategory.USER_TASKS)
             .processDefinitionId(null)
             .decisionRequirementsId(null)
@@ -121,7 +119,6 @@ public class AuditLogEntityMapperTest {
     assertThat(entity.actorId()).isNull();
     assertThat(entity.tenantId()).isNull();
     assertThat(entity.result()).isNotNull();
-    assertThat(entity.annotation()).isNull();
     assertThat(entity.category()).isNotNull();
     assertThat(entity.processDefinitionId()).isNull();
     assertThat(entity.decisionRequirementsId()).isNull();

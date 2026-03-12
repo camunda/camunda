@@ -31,7 +31,6 @@ public record AuditLogDbModel(
     String tenantId,
     AuditLogEntity.AuditLogTenantScope tenantScope,
     AuditLogEntity.AuditLogOperationResult result,
-    String annotation,
     AuditLogEntity.AuditLogOperationCategory category,
     String processDefinitionId,
     String decisionRequirementsId,
@@ -79,7 +78,6 @@ public record AuditLogDbModel(
         .tenantId(tenantId)
         .tenantScope(tenantScope)
         .result(result)
-        .annotation(annotation)
         .category(category)
         .processDefinitionId(processDefinitionId)
         .decisionRequirementsId(decisionRequirementsId)
@@ -133,7 +131,6 @@ public record AuditLogDbModel(
     private String tenantId;
     private AuditLogEntity.AuditLogTenantScope tenantScope;
     private AuditLogEntity.AuditLogOperationResult result;
-    private String annotation;
     private AuditLogEntity.AuditLogOperationCategory category;
     private String processDefinitionId;
     private String decisionRequirementsId;
@@ -235,11 +232,6 @@ public record AuditLogDbModel(
 
     public Builder result(final AuditLogEntity.AuditLogOperationResult result) {
       this.result = result;
-      return this;
-    }
-
-    public Builder annotation(final String annotation) {
-      this.annotation = annotation;
       return this;
     }
 
@@ -367,7 +359,6 @@ public record AuditLogDbModel(
           tenantId,
           tenantScope,
           result,
-          annotation,
           category,
           processDefinitionId,
           decisionRequirementsId,
