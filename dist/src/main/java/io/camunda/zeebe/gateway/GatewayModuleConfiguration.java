@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
@@ -23,7 +24,6 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -81,8 +81,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       final PasswordEncoder passwordEncoder,
       @Autowired(required = false) final JwtDecoder jwtDecoder,
       final MeterRegistry meterRegistry,
-      @Value("${zeebe.broker.experimental.engine.validators.maxNameFieldLength:32768}")
-          final int maxVariableNameLength) {
+      final GatewayRestConfiguration gatewayRestConfiguration) {
     this.configuration = configuration;
     this.securityConfiguration = securityConfiguration;
     this.springGatewayBridge = springGatewayBridge;
@@ -94,7 +93,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
     this.meterRegistry = meterRegistry;
-    this.maxVariableNameLength = maxVariableNameLength;
+    this.maxVariableNameLength = gatewayRestConfiguration.getMaxNameFieldLength();
   }
 
   @Bean(destroyMethod = "close")
