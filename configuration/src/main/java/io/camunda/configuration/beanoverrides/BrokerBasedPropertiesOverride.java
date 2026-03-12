@@ -279,10 +279,7 @@ public class BrokerBasedPropertiesOverride {
   private void populateFromExport(final BrokerBasedProperties override) {
     final Export export = unifiedConfiguration.getCamunda().getData().getExport();
     final var exportingCfg =
-        new ExportingCfg(
-            export.getSkipRecords(),
-            export.getDistributionInterval(),
-            export.getSkipRecordsForPartitions());
+        new ExportingCfg(export.getSkipRecords(), export.getDistributionInterval());
     override.setExporting(exportingCfg);
   }
 
