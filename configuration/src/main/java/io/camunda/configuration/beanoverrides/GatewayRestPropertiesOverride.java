@@ -10,6 +10,7 @@ package io.camunda.configuration.beanoverrides;
 import io.camunda.configuration.Executor;
 import io.camunda.configuration.JobMetricsConfig;
 import io.camunda.configuration.ProcessCache;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.GatewayRestProperties;
 import io.camunda.configuration.beans.LegacyGatewayRestProperties;
@@ -47,6 +48,7 @@ public class GatewayRestPropertiesOverride {
     populateFromProcessCache(override);
     populateFromExecutor(override);
     populateFromJobMetrics(override);
+    populateFromValidators(override);
 
     return override;
   }
@@ -78,5 +80,21 @@ public class GatewayRestPropertiesOverride {
     jobMetricsConfiguration.setMaxTenantIdLength(jobMetrics.getMaxTenantIdLength());
     jobMetricsConfiguration.setMaxUniqueKeys(jobMetrics.getMaxUniqueKeys());
     jobMetricsConfiguration.setEnabled(jobMetrics.isEnabled());
+  }
+
+  private void populateFromValidators(final GatewayRestProperties override) {
+    if (unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType()
+        != SecondaryStorageType.rdbms) {
+      return;
+    }
+
+    final var maxNameFieldLength =
+        unifiedConfiguration
+            .getCamunda()
+            .getData()
+            .getSecondaryStorage()
+            .getRdbms()
+            .getMaxVarcharFieldLength();
+    override.setMaxNameFieldLength(maxNameFieldLength);
   }
 }
