@@ -395,6 +395,5 @@ public class CamundaAssert {
    */
   static void reset() {
     CamundaAssert.DATA_SOURCE.remove();
-    CamundaAssert.judgeConfig = null;
   }
 }

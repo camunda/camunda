@@ -301,9 +301,6 @@ public class CamundaProcessTestExtension
         new CamundaDataSource(camundaProcessTestContext.createClient());
     CamundaAssert.initialize(dataSource);
 
-    // re-initialize judge config (reset in afterEach clears the ThreadLocal)
-    initializeJudgeConfig();
-
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
 
