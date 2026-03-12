@@ -7,26 +7,46 @@
  */
 package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.agrona.BitUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A fixed-capacity ring buffer for {@link InFlightEntry} instances, indexed by position. Uses
- * power-of-two capacity with {@code & mask} indexing for O(1) operations.
+ * A fixed-capacity ring buffer for {@link InFlightEntry} instances, specialized for the {@link
+ * FlowControl}/{@link io.camunda.zeebe.logstreams.impl.log.Sequencer} threading model. It is
+ * <em>not</em> a general-purpose concurrent data structure — its correctness depends on the
+ * specific access patterns of those callers:
+ *
+ * <ul>
+ *   <li>{@link #put} is called under the sequencer lock (single writer).
+ *   <li>{@link #get} is only used in tests.
+ *   <li>{@link #findAndRemove} is called from the stream processor thread (single caller, processes
+ *       entries in order).
+ * </ul>
+ *
+ * <p>The buffer is lossy by design: when a slot is reused after a full wraparound, the displaced
+ * entry is cleaned up rather than blocking the writer. Similarly, {@link #findAndRemove} cleans up
+ * all entries before the matched one, since they were skipped by the stream processor. This is
+ * acceptable because displaced or skipped entries represent in-flight appends whose metrics are no
+ * longer meaningful.
  *
  * <p>Each slot has volatile read/write semantics via {@link AtomicReferenceArray}, ensuring
  * visibility across threads without external synchronization.
  *
+ * <h3>Sequential indexing</h3>
+ *
+ * <p>The buffer uses a monotonically increasing counter ({@link #nextIndex}) incremented under the
+ * sequencer lock. Every slot is used before wrapping, giving effective capacity equal to the full
+ * buffer size.
+ *
  * <h3>Wraparound safety</h3>
  *
- * <p>Because multiple positions map to the same slot (modular indexing), a slot may be overwritten
- * by a newer position after a full wraparound. To guard against reading the wrong entry, {@link
- * #put(long, InFlightEntry)} stamps the entry with the position before the volatile write, and
- * {@link #get(long)} verifies that the entry's {@link InFlightEntry#position} matches the requested
- * position. This keeps all concurrency concerns (position stamping + volatile publication) inside
- * the ring buffer.
+ * <p>Because multiple indices map to the same slot (modular indexing), a slot may be overwritten by
+ * a newer index after a full wraparound. To guard against reading the wrong entry, {@link
+ * #put(InFlightEntry)} stamps the entry with the sequential index before the volatile write, and
+ * {@link #get(long, long)} verifies both the sequential index and the log position match.
  */
 final class RingBuffer {
   private static final int DEFAULT_CAPACITY = 8 * 1024; // 8K slots
@@ -34,8 +54,24 @@ final class RingBuffer {
 
   private final AtomicReferenceArray<InFlightEntry> buffer;
   private final int mask;
-  // NOTE: this field is not volatile
-  private long lastWrittenPosition = -1;
+
+  /**
+   * Monotonically increasing counter for slot assignment.
+   *
+   * <p>Written by the sequencer thread (under lock) in {@link #put}. Read by the stream processor
+   * thread in {@link #findAndRemove} to bound the scan range.
+   */
+  private volatile long nextIndex = 0;
+
+  /**
+   * Tracks the sequential index of the last entry removed by {@link #findAndRemove(long)}.
+   * Subsequent scans start from {@code lastProcessedIndex + 1}, avoiding re-scanning already
+   * processed slots.
+   *
+   * <p>Only accessed by the stream processor thread in {@link #findAndRemove}. Not volatile because
+   * no other thread reads or writes this field.
+   */
+  private long lastProcessedIndex = -1;
 
   /**
    * Creates a new ring buffer with at least the given capacity. The actual capacity is rounded up
@@ -56,60 +92,86 @@ final class RingBuffer {
   }
 
   /**
-   * Puts an entry at the given position. Stamps {@code entry.position} before the volatile write so
-   * that it is published together with the reference. If the slot was occupied, the displaced
-   * entry's {@link InFlightEntry#cleanup()} is called to release resources (timers, request
-   * listeners).
+   * Puts an entry into the next sequential slot. Stamps {@code entry.position} with the assigned
+   * index before the volatile write so that it is published together with the reference. If the
+   * slot was occupied, the displaced entry's {@link InFlightEntry#cleanup()} is called to release
+   * resources (timers, request listeners).
+   *
+   * <p>Must be called under the sequencer lock.
+   *
+   * @return the assigned sequential index
    */
-  void put(final long position, final InFlightEntry entry) {
+  long put(final InFlightEntry entry) {
+    final long index = nextIndex++;
     // Plain write, published by the volatile getAndSet below (happens-before).
-    entry.position = position;
-    // IMPORTANT:
-    // lastWrittenPosition must be written before the buffer is modified:
-    // clients that will do a get() will see the updated value.
-    lastWrittenPosition = position;
-    final var displaced = buffer.getAndSet((int) (position & mask), entry);
+    entry.position = index;
+    final var displaced = buffer.getAndSet((int) (index & mask), entry);
     if (displaced != null) {
-      // position is a long, which will get boxed without the if check
       if (LOGGER.isTraceEnabled()) {
         LOGGER.trace(
-            "Found non-null entry at position {} while doing a put at position {}: cleaning it up",
+            "Found non-null entry at index {} (highestPosition {}) while doing a put at index {}"
+                + " (highestPosition {}): cleaning it up",
             displaced.position,
-            position);
+            displaced.highestPosition,
+            index,
+            entry.highestPosition);
       }
       displaced.cleanup();
     }
+    return index;
   }
 
   /**
-   * Returns the entry at the given position, or null if the slot is empty or holds an entry for a
-   * different position (i.e. the slot was overwritten by a wraparound).
+   * Returns the entry at the given sequential index, but only if both the index and the
+   * highestPosition match. Returns null if the slot is empty, holds an entry for a different index
+   * (wraparound), or holds an entry with a different highestPosition (defense-in-depth).
    */
-  InFlightEntry get(final long position) {
-    final var entry = buffer.get((int) (position & mask));
-    return entry != null && entry.position == position ? entry : null;
+  @VisibleForTesting
+  InFlightEntry get(final long index, final long highestPosition) {
+    final var entry = buffer.get((int) (index & mask));
+    return entry != null && entry.position == index && entry.highestPosition == highestPosition
+        ? entry
+        : null;
   }
 
   /**
-   * The returned value is not a volatile read, so it might not be up to date, unless a {@link
-   * RingBuffer#get(long)} is called beforehand.
+   * Scans forward from {@link #lastProcessedIndex} to find and remove an entry by its log position.
+   * Used by {@code onProcessed} from the stream processor thread, which processes entries in order.
    *
-   * <p>This is done to not add overhead (as it's in the hot path) as this getter is not really
-   * necessary in production code. If it becomes necessary to have a volatile read, then the field
-   * must be updated.
+   * <p>The scan starts from the last processed entry's sequential index and iterates forward in
+   * sequential index order. Each entry's {@link InFlightEntry#position} is verified against the
+   * expected index to skip displaced entries (where the slot was overwritten by a newer {@link
+   * #put}).
    *
-   * @return the last written position to the buffer
+   * <p>The scan range is {@code [max(lastProcessedIndex+1, nextIndex-capacity), nextIndex)}, which
+   * is at most {@code capacity} iterations and in practice much less when the stream processor
+   * keeps up with the writer.
+   *
+   * @return the entry if found, or null if the entry was displaced or not present
    */
-  long lastWrittenPosition() {
-    return lastWrittenPosition;
-  }
+  InFlightEntry findAndRemove(final long highestPosition) {
+    final long scanEnd = nextIndex; // volatile read — snapshot of writer progress
+    final long scanStart = Math.max(lastProcessedIndex + 1, scanEnd - buffer.length());
 
-  /**
-   * Removes the entry at the given position by nulling the slot if the entry in the buffer matches
-   * {@param entry}
-   */
-  void remove(final InFlightEntry entry) {
-    buffer.compareAndExchange((int) (entry.position & mask), entry, null);
+    for (long idx = scanStart; idx < scanEnd; idx++) {
+      final int slot = (int) (idx & mask);
+      final var entry = buffer.get(slot);
+      if (entry == null || entry.position != idx) {
+        continue; // slot empty or entry displaced by a newer put
+      }
+      if (entry.highestPosition == highestPosition) {
+        buffer.compareAndExchange(slot, entry, null);
+        lastProcessedIndex = entry.position;
+        return entry;
+      }
+      if (entry.highestPosition < highestPosition) {
+        // Entry was skipped by the stream processor — clean it up
+        buffer.compareAndExchange(slot, entry, null);
+        entry.cleanup();
+        lastProcessedIndex = entry.position;
+      }
+    }
+    return null;
   }
 
   /** Returns the capacity of this ring buffer. */
