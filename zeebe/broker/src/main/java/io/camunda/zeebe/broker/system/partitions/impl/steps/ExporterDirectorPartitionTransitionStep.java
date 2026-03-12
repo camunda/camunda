@@ -28,7 +28,7 @@ import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -129,7 +129,10 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .descriptors(exporterDescriptors)
             .exporterMode(exporterMode)
             .positionsToSkipFilter(exporterFilter)
-            .meterRegistry(context.getPartitionTransitionMeterRegistry());
+            .meterRegistry(context.getPartitionTransitionMeterRegistry())
+            .engineName(brokerCfg.getExperimental().getDefaultEngineName())
+            .sendOnLegacySubject(brokerCfg.getExperimental().isSendOnLegacySubject())
+            .receiveOnLegacySubject(brokerCfg.getExperimental().isReceiveOnLegacySubject());
 
     final ExporterDirector director =
         exporterDirectorBuilder.apply(exporterCtx, context.getExporterPhase());
