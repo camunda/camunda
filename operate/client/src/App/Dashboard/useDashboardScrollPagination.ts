@@ -51,11 +51,14 @@ function useDashboardScrollPagination(
     ],
   );
 
-  const handleScrollEndReach = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  const handleScrollEndReach = useCallback(
+    (_scrollUp: (distance: number) => void) => {
+      if (hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+    [hasNextPage, isFetchingNextPage, fetchNextPage],
+  );
 
   return {
     handleScrollStartReach,

@@ -30,7 +30,7 @@ type Props = {
   isFetchingNextPage: boolean;
   isFetchingPreviousPage: boolean;
   onScrollStartReach?: (scrollDown: (distance: number) => void) => void;
-  onScrollEndReach: () => void;
+  onScrollEndReach: (scrollUp: (distance: number) => void) => void;
 };
 
 const IncidentsByError: React.FC<Props> = ({
