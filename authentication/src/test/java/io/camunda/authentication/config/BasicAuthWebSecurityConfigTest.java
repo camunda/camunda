@@ -153,7 +153,7 @@ public class BasicAuthWebSecurityConfigTest extends AbstractWebSecurityConfigTes
 
     final Cookie csrfCookie = testResult.getResponse().getCookie(EXPECTED_CSRF_TOKEN_COOKIE_NAME);
 
-    assertThat(csrfCookie.isHttpOnly()).isTrue();
+    assertThat(csrfCookie.isHttpOnly()).isFalse();
     assertThat(csrfCookie.getSecure()).isTrue();
   }
 
@@ -177,7 +177,7 @@ public class BasicAuthWebSecurityConfigTest extends AbstractWebSecurityConfigTes
 
     final Cookie csrfCookie = testResult.getResponse().getCookie(EXPECTED_CSRF_TOKEN_COOKIE_NAME);
 
-    assertThat(csrfCookie.isHttpOnly()).isTrue();
+    assertThat(csrfCookie.isHttpOnly()).isFalse();
     assertThat(csrfCookie.getSecure()).isFalse();
   }
 
