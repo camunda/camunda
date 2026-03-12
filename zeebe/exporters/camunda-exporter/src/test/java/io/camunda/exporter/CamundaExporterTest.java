@@ -207,8 +207,15 @@ final class CamundaExporterTest {
   @Nested
   final class ScheduledFlushTest {
 
+    @BeforeEach
+    void setup() {
+      configuration.getIndex().setShouldWaitForImporters(false);
+    }
+
     private Record<?> stubRecord() {
-      return new ProtocolFactory().generateRecord(ValueType.VARIABLE);
+      final var record = spy(new ProtocolFactory().generateRecord(ValueType.VARIABLE));
+      when(record.getBrokerVersion()).thenReturn("8.8.0");
+      return record;
     }
 
     @Test
