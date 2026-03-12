@@ -44,6 +44,7 @@ import io.camunda.search.query.UserQuery;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -1409,6 +1410,7 @@ class RdbmsExporterIT {
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_INSTANCE_CREATION))
             .withRecordType(RecordType.EVENT)
             .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .withAuthorizations(Map.of(Authorization.AUTHORIZED_USERNAME, "user"))
             .withPosition(1L)
             .withPartitionId(1)
             .withTimestamp(System.currentTimeMillis())
