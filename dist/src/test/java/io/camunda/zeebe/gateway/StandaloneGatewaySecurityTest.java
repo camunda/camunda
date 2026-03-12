@@ -234,6 +234,7 @@ final class StandaloneGatewaySecurityTest {
         null,
         null,
         null,
-        new SimpleMeterRegistry());
+        new SimpleMeterRegistry(),
+        32 * 1024);
   }
 }

@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -63,6 +64,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
   private final MeterRegistry meterRegistry;
+  private final int maxVariableNameLength;
 
   private Gateway gateway;
 
@@ -78,7 +80,9 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       @Autowired(required = false) final JwtDecoder jwtDecoder,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      @Value("${zeebe.broker.experimental.engine.validators.maxNameFieldLength:32768}")
+          final int maxVariableNameLength) {
     this.configuration = configuration;
     this.securityConfiguration = securityConfiguration;
     this.springGatewayBridge = springGatewayBridge;
@@ -90,6 +94,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
     this.meterRegistry = meterRegistry;
+    this.maxVariableNameLength = maxVariableNameLength;
   }
 
   @Bean(destroyMethod = "close")
@@ -117,7 +122,8 @@ public class GatewayModuleConfiguration implements CloseableSilently {
             userServices,
             passwordEncoder,
             jwtDecoder,
-            meterRegistry);
+            meterRegistry,
+            maxVariableNameLength);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
         () ->
