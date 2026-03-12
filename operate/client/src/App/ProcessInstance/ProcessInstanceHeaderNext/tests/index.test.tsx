@@ -338,17 +338,13 @@ describe('InstanceHeader', () => {
     await user.click(screen.getByRole('button', {name: /Migrate Instance/}));
     await user.click(screen.getByRole('button', {name: 'Continue'}));
 
-    await waitFor(() => {
-      expect(processInstanceMigrationStore.isEnabled).toBe(true);
-      expect(processInstanceMigrationStore.state.selectedInstancesCount).toBe(
-        1,
-      );
-      expect(processInstanceMigrationStore.state.batchOperationQuery).toEqual({
-        ids: [mockInstance.processInstanceKey],
-      });
-      expect(
-        processInstanceMigrationStore.state.sourceProcessDefinition,
-      ).toEqual({
+    expect(processInstanceMigrationStore.isEnabled).toBe(true);
+    expect(processInstanceMigrationStore.state.selectedInstancesCount).toBe(1);
+    expect(processInstanceMigrationStore.state.batchOperationQuery).toEqual({
+      ids: [mockInstance.processInstanceKey],
+    });
+    expect(processInstanceMigrationStore.state.sourceProcessDefinition).toEqual(
+      {
         processDefinitionKey: mockInstance.processDefinitionKey,
         processDefinitionId: mockInstance.processDefinitionId,
         version: mockInstance.processDefinitionVersion,
@@ -357,9 +353,10 @@ describe('InstanceHeader', () => {
         tenantId: mockInstance.tenantId,
         resourceName: null,
         hasStartForm: false,
-      });
-      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
-    });
+      },
+    );
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
 
     const search = new URLSearchParams(
       screen.getByTestId('search').textContent ?? '',
