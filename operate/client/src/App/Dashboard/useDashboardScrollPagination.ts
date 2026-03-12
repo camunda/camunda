@@ -6,19 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {UseInfiniteQueryResult} from '@tanstack/react-query';
 import {useCallback} from 'react';
 
 const ROW_HEIGHT = 64;
 const DEFAULT_PAGE_SIZE = 50;
 
-type PaginatedResult = {
-  hasPreviousPage: boolean;
-  hasNextPage: boolean;
-  isFetchingPreviousPage: boolean;
-  isFetchingNextPage: boolean;
-  fetchPreviousPage: () => Promise<unknown>;
-  fetchNextPage: () => Promise<unknown>;
-};
+type PaginatedResult = Pick<
+  UseInfiniteQueryResult,
+  | 'hasPreviousPage'
+  | 'hasNextPage'
+  | 'isFetchingPreviousPage'
+  | 'isFetchingNextPage'
+  | 'fetchPreviousPage'
+  | 'fetchNextPage'
+>;
 
 function useDashboardScrollPagination(
   queryResult: PaginatedResult,
