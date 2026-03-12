@@ -12,6 +12,10 @@ const isCallActivity = (businessObject: BusinessObject): boolean => {
   return businessObject.$type === 'bpmn:CallActivity';
 };
 
+const isBusinessRuleTask = (businessObject: BusinessObject): boolean => {
+  return businessObject.$type === 'bpmn:BusinessRuleTask';
+};
+
 const isElementRunning = (
   elementId: string,
   runningInstancesByElement: Record<string, number>,
@@ -25,9 +29,14 @@ const isDrillDownCandidate = (
   runningInstancesByElement: Record<string, number>,
 ): boolean => {
   return (
-    isCallActivity(businessObject) &&
+    (isCallActivity(businessObject) || isBusinessRuleTask(businessObject)) &&
     isElementRunning(elementId, runningInstancesByElement)
   );
 };
 
-export {isCallActivity, isElementRunning, isDrillDownCandidate};
+export {
+  isCallActivity,
+  isBusinessRuleTask,
+  isElementRunning,
+  isDrillDownCandidate,
+};

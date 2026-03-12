@@ -433,7 +433,10 @@ const TopPanel: React.FC = observer(() => {
                 }
                 customElementClasses={customElementClasses}
                 onElementDoubleClick={(elementId) => {
-                  handleDrillDown(elementId);
+                  const elementType = businessObjects?.[elementId]?.$type;
+                  if (elementType) {
+                    handleDrillDown(elementId, elementType);
+                  }
                 }}
               >
                 {stateOverlays.map((overlay) => {

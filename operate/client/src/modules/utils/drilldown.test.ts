@@ -9,6 +9,7 @@
 import type {BusinessObject, ElementType} from 'bpmn-js/lib/NavigatedViewer';
 import {
   isCallActivity,
+  isBusinessRuleTask,
   isElementRunning,
   isDrillDownCandidate,
 } from './drilldown';
@@ -54,6 +55,24 @@ describe('drilldown utilities', () => {
     );
   });
 
+  it('isBusinessRuleTask should return true for bpmn:BusinessRuleTask', () => {
+    expect(
+      isBusinessRuleTask(createBusinessObject('bpmn:BusinessRuleTask')),
+    ).toBe(true);
+  });
+
+  it('isBusinessRuleTask should return false for bpmn:ServiceTask', () => {
+    expect(isBusinessRuleTask(createBusinessObject('bpmn:ServiceTask'))).toBe(
+      false,
+    );
+  });
+
+  it('isBusinessRuleTask should return false for bpmn:CallActivity', () => {
+    expect(isBusinessRuleTask(createBusinessObject('bpmn:CallActivity'))).toBe(
+      false,
+    );
+  });
+
   it('isElementRunning should return true when running count is greater than 0', () => {
     expect(isElementRunning('el_1', {el_1: 3})).toBe(true);
   });
@@ -93,5 +112,15 @@ describe('drilldown utilities', () => {
   it('isDrillDownCandidate should return false for a running ServiceTask', () => {
     const bo = createBusinessObject('bpmn:ServiceTask');
     expect(isDrillDownCandidate('el_1', bo, {el_1: 1})).toBe(false);
+  });
+
+  it('isDrillDownCandidate should return true for a running BusinessRuleTask', () => {
+    const bo = createBusinessObject('bpmn:BusinessRuleTask');
+    expect(isDrillDownCandidate('el_1', bo, {el_1: 1})).toBe(true);
+  });
+
+  it('isDrillDownCandidate should return false for a non-running BusinessRuleTask', () => {
+    const bo = createBusinessObject('bpmn:BusinessRuleTask');
+    expect(isDrillDownCandidate('el_1', bo, {el_1: 0})).toBe(false);
   });
 });
