@@ -38,11 +38,11 @@ import org.slf4j.LoggerFactory;
  * @see ItemProviderFactory
  * @see PersistedBatchOperation
  */
-public class BatchOperationInitializationHelper {
+public class BatchOperationInitializationBehavior {
   public static final String ERROR_MSG_FAILED_FIRST_CHUNK_APPEND =
       "Unable to append first chunk of batch operation items. Number of items: %d";
   private static final Logger LOG =
-      LoggerFactory.getLogger(BatchOperationInitializationHelper.class);
+      LoggerFactory.getLogger(BatchOperationInitializationBehavior.class);
 
   private final ItemProviderFactory itemProviderFactory;
   private final BatchOperationMetrics metrics;
@@ -50,7 +50,7 @@ public class BatchOperationInitializationHelper {
   private final BatchOperationPageProcessor pageProcessor;
   private final int queryPageSize;
 
-  public BatchOperationInitializationHelper(
+  public BatchOperationInitializationBehavior(
       final ItemProviderFactory itemProviderFactory,
       final BatchOperationPageProcessor pageProcessor,
       final BatchOperationCommandAppender commandAppender,

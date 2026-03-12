@@ -26,7 +26,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvid
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationHelper.BatchOperationInitializationException;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.BatchOperationInitializationException;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
@@ -36,7 +36,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class BatchOperationInitializationHelperTest {
+class BatchOperationInitializationBehaviorTest {
 
   private static final long BATCH_OPERATION_KEY = 12345L;
   private static final String SEARCH_CURSOR = "test-cursor";
@@ -52,12 +52,12 @@ class BatchOperationInitializationHelperTest {
   private final TaskResultBuilder taskResultBuilder = mock(TaskResultBuilder.class);
   private PersistedBatchOperation batchOperation;
 
-  private BatchOperationInitializationHelper initializer;
+  private BatchOperationInitializationBehavior initializer;
 
   @BeforeEach
   void setUp() {
     initializer =
-        new BatchOperationInitializationHelper(
+        new BatchOperationInitializationBehavior(
             itemProviderFactory, pageProcessor, commandBuilder, PAGE_SIZE, metrics);
 
     // Default batch operation setup
