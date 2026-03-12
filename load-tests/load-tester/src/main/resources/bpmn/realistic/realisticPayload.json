@@ -1,4 +1,5 @@
 {
+  "correlationKey": "local-load-test",
   "customerId": 123,
   "customer": {
     "firstname": "Dodson",

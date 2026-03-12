@@ -23,6 +23,7 @@ public class WorkerCfg {
   private boolean sendMessage = false;
   private String messageName = "defaultMessage";
   private String correlationKeyVariableName = "correlationKey-var";
+  private Duration messageTimeToLive = Duration.ofSeconds(30);
 
   public String getJobType() {
     return jobType;
@@ -118,5 +119,13 @@ public class WorkerCfg {
 
   public void setCorrelationKeyVariableName(final String correlationKeyVariableName) {
     this.correlationKeyVariableName = correlationKeyVariableName;
+  }
+
+  public Duration getMessageTimeToLive() {
+    return messageTimeToLive;
+  }
+
+  public void setMessageTimeToLive(final Duration messageTimeToLive) {
+    this.messageTimeToLive = messageTimeToLive;
   }
 }

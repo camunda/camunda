@@ -121,6 +121,7 @@ public class Worker extends App {
             .newPublishMessageCommand()
             .messageName(messageName)
             .correlationKey(correlationKey)
+            .timeToLive(workerCfg.getMessageTimeToLive())
             .send();
 
     try {
