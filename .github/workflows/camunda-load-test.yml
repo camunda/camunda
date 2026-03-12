@@ -197,7 +197,7 @@ jobs:
     permissions: { }
     outputs:
       load-test-load: ${{ steps.config.outputs.load-test-load }}
-      platform-consistency-override: ${{ steps.config.outputs.platform-consistency-override }}
+      platform-additional-config: ${{ steps.config.outputs.platform-additional-config }}
     steps:
       - name: Calculate configuration based on scenario
         id: config
@@ -212,29 +212,31 @@ jobs:
           case "$scenario" in
             latency)
               echo "load-test-load=--set starter.rate=1 --set workers.worker.replicas=1" >> "$GITHUB_OUTPUT"
-              echo "platform-consistency-override=" >> "$GITHUB_OUTPUT"
+              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             realistic)
               echo "load-test-load=-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml" >> "$GITHUB_OUTPUT"
-              echo "platform-consistency-override=" >> "$GITHUB_OUTPUT"
+              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             typical)
               # Output typical configuration directly to avoid quote escaping issues
               echo "load-test-load=--set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=bpmn/typical_process.bpmn" >> "$GITHUB_OUTPUT"
-              echo "platform-consistency-override=" >> "$GITHUB_OUTPUT"
+              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             max)
               echo "load-test-load=--set starter.rate=300" >> "$GITHUB_OUTPUT"
               # For the max stress scenario, disable the experimental consistency checks to avoid overhead.
               # We inject the overrides via --set-file into extraConfiguration[1] (application-override.yml),
               # which is loaded after (and thus takes priority over) the base application.yml.
+              # All values files define extraConfiguration[1] as application-override.yml (empty by default),
+              # so this override works regardless of which secondary storage type is selected.
               # Path is relative to the helm working dir: load-tests/setup/$NAMESPACE/
-              echo "platform-consistency-override=--set-file 'orchestration.extraConfiguration[1].content=../../camunda-platform-max-consistency-override.yml'" >> "$GITHUB_OUTPUT"
+              echo "platform-additional-config=--set-file 'orchestration.extraConfiguration[1].content=../../camunda-platform-override-values.yml'" >> "$GITHUB_OUTPUT"
               ;;
             custom)
               # Use the provided load-test-load inputs
               echo "load-test-load=${{ inputs.load-test-load }}" >> "$GITHUB_OUTPUT"
-              echo "platform-consistency-override=" >> "$GITHUB_OUTPUT"
+              echo "platform-additional-config=" >> "$GITHUB_OUTPUT"
               ;;
             *)
               echo "Error: Unknown scenario '$scenario'"
@@ -416,9 +418,9 @@ jobs:
 
           # Build additional platform configuration, including any scenario-specific overrides
           additional_platform_config="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }} --set orchestration.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'team-zeebe/camunda' }} --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.platform-helm-values }}"
-          # Disable experimental consistency checks for the max stress scenario to avoid overhead
-          if [[ -n "${{ needs.calculate-scenario-config.outputs.platform-consistency-override }}" ]]; then
-            additional_platform_config="$additional_platform_config ${{ needs.calculate-scenario-config.outputs.platform-consistency-override }}"
+          # Append scenario-specific platform configuration if present (e.g. max scenario disables consistency checks)
+          if [[ -n "${{ needs.calculate-scenario-config.outputs.platform-additional-config }}" ]]; then
+            additional_platform_config="$additional_platform_config ${{ needs.calculate-scenario-config.outputs.platform-additional-config }}"
           fi
 
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \

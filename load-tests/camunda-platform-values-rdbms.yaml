@@ -61,8 +61,23 @@ orchestration:
         # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
         zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
         # History cleanup adjust batch sizes
+<<<<<<< HEAD
         camunda.data.secondary-storage.rdbms.history.historyCleanupBatchSize: 100000
         camunda.data.secondary-storage.rdbms.history.historyCleanupProcessInstanceBatchSize: 2000
+=======
+        camunda.data.secondary-storage.rdbms.history.history-cleanup-batch-size: 100000
+        camunda.data.secondary-storage.rdbms.history.history-cleanup-process-instance-batch-size: 2000
+        # set to 2001 and not 2000 to directly see when queue is full in metrics dashboard
+        camunda.data.secondary-storage.rdbms.queue-size: 2001
+        camunda.data.secondary-storage.rdbms.history.default-history-ttl: PT1H
+        camunda.data.secondary-storage.rdbms.history.min-history-cleanup-interval: PT1S
+        camunda.data.secondary-storage.rdbms.history.max-history-cleanup-interval: PT1M
+    # This file is loaded after application.yml (higher priority). It is empty by default,
+    # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
+    # like disabling consistency checks without duplicating the full application.yml content.
+    - file: application-override.yml
+      content: "# no overrides"
+>>>>>>> fe6eb444 (feat: update platform configuration for max stress scenario to disable consistency checks)
 
 ########################################################################################
 ################################################### Disable ElasticSearch for RDBMS
