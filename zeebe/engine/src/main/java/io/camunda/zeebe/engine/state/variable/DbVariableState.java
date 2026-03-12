@@ -22,6 +22,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -41,6 +42,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class DbVariableState implements MutableVariableState {
 
   private static final int VARIABLE_NAME_CACHE_MAX_SIZE = 10_000;
+  private static final Duration VARIABLE_NAME_CACHE_EXPIRY = Duration.ofMinutes(5);
 
   private final MsgPackWriter writer = new MsgPackWriter();
   private final ExpandableArrayBuffer documentResultBuffer = new ExpandableArrayBuffer();
@@ -71,7 +73,10 @@ public class DbVariableState implements MutableVariableState {
 
   // (scope key) => (set of variable names on that scope) — LRU cache for fast removeAllVariables
   private final Cache<Long, Set<String>> variableNameCache =
-      Caffeine.newBuilder().maximumSize(VARIABLE_NAME_CACHE_MAX_SIZE).build();
+      Caffeine.newBuilder()
+          .maximumSize(VARIABLE_NAME_CACHE_MAX_SIZE)
+          .expireAfterAccess(VARIABLE_NAME_CACHE_EXPIRY)
+          .build();
 
   // collecting variables
   private final ObjectHashSet<DirectBuffer> collectedVariables = new ObjectHashSet<>();
