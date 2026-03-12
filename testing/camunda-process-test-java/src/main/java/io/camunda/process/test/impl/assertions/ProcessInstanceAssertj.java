@@ -428,14 +428,6 @@ public class ProcessInstanceAssertj
   }
 
   @Override
-  public ProcessInstanceAssert hasVariableSatisfiesJudge(
-      final String variableName, final String expectation, final double threshold) {
-    variableAssertj.hasVariableSatisfiesJudge(
-        getProcessInstanceKey(), variableName, expectation, threshold);
-    return this;
-  }
-
-  @Override
   public ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
       final String elementId, final String variableName, final String expectation) {
     variableAssertj.hasLocalVariableSatisfiesJudge(
@@ -445,35 +437,9 @@ public class ProcessInstanceAssertj
 
   @Override
   public ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
-      final String elementId,
-      final String variableName,
-      final String expectation,
-      final double threshold) {
-    variableAssertj.hasLocalVariableSatisfiesJudge(
-        getProcessInstanceKey(),
-        elementSelector.apply(elementId),
-        variableName,
-        expectation,
-        threshold);
-    return this;
-  }
-
-  @Override
-  public ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
       final ElementSelector selector, final String variableName, final String expectation) {
     variableAssertj.hasLocalVariableSatisfiesJudge(
         getProcessInstanceKey(), selector, variableName, expectation);
-    return this;
-  }
-
-  @Override
-  public ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
-      final ElementSelector selector,
-      final String variableName,
-      final String expectation,
-      final double threshold) {
-    variableAssertj.hasLocalVariableSatisfiesJudge(
-        getProcessInstanceKey(), selector, variableName, expectation, threshold);
     return this;
   }
 
