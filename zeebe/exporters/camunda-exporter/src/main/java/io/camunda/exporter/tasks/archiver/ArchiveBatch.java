@@ -35,6 +35,17 @@ public interface ArchiveBatch {
     public int size() {
       return processInstanceKeys.size() + rootProcessInstanceKeys.size();
     }
+
+    public ProcessInstanceArchiveBatch limit(final int limit) {
+      if (size() <= limit) {
+        return this;
+      }
+      final var rootProcessInstances = rootProcessInstanceKeys.stream().limit(limit).toList();
+      final var remainingLimit = limit - rootProcessInstances.size();
+      final var processInstanceKeys =
+          this.processInstanceKeys.stream().limit(remainingLimit).toList();
+      return new ProcessInstanceArchiveBatch(finishDate, processInstanceKeys, rootProcessInstances);
+    }
   }
 
   record BasicArchiveBatch(String finishDate, List<String> ids) implements ArchiveBatch {
