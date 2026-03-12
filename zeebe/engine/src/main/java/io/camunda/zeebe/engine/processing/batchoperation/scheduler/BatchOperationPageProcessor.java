@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 
 import com.google.common.collect.Lists;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -64,7 +65,7 @@ public class BatchOperationPageProcessor {
    * @return a result indicating whether chunks were appended, the end cursor, number of items
    *     processed, and if it was the last page
    */
-  public PageProcessingResult processPage(
+  private PageProcessingResult processPage(
       final long batchOperationKey,
       final ItemPage page,
       final TaskResultBuilder taskResultBuilder) {
@@ -77,6 +78,29 @@ public class BatchOperationPageProcessor {
       return new PageProcessingResult.Finished(page.endCursor(), page.items().size());
     }
     return new PageProcessingResult.Continue(page.endCursor(), page.items().size());
+  }
+
+  /**
+   * Fetches the next page of items and processes it into chunks. If the fetch fails, a {@link
+   * PageProcessingResult.FetchFailed} is returned instead of throwing an exception.
+   *
+   * @param itemProvider the item provider to fetch the page from
+   * @param context the current initialization context (cursor, page size)
+   * @param taskResultBuilder the builder to append command records to
+   * @return the result of processing the page, or a {@link PageProcessingResult.FetchFailed} if the
+   *     fetch fails
+   */
+  public PageProcessingResult processNextPage(
+      final ItemProvider itemProvider,
+      final InitializationContext context,
+      final TaskResultBuilder taskResultBuilder) {
+    final ItemPage page;
+    try {
+      page = itemProvider.fetchItemPage(context.currentCursor(), context.pageSize());
+    } catch (final Exception e) {
+      return new PageProcessingResult.FetchFailed(e);
+    }
+    return processPage(context.operation().getKey(), page, taskResultBuilder);
   }
 
   private boolean appendChunks(
@@ -143,6 +167,7 @@ public class BatchOperationPageProcessor {
    *   <li>{@link Continue} — chunks were appended, more pages remain
    *   <li>{@link Finished} — chunks were appended and this was the last page
    *   <li>{@link BufferFull} — chunks could not fit in the result buffer
+   *   <li>{@link FetchFailed} — fetching the page failed with an exception
    * </ul>
    */
   public sealed interface PageProcessingResult {
@@ -154,5 +179,8 @@ public class BatchOperationPageProcessor {
 
     /** Chunks could not fit in the result buffer. */
     record BufferFull(int itemsProcessed) implements PageProcessingResult {}
+
+    /** Fetching the page from the item provider failed. */
+    record FetchFailed(Exception cause) implements PageProcessingResult {}
   }
 }
