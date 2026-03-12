@@ -40,6 +40,9 @@ global:
         secret:
           existingSecret: camunda-credentials
           existingSecretKey: identity-optimize-client-token
+  security:
+    authentication:
+      type: oidc
 
 identity:
   enabled: true
@@ -75,6 +78,7 @@ postgresql:
 orchestration:
   security:
     authentication:
+      method: oidc
       unprotectedApi: false
       oidc:
         secret:
