@@ -106,7 +106,8 @@ runs:
             break # No need to check further jobs - we will skip comment creation entirely in this case
           fi
 
-          ANNOTATION_COUNT=$(echo "$ANNOTATIONS" | jq '. | length')
+          FILTERED_ANNOTATIONS=$(echo "$ANNOTATIONS" | jq '[.[] | select(.annotation_level != "warning" or (.message | contains("Node.js 20 actions are deprecated") | not))]')
+          ANNOTATION_COUNT=$(echo "$FILTERED_ANNOTATIONS" | jq '. | length')
 
           if [ "$ANNOTATION_COUNT" -eq 0 ]; then
             echo "No GHA annotations found for this job." | tee -a "$COMMENT_FILE"
@@ -116,7 +117,7 @@ runs:
             echo "" | tee -a "$COMMENT_FILE"
 
             # Format annotations for display
-            echo "$ANNOTATIONS" | jq -r '.[] | "- **\(.annotation_level | ascii_upcase)**: \(.message)"' | tee -a "$COMMENT_FILE"
+            echo "$FILTERED_ANNOTATIONS" | jq -r '.[] | "- **\(.annotation_level | ascii_upcase)**: \(.message)"' | tee -a "$COMMENT_FILE"
 
             echo "" | tee -a "$COMMENT_FILE"
           fi
