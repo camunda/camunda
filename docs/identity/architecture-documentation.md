@@ -401,16 +401,27 @@ Key responsibilities:
 
 Scenario: human user logs into Operate or Tasklist using username and password (Basic Auth).
 
+1. Browser navigates to a cluster UI (for example Operate).
+2. Spring Security redirects the browser to the built-in login form.
+3. User submits credentials; Spring Security delegates to `UsernamePasswordAuthenticationTokenConverter`.
+4. The converter loads the user entity, roles, and tenants directly from the Secondary Database — no external IdP is involved.
+5. `TokenClaimsConverter` and `DefaultCamundaAuthenticationProvider` build a `CamundaAuthentication` and store it in the session.
+6. Subsequent requests are authenticated via the session.
+
 ```mermaid
 sequenceDiagram
-  participant USER as User (Browser)
-  participant UI as Camunda Web UI<br/>(Operate / Tasklist)
-  participant SS as Spring Security<br/>(UsernamePasswordAuthenticationFilter)
-  participant BASIC_CONV as UsernamePasswordAuthenticationTokenConverter
-  participant CLAIMS as TokenClaimsConverter
-  participant AUTHN_PROVIDER as DefaultCamundaAuthenticationProvider
-  participant SESSION as WebSessionRepository
-  participant SECONDARY_DB as Secondary Database
+  box Customer System
+    participant USER as User (Browser)
+  end box
+  box Orchestration Cluster
+    participant UI as Camunda Web UI<br/>(Operate / Tasklist)
+    participant SS as Spring Security<br/>(UsernamePasswordAuthenticationFilter)
+    participant BASIC_CONV as UsernamePasswordAuthenticationTokenConverter
+    participant CLAIMS as TokenClaimsConverter
+    participant AUTHN_PROVIDER as DefaultCamundaAuthenticationProvider
+    participant SESSION as WebSessionRepository
+    participant SECONDARY_DB as Secondary Database
+  end box
 
   USER->>UI: Navigate to UI
   UI->>SS: Unauthenticated request
@@ -439,16 +450,22 @@ Scenario: human user logs into Operate or Tasklist via OIDC.
 
 ```mermaid
 sequenceDiagram
-  participant USER as User (Browser)
-  participant UI as Camunda Web UI<br/>(Operate / Tasklist)
-  participant SS as Spring Security<br/>(OAuth2LoginAuthenticationFilter)
-  participant IDP as OIDC IdP
-  participant OIDC_USER_CONV as OidcUserAuthenticationConverter
-  participant CLAIMS as TokenClaimsConverter
-  participant MAPPING as MappingRuleMatcher
-  participant AUTHN_PROVIDER as DefaultCamundaAuthenticationProvider
-  participant SESSION as WebSessionRepository
-  participant SECONDARY_DB as Secondary Database
+  box Customer System
+    participant USER as User (Browser)
+  end box
+  box Orchestration Cluster
+    participant UI as Camunda Web UI<br/>(Operate / Tasklist)
+    participant SS as Spring Security<br/>(OAuth2LoginAuthenticationFilter)
+    participant OIDC_USER_CONV as OidcUserAuthenticationConverter
+    participant CLAIMS as TokenClaimsConverter
+    participant MAPPING as MappingRuleMatcher
+    participant AUTHN_PROVIDER as DefaultCamundaAuthenticationProvider
+    participant SESSION as WebSessionRepository
+    participant SECONDARY_DB as Secondary Database
+  end box
+  box External
+    participant IDP as OIDC IdP
+  end box
 
   USER->>UI: Navigate to UI
   UI->>SS: Unauthenticated request
@@ -473,19 +490,48 @@ sequenceDiagram
   UI-->>USER: Dashboard rendered
 ```
 
-## 6.2 User logout (OIDC)
+## 6.2.1 User logout (Basic Auth)
+
+Scenario: human user logs out of a cluster UI when authenticated with Basic Auth.
+Since no external IdP session was established, logout only invalidates the local session — no RP‑initiated logout is performed.
+
+```mermaid
+sequenceDiagram
+  box Customer System
+    participant USER as User (Browser)
+  end box
+  box Orchestration Cluster
+    participant UI as Camunda Web UI<br/>(Operate / Tasklist)
+    participant SS as Spring Security<br/>(LogoutFilter)
+    participant SESSION as WebSessionRepository
+  end box
+
+  USER->>UI: Click Logout
+  UI->>SS: Logout request
+  SS->>SESSION: Invalidate local session
+  SESSION-->>SS: Session removed
+  SS-->>USER: Redirect to login form
+```
+
+## 6.2.2 User logout (OIDC)
 
 Scenario: human user logs out of a cluster UI; RP‑initiated logout propagates the logout back to the external IdP.
 
 ```mermaid
 sequenceDiagram
-  participant USER as User (Browser)
-  participant UI as Camunda Web UI<br/>(Operate / Tasklist)
-  participant SS as Spring Security<br/>(LogoutFilter)
-  participant LOGOUT_HANDLER as CamundaOidcLogoutSuccessHandler
-  participant SESSION as WebSessionRepository
-  participant IDP as OIDC IdP
-  participant POST_LOGOUT as PostLogoutController
+  box Customer System
+    participant USER as User (Browser)
+  end box
+  box Orchestration Cluster
+    participant UI as Camunda Web UI<br/>(Operate / Tasklist)
+    participant SS as Spring Security<br/>(LogoutFilter)
+    participant LOGOUT_HANDLER as CamundaOidcLogoutSuccessHandler
+    participant SESSION as WebSessionRepository
+    participant POST_LOGOUT as PostLogoutController
+  end box
+  box External
+    participant IDP as OIDC IdP
+  end box
 
   USER->>UI: Click Logout
   UI->>SS: Logout request
@@ -501,25 +547,31 @@ sequenceDiagram
   POST_LOGOUT-->>USER: Redirect to application login page
 ```
 
-## 6.3 Machine‑to‑machine access (workers and services)
+## 6.3.1 Machine‑to‑machine access (Bearer Token / OIDC)
 
-Scenario: worker or backend service calls REST or gRPC APIs using a Bearer token (OIDC client credentials).
+Scenario: worker or backend service calls REST APIs using an OIDC JWT Bearer Token acquired via the OAuth2 client credentials grant.
 
-1. Worker or service acquires a JWT via OAuth2 client credentials from the IdP.
-2. It sends the token with REST or gRPC calls to the Orchestration Cluster.
-3. Spring Security validates the token and maps the client to an Identity client entity and associated roles or authorizations.
-4. Authorization engine checks permissions for each requested operation.
+1. Service acquires a JWT from the external IdP via the client credentials grant.
+2. It sends the token as a `Bearer` header on each REST request.
+3. Spring Security (`BearerTokenAuthenticationFilter`) validates the token signature via the IdP's JWKS endpoint — no local credential storage needed.
+4. `OidcTokenAuthenticationConverter` and `TokenClaimsConverter` extract the client identity and apply mapping rules to resolve roles and tenants.
 
 ```mermaid
 sequenceDiagram
-  participant WORKER as Worker / Service
-  participant IDP as OIDC IdP
-  participant REST as REST APIs
-  participant SS as Spring Security<br/>(BearerTokenAuthenticationFilter)
-  participant TOKEN_CONV as OidcTokenAuthenticationConverter
-  participant CLAIMS as TokenClaimsConverter
-  participant MAPPING as MappingRuleMatcher
-  participant SECONDARY_DB as Secondary Database
+  box Customer System
+    participant WORKER as Worker / Service
+  end box
+  box External
+    participant IDP as OIDC IdP
+  end box
+  box Orchestration Cluster
+    participant REST as REST APIs
+    participant SS as Spring Security<br/>(BearerTokenAuthenticationFilter)
+    participant TOKEN_CONV as OidcTokenAuthenticationConverter
+    participant CLAIMS as TokenClaimsConverter
+    participant MAPPING as MappingRuleMatcher
+    participant SECONDARY_DB as Secondary Database
+  end box
 
   WORKER->>IDP: Request token (client credentials grant)
   IDP-->>WORKER: JWT access token
@@ -538,19 +590,58 @@ sequenceDiagram
   SS-->>REST: Authorized request continues
 ```
 
+## 6.3.2 Machine‑to‑machine access (Client ID + Secret / Basic Auth)
+
+Scenario: worker or backend service calls REST APIs using a Client ID and Secret via HTTP Basic authentication.
+No external IdP is involved; credentials are verified directly against Identity entities stored in the Secondary Database.
+
+1. Service sends a `Basic <base64(clientId:secret)>` header on each REST request.
+2. Spring Security (`UsernamePasswordAuthenticationFilter`) delegates to `UsernamePasswordAuthenticationTokenConverter`.
+3. The converter loads the client entity and its roles and tenants from the Secondary Database.
+4. `TokenClaimsConverter` and `DefaultCamundaAuthenticationProvider` build a `CamundaAuthentication` and the request is authorized.
+
+```mermaid
+sequenceDiagram
+  box Customer System
+    participant WORKER as Worker / Service
+  end box
+  box Orchestration Cluster
+    participant REST as REST APIs
+    participant SS as Spring Security<br/>(UsernamePasswordAuthenticationFilter)
+    participant BASIC_CONV as UsernamePasswordAuthenticationTokenConverter
+    participant CLAIMS as TokenClaimsConverter
+    participant AUTHN_PROVIDER as DefaultCamundaAuthenticationProvider
+    participant SECONDARY_DB as Secondary Database
+  end box
+
+  WORKER->>REST: API request + Basic auth (clientId:secret)
+  REST->>SS: Authenticate Basic credentials
+  SS->>BASIC_CONV: Convert credentials to CamundaAuthentication
+  BASIC_CONV->>SECONDARY_DB: Load client entity by clientId
+  SECONDARY_DB-->>BASIC_CONV: Client entity, roles, tenants
+  BASIC_CONV->>CLAIMS: Build token claims (clientId, roles, tenants)
+  CLAIMS->>AUTHN_PROVIDER: Build CamundaAuthentication
+  AUTHN_PROVIDER-->>SS: Client principal authenticated
+  SS-->>REST: Authorized request continues
+```
+
 ## 6.4 Sending a command via REST
 
 Scenario: a client starts a process instance via the REST API; the Zeebe Engine enforces RBAC via Engine Identity before applying the command.
 
 ```mermaid
 sequenceDiagram
-  participant CLIENT as Client (User / Service)
-  participant REST as REST APIs
-  participant SS as Spring Security
-  participant CAMUNDA_SERVICES as Camunda Services
-  participant ENGINE as Engine
-  participant AUTHZ_BEHAVIOR as AuthorizationCheckBehavior
-  participant PRIMARY_DB as Primary Database (RocksDB)
+  box Customer System
+    participant CLIENT as Client (User / Service)
+  end box
+  box Orchestration Cluster
+    participant REST as REST APIs
+    participant SS as Spring Security
+    participant CAMUNDA_SERVICES as Camunda Services
+    participant ENGINE as Engine
+    participant AUTHZ_BEHAVIOR as AuthorizationCheckBehavior
+    participant PRIMARY_DB as Primary Database (RocksDB)
+  end box
 
   CLIENT->>REST: POST /v2/process-instances (start process)
   REST->>SS: Authenticate and authorize request
@@ -574,14 +665,18 @@ Scenario: a client queries process instances via the REST API; the Camunda Searc
 
 ```mermaid
 sequenceDiagram
-  participant CLIENT as Client (User / Service)
-  participant REST as REST APIs
-  participant SS as Spring Security
-  participant CAMUNDA_SERVICES as Camunda Services
-  participant SC_PROVIDER as SecurityContextProvider
-  participant CAMUNDA_SEARCH_CLIENT as Camunda Search Client
-  participant RESOURCE_ACCESS as ResourceAccessProvider
-  participant SECONDARY_DB as Secondary Database (ES/OS/RDBMS)
+  box Customer System
+    participant CLIENT as Client (User / Service)
+  end box
+  box Orchestration Cluster
+    participant REST as REST APIs
+    participant SS as Spring Security
+    participant CAMUNDA_SERVICES as Camunda Services
+    participant SC_PROVIDER as SecurityContextProvider
+    participant CAMUNDA_SEARCH_CLIENT as Camunda Search Client
+    participant RESOURCE_ACCESS as ResourceAccessProvider
+    participant SECONDARY_DB as Secondary Database (ES/OS/RDBMS)
+  end box
 
   CLIENT->>REST: GET /v2/process-instances (search)
   REST->>SS: Authenticate and authorize request
@@ -624,9 +719,36 @@ Identity‑specific aspects:
 
 For detailed infrastructure topologies, see the Camunda 8 reference architectures listed in the sources appendix.
 
+## 7.1 Deployment view (Basic Auth)
+
+In a Basic Auth setup, no external IdP is involved.
+All authentication and authorization is handled directly by the Identity components embedded within the Orchestration Cluster.
+There is no OIDC component or token exchange with an external system.
+
 ```mermaid
 ---
-title: Identity - Deployment View
+title: Identity - Deployment View (Basic Auth)
+---
+flowchart TB
+  subgraph OC_POD["Orchestration Cluster Pod (JAR / Container)"]
+    CLUSTER_STUFF["Other Orchestration\nCluster Components"]
+    IDENTITY["Identity\n(Authentication, Security, Engine Identity)"]
+  end
+
+  CLIENTS["Clients\n(Browser, Camunda Client, Worker, ...)"]
+
+  CLIENTS -->|"REST / gRPC / Browser"| OC_POD
+```
+
+## 7.2 Deployment view (OIDC)
+
+In an OIDC setup, an external IdP handles SSO and token issuance.
+Spring Security communicates directly with the IdP for authorization code exchange and token validation (JWKS).
+Identity components within the Orchestration Cluster process the resulting tokens to build a `CamundaAuthentication` and apply mapping rules.
+
+```mermaid
+---
+title: Identity - Deployment View (OIDC)
 ---
 flowchart TB
   subgraph OC_POD["Orchestration Cluster Pod (JAR / Container)"]
@@ -636,11 +758,9 @@ flowchart TB
 
   CLIENTS["Clients\n(Browser, Camunda Client, Worker, ...)"]
   IDP[("OIDC IdP")]
-  SECONDARY_DB[("Secondary Database\n(ES / OS / RDBMS)")]
 
   CLIENTS -->|"REST / gRPC / Browser"| OC_POD
   IDENTITY <-->|"OIDC / token validation"| IDP
-  IDENTITY <-->|"resource access"| SECONDARY_DB
 ```
 
 
