@@ -42,7 +42,7 @@ type RenderOptions = {
   highlightedElementIds?: string[];
   nonSelectableNodeTooltipText?: string;
   hasOuterBorderOnSelection: boolean;
-  drilldownElements?: string[];
+  customElementClasses?: [elementId: string, className: string][];
 };
 
 class BpmnJS {
@@ -61,7 +61,7 @@ class BpmnJS {
   #overlaysData: OverlayData[] = [];
   #hasOuterBorderOnSelection = false;
   #rootElement?: BpmnElement;
-  #drilldownElements: string[] = [];
+  #customElementClasses: [elementId: string, className: string][] = [];
 
   import = async (xml: string) => {
     // Cleanup before importing
@@ -82,7 +82,7 @@ class BpmnJS {
     this.#selectableElements = [];
     this.#selectedElementIds = undefined;
     this.#hasOuterBorderOnSelection = false;
-    this.#drilldownElements = [];
+    this.#customElementClasses = [];
     this.#rootElement = undefined;
 
     await this.#navigatedViewer!.importXML(xml);
@@ -116,7 +116,7 @@ class BpmnJS {
       highlightedElementIds: unfilteredHighlightedElementIds = [],
       nonSelectableNodeTooltipText,
       hasOuterBorderOnSelection,
-      drilldownElements: unfilteredDrilldownElements = [],
+      customElementClasses: unfilteredCustomElementClasses = [],
     } = options;
 
     if (this.#navigatedViewer === null) {
@@ -140,8 +140,9 @@ class BpmnJS {
       unfilteredHighlightedElementIds?.filter(doesElementExist);
     const selectableElements =
       unfilteredSelectableElements?.filter(doesElementExist);
-    const drilldownElements =
-      unfilteredDrilldownElements?.filter(doesElementExist);
+    const customElementClasses = unfilteredCustomElementClasses?.filter(
+      ([elementId]) => doesElementExist(elementId),
+    );
 
     // if render is called a second time before importing has finished,
     // exit early because there is no root element yet.
@@ -248,15 +249,15 @@ class BpmnJS {
       this.#highlightedElementIds = highlightedElementIds;
     }
 
-    // handle op-drilldown markers
-    if (!isEqual(this.#drilldownElements, drilldownElements)) {
-      this.#drilldownElements.forEach((elementId) => {
-        this.#removeMarker(elementId, 'op-drilldown');
+    // handle custom element classes
+    if (!isEqual(this.#customElementClasses, customElementClasses)) {
+      this.#customElementClasses.forEach(([elementId, className]) => {
+        this.#removeMarker(elementId, className);
       });
-      drilldownElements.forEach((elementId) => {
-        this.#addMarker(elementId, 'op-drilldown');
+      customElementClasses.forEach(([elementId, className]) => {
+        this.#addMarker(elementId, className);
       });
-      this.#drilldownElements = drilldownElements;
+      this.#customElementClasses = customElementClasses;
     }
 
     // handle overlays
@@ -441,7 +442,9 @@ class BpmnJS {
       return;
     }
 
-    if (this.#drilldownElements.includes(element.id)) {
+    if (
+      this.#customElementClasses.some(([elementId]) => elementId === element.id)
+    ) {
       this.onElementDoubleClick?.(element.id);
     }
   };
