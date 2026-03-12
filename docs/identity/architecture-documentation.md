@@ -228,89 +228,9 @@ Main building blocks:
 - Primary Database: RocksDB used for Zeebe Engine state.
 - Secondary Database: Elasticsearch, OpenSearch, or RDBMS used for search queries. Contains Runtime, History, and Identity data.
 
-## 5.2 Internal structure: Orchestration Cluster Identity
+## 5.2 Building Blocks
 
-Responsibilities:
-
-- Source of truth for runtime identity and access in an Orchestration Cluster.
-- Admin UI and APIs for managing identity entities.
-- Authentication for web UIs and machine APIs.
-- Authorization checks for all cluster components via the shared RBAC engine.
-
-```mermaid
----
-title: Orchestration Cluster Identity - Internal Structure
----
-flowchart TB
-  subgraph OC_IDENTITY["Orchestration Cluster Identity"]
-    ADMIN_UI["Admin UI / Orchestration Cluster Admin\n(users, groups, roles, tenants, mapping rules, authorizations)"]
-
-    subgraph AUTHN["Authentication"]
-      WEB_SEC_CFG["Spring Security Config\n(WebSecurityConfig)"]
-      BASIC_CONV["Basic Auth Converter\n(UsernamePasswordAuthenticationTokenConverter)"]
-      OIDC_CONV["OIDC Converters\n(OidcUserAuthenticationConverter,\nOidcTokenAuthenticationConverter)"]
-      CLAIMS_CONV["Claims Converter\n(TokenClaimsConverter)"]
-      MAPPING_MATCHER["Mapping Rule Matcher\n(MappingRuleMatcher)"]
-      AUTHN_PROVIDER["Authentication Provider\n(DefaultCamundaAuthenticationProvider)"]
-      SESSION_REPO["Session Repository\n(WebSessionRepository)"]
-    end
-
-    subgraph IDENTITY_ENTITIES["Identity Entities"]
-      USERS["Users"]
-      GROUPS["Groups"]
-      ROLES["Roles"]
-      AUTHORIZATIONS["Authorizations"]
-      TENANTS["Tenants"]
-      CLIENTS_ENT["Clients (M2M)"]
-      MAPPING_RULES["Mapping Rules"]
-    end
-
-    subgraph SECURITY_BB["Security"]
-      SC_PROVIDER["SecurityContextProvider"]
-      RESOURCE_ACCESS["ResourceAccessProvider"]
-    end
-
-    ADMIN_UI --> IDENTITY_ENTITIES
-    WEB_SEC_CFG --> BASIC_CONV
-    WEB_SEC_CFG --> OIDC_CONV
-    BASIC_CONV --> CLAIMS_CONV
-    OIDC_CONV --> CLAIMS_CONV
-    CLAIMS_CONV --> MAPPING_MATCHER --> AUTHN_PROVIDER --> SESSION_REPO
-    RESOURCE_ACCESS --> AUTHORIZATIONS
-    RESOURCE_ACCESS --> ROLES
-  end
-
-  IDP[("OIDC IdP")]
-  PRIMARY_DB[("Primary Database (RocksDB)")]
-  SECONDARY_DB[("Secondary Database (ES/OS/RDBMS)")]
-
-  WEB_SEC_CFG -.->|"OIDC / JWKS"| IDP
-  IDENTITY_ENTITIES --> PRIMARY_DB
-  IDENTITY_ENTITIES --> SECONDARY_DB
-  MAPPING_MATCHER --> SECONDARY_DB
-  BASIC_CONV --> SECONDARY_DB
-```
-
-Key sub‑components:
-
-- Admin UI / Orchestration Cluster Admin
-  Management for users, groups, roles, tenants, mapping rules and authorizations.
-
-- Authentication
-  - Basic: credentials stored and validated inside Identity; suitable for local and simple Self‑Managed setups.
-  - OIDC: login delegated to external IdP; mapping rules assign principals to roles, groups, tenants and authorizations.
-
-- Identity entities
-  - Users, groups, roles: core principal and grouping model; roles bundle permissions.
-  - Authorizations: resource‑based permissions connecting principals to resource types and actions.
-  - Tenants: data and access isolation within a cluster (Self‑Managed).
-  - Clients: technical clients (M2M) mapped from IdP client registrations.
-  - Mapping rules: link IdP claims to groups, roles, tenants and authorizations.
-
-- Authorization engine
-  Shared framework that allows other teams to define resource and permission types and use them consistently. Integrated with Zeebe engine, REST gateway and services.
-
-## 5.3 Authentication
+## 5.2.1 Authentication - Level 2
 
 The Authentication building block provides configuration classes, converters, and helpers that extend Spring Security.
 Spring Security itself manages the OIDC / OAuth2 filter chain, token exchange, and IdP communication.
@@ -344,18 +264,18 @@ flowchart TB
 
   IDP[("OIDC IdP")]
   SPRING_SECURITY["Spring Security\n(OAuth2 filter chain)"]
-  SECONDARY_DB[("Secondary Database\n(users, mapping rules)")]
+  CAMUNDA_SERVICES["Camunda Services"]
 
   SPRING_SECURITY -->|"configured by"| WEB_SEC_CFG
   SPRING_SECURITY -->|"OIDC / JWKS validation"| IDP
-  BASIC_CONV -->|"load user"| SECONDARY_DB
-  MAPPING_RULES_PROC -->|"load mapping rules"| SECONDARY_DB
+  BASIC_CONV -->|"load user"| CAMUNDA_SERVICES
+  MAPPING_RULES_PROC -->|"load mapping rules"| CAMUNDA_SERVICES
   SESSION_MGR -->|"CamundaAuthentication principal"| SPRING_SECURITY
 ```
 
 Key responsibilities:
 
-- `WebSecurityConfig`: configures the Spring Security filter chains for Basic auth, OIDC browser login, and Bearer token validation.
+- `WebSecurityConfig`: configures the Spring Security filter chains for Basic auth, OIDC browser login, no auth, and Bearer token validation.
 - `UsernamePasswordAuthenticationTokenConverter`: converts Basic auth credentials into a `CamundaAuthentication` by loading user data from secondary storage.
 - `OidcUserAuthenticationConverter`: post-processes OIDC browser login tokens to extract Camunda-specific claims.
 - `OidcTokenAuthenticationConverter`: converts Bearer JWTs (M2M) into a `CamundaAuthentication`.
@@ -364,7 +284,11 @@ Key responsibilities:
 - `DefaultCamundaAuthenticationProvider`: bridges Spring Security to the Camunda authentication context via `CamundaAuthentication`.
 - `WebSessionRepository`: creates and invalidates server‑side sessions backed by secondary storage.
 
-## 5.4 Security
+Extern responsibilities:
+
+- Camunda Services: access via Camunda Search Client to secondary storage.
+
+## 5.2.2 Security - Level 2
 
 The Security building block provides authorization checks for REST queries executed via the Camunda Search Client.
 It implements the shared RBAC framework for data access control, ensuring that search results are filtered according to the caller's permissions.
@@ -403,7 +327,7 @@ Key responsibilities:
 - Permission Evaluator: resolves the effective permissions of a principal by combining direct authorizations and role‑based authorizations.
 - Resource Filter Builder: translates the effective permissions into a search‑engine filter that restricts query results to authorized resources.
 
-## 5.5 Engine Identity
+## 5.2.3 Engine Identity - Level 2
 
 Engine Identity is the RBAC authorization engine embedded directly inside the Zeebe Engine.
 It intercepts engine commands (such as creating process instances or completing user tasks) and enforces authorization before the command is applied.
