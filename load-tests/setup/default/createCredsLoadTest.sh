@@ -4,6 +4,9 @@
 #
 set -euo pipefail
 
+# Contains OS specific sed function
+. ../utils.sh
+
 # Usage: ./createCredsLoadTest.sh [namespace]
 NS="${1:-__NAMESPACE__}"
 
@@ -54,6 +57,6 @@ stringData:
 EOF
 
 # Replace __SECRET__ in load-test-values.yaml with the generated orchestration secret 
-sed "s/__SECRET__/${ORCHESTRATION_SECRET}/g" load-test-values.yaml 
+sed_inplace "s/__SECRET__/${ORCHESTRATION_SECRET}/g" load-test-values.yaml
 
 echo "Done. Secret 'camunda-credentials' created in namespace '$NS'."
