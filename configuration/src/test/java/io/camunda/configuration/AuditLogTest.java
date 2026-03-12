@@ -61,6 +61,18 @@ class AuditLogTest {
   }
 
   @Test
+  void shouldHaveUnknownDefaults() {
+    final AuditLog auditLog = new AuditLog();
+
+    assertThat(auditLog.getUnknown().getCategories())
+        .as("Unknown categories should be empty by default (opt-in logging)")
+        .isEmpty();
+    assertThat(auditLog.getUnknown().getExcludes())
+        .as("No excludes should be set for unknown by default")
+        .isEmpty();
+  }
+
+  @Test
   void shouldConvertToAuditLogConfiguration() {
     final AuditLog auditLog = new AuditLog();
 
@@ -75,12 +87,18 @@ class AuditLogTest {
     assertThat(config.getUser().getCategories())
         .as("User categories should match")
         .isEqualTo(auditLog.getUser().getCategories());
+    assertThat(config.getUnknown().getCategories())
+        .as("Unknown categories should match")
+        .isEqualTo(auditLog.getUnknown().getCategories());
     assertThat(config.getClient().getExcludes())
         .as("Client excludes should match")
         .isEqualTo(auditLog.getClient().getExcludes());
     assertThat(config.getUser().getExcludes())
         .as("User excludes should match")
         .isEqualTo(auditLog.getUser().getExcludes());
+    assertThat(config.getUnknown().getExcludes())
+        .as("Unknown excludes should match")
+        .isEqualTo(auditLog.getUnknown().getExcludes());
   }
 
   @Nested
@@ -98,7 +116,9 @@ class AuditLogTest {
         "camunda.data.audit-log.user.categories[1]=USER_TASKS",
         "camunda.data.audit-log.user.excludes[0]=VARIABLE",
         "camunda.data.audit-log.client.categories[0]=ADMIN",
-        "camunda.data.audit-log.client.excludes[0]=PROCESS_INSTANCE"
+        "camunda.data.audit-log.client.excludes[0]=PROCESS_INSTANCE",
+        "camunda.data.audit-log.unknown.categories[0]=USER_TASKS",
+        "camunda.data.audit-log.unknown.excludes[0]=VARIABLE"
       })
   class RDBMSExporterTest {
     @Test
@@ -119,6 +139,10 @@ class AuditLogTest {
           .containsExactlyInAnyOrder(AuditLogOperationCategory.ADMIN);
       assertThat(config.getAuditLog().getClient().getExcludes())
           .containsExactlyInAnyOrder(AuditLogEntityType.PROCESS_INSTANCE);
+      assertThat(config.getAuditLog().getUnknown().getCategories())
+          .containsExactlyInAnyOrder(AuditLogOperationCategory.USER_TASKS);
+      assertThat(config.getAuditLog().getUnknown().getExcludes())
+          .containsExactlyInAnyOrder(AuditLogEntityType.VARIABLE);
     }
   }
 
@@ -137,7 +161,9 @@ class AuditLogTest {
         "camunda.data.audit-log.user.categories[1]=ADMIN",
         "camunda.data.audit-log.user.excludes[0]=INCIDENT",
         "camunda.data.audit-log.client.categories[0]=USER_TASKS",
-        "camunda.data.audit-log.client.excludes[0]=USER"
+        "camunda.data.audit-log.client.excludes[0]=USER",
+        "camunda.data.audit-log.unknown.categories[0]=DEPLOYED_RESOURCES",
+        "camunda.data.audit-log.unknown.excludes[0]=PROCESS_INSTANCE"
       })
   class CamundaExporterTest {
     @Test
@@ -158,6 +184,10 @@ class AuditLogTest {
           .containsExactlyInAnyOrder(AuditLogOperationCategory.USER_TASKS);
       assertThat(config.getAuditLog().getClient().getExcludes())
           .containsExactlyInAnyOrder(AuditLogEntityType.USER);
+      assertThat(config.getAuditLog().getUnknown().getCategories())
+          .containsExactlyInAnyOrder(AuditLogOperationCategory.DEPLOYED_RESOURCES);
+      assertThat(config.getAuditLog().getUnknown().getExcludes())
+          .containsExactlyInAnyOrder(AuditLogEntityType.PROCESS_INSTANCE);
     }
   }
 }
