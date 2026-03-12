@@ -315,7 +315,6 @@ public class CamundaExporter implements Exporter {
   private void flushAndReschedule() {
     try {
       flush();
-      updateLastExportedPosition(lastPosition);
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
     }
@@ -323,23 +322,19 @@ public class CamundaExporter implements Exporter {
   }
 
   private void flush() {
-    if (writer.getBatchSize() == 0) {
-      return;
+    if (writer.getBatchSize() > 0) {
+      try (final var ignored = metrics.measureFlushDuration()) {
+        metrics.recordBulkSize(writer.getBatchSize());
+        final BatchRequest batchRequest = clientAdapter.createBatchRequest().withMetrics(metrics);
+        writer.flush(batchRequest);
+        metrics.recordFlushOccurrence(Instant.now());
+        metrics.stopFlushLatencyMeasurement();
+      } catch (final PersistenceException ex) {
+        metrics.recordFailedFlush();
+        throw new ExporterException(ex.getMessage(), ex);
+      }
     }
 
-    try (final var ignored = metrics.measureFlushDuration()) {
-      metrics.recordBulkSize(writer.getBatchSize());
-      final BatchRequest batchRequest = clientAdapter.createBatchRequest().withMetrics(metrics);
-      writer.flush(batchRequest);
-      metrics.recordFlushOccurrence(Instant.now());
-      metrics.stopFlushLatencyMeasurement();
-    } catch (final PersistenceException ex) {
-      metrics.recordFailedFlush();
-      throw new ExporterException(ex.getMessage(), ex);
-    }
-
-    // Update the record counters only after the flush was successful. If the synchronous flush
-    // fails then the exporter will be invoked with the same record again.
     updateLastExportedPosition(lastPosition);
   }
 
