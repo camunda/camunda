@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.variable;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -22,8 +24,10 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentReco
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
@@ -35,6 +39,8 @@ import org.agrona.collections.ObjectHashSet;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class DbVariableState implements MutableVariableState {
+
+  private static final int VARIABLE_NAME_CACHE_MAX_SIZE = 10_000;
 
   private final MsgPackWriter writer = new MsgPackWriter();
   private final ExpandableArrayBuffer documentResultBuffer = new ExpandableArrayBuffer();
@@ -62,6 +68,10 @@ public class DbVariableState implements MutableVariableState {
 
   private final VariableInstance newVariable = new VariableInstance();
   private final DirectBuffer variableNameView = new UnsafeBuffer(0, 0);
+
+  // (scope key) => (set of variable names on that scope) — LRU cache for fast removeAllVariables
+  private final Cache<Long, Set<String>> variableNameCache =
+      Caffeine.newBuilder().maximumSize(VARIABLE_NAME_CACHE_MAX_SIZE).build();
 
   // collecting variables
   private final ObjectHashSet<DirectBuffer> collectedVariables = new ObjectHashSet<>();
@@ -127,6 +137,11 @@ public class DbVariableState implements MutableVariableState {
     variableName.wrapBuffer(variableNameView);
 
     variablesColumnFamily.upsert(scopeKeyVariableNameKey, newVariable);
+
+    final Set<String> cachedNames = variableNameCache.getIfPresent(scopeKey);
+    if (cachedNames != null) {
+      cachedNames.add(BufferUtil.bufferAsString(variableNameView));
+    }
   }
 
   @Override
@@ -135,6 +150,8 @@ public class DbVariableState implements MutableVariableState {
     this.parentKey.set(parentKey);
 
     childParentColumnFamily.insert(this.childKey, this.parentKey);
+
+    variableNameCache.put(childKey, new HashSet<>());
   }
 
   @Override
@@ -142,6 +159,7 @@ public class DbVariableState implements MutableVariableState {
     this.scopeKey.wrapLong(scopeKey);
 
     removeAllVariables(scopeKey);
+    variableNameCache.invalidate(scopeKey);
 
     childKey.wrapLong(scopeKey);
     // TODO: Could be deleteExisting except for tests
@@ -150,11 +168,24 @@ public class DbVariableState implements MutableVariableState {
 
   @Override
   public void removeAllVariables(final long scopeKey) {
-    visitVariablesLocal(
-        scopeKey,
-        dbString -> true,
-        (dbString, variable1) -> variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey),
-        () -> false);
+    final Set<String> cachedNames = variableNameCache.getIfPresent(scopeKey);
+    if (cachedNames != null) {
+      try {
+        this.scopeKey.wrapLong(scopeKey);
+        for (final String name : cachedNames) {
+          variableName.wrapString(name);
+          variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey);
+        }
+      } finally {
+        cachedNames.clear();
+      }
+    } else {
+      visitVariablesLocal(
+          scopeKey,
+          dbString -> true,
+          (dbString, variable1) -> variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey),
+          () -> false);
+    }
   }
 
   @Override
