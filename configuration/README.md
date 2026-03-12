@@ -4,15 +4,15 @@ This Spring module implements the component used by the Camunda Orchestration Cl
 
 ## Context
 
-Starting with Camunda 8.8, the webapps that were previously standalone and independent, Operate, Tasklist and Identity, have been merged into a single application, called Orchestration Cluster.
+Starting with Camunda 8.8, the webapps that were previously standalone and independent -Operate, Tasklist and Identity - have been merged into a single application, referred to as the Orchestration Cluster.
 
-In spite of these apps being part of the single application, after the merge, they would still consume their configurations independently. This would be unintuitive and misleading or even dangerous, in some more critical cases.
+Despite these apps being part of the single application after the merging together of codebases, they originally still consumed their configurations independently. This was unintuitive and misleading, or in some more critical cases, dangerous.
 
 ## Features
 
 ### Unification
 
-A good example of this negative potential was the configuration for the database endpoint, since, in the case of Elasticsearch, it needed to be configured multiple times, once for each component:
+To illustrate the potential for misconfiguration resulting from this, consider the Elasticsearch URL property. It needed to be configured multiple times, once for each component:
 * Operate:
 ```
 camunda.operate.elasticsearch.url
@@ -29,14 +29,14 @@ zeebe.broker.exporters.{exporterName}.args.connect.url
 ```
 camunda.database.url
 ```
-and even more. Such repeated configuration is not easy to explain, within the context of a single application, as it would supposedly need to be configured only once, and with the example above could be even considered relatively dangerous, as a User could think that by configuring `camunda.database.url` would be enough, while Tasklist and Operate would potentially use another database, given that the properties had default values.
+Moreover, repeated configuration was not easy to explain within the context of a single application for contributors and users. A User (or contributor) might understandably assume that by configuring `camunda.database.url` the URL was sufficiently configured. In reality, Tasklist and Operate would still be consuming the _old_ properties, respectively.
 
 ### Naming conventions
 
-While the situation exemplified above was the main concern of the legacy configuration system, other aspects of the configuration needed to be curated for a better User experience, such as:
-* properties names referencing functional aspects of the application, rather than specific webapps
-* legacy properties names were typically referred using lowerCamelCase style, as opposed to the standard kebab-case style
-* poor documentation
+While the situation demonstrated above was the main concern of the legacy configuration system, other aspects of the configuration needed to be curated for a better User experience, such as:
+* Making property names reference functional aspects of the application, rather than specific webapps/components, to resemble more correctly the single application.
+* Formalising kebab-style casing for all application properties, rather than maintaining the previously used lowerCamelCase.
+* Improving documentation for contributors and customers
 
 ### Development and maintainability
 
