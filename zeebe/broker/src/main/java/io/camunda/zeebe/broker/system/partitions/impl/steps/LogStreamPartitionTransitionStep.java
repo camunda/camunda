@@ -73,7 +73,7 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
         flowControlCfg.getRequest() != null
             ? flowControlCfg.getRequest()
             : context.getBrokerCfg().getBackpressure();
-    final var ringBufferSizeMultiplier = 100;
+    final var ringBufferSizeMultiplier = 20;
     return logStreamBuilderSupplier
         .get()
         .withLogStorage(context.getLogStorage())
