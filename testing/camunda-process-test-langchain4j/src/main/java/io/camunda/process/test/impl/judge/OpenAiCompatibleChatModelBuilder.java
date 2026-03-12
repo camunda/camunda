@@ -20,7 +20,7 @@ import static io.camunda.process.test.impl.judge.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
-import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
+import io.camunda.process.test.api.judge.ProviderConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +30,7 @@ final class OpenAiCompatibleChatModelBuilder {
 
   private OpenAiCompatibleChatModelBuilder() {}
 
-  static ChatModel build(final JudgeConfigBootstrapData.OpenAiCompatibleConfig config) {
+  static ChatModel build(final ProviderConfig.OpenAiCompatibleConfig config) {
     LOG.debug("Building OpenAI-compatible chat model");
 
     final String model = require(config.getModel(), "model", "openai-compatible");

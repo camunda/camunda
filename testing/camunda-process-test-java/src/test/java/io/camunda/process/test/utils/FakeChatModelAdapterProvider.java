@@ -15,23 +15,22 @@
  */
 package io.camunda.process.test.utils;
 
-import io.camunda.process.test.api.judge.JudgeConfig;
-import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
-import io.camunda.process.test.api.judge.JudgeConfigBootstrapProvider;
+import io.camunda.process.test.api.judge.ChatModelAdapter;
+import io.camunda.process.test.api.judge.ChatModelAdapterProvider;
+import io.camunda.process.test.api.judge.ProviderConfig;
+import java.util.Optional;
 
 /**
- * A test-scoped {@link JudgeConfigBootstrapProvider} registered via SPI for verifying ServiceLoader
- * discovery in {@code JudgeAssertBootstrapIT}. Always returns a fake {@link JudgeConfig} that
+ * A test-scoped {@link ChatModelAdapterProvider} registered via SPI for verifying ServiceLoader
+ * discovery in {@code JudgeAssertBootstrapIT}. Always returns a fake {@link ChatModelAdapter} that
  * scores 1.0.
  */
-public class FakeJudgeConfigBootstrapProvider implements JudgeConfigBootstrapProvider {
+public class FakeChatModelAdapterProvider implements ChatModelAdapterProvider {
 
   public static final String FAKE_REASONING = "{\"score\": 1.0, \"reasoning\": \"fake\"}";
 
   @Override
-  public JudgeConfig bootstrap(final JudgeConfigBootstrapData data) {
-    return JudgeConfig.of(prompt -> FAKE_REASONING)
-        .withCustomPrompt(data.getCustomPrompt())
-        .withThreshold(data.getThreshold());
+  public Optional<ChatModelAdapter> create(final ProviderConfig config) {
+    return Optional.of(prompt -> FAKE_REASONING);
   }
 }

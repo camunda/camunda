@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.langchain4j.model.chat.ChatModel;
-import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
+import io.camunda.process.test.api.judge.ProviderConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -30,8 +30,8 @@ class OpenAiCompatibleChatModelBuilderTest {
   @Test
   void shouldBuildChatModelWithApiKey() {
     // given
-    final JudgeConfigBootstrapData.OpenAiCompatibleConfig config =
-        new JudgeConfigBootstrapData.OpenAiCompatibleConfig(
+    final ProviderConfig.OpenAiCompatibleConfig config =
+        new ProviderConfig.OpenAiCompatibleConfig(
             "llama3", "http://localhost:11434/v1", "test-api-key");
 
     // when
@@ -46,9 +46,8 @@ class OpenAiCompatibleChatModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldBuildChatModelWithoutApiKey(final String apiKey) {
     // given — null or blank apiKey is treated as absent
-    final JudgeConfigBootstrapData.OpenAiCompatibleConfig config =
-        new JudgeConfigBootstrapData.OpenAiCompatibleConfig(
-            "llama3", "http://localhost:11434/v1", apiKey);
+    final ProviderConfig.OpenAiCompatibleConfig config =
+        new ProviderConfig.OpenAiCompatibleConfig("llama3", "http://localhost:11434/v1", apiKey);
 
     // when
     final ChatModel chatModel = OpenAiCompatibleChatModelBuilder.build(config);
@@ -62,8 +61,8 @@ class OpenAiCompatibleChatModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenBaseUrlMissingOrBlank(final String baseUrl) {
     // given
-    final JudgeConfigBootstrapData.OpenAiCompatibleConfig config =
-        new JudgeConfigBootstrapData.OpenAiCompatibleConfig("llama3", baseUrl, null);
+    final ProviderConfig.OpenAiCompatibleConfig config =
+        new ProviderConfig.OpenAiCompatibleConfig("llama3", baseUrl, null);
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleChatModelBuilder.build(config))
@@ -77,9 +76,8 @@ class OpenAiCompatibleChatModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
-    final JudgeConfigBootstrapData.OpenAiCompatibleConfig config =
-        new JudgeConfigBootstrapData.OpenAiCompatibleConfig(
-            model, "http://localhost:11434/v1", null);
+    final ProviderConfig.OpenAiCompatibleConfig config =
+        new ProviderConfig.OpenAiCompatibleConfig(model, "http://localhost:11434/v1", null);
 
     // when / then
     assertThatThrownBy(() -> OpenAiCompatibleChatModelBuilder.build(config))

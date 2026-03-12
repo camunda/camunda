@@ -21,9 +21,9 @@ import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
+import io.camunda.process.test.api.judge.ChatModelAdapterProvider;
 import io.camunda.process.test.api.judge.JudgeConfig;
-import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
-import io.camunda.process.test.api.judge.JudgeConfigBootstrapProvider;
+import io.camunda.process.test.api.judge.ProviderConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
@@ -56,7 +56,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -293,65 +293,53 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
 
     // Fall back to SPI bootstrap
-    final JudgeConfigBootstrapData configurationData = toConfigurationData(judgeConfiguration);
+    final ProviderConfig providerConfig = createProviderConfig(judgeConfiguration.getChatModel());
 
-    loadJudgeConfigProviders()
-        .map(p -> p.bootstrap(configurationData))
-        .filter(Objects::nonNull)
+    loadChatModelAdapterProviders()
+        .map(p -> p.create(providerConfig))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
         .findFirst()
         .ifPresentOrElse(
-            CamundaAssert::setJudgeConfig,
+            adapter ->
+                CamundaAssert.setJudgeConfig(
+                    JudgeConfig.of(
+                        adapter,
+                        judgeConfiguration.getThreshold(),
+                        judgeConfiguration.getCustomPrompt())),
             () -> {
               throw new IllegalStateException(
-                  "Judge configuration is present but no JudgeConfigBootstrapProvider could be resolved. "
+                  "Judge configuration is present but no ChatModelAdapterProvider could be resolved. "
                       + "Ensure judge.chatModel.provider is configured and "
                       + "the appropriate provider module is on the classpath.");
             });
   }
 
-  private Stream<JudgeConfigBootstrapProvider> loadJudgeConfigProviders() {
+  private Stream<ChatModelAdapterProvider> loadChatModelAdapterProviders() {
     return ServiceLoader.load(
-            JudgeConfigBootstrapProvider.class, JudgeConfigBootstrapProvider.class.getClassLoader())
+            ChatModelAdapterProvider.class, ChatModelAdapterProvider.class.getClassLoader())
         .stream()
         .map(ServiceLoader.Provider::get);
   }
 
-  private JudgeConfigBootstrapData toConfigurationData(
-      final JudgeConfiguration judgeConfiguration) {
-    final JudgeConfiguration.ChatModelConfiguration chatModel = judgeConfiguration.getChatModel();
-
-    final JudgeConfigBootstrapData.Builder builder =
-        JudgeConfigBootstrapData.builder()
-            .threshold(judgeConfiguration.getThreshold())
-            .customPrompt(judgeConfiguration.getCustomPrompt());
-
-    if (chatModel.getProvider() != null) {
-      builder.providerConfig(createProviderConfig(chatModel));
-    }
-
-    return builder.build();
-  }
-
-  private JudgeConfigBootstrapData.ProviderConfig createProviderConfig(
+  private ProviderConfig createProviderConfig(
       final JudgeConfiguration.ChatModelConfiguration chatModel) {
     final AwsCredentialsConfiguration credentials = chatModel.getCredentials();
     final String provider = chatModel.getProvider().trim().toLowerCase();
     switch (provider) {
-      case JudgeConfigBootstrapData.ProviderConfig.PROVIDER_OPENAI:
-        return new JudgeConfigBootstrapData.OpenAiConfig(
-            chatModel.getModel(), chatModel.getApiKey());
-      case JudgeConfigBootstrapData.ProviderConfig.PROVIDER_ANTHROPIC:
-        return new JudgeConfigBootstrapData.AnthropicConfig(
-            chatModel.getModel(), chatModel.getApiKey());
-      case JudgeConfigBootstrapData.ProviderConfig.PROVIDER_AMAZON_BEDROCK:
-        return new JudgeConfigBootstrapData.AmazonBedrockConfig(
+      case ProviderConfig.PROVIDER_OPENAI:
+        return new ProviderConfig.OpenAiConfig(chatModel.getModel(), chatModel.getApiKey());
+      case ProviderConfig.PROVIDER_ANTHROPIC:
+        return new ProviderConfig.AnthropicConfig(chatModel.getModel(), chatModel.getApiKey());
+      case ProviderConfig.PROVIDER_AMAZON_BEDROCK:
+        return new ProviderConfig.AmazonBedrockConfig(
             chatModel.getModel(),
             chatModel.getRegion(),
             chatModel.getApiKey(),
             credentials != null ? credentials.getAccessKey() : null,
             credentials != null ? credentials.getSecretKey() : null);
-      case JudgeConfigBootstrapData.ProviderConfig.PROVIDER_OPENAI_COMPATIBLE:
-        return new JudgeConfigBootstrapData.OpenAiCompatibleConfig(
+      case ProviderConfig.PROVIDER_OPENAI_COMPATIBLE:
+        return new ProviderConfig.OpenAiCompatibleConfig(
             chatModel.getModel(), chatModel.getBaseUrl(), chatModel.getApiKey());
       default:
         return null;

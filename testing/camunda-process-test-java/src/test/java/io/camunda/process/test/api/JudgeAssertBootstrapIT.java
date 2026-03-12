@@ -17,7 +17,7 @@ package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.process.test.utils.FakeJudgeConfigBootstrapProvider;
+import io.camunda.process.test.utils.FakeChatModelAdapterProvider;
 import org.junit.jupiter.api.Test;
 
 @CamundaProcessTest
@@ -31,7 +31,7 @@ public class JudgeAssertBootstrapIT {
         .satisfies(
             judgeConfig ->
                 assertThat(judgeConfig.getChatModel().generate("anything"))
-                    .isEqualTo(FakeJudgeConfigBootstrapProvider.FAKE_REASONING))
+                    .isEqualTo(FakeChatModelAdapterProvider.FAKE_REASONING))
         .satisfies(judgeConfig -> assertThat(judgeConfig.getThreshold()).isEqualTo(0.8));
   }
 }

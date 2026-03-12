@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.langchain4j.model.chat.ChatModel;
-import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
+import io.camunda.process.test.api.judge.ProviderConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -30,8 +30,8 @@ class AnthropicChatModelBuilderTest {
   @Test
   void shouldBuildChatModel() {
     // given
-    final JudgeConfigBootstrapData.AnthropicConfig config =
-        new JudgeConfigBootstrapData.AnthropicConfig("claude-3-5-sonnet-20241022", "test-api-key");
+    final ProviderConfig.AnthropicConfig config =
+        new ProviderConfig.AnthropicConfig("claude-3-5-sonnet-20241022", "test-api-key");
 
     // when
     final ChatModel chatModel = AnthropicChatModelBuilder.build(config);
@@ -45,8 +45,8 @@ class AnthropicChatModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenApiKeyMissingOrBlank(final String apiKey) {
     // given
-    final JudgeConfigBootstrapData.AnthropicConfig config =
-        new JudgeConfigBootstrapData.AnthropicConfig("claude-3-5-sonnet-20241022", apiKey);
+    final ProviderConfig.AnthropicConfig config =
+        new ProviderConfig.AnthropicConfig("claude-3-5-sonnet-20241022", apiKey);
 
     // when / then
     assertThatThrownBy(() -> AnthropicChatModelBuilder.build(config))
@@ -60,8 +60,8 @@ class AnthropicChatModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
-    final JudgeConfigBootstrapData.AnthropicConfig config =
-        new JudgeConfigBootstrapData.AnthropicConfig(model, "test-api-key");
+    final ProviderConfig.AnthropicConfig config =
+        new ProviderConfig.AnthropicConfig(model, "test-api-key");
 
     // when / then
     assertThatThrownBy(() -> AnthropicChatModelBuilder.build(config))
