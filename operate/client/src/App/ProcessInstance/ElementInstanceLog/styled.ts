@@ -16,6 +16,14 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+
+  @media (max-width: 66rem) {
+    border-right: none;
+    border-bottom: solid 1px var(--cds-border-subtle-01);
+  }
 `;
 
 const PanelHeader = styled(BasePanelHeader)`
