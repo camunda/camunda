@@ -201,7 +201,10 @@ const TaskDetailsHistoryView: React.FC = () => {
   );
 
   const handleOpenDetails = (auditLogKey: string) => {
-    navigate(pages.taskDetailsHistoryAuditLog(id, auditLogKey));
+    navigate({
+      ...location,
+      pathname: pages.taskDetailsHistoryAuditLog(id, auditLogKey),
+    });
   };
 
   if (rows.length === 0) {
