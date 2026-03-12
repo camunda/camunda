@@ -16,6 +16,7 @@ public class AuditLog {
 
   @NestedConfigurationProperty private AuditLogEntry user = AuditLogEntry.logAll();
   @NestedConfigurationProperty private AuditLogEntry client = AuditLogEntry.logNone();
+  @NestedConfigurationProperty private AuditLogEntry unknown = AuditLogEntry.logAll();
 
   public boolean isEnabled() {
     return enabled;
@@ -41,6 +42,14 @@ public class AuditLog {
     this.user = user;
   }
 
+  public AuditLogEntry getUnknown() {
+    return unknown;
+  }
+
+  public void setUnknown(final AuditLogEntry unknown) {
+    this.unknown = unknown;
+  }
+
   /** Converts this configuration to an {@link AuditLogConfiguration} for the exporter. */
   public AuditLogConfiguration toConfiguration() {
     final AuditLogConfiguration auditLogConfiguration = new AuditLogConfiguration();
@@ -53,6 +62,10 @@ public class AuditLog {
         .getUser()
         .setCategories(getUser().getCategories())
         .setExcludes(getUser().getExcludes());
+    auditLogConfiguration
+        .getUnknown()
+        .setCategories(getUnknown().getCategories())
+        .setExcludes(getUnknown().getExcludes());
     return auditLogConfiguration;
   }
 }

@@ -1,0 +1,20 @@
+# Audit log benchmark values for Camunda Platform Chart.
+#
+# This file is used in combination with the base camunda-platform-values.yaml to configure
+# audit logging for benchmarking purposes. It enables the audit log with a specific configuration
+# for the unknown actor type, simulating Operate-related logs.
+#
+# Benchmark scenarios:
+# 1. Baseline: Use camunda-platform-values.yaml without this file (audit log disabled by default in load tests)
+# 2. With audit log: Use camunda-platform-values.yaml + this file
+#
+# Usage:
+#   make install additional_platform_configuration="-f camunda-platform-values-audit-log.yaml"
+
+orchestration:
+  extraConfiguration:
+    - file: application-audit-log.yml
+      content: |
+        camunda.data.audit-log.enabled: true
+        camunda.data.audit-log.unknown.categories[0]: DEPLOYED_RESOURCES
+        camunda.data.audit-log.unknown.categories[1]: USER_TASKS
