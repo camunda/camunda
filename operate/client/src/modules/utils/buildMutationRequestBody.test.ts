@@ -122,7 +122,7 @@ describe('buildMutationRequestBody', () => {
       filter: {
         elementId: 'taskA',
         elementInstanceState: {$eq: 'ACTIVE'},
-        $or: [{hasIncident: true}, {state: {$eq: 'ACTIVE'}}],
+        $or: [{state: {$in: ['ACTIVE']}}, {hasIncident: true}],
       },
     });
   });
@@ -163,6 +163,7 @@ describe('buildMutationRequestBody', () => {
         elementId: 'taskA',
         elementInstanceState: {$eq: 'ACTIVE'},
         state: {$eq: 'ACTIVE'},
+        hasIncident: false,
       },
     });
   });
@@ -338,10 +339,7 @@ describe('buildMutationRequestBody', () => {
 
     expect(body).toEqual({
       filter: {
-        variables: [
-          {name: 'foo', value: 'a'},
-          {name: 'foo', value: 'b'},
-        ],
+        variables: [{name: 'foo', value: {$in: ['a', 'b']}}],
       },
     });
   });
@@ -359,6 +357,7 @@ describe('buildMutationRequestBody', () => {
     expect(both).toEqual({
       filter: {
         state: {$in: ['COMPLETED', 'TERMINATED']},
+        hasIncident: false,
       },
     });
 
@@ -373,6 +372,7 @@ describe('buildMutationRequestBody', () => {
     expect(onlyCompleted).toEqual({
       filter: {
         state: {$eq: 'COMPLETED'},
+        hasIncident: false,
       },
     });
 
@@ -387,6 +387,7 @@ describe('buildMutationRequestBody', () => {
     expect(onlyCanceled).toEqual({
       filter: {
         state: {$eq: 'TERMINATED'},
+        hasIncident: false,
       },
     });
   });

@@ -10,6 +10,7 @@ import type {RequestFilters} from 'modules/utils/filter';
 import type {
   CreateCancellationBatchOperationRequestBody,
   CreateIncidentResolutionBatchOperationRequestBody,
+  ProcessInstance,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
 import {formatToISO} from 'modules/utils/date/formatDate';
@@ -32,27 +33,34 @@ const buildMutationRequestBody = ({
       elementId: baseFilter.activityId,
       errorMessage: baseFilter.errorMessage,
       tenantId: baseFilter.tenantId,
-      batchOperationKey: baseFilter.batchOperationId,
+      batchOperationId: baseFilter.batchOperationId,
       parentProcessInstanceKey: baseFilter.parentInstanceId,
       hasRetriesLeft: baseFilter.retriesLeft,
       incidentErrorHashCode: baseFilter.incidentErrorHashCode,
     },
   };
 
-  if (baseFilter.incidents && baseFilter.active) {
-    requestBody.filter.$or = [{hasIncident: true}, {state: {$eq: 'ACTIVE'}}];
-  } else if (baseFilter.incidents) {
-    requestBody.filter.hasIncident = true;
-  } else if (baseFilter.active) {
-    requestBody.filter.state = {$eq: 'ACTIVE'};
+  const states: ProcessInstance['state'][] = [];
+  if (baseFilter.active) {
+    states.push('ACTIVE');
+  }
+  if (baseFilter.completed) {
+    states.push('COMPLETED');
+  }
+  if (baseFilter.canceled) {
+    states.push('TERMINATED');
   }
 
-  if (baseFilter.completed && baseFilter.canceled) {
-    requestBody.filter.state = {$in: ['COMPLETED', 'TERMINATED']};
-  } else if (baseFilter.completed) {
-    requestBody.filter.state = {$eq: 'COMPLETED'};
-  } else if (baseFilter.canceled) {
-    requestBody.filter.state = {$eq: 'TERMINATED'};
+  if (baseFilter.incidents) {
+    if (states.length > 0) {
+      requestBody.filter.$or = [{state: {$in: states}}, {hasIncident: true}];
+    } else {
+      requestBody.filter.hasIncident = true;
+    }
+  } else if (states.length > 0) {
+    requestBody.filter.state =
+      states.length === 1 ? {$eq: states[0]} : {$in: states};
+    requestBody.filter.hasIncident = false;
   }
 
   if (baseFilter.activityId) {
@@ -105,12 +113,13 @@ const buildMutationRequestBody = ({
     Array.isArray(baseFilter.variable.values) &&
     baseFilter.variable.values.length > 0
   ) {
-    requestBody.filter.variables = baseFilter.variable.values.map((value) => {
-      return {
-        name: baseFilter.variable!.name,
-        value,
-      };
-    });
+    const values = baseFilter.variable.values;
+    requestBody.filter.variables = [
+      {
+        name: baseFilter.variable.name,
+        value: values.length === 1 ? values[0] : {$in: values},
+      },
+    ];
   }
 
   const keyCriterion = buildProcessInstanceKeyCriterion(includeIds, excludeIds);
