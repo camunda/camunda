@@ -91,6 +91,8 @@ public class CamundaExporter implements Exporter {
   private Context context;
   private long lastFlushTimestamp = 0L;
 
+  private long delayMs;
+
   public CamundaExporter() {
     // the metadata will be initialized on open
     this(new DefaultExporterResourceProvider(), null);
@@ -111,6 +113,7 @@ public class CamundaExporter implements Exporter {
   public void configure(final Context context) {
     this.context = context;
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
+    delayMs = configuration.getBulk().getDelay() * 1000L;
     partitionId = context.getPartitionId();
 
     LOG.info("Configuring exporter with {}", configuration);
@@ -309,7 +312,6 @@ public class CamundaExporter implements Exporter {
   }
 
   private void scheduleDelayedFlush(final long now) {
-    long delayMs = configuration.getBulk().getDelay() * 1000L;
     if (lastFlushTimestamp > 0) {
       delayMs = Math.max(0, delayMs - (now - lastFlushTimestamp));
     }
