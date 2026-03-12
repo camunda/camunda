@@ -31,13 +31,13 @@ type Props = {
 };
 
 const ModificationHelperModal: React.FC<Props> = observer(
-  ({open: isVisible, onClose, onSubmit}) => {
+  ({open, onClose, onSubmit}) => {
     return (
       <HelperModal
         title="Process Instance Modification Mode"
         localStorageKey={localStorageKey}
         onClose={onClose}
-        open={isVisible}
+        open={open}
         onSubmit={onSubmit}
       >
         <Container>
