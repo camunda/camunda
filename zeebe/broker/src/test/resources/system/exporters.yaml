@@ -1,8 +1,7 @@
 zeebe:
   broker:
     exporting:
-      skipRecords: 112233, 445566
-      skipRecordsForPartitions:
+      skipRecords:
         1: 999
       distributionInterval: 5s
     exporters:
