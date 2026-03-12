@@ -52,6 +52,8 @@ import org.jspecify.annotations.Nullable;
  *       raft thread.
  *   <li>Calls to {@link #onCommit(long, long)} from the log storage, serialized through the single
  *       raft thread.
+ *   <li>Calls to {@link #onCommitError(long, long, Throwable)} from the log storage, serialized
+ *       through the single raft thread.
  *   <li>Calls to {@link #onProcessed(long)} from the stream processor, serialized through the
  *       stream processor actor.
  * </ol>
@@ -61,8 +63,8 @@ import org.jspecify.annotations.Nullable;
  * guarantees that the entry is present in the buffer when {@link #onWrite(long, long)} and {@link
  * #onCommit(long, long)} callbacks fire.
  *
- * <p>{@link #onWrite(long, long)} and {@link #onCommit(long, long)} and {@link #onProcessed(long)}
- * can be called in any order.
+ * <p>{@link #onWrite(long, long)}, {@link #onCommit(long, long)}, {@link #onCommitError(long, long,
+ * Throwable)} and {@link #onProcessed(long)} can be called in any order.
  *
  * <p>The {@link #inFlight} ring buffer is a fixed-capacity {@link RingBuffer} indexed by position.
  * It is modified by {@link #registerEntry(long, InFlightEntry)} (under the sequencer lock) and read
@@ -97,6 +99,7 @@ public final class FlowControl implements AppendListener {
   @Nullable private RateLimitThrottle writeRateThrottle;
   private volatile long lastWrittenPosition = -1;
   private volatile long lastExportedPosition;
+  private volatile CommitErrorHandler commitErrorHandler;
 
   private final RingBuffer inFlight;
 
@@ -145,17 +148,21 @@ public final class FlowControl implements AppendListener {
       final WriteContext context, final List<LogAppendEntry> batchMetadata) {
     Listener requestListener = null;
     var alwaysAllowed = false;
+    long requestId = -1;
+    int requestStreamId = -1;
     switch (context) {
       case final Internal ignored -> {
         // Internal commands are always accepted for incident response and maintenance.
         alwaysAllowed = true;
       }
-      case UserCommand(final var intent) -> {
-        alwaysAllowed = WhiteListedCommands.isWhitelisted(intent);
-        requestListener = processingLimiter.acquire(intent).orElse(null);
+      case UserCommand userCommand -> {
+        alwaysAllowed = WhiteListedCommands.isWhitelisted(userCommand.intent());
+        requestListener = processingLimiter.acquire(userCommand.intent()).orElse(null);
         if (requestListener == null) {
           return Either.left(Rejection.RequestLimitExhausted);
         }
+        requestId = userCommand.requestId();
+        requestStreamId = userCommand.requestStreamId();
       }
       case ProcessingResult(final var intent) -> {
         alwaysAllowed = WhiteListedCommands.isWhitelisted(intent);
@@ -175,7 +182,10 @@ public final class FlowControl implements AppendListener {
     // if the entry is written, the callback will be invoked later.
     // in the meantime the RecordMetadata might have been reused already
     final var copiedMetadata = LogAppendEntryMetadata.copyMetadata(batchMetadata);
-    return Either.right(new InFlightEntry(metrics, copiedMetadata, requestListener));
+    final var entry = new InFlightEntry(metrics, copiedMetadata, requestListener);
+    entry.requestId = requestId;
+    entry.requestStreamId = requestStreamId;
+    return Either.right(entry);
   }
 
   public void registerEntry(final long highestPosition, final InFlightEntry entry) {
@@ -212,6 +222,20 @@ public final class FlowControl implements AppendListener {
     final var inFlightEntry = inFlight.get(highestPosition);
     if (inFlightEntry != null) {
       inFlightEntry.onCommit();
+    }
+  }
+
+  @Override
+  public void onCommitError(final long index, final long highestPosition, final Throwable error) {
+    metrics.decreaseInflightAppends();
+    final var inFlightEntry = inFlight.get(highestPosition);
+    if (inFlightEntry != null) {
+      final var handler = commitErrorHandler;
+      if (handler != null && inFlightEntry.requestId >= 0) {
+        handler.onCommitError(inFlightEntry.requestId, inFlightEntry.requestStreamId, error);
+      }
+      inFlightEntry.cleanup();
+      inFlight.remove(inFlightEntry);
     }
   }
 
@@ -271,5 +295,19 @@ public final class FlowControl implements AppendListener {
   public enum Rejection {
     WriteRateLimitExhausted,
     RequestLimitExhausted
+  }
+
+  /**
+   * Handler that is called when a commit error occurs for a user command entry. This allows the
+   * transport layer to send an error response back to the client instead of letting the request
+   * time out.
+   */
+  @FunctionalInterface
+  public interface CommitErrorHandler {
+    void onCommitError(long requestId, int requestStreamId, Throwable error);
+  }
+
+  public void setCommitErrorHandler(final CommitErrorHandler handler) {
+    commitErrorHandler = handler;
   }
 }

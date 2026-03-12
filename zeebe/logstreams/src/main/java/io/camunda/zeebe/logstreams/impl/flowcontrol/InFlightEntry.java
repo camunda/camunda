@@ -27,6 +27,15 @@ public final class InFlightEntry {
   final AtomicReference<@Nullable CloseableSilently> commitTimer;
 
   /**
+   * Request identification for user commands. A value of {@code -1} indicates no request metadata
+   * (e.g., for internal or processing-result entries). A non-negative value indicates a user
+   * command whose commit error should be reported back to the client.
+   */
+  long requestId = -1;
+
+  int requestStreamId = -1;
+
+  /**
    * The position this entry was registered at in the ring buffer. Set by {@link RingBuffer#put}
    * before the entry reference is published into the array. Used by {@link RingBuffer#get} to
    * verify that the entry in a slot actually belongs to the requested position (guards against
