@@ -18,9 +18,10 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.process.test.api.judge.ChatModelAdapter;
+import io.camunda.process.test.api.judge.ChatModelAdapterProvider;
 import io.camunda.process.test.api.judge.JudgeConfig;
-import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
-import io.camunda.process.test.api.judge.JudgeConfigBootstrapProvider;
+import io.camunda.process.test.api.judge.ProviderConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
@@ -234,19 +235,25 @@ public class CamundaProcessTestExtension
       return;
     }
 
-    tryBootstrappingJudgeConfig().ifPresent(CamundaAssert::setJudgeConfig);
+    tryBootstrappingChatModelAdapter()
+        .map(
+            adapter ->
+                JudgeConfig.of(
+                    adapter,
+                    CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getThreshold(),
+                    CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getCustomPrompt()))
+        .ifPresent(CamundaAssert::setJudgeConfig);
   }
 
-  private Optional<JudgeConfig> tryBootstrappingJudgeConfig() {
-    final JudgeConfigBootstrapData judgeConfigurationData =
-        CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.toJudgeConfigurationData();
-    for (final JudgeConfigBootstrapProvider provider :
+  private Optional<ChatModelAdapter> tryBootstrappingChatModelAdapter() {
+    final ProviderConfig providerConfig =
+        CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.toProviderConfig();
+    for (final ChatModelAdapterProvider provider :
         ServiceLoader.load(
-            JudgeConfigBootstrapProvider.class,
-            JudgeConfigBootstrapProvider.class.getClassLoader())) {
-      final JudgeConfig bootstrapped = provider.bootstrap(judgeConfigurationData);
-      if (bootstrapped != null) {
-        return Optional.of(bootstrapped);
+            ChatModelAdapterProvider.class, ChatModelAdapterProvider.class.getClassLoader())) {
+      final Optional<ChatModelAdapter> adapter = provider.create(providerConfig);
+      if (adapter.isPresent()) {
+        return adapter;
       }
     }
     return Optional.empty();

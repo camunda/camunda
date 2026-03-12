@@ -19,11 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.process.test.api.judge.ChatModelAdapter;
+import io.camunda.process.test.api.judge.ChatModelAdapterProvider;
 import io.camunda.process.test.api.judge.JudgeConfig;
-import io.camunda.process.test.api.judge.JudgeConfigBootstrapData;
-import io.camunda.process.test.api.judge.JudgeConfigBootstrapData.OpenAiConfig;
-import io.camunda.process.test.api.judge.JudgeConfigBootstrapData.ProviderConfig;
-import io.camunda.process.test.impl.judge.JudgeConfigBootstrap;
+import io.camunda.process.test.api.judge.ProviderConfig;
+import io.camunda.process.test.impl.judge.Langchain4jChatModelAdapterProvider;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -206,32 +205,18 @@ public class JudgeConfigBootstrapIT {
   @Nested
   class InvalidConfiguration {
 
-    private final JudgeConfigBootstrap bootstrap = new JudgeConfigBootstrap();
+    private final ChatModelAdapterProvider provider = new Langchain4jChatModelAdapterProvider();
 
     @Test
-    void shouldReturnNullWhenProviderNotConfigured() {
-      final JudgeConfigBootstrapData data = JudgeConfigBootstrapData.builder().build();
-      final JudgeConfig config = bootstrap.bootstrap(data);
-      assertThat(config).isNull();
-    }
-
-    @Test
-    void shouldReturnNullWhenProviderIsUnknown() {
-      final JudgeConfigBootstrapData data =
-          JudgeConfigBootstrapData.builder()
-              .providerConfig(new ProviderConfig("unknown-provider", "test-model") {})
-              .build();
-      final JudgeConfig config = bootstrap.bootstrap(data);
-      assertThat(config).isNull();
+    void shouldReturnEmptyWhenProviderIsUnknown() {
+      final ProviderConfig config = new ProviderConfig("unknown-provider", "test-model") {};
+      assertThat(provider.create(config)).isEmpty();
     }
 
     @Test
     void shouldThrowWhenRequiredFieldMissing() {
-      final JudgeConfigBootstrapData data =
-          JudgeConfigBootstrapData.builder()
-              .providerConfig(new OpenAiConfig(null, "api-key"))
-              .build();
-      assertThatThrownBy(() -> bootstrap.bootstrap(data)).isInstanceOf(IllegalStateException.class);
+      final ProviderConfig config = new ProviderConfig.OpenAiConfig(null, "api-key");
+      assertThatThrownBy(() -> provider.create(config)).isInstanceOf(IllegalStateException.class);
     }
   }
 }
