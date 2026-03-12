@@ -594,7 +594,7 @@ public interface ProcessInstanceAssert {
 
   /**
    * Verifies that a process variable's value satisfies a natural language expectation using an LLM
-   * judge. Uses the default threshold from the configured {@link JudgeConfig}.
+   * judge. Uses the threshold from the configured {@link JudgeConfig}.
    *
    * <p>The assertion waits until the variable exists, then runs the judge evaluation once.
    *
@@ -605,22 +605,8 @@ public interface ProcessInstanceAssert {
   ProcessInstanceAssert hasVariableSatisfiesJudge(String variableName, String expectation);
 
   /**
-   * Verifies that a process variable's value satisfies a natural language expectation using an LLM
-   * judge with a custom threshold.
-   *
-   * <p>The assertion waits until the variable exists, then runs the judge evaluation once.
-   *
-   * @param variableName the variable name
-   * @param expectation the natural language expectation
-   * @param threshold the score threshold (0-1) above which the evaluation passes
-   * @return the assertion object
-   */
-  ProcessInstanceAssert hasVariableSatisfiesJudge(
-      String variableName, String expectation, double threshold);
-
-  /**
    * Verifies that a local variable's value satisfies a natural language expectation using an LLM
-   * judge. Uses the default threshold from the configured {@link JudgeConfig}.
+   * judge. Uses the threshold from the configured {@link JudgeConfig}.
    *
    * <p>The assertion waits until the variable exists, then runs the judge evaluation once.
    *
@@ -634,22 +620,7 @@ public interface ProcessInstanceAssert {
 
   /**
    * Verifies that a local variable's value satisfies a natural language expectation using an LLM
-   * judge with a custom threshold.
-   *
-   * <p>The assertion waits until the variable exists, then runs the judge evaluation once.
-   *
-   * @param elementId the BPMN element ID
-   * @param variableName the variable name
-   * @param expectation the natural language expectation
-   * @param threshold the score threshold (0-1) above which the evaluation passes
-   * @return the assertion object
-   */
-  ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
-      String elementId, String variableName, String expectation, double threshold);
-
-  /**
-   * Verifies that a local variable's value satisfies a natural language expectation using an LLM
-   * judge. Uses the default threshold from the configured {@link JudgeConfig}.
+   * judge. Uses the threshold from the configured {@link JudgeConfig}.
    *
    * <p>The assertion waits until the variable exists, then runs the judge evaluation once.
    *
@@ -661,20 +632,4 @@ public interface ProcessInstanceAssert {
    */
   ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
       ElementSelector selector, String variableName, String expectation);
-
-  /**
-   * Verifies that a local variable's value satisfies a natural language expectation using an LLM
-   * judge with a custom threshold.
-   *
-   * <p>The assertion waits until the variable exists, then runs the judge evaluation once.
-   *
-   * @param selector the selector for the BPMN element
-   * @param variableName the variable name
-   * @param expectation the natural language expectation
-   * @param threshold the score threshold (0-1) above which the evaluation passes
-   * @return the assertion object
-   * @see ElementSelectors
-   */
-  ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
-      ElementSelector selector, String variableName, String expectation, double threshold);
 }

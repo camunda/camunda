@@ -341,19 +341,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final long processInstanceKey, final String variableName, final String expectation) {
 
     assertJudgeHasAllRequiredSettings();
-    hasVariableSatisfiesJudge(
-        processInstanceKey, variableName, expectation, judgeConfig.getThreshold());
-  }
-
-  public void hasVariableSatisfiesJudge(
-      final long processInstanceKey,
-      final String variableName,
-      final String expectation,
-      final double threshold) {
-
-    assertJudgeHasAllRequiredSettings();
     assertExpectationNotEmpty(expectation);
-    assertThresholdInRange(threshold);
 
     final AtomicReference<String> capturedValue = new AtomicReference<>();
     awaitBehavior.untilAsserted(
@@ -370,7 +358,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
           capturedValue.set(variables.get(variableName));
         });
 
-    evaluateJudge(variableName, expectation, threshold, capturedValue.get());
+    evaluateJudge(variableName, expectation, judgeConfig.getThreshold(), capturedValue.get());
   }
 
   public void hasLocalVariableSatisfiesJudge(
@@ -380,20 +368,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final String expectation) {
 
     assertJudgeHasAllRequiredSettings();
-    hasLocalVariableSatisfiesJudge(
-        processInstanceKey, selector, variableName, expectation, judgeConfig.getThreshold());
-  }
-
-  public void hasLocalVariableSatisfiesJudge(
-      final long processInstanceKey,
-      final ElementSelector selector,
-      final String variableName,
-      final String expectation,
-      final double threshold) {
-
-    assertJudgeHasAllRequiredSettings();
     assertExpectationNotEmpty(expectation);
-    assertThresholdInRange(threshold);
 
     final AtomicReference<String> capturedValue = new AtomicReference<>();
     withLocalVariableAssertion(
@@ -413,7 +388,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
           capturedValue.set(variables.get(variableName));
         });
 
-    evaluateJudge(variableName, expectation, threshold, capturedValue.get());
+    evaluateJudge(variableName, expectation, judgeConfig.getThreshold(), capturedValue.get());
   }
 
   private void evaluateJudge(
@@ -468,13 +443,6 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   private static void assertExpectationNotEmpty(final String expectation) {
     if (expectation == null || expectation.trim().isEmpty()) {
       throw new IllegalArgumentException("expectation must not be null or empty");
-    }
-  }
-
-  private static void assertThresholdInRange(final double threshold) {
-    if (threshold < 0.0 || threshold > 1.0) {
-      throw new IllegalArgumentException(
-          "threshold must be between 0.0 and 1.0, was: " + threshold);
     }
   }
 
