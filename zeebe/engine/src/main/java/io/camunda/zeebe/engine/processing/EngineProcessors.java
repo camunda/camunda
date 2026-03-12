@@ -238,11 +238,7 @@ public final class EngineProcessors {
 
     final var userTaskProcessor =
         createUserTaskProcessor(
-            processingState,
-            bpmnBehaviors,
-            writers,
-            asyncRequestBehavior,
-            authCheckBehavior);
+            processingState, bpmnBehaviors, writers, asyncRequestBehavior, authCheckBehavior);
     addUserTaskProcessors(typedRecordProcessors, userTaskProcessor);
 
     addIncidentProcessors(
