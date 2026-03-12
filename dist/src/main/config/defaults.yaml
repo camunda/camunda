@@ -305,11 +305,12 @@ camunda: # Type: io.camunda.configuration.Camunda
       # need to replay and export everything. It can for example can start from the last exported position
       # it has received by the distribution mechanism.
       distribution-interval: null # Type: Duration, Env: CAMUNDA_DATA_EXPORT_DISTRIBUTIONINTERVAL
-      # Enable the exporters to skip record position. Allows to skip certain records by their position. This
-      # is useful for debugging or skipping a record that is preventing processing or exporting to continue.
-      # Record positions defined to skip in this definition will be skipped in all exporters. The value is a
-      # comma-separated list of records ids to skip. Whitespace is ignored.
-      skip-records: null # Type: Set<Long>, Env: CAMUNDA_DATA_EXPORT_SKIPRECORDS
+      # Enable the exporters to skip record positions per partition. Allows to skip certain records by
+      # their position for a specific partition. This is useful for debugging or skipping a record
+      # that is preventing processing or exporting to continue. Record positions defined to skip in
+      # this definition will be skipped only for the specified partition. The value is a map of
+      # partition id to a comma-separated list of records positions to skip. Whitespace is ignored.
+      skip-records: null # Type: Map<Integer,Set<Long>>, Env: CAMUNDA_DATA_EXPORT_SKIPRECORDS_<PARTITION_ID>
 
     # This section allows configuring exporters
     exporters: null # Type: Map<String,io.camunda.configuration.Exporter>, Env: CAMUNDA_DATA_EXPORTERS
