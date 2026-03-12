@@ -17,6 +17,7 @@ public final class AuditLogConfiguration implements AuditLogCheck {
 
   private ActorAuditLogConfiguration user = ActorAuditLogConfiguration.logAll();
   private ActorAuditLogConfiguration client = ActorAuditLogConfiguration.logNone();
+  private ActorAuditLogConfiguration unknown = ActorAuditLogConfiguration.logNone();
 
   public ActorAuditLogConfiguration getUser() {
     return user;
@@ -36,6 +37,15 @@ public final class AuditLogConfiguration implements AuditLogCheck {
     return this;
   }
 
+  public ActorAuditLogConfiguration getUnknown() {
+    return unknown;
+  }
+
+  public AuditLogConfiguration setUnknown(final ActorAuditLogConfiguration unknown) {
+    this.unknown = unknown;
+    return this;
+  }
+
   @Override
   public String toString() {
     return "AuditLogConfiguration{"
@@ -45,12 +55,16 @@ public final class AuditLogConfiguration implements AuditLogCheck {
         + user
         + ", client="
         + client
+        + ", unknown="
+        + unknown
         + '}';
   }
 
   public boolean isEnabled() {
     return enabled
-        && !(getUser().getCategories().isEmpty() && getClient().getCategories().isEmpty());
+        && !(getUser().getCategories().isEmpty()
+            && getClient().getCategories().isEmpty()
+            && getUnknown().getCategories().isEmpty());
   }
 
   public void setEnabled(final boolean enabled) {
@@ -64,9 +78,7 @@ public final class AuditLogConfiguration implements AuditLogCheck {
           case USER -> getUser();
           case CLIENT -> getClient();
           case ANONYMOUS -> AuditLogCheck.DISABLED;
-          // UNKNOWN actor types are logged by default to avoid missing events or when the insecure
-          // profile is used
-          case UNKNOWN -> AuditLogCheck.ENABLED;
+          case UNKNOWN -> getUnknown();
         };
 
     return isEnabled() && check.isEnabled(auditLog);
