@@ -26,6 +26,7 @@ const config = defineConfig({
   workers: IS_CI || IS_E2E ? 1 : undefined,
   reporter: IS_CI
     ? [
+        ['blob'],
         ['github'],
         ['html'],
         [
