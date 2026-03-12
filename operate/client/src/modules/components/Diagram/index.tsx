@@ -52,7 +52,7 @@ type Props = {
   nonSelectableNodeTooltipText?: string;
   hasOuterBorderOnSelection?: boolean;
   onElementDoubleClick?: OnElementDoubleClick;
-  drilldownElements?: string[];
+  customElementClasses?: [elementId: string, className: string][];
 };
 
 const useFullscreen = (
@@ -139,7 +139,7 @@ const Diagram: React.FC<Props> = observer(
     nonSelectableNodeTooltipText,
     hasOuterBorderOnSelection = true,
     onElementDoubleClick,
-    drilldownElements,
+    customElementClasses,
   }) => {
     const diagramCanvasRef = useRef<HTMLDivElement | null>(null);
     const diagramRef = useRef<HTMLDivElement | null>(null);
@@ -179,7 +179,7 @@ const Diagram: React.FC<Props> = observer(
             highlightedElementIds,
             nonSelectableNodeTooltipText,
             hasOuterBorderOnSelection,
-            drilldownElements,
+            customElementClasses,
           });
           setIsDiagramRendered(true);
           resetMinimap();
@@ -197,7 +197,7 @@ const Diagram: React.FC<Props> = observer(
       nonSelectableNodeTooltipText,
       hasOuterBorderOnSelection,
       resetMinimap,
-      drilldownElements,
+      customElementClasses,
     ]);
 
     useEffect(() => {

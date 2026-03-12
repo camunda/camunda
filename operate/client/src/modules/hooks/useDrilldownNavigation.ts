@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useTransition} from 'react';
+import {useState, useTransition} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {useQueryClient} from '@tanstack/react-query';
 import {searchProcessInstances} from 'modules/api/v2/processInstances/searchProcessInstances';
@@ -14,27 +14,21 @@ import {Paths} from 'modules/Routes';
 import {notificationsStore} from 'modules/stores/notifications';
 import {queryKeys} from 'modules/queries/queryKeys';
 
-const LOADING_CLASS = 'op-drilldown-loading';
-
-const setDiagramLoading = (loading: boolean) => {
-  const container = document.querySelector<HTMLElement>('.djs-container');
-  if (container) {
-    container.classList.toggle(LOADING_CLASS, loading);
-  }
-};
-
 const useDrillDownNavigation = (processInstanceKey: string) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
+  const [pendingDrillDownElementId, setPendingDrillDownElementId] = useState<
+    string | null
+  >(null);
 
-  function handleDrillDown() {
+  function handleDrillDown(elementId: string) {
     if (isPending) {
       return;
     }
 
     startTransition(async () => {
-      setDiagramLoading(true);
+      setPendingDrillDownElementId(elementId);
 
       try {
         const response = await queryClient.fetchQuery({
@@ -66,12 +60,12 @@ const useDrillDownNavigation = (processInstanceKey: string) => {
           isDismissable: true,
         });
       } finally {
-        setDiagramLoading(false);
+        setPendingDrillDownElementId(null);
       }
     });
   }
 
-  return {handleDrillDown};
+  return {handleDrillDown, pendingDrillDownElementId};
 };
 
 export {useDrillDownNavigation};

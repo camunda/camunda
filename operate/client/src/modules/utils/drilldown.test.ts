@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import type {BusinessObject, ElementType} from 'bpmn-js/lib/NavigatedViewer';
 import {
   isCallActivity,
   isElementRunning,
@@ -14,15 +14,15 @@ import {
 } from './drilldown';
 
 function createBusinessObject(
-  type: string,
+  type: ElementType,
   overrides?: Partial<BusinessObject>,
 ): BusinessObject {
   return {
     id: 'element_1',
     name: 'Test Element',
-    $type: type as BusinessObject['$type'],
+    $type: type,
     ...overrides,
-  } as BusinessObject;
+  } satisfies BusinessObject;
 }
 
 describe('drilldown utilities', () => {
