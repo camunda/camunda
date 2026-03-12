@@ -75,6 +75,29 @@ describe('DetailsModal', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('renders fallback name when entityDescription is an empty string or whitespace only', () => {
+    const auditLogWithEmptyDescription: AuditLog = {
+      ...baseAuditLog,
+      entityType: 'PROCESS_INSTANCE',
+      entityKey: 'process-instance-123',
+      entityDescription: ' ',
+      processDefinitionId: 'process-def-id',
+    };
+
+    render(
+      <DetailsModal
+        isOpen
+        onClose={() => {}}
+        auditLog={auditLogWithEmptyDescription}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(screen.getByText('process-def-id')).toBeInTheDocument();
+  });
+
   it('renders batch information and link for batch audit log', () => {
     const batchAuditLog: AuditLog = {
       ...baseAuditLog,
