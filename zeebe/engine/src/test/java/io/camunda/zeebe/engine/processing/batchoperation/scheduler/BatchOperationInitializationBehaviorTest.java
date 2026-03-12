@@ -22,9 +22,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
-import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider;
-import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
-import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.BatchOperationInitializationException;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult;
@@ -32,7 +29,6 @@ import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +40,6 @@ class BatchOperationInitializationBehaviorTest {
   private static final int PAGE_SIZE = 100;
 
   private final ItemProviderFactory itemProviderFactory = mock(ItemProviderFactory.class);
-  private final ItemProvider itemProvider = mock(ItemProvider.class);
   private final BatchOperationPageProcessor pageProcessor = mock(BatchOperationPageProcessor.class);
   private final BatchOperationCommandAppender commandBuilder =
       mock(BatchOperationCommandAppender.class);
@@ -69,8 +64,6 @@ class BatchOperationInitializationBehaviorTest {
             .setInitializationSearchQueryPageSize(PAGE_SIZE)
             .setNumTotalItems(0)
             .setStatus(CREATED);
-
-    when(itemProviderFactory.fromBatchOperation(batchOperation)).thenReturn(itemProvider);
   }
 
   @Test
@@ -84,20 +77,14 @@ class BatchOperationInitializationBehaviorTest {
     // then
     assertThat(result.batchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
     assertThat(result.searchResultCursor()).isEqualTo(SEARCH_CURSOR);
-    verify(itemProvider, never()).fetchItemPage(anyString(), any(Integer.class));
-    verify(pageProcessor, never()).processPage(anyLong(), any(), any());
+    verify(pageProcessor, never()).processNextPage(any(), any(), any());
   }
 
   @Test
   void shouldInitializeSuccessfullyWithSinglePageAndFinish() {
     // given
-    final var items = List.of(createItem(1L), createItem(2L));
-    final var itemPage = new ItemPage(items, NEXT_SEARCH_CURSOR, 2L, true);
-    final var pageResult = new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 2);
-
-    when(itemProvider.fetchItemPage(SEARCH_CURSOR, PAGE_SIZE)).thenReturn(itemPage);
-    when(pageProcessor.processPage(batchOperation.getKey(), itemPage, taskResultBuilder))
-        .thenReturn(pageResult);
+    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+        .thenReturn(new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 2));
 
     // when
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
@@ -121,20 +108,9 @@ class BatchOperationInitializationBehaviorTest {
   @Test
   void shouldHandleMultiplePagesSuccessfully() {
     // given
-    final var firstPageItems = List.of(createItem(1L), createItem(2L));
-    final var firstPage = new ItemPage(firstPageItems, "cursor1", 4L, false);
-    final var firstPageResult = new PageProcessingResult.Continue("cursor1", 2);
-
-    final var secondPageItems = List.of(createItem(3L), createItem(4L));
-    final var secondPage = new ItemPage(secondPageItems, "cursor2", 4L, true);
-    final var secondPageResult = new PageProcessingResult.Finished("cursor2", 2);
-
-    when(itemProvider.fetchItemPage(SEARCH_CURSOR, PAGE_SIZE)).thenReturn(firstPage);
-    when(itemProvider.fetchItemPage("cursor1", PAGE_SIZE)).thenReturn(secondPage);
-    when(pageProcessor.processPage(batchOperation.getKey(), firstPage, taskResultBuilder))
-        .thenReturn(firstPageResult);
-    when(pageProcessor.processPage(batchOperation.getKey(), secondPage, taskResultBuilder))
-        .thenReturn(secondPageResult);
+    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+        .thenReturn(new PageProcessingResult.Continue("cursor1", 2))
+        .thenReturn(new PageProcessingResult.Finished("cursor2", 2));
 
     // when
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
@@ -152,13 +128,8 @@ class BatchOperationInitializationBehaviorTest {
   @Test
   void shouldHandleFailedChunkAppendWithoutPreviousChunks() {
     // given
-    final var items = List.of(createItem(1L), createItem(2L));
-    final var itemPage = new ItemPage(items, NEXT_SEARCH_CURSOR, 2L, false);
-    final var pageResult = new PageProcessingResult.BufferFull(2);
-
-    when(itemProvider.fetchItemPage(SEARCH_CURSOR, PAGE_SIZE)).thenReturn(itemPage);
-    when(pageProcessor.processPage(batchOperation.getKey(), itemPage, taskResultBuilder))
-        .thenReturn(pageResult);
+    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+        .thenReturn(new PageProcessingResult.BufferFull(2));
 
     // when
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
@@ -177,21 +148,10 @@ class BatchOperationInitializationBehaviorTest {
 
   @Test
   void shouldHandleFailedChunkAppendWithPreviousChunks() {
-    // given - First page succeeds, second page fails
-    final var firstPageItems = List.of(createItem(1L), createItem(2L));
-    final var firstPage = new ItemPage(firstPageItems, "cursor1", 4L, false);
-    final var firstPageResult = new PageProcessingResult.Continue("cursor1", 2);
-
-    final var secondPageItems = List.of(createItem(3L), createItem(4L));
-    final var secondPage = new ItemPage(secondPageItems, "cursor2", 4L, false);
-    final var secondPageResult = new PageProcessingResult.BufferFull(2);
-
-    when(itemProvider.fetchItemPage(SEARCH_CURSOR, PAGE_SIZE)).thenReturn(firstPage);
-    when(itemProvider.fetchItemPage("cursor1", PAGE_SIZE)).thenReturn(secondPage);
-    when(pageProcessor.processPage(batchOperation.getKey(), firstPage, taskResultBuilder))
-        .thenReturn(firstPageResult);
-    when(pageProcessor.processPage(batchOperation.getKey(), secondPage, taskResultBuilder))
-        .thenReturn(secondPageResult);
+    // given - First page succeeds, second page fails to fit in buffer
+    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+        .thenReturn(new PageProcessingResult.Continue("cursor1", 2))
+        .thenReturn(new PageProcessingResult.BufferFull(2));
 
     // when
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
@@ -206,10 +166,11 @@ class BatchOperationInitializationBehaviorTest {
   }
 
   @Test
-  void shouldThrowExceptionWhenItemProviderFailsWithoutPreviousChunks() {
+  void shouldThrowExceptionWhenFetchFailsWithoutPreviousChunks() {
     // given
     final var exception = new RuntimeException("Database connection failed");
-    when(itemProvider.fetchItemPage(SEARCH_CURSOR, PAGE_SIZE)).thenThrow(exception);
+    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+        .thenReturn(new PageProcessingResult.FetchFailed(exception));
 
     // when & then
     assertThatThrownBy(
@@ -224,18 +185,12 @@ class BatchOperationInitializationBehaviorTest {
   }
 
   @Test
-  void shouldContinueInitializationWhenItemProviderFailsWithPreviousChunks() {
-    // given - First page succeeds, second page throws exception
-    final var firstPageItems = List.of(createItem(1L), createItem(2L));
-    final var firstPage = new ItemPage(firstPageItems, "cursor1", 4L, false);
-    final var firstPageResult = new PageProcessingResult.Continue("cursor1", 2);
-
+  void shouldContinueInitializationWhenFetchFailsWithPreviousChunks() {
+    // given - First page succeeds, second page fetch fails
     final var exception = new RuntimeException("Database connection failed");
-
-    when(itemProvider.fetchItemPage(SEARCH_CURSOR, PAGE_SIZE)).thenReturn(firstPage);
-    when(itemProvider.fetchItemPage("cursor1", PAGE_SIZE)).thenThrow(exception);
-    when(pageProcessor.processPage(batchOperation.getKey(), firstPage, taskResultBuilder))
-        .thenReturn(firstPageResult);
+    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+        .thenReturn(new PageProcessingResult.Continue("cursor1", 2))
+        .thenReturn(new PageProcessingResult.FetchFailed(exception));
 
     // when & then
     assertThatThrownBy(
@@ -268,12 +223,8 @@ class BatchOperationInitializationBehaviorTest {
   @Test
   void shouldHandleEmptyPageSuccessfully() {
     // given
-    final var emptyPage = new ItemPage(List.of(), NEXT_SEARCH_CURSOR, 0L, true);
-    final var pageResult = new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 0);
-
-    when(itemProvider.fetchItemPage(SEARCH_CURSOR, PAGE_SIZE)).thenReturn(emptyPage);
-    when(pageProcessor.processPage(batchOperation.getKey(), emptyPage, taskResultBuilder))
-        .thenReturn(pageResult);
+    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+        .thenReturn(new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 0));
 
     // when
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
@@ -292,14 +243,8 @@ class BatchOperationInitializationBehaviorTest {
   void shouldUpdateTotalItemsCountCorrectly() {
     // given
     batchOperation.setNumTotalItems(5);
-
-    final var items = List.of(createItem(1L), createItem(2L), createItem(3L));
-    final var itemPage = new ItemPage(items, NEXT_SEARCH_CURSOR, 3L, true);
-    final var pageResult = new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 3);
-
-    when(itemProvider.fetchItemPage(SEARCH_CURSOR, PAGE_SIZE)).thenReturn(itemPage);
-    when(pageProcessor.processPage(batchOperation.getKey(), itemPage, taskResultBuilder))
-        .thenReturn(pageResult);
+    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+        .thenReturn(new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 3));
 
     // when
     initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
@@ -312,13 +257,8 @@ class BatchOperationInitializationBehaviorTest {
   void shouldInitializeDeleteProcessInstanceBatchOperation() {
     // given
     batchOperation.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
-    final var items = List.of(createItem(10L), createItem(11L));
-    final var itemPage = new ItemPage(items, NEXT_SEARCH_CURSOR, 2L, true);
-    final var pageResult = new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 2);
-
-    when(itemProvider.fetchItemPage(SEARCH_CURSOR, PAGE_SIZE)).thenReturn(itemPage);
-    when(pageProcessor.processPage(batchOperation.getKey(), itemPage, taskResultBuilder))
-        .thenReturn(pageResult);
+    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+        .thenReturn(new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 2));
 
     // when
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
@@ -336,9 +276,5 @@ class BatchOperationInitializationBehaviorTest {
     verify(metrics)
         .startTotalExecutionLatencyMeasure(
             BATCH_OPERATION_KEY, BatchOperationType.DELETE_PROCESS_INSTANCE);
-  }
-
-  private Item createItem(final long key) {
-    return new Item(key, key + 1000, null);
   }
 }

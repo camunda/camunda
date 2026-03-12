@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult.BufferFull;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult.Continue;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult.FetchFailed;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult.Finished;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
@@ -31,10 +32,12 @@ import org.slf4j.LoggerFactory;
  *   <li>Recording metrics for batch operation performance
  * </ul/>
  *
- * <p>The initialization process fetches items using an {@link ItemProviderFactory}, processes them
- * in pages via {@link BatchOperationPageProcessor}, and builds commands through {@link
- * BatchOperationCommandAppender}. If chunk appending fails, it attempts to reduce the page size and
- * retry, or marks the operation as failed if the minimum page size is reached.
+ * <p>The initialization process creates an {@link
+ * io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider} once per batch
+ * operation via {@link ItemProviderFactory}, then fetches and processes items in pages via {@link
+ * BatchOperationPageProcessor}, and builds commands through {@link BatchOperationCommandAppender}.
+ * If chunk appending fails, it attempts to reduce the page size and retry, or marks the operation
+ * as failed if the minimum page size is reached.
  *
  * @see BatchOperationPageProcessor
  * @see BatchOperationCommandAppender
@@ -99,31 +102,26 @@ public class BatchOperationInitializationBehavior {
     var context = InitializationContext.fromBatchOperation(batchOperation, queryPageSize);
 
     while (true) {
-      try {
-        final var page = itemProvider.fetchItemPage(context.currentCursor(), context.pageSize());
-        final var result =
-            pageProcessor.processPage(context.operation().getKey(), page, taskResultBuilder);
+      final var result = pageProcessor.processNextPage(itemProvider, context, taskResultBuilder);
 
-        switch (result) {
-          case Continue(final var endCursor, final int itemsProcessed) ->
-              context = context.withNextPage(endCursor, itemsProcessed, true);
-          case Finished(final var endCursor, final int itemsProcessed) -> {
+      switch (result) {
+        case Continue(final var endCursor, final int itemsProcessed) ->
             context = context.withNextPage(endCursor, itemsProcessed, true);
-            finishInitialization(batchOperation, taskResultBuilder);
-            startExecutionPhase(taskResultBuilder, context);
-            return new BatchOperationInitializationResult(batchOperation.getKey(), "finished");
-          }
-          case BufferFull(final int itemCount) -> {
-            return handleFailedChunkAppend(taskResultBuilder, context, itemCount);
-          }
+        case Finished(final var endCursor, final int itemsProcessed) -> {
+          context = context.withNextPage(endCursor, itemsProcessed, true);
+          finishInitialization(batchOperation, taskResultBuilder);
+          startExecutionPhase(taskResultBuilder, context);
+          return new BatchOperationInitializationResult(batchOperation.getKey(), "finished");
         }
-      } catch (final BatchOperationInitializationException e) {
-        throw e;
-      } catch (final Exception e) {
-        if (context.hasAppendedChunks()) {
-          continueInitialization(taskResultBuilder, context);
+        case BufferFull(final int itemCount) -> {
+          return handleFailedChunkAppend(taskResultBuilder, context, itemCount);
         }
-        throw new BatchOperationInitializationException(e, context.currentCursor());
+        case FetchFailed(final var cause) -> {
+          if (context.hasAppendedChunks()) {
+            continueInitialization(taskResultBuilder, context);
+          }
+          throw new BatchOperationInitializationException(cause, context.currentCursor());
+        }
       }
     }
   }
