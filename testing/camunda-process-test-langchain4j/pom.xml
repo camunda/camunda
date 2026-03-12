@@ -76,6 +76,11 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>dev.langchain4j</groupId>
+      <artifactId>langchain4j-azure-open-ai</artifactId>
+    </dependency>
+
     <!--  test scope  -->
 
     <dependency>

@@ -27,6 +27,7 @@ import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.api.assertions.VariableSelector;
 import io.camunda.process.test.api.assertions.VariableSelectors;
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import java.time.Duration;
 import java.util.Arrays;
@@ -63,14 +64,16 @@ public class ProcessInstanceAssertj
       final CamundaAssertJsonMapper jsonMapper,
       final long processInstanceKey,
       final Function<String, ElementSelector> elementSelector,
-      final JudgeConfig judgeConfig) {
+      final JudgeConfig judgeConfig,
+      final SemanticSimilarityConfig similarityConfig) {
     this(
         dataSource,
         awaitBehavior,
         jsonMapper,
         ProcessInstanceSelectors.byKey(processInstanceKey),
         elementSelector,
-        judgeConfig);
+        judgeConfig,
+        similarityConfig);
   }
 
   public ProcessInstanceAssertj(
@@ -79,7 +82,8 @@ public class ProcessInstanceAssertj
       final CamundaAssertJsonMapper jsonMapper,
       final ProcessInstanceSelector processInstanceSelector,
       final Function<String, ElementSelector> elementSelector,
-      final JudgeConfig judgeConfig) {
+      final JudgeConfig judgeConfig,
+      final SemanticSimilarityConfig semanticSimilarityConfig) {
     super(processInstanceSelector, ProcessInstanceAssertj.class);
     this.dataSource = dataSource;
     this.awaitBehavior = awaitBehavior;
@@ -89,7 +93,12 @@ public class ProcessInstanceAssertj
     elementAssertj = new ElementAssertj(dataSource, this::getAwaitBehavior, failureMessagePrefix);
     variableAssertj =
         new VariableAssertj(
-            dataSource, this::getAwaitBehavior, jsonMapper, judgeConfig, failureMessagePrefix);
+            dataSource,
+            this::getAwaitBehavior,
+            jsonMapper,
+            judgeConfig,
+            semanticSimilarityConfig,
+            failureMessagePrefix);
     incidentAssertj = new IncidentAssertj(dataSource, this::getAwaitBehavior, failureMessagePrefix);
     messageSubscriptionAssertj =
         new MessageSubscriptionAssertj(dataSource, this::getAwaitBehavior, failureMessagePrefix);
@@ -529,6 +538,38 @@ public class ProcessInstanceAssertj
       final String expectation) {
     variableAssertj.hasLocalVariableSatisfiesJudge(
         getProcessInstanceKey(), elementSelector, variableSelector, expectation);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert withSemanticSimilarityConfig(
+      final UnaryOperator<SemanticSimilarityConfig> modifier) {
+    if (modifier == null) {
+      throw new IllegalArgumentException("modifier must not be null");
+    }
+    final SemanticSimilarityConfig currentConfig = variableAssertj.getSemanticSimilarityConfig();
+    final SemanticSimilarityConfig baseConfig =
+        currentConfig != null ? currentConfig : SemanticSimilarityConfig.defaults();
+    final SemanticSimilarityConfig modifiedConfig = modifier.apply(baseConfig);
+    if (modifiedConfig == null) {
+      throw new IllegalArgumentException("modifier must not return null");
+    }
+    variableAssertj.setSemanticSimilarityConfig(modifiedConfig);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasVariableSimilarTo(
+      final String variableName, final String expectedValue) {
+    variableAssertj.hasVariableSimilarTo(getProcessInstanceKey(), variableName, expectedValue);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariableSimilarTo(
+      final ElementSelector selector, final String variableName, final String expectedValue) {
+    variableAssertj.hasLocalVariableSimilarTo(
+        getProcessInstanceKey(), selector, variableName, expectedValue);
     return this;
   }
 

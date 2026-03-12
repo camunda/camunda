@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.impl.judge;
 
-import static io.camunda.process.test.impl.judge.ModelBuilderSupport.hasText;
-import static io.camunda.process.test.impl.judge.ModelBuilderSupport.require;
+import static io.camunda.process.test.impl.ModelBuilderSupport.hasText;
+import static io.camunda.process.test.impl.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.bedrock.BedrockChatModel;
 import dev.langchain4j.model.bedrock.BedrockChatRequestParameters;

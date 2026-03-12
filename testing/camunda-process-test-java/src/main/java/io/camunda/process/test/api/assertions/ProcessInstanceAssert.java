@@ -16,6 +16,7 @@
 package io.camunda.process.test.api.assertions;
 
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 import org.assertj.core.api.ThrowingConsumer;
@@ -727,4 +728,53 @@ public interface ProcessInstanceAssert extends WithAssertionConfiguration<Proces
    */
   ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
       ElementSelector elementSelector, VariableSelector variableSelector, String expectation);
+
+  /**
+   * Modifies the {@link SemanticSimilarityConfig} for subsequent similarity assertions in this
+   * chain using a modifier function. The global default set via {@link
+   * io.camunda.process.test.api.CamundaAssert#setSemanticSimilarityConfig(SemanticSimilarityConfig)}
+   * is not affected. Each new {@code assertThat(pi)} call starts fresh from the global default.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   *   assertThat(pi)
+   *       .withSimilarityConfig(c -> c.withThreshold(0.9))
+   *       .hasVariableSimilarTo("result", "expected text");
+   * </pre>
+   *
+   * @param modifier a function to apply to the current similarity config; must not be null and must
+   *     not return null
+   * @return the assertion object
+   */
+  ProcessInstanceAssert withSemanticSimilarityConfig(
+      UnaryOperator<SemanticSimilarityConfig> modifier);
+
+  /**
+   * Verifies that a process variable's value is semantically similar to an expected value using
+   * text embeddings. Uses the default threshold from the configured {@link
+   * SemanticSimilarityConfig} .
+   *
+   * <p>The assertion waits until the variable exists, then evaluates semantic similarity once.
+   *
+   * @param variableName the variable name
+   * @param expectedValue the expected value to compare against
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasVariableSimilarTo(String variableName, String expectedValue);
+
+  /**
+   * Verifies that a local variable's value is semantically similar to an expected value using text
+   * embeddings. Uses the default threshold from the configured {@link SemanticSimilarityConfig}.
+   *
+   * <p>The assertion waits until the variable exists, then evaluates semantic similarity once.
+   *
+   * @param selector the selector for the BPMN element
+   * @param variableName the variable name
+   * @param expectedValue the expected value to compare against
+   * @return the assertion object
+   * @see ElementSelectors
+   */
+  ProcessInstanceAssert hasLocalVariableSimilarTo(
+      ElementSelector selector, String variableName, String expectedValue);
 }

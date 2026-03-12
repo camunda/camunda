@@ -1,0 +1,4 @@
+io.camunda.process.test.impl.similarity.OpenAiEmbeddingModelAdapterProvider
+io.camunda.process.test.impl.similarity.OpenAiCompatibleEmbeddingModelAdapterProvider
+io.camunda.process.test.impl.similarity.AzureOpenAiEmbeddingModelAdapterProvider
+io.camunda.process.test.impl.similarity.BedrockEmbeddingModelAdapterProvider

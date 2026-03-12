@@ -20,6 +20,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
+import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
@@ -35,6 +36,7 @@ import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
+import io.camunda.process.test.impl.similarity.EmbeddingModelAdapterResolver;
 import io.camunda.process.test.impl.testCases.CamundaTestCaseRunner;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
@@ -118,6 +120,7 @@ public class CamundaProcessTestExtension
   private CamundaProcessTestResultCollector processTestResultCollector;
 
   private JudgeConfig judgeConfig;
+  private SemanticSimilarityConfig semanticSimilarityConfig;
 
   private JsonMapper jsonMapper;
   private io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
@@ -198,6 +201,7 @@ public class CamundaProcessTestExtension
     initializeJsonMapper(jsonMapper, zeebeJsonMapper);
     initializeJudgeConfig();
     initializeAssertions(runtimeBuilder);
+    initializeSemanticSimilarityConfig();
   }
 
   private CamundaManagementClient createManagementClient(
@@ -251,6 +255,28 @@ public class CamundaProcessTestExtension
   private void initializeAssertions(final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
     runtimeBuilder.getAssertionTimeout().ifPresent(CamundaAssert::setAssertionTimeout);
     runtimeBuilder.getAssertionInterval().ifPresent(CamundaAssert::setAssertionInterval);
+  }
+
+  private void initializeSemanticSimilarityConfig() {
+    if (semanticSimilarityConfig != null) {
+      CamundaAssert.setSemanticSimilarityConfig(semanticSimilarityConfig);
+      return;
+    }
+    if (CamundaAssert.getSemanticSimilarityConfig() != null) {
+      return;
+    }
+    if (!CamundaProcessTestRuntimeDefaults.SEMANTIC_SIMILARITY_PROPERTIES.hasProviderConfigured()) {
+      return;
+    }
+    EmbeddingModelAdapterResolver.resolve(
+            CamundaProcessTestRuntimeDefaults.SEMANTIC_SIMILARITY_PROPERTIES.toProviderConfig())
+        .map(
+            adapter ->
+                SemanticSimilarityConfig.of(
+                    adapter,
+                    CamundaProcessTestRuntimeDefaults.SEMANTIC_SIMILARITY_PROPERTIES
+                        .getThreshold()))
+        .ifPresent(CamundaAssert::setSemanticSimilarityConfig);
   }
 
   private boolean hasProcessTestExtension(final ExtensionContext context) {
@@ -446,6 +472,7 @@ public class CamundaProcessTestExtension
     }
 
     CamundaAssert.setJudgeConfig(null);
+    CamundaAssert.setSemanticSimilarityConfig(null);
 
     runtime.close();
   }
@@ -703,6 +730,18 @@ public class CamundaProcessTestExtension
    */
   public CamundaProcessTestExtension withJudgeConfig(final JudgeConfig judgeConfig) {
     this.judgeConfig = judgeConfig;
+    return this;
+  }
+
+  /**
+   * Configure the semantic similarity for semantic similarity assertions.
+   *
+   * @param semanticSimilarityConfig the semantic similarity configuration
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withSemanticSimilarityConfig(
+      final SemanticSimilarityConfig semanticSimilarityConfig) {
+    this.semanticSimilarityConfig = semanticSimilarityConfig;
     return this;
   }
 
