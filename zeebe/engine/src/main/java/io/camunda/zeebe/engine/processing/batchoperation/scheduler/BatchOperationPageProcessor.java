@@ -69,8 +69,14 @@ public class BatchOperationPageProcessor {
       final ItemPage page,
       final TaskResultBuilder taskResultBuilder) {
     final boolean appendedChunks = appendChunks(taskResultBuilder, batchOperationKey, page.items());
-    return new PageProcessingResult(
-        appendedChunks, page.endCursor(), page.items().size(), page.isLastPage());
+
+    if (!appendedChunks) {
+      return new PageProcessingResult.BufferFull(page.items().size());
+    }
+    if (page.isLastPage()) {
+      return new PageProcessingResult.Finished(page.endCursor(), page.items().size());
+    }
+    return new PageProcessingResult.Continue(page.endCursor(), page.items().size());
   }
 
   private boolean appendChunks(
@@ -130,6 +136,23 @@ public class BatchOperationPageProcessor {
         .setRootProcessInstanceKey(Optional.ofNullable(item.rootProcessInstanceKey()).orElse(-1L));
   }
 
-  public record PageProcessingResult(
-      boolean chunksAppended, String endCursor, int itemsProcessed, boolean isLastPage) {}
+  /**
+   * Represents the outcome of processing a page of batch operation items.
+   *
+   * <ul>
+   *   <li>{@link Continue} — chunks were appended, more pages remain
+   *   <li>{@link Finished} — chunks were appended and this was the last page
+   *   <li>{@link BufferFull} — chunks could not fit in the result buffer
+   * </ul>
+   */
+  public sealed interface PageProcessingResult {
+    /** Chunks were appended and more pages remain. */
+    record Continue(String endCursor, int itemsProcessed) implements PageProcessingResult {}
+
+    /** Chunks were appended and this was the last page. */
+    record Finished(String endCursor, int itemsProcessed) implements PageProcessingResult {}
+
+    /** Chunks could not fit in the result buffer. */
+    record BufferFull(int itemsProcessed) implements PageProcessingResult {}
+  }
 }

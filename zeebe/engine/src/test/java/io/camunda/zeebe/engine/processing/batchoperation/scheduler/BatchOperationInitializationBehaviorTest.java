@@ -93,7 +93,7 @@ class BatchOperationInitializationBehaviorTest {
     // given
     final var items = List.of(createItem(1L), createItem(2L));
     final var itemPage = new ItemPage(items, NEXT_SEARCH_CURSOR, 2L, true);
-    final var pageResult = new PageProcessingResult(true, NEXT_SEARCH_CURSOR, 2, true);
+    final var pageResult = new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 2);
 
     when(itemProvider.fetchItemPage(SEARCH_CURSOR, PAGE_SIZE)).thenReturn(itemPage);
     when(pageProcessor.processPage(batchOperation.getKey(), itemPage, taskResultBuilder))
@@ -123,11 +123,11 @@ class BatchOperationInitializationBehaviorTest {
     // given
     final var firstPageItems = List.of(createItem(1L), createItem(2L));
     final var firstPage = new ItemPage(firstPageItems, "cursor1", 4L, false);
-    final var firstPageResult = new PageProcessingResult(true, "cursor1", 2, false);
+    final var firstPageResult = new PageProcessingResult.Continue("cursor1", 2);
 
     final var secondPageItems = List.of(createItem(3L), createItem(4L));
     final var secondPage = new ItemPage(secondPageItems, "cursor2", 4L, true);
-    final var secondPageResult = new PageProcessingResult(true, "cursor2", 2, true);
+    final var secondPageResult = new PageProcessingResult.Finished("cursor2", 2);
 
     when(itemProvider.fetchItemPage(SEARCH_CURSOR, PAGE_SIZE)).thenReturn(firstPage);
     when(itemProvider.fetchItemPage("cursor1", PAGE_SIZE)).thenReturn(secondPage);
@@ -154,7 +154,7 @@ class BatchOperationInitializationBehaviorTest {
     // given
     final var items = List.of(createItem(1L), createItem(2L));
     final var itemPage = new ItemPage(items, NEXT_SEARCH_CURSOR, 2L, false);
-    final var pageResult = new PageProcessingResult(false, NEXT_SEARCH_CURSOR, 2, false);
+    final var pageResult = new PageProcessingResult.BufferFull(2);
 
     when(itemProvider.fetchItemPage(SEARCH_CURSOR, PAGE_SIZE)).thenReturn(itemPage);
     when(pageProcessor.processPage(batchOperation.getKey(), itemPage, taskResultBuilder))
@@ -180,11 +180,11 @@ class BatchOperationInitializationBehaviorTest {
     // given - First page succeeds, second page fails
     final var firstPageItems = List.of(createItem(1L), createItem(2L));
     final var firstPage = new ItemPage(firstPageItems, "cursor1", 4L, false);
-    final var firstPageResult = new PageProcessingResult(true, "cursor1", 2, false);
+    final var firstPageResult = new PageProcessingResult.Continue("cursor1", 2);
 
     final var secondPageItems = List.of(createItem(3L), createItem(4L));
     final var secondPage = new ItemPage(secondPageItems, "cursor2", 4L, false);
-    final var secondPageResult = new PageProcessingResult(false, "cursor2", 2, false);
+    final var secondPageResult = new PageProcessingResult.BufferFull(2);
 
     when(itemProvider.fetchItemPage(SEARCH_CURSOR, PAGE_SIZE)).thenReturn(firstPage);
     when(itemProvider.fetchItemPage("cursor1", PAGE_SIZE)).thenReturn(secondPage);
@@ -228,7 +228,7 @@ class BatchOperationInitializationBehaviorTest {
     // given - First page succeeds, second page throws exception
     final var firstPageItems = List.of(createItem(1L), createItem(2L));
     final var firstPage = new ItemPage(firstPageItems, "cursor1", 4L, false);
-    final var firstPageResult = new PageProcessingResult(true, "cursor1", 2, false);
+    final var firstPageResult = new PageProcessingResult.Continue("cursor1", 2);
 
     final var exception = new RuntimeException("Database connection failed");
 
@@ -269,7 +269,7 @@ class BatchOperationInitializationBehaviorTest {
   void shouldHandleEmptyPageSuccessfully() {
     // given
     final var emptyPage = new ItemPage(List.of(), NEXT_SEARCH_CURSOR, 0L, true);
-    final var pageResult = new PageProcessingResult(true, NEXT_SEARCH_CURSOR, 0, true);
+    final var pageResult = new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 0);
 
     when(itemProvider.fetchItemPage(SEARCH_CURSOR, PAGE_SIZE)).thenReturn(emptyPage);
     when(pageProcessor.processPage(batchOperation.getKey(), emptyPage, taskResultBuilder))
@@ -295,7 +295,7 @@ class BatchOperationInitializationBehaviorTest {
 
     final var items = List.of(createItem(1L), createItem(2L), createItem(3L));
     final var itemPage = new ItemPage(items, NEXT_SEARCH_CURSOR, 3L, true);
-    final var pageResult = new PageProcessingResult(true, NEXT_SEARCH_CURSOR, 3, true);
+    final var pageResult = new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 3);
 
     when(itemProvider.fetchItemPage(SEARCH_CURSOR, PAGE_SIZE)).thenReturn(itemPage);
     when(pageProcessor.processPage(batchOperation.getKey(), itemPage, taskResultBuilder))
@@ -314,7 +314,7 @@ class BatchOperationInitializationBehaviorTest {
     batchOperation.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
     final var items = List.of(createItem(10L), createItem(11L));
     final var itemPage = new ItemPage(items, NEXT_SEARCH_CURSOR, 2L, true);
-    final var pageResult = new PageProcessingResult(true, NEXT_SEARCH_CURSOR, 2, true);
+    final var pageResult = new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 2);
 
     when(itemProvider.fetchItemPage(SEARCH_CURSOR, PAGE_SIZE)).thenReturn(itemPage);
     when(pageProcessor.processPage(batchOperation.getKey(), itemPage, taskResultBuilder))
