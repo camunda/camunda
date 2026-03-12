@@ -17,6 +17,15 @@
           "message": 1
         }
       ]
+    },
+    {
+      "owner": "maven-failsafe-test",
+      "pattern": [
+        {
+          "regexp": "^\\s*\\[INFO\\]\\s+\\+--\\s+\\[XX\\]\\s+(?<message>.+)$",
+          "message": 1
+        }
+      ]
     }
   ]
 }
