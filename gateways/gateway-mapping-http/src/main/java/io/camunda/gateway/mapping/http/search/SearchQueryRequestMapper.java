@@ -182,6 +182,14 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.processDefinitionSearchQuery().build());
     }
+
+    // Validate isLatestVersion constraints
+    final var isLatestVersionValidation =
+        validateProcessDefinitionIsLatestVersionConstraints(request);
+    if (isLatestVersionValidation.isLeft()) {
+      return Either.left(isLatestVersionValidation.getLeft());
+    }
+
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
@@ -956,6 +964,56 @@ public final class SearchQueryRequestMapper {
 
   private static SearchQueryPage innerToSearchQueryPage(final LimitPagination requestedPage) {
     return SearchQueryPage.of((p) -> p.size(requestedPage.getLimit()));
+  }
+
+  private static Either<ProblemDetail, Void> validateProcessDefinitionIsLatestVersionConstraints(
+      final ProcessDefinitionSearchQuery request) {
+    final List<String> violations = new ArrayList<>();
+
+    // Check if isLatestVersion filter is set to true
+    final var filter = request.getFilter();
+    if (filter == null || filter.getIsLatestVersion() == null || !filter.getIsLatestVersion()) {
+      return Either.right(null);
+    }
+
+    // Validate pagination: only 'after' and 'limit' are allowed
+    final var page = request.getPage();
+    if (page != null) {
+      if (page instanceof CursorBackwardPagination) {
+        violations.add(
+            ERROR_MESSAGE_UNSUPPORTED_PAGINATION_WITH_IS_LATEST_VERSION.formatted("before"));
+      } else if (page instanceof OffsetPagination) {
+        violations.add(
+            ERROR_MESSAGE_UNSUPPORTED_PAGINATION_WITH_IS_LATEST_VERSION.formatted("from"));
+      }
+    }
+
+    // Validate sorting: only 'processDefinitionId' and 'tenantId' are allowed
+    final var sort = request.getSort();
+    if (sort != null && !sort.isEmpty()) {
+      for (final var sortRequest : sort) {
+        final var field = sortRequest.getField();
+        if (field != null
+            && field
+                != io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuerySortRequest
+                    .FieldEnum.PROCESS_DEFINITION_ID
+            && field
+                != io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuerySortRequest
+                    .FieldEnum.TENANT_ID) {
+          violations.add(
+              ERROR_MESSAGE_UNSUPPORTED_SORT_FIELD_WITH_IS_LATEST_VERSION.formatted(field));
+        }
+      }
+    }
+
+    if (!violations.isEmpty()) {
+      final var problem = RequestValidator.createProblemDetail(violations);
+      if (problem.isPresent()) {
+        return Either.left(problem.get());
+      }
+    }
+
+    return Either.right(null);
   }
 
   private static Either<List<String>, SearchQueryPage> toOffsetPagination(
