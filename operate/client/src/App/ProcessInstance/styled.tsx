@@ -16,6 +16,23 @@ const BottomPanel = styled.div<{$shouldExpandPanel?: boolean}>`
   height: 100%;
 `;
 
+const BottomPanelNew = styled.div`
+  height: 100%;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--cds-border-subtle-01);
+`;
+
+const BottomPanelStacked = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  border-top: 1px solid var(--cds-border-subtle-01);
+`;
+
 const ModificationFooter = styled.div`
   display: flex;
   justify-content: space-between;
@@ -28,4 +45,10 @@ const Buttons = styled(Stack)`
   margin-left: auto;
 `;
 
-export {BottomPanel, ModificationFooter, Buttons};
+export {
+  BottomPanel,
+  BottomPanelNew,
+  BottomPanelStacked,
+  ModificationFooter,
+  Buttons,
+};
