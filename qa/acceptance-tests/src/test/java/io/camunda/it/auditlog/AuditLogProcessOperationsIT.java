@@ -13,9 +13,11 @@ import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
 import static io.camunda.it.util.TestHelper.waitForDecisionsToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitForJobs;
+import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeCompleted;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreResolved;
+import static io.camunda.it.util.TestHelper.waitUntilJobExistsForProcessInstance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -69,6 +71,7 @@ public class AuditLogProcessOperationsIT {
   private static final String INCIDENT_PROCESS_ID = "incident_process_v1";
   private static final String SERVICE_TASKS_PROCESS_ID = "service_tasks_v1";
   private static final String DECISION_ID = "decision_1";
+  private static final String PROCESS_WITH_BUSINESS_RULE_TASK_ID = "business_rule_task_process";
   private static CamundaClient adminClient;
   private static AuditLogUtils utils;
 
@@ -86,7 +89,8 @@ public class AuditLogProcessOperationsIT {
                 "process/migration-process_v2.bpmn",
                 "process/service_tasks_v1.bpmn",
                 "process/incident_process_v1.bpmn",
-                "decisions/decision_model.dmn")
+                "decisions/decision_model.dmn",
+                "process/business_rule_task_process.bpmn")
             .map(
                 resource ->
                     adminClient
@@ -95,10 +99,9 @@ public class AuditLogProcessOperationsIT {
                         .tenantId(TENANT_A)
                         .send())
             .toList();
-
     deploymentFutures.forEach(CamundaFuture::join);
 
-    waitForProcessesToBeDeployed(adminClient, 4);
+    waitForProcessesToBeDeployed(adminClient, 5);
     waitForDecisionsToBeDeployed(adminClient, 1, 1);
 
     final var sharedInstance =
@@ -515,6 +518,49 @@ public class AuditLogProcessOperationsIT {
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = auditLogItems.getFirst();
     assertDecisionAuditLog(auditLog, AuditLogOperationTypeEnum.EVALUATE);
+  }
+
+  @Test
+  void shouldNotTrackDecisionEvaluationTriggeredByBusinessRuleTask(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given - start a process instance that evaluates the decision via a business rule task
+    final var processInstance =
+        createProcessInstance(
+            client, PROCESS_WITH_BUSINESS_RULE_TASK_ID, Map.of("age", 25, "income", 30000));
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
+
+    // when - the process completes (the BRT evaluates the decision internally)
+    waitUntilJobExistsForProcessInstance(client, processInstanceKey);
+    final var activateJobsResponse =
+        client
+            .newActivateJobsCommand()
+            .jobType("milestoneJob")
+            .maxJobsToActivate(1)
+            .tenantId(TENANT_A)
+            .send()
+            .join();
+    client.newCompleteCommand(activateJobsResponse.getJobs().getFirst()).send().join();
+    waitForProcessInstancesToBeCompleted(client, f -> f.processInstanceKey(processInstanceKey), 1);
+
+    // then - assert that no DECISION audit log entries exist for this process instance
+    final var auditLogs =
+        client
+            .newAuditLogSearchRequest()
+            .filter(
+                f ->
+                    f.entityType(
+                            filter ->
+                                filter.in(
+                                    AuditLogEntityTypeEnum.DECISION, AuditLogEntityTypeEnum.JOB))
+                        .processInstanceKey(String.valueOf(processInstanceKey)))
+            .send()
+            .join()
+            .items();
+    // We expect only a JOB audit log for the service task, but no DECISION audit log
+    // since the evaluation is triggered by a BRT internally before the job is completed.
+    assertThat(auditLogs).hasSize(1);
+    final var auditLog = auditLogs.getFirst();
+    assertThat(auditLog.getEntityType()).isEqualTo(AuditLogEntityTypeEnum.JOB);
   }
 
   // ========================================================================================
