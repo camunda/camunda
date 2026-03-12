@@ -8,6 +8,8 @@ Starting with Camunda 8.8, the webapps that were previously standalone and indep
 
 Despite these apps being part of the single application after the merging together of codebases, they originally still consumed their configurations independently. This was unintuitive and misleading, or in some more critical cases, dangerous.
 
+With the Unified Configuration system, we replaced the previous configuration properties with a new set of properties that do not have redundancy across the webapps and that are consistent in naming and types.
+
 ## Features
 
 ### Unification
@@ -31,17 +33,13 @@ camunda.database.url
 ```
 Moreover, repeated configuration was not easy to explain within the context of a single application for contributors and users. A User (or contributor) might understandably assume that by configuring `camunda.database.url` the URL was sufficiently configured. In reality, Tasklist and Operate would still be consuming the _old_ properties, respectively.
 
-### Naming conventions
+### Conventions
 
 While the situation demonstrated above was the main concern of the legacy configuration system, other aspects of the configuration needed to be curated for a better User experience, such as:
 * Making property names reference functional aspects of the application, rather than specific webapps/components, to resemble more correctly the single application.
 * Formalising kebab-style casing for all application properties, rather than maintaining the previously used lowerCamelCase.
 * Improving documentation for contributors and customers
-
-### Development and maintainability
-
-In addition to a poor User experience, the legacy system had also problems at development time:
-* lack of a central configuration system sometimes resulted in difficulties when Engineers needed the name of a given property
+* Discoverability of available properties was difficult when working with the codebase
 
 ### Units of measurements
 
