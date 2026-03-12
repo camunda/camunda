@@ -69,7 +69,7 @@ components:
       type: string
       minLength: 1
       maxLength: 100
-      pattern: ^[\p{L}][\p{L}\p{N}_\-:.]{0,99}$
+      pattern: ^[A-Za-z][A-Za-z0-9_\-:.]{0,99}$
 
     TagSet:
       description: List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.
