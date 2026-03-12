@@ -6,14 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {styled} from 'styled-components';
+import styled from 'styled-components';
 
-const Container = styled.div`
+const Container = styled.section`
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
   overflow: hidden;
-  background-color: var(--cds-layer);
+  padding-top: var(--cds-spacing-05);
 `;
 
 export {Container};
