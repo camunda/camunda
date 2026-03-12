@@ -19,51 +19,8 @@ defaults:
     shell: bash
 
 jobs:
-  build:
-    name: "Build Camunda distribution"
-    runs-on: gcp-perf-core-16-default
-    permissions:
-      contents: read
-    timeout-minutes: 30
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v6
-
-      - uses: ./.github/actions/setup-build
-        with:
-          maven-cache-key-modifier: "api-tests-rdbms-build"
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-
-      - name: Build Camunda distribution
-        run: ./mvnw install -Dquickly -T1C -PskipFrontendBuild
-
-      - name: Extract distribution
-        run: |
-          mkdir -p dev-dist
-                    exploded="dist/target/camunda-zeebe"
-          if [ -d "$exploded/bin" ]; then
-            cp -a "$exploded"/. dev-dist/
-          else
-            tarball=$(find dist/target -maxdepth 1 -name 'camunda-zeebe-*.tar.gz' | head -1)
-            if [ -z "$tarball" ]; then
-              echo "ERROR: No dist build output found."
-              exit 1
-            fi
-            tar xzf "$tarball" --strip-components=1 -C dev-dist
-          fi
-
-      - name: Upload distribution artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: camunda-dist
-          path: dev-dist/
-          retention-days: 1
-
   rdbms-api-tests:
     name: "API Tests / ${{ matrix.database-name }}"
-    needs: build
     permissions:
       actions: write
       contents: read
@@ -77,31 +34,31 @@ jobs:
           - database-name: "Postgres 14"
             database-type: "postgres"
             database-image-version: "14-alpine"
-            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
+            jdbc-url: "jdbc:postgresql:camunda"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
           - database-name: "Postgres 15"
             database-type: "postgres"
             database-image-version: "15-alpine"
-            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
+            jdbc-url: "jdbc:postgresql:camunda"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
           - database-name: "Postgres 16"
             database-type: "postgres"
             database-image-version: "16-alpine"
-            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
+            jdbc-url: "jdbc:postgresql:camunda"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
           - database-name: "Postgres 17"
             database-type: "postgres"
             database-image-version: "17-alpine"
-            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
+            jdbc-url: "jdbc:postgresql:camunda"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
           - database-name: "Postgres 18"
             database-type: "postgres"
             database-image-version: "18-alpine"
-            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
+            jdbc-url: "jdbc:postgresql:camunda"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
           # MySQL - Supported version: 8.4
@@ -166,25 +123,18 @@ jobs:
       IMAGE_VERSION: ${{ matrix.database-image-version }}
     steps:
       - name: Resolve database container name
-        run: echo "DATABASE_CONTAINER=${{ matrix.database-type }}" >> "$GITHUB_ENV"
+        run: |
+          echo "DATABASE_CONTAINER=${{ matrix.database-type }}" >> "$GITHUB_ENV"
 
       - name: Checkout Code
         uses: actions/checkout@v6
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: ./.github/actions/setup-build
         with:
-          distribution: temurin
-          java-version: '21'
-
-      - name: Download distribution artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: camunda-dist
-          path: dev-dist/
-
-      - name: Restore distribution permissions
-        run: chmod +x dev-dist/bin/camunda
+          maven-cache-key-modifier: "api-tests-rdbms-${{ matrix.database-type }}"
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
       # ── Database ────────────────────────────────────────────────────────────
       - name: Start database service
@@ -194,65 +144,29 @@ jobs:
             exit 1
           }
 
-      - name: Wait for database readiness
+      # ── Build ───────────────────────────────────────────────────────────────
+      - name: Build Camunda distribution
+        run: ./mvnw install -Dquickly -T1C -PskipFrontendBuild
+
+      - name: Extract distribution
         run: |
-          case "${{ matrix.database-type }}" in
-            postgres) PORT=5432 ;;
-            mysql|mariadb) PORT=3306 ;;
-            mssql) PORT=1433 ;;
-            oracle*) PORT=1521 ;;
-          esac
-
-          echo "Waiting for DB on port $PORT..."
-
-          for i in {1..90}; do
-            if (echo > /dev/tcp/localhost/$PORT) >/dev/null 2>&1; then
-              echo "DB port open"
-              break
+          mkdir -p dev-dist
+          exploded="dist/target/camunda-zeebe"
+          if [ -d "$exploded/bin" ]; then
+            cp -a "$exploded"/. dev-dist/
+          else
+            tarball=$(find dist/target -maxdepth 1 -name 'camunda-zeebe-*.tar.gz' | head -1)
+            if [ -z "$tarball" ]; then
+              echo "ERROR: No dist build output found."
+              exit 1
             fi
-            echo "Attempt $i: DB not ready"
-            sleep 2
-          done
-
-          sleep 10
-
-      - name: Install JDBC driver
-        run: |
-          mkdir -p dev-dist/lib
-
-          case "${{ matrix.database-type }}" in
-            mysql)
-              echo "Installing MySQL driver"
-              curl -L -o dev-dist/lib/mysql-connector.jar \
-                https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.4.0/mysql-connector-j-8.4.0.jar
-              ;;
-
-            mariadb)
-              echo "Installing MariaDB driver"
-              curl -L -o dev-dist/lib/mariadb.jar \
-                https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/3.4.1/mariadb-java-client-3.4.1.jar
-              ;;
-
-            mssql)
-              echo "Installing SQL Server driver"
-              curl -L -o dev-dist/lib/mssql-jdbc.jar \
-                https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/12.6.3.jre11/mssql-jdbc-12.6.3.jre11.jar
-              ;;
-
-            oracle*)
-              echo "Installing Oracle driver"
-              curl -L -o dev-dist/lib/ojdbc11.jar \
-                https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc11/23.3.0.23.09/ojdbc11-23.3.0.23.09.jar
-              ;;
-
-            *)
-              echo "No JDBC driver mapping for ${{ matrix.database-type }}"
-              ;;
-          esac
+            tar xzf "$tarball" --strip-components=1 -C dev-dist
+          fi
 
       # ── Start Camunda wired to the matrix DB ────────────────────────────────
       - name: Start Camunda with ${{ matrix.database-name }}
         run: |
+          chmod +x dev-dist/bin/camunda
           export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin,operate,tasklist"
           export ZEEBE_CLOCK_CONTROLLED="true"
           export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI="false"
@@ -332,12 +246,14 @@ jobs:
           if [ -f dev-dist/camunda.pid ]; then
             pid=$(cat dev-dist/camunda.pid)
             kill "$pid" 2>/dev/null || true
-            for _ in $(seq 1 30); do
+            # Wait up to 30s for graceful shutdown, then force kill
+            for i in $(seq 1 30); do
               kill -0 "$pid" 2>/dev/null || break
               sleep 1
             done
             kill -9 "$pid" 2>/dev/null || true
           fi
+          # Always dump recent logs for observability
           tail -50 dev-dist/camunda.log 2>/dev/null || true
 
       - name: Stop database service
