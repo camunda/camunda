@@ -30,8 +30,7 @@ components:
       x-semantic-type: DecisionDefinitionId
       type: string
       minLength: 1
-      maxLength: 256
-      pattern: ^[\p{L}\p{N}_@.+-]+$
+      pattern: ^[\p{L}_][\p{L}\p{N}_\-\.]*$
       example: new-hire-onboarding-workflow
 
     GlobalListenerId:
