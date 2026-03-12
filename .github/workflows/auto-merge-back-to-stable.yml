@@ -92,6 +92,7 @@ jobs:
               sleep "$RETRY_DELAY"
             fi
           done
+      
       - name: Validate changes are version bumps only
         id: validate_changes
         run: |
@@ -104,7 +105,7 @@ jobs:
             echo "❌ Non-pom.xml files changed. Only version bumps allowed."
             exit 1
           fi
-          
+
           # Verify all changed pom.xml files are captured in POM_DIFF
           CHANGED_POM_COUNT=$(echo "$CHANGED_FILES" | grep -c 'pom\.xml$' || true)
           POM_DIFF_FILE_COUNT=$(echo "$POM_DIFF" | grep -c '^diff --git' || true)
@@ -118,14 +119,12 @@ jobs:
           # Check only version tags modified in pom.xml
           # Whitelist of allowed property changes in release PRs:
           # - <version>: Main project version (X.Y.Z-SNAPSHOT)
-          # - <dependency.zeebe.version>: Zeebe dependency version
           # - <backwards.compat.version>: Java API compatibility version
           # - <version.identity>: Identity component version (updated by automation)
           ALLOWED_PATTERNS=(
             '^\+\+\+'                              # Diff header
             '^---'                                 # Diff header
             '^[+-]\s*<version>'                    # Main version tag
-            '^[+-]\s*<dependency\.zeebe\.version>' # Zeebe dependency
             '^[+-]\s*<backwards\.compat\.version>' # Backwards compatibility version
             '^[+-]\s*<version\.identity>'          # Identity version
           )
@@ -160,26 +159,7 @@ jobs:
               exit 1
             }
             echo "✅ Version: $OLD_VER → $NEW_VER"
-          fi
-          
-          # Validate dependency.zeebe.version increment: X.Y.Z → X.Y.(Z+1)
-          OLD_ZEEBE=$( (echo "$POM_DIFF" | grep -E '^-\s*<dependency\.zeebe\.version>' | sed -E 's/.*>([^<]+)<.*/\1/') 2>/dev/null || true)
-          NEW_ZEEBE=$( (echo "$POM_DIFF" | grep -E '^\+\s*<dependency\.zeebe\.version>' | sed -E 's/.*>([^<]+)<.*/\1/') 2>/dev/null || true)
-          
-          if [[ -n "$OLD_ZEEBE" && -n "$NEW_ZEEBE" ]]; then
-            [[ "$OLD_ZEEBE" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]] || { echo "❌ Invalid old Zeebe version: $OLD_ZEEBE"; exit 1; }
-            OLD_MAJ="${BASH_REMATCH[1]}" OLD_MIN="${BASH_REMATCH[2]}" OLD_PAT="${BASH_REMATCH[3]}"
-            
-            [[ "$NEW_ZEEBE" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]] || { echo "❌ Invalid new Zeebe version: $NEW_ZEEBE"; exit 1; }
-            NEW_MAJ="${BASH_REMATCH[1]}" NEW_MIN="${BASH_REMATCH[2]}" NEW_PAT="${BASH_REMATCH[3]}"
-            
-            [[ "$NEW_MAJ" == "$OLD_MAJ" && "$NEW_MIN" == "$OLD_MIN" && "$NEW_PAT" == $((OLD_PAT + 1)) ]] || {
-              echo "❌ Expected Zeebe ${OLD_MAJ}.${OLD_MIN}.$((OLD_PAT + 1)), got $NEW_ZEEBE"
-              exit 1
-            }
-            echo "✅ Zeebe dependency: $OLD_ZEEBE → $NEW_ZEEBE"
-          fi
-      
+          fi      
       - name: Get required status checks from rulesets targeting base branch
         id: get_required_checks
         run: |
@@ -235,19 +215,71 @@ jobs:
             echo "Required checks for $BASE_BRANCH: $CHECKS_PATTERN"
             echo "checks_pattern=$CHECKS_PATTERN" >> "$GITHUB_OUTPUT"
           fi
-      
-      - name: Wait for required checks
+
+      - name: Wait for required checks to pass
         id: wait_checks
         if: steps.get_required_checks.outputs.checks_pattern != ''
-        # Using lewagon/wait-on-check-action - approved in https://github.com/camunda/github-actions-recipes
-        uses: lewagon/wait-on-check-action@v1.4.1
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 30
-          running-workflow-name: 'Auto-merge release to stable'
-          check-regexp: '${{ steps.get_required_checks.outputs.checks_pattern }}'
-          allowed-conclusions: success
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+          CHECKS_PATTERN: ${{ steps.get_required_checks.outputs.checks_pattern }}
+        run: |
+          TIMEOUT_MINUTES=30
+          POLL_INTERVAL=30
+          MAX_WAIT=$((TIMEOUT_MINUTES * 60))
+          ELAPSED=0
+
+          IFS='|' read -ra REQUIRED_CHECKS <<< "$CHECKS_PATTERN"
+          echo "Waiting for required checks: ${REQUIRED_CHECKS[*]}"
+          echo "Timeout: ${TIMEOUT_MINUTES}m, poll interval: ${POLL_INTERVAL}s"
+          echo ""
+
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            # filter=all includes re-runs so we always see the most recent attempt
+            RUNS_JSON=$(gh api "repos/${{ github.repository }}/commits/${SHA}/check-runs?filter=all&per_page=100" \
+              --paginate --jq '.check_runs[] | {name: .name, id: .id, status: .status, conclusion: .conclusion}' \
+              | jq -s '.')
+
+            ALL_PASSED=true
+            for CHECK in "${REQUIRED_CHECKS[@]}"; do
+              # Pick the run with the highest id (most recent, handles re-runs)
+              LATEST=$(echo "$RUNS_JSON" | jq -r --arg name "$CHECK" \
+                '[.[] | select(.name == $name)] | sort_by(.id) | last // empty')
+
+              if [ -z "$LATEST" ] || [ "$LATEST" = "null" ]; then
+                echo "⏳ [$CHECK] not yet registered"
+                ALL_PASSED=false
+                continue
+              fi
+
+              STATUS=$(echo "$LATEST" | jq -r '.status')
+              CONCLUSION=$(echo "$LATEST" | jq -r '.conclusion // "pending"')
+
+              if [ "$STATUS" != "completed" ]; then
+                echo "⏳ [$CHECK] $STATUS"
+                ALL_PASSED=false
+              elif [ "$CONCLUSION" = "success" ]; then
+                echo "✅ [$CHECK] passed"
+              else
+                echo "❌ [$CHECK] failed (conclusion: $CONCLUSION)"
+                exit 1
+              fi
+            done
+
+            if [ "$ALL_PASSED" = true ]; then
+              echo ""
+              echo "✅ All required checks passed"
+              exit 0
+            fi
+
+            ELAPSED=$((ELAPSED + POLL_INTERVAL))
+            if [ $ELAPSED -ge $MAX_WAIT ]; then
+              echo ""
+              echo "❌ Timed out waiting for checks after ${TIMEOUT_MINUTES} minutes"
+              exit 1
+            fi
+            echo "--- Waiting ${POLL_INTERVAL}s (${ELAPSED}s/${MAX_WAIT}s) ---"
+            sleep "$POLL_INTERVAL"
+          done
       
       - name: Approve PR
         # Proceed when checks pass OR when no required checks configured (skipped outcome)
