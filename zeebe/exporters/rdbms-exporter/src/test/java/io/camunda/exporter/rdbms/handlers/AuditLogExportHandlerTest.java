@@ -130,7 +130,6 @@ class AuditLogExportHandlerTest {
                 java.time.OffsetDateTime.ofInstant(
                     java.time.Instant.ofEpochMilli(record.getTimestamp()),
                     java.time.ZoneOffset.UTC))
-            .setAnnotation("test annotation")
             .setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.SUCCESS)
             .setProcessDefinitionId("process-def-id")
             .setProcessDefinitionKey(456L)
@@ -188,7 +187,6 @@ class AuditLogExportHandlerTest {
         .isEqualTo(
             java.time.OffsetDateTime.ofInstant(
                 java.time.Instant.ofEpochMilli(record.getTimestamp()), java.time.ZoneOffset.UTC));
-    assertThat(entity.annotation()).isEqualTo("test annotation");
     assertThat(entity.result())
         .isEqualTo(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.SUCCESS);
     assertThat(entity.processDefinitionId()).isEqualTo("process-def-id");
@@ -242,7 +240,6 @@ class AuditLogExportHandlerTest {
                 java.time.OffsetDateTime.ofInstant(
                     java.time.Instant.ofEpochMilli(record.getTimestamp()),
                     java.time.ZoneOffset.UTC))
-            .setAnnotation("test annotation")
             .setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.SUCCESS)
             .setProcessDefinitionId("process-def-id")
             .setProcessDefinitionKey(456L)
