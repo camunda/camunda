@@ -38,7 +38,7 @@ class AuditLogConfigurationTest {
   }
 
   @Test
-  void shouldHaveDefaultUserAndClientConfigurations() {
+  void shouldHaveDefaultConfigurations() {
     final var config = new AuditLogConfiguration();
 
     assertThat(config.getUser()).isNotNull();
