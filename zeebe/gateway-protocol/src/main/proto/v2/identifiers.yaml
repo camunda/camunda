@@ -7,7 +7,7 @@ components:
       type: string
       x-semantic-type: ProcessDefinitionId
       minLength: 1
-      pattern: ^[a-zA-Z_][a-zA-Z0-9_\-\.]*$
+      pattern: ^[\p{L}_][\p{L}\p{N}_\-\.]*$
       example: new-account-onboarding-workflow
 
     ElementId:
@@ -31,7 +31,7 @@ components:
       type: string
       minLength: 1
       maxLength: 256
-      pattern: ^[A-Za-z0-9_@.+-]+$
+      pattern: ^[\p{L}\p{N}_@.+-]+$
       example: new-hire-onboarding-workflow
 
     GlobalListenerId:
@@ -69,7 +69,7 @@ components:
       type: string
       minLength: 1
       maxLength: 100
-      pattern: ^[A-Za-z][A-Za-z0-9_\-:.]{0,99}$
+      pattern: ^[\p{L}][\p{L}\p{N}_\-:.]{0,99}$
 
     TagSet:
       description: List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.

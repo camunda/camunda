@@ -3162,7 +3162,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "type":"about:blank",
                 "title":"INVALID_ARGUMENT",
                 "status":400,
-                "detail":"The provided processDefinitionId contains illegal characters. It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\\\-.]*$'.",
+                "detail":"The provided processDefinitionId contains illegal characters. It must match the pattern '^[\\\\p{L}_][\\\\p{L}\\\\p{N}_\\\\-.]*$'.",
                 "instance":"/v2/process-instances"
              }""";
 
