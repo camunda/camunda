@@ -62,6 +62,11 @@ orchestration:
         camunda.data.secondary-storage.rdbms.history.default-history-ttl: PT1H
         camunda.data.secondary-storage.rdbms.history.min-history-cleanup-interval: PT1S
         camunda.data.secondary-storage.rdbms.history.max-history-cleanup-interval: PT1M
+    # This file is loaded after application.yml (higher priority). It is empty by default,
+    # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
+    # like disabling consistency checks without duplicating the full application.yml content.
+    - file: application-override.yml
+      content: "# no overrides"
 
 ########################################################################################
 ################################################### Disable ElasticSearch for RDBMS
