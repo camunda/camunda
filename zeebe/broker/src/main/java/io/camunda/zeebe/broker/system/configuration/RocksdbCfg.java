@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import static io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.DEFAULT_ROCKSDB_MEMORY_ALLOCATION_STRATEGY;
+
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
@@ -29,7 +31,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
   private int ioRateBytesPerSecond = RocksDbConfiguration.DEFAULT_IO_RATE_BYTES_PER_SECOND;
   private boolean disableWal = RocksDbConfiguration.DEFAULT_WAL_DISABLED;
   private boolean enableSstPartitioning = RocksDbConfiguration.DEFAULT_SST_PARTITIONING_ENABLED;
-  private MemoryAllocationStrategy memoryAllocationStrategy = MemoryAllocationStrategy.FRACTION;
+  private MemoryAllocationStrategy memoryAllocationStrategy =
+      DEFAULT_ROCKSDB_MEMORY_ALLOCATION_STRATEGY;
   private double memoryFraction = 0.1;
   private double maxMemoryFraction = -1;
 
