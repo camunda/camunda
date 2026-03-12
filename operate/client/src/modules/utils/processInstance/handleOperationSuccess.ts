@@ -13,6 +13,7 @@ import {tracking} from 'modules/tracking';
 import {Locations} from 'modules/Routes';
 import {queryKeys} from 'modules/queries/queryKeys';
 import type {OperationEntityType} from 'modules/types/operate';
+import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
 
 type HandleOperationSuccessOptions = {
   operationType: OperationEntityType;
@@ -55,8 +56,32 @@ function useHandleOperationSuccess() {
       }
 
       notificationsStore.displayNotification({
-        kind: 'success',
+        kind: 'info',
         title: 'Instance is scheduled for deletion',
+        isDismissable: true,
+      });
+    }
+
+    if (
+      IS_NEW_PROCESS_INSTANCE_PAGE &&
+      operationType === 'CANCEL_PROCESS_INSTANCE' &&
+      source === 'instance-header'
+    ) {
+      notificationsStore.displayNotification({
+        kind: 'info',
+        title: 'Instance is scheduled for cancellation',
+        isDismissable: true,
+      });
+    }
+
+    if (
+      IS_NEW_PROCESS_INSTANCE_PAGE &&
+      operationType === 'RESOLVE_INCIDENT' &&
+      source === 'instance-header'
+    ) {
+      notificationsStore.displayNotification({
+        kind: 'info',
+        title: 'Incidents are scheduled for retry',
         isDismissable: true,
       });
     }
