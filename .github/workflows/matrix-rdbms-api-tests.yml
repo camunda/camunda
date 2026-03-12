@@ -187,6 +187,40 @@ jobs:
             exit 1
           }
 
+      - name: Install JDBC driver
+        run: |
+          mkdir -p dev-dist/lib
+
+          case "${{ matrix.database-type }}" in
+            mysql)
+              echo "Installing MySQL driver"
+              curl -L -o dev-dist/lib/mysql-connector.jar \
+                https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.4.0/mysql-connector-j-8.4.0.jar
+              ;;
+
+            mariadb)
+              echo "Installing MariaDB driver"
+              curl -L -o dev-dist/lib/mariadb.jar \
+                https://repo1.maven.org/maven2/org/mariadb/jdbc/mariadb-java-client/3.4.1/mariadb-java-client-3.4.1.jar
+              ;;
+
+            mssql)
+              echo "Installing SQL Server driver"
+              curl -L -o dev-dist/lib/mssql-jdbc.jar \
+                https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/12.6.3.jre11/mssql-jdbc-12.6.3.jre11.jar
+              ;;
+
+            oracle*)
+              echo "Installing Oracle driver"
+              curl -L -o dev-dist/lib/ojdbc11.jar \
+                https://repo1.maven.org/maven2/com/oracle/database/jdbc/ojdbc11/23.3.0.23.09/ojdbc11-23.3.0.23.09.jar
+              ;;
+
+            *)
+              echo "No JDBC driver mapping for ${{ matrix.database-type }}"
+              ;;
+          esac
+
       # ── Start Camunda wired to the matrix DB ────────────────────────────────
       - name: Start Camunda with ${{ matrix.database-name }}
         run: |
