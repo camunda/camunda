@@ -10,7 +10,6 @@ import type {UseInfiniteQueryResult} from '@tanstack/react-query';
 import {useCallback} from 'react';
 
 const ROW_HEIGHT = 64;
-const DEFAULT_PAGE_SIZE = 50;
 
 type PaginatedResult = Pick<
   UseInfiniteQueryResult,
@@ -24,7 +23,7 @@ type PaginatedResult = Pick<
 
 function useDashboardScrollPagination(
   queryResult: PaginatedResult,
-  pageSize: number = DEFAULT_PAGE_SIZE,
+  pageSize: number,
 ) {
   const {
     hasPreviousPage,
