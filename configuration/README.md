@@ -1,5 +1,3 @@
-[TOC]
-
 # Unified Configuration System
 
 This Spring module implements the component used by the Camunda Orchestration Cluster to manage and consume the configuration.
@@ -55,7 +53,7 @@ When developing the Unified Configuration System, we also doubled down on cohere
 
 The backwards compatibility feature makes it possible to keep using the legacy properties, when possible. This way, a User is not necessarily required to change their configuration, or at least to change it entirely.
 
-When a legacy property exists, there are 3 possible types of backwards compatibility between the it and the unified new property, even though the application is currently using only 2 of them:
+When a legacy property exists, there are 3 possible types of backwards compatibility between it and the unified new property, even though the application is currently using only 2 of them:
 
 * backwards compatibility **SUPPORTED**
 * backwards compatibility **SUPPORTED ONLY WITH MATCHING VALUES**
@@ -65,7 +63,7 @@ When a legacy property exists, there are 3 possible types of backwards compatibi
 
 In the [public documentation](https://docs.camunda.io/docs/next/self-managed/components/orchestration-cluster/core-settings/configuration/configuration-mapping/#about-unified-configuration-property-changes), this is often referred to as "direct mapping", meaning that there is a 1:1 association between the new unified property and the legacy property. This also implies that there only is 1 legacy property.
 
-When backwards compability is supported, a legacy property can be used instead of the unified property. The configuration would work as expected and only a warning would be print in the log, suggesting that the legacy property should be replaced by the new unified property. An example would be the following:
+When backwards compatibility is supported, a legacy property can be used instead of the unified property. The configuration would work as expected and only a warning would be print in the log, suggesting that the legacy property should be replaced by the new unified property. An example would be the following:
 
 The legacy configuration:
 ```
@@ -104,11 +102,11 @@ Even though the legacy property is defined, as its value is equal to the one def
 
 #### Not supported
 
-This is not used anywhere in the application and it is currently reseverd for the future (i.e., for when a property is deprecated and no longer allowed to be used). If a property is not supported, its definition in the config set would cause the application to stop with an error print in the log.
+This is not used anywhere in the application and it is currently reserved for the future (i.e., for when a property is deprecated and no longer allowed to be used). If a property is not supported, its definition in the config set would cause the application to stop with an error printed in the log.
 
 ## How it works and its limitations
 
-To understand how the configuration system works, it is necessary to have context about the architecture it was build upon.
+To understand how the configuration system works, it is necessary to have context about the architecture it was built upon.
 
 For technical reasons (see sub-sections below), we couldn't remove the whole system and replace it with the new, unified configuration system. The system currently works by taking values from the unified configuration and propagating them into the legacy variables. This way the consumers of the config are still reading the legacy variables. For example, the unified configuration `camunda.data.secondary-storage.elasticsearch.url` will override the following legacy properties:
 
@@ -128,7 +126,7 @@ With this propagation system, we can achieve different things:
 
 We can understand how the system works by using the example of the URL mentioned above.
 
-* The unified configuration is `camunda.data.secondary-storage.elasticsearch.url`, and one of the selling point of the new system was that such configuration variable has to be static. This means that, in the `configuration` spring-boot module, we can start by locating the file `Camunda.java`. From there, we can navigate through `Data.java` -> `SecondaryStorage.java` -> `Elasticsearch.java` -> `DocumentBasedSecondaryStorageDatabase.java`, where we finally find the getter `getUrl()`.
+* The unified configuration is `camunda.data.secondary-storage.elasticsearch.url`, and one of the selling points of the new system was that such configuration variable has to be static. This means that, in the `configuration` spring-boot module, we can start by locating the file `Camunda.java`. From there, we can navigate through `Data.java` -> `SecondaryStorage.java` -> `Elasticsearch.java` -> `DocumentBasedSecondaryStorageDatabase.java`, where we finally find the getter `getUrl()`.
 
 * The getter performs the validations that are needed for the specific field (we have some for the ES and OS URL) as well as the backwards compatibility checks (they happen through the method `UnifiedConfigurationHelper.validateLegacyConfiguration(...)`). This completes the declarative part of the new unified property.
 
@@ -163,14 +161,14 @@ String url = unifiedConfiguration.getCamunda().getData()
 While this currently remains an objective for the Unified Configuration system to achieve, at the moment of the implementation it was not feasible. To achieve feasibility, the following refactoring work would be needed:
 
   * the legacy configuration objects and variables are removed from the webapps
-  * with such partial achieved, the `configuration` module can become independent of the webapps (i.e., it doesn't have to propagate values into `TasklistProperties`, `OperateProperties` and/or the likes)
+  * once this partial refactoring is achieved, the `configuration` module can become independent of the webapps (i.e., it doesn't have to propagate values into `TasklistProperties`, `OperateProperties` and/or the likes)
   * therefore, the webapps can consume the new `configuration` module, without creating circular dependency problems
 
 At the moment of the project realization, such work was evaluated to require too much development time, for the speed we wanted.
 
 It is worth noticing that all of these changes would need to happen not only in the consumers, but also in all of the tests.
 
-An alternative solution would be to declare interfaces to each consuming submodule, so that the `UnifiedConfiguration` bean could be retrieved into such intercaces by the webapps. This might simplify the refactoring work, but it would introduce some extra code, and refactoring would still be needed to go from the legacy objects to the new UC bean.
+An alternative solution would be to declare interfaces to each consuming submodule, so that the `UnifiedConfiguration` bean could be retrieved into such interfaces by the webapps. This might simplify the refactoring work, but it would introduce some extra code, and refactoring would still be needed to go from the legacy objects to the new UC bean.
 
 ## Impact
 
