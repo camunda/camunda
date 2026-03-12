@@ -208,7 +208,6 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
           .setChecksum(resourceDigest)
           .setResourceName(deploymentResource.getResourceNameBuffer())
           .setTenantId(tenantId);
-
       getOptionalVersionTag(process).ifPresent(processMetadata::setVersionTag);
       getOptionalProcessName(process).ifPresent(processMetadata::setProcessName);
 
