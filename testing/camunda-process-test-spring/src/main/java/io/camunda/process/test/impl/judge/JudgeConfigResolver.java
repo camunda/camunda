@@ -29,8 +29,8 @@ import org.springframework.context.ApplicationContext;
  * <p>Resolution order:
  *
  * <ol>
- *   <li>If exactly one {@link ChatModelAdapter} bean exists, use it.
- *   <li>If multiple beans exist and the provider property matches a bean name, use that bean.
+ *   <li>If exactly one {@link ChatModelAdapter} bean exists and no provider is configured, use it.
+ *   <li>If a provider is configured and a bean name matches, use that bean.
  *   <li>Otherwise, fall back to SPI-based resolution via {@link ChatModelAdapterResolver}.
  * </ol>
  */
@@ -80,12 +80,12 @@ public final class JudgeConfigResolver {
       return null;
     }
 
-    if (beans.size() == 1) {
+    // Single bean without provider configured: auto-select
+    if (beans.size() == 1 && !judgeConfiguration.hasProviderConfigured()) {
       return beans.values().iterator().next();
     }
 
-    // Multiple beans: match by bean name against provider property (case-sensitive, per Spring
-    // conventions)
+    // Provider configured: match by bean name (case-sensitive, per Spring conventions)
     if (judgeConfiguration.hasProviderConfigured()) {
       final String provider = judgeConfiguration.getChatModel().getProvider().trim();
       return beans.get(provider);
