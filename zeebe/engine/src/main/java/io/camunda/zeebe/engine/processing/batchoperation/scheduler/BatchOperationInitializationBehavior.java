@@ -101,29 +101,33 @@ public class BatchOperationInitializationBehavior {
     final var itemProvider = itemProviderFactory.fromBatchOperation(batchOperation);
     var context = InitializationContext.fromBatchOperation(batchOperation, queryPageSize);
 
-    while (true) {
-      final var result = pageProcessor.processNextPage(itemProvider, context, taskResultBuilder);
-
-      switch (result) {
-        case Continue(final var endCursor, final int itemsProcessed) ->
-            context = context.withNextPage(endCursor, itemsProcessed, true);
-        case Finished(final var endCursor, final int itemsProcessed) -> {
-          context = context.withNextPage(endCursor, itemsProcessed, true);
-          finishInitialization(batchOperation, taskResultBuilder);
-          startExecutionPhase(taskResultBuilder, context);
-          return new BatchOperationInitializationResult(batchOperation.getKey(), "finished");
-        }
-        case BufferFull(final int itemCount) -> {
-          return handleFailedChunkAppend(taskResultBuilder, context, itemCount);
-        }
-        case FetchFailed(final var cause) -> {
-          if (context.hasAppendedChunks()) {
-            continueInitialization(taskResultBuilder, context);
-          }
-          throw new BatchOperationInitializationException(cause, context.currentCursor());
-        }
-      }
+    var result = pageProcessor.processNextPage(itemProvider, context, taskResultBuilder);
+    while (result instanceof Continue(final var endCursor, final int itemsProcessed)) {
+      context = context.withNextPage(endCursor, itemsProcessed, true);
+      result = pageProcessor.processNextPage(itemProvider, context, taskResultBuilder);
     }
+
+    return switch (result) {
+      case Continue(final var endCursor, final int ignored) ->
+          throw new BatchOperationInitializationException(
+              "Unexpected Continue result after loop exit",
+              BatchOperationErrorType.UNKNOWN,
+              endCursor);
+      case Finished(final var endCursor, final int itemsProcessed) -> {
+        context = context.withNextPage(endCursor, itemsProcessed, true);
+        finishInitialization(batchOperation, taskResultBuilder);
+        startExecutionPhase(taskResultBuilder, context);
+        yield new BatchOperationInitializationResult(batchOperation.getKey(), "finished");
+      }
+      case BufferFull(final int itemCount) ->
+          handleFailedChunkAppend(taskResultBuilder, context, itemCount);
+      case FetchFailed(final var cause) -> {
+        if (context.hasAppendedChunks()) {
+          continueInitialization(taskResultBuilder, context);
+        }
+        throw new BatchOperationInitializationException(cause, context.currentCursor());
+      }
+    };
   }
 
   private BatchOperationInitializationResult handleFailedChunkAppend(
