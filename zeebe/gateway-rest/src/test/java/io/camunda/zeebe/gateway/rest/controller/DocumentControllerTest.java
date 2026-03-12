@@ -575,5 +575,388 @@ public class DocumentControllerTest extends RestControllerTest {
         .isEqualTo(content);
   }
 
+<<<<<<< HEAD
   // TODO: test error cases
+=======
+  @Test
+  void shouldYieldBadRequestWhenNoHashDocumentForGetDocument() {
+    // given
+    when(documentServices.getDocumentContent(any(), any(), any(), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapDocumentError(new DocumentHashMismatch("foo", null))));
+
+    // when/then
+    webClient
+        .get()
+        .uri(DOCUMENTS_BASE_URL + "/foo")
+        .accept(MediaType.APPLICATION_OCTET_STREAM)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "No document hash provided for document foo",
+                  "instance": "%s"
+                }
+                """
+                .formatted(DOCUMENTS_BASE_URL + "/foo"),
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldYieldBadRequestWhenWrongHashForGetDocument() {
+    // given
+    when(documentServices.getDocumentContent(any(), any(), any(), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapDocumentError(new DocumentHashMismatch("foo", "barbaz"))));
+
+    // when/then
+    webClient
+        .get()
+        .uri(DOCUMENTS_BASE_URL + "/foo")
+        .accept(MediaType.APPLICATION_OCTET_STREAM)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Document hash for document foo doesn't match the provided hash barbaz",
+                  "instance": "%s"
+                }
+                """
+                .formatted(DOCUMENTS_BASE_URL + "/foo"),
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectDocumentWithInvalidProcessDefinitionId() {
+    // given — a processDefinitionId starting with a digit is invalid per the
+    // BPMN identifier pattern ^[a-zA-Z_][a-zA-Z0-9_\-.]*$
+    final var content = new byte[] {1, 2, 3};
+    final var contentType = MediaType.APPLICATION_OCTET_STREAM;
+
+    final var metadata = new DocumentMetadata();
+    metadata.setFileName("file.txt");
+    metadata.setProcessDefinitionId("9invalid");
+
+    final var multipartBodyBuilder = new MultipartBodyBuilder();
+    multipartBodyBuilder.part("file", content).contentType(contentType).filename("file.txt");
+    multipartBodyBuilder.part("metadata", metadata).contentType(MediaType.APPLICATION_JSON);
+
+    // when/then
+    webClient
+        .post()
+        .uri(DOCUMENTS_BASE_URL)
+        .contentType(MediaType.MULTIPART_FORM_DATA)
+        .bodyValue(multipartBodyBuilder.build())
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo(
+            "The provided processDefinitionId contains illegal characters. "
+                + "It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\-.]*$'.");
+
+    verify(documentServices, never()).createDocument(any(), any());
+  }
+
+  @Test
+  void shouldReturnBadRequestWhenMetadataListLengthMismatch() throws Exception {
+    // given two files but only one metadataList entry
+    final var filename1 = "file.txt";
+    final var filename2 = "file2.txt";
+    final var contentType = MediaType.APPLICATION_OCTET_STREAM;
+    final var content1 = new byte[] {1, 2, 3};
+    final var content2 = new byte[] {4, 5};
+
+    final var multipartBodyBuilder = new MultipartBodyBuilder();
+    multipartBodyBuilder.part("files", content1).filename(filename1).contentType(contentType);
+    multipartBodyBuilder.part("files", content2).filename(filename2).contentType(contentType);
+
+    final var mapper = new ObjectMapper();
+    final var meta1 =
+        new DocumentMetadata().contentType(contentType.toString()).fileName(filename1);
+    // Provide single-element JSON array to simulate mismatch
+    multipartBodyBuilder
+        .part("metadataList", mapper.writeValueAsString(List.of(meta1)))
+        .contentType(MediaType.APPLICATION_JSON);
+
+    // when / then
+    webClient
+        .post()
+        .uri(DOCUMENTS_BASE_URL + "/batch")
+        .contentType(MediaType.MULTIPART_FORM_DATA)
+        .bodyValue(multipartBodyBuilder.build())
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo("metadataList length (1) does not match files length (2)");
+
+    // ensure service layer was not invoked
+    verify(documentServices, never()).createDocumentBatch(any(), any());
+  }
+
+  @Test
+  void shouldCreateDocumentsBatchWithMetadataList() throws Exception {
+    // given
+    final var filename1 = "file.txt";
+    final var filename2 = "file2.txt";
+    final var contentType = MediaType.APPLICATION_OCTET_STREAM;
+    final var content1 = new byte[] {1, 2, 3};
+    final var content2 = new byte[] {4, 5};
+    final var timestamp = OffsetDateTime.now();
+
+    final ArgumentCaptor<List<DocumentCreateRequest>> requestCaptor =
+        ArgumentCaptor.forClass(List.class);
+    final var ref =
+        new DocumentReferenceResponse(
+            "documentId",
+            "default",
+            "dummy_hash",
+            new DocumentMetadataModel(
+                contentType.toString(), filename1, timestamp, 0L, null, 123L, Map.of()));
+    when(documentServices.createDocumentBatch(any(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(List.of(Either.right(ref), Either.right(ref))));
+
+    final var multipartBodyBuilder = new MultipartBodyBuilder();
+    multipartBodyBuilder.part("files", content1).filename(filename1).contentType(contentType);
+    multipartBodyBuilder.part("files", content2).filename(filename2).contentType(contentType);
+
+    final var mapper = new ObjectMapper();
+    final var metadataList =
+        List.of(
+            new DocumentMetadata()
+                .contentType(contentType.toString())
+                .fileName(filename1)
+                .expiresAt(timestamp.toString())
+                .processInstanceKey("123"),
+            new DocumentMetadata()
+                .contentType(contentType.toString())
+                .fileName(filename2)
+                .expiresAt(timestamp.toString())
+                .processInstanceKey("123"));
+    multipartBodyBuilder
+        .part("metadataList", mapper.writeValueAsString(metadataList))
+        .contentType(MediaType.APPLICATION_JSON);
+
+    // when / then
+    webClient
+        .post()
+        .uri(DOCUMENTS_BASE_URL + "/batch")
+        .contentType(MediaType.MULTIPART_FORM_DATA)
+        .bodyValue(multipartBodyBuilder.build())
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isCreated();
+
+    verify(documentServices).createDocumentBatch(requestCaptor.capture(), any());
+    final var values = requestCaptor.getValue();
+    assertThat(values).hasSize(2);
+    assertThat(values)
+        .extracting(d -> d.metadata().processInstanceKey())
+        .containsExactly(123L, 123L);
+    assertThat(values)
+        .extracting(d -> d.metadata().fileName())
+        .containsExactlyInAnyOrder(filename1, filename2);
+  }
+
+  @Test
+  void shouldRejectWhenBothRequestMetadataListAndHeadersProvided() throws Exception {
+    // given
+    final var filename1 = "file.txt";
+    final var filename2 = "file2.txt";
+    final var contentType = MediaType.APPLICATION_OCTET_STREAM;
+    final var content1 = new byte[] {1, 2, 3};
+    final var content2 = new byte[] {4, 5};
+    final var timestamp = OffsetDateTime.now();
+
+    final ArgumentCaptor<List<DocumentCreateRequest>> requestCaptor =
+        ArgumentCaptor.forClass(List.class);
+    final var ref =
+        new DocumentReferenceResponse(
+            "documentId",
+            "default",
+            "dummy_hash",
+            new DocumentMetadataModel(
+                contentType.toString(), filename1, timestamp, 0L, null, 123L, Map.of()));
+    // Should not be invoked due to validation failure
+
+    final var mapper = new ObjectMapper();
+    final var multipartBodyBuilder = new MultipartBodyBuilder();
+
+    // Files with conflicting header metadata (processInstanceKey 999, different fileName hint)
+    multipartBodyBuilder
+        .part("files", content1)
+        .filename(filename1)
+        .contentType(contentType)
+        .header(
+            "X-Document-Metadata",
+            mapper.writeValueAsString(
+                new DocumentMetadata()
+                    .contentType(contentType.toString())
+                    .fileName("IGNORED-" + filename1)
+                    .processInstanceKey("999")));
+    multipartBodyBuilder
+        .part("files", content2)
+        .filename(filename2)
+        .contentType(contentType)
+        .header(
+            "X-Document-Metadata",
+            mapper.writeValueAsString(
+                new DocumentMetadata()
+                    .contentType(contentType.toString())
+                    .fileName("IGNORED-" + filename2)
+                    .processInstanceKey("999")));
+
+    // Preferred metadataList (processInstanceKey 123, original file names)
+    final var metadataList =
+        List.of(
+            new DocumentMetadata()
+                .contentType(contentType.toString())
+                .fileName(filename1)
+                .processInstanceKey("123"),
+            new DocumentMetadata()
+                .contentType(contentType.toString())
+                .fileName(filename2)
+                .processInstanceKey("123"));
+    multipartBodyBuilder
+        .part("metadataList", mapper.writeValueAsString(metadataList))
+        .contentType(MediaType.APPLICATION_JSON);
+
+    // when / then
+    webClient
+        .post()
+        .uri(DOCUMENTS_BASE_URL + "/batch")
+        .contentType(MediaType.MULTIPART_FORM_DATA)
+        .bodyValue(multipartBodyBuilder.build())
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo("Specify either metadataList part or X-Document-Metadata headers, but not both");
+
+    verify(documentServices, never()).createDocumentBatch(any(), any());
+  }
+
+  @Test
+  void shouldReturn207WithApplicationJsonWhenSomeDocumentsFail() throws Exception {
+    // given
+    final var filename1 = "file.txt";
+    final var filename2 = "file2.txt";
+    final var contentType = MediaType.APPLICATION_OCTET_STREAM;
+    final var content1 = new byte[] {1, 2, 3};
+    final var content2 = new byte[] {4, 5};
+    final var timestamp = OffsetDateTime.now();
+
+    final var successfulRef =
+        new DocumentReferenceResponse(
+            "documentId1",
+            "default",
+            "dummy_hash_1",
+            new DocumentMetadataModel(
+                contentType.toString(), filename1, timestamp, 0L, null, null, Map.of()));
+
+    final var failedError =
+        new DocumentServices.DocumentErrorResponse(
+            new DocumentServices.DocumentCreateRequest(
+                null,
+                null,
+                new ByteArrayInputStream(content2),
+                new DocumentMetadataModel(
+                    contentType.toString(),
+                    filename2,
+                    null,
+                    (long) content2.length,
+                    null,
+                    null,
+                    Map.of())),
+            ErrorMapper.mapDocumentError(new DocumentHashMismatch("doc2", "expected")));
+
+    when(documentServices.createDocumentBatch(any(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                List.of(Either.right(successfulRef), Either.left(failedError))));
+
+    final var mapper = new ObjectMapper();
+    final var multipartBodyBuilder = new MultipartBodyBuilder();
+    multipartBodyBuilder.part("files", content1).filename(filename1).contentType(contentType);
+    multipartBodyBuilder.part("files", content2).filename(filename2).contentType(contentType);
+
+    // when/then
+    webClient
+        .post()
+        .uri(DOCUMENTS_BASE_URL + "/batch")
+        .contentType(MediaType.MULTIPART_FORM_DATA)
+        .bodyValue(multipartBodyBuilder.build())
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(207)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .jsonPath("$.createdDocuments.length()")
+        .isEqualTo(1)
+        .jsonPath("$.failedDocuments.length()")
+        .isEqualTo(1);
+  }
+
+  @Test
+  void shouldRejectBatchDocumentWithInvalidProcessDefinitionId() throws Exception {
+    // given — a processDefinitionId starting with a digit is invalid per the
+    // BPMN identifier pattern ^[a-zA-Z_][a-zA-Z0-9_\-.]*$
+    final var content = new byte[] {1, 2, 3};
+    final var contentType = MediaType.APPLICATION_OCTET_STREAM;
+    final var mapper = new ObjectMapper();
+
+    final var metadata = new DocumentMetadata();
+    metadata.setFileName("file.txt");
+    metadata.setProcessDefinitionId("9invalid");
+
+    final var multipartBodyBuilder = new MultipartBodyBuilder();
+    multipartBodyBuilder.part("files", content).contentType(contentType).filename("file.txt");
+    multipartBodyBuilder
+        .part("metadataList", mapper.writeValueAsString(List.of(metadata)))
+        .contentType(MediaType.APPLICATION_JSON);
+
+    // when/then
+    webClient
+        .post()
+        .uri(DOCUMENTS_BASE_URL + "/batch")
+        .contentType(MediaType.MULTIPART_FORM_DATA)
+        .bodyValue(multipartBodyBuilder.build())
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo(
+            "The provided processDefinitionId contains illegal characters. "
+                + "It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\-.]*$'.");
+
+    verify(documentServices, never()).createDocumentBatch(any(), any());
+  }
+>>>>>>> d2189895 (fix: set application/json content-type for 207 responses)
 }
