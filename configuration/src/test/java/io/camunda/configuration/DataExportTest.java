@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import java.time.Duration;
+import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,6 +100,31 @@ public class DataExportTest {
     @Test
     void shouldSetSkipRecordsFromNew() {
       assertThat(brokerCfg.getExporting().skipRecords()).contains(10L, 20L);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.export.skip-records-for-partitions.1=10,20",
+        "camunda.data.export.skip-records-for-partitions.2=30",
+      })
+  class WithPerPartitionSkipRecordsSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithPerPartitionSkipRecordsSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetSkipRecordsForPartition1() {
+      assertThat(brokerCfg.getExporting().skipRecordsForPartitions())
+          .containsEntry(1, Set.of(10L, 20L));
+    }
+
+    @Test
+    void shouldSetSkipRecordsForPartition2() {
+      assertThat(brokerCfg.getExporting().skipRecordsForPartitions()).containsEntry(2, Set.of(30L));
     }
   }
 }
