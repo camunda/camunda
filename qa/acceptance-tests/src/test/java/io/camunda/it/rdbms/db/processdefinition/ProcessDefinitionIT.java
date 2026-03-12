@@ -138,6 +138,30 @@ public class ProcessDefinitionIT {
   }
 
   @TestTemplate
+  public void shouldStoreAndFindUTF8ProcessDefinitionName(
+      final CamundaRdbmsTestApplication testApplication) {
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final var processDefinitionReader = rdbmsService.getProcessDefinitionReader();
+
+    final var name = "カマンダ";
+
+    final var processDefinition = ProcessDefinitionFixtures.createRandomized(b -> b.name(name));
+    createAndSaveProcessDefinition(rdbmsWriter, processDefinition);
+
+    final var searchResult =
+        processDefinitionReader.search(
+            new ProcessDefinitionQuery(
+                new ProcessDefinitionFilter.Builder().names(name).build(),
+                ProcessDefinitionSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().stream().map(ProcessDefinitionEntity::name))
+        .containsExactly(name);
+  }
+
+  @TestTemplate
   public void shouldStoreLongUTF8ProcessDefinitionName(
       final CamundaRdbmsTestApplication testApplication) {
     final var rdbmsService = testApplication.getRdbmsService();

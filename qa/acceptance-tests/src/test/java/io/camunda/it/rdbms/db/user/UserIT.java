@@ -118,6 +118,26 @@ public class UserIT {
   }
 
   @TestTemplate
+  public void shouldFindByNameUTF8(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final UserDbReader userReader = rdbmsService.getUserReader();
+
+    final var username = "カムンダ ユーザー";
+    final var user = UserFixtures.createRandomized(b -> b.name(username));
+    createAndSaveUser(rdbmsWriters, user);
+
+    final var searchResult =
+        userReader.search(
+            new UserQuery(
+                new UserFilter.Builder().names(user.name()).build(),
+                UserSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResult.items()).extracting(UserEntity::name).containsExactly(username);
+  }
+
+  @TestTemplate
   public void shouldFindAuthorization(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
