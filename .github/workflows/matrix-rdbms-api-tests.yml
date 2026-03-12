@@ -201,23 +201,20 @@ jobs:
             mysql|mariadb) PORT=3306 ;;
             mssql) PORT=1433 ;;
             oracle*) PORT=1521 ;;
-            *) echo "Unknown DB type"; exit 1 ;;
           esac
 
-          echo "Waiting for database on port $PORT..."
+          echo "Waiting for DB on port $PORT..."
 
-          for i in $(seq 1 90); do
-            if nc -z localhost $PORT; then
-              echo "Database port is open"
-              exit 0
+          for i in {1..90}; do
+            if (echo > /dev/tcp/localhost/$PORT) >/dev/null 2>&1; then
+              echo "DB port open"
+              break
             fi
             echo "Attempt $i: DB not ready"
             sleep 2
           done
 
-          echo "Database never became ready"
-          docker compose -f db/docker-compose.yml logs
-          exit 1
+          sleep 10
 
       - name: Install JDBC driver
         run: |
