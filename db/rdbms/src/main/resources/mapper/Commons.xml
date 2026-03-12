@@ -113,7 +113,14 @@
         close=")">
         <foreach collection="keySet.entries" item="entry" open="(" separator=" AND "
           close=")">
-            ${entry.fieldName} ${entry.operator.symbol} #{entry.fieldValue}
+          <choose>
+            <when test="entry.fieldValue != null">
+              ${entry.fieldName} ${entry.operator.symbol} #{entry.fieldValue}
+            </when>
+            <otherwise>
+              ${entry.fieldName} ${entry.operator.symbol}
+            </otherwise>
+          </choose>
         </foreach>
       </foreach>
     </if>

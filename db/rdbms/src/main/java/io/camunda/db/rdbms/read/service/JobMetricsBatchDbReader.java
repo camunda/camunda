@@ -64,7 +64,7 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
 
   // Fixed sort: errorCode asc, errorMessage asc
   private static final JobErrorStatisticsSort JOB_ERROR_STATS_FIXED_SORT =
-      JobErrorStatisticsSort.of(b -> b.errorCode().asc());
+      JobErrorStatisticsSort.of(b -> b.errorCode().asc().errorMessage().asc());
 
   private final JobMetricsBatchMapper jobMetricsBatchMapper;
 
