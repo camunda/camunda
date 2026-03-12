@@ -363,6 +363,20 @@ func initialize(baseCommand string, baseDir string) *types.State {
 		}
 	}
 
+	if baseCommand == "start" && settings.Docker && settings.ResolvedConfigPath != "" {
+		dockerConfigFile, err := prepareDockerComposeConfig(baseDir, composeExtractedFolder, settings.ResolvedConfigPath)
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+		if dockerConfigFile != "" {
+			if err := os.Setenv("ORCHESTRATION_CONFIG_FILE", dockerConfigFile); err != nil {
+				fmt.Println("failed to set ORCHESTRATION_CONFIG_FILE: " + err.Error())
+				os.Exit(1)
+			}
+		}
+	}
+
 	err = validateKeystore(settings, baseDir)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -441,6 +455,52 @@ func applySecondaryStorageDefaults(baseDir string, settings *types.C8RunSettings
 		event = event.Str("config", configSource)
 	}
 	event.Msg("Secondary storage type is Elasticsearch; keeping default behavior")
+}
+
+func prepareDockerComposeConfig(baseDir, composeFolder, resolvedConfigPath string) (string, error) {
+	if strings.TrimSpace(composeFolder) == "" {
+		return "", fmt.Errorf("COMPOSE_EXTRACTED_FOLDER is not set; unable to prepare docker-compose configuration")
+	}
+	if resolvedConfigPath == "" {
+		return "", nil
+	}
+
+	configDir := filepath.Join(baseDir, composeFolder, "configuration")
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		return "", fmt.Errorf("failed to ensure docker-compose configuration directory: %w", err)
+	}
+
+	fileName := filepath.Base(resolvedConfigPath)
+	destPath := filepath.Join(configDir, fileName)
+
+	sameFile, err := filesAreSame(resolvedConfigPath, destPath)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return "", err
+	}
+
+	if !sameFile {
+		if err := copyFileEnsureDir(resolvedConfigPath, destPath); err != nil {
+			return "", fmt.Errorf("failed to copy configuration for docker-compose: %w", err)
+		}
+		log.Info().
+			Str("source", resolvedConfigPath).
+			Str("destination", destPath).
+			Msg("Copied configuration for docker-compose")
+	}
+
+	return fileName, nil
+}
+
+func filesAreSame(a, b string) (bool, error) {
+	aInfo, err := os.Stat(a)
+	if err != nil {
+		return false, err
+	}
+	bInfo, err := os.Stat(b)
+	if err != nil {
+		return false, err
+	}
+	return os.SameFile(aInfo, bInfo), nil
 }
 
 func resolveConfigPaths(baseDir string, userConfig string) []string {
@@ -649,6 +709,13 @@ func copyFile(src, dst string) error {
 		return err
 	}
 	return nil
+}
+
+func copyFileEnsureDir(src, dst string) error {
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return err
+	}
+	return copyFile(src, dst)
 }
 
 func main() {
