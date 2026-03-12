@@ -364,13 +364,11 @@ describe('InstanceHeader', () => {
     });
     await user.click(screen.getByRole('button', {name: /danger delete/i}));
 
-    await waitFor(() =>
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'success',
-        title: 'Instance is scheduled for deletion',
-        isDismissable: true,
-      }),
-    );
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'info',
+      title: 'Instance is scheduled for deletion',
+      isDismissable: true,
+    });
 
     await waitFor(() => {
       expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
