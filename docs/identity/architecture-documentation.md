@@ -560,8 +560,8 @@ Identity‑specific aspects:
 
 - Storage
   Identity entities are stored using:
-  - Primary storage: the Zeebe log (for durability and replay).
-  - Secondary storage: the configured search database (for query and admin UI).
+  - Primary storage: RocksDB.
+  - Secondary storage: the configured search database (ES/OS/RDBMS).
 
 - Self‑Managed deployments
   - Typically deployed on Kubernetes using the Camunda 8 Helm charts.
@@ -579,15 +579,17 @@ title: Identity - Deployment View
 ---
 flowchart TB
   subgraph OC_POD["Orchestration Cluster Pod (JAR / Container)"]
-    CAMUNDA_SERVICES["Camunda Services"]
+    CLUSTER_STUFF["Other Orchestration\nCluster Components"]
     IDENTITY["Identity\n(Authentication, Security, Engine Identity)"]
   end
 
   CLIENTS["Clients\n(Browser, Camunda Client, Worker, ...)"]
   IDP[("OIDC IdP")]
+  SECONDARY_DB[("Secondary Database\n(ES / OS / RDBMS)")]
 
   CLIENTS -->|"REST / gRPC / Browser"| OC_POD
   IDENTITY <-->|"OIDC / token validation"| IDP
+  IDENTITY <-->|"resource access"| SECONDARY_DB
 ```
 
 
