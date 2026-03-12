@@ -11,6 +11,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 public class RequestExecutor {
@@ -27,6 +28,7 @@ public class RequestExecutor {
                     .orElseGet(
                         () ->
                             ResponseEntity.status(responseStatus)
+                                .contentType(MediaType.APPLICATION_JSON)
                                 .body(resultMapper.apply(response))));
   }
 
@@ -43,7 +45,9 @@ public class RequestExecutor {
                     .orElseGet(
                         () -> {
                           final var body = resultMapper.apply(response);
-                          return ResponseEntity.status(responseStatusMapper.apply(body)).body(body);
+                          return ResponseEntity.status(responseStatusMapper.apply(body))
+                              .contentType(MediaType.APPLICATION_JSON)
+                              .body(body);
                         }));
   }
 
