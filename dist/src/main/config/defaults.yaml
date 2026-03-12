@@ -1207,6 +1207,9 @@ camunda: # Type: io.camunda.configuration.Camunda
       expiration-idle-millis: null # Type: Long, Env: CAMUNDA_REST_PROCESSCACHE_EXPIRATIONIDLEMILLIS
       max-size: null # Type: Integer, Env: CAMUNDA_REST_PROCESSCACHE_MAXSIZE
 
+    # Maximum allowed length for message names in REST requests.
+    max-name-field-length: 32768 # Type: Integer, Env: CAMUNDA_REST_MAXNAMEFIELDLENGTH
+
   security: # Type: io.camunda.configuration.Security
     transport-layer-security: # Type: io.camunda.configuration.Tls
       cluster: # Type: io.camunda.configuration.TlsCluster
