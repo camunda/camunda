@@ -18,6 +18,9 @@ package io.camunda.process.test.impl.runtime.properties;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.process.test.api.judge.BaseProviderConfig;
+import io.camunda.process.test.api.judge.ProviderConfig;
+import java.util.Map;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
 
@@ -87,6 +90,74 @@ public class JudgePropertiesTest {
     assertThatThrownBy(() -> new JudgeProperties(properties))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("judge.threshold must be between 0.0 and 1.0");
+  }
+
+  @Test
+  void shouldCreateTypedProviderConfigForKnownProvider() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.provider", "openai");
+    properties.setProperty("judge.chatModel.model", "gpt-4o");
+    properties.setProperty("judge.chatModel.apiKey", "test-key");
+
+    // when
+    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+
+    // then
+    assertThat(config).isInstanceOf(BaseProviderConfig.OpenAiConfig.class);
+    assertThat(config.getProvider()).isEqualTo("openai");
+    assertThat(config.getModel()).isEqualTo("gpt-4o");
+  }
+
+  @Test
+  void shouldCreateBaseProviderConfigForUnknownProvider() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.provider", "my-custom-llm");
+    properties.setProperty("judge.chatModel.model", "custom-model");
+
+    // when
+    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+
+    // then
+    assertThat(config).isExactlyInstanceOf(BaseProviderConfig.GenericConfig.class);
+    assertThat(config.getProvider()).isEqualTo("my-custom-llm");
+    assertThat(config.getModel()).isEqualTo("custom-model");
+    assertThat(((BaseProviderConfig.GenericConfig) config).getCustomProperties()).isEmpty();
+  }
+
+  @Test
+  void shouldPassCustomPropertiesToGenericConfig() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.provider", "my-custom-llm");
+    properties.setProperty("judge.chatModel.model", "custom-model");
+    properties.setProperty("judge.chatModel.customProperties.endpoint", "http://localhost:8080");
+    properties.setProperty("judge.chatModel.customProperties.temperature", "0.7");
+
+    // when
+    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+
+    // then
+    assertThat(config).isExactlyInstanceOf(BaseProviderConfig.GenericConfig.class);
+    final Map<String, String> customProps =
+        ((BaseProviderConfig.GenericConfig) config).getCustomProperties();
+    assertThat(customProps)
+        .containsEntry("endpoint", "http://localhost:8080")
+        .containsEntry("temperature", "0.7")
+        .hasSize(2);
+  }
+
+  @Test
+  void shouldReturnNullProviderConfigWhenNoProviderSet() {
+    // given
+    final Properties properties = new Properties();
+
+    // when
+    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+
+    // then
+    assertThat(config).isNull();
   }
 
   @Test

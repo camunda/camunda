@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.langchain4j.model.chat.ChatModel;
-import io.camunda.process.test.api.judge.ProviderConfig;
+import io.camunda.process.test.api.judge.BaseProviderConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -32,8 +32,8 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldBuildChatModelWithAccessKeyCredentials() {
     // given
-    final ProviderConfig.AmazonBedrockConfig config =
-        new ProviderConfig.AmazonBedrockConfig(
+    final BaseProviderConfig.AmazonBedrockConfig config =
+        new BaseProviderConfig.AmazonBedrockConfig(
             "anthropic.claude-3-5-sonnet-20241022-v2:0",
             "us-east-1",
             null,
@@ -50,8 +50,8 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldBuildChatModelWithApiKey() {
     // given
-    final ProviderConfig.AmazonBedrockConfig config =
-        new ProviderConfig.AmazonBedrockConfig(
+    final BaseProviderConfig.AmazonBedrockConfig config =
+        new BaseProviderConfig.AmazonBedrockConfig(
             "anthropic.claude-3-5-sonnet-20241022-v2:0", "us-east-1", "test-api-key", null, null);
 
     // when
@@ -64,8 +64,8 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldBuildChatModelWithDefaultCredentialChain() {
     // given — no explicit authentication, uses AWS default credential chain
-    final ProviderConfig.AmazonBedrockConfig config =
-        new ProviderConfig.AmazonBedrockConfig(
+    final BaseProviderConfig.AmazonBedrockConfig config =
+        new BaseProviderConfig.AmazonBedrockConfig(
             "anthropic.claude-3-5-sonnet-20241022-v2:0", "us-east-1", null, null, null);
 
     // when
@@ -82,8 +82,8 @@ class BedrockChatModelBuilderTest {
   @ValueSource(strings = {"  "})
   void shouldThrowWhenModelMissingOrBlank(final String model) {
     // given
-    final ProviderConfig.AmazonBedrockConfig config =
-        new ProviderConfig.AmazonBedrockConfig(
+    final BaseProviderConfig.AmazonBedrockConfig config =
+        new BaseProviderConfig.AmazonBedrockConfig(
             model, "us-east-1", null, "test-access-key", "test-secret-key");
 
     // when / then
@@ -99,8 +99,8 @@ class BedrockChatModelBuilderTest {
   @ValueSource(strings = {"", "  "})
   void shouldFallbackToDefaultCredentialChainWhenApiKeyBlank(final String apiKey) {
     // given — blank apiKey is treated as absent
-    final ProviderConfig.AmazonBedrockConfig config =
-        new ProviderConfig.AmazonBedrockConfig(
+    final BaseProviderConfig.AmazonBedrockConfig config =
+        new BaseProviderConfig.AmazonBedrockConfig(
             "anthropic.claude-3-5-sonnet-20241022-v2:0", "us-east-1", apiKey, null, null);
 
     // when
@@ -114,8 +114,8 @@ class BedrockChatModelBuilderTest {
   @ValueSource(strings = {"", "  "})
   void shouldFallbackToDefaultCredentialChainWhenBothKeysBlank(final String blankValue) {
     // given — both blank credentials are treated as absent
-    final ProviderConfig.AmazonBedrockConfig config =
-        new ProviderConfig.AmazonBedrockConfig(
+    final BaseProviderConfig.AmazonBedrockConfig config =
+        new BaseProviderConfig.AmazonBedrockConfig(
             "anthropic.claude-3-5-sonnet-20241022-v2:0", "us-east-1", null, blankValue, blankValue);
 
     // when
@@ -130,8 +130,8 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldThrowWhenBothAuthMethodsProvided() {
     // given — both accessKey/secretKey and apiKey are set
-    final ProviderConfig.AmazonBedrockConfig config =
-        new ProviderConfig.AmazonBedrockConfig(
+    final BaseProviderConfig.AmazonBedrockConfig config =
+        new BaseProviderConfig.AmazonBedrockConfig(
             "anthropic.claude-3-5-sonnet-20241022-v2:0",
             "us-east-1",
             "test-api-key",
@@ -147,8 +147,8 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldThrowWhenOnlyAccessKeyProvided() {
     // given — only accessKey without secretKey
-    final ProviderConfig.AmazonBedrockConfig config =
-        new ProviderConfig.AmazonBedrockConfig(
+    final BaseProviderConfig.AmazonBedrockConfig config =
+        new BaseProviderConfig.AmazonBedrockConfig(
             "anthropic.claude-3-5-sonnet-20241022-v2:0",
             "us-east-1",
             null,
@@ -165,8 +165,8 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldThrowWhenOnlySecretKeyProvided() {
     // given — only secretKey without accessKey
-    final ProviderConfig.AmazonBedrockConfig config =
-        new ProviderConfig.AmazonBedrockConfig(
+    final BaseProviderConfig.AmazonBedrockConfig config =
+        new BaseProviderConfig.AmazonBedrockConfig(
             "anthropic.claude-3-5-sonnet-20241022-v2:0",
             "us-east-1",
             null,
@@ -183,8 +183,8 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldThrowWhenAccessKeyBlankAndSecretKeySet() {
     // given — blank accessKey treated as absent, creating a partial key-pair
-    final ProviderConfig.AmazonBedrockConfig config =
-        new ProviderConfig.AmazonBedrockConfig(
+    final BaseProviderConfig.AmazonBedrockConfig config =
+        new BaseProviderConfig.AmazonBedrockConfig(
             "anthropic.claude-3-5-sonnet-20241022-v2:0",
             "us-east-1",
             null,
@@ -201,8 +201,8 @@ class BedrockChatModelBuilderTest {
   @Test
   void shouldThrowWhenSecretKeyBlankAndAccessKeySet() {
     // given — blank secretKey treated as absent, creating a partial key-pair
-    final ProviderConfig.AmazonBedrockConfig config =
-        new ProviderConfig.AmazonBedrockConfig(
+    final BaseProviderConfig.AmazonBedrockConfig config =
+        new BaseProviderConfig.AmazonBedrockConfig(
             "anthropic.claude-3-5-sonnet-20241022-v2:0", "us-east-1", null, "test-access-key", "");
 
     // when / then

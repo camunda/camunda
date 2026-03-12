@@ -19,12 +19,15 @@ import static io.camunda.process.test.api.judge.ProviderConfig.PROVIDER_AMAZON_B
 import static io.camunda.process.test.api.judge.ProviderConfig.PROVIDER_ANTHROPIC;
 import static io.camunda.process.test.api.judge.ProviderConfig.PROVIDER_OPENAI;
 import static io.camunda.process.test.api.judge.ProviderConfig.PROVIDER_OPENAI_COMPATIBLE;
+import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyMapOrEmpty;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import io.camunda.process.test.api.judge.BaseProviderConfig;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.ProviderConfig;
+import java.util.Map;
 import java.util.Properties;
 
 public class JudgeProperties {
@@ -40,6 +43,8 @@ public class JudgeProperties {
       "judge.chatModel.credentials.accessKey";
   public static final String PROPERTY_NAME_JUDGE_CHAT_MODEL_CREDENTIALS_SECRET_KEY =
       "judge.chatModel.credentials.secretKey";
+  public static final String PROPERTY_NAME_JUDGE_CHAT_MODEL_CUSTOM_PROPERTIES_PREFIX =
+      "judge.chatModel.customProperties";
 
   private static final double DEFAULT_THRESHOLD = JudgeConfig.DEFAULT_THRESHOLD;
 
@@ -52,6 +57,7 @@ public class JudgeProperties {
   private final String chatModelRegion;
   private final String chatModelCredentialsAccessKey;
   private final String chatModelCredentialsSecretKey;
+  private final Map<String, String> chatModelCustomProperties;
 
   public JudgeProperties(final Properties properties) {
     final double parsedThreshold =
@@ -73,6 +79,8 @@ public class JudgeProperties {
         getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_CREDENTIALS_ACCESS_KEY);
     chatModelCredentialsSecretKey =
         getPropertyOrNull(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_CREDENTIALS_SECRET_KEY);
+    chatModelCustomProperties =
+        getPropertyMapOrEmpty(properties, PROPERTY_NAME_JUDGE_CHAT_MODEL_CUSTOM_PROPERTIES_PREFIX);
   }
 
   public boolean hasProviderConfigured() {
@@ -94,21 +102,22 @@ public class JudgeProperties {
     final String normalized = chatModelProvider.trim().toLowerCase();
     switch (normalized) {
       case PROVIDER_OPENAI:
-        return new ProviderConfig.OpenAiConfig(chatModelModel, chatModelApiKey);
+        return new BaseProviderConfig.OpenAiConfig(chatModelModel, chatModelApiKey);
       case PROVIDER_ANTHROPIC:
-        return new ProviderConfig.AnthropicConfig(chatModelModel, chatModelApiKey);
+        return new BaseProviderConfig.AnthropicConfig(chatModelModel, chatModelApiKey);
       case PROVIDER_AMAZON_BEDROCK:
-        return new ProviderConfig.AmazonBedrockConfig(
+        return new BaseProviderConfig.AmazonBedrockConfig(
             chatModelModel,
             chatModelRegion,
             chatModelApiKey,
             chatModelCredentialsAccessKey,
             chatModelCredentialsSecretKey);
       case PROVIDER_OPENAI_COMPATIBLE:
-        return new ProviderConfig.OpenAiCompatibleConfig(
+        return new BaseProviderConfig.OpenAiCompatibleConfig(
             chatModelModel, chatModelBaseUrl, chatModelApiKey);
       default:
-        throw new IllegalArgumentException("Unknown provider: " + chatModelProvider);
+        return new BaseProviderConfig.GenericConfig(
+            normalized, chatModelModel, chatModelCustomProperties);
     }
   }
 }

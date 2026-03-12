@@ -18,10 +18,12 @@ package io.camunda.process.test.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.process.test.api.judge.BaseProviderConfig;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.ChatModelAdapterProvider;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.ProviderConfig;
+import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.judge.Langchain4jChatModelAdapterProvider;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,12 +38,29 @@ import org.springframework.test.context.NestedTestConfiguration.EnclosingConfigu
 @NestedTestConfiguration(EnclosingConfiguration.OVERRIDE)
 public class JudgeConfigBootstrapIT {
 
+  static final ChatModelAdapter ADAPTER_A = prompt -> "response from A";
+  static final ChatModelAdapter ADAPTER_B = prompt -> "response from B";
+
   @Configuration
   static class ChatModelAdapterConfig {
 
     @Bean
     ChatModelAdapter chatModelAdapter() {
-      return prompt -> "mocked response";
+      return ADAPTER_A;
+    }
+  }
+
+  @Configuration
+  static class MultipleChatModelAdapterConfig {
+
+    @Bean("my-custom")
+    ChatModelAdapter customAdapter() {
+      return ADAPTER_A;
+    }
+
+    @Bean("another-adapter")
+    ChatModelAdapter anotherAdapter() {
+      return ADAPTER_B;
     }
   }
 
@@ -188,17 +207,106 @@ public class JudgeConfigBootstrapIT {
       })
   @CamundaSpringProcessTest
   @Import(JudgeConfigBootstrapIT.ChatModelAdapterConfig.class)
-  class WithChatModelAdapterBean {
-
-    @Autowired private ChatModelAdapter chatModelAdapter;
+  class WithSingleChatModelAdapterBean {
 
     @Test
-    void shouldUseSpringBeanWhenChatModelAdapterBeanIsPresent() {
+    void shouldUseSingleBeanRegardlessOfProviderProperty() {
       final JudgeConfig config = CamundaAssert.getJudgeConfig();
       assertThat(config).isNotNull();
-      assertThat(config.getChatModel()).isSameAs(chatModelAdapter);
+      assertThat(config.getChatModel()).isSameAs(ADAPTER_A);
       assertThat(config.getThreshold()).isEqualTo(0.145);
       assertThat(config.getCustomPrompt()).isEqualTo("Custom prompt");
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = JudgeConfigBootstrapIT.class,
+      properties = {
+        "camunda.process-test.judge.chatModel.provider=my-custom",
+        "camunda.process-test.judge.threshold=0.7",
+      })
+  @CamundaSpringProcessTest
+  @Import(JudgeConfigBootstrapIT.MultipleChatModelAdapterConfig.class)
+  class WithMultipleBeansAndMatchingProvider {
+
+    @Test
+    void shouldSelectBeanByProviderName() {
+      final JudgeConfig config = CamundaAssert.getJudgeConfig();
+      assertThat(config).isNotNull();
+      assertThat(config.getChatModel()).isSameAs(ADAPTER_A);
+      assertThat(config.getThreshold()).isEqualTo(0.7);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = JudgeConfigBootstrapIT.class,
+      properties = {
+        "camunda.process-test.judge.chatModel.provider=openai",
+        "camunda.process-test.judge.chatModel.model=gpt-4o",
+        "camunda.process-test.judge.chatModel.apiKey=test-key",
+      })
+  @CamundaSpringProcessTest
+  @Import(JudgeConfigBootstrapIT.MultipleChatModelAdapterConfig.class)
+  class WithMultipleBeansAndNoMatch {
+
+    @Test
+    void shouldFallBackToSpiWhenNoBeanMatchesProvider() {
+      final JudgeConfig config = CamundaAssert.getJudgeConfig();
+      assertThat(config).isNotNull();
+      // SPI-bootstrapped adapter (from Langchain4j), not one of the beans
+      assertThat(config.getChatModel()).isNotSameAs(ADAPTER_A).isNotSameAs(ADAPTER_B);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(classes = JudgeConfigBootstrapIT.class)
+  @CamundaSpringProcessTest
+  @Import(JudgeConfigBootstrapIT.MultipleChatModelAdapterConfig.class)
+  class WithMultipleBeansAndNoProviderProperty {
+
+    @Test
+    void shouldNotBootstrapWhenMultipleBeansAndNoProvider() {
+      assertThat(CamundaAssert.getJudgeConfig()).isNull();
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = JudgeConfigBootstrapIT.class,
+      properties = {
+        "camunda.process-test.judge.chatModel.provider=my-generic",
+        "camunda.process-test.judge.chatModel.model=custom-model",
+        "camunda.process-test.judge.chatModel.customProperties.endpoint=http://localhost:8080",
+        "camunda.process-test.judge.chatModel.customProperties.temperature=0.7",
+        "camunda.process-test.judge.threshold=0.6",
+      })
+  @CamundaSpringProcessTest
+  @Import(JudgeConfigBootstrapIT.ChatModelAdapterConfig.class)
+  class GenericProviderWithCustomProperties {
+
+    @Autowired CamundaProcessTestRuntimeConfiguration runtimeConfig;
+
+    @Test
+    void shouldBootstrapAndBindCustomProperties() {
+      // judge config bootstrapped via the single bean
+      final JudgeConfig config = CamundaAssert.getJudgeConfig();
+      assertThat(config).isNotNull();
+      assertThat(config.getChatModel()).isSameAs(ADAPTER_A);
+      assertThat(config.getThreshold()).isEqualTo(0.6);
+
+      // custom properties bound to GenericConfig
+      final ProviderConfig providerConfig = runtimeConfig.getJudge().toProviderConfig();
+      assertThat(providerConfig).isInstanceOf(BaseProviderConfig.GenericConfig.class);
+      final BaseProviderConfig.GenericConfig genericConfig =
+          (BaseProviderConfig.GenericConfig) providerConfig;
+      assertThat(genericConfig.getProvider()).isEqualTo("my-generic");
+      assertThat(genericConfig.getModel()).isEqualTo("custom-model");
+      assertThat(genericConfig.getCustomProperties())
+          .containsEntry("endpoint", "http://localhost:8080")
+          .containsEntry("temperature", "0.7")
+          .hasSize(2);
     }
   }
 
@@ -209,13 +317,14 @@ public class JudgeConfigBootstrapIT {
 
     @Test
     void shouldReturnEmptyWhenProviderIsUnknown() {
-      final ProviderConfig config = new ProviderConfig("unknown-provider", "test-model") {};
+      final ProviderConfig config =
+          new BaseProviderConfig.GenericConfig("unknown-provider", "test-model");
       assertThat(provider.create(config)).isEmpty();
     }
 
     @Test
     void shouldThrowWhenRequiredFieldMissing() {
-      final ProviderConfig config = new ProviderConfig.OpenAiConfig(null, "api-key");
+      final ProviderConfig config = new BaseProviderConfig.OpenAiConfig(null, "api-key");
       assertThatThrownBy(() -> provider.create(config)).isInstanceOf(IllegalStateException.class);
     }
   }

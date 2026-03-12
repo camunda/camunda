@@ -15,7 +15,11 @@
  */
 package io.camunda.process.test.impl.configuration;
 
+import io.camunda.process.test.api.judge.BaseProviderConfig;
 import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.judge.ProviderConfig;
+import java.util.Collections;
+import java.util.Map;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.StringUtils;
 
@@ -60,6 +64,30 @@ public class JudgeConfiguration {
     return StringUtils.hasText(chatModel.getProvider());
   }
 
+  public ProviderConfig toProviderConfig() {
+    final AwsCredentialsConfiguration credentials = chatModel.getCredentials();
+    final String provider = chatModel.getProvider().trim().toLowerCase();
+    switch (provider) {
+      case ProviderConfig.PROVIDER_OPENAI:
+        return new BaseProviderConfig.OpenAiConfig(chatModel.getModel(), chatModel.getApiKey());
+      case ProviderConfig.PROVIDER_ANTHROPIC:
+        return new BaseProviderConfig.AnthropicConfig(chatModel.getModel(), chatModel.getApiKey());
+      case ProviderConfig.PROVIDER_AMAZON_BEDROCK:
+        return new BaseProviderConfig.AmazonBedrockConfig(
+            chatModel.getModel(),
+            chatModel.getRegion(),
+            chatModel.getApiKey(),
+            credentials != null ? credentials.getAccessKey() : null,
+            credentials != null ? credentials.getSecretKey() : null);
+      case ProviderConfig.PROVIDER_OPENAI_COMPATIBLE:
+        return new BaseProviderConfig.OpenAiCompatibleConfig(
+            chatModel.getModel(), chatModel.getBaseUrl(), chatModel.getApiKey());
+      default:
+        return new BaseProviderConfig.GenericConfig(
+            provider, chatModel.getModel(), chatModel.getCustomProperties());
+    }
+  }
+
   public static class ChatModelConfiguration {
 
     /**
@@ -85,6 +113,9 @@ public class JudgeConfiguration {
 
     @NestedConfigurationProperty
     private AwsCredentialsConfiguration credentials = new AwsCredentialsConfiguration();
+
+    /** Custom properties for custom/unknown providers. */
+    private Map<String, String> customProperties = Collections.emptyMap();
 
     public String getProvider() {
       return provider;
@@ -132,6 +163,14 @@ public class JudgeConfiguration {
 
     public void setCredentials(final AwsCredentialsConfiguration credentials) {
       this.credentials = credentials;
+    }
+
+    public Map<String, String> getCustomProperties() {
+      return customProperties;
+    }
+
+    public void setCustomProperties(final Map<String, String> customProperties) {
+      this.customProperties = customProperties;
     }
   }
 

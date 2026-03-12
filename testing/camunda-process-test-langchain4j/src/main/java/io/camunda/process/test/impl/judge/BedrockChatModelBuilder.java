@@ -20,7 +20,7 @@ import static io.camunda.process.test.impl.judge.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.bedrock.BedrockChatModel;
 import dev.langchain4j.model.chat.ChatModel;
-import io.camunda.process.test.api.judge.ProviderConfig;
+import io.camunda.process.test.api.judge.BaseProviderConfig;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -39,7 +39,7 @@ final class BedrockChatModelBuilder {
 
   private BedrockChatModelBuilder() {}
 
-  static ChatModel build(final ProviderConfig.AmazonBedrockConfig config) {
+  static ChatModel build(final BaseProviderConfig.AmazonBedrockConfig config) {
     LOG.debug("Building Amazon Bedrock chat model");
 
     final String model = require(config.getModel(), "model", "amazon-bedrock");

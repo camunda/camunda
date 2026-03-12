@@ -18,10 +18,7 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.process.test.api.judge.ChatModelAdapter;
-import io.camunda.process.test.api.judge.ChatModelAdapterProvider;
 import io.camunda.process.test.api.judge.JudgeConfig;
-import io.camunda.process.test.api.judge.ProviderConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
@@ -31,6 +28,7 @@ import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
+import io.camunda.process.test.impl.judge.ChatModelAdapterResolver;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
@@ -49,8 +47,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.ServiceLoader;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -235,7 +231,8 @@ public class CamundaProcessTestExtension
       return;
     }
 
-    tryBootstrappingChatModelAdapter()
+    new ChatModelAdapterResolver()
+        .resolve(CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.toProviderConfig())
         .map(
             adapter ->
                 JudgeConfig.of(
@@ -243,20 +240,6 @@ public class CamundaProcessTestExtension
                     CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getThreshold(),
                     CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getCustomPrompt()))
         .ifPresent(CamundaAssert::setJudgeConfig);
-  }
-
-  private Optional<ChatModelAdapter> tryBootstrappingChatModelAdapter() {
-    final ProviderConfig providerConfig =
-        CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.toProviderConfig();
-    for (final ChatModelAdapterProvider provider :
-        ServiceLoader.load(
-            ChatModelAdapterProvider.class, ChatModelAdapterProvider.class.getClassLoader())) {
-      final Optional<ChatModelAdapter> adapter = provider.create(providerConfig);
-      if (adapter.isPresent()) {
-        return adapter;
-      }
-    }
-    return Optional.empty();
   }
 
   private boolean hasProcessTestExtension(final ExtensionContext context) {
