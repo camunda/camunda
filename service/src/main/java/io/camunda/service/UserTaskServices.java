@@ -38,6 +38,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskUpdateRequest;
+import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.Arrays;
@@ -70,6 +71,7 @@ public final class UserTaskServices
   private final VariableServices variableServices;
   private final ProcessCache processCache;
   private final AuditLogServices auditLogServices;
+  private final int maxVariableNameLength;
 
   public UserTaskServices(
       final BrokerClient brokerClient,
@@ -82,6 +84,32 @@ public final class UserTaskServices
       final ProcessCache processCache,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    this(
+        brokerClient,
+        securityContextProvider,
+        userTaskSearchClient,
+        formServices,
+        elementInstanceServices,
+        variableServices,
+        auditLogServices,
+        processCache,
+        executorProvider,
+        brokerRequestAuthorizationConverter,
+        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
+  }
+
+  public UserTaskServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final UserTaskSearchClient userTaskSearchClient,
+      final FormServices formServices,
+      final ElementInstanceServices elementInstanceServices,
+      final VariableServices variableServices,
+      final AuditLogServices auditLogServices,
+      final ProcessCache processCache,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final int maxVariableNameLength) {
     super(
         brokerClient,
         securityContextProvider,
@@ -93,6 +121,7 @@ public final class UserTaskServices
     this.variableServices = variableServices;
     this.auditLogServices = auditLogServices;
     this.processCache = processCache;
+    this.maxVariableNameLength = maxVariableNameLength;
   }
 
   @Override
@@ -176,7 +205,8 @@ public final class UserTaskServices
       final String action,
       final CamundaAuthentication authentication) {
     return sendBrokerRequest(
-        new BrokerUserTaskCompletionRequest(userTaskKey, getDocumentOrEmpty(variables), action),
+        new BrokerUserTaskCompletionRequest(
+            userTaskKey, getDocumentOrEmpty(variables), action, maxVariableNameLength),
         authentication);
   }
 

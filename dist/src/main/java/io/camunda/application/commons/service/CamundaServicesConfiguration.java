@@ -78,6 +78,7 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -114,14 +115,17 @@ public class CamundaServicesConfiguration {
       final ActivateJobsHandler<JobActivationResult> activateJobsHandler,
       final JobSearchClient jobSearchClient,
       final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      @Value("${zeebe.broker.experimental.engine.validators.maxNameFieldLength:32768}")
+          final int maxVariableNameLength) {
     return new JobServices<>(
         brokerClient,
         securityContextProvider,
         activateJobsHandler,
         jobSearchClient,
         executorProvider,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        maxVariableNameLength);
   }
 
   @Bean
@@ -181,7 +185,9 @@ public class CamundaServicesConfiguration {
       final SequenceFlowSearchClient sequenceFlowSearchClient,
       final IncidentServices incidentServices,
       final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      @Value("${zeebe.broker.experimental.engine.validators.maxNameFieldLength:32768}")
+          final int maxVariableNameLength) {
     return new ProcessInstanceServices(
         brokerClient,
         securityContextProvider,
@@ -189,7 +195,8 @@ public class CamundaServicesConfiguration {
         sequenceFlowSearchClient,
         incidentServices,
         executorProvider,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        maxVariableNameLength);
   }
 
   @Bean
@@ -342,7 +349,9 @@ public class CamundaServicesConfiguration {
       final AuditLogServices auditLogServices,
       final ProcessCache processCache,
       final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      @Value("${zeebe.broker.experimental.engine.validators.maxNameFieldLength:32768}")
+          final int maxVariableNameLength) {
     return new UserTaskServices(
         brokerClient,
         securityContextProvider,
@@ -353,7 +362,8 @@ public class CamundaServicesConfiguration {
         auditLogServices,
         processCache,
         executorProvider,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        maxVariableNameLength);
   }
 
   @Bean
@@ -404,12 +414,15 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      @Value("${zeebe.broker.experimental.engine.validators.maxNameFieldLength:32768}")
+          final int maxVariableNameLength) {
     return new MessageServices(
         brokerClient,
         securityContextProvider,
         executorProvider,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        maxVariableNameLength);
   }
 
   @Bean

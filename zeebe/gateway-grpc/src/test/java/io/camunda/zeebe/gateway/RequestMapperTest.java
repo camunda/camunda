@@ -12,11 +12,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import io.camunda.zeebe.gateway.cmd.InvalidBusinessIdException;
+import io.camunda.zeebe.gateway.cmd.InvalidVariableRequestException;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
+import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -45,6 +48,14 @@ public class RequestMapperTest {
   // BigInteger larger than 2^64-1
   private static final String BIG_INTEGER =
       "{\"mybigintistoolong\": 123456789012345678901234567890}";
+  private static final int DEFAULT_MAX_VARIABLE_NAME_LENGTH =
+      VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH;
+
+  @AfterEach
+  public void resetRequestMapperState() {
+    RequestMapper.setMultiTenancyEnabled(false);
+    RequestMapper.setMaxVariableNameLength(DEFAULT_MAX_VARIABLE_NAME_LENGTH);
+  }
 
   @Test
   public void shouldThrowHelpfulExceptionIfJsonIsInvalid() {
@@ -712,6 +723,70 @@ public class RequestMapperTest {
 
       // then
       assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEmpty();
+    }
+  }
+
+  @Nested
+  class VariableNameLengthValidationTest {
+
+    private static final int MAX_VARIABLE_NAME_LENGTH = 5;
+
+    @BeforeEach
+    public void setup() {
+      RequestMapper.setMaxVariableNameLength(MAX_VARIABLE_NAME_LENGTH);
+    }
+
+    @Test
+    public void shouldRejectCompleteJobWhenVariableNameExceedsMaxLength() {
+      // given
+      final var tooLongVariableName = "x".repeat(MAX_VARIABLE_NAME_LENGTH + 1);
+      final var grpcRequest =
+          CompleteJobRequest.newBuilder()
+              .setJobKey(123L)
+              .setVariables("{\"" + tooLongVariableName + "\":1}")
+              .build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toCompleteJobRequest(grpcRequest))
+          .isInstanceOf(InvalidVariableRequestException.class)
+          .hasMessageContaining("Expected variable names to be no longer than 5 characters")
+          .hasMessageContaining("length 6");
+    }
+
+    @Test
+    public void shouldRejectCreateProcessInstanceWhenVariableNameExceedsMaxLength() {
+      // given
+      final var tooLongVariableName = "x".repeat(MAX_VARIABLE_NAME_LENGTH + 1);
+      final var grpcRequest =
+          CreateProcessInstanceRequest.newBuilder()
+              .setBpmnProcessId("process")
+              .setVariables("{\"" + tooLongVariableName + "\":1}")
+              .build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toCreateProcessInstanceRequest(grpcRequest))
+          .isInstanceOf(InvalidVariableRequestException.class)
+          .hasMessageContaining("Expected variable names to be no longer than 5 characters")
+          .hasMessageContaining("length 6");
+    }
+
+    @Test
+    public void shouldRejectCreateProcessInstanceWithResultWhenVariableNameExceedsMaxLength() {
+      // given
+      final var tooLongVariableName = "x".repeat(MAX_VARIABLE_NAME_LENGTH + 1);
+      final var grpcRequest =
+          CreateProcessInstanceWithResultRequest.newBuilder()
+              .setRequest(
+                  CreateProcessInstanceRequest.newBuilder()
+                      .setBpmnProcessId("process")
+                      .setVariables("{\"" + tooLongVariableName + "\":1}"))
+              .build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toCreateProcessInstanceWithResultRequest(grpcRequest))
+          .isInstanceOf(InvalidVariableRequestException.class)
+          .hasMessageContaining("Expected variable names to be no longer than 5 characters")
+          .hasMessageContaining("length 6");
     }
   }
 }
