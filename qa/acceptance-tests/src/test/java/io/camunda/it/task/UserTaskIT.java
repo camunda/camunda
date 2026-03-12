@@ -56,7 +56,9 @@ public class UserTaskIT {
 
     final var processInstanceId = startProcessInstance(client, "test-process-id");
 
-    waitForProcessTasks(client, processInstanceId);
+    waitForTask(
+        client,
+        f -> f.processInstanceKey(processInstanceId).assignee("demo").state(UserTaskState.CREATED));
 
     final var userTasks = fetchUserTasks(client, processInstanceId);
     // then
@@ -386,20 +388,7 @@ public class UserTaskIT {
 
   public static void waitForProcessTasks(
       final CamundaClient client, final Long processInstanceKey) {
-
-    Awaitility.await()
-        .ignoreExceptions()
-        .timeout(Duration.ofSeconds(30))
-        .until(
-            () ->
-                !client
-                    .newUserTaskSearchRequest()
-                    .filter(
-                        f -> f.processInstanceKey(processInstanceKey).state(UserTaskState.CREATED))
-                    .send()
-                    .join()
-                    .items()
-                    .isEmpty());
+    waitForTask(client, f -> f.processInstanceKey(processInstanceKey).state(UserTaskState.CREATED));
   }
 
   public static Long startProcessInstance(final CamundaClient client, final String processId) {
