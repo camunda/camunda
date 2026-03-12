@@ -134,6 +134,10 @@ class TaskPanelPage {
   async scrollToFirstTask(name: string) {
     await this.page.getByText(name).first().scrollIntoViewIfNeeded();
   }
+
+  goToTaskDetails(taskKey: string) {
+    return this.page.goto(`/tasklist/${taskKey}`);
+  }
 }
 
 export {TaskPanelPage};
