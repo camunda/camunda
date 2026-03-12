@@ -40,6 +40,13 @@ class OperateProcessInstancePage {
   readonly listenersTabButton: Locator;
   readonly operationsLogTabButton: Locator;
   readonly operationsLogTable: Locator;
+  readonly operationsLogTableRow: Locator;
+  readonly operationsLogTableOperationTypeHeader: Locator;
+  readonly operationsLogTableEntityTypeHeader: Locator;
+  readonly operationsLogTableEntityKeyHeader: Locator;
+  readonly operationsLogTableActorHeader: Locator;
+  readonly operationsLogTableSortByDateHeader: Locator;
+  readonly operationsLogTableProcessInstanceCell: Locator;
   readonly metadataModal: Locator;
   readonly modifyInstanceButton: Locator;
   readonly listenerTypeFilter: Locator;
@@ -159,6 +166,39 @@ class OperateProcessInstancePage {
     this.operationsLogTable = page
       .getByTestId('data-table-container')
       .getByRole('table');
+    this.operationsLogTableRow = this.operationsLogTable.getByRole('row');
+    this.operationsLogTableOperationTypeHeader =
+      this.operationsLogTable.getByRole('columnheader', {
+        name: 'Operation Type',
+      });
+    this.operationsLogTableEntityTypeHeader = this.operationsLogTable.getByRole(
+      'columnheader',
+      {
+        name: 'Entity Type',
+      },
+    );
+    this.operationsLogTableEntityKeyHeader = this.operationsLogTable.getByRole(
+      'columnheader',
+      {
+        name: 'Entity Key',
+      },
+    );
+    this.operationsLogTableActorHeader = this.operationsLogTable.getByRole(
+      'columnheader',
+      {
+        name: 'Actor',
+      },
+    );
+    this.operationsLogTableSortByDateHeader = this.operationsLogTable.getByRole(
+      'columnheader',
+      {
+        name: 'Sort by Date',
+      },
+    );
+    this.operationsLogTableProcessInstanceCell =
+      this.operationsLogTable.getByRole('cell', {
+        name: /process instance/i,
+      });
     this.metadataModal = this.page.getByRole('dialog', {name: 'metadata'});
     this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
     this.modifyDialog = this.page.getByLabel(
@@ -886,6 +926,14 @@ class OperateProcessInstancePage {
     for (let i = 0; i < filteredElementsData.length; i++) {
       expect(filteredElementsData[i].icon).toBe(expectedStatus[i]);
     }
+  }
+
+  getOperationsLogTableRowCount(): Promise<number> {
+    return this.operationsLogTableRow.count();
+  }
+
+  getOperationsLogTableProcessInstanceCellCount(): Promise<number> {
+    return this.operationsLogTableProcessInstanceCell.count();
   }
 }
 

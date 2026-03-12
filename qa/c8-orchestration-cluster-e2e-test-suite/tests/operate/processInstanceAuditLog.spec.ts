@@ -72,17 +72,13 @@ test.describe('Process Instance Audit Log', () => {
 
     await expect
       .poll(
-        async () =>
-          operateProcessInstancePage.operationsLogTable
-            .getByRole('row')
-            .count(),
+        async () => operateProcessInstancePage.getOperationsLogTableRowCount(),
         {timeout: 60000},
       )
       .toBeGreaterThan(1);
   });
 
   test('Operations Log table shows correct column headers', async ({
-    page,
     operateProcessInstancePage,
   }) => {
     const {processInstanceKey} = deployedProcess.instance;
@@ -92,17 +88,19 @@ test.describe('Process Instance Audit Log', () => {
     });
 
     await expect(
-      page.getByRole('columnheader', {name: 'Operation Type'}),
+      operateProcessInstancePage.operationsLogTableOperationTypeHeader,
     ).toBeVisible();
     await expect(
-      page.getByRole('columnheader', {name: 'Entity Type'}),
+      operateProcessInstancePage.operationsLogTableEntityTypeHeader,
     ).toBeVisible();
     await expect(
-      page.getByRole('columnheader', {name: 'Entity Key'}),
+      operateProcessInstancePage.operationsLogTableEntityKeyHeader,
     ).toBeVisible();
-    await expect(page.getByRole('columnheader', {name: 'Actor'})).toBeVisible();
     await expect(
-      page.getByRole('columnheader', {name: 'Sort by Date'}),
+      operateProcessInstancePage.operationsLogTableActorHeader,
+    ).toBeVisible();
+    await expect(
+      operateProcessInstancePage.operationsLogTableSortByDateHeader,
     ).toBeVisible();
   });
 
@@ -118,9 +116,7 @@ test.describe('Process Instance Audit Log', () => {
     await expect
       .poll(
         async () =>
-          operateProcessInstancePage.operationsLogTable
-            .getByRole('cell', {name: /process instance/i})
-            .count(),
+          operateProcessInstancePage.getOperationsLogTableProcessInstanceCellCount(),
         {timeout: 60000},
       )
       .toBeGreaterThan(0);
