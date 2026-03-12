@@ -53,24 +53,24 @@ export class OperateFiltersPanelPage {
 
   constructor(page: Page) {
     this.page = page;
-     this.runningInstancesCheckbox = this.page
+    this.runningInstancesCheckbox = this.page
       .locator('label')
-      .filter({ hasText: 'Running' });
+      .filter({hasText: 'Running'});
     this.activeCheckbox = this.page
       .locator('label')
-      .filter({ hasText: 'Active' });
+      .filter({hasText: 'Active'});
     this.incidentsCheckbox = this.page
       .locator('label')
-      .filter({ hasText: 'Incidents' });
+      .filter({hasText: 'Incidents'});
     this.completedCheckbox = this.page
       .locator('label')
-      .filter({ hasText: 'Completed' });
+      .filter({hasText: 'Completed'});
     this.canceledCheckbox = this.page
       .locator('label')
-      .filter({ hasText: 'Canceled' });
+      .filter({hasText: 'Canceled'});
     this.finishedInstancesCheckbox = this.page
       .locator('label')
-      .filter({ hasText: 'Finished' });
+      .filter({hasText: 'Finished'});
     this.processNameFilter = this.page.getByRole('combobox', {
       name: 'Name',
     });
@@ -159,8 +159,12 @@ export class OperateFiltersPanelPage {
 
   async selectProcess(option: string) {
     await this.processNameFilter.waitFor({state: 'attached'});
-    await expect(this.processNameFilter).toBeEnabled({timeout: 30000});
+    await this.page
+      .getByTestId('data-table-loader')
+      .waitFor({state: 'detached', timeout: 30000});
+    await expect(this.processNameFilter).toBeEnabled({timeout: 60000});
     await this.processNameFilter.click();
+    await this.processNameFilter.fill(option);
     await this.page.getByRole('option', {name: option, exact: true}).click();
   }
 
@@ -214,7 +218,7 @@ export class OperateFiltersPanelPage {
     await expect(this.dateFilterDialog).toBeVisible();
 
     const date = new Date();
-    const monthName = date.toLocaleString('default', { month: 'long' });
+    const monthName = date.toLocaleString('default', {month: 'long'});
     const year = date.getFullYear();
 
     await this.fromDateInput.click();
@@ -255,11 +259,11 @@ export class OperateFiltersPanelPage {
   }
 
   async clickMultipleVariablesSwitch() {
-    await this.multipleVariablesSwitch.click({ force: true });
+    await this.multipleVariablesSwitch.click({force: true});
   }
 
   async clickRunningInstancesCheckbox(): Promise<void> {
-    await this.runningInstancesCheckbox.click({ timeout: 60000 });
+    await this.runningInstancesCheckbox.click({timeout: 60000});
   }
 
   async clickActiveInstancesCheckbox(): Promise<void> {
@@ -267,17 +271,17 @@ export class OperateFiltersPanelPage {
   }
 
   async clickIncidentsInstancesCheckbox(): Promise<void> {
-    await this.incidentsCheckbox.click({ timeout: 60000 });
+    await this.incidentsCheckbox.click({timeout: 60000});
   }
 
   async clickFinishedInstancesCheckbox(): Promise<void> {
-    await this.finishedInstancesCheckbox.click({ timeout: 60000 });
+    await this.finishedInstancesCheckbox.click({timeout: 60000});
   }
 
   async clickCompletedInstancesCheckbox(): Promise<void> {
-    await this.completedCheckbox.click({ timeout: 60000 });
+    await this.completedCheckbox.click({timeout: 60000});
   }
   async clickCanceledInstancesCheckbox(): Promise<void> {
-    await this.canceledCheckbox.click({ timeout: 60000 });
+    await this.canceledCheckbox.click({timeout: 60000});
   }
 }
