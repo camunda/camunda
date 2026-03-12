@@ -393,6 +393,16 @@ const TopPanel: React.FC = observer(() => {
                   !isModificationModeEnabled ||
                   hasSelectedElementMultipleRunningInstances
                 }
+<<<<<<< HEAD
+=======
+                customElementClasses={customElementClasses}
+                onElementDoubleClick={(elementId) => {
+                  const elementType = businessObjects?.[elementId]?.$type;
+                  if (elementType) {
+                    handleDrillDown(elementId, elementType);
+                  }
+                }}
+>>>>>>> 30a86120 (feat: add drilldown navigation to business rule tasks)
               >
                 {stateOverlays.map((overlay) => {
                   const payload = overlay.payload as {
