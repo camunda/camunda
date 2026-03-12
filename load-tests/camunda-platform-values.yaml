@@ -179,14 +179,6 @@ orchestration:
         zeebe.broker.flowControl.write.enabled: "true"
         zeebe.broker.flowControl.write.limit: 10000
         zeebe.broker.flowControl.write.throttling.enabled: "true"
-        # Schema management has been moved out of exporter - to be bootstrap at start; once
-        camunda.data.secondary-storage.retention.enabled: "true"
-        camunda.data.secondary-storage.retention.minimum-age: "70m"
-        # We define the retention policy name for both, ES and OpenSearch, to be the same, as the ILM policy is compatible with both and it simplifies the configuration.
-        camunda.data.secondary-storage.elasticsearch.history.policy-name: "camunda-retention-policy"
-        camunda.data.secondary-storage.opensearch.history.policy-name: "camunda-retention-policy"
-        camunda.database.retention.policyName: "camunda-retention-policy"
-        zeebe.broker.exporters.camundaexporter.args.history.retention.policyName: "camunda-retention-policy"
         # RocksDB memory limit setting, limits the overall RocksDB memory usage
         # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
         zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
@@ -199,12 +191,18 @@ orchestration:
   extraVolumeMounts:
     - name: logs
       mountPath: /usr/local/camunda/logs
+  # Retention for the ES Exporter indices - legacy Zeebe indices    
+  retention:
+    enabled: true
+    minimumAge: 1d
+  # Retention for the Camunda Exporter  
   history:
     retention:
       ## @param core.history.retention.enabled if true, the ILM Policy is created and applied to the index templates.
       enabled: true
       ## @param core.history.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
-      minimumAge: 70m
+      minimumAge: 1d
+      policyName: "camunda-retention-policy"
   # @param core.env can be used to set extra environment variables in each broker container
   env:
     # Enable JSON logging for google cloud stackdriver
