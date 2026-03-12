@@ -47,39 +47,30 @@ test.describe('Task History Audit Log', () => {
     await taskDetailsPage.clickHistoryTab();
 
     await expect
-      .poll(async () => taskDetailsPage.historyTable.getByRole('row').count(), {
+      .poll(async () => taskDetailsPage.getHistoryTableRowCount(), {
         timeout: 60000,
       })
       .toBeGreaterThan(1);
   });
 
   test('Task history shows correct column headers', async ({
-    page,
     taskDetailsPage,
   }) => {
     await taskDetailsPage.clickHistoryTab();
 
-    await expect(
-      page.getByRole('columnheader', {name: 'Operation'}),
-    ).toBeVisible();
-    await expect(
-      page.getByRole('columnheader', {name: 'Property'}),
-    ).toBeVisible();
-    await expect(page.getByRole('columnheader', {name: 'Actor'})).toBeVisible();
-    await expect(page.getByRole('columnheader', {name: 'Time'})).toBeVisible();
+    await expect(taskDetailsPage.historyTableOperationHeader).toBeVisible();
+    await expect(taskDetailsPage.historyTablePropertyHeader).toBeVisible();
+    await expect(taskDetailsPage.historyTableActorHeader).toBeVisible();
+    await expect(taskDetailsPage.historyTableTimeHeader).toBeVisible();
   });
 
   test('Task history shows assign task entry', async ({taskDetailsPage}) => {
     await taskDetailsPage.clickHistoryTab();
 
     await expect
-      .poll(
-        async () =>
-          taskDetailsPage.historyTable
-            .getByRole('cell', {name: 'Assign task'})
-            .count(),
-        {timeout: 60000},
-      )
+      .poll(async () => taskDetailsPage.getHistoryTableAssignCellCount(), {
+        timeout: 60000,
+      })
       .toBeGreaterThan(0);
   });
 });

@@ -65,6 +65,12 @@ class TaskDetailsPage {
   readonly assignedToMeText: Locator;
   readonly historyTabButton: Locator;
   readonly historyTable: Locator;
+  readonly historyTableRow: Locator;
+  readonly historyTableOperationHeader: Locator;
+  readonly historyTablePropertyHeader: Locator;
+  readonly historyTableActorHeader: Locator;
+  readonly historyTableTimeHeader: Locator;
+  readonly historyTableAssignCell: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -120,6 +126,28 @@ class TaskDetailsPage {
     this.historyTable = page
       .getByTestId('task-details-history-view')
       .getByRole('table');
+    this.historyTableRow = this.historyTable.getByRole('row');
+    this.historyTableOperationHeader = this.historyTable.getByRole(
+      'columnheader',
+      {
+        name: 'Operation',
+      },
+    );
+    this.historyTablePropertyHeader = this.historyTable.getByRole(
+      'columnheader',
+      {
+        name: 'Property',
+      },
+    );
+    this.historyTableActorHeader = this.historyTable.getByRole('columnheader', {
+      name: 'Actor',
+    });
+    this.historyTableTimeHeader = this.historyTable.getByRole('columnheader', {
+      name: 'Time',
+    });
+    this.historyTableAssignCell = this.historyTable.getByRole('cell', {
+      name: 'Assign task',
+    });
   }
 
   async clickAssignToMeButton() {
@@ -374,6 +402,14 @@ class TaskDetailsPage {
 
   async clickHistoryTab(): Promise<void> {
     await this.historyTabButton.click();
+  }
+
+  getHistoryTableRowCount(): Promise<number> {
+    return this.historyTableRow.count();
+  }
+
+  getHistoryTableAssignCellCount(): Promise<number> {
+    return this.historyTableAssignCell.count();
   }
 }
 
