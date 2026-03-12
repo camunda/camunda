@@ -1,0 +1,174 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.gateway.mapping.http.search.contract.generated;
+
+import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import jakarta.annotation.Generated;
+import org.springframework.lang.Nullable;
+
+@Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
+public record GeneratedAuthorizationFilterStrictContract(
+    @Nullable String ownerId,
+    @Nullable io.camunda.gateway.protocol.model.OwnerTypeEnum ownerType,
+    @Nullable java.util.List<String> resourceIds,
+    @Nullable java.util.List<String> resourcePropertyNames,
+    @Nullable io.camunda.gateway.protocol.model.ResourceTypeEnum resourceType) {
+
+  private static <T> T applyRequiredPolicy(
+      final T value,
+      final ContractPolicy.FieldPolicy<T> policy,
+      final ContractPolicy.FieldRef field) {
+    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
+        .apply(value, field, null);
+  }
+
+  public static OptionalStep builder() {
+    return new Builder();
+  }
+
+  public static final class Builder implements OptionalStep {
+    private String ownerId;
+    private io.camunda.gateway.protocol.model.OwnerTypeEnum ownerType;
+    private java.util.List<String> resourceIds;
+    private java.util.List<String> resourcePropertyNames;
+    private io.camunda.gateway.protocol.model.ResourceTypeEnum resourceType;
+
+    private Builder() {}
+
+    @Override
+    public OptionalStep ownerId(final String ownerId) {
+      this.ownerId = ownerId;
+      return this;
+    }
+
+    @Override
+    public OptionalStep ownerId(
+        final String ownerId, final ContractPolicy.FieldPolicy<String> policy) {
+      this.ownerId = policy.apply(ownerId, Fields.OWNER_ID, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep ownerType(final io.camunda.gateway.protocol.model.OwnerTypeEnum ownerType) {
+      this.ownerType = ownerType;
+      return this;
+    }
+
+    @Override
+    public OptionalStep ownerType(
+        final io.camunda.gateway.protocol.model.OwnerTypeEnum ownerType,
+        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.OwnerTypeEnum> policy) {
+      this.ownerType = policy.apply(ownerType, Fields.OWNER_TYPE, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep resourceIds(final java.util.List<String> resourceIds) {
+      this.resourceIds = resourceIds;
+      return this;
+    }
+
+    @Override
+    public OptionalStep resourceIds(
+        final java.util.List<String> resourceIds,
+        final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
+      this.resourceIds = policy.apply(resourceIds, Fields.RESOURCE_IDS, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep resourcePropertyNames(final java.util.List<String> resourcePropertyNames) {
+      this.resourcePropertyNames = resourcePropertyNames;
+      return this;
+    }
+
+    @Override
+    public OptionalStep resourcePropertyNames(
+        final java.util.List<String> resourcePropertyNames,
+        final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
+      this.resourcePropertyNames =
+          policy.apply(resourcePropertyNames, Fields.RESOURCE_PROPERTY_NAMES, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep resourceType(
+        final io.camunda.gateway.protocol.model.ResourceTypeEnum resourceType) {
+      this.resourceType = resourceType;
+      return this;
+    }
+
+    @Override
+    public OptionalStep resourceType(
+        final io.camunda.gateway.protocol.model.ResourceTypeEnum resourceType,
+        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ResourceTypeEnum>
+            policy) {
+      this.resourceType = policy.apply(resourceType, Fields.RESOURCE_TYPE, null);
+      return this;
+    }
+
+    @Override
+    public GeneratedAuthorizationFilterStrictContract build() {
+      return new GeneratedAuthorizationFilterStrictContract(
+          this.ownerId,
+          this.ownerType,
+          this.resourceIds,
+          this.resourcePropertyNames,
+          this.resourceType);
+    }
+  }
+
+  public interface OptionalStep {
+    OptionalStep ownerId(final String ownerId);
+
+    OptionalStep ownerId(final String ownerId, final ContractPolicy.FieldPolicy<String> policy);
+
+    OptionalStep ownerType(final io.camunda.gateway.protocol.model.OwnerTypeEnum ownerType);
+
+    OptionalStep ownerType(
+        final io.camunda.gateway.protocol.model.OwnerTypeEnum ownerType,
+        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.OwnerTypeEnum> policy);
+
+    OptionalStep resourceIds(final java.util.List<String> resourceIds);
+
+    OptionalStep resourceIds(
+        final java.util.List<String> resourceIds,
+        final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
+
+    OptionalStep resourcePropertyNames(final java.util.List<String> resourcePropertyNames);
+
+    OptionalStep resourcePropertyNames(
+        final java.util.List<String> resourcePropertyNames,
+        final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
+
+    OptionalStep resourceType(
+        final io.camunda.gateway.protocol.model.ResourceTypeEnum resourceType);
+
+    OptionalStep resourceType(
+        final io.camunda.gateway.protocol.model.ResourceTypeEnum resourceType,
+        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ResourceTypeEnum>
+            policy);
+
+    GeneratedAuthorizationFilterStrictContract build();
+  }
+
+  public static final class Fields {
+    public static final ContractPolicy.FieldRef OWNER_ID =
+        ContractPolicy.field("AuthorizationFilter", "ownerId");
+    public static final ContractPolicy.FieldRef OWNER_TYPE =
+        ContractPolicy.field("AuthorizationFilter", "ownerType");
+    public static final ContractPolicy.FieldRef RESOURCE_IDS =
+        ContractPolicy.field("AuthorizationFilter", "resourceIds");
+    public static final ContractPolicy.FieldRef RESOURCE_PROPERTY_NAMES =
+        ContractPolicy.field("AuthorizationFilter", "resourcePropertyNames");
+    public static final ContractPolicy.FieldRef RESOURCE_TYPE =
+        ContractPolicy.field("AuthorizationFilter", "resourceType");
+
+    private Fields() {}
+  }
+}

@@ -1,0 +1,276 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.gateway.mapping.http.search.contract.generated;
+
+import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
+import jakarta.annotation.Generated;
+import java.util.Objects;
+import org.springframework.lang.Nullable;
+
+@Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
+public record GeneratedProcessInstanceSequenceFlowStrictContract(
+    String sequenceFlowId,
+    String processInstanceKey,
+    @Nullable String rootProcessInstanceKey,
+    String processDefinitionKey,
+    String processDefinitionId,
+    String elementId,
+    String tenantId) {
+
+  public GeneratedProcessInstanceSequenceFlowStrictContract {
+    Objects.requireNonNull(sequenceFlowId, "sequenceFlowId is required and must not be null");
+    Objects.requireNonNull(
+        processInstanceKey, "processInstanceKey is required and must not be null");
+    Objects.requireNonNull(
+        processDefinitionKey, "processDefinitionKey is required and must not be null");
+    Objects.requireNonNull(
+        processDefinitionId, "processDefinitionId is required and must not be null");
+    Objects.requireNonNull(elementId, "elementId is required and must not be null");
+    Objects.requireNonNull(tenantId, "tenantId is required and must not be null");
+  }
+
+  public static String coerceProcessInstanceKey(final Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof String stringValue) {
+      return stringValue;
+    }
+    if (value instanceof Number numberValue) {
+      return KeyUtil.keyToString(numberValue.longValue());
+    }
+    throw new IllegalArgumentException(
+        "processInstanceKey must be a String or Number, but was " + value.getClass().getName());
+  }
+
+  public static String coerceRootProcessInstanceKey(final Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof String stringValue) {
+      return stringValue;
+    }
+    if (value instanceof Number numberValue) {
+      return KeyUtil.keyToString(numberValue.longValue());
+    }
+    throw new IllegalArgumentException(
+        "rootProcessInstanceKey must be a String or Number, but was " + value.getClass().getName());
+  }
+
+  public static String coerceProcessDefinitionKey(final Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof String stringValue) {
+      return stringValue;
+    }
+    if (value instanceof Number numberValue) {
+      return KeyUtil.keyToString(numberValue.longValue());
+    }
+    throw new IllegalArgumentException(
+        "processDefinitionKey must be a String or Number, but was " + value.getClass().getName());
+  }
+
+  private static <T> T applyRequiredPolicy(
+      final T value,
+      final ContractPolicy.FieldPolicy<T> policy,
+      final ContractPolicy.FieldRef field) {
+    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
+        .apply(value, field, null);
+  }
+
+  public static SequenceFlowIdStep builder() {
+    return new Builder();
+  }
+
+  public static final class Builder
+      implements SequenceFlowIdStep,
+          ProcessInstanceKeyStep,
+          ProcessDefinitionKeyStep,
+          ProcessDefinitionIdStep,
+          ElementIdStep,
+          TenantIdStep,
+          OptionalStep {
+    private String sequenceFlowId;
+    private ContractPolicy.FieldPolicy<String> sequenceFlowIdPolicy;
+    private Object processInstanceKey;
+    private ContractPolicy.FieldPolicy<Object> processInstanceKeyPolicy;
+    private Object rootProcessInstanceKey;
+    private Object processDefinitionKey;
+    private ContractPolicy.FieldPolicy<Object> processDefinitionKeyPolicy;
+    private String processDefinitionId;
+    private ContractPolicy.FieldPolicy<String> processDefinitionIdPolicy;
+    private String elementId;
+    private ContractPolicy.FieldPolicy<String> elementIdPolicy;
+    private String tenantId;
+    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
+
+    private Builder() {}
+
+    @Override
+    public ProcessInstanceKeyStep sequenceFlowId(
+        final String sequenceFlowId, final ContractPolicy.FieldPolicy<String> policy) {
+      this.sequenceFlowId = sequenceFlowId;
+      this.sequenceFlowIdPolicy = policy;
+      return this;
+    }
+
+    @Override
+    public ProcessDefinitionKeyStep processInstanceKey(
+        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.processInstanceKey = processInstanceKey;
+      this.processInstanceKeyPolicy = policy;
+      return this;
+    }
+
+    @Override
+    public ProcessDefinitionIdStep processDefinitionKey(
+        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.processDefinitionKey = processDefinitionKey;
+      this.processDefinitionKeyPolicy = policy;
+      return this;
+    }
+
+    @Override
+    public ElementIdStep processDefinitionId(
+        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+      this.processDefinitionId = processDefinitionId;
+      this.processDefinitionIdPolicy = policy;
+      return this;
+    }
+
+    @Override
+    public TenantIdStep elementId(
+        final String elementId, final ContractPolicy.FieldPolicy<String> policy) {
+      this.elementId = elementId;
+      this.elementIdPolicy = policy;
+      return this;
+    }
+
+    @Override
+    public OptionalStep tenantId(
+        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+      this.tenantId = tenantId;
+      this.tenantIdPolicy = policy;
+      return this;
+    }
+
+    @Override
+    public OptionalStep rootProcessInstanceKey(final String rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
+      return this;
+    }
+
+    @Override
+    public OptionalStep rootProcessInstanceKey(final Object rootProcessInstanceKey) {
+      this.rootProcessInstanceKey = rootProcessInstanceKey;
+      return this;
+    }
+
+    public Builder rootProcessInstanceKey(
+        final String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+      this.rootProcessInstanceKey =
+          policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep rootProcessInstanceKey(
+        final Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.rootProcessInstanceKey =
+          policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
+      return this;
+    }
+
+    @Override
+    public GeneratedProcessInstanceSequenceFlowStrictContract build() {
+      return new GeneratedProcessInstanceSequenceFlowStrictContract(
+          applyRequiredPolicy(
+              this.sequenceFlowId, this.sequenceFlowIdPolicy, Fields.SEQUENCE_FLOW_ID),
+          coerceProcessInstanceKey(
+              applyRequiredPolicy(
+                  this.processInstanceKey,
+                  this.processInstanceKeyPolicy,
+                  Fields.PROCESS_INSTANCE_KEY)),
+          coerceRootProcessInstanceKey(this.rootProcessInstanceKey),
+          coerceProcessDefinitionKey(
+              applyRequiredPolicy(
+                  this.processDefinitionKey,
+                  this.processDefinitionKeyPolicy,
+                  Fields.PROCESS_DEFINITION_KEY)),
+          applyRequiredPolicy(
+              this.processDefinitionId,
+              this.processDefinitionIdPolicy,
+              Fields.PROCESS_DEFINITION_ID),
+          applyRequiredPolicy(this.elementId, this.elementIdPolicy, Fields.ELEMENT_ID),
+          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID));
+    }
+  }
+
+  public interface SequenceFlowIdStep {
+    ProcessInstanceKeyStep sequenceFlowId(
+        final String sequenceFlowId, final ContractPolicy.FieldPolicy<String> policy);
+  }
+
+  public interface ProcessInstanceKeyStep {
+    ProcessDefinitionKeyStep processInstanceKey(
+        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+  }
+
+  public interface ProcessDefinitionKeyStep {
+    ProcessDefinitionIdStep processDefinitionKey(
+        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+  }
+
+  public interface ProcessDefinitionIdStep {
+    ElementIdStep processDefinitionId(
+        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+  }
+
+  public interface ElementIdStep {
+    TenantIdStep elementId(final String elementId, final ContractPolicy.FieldPolicy<String> policy);
+  }
+
+  public interface TenantIdStep {
+    OptionalStep tenantId(final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+  }
+
+  public interface OptionalStep {
+    OptionalStep rootProcessInstanceKey(final String rootProcessInstanceKey);
+
+    OptionalStep rootProcessInstanceKey(final Object rootProcessInstanceKey);
+
+    OptionalStep rootProcessInstanceKey(
+        final String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+
+    OptionalStep rootProcessInstanceKey(
+        final Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+
+    GeneratedProcessInstanceSequenceFlowStrictContract build();
+  }
+
+  public static final class Fields {
+    public static final ContractPolicy.FieldRef SEQUENCE_FLOW_ID =
+        ContractPolicy.field("ProcessInstanceSequenceFlowResult", "sequenceFlowId");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY =
+        ContractPolicy.field("ProcessInstanceSequenceFlowResult", "processInstanceKey");
+    public static final ContractPolicy.FieldRef ROOT_PROCESS_INSTANCE_KEY =
+        ContractPolicy.field("ProcessInstanceSequenceFlowResult", "rootProcessInstanceKey");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY =
+        ContractPolicy.field("ProcessInstanceSequenceFlowResult", "processDefinitionKey");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID =
+        ContractPolicy.field("ProcessInstanceSequenceFlowResult", "processDefinitionId");
+    public static final ContractPolicy.FieldRef ELEMENT_ID =
+        ContractPolicy.field("ProcessInstanceSequenceFlowResult", "elementId");
+    public static final ContractPolicy.FieldRef TENANT_ID =
+        ContractPolicy.field("ProcessInstanceSequenceFlowResult", "tenantId");
+
+    private Fields() {}
+  }
+}

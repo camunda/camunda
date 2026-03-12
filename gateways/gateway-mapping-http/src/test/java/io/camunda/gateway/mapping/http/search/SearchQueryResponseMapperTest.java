@@ -8,6 +8,7 @@
 package io.camunda.gateway.mapping.http.search;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
@@ -19,8 +20,10 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
+import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
@@ -38,6 +41,7 @@ import io.camunda.search.entities.JobEntity.JobState;
 import io.camunda.search.entities.JobEntity.ListenerEventType;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
+import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
@@ -50,6 +54,51 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class SearchQueryResponseMapperTest {
+
+  @Test
+  void shouldMapProcessDefinitionEntityToContractResult() {
+    final var entity =
+        new ProcessDefinitionEntity(
+            2251799813685001L,
+            "Demo Process", // required + nullable in contract; non-null in this case
+            "demo-process",
+            null,
+            "demo.bpmn",
+            1,
+            null, // required + nullable in contract
+            "tenant-a",
+            null);
+
+    final var response = SearchQueryResponseMapper.toProcessDefinition(entity);
+
+    assertThat(response.getProcessDefinitionKey()).isEqualTo("2251799813685001");
+    assertThat(response.getName()).isEqualTo("Demo Process");
+    assertThat(response.getResourceName()).isEqualTo("demo.bpmn");
+    assertThat(response.getVersion()).isEqualTo(1);
+    assertThat(response.getVersionTag()).isNull();
+    assertThat(response.getProcessDefinitionId()).isEqualTo("demo-process");
+    assertThat(response.getTenantId()).isEqualTo("tenant-a");
+    assertThat(response.getHasStartForm()).isFalse();
+  }
+
+  @Test
+  void shouldFailWhenRequiredNonNullableProcessDefinitionFieldIsNull() {
+    final var entity =
+        new ProcessDefinitionEntity(
+            2251799813685001L,
+            "Demo Process",
+            "demo-process",
+            null,
+            null, // required + non-nullable in contract
+            1,
+            null,
+            "tenant-a",
+            null);
+
+    assertThatThrownBy(() -> SearchQueryResponseMapper.toProcessDefinition(entity))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessageContaining("resourceName");
+  }
 
   @Test
   void shouldConvertBatchOperationItemEntity() {
@@ -82,21 +131,66 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
-  void shouldHandleNullFieldsInBatchOperationItemEntity() {
-    // given
+  void shouldDefaultNullBatchOperationErrorsToEmptyList() {
+    final var entity =
+        new BatchOperationEntity(
+            "2251799813685001",
+            BatchOperationState.ACTIVE,
+            BatchOperationType.MIGRATE_PROCESS_INSTANCE,
+            OffsetDateTime.parse("2025-01-15T11:53:00Z"),
+            null,
+            null,
+            null,
+            10,
+            1,
+            9,
+            null);
+
+    final var response = SearchQueryResponseMapper.toBatchOperation(entity);
+
+    assertThat(response.getErrors()).isNotNull().isEmpty();
+  }
+
+  @Test
+  void shouldFailWhenRequiredNonNullableBatchOperationItemFieldIsNull() {
+    // given — operationType is required + non-nullable in the contract
     final BatchOperationItemEntity item =
-        new BatchOperationItemEntity(null, null, null, null, null, null, null, null);
+        new BatchOperationItemEntity(
+            "batchOperationKey",
+            null,
+            1234L,
+            4321L,
+            null,
+            BatchOperationItemState.COMPLETED,
+            null,
+            null);
+
+    // when / then
+    assertThatThrownBy(() -> SearchQueryResponseMapper.toBatchOperationItem(item))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessageContaining("operationType");
+  }
+
+  @Test
+  void shouldHandleNullOptionalFieldsInBatchOperationItemEntity() {
+    // given — required fields populated, optional fields null
+    final BatchOperationItemEntity item =
+        new BatchOperationItemEntity(
+            "batchOperationKey",
+            BatchOperationType.MIGRATE_PROCESS_INSTANCE,
+            1234L,
+            4321L,
+            null, // rootProcessInstanceKey (optional)
+            BatchOperationItemState.COMPLETED,
+            null, // processedDate (optional)
+            null); // errorMessage (optional)
 
     // when
     final BatchOperationItemResponse response =
         SearchQueryResponseMapper.toBatchOperationItem(item);
 
     // then
-    assertThat(response.getBatchOperationKey()).isNull();
-    assertThat(response.getOperationType()).isNull();
-    assertThat(response.getItemKey()).isNull();
-    assertThat(response.getProcessInstanceKey()).isNull();
-    assertThat(response.getState()).isNull();
+    assertThat(response.getRootProcessInstanceKey()).isNull();
     assertThat(response.getProcessedDate()).isNull();
     assertThat(response.getErrorMessage()).isNull();
   }
@@ -128,6 +222,32 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
+  }
+
+  @Test
+  void shouldFallbackToProcessDefinitionIdForCallHierarchyWhenNameBlank() {
+    final var entity =
+        new ProcessInstanceEntity(
+            123L,
+            999L,
+            "demo-process",
+            "   ",
+            1,
+            null,
+            456L,
+            null,
+            null,
+            OffsetDateTime.now(),
+            null,
+            ProcessInstanceState.ACTIVE,
+            false,
+            "tenant",
+            null,
+            null);
+
+    final var response = SearchQueryResponseMapper.toProcessInstanceCallHierarchyEntry(entity);
+
+    assertThat(response.getProcessDefinitionName()).isEqualTo("demo-process");
   }
 
   @Test

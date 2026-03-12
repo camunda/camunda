@@ -1,0 +1,81 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.gateway.mapping.http.search.contract.generated;
+
+import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import jakarta.annotation.Generated;
+import java.util.Objects;
+
+@Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
+public record GeneratedSearchQueryResponseStrictContract(
+    GeneratedSearchQueryPageResponseStrictContract page) {
+
+  public GeneratedSearchQueryResponseStrictContract {
+    Objects.requireNonNull(page, "page is required and must not be null");
+  }
+
+  public static GeneratedSearchQueryPageResponseStrictContract coercePage(final Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof GeneratedSearchQueryPageResponseStrictContract strictValue) {
+      return strictValue;
+    }
+
+    throw new IllegalArgumentException(
+        "page must be a GeneratedSearchQueryPageResponseStrictContract, but was "
+            + value.getClass().getName());
+  }
+
+  private static <T> T applyRequiredPolicy(
+      final T value,
+      final ContractPolicy.FieldPolicy<T> policy,
+      final ContractPolicy.FieldRef field) {
+    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
+        .apply(value, field, null);
+  }
+
+  public static PageStep builder() {
+    return new Builder();
+  }
+
+  public static final class Builder implements PageStep, OptionalStep {
+    private Object page;
+    private ContractPolicy.FieldPolicy<Object> pagePolicy;
+
+    private Builder() {}
+
+    @Override
+    public OptionalStep page(final Object page, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.page = page;
+      this.pagePolicy = policy;
+      return this;
+    }
+
+    @Override
+    public GeneratedSearchQueryResponseStrictContract build() {
+      return new GeneratedSearchQueryResponseStrictContract(
+          coercePage(applyRequiredPolicy(this.page, this.pagePolicy, Fields.PAGE)));
+    }
+  }
+
+  public interface PageStep {
+    OptionalStep page(final Object page, final ContractPolicy.FieldPolicy<Object> policy);
+  }
+
+  public interface OptionalStep {
+    GeneratedSearchQueryResponseStrictContract build();
+  }
+
+  public static final class Fields {
+    public static final ContractPolicy.FieldRef PAGE =
+        ContractPolicy.field("SearchQueryResponse", "page");
+
+    private Fields() {}
+  }
+}
