@@ -28,6 +28,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQuerySortRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentMatchers;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -563,5 +565,217 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processDefinitionServices, never()).search(any(ProcessDefinitionQuery.class));
+  }
+
+  @Test
+  void shouldRejectBeforePaginationWhenIsLatestVersionIsTrue() {
+    // given
+    final var request =
+        """
+            {
+                "filter": {
+                    "isLatestVersion": true
+                },
+                "page": {
+                    "before": "someCursor"
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "When using isLatestVersion filter, pagination is limited to forward pagination using 'after' and 'limit'. The field 'before' is not supported.",
+                  "instance": "%s"
+                }""",
+            PROCESS_DEFINITION_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(processDefinitionServices, never()).search(any(ProcessDefinitionQuery.class));
+  }
+
+  @Test
+  void shouldRejectFromPaginationWhenIsLatestVersionIsTrue() {
+    // given
+    final var request =
+        """
+            {
+                "filter": {
+                    "isLatestVersion": true
+                },
+                "page": {
+                    "from": 10
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "When using isLatestVersion filter, pagination is limited to forward pagination using 'after' and 'limit'. The field 'from' is not supported.",
+                  "instance": "%s"
+                }""",
+            PROCESS_DEFINITION_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(processDefinitionServices, never()).search(any(ProcessDefinitionQuery.class));
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = ProcessDefinitionSearchQuerySortRequest.FieldEnum.class,
+      names = {"PROCESS_DEFINITION_ID", "TENANT_ID"},
+      mode = EnumSource.Mode.EXCLUDE)
+  void shouldRejectUnsupportedSortFieldWhenIsLatestVersionIsTrue(
+      final ProcessDefinitionSearchQuerySortRequest.FieldEnum unsupportedField) {
+    // given
+    final var request =
+        String.format(
+            """
+            {
+                "filter": {
+                    "isLatestVersion": true
+                },
+                "sort": [
+                    {
+                        "field": "%s",
+                        "order": "ASC"
+                    }
+                ]
+            }""",
+            unsupportedField.getValue());
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "When using isLatestVersion filter, sorting is limited to 'processDefinitionId' and 'tenantId' fields only. The field '%s' is not supported.",
+                  "instance": "%s"
+                }""",
+            unsupportedField.getValue(), PROCESS_DEFINITION_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(processDefinitionServices, never()).search(any(ProcessDefinitionQuery.class));
+  }
+
+  @Test
+  void shouldAllowAfterPaginationWhenIsLatestVersionIsTrue() {
+    // given
+    final var request =
+        """
+            {
+                "filter": {
+                    "isLatestVersion": true
+                },
+                "page": {
+                    "after": "someCursor",
+                    "limit": 10
+                }
+            }""";
+    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class)))
+        .thenReturn(SEARCH_QUERY_RESULT);
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(processDefinitionServices).search(any(ProcessDefinitionQuery.class));
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = ProcessDefinitionSearchQuerySortRequest.FieldEnum.class,
+      names = {"PROCESS_DEFINITION_ID", "TENANT_ID"})
+  void shouldAllowSupportedSortFieldsWhenIsLatestVersionIsTrue(
+      final ProcessDefinitionSearchQuerySortRequest.FieldEnum supportedField) {
+    // given
+    final var request =
+        String.format(
+            """
+            {
+                "filter": {
+                    "isLatestVersion": true
+                },
+                "sort": [
+                    {
+                        "field": "%s",
+                        "order": "ASC"
+                    }
+                ]
+            }""",
+            supportedField.getValue());
+    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class)))
+        .thenReturn(SEARCH_QUERY_RESULT);
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(processDefinitionServices).search(any(ProcessDefinitionQuery.class));
   }
 }
