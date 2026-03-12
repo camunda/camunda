@@ -23,7 +23,10 @@ public class JudgeConfiguration {
 
   private static final double DEFAULT_THRESHOLD = JudgeConfig.DEFAULT_THRESHOLD;
 
+  /** The confidence threshold for the AI judge to consider an assertion as passed. */
   private double threshold = DEFAULT_THRESHOLD;
+
+  /** A custom prompt to use for the AI judge instead of the default one. */
   private String customPrompt;
 
   @NestedConfigurationProperty
@@ -59,14 +62,29 @@ public class JudgeConfiguration {
 
   public static class ChatModelConfiguration {
 
+    /**
+     * The LLM provider to use for the AI judge. Supported providers: openai, anthropic,
+     * amazon-bedrock, openai-compatible.
+     */
     private String provider;
+
+    /**
+     * The model name to use for the AI judge (e.g. 'gpt-4o', 'claude-sonnet-4-20250514',
+     * 'us.anthropic.claude-sonnet-4-20250514-v1:0').
+     */
     private String model;
+
+    /** The API key for authenticating with the chat model provider. */
     private String apiKey;
+
+    /** The base URL for the chat model API. Required for the 'openai-compatible' provider. */
     private String baseUrl;
+
+    /** The AWS region for the Amazon Bedrock provider (e.g. 'us-east-1'). */
     private String region;
 
     @NestedConfigurationProperty
-    private CredentialsConfiguration credentials = new CredentialsConfiguration();
+    private AwsCredentialsConfiguration credentials = new AwsCredentialsConfiguration();
 
     public String getProvider() {
       return provider;
@@ -108,18 +126,21 @@ public class JudgeConfiguration {
       this.region = region;
     }
 
-    public CredentialsConfiguration getCredentials() {
+    public AwsCredentialsConfiguration getCredentials() {
       return credentials;
     }
 
-    public void setCredentials(final CredentialsConfiguration credentials) {
+    public void setCredentials(final AwsCredentialsConfiguration credentials) {
       this.credentials = credentials;
     }
   }
 
-  public static class CredentialsConfiguration {
+  public static class AwsCredentialsConfiguration {
 
+    /** The AWS access key for authenticating with Amazon Bedrock. */
     private String accessKey;
+
+    /** The AWS secret key for authenticating with Amazon Bedrock. */
     private String secretKey;
 
     public String getAccessKey() {
