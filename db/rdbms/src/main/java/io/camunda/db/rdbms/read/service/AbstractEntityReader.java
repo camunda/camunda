@@ -7,13 +7,10 @@
  */
 package io.camunda.db.rdbms.read.service;
 
-import static io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPaginationFieldEntry.determineOperator;
-
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.DbQueryPage;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPagination;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPaginationFieldEntry;
-import io.camunda.db.rdbms.read.domain.DbQueryPage.Operator;
 import io.camunda.db.rdbms.read.domain.DbQuerySorting;
 import io.camunda.db.rdbms.sql.columns.SearchColumn;
 import io.camunda.search.page.SearchQueryPage;
@@ -129,20 +126,20 @@ abstract class AbstractEntityReader<T> {
 
     for (int i = 0; i < sort.orderings().size(); i++) {
       final List<KeySetPaginationFieldEntry> fieldEntries = new ArrayList<>();
-      // add entries for equals sorting
+      // add equality entries for all preceding sort columns
       for (int j = 0; j < i; j++) {
         final SearchColumn<?> sortColumn = sort.orderings().get(j).column();
-        fieldEntries.add(
-            new KeySetPaginationFieldEntry(sortColumn.name(), Operator.EQUALS, sortValues[j]));
+        fieldEntries.add(KeySetPaginationFieldEntry.equality(sortColumn.name(), sortValues[j]));
       }
 
-      // add comparator entry
+      // add the comparator entry for the current sort column
       final var sorting = sort.orderings().get(i);
       fieldEntries.add(
-          new KeySetPaginationFieldEntry(
-              sorting.column().name(),
-              determineOperator(sorting.order(), isSearchAfter),
-              sortValues[i]));
+          KeySetPaginationFieldEntry.of(sorting.column().name(), sortValues[i])
+              .order(sorting.order())
+              .isSearchAfter(isSearchAfter)
+              .build());
+
       keySetPagination.add(new KeySetPagination(fieldEntries));
     }
 
