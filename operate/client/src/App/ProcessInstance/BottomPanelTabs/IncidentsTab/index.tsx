@@ -32,7 +32,7 @@ const ROW_HEIGHT = 32;
 const IncidentsTab: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const {data: processInstance} = useProcessInstance();
-  const {selectedElementId, resolvedElementInstance} =
+  const {selectedElementId, resolvedElementInstance, isFetchingElement} =
     useProcessInstanceElementSelection();
   const resolvedElementInstanceKey =
     resolvedElementInstance?.elementInstanceKey;
@@ -55,7 +55,10 @@ const IncidentsTab: React.FC = observer(() => {
   const processInstanceResult = useGetIncidentsByProcessInstancePaginated(
     processInstanceId,
     {
-      enabled: !isElementInstanceSelected && processInstance !== undefined,
+      enabled:
+        !isElementInstanceSelected &&
+        processInstance !== undefined &&
+        !isFetchingElement,
       enablePeriodicRefetch,
       payload: {sort, filter},
     },
