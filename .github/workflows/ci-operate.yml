@@ -341,7 +341,7 @@ jobs:
       - name: Start server
         run: npm run start:visual-regression &
       - name: Run Visual regression tests
-        run: npm run test:visual -- --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob --reporter=github
+        run: npm run test:visual -- --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
       - name: Upload blob report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
