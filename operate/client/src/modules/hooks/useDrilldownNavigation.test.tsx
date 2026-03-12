@@ -60,81 +60,113 @@ function createDecisionSearchResult(
 }
 
 describe('useDrillDownNavigation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  it('should navigate directly to the called process instance when there is exactly one', async () => {
+    const calledInstance = createProcessInstance({
+      processInstanceKey: 'called-200',
+    });
+
+    mockSearchProcessInstances().withSuccess(searchResult([calledInstance], 1));
+
+    const {result} = renderHook(
+      () => useDrillDownNavigation(PROCESS_INSTANCE_KEY),
+      {wrapper: createWrapper()},
+    );
+
+    await act(async () => {
+      result.current.handleDrillDown(CALL_ACTIVITY_ID, 'bpmn:CallActivity');
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      Paths.processInstance('called-200'),
+    );
   });
 
-  describe('CallActivity drilldown', () => {
-    it('should navigate directly to the called instance when there is exactly one', async () => {
-      const calledInstance = createProcessInstance({
-        processInstanceKey: 'called-200',
-      });
+  it('should not navigate when there are multiple called instances', async () => {
+    const calledInstances = [
+      createProcessInstance({processInstanceKey: 'called-200'}),
+      createProcessInstance({processInstanceKey: 'called-201'}),
+    ];
 
-      mockSearchProcessInstances().withSuccess(
-        searchResult([calledInstance], 1),
-      );
+    mockSearchProcessInstances().withSuccess(searchResult(calledInstances, 2));
 
-      const {result} = renderHook(
-        () => useDrillDownNavigation(PROCESS_INSTANCE_KEY),
-        {wrapper: createWrapper()},
-      );
+    const {result} = renderHook(
+      () => useDrillDownNavigation(PROCESS_INSTANCE_KEY),
+      {wrapper: createWrapper()},
+    );
 
-      await act(async () => {
-        result.current.handleDrillDown(CALL_ACTIVITY_ID, 'bpmn:CallActivity');
-      });
-
-      expect(mockNavigate).toHaveBeenCalledWith(
-        Paths.processInstance('called-200'),
-      );
+    await act(async () => {
+      result.current.handleDrillDown(CALL_ACTIVITY_ID, 'bpmn:CallActivity');
     });
 
-    it('should not navigate when there are multiple called instances', async () => {
-      const calledInstances = [
-        createProcessInstance({processInstanceKey: 'called-200'}),
-        createProcessInstance({processInstanceKey: 'called-201'}),
-      ];
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
 
-      mockSearchProcessInstances().withSuccess(
-        searchResult(calledInstances, 2),
-      );
+  it('should show error toast when process API call fails', async () => {
+    mockSearchProcessInstances().withServerError();
 
-      const {result} = renderHook(
-        () => useDrillDownNavigation(PROCESS_INSTANCE_KEY),
-        {wrapper: createWrapper()},
-      );
+    const {result} = renderHook(
+      () => useDrillDownNavigation(PROCESS_INSTANCE_KEY),
+      {wrapper: createWrapper()},
+    );
 
-      await act(async () => {
-        result.current.handleDrillDown(CALL_ACTIVITY_ID, 'bpmn:CallActivity');
-      });
-
-      expect(mockNavigate).not.toHaveBeenCalled();
+    await act(async () => {
+      result.current.handleDrillDown(CALL_ACTIVITY_ID, 'bpmn:CallActivity');
     });
 
-    it('should show error toast when API call fails', async () => {
-      mockSearchProcessInstances().withServerError();
-
-      const {result} = renderHook(
-        () => useDrillDownNavigation(PROCESS_INSTANCE_KEY),
-        {wrapper: createWrapper()},
-      );
-
-      await act(async () => {
-        result.current.handleDrillDown(CALL_ACTIVITY_ID, 'bpmn:CallActivity');
-      });
-
-      expect(mockNavigate).not.toHaveBeenCalled();
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'error',
-        title: 'Failed to resolve called instances',
-        isDismissable: true,
-      });
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'Failed to resolve called instances',
+      isDismissable: true,
     });
   });
 
-  describe('BusinessRuleTask drilldown', () => {
-    it('should navigate to the decision instance when there is exactly one', async () => {
-      mockSearchDecisionInstances().withSuccess(
-        createDecisionSearchResult([
+  it('should navigate to the decision instance when there is exactly one', async () => {
+    mockSearchDecisionInstances().withSuccess(
+      createDecisionSearchResult([
+        {
+          decisionEvaluationInstanceKey: 'dec-100',
+          decisionEvaluationKey: 'dec-eval-100',
+          state: 'EVALUATED',
+          evaluationDate: '2024-01-01T00:00:00.000+0000',
+          evaluationFailure: null,
+          decisionDefinitionId: 'risk-assessment',
+          decisionDefinitionName: 'Risk Assessment',
+          decisionDefinitionVersion: 1,
+          decisionDefinitionType: 'DECISION_TABLE',
+          decisionDefinitionKey: 'def-1',
+          result: '',
+          tenantId: '<default>',
+          processDefinitionKey: 'proc-def-1',
+          processInstanceKey: PROCESS_INSTANCE_KEY,
+          rootProcessInstanceKey: null,
+          elementInstanceKey: 'el-inst-1',
+          rootDecisionDefinitionKey: 'def-1',
+        },
+      ]),
+    );
+
+    const {result} = renderHook(
+      () => useDrillDownNavigation(PROCESS_INSTANCE_KEY),
+      {wrapper: createWrapper()},
+    );
+
+    await act(async () => {
+      result.current.handleDrillDown(
+        BUSINESS_RULE_TASK_ID,
+        'bpmn:BusinessRuleTask',
+      );
+    });
+
+    expect(mockNavigate).toHaveBeenCalledWith(
+      Paths.decisionInstance('dec-100'),
+    );
+  });
+
+  it('should not navigate when there are multiple decision instances', async () => {
+    mockSearchDecisionInstances().withSuccess(
+      createDecisionSearchResult(
+        [
           {
             decisionEvaluationInstanceKey: 'dec-100',
             decisionEvaluationKey: 'dec-eval-100',
@@ -154,90 +186,46 @@ describe('useDrillDownNavigation', () => {
             elementInstanceKey: 'el-inst-1',
             rootDecisionDefinitionKey: 'def-1',
           },
-        ]),
-      );
+        ],
+        2,
+      ),
+    );
 
-      const {result} = renderHook(
-        () => useDrillDownNavigation(PROCESS_INSTANCE_KEY),
-        {wrapper: createWrapper()},
-      );
+    const {result} = renderHook(
+      () => useDrillDownNavigation(PROCESS_INSTANCE_KEY),
+      {wrapper: createWrapper()},
+    );
 
-      await act(async () => {
-        result.current.handleDrillDown(
-          BUSINESS_RULE_TASK_ID,
-          'bpmn:BusinessRuleTask',
-        );
-      });
-
-      expect(mockNavigate).toHaveBeenCalledWith(
-        Paths.decisionInstance('dec-100'),
+    await act(async () => {
+      result.current.handleDrillDown(
+        BUSINESS_RULE_TASK_ID,
+        'bpmn:BusinessRuleTask',
       );
     });
 
-    it('should not navigate when there are multiple decision instances', async () => {
-      mockSearchDecisionInstances().withSuccess(
-        createDecisionSearchResult(
-          [
-            {
-              decisionEvaluationInstanceKey: 'dec-100',
-              decisionEvaluationKey: 'dec-eval-100',
-              state: 'EVALUATED',
-              evaluationDate: '2024-01-01T00:00:00.000+0000',
-              evaluationFailure: null,
-              decisionDefinitionId: 'risk-assessment',
-              decisionDefinitionName: 'Risk Assessment',
-              decisionDefinitionVersion: 1,
-              decisionDefinitionType: 'DECISION_TABLE',
-              decisionDefinitionKey: 'def-1',
-              result: '',
-              tenantId: '<default>',
-              processDefinitionKey: 'proc-def-1',
-              processInstanceKey: PROCESS_INSTANCE_KEY,
-              rootProcessInstanceKey: null,
-              elementInstanceKey: 'el-inst-1',
-              rootDecisionDefinitionKey: 'def-1',
-            },
-          ],
-          2,
-        ),
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('should show error toast when decision API call fails', async () => {
+    mockSearchDecisionInstances().withServerError();
+
+    const {result} = renderHook(
+      () => useDrillDownNavigation(PROCESS_INSTANCE_KEY),
+      {wrapper: createWrapper()},
+    );
+
+    await act(async () => {
+      result.current.handleDrillDown(
+        BUSINESS_RULE_TASK_ID,
+        'bpmn:BusinessRuleTask',
       );
-
-      const {result} = renderHook(
-        () => useDrillDownNavigation(PROCESS_INSTANCE_KEY),
-        {wrapper: createWrapper()},
-      );
-
-      await act(async () => {
-        result.current.handleDrillDown(
-          BUSINESS_RULE_TASK_ID,
-          'bpmn:BusinessRuleTask',
-        );
-      });
-
-      expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('should show error toast when decision API call fails', async () => {
-      mockSearchDecisionInstances().withServerError();
-
-      const {result} = renderHook(
-        () => useDrillDownNavigation(PROCESS_INSTANCE_KEY),
-        {wrapper: createWrapper()},
-      );
-
-      await act(async () => {
-        result.current.handleDrillDown(
-          BUSINESS_RULE_TASK_ID,
-          'bpmn:BusinessRuleTask',
-        );
-      });
-
-      expect(mockNavigate).not.toHaveBeenCalled();
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'error',
-        title: 'Failed to resolve called decision instances',
-        isDismissable: true,
-      });
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'Failed to resolve called decision instances',
+      isDismissable: true,
     });
   });
 });
