@@ -578,51 +578,16 @@ For detailed infrastructure topologies, see the Camunda 8 reference architecture
 title: Identity - Deployment View
 ---
 flowchart TB
-  subgraph EXTERNAL["External"]
-    CLIENTS["Clients\n(Browser, Camunda Client, Worker, ...)"]
-    IDP[("OIDC IdP\n(Keycloak, Okta, Entra ID, ...)")]
+  subgraph OC_POD["Orchestration Cluster Pod (JAR / Container)"]
+    CAMUNDA_SERVICES["Camunda Services"]
+    IDENTITY["Identity\n(Authentication, Security, Engine Identity)"]
   end
 
-  subgraph K8S["Kubernetes Cluster (Self-Managed) / Camunda SaaS"]
-    subgraph OC_POD["Orchestration Cluster Pod (JAR / Container)"]
-      REST_API["REST / gRPC APIs"]
+  CLIENTS["Clients\n(Browser, Camunda Client, Worker, ...)"]
+  IDP[("OIDC IdP")]
 
-      subgraph IDENTITY_RUNTIME["Identity Runtime"]
-        SPRING_SECURITY["Spring Security\n(Authentication filter chain)"]
-        AUTHENTICATION["Authentication\n(Basic, OIDC)"]
-        SECURITY["Security\n(Authorization checks)"]
-      end
-
-      CAMUNDA_SERVICES["Camunda Services"]
-      CAMUNDA_SEARCH_CLIENT["Camunda Search Client"]
-
-      subgraph ZEEBE["Zeebe"]
-        ENGINE["Engine\n(command processing)"]
-        ENGINE_IDENTITY["Engine Identity\n(RBAC for commands)"]
-      end
-
-      REST_API --> SPRING_SECURITY
-      SPRING_SECURITY --> IDENTITY_RUNTIME
-      SPRING_SECURITY --> REST_API
-      REST_API --> CAMUNDA_SERVICES
-      CAMUNDA_SERVICES --> ENGINE
-      CAMUNDA_SERVICES --> CAMUNDA_SEARCH_CLIENT
-      CAMUNDA_SEARCH_CLIENT --> SECURITY
-      ENGINE --> ENGINE_IDENTITY
-    end
-
-    subgraph STORAGE["Storage"]
-      PRIMARY_DB[("Primary Storage\n(RocksDB)")]
-      SECONDARY_DB[("Secondary Storage\n(ES / OS / RDBMS)")]
-    end
-  end
-
-  CLIENTS -->|"REST / gRPC / Browser"| REST_API
-  AUTHENTICATION -->|"token validation / login redirect"| IDP
-  ENGINE --> PRIMARY_DB
-  ENGINE_IDENTITY --> PRIMARY_DB
-  CAMUNDA_SEARCH_CLIENT --> SECONDARY_DB
-  SECURITY --> SECONDARY_DB
+  CLIENTS -->|"REST / gRPC / Browser"| OC_POD
+  IDENTITY <-->|"OIDC / token validation"| IDP
 ```
 
 
