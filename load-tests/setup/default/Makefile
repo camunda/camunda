@@ -134,14 +134,14 @@ setup-leader-balancer:
 # Generates templates from the Camunda Platform helm chart
 .PHONY: template
 template:
-	helm template $(namespace) camunda/$(helm_chart) \
+	helm template $(namespace) camunda-platform-helm/charts/$(helm_chart) \
 		$(platform_values) \
 		-f values-preemptible.yaml \
 		--output-dir .
 
 .PHONY: template-stable
 template-stable:
-	helm template $(namespace) camunda/$(helm_chart) \
+	helm template $(namespace) camunda-platform-helm/charts/$(helm_chart) \
 		$(platform_values_stable) \
 		--output-dir .
 
