@@ -327,7 +327,7 @@ public final class ResponseMapper {
               response.addFailedDocumentsItem(detail);
             });
     return ResponseEntity.status(HttpStatus.MULTI_STATUS)
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
         .body(response);
   }
 
