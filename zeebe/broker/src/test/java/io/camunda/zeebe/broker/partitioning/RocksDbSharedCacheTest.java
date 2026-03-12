@@ -31,11 +31,6 @@ class RocksDbSharedCacheTest {
   void setUp() {
     brokerCfg = new BrokerCfg();
     brokerCfg.getExperimental().getRocksdb().setMemoryLimit(DataSize.ofBytes(512 * 1024 * 1024L));
-    // it's already the default, but to be explicit
-    brokerCfg
-        .getExperimental()
-        .getRocksdb()
-        .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
   }
 
   /**
@@ -78,6 +73,10 @@ class RocksDbSharedCacheTest {
   void shouldValidateMaxMemoryFractionConfiguration(
       final double maxMemoryFraction, final boolean shouldThrow) {
     // when
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
     brokerCfg.getExperimental().getRocksdb().setMaxMemoryFraction(maxMemoryFraction);
     brokerCfg.getExperimental().getRocksdb().setMemoryLimit(DataSize.ofBytes(128L * 1024 * 1024L));
     // then
@@ -109,6 +108,10 @@ class RocksDbSharedCacheTest {
   void shouldValidateMemoryAllocationAgainstMaxFraction(
       final DataSize memoryLimit, final double fraction, final boolean shouldThrow) {
     // when
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
     brokerCfg.getExperimental().getRocksdb().setMaxMemoryFraction(fraction);
     brokerCfg.getExperimental().getRocksdb().setMemoryLimit(memoryLimit);
 
@@ -138,6 +141,10 @@ class RocksDbSharedCacheTest {
   @Test
   void shouldThrowIfTriesToAllocateMoreThanFractionalOfRam() {
     // when
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
     brokerCfg.getExperimental().getRocksdb().setMaxMemoryFraction(0.100);
     brokerCfg
         .getExperimental()
@@ -167,6 +174,10 @@ class RocksDbSharedCacheTest {
     brokerCfg
         .getExperimental()
         .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
         .setMemoryLimit(DataSize.ofBytes(200L * 1024 * 1024)); // 200MB
     // then when we allocate more than half of the memory to rocks db, we expect NO exception
     try (final var managementFactoryMock = mockMemoryEnvironment(256L * 1024 * 1024)) { // 256MB
@@ -183,6 +194,10 @@ class RocksDbSharedCacheTest {
   void shouldThrowIfMemoryPerPartitionTooSmall() {
     // when
     // we only give half of the minimum required memory per partition
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
     brokerCfg
         .getExperimental()
         .getRocksdb()
