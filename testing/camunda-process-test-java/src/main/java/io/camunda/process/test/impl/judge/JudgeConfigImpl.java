@@ -32,6 +32,14 @@ public final class JudgeConfigImpl implements JudgeConfig {
   }
 
   @Override
+  public JudgeConfig withChatModelAdapter(final ChatModelAdapter chatModel) {
+    if (chatModel == null) {
+      throw new IllegalArgumentException("chatModel must not be null");
+    }
+    return new JudgeConfigImpl(chatModel, threshold, customPrompt);
+  }
+
+  @Override
   public JudgeConfig withThreshold(final double threshold) {
     if (threshold < 0.0 || threshold > 1.0) {
       throw new IllegalArgumentException(

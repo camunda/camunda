@@ -588,7 +588,7 @@ public class JudgeAssertTest {
 
     @Test
     void shouldUseOverriddenJudgeConfig() {
-      // given — global judge returns low score, override judge returns high score
+      // given — global judge returns low score, override replaces chat model
       final ChatModelAdapter globalModel =
           prompt -> "{\"score\": 0.1, \"reasoning\": \"Global judge.\"}";
       final ChatModelAdapter overrideModel =
@@ -603,7 +603,7 @@ public class JudgeAssertTest {
 
       // when / then — override judge passes (0.9 >= 0.5)
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
-          .withJudgeConfig(JudgeConfig.of(overrideModel))
+          .withJudgeConfig(config -> config.withChatModelAdapter(overrideModel))
           .hasVariableSatisfiesJudge("result", "should be a greeting");
     }
 
@@ -633,9 +633,9 @@ public class JudgeAssertTest {
 
       // when
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
-          .withJudgeConfig(JudgeConfig.of(judgeA))
+          .withJudgeConfig(config -> config.withChatModelAdapter(judgeA))
           .hasVariableSatisfiesJudge("varA", "expectation A")
-          .withJudgeConfig(JudgeConfig.of(judgeB))
+          .withJudgeConfig(config -> config.withChatModelAdapter(judgeB))
           .hasVariableSatisfiesJudge("varB", "expectation B");
 
       // then
@@ -644,7 +644,7 @@ public class JudgeAssertTest {
     }
 
     @Test
-    void shouldThrowWhenJudgeConfigIsNull() {
+    void shouldThrowWhenModifierIsNull() {
       // given
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -654,7 +654,132 @@ public class JudgeAssertTest {
                   CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .withJudgeConfig(null))
           .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("judgeConfig must not be null");
+          .hasMessageContaining("modifier must not be null");
+    }
+
+    @Test
+    void shouldModifyConfigViaFunctionalOverload() {
+      // given
+      final String[] capturedPrompt = new String[1];
+      final ChatModelAdapter mockModel =
+          prompt -> {
+            capturedPrompt[0] = prompt;
+            return "{\"score\": 0.9, \"reasoning\": \"match\"}";
+          };
+      CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
+
+      final Variable variable = newVariable("result", "\"Hello\"");
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .withJudgeConfig(config -> config.withCustomPrompt("You are a financial data judge"))
+          .hasVariableSatisfiesJudge("result", "should be a greeting");
+
+      // then
+      Assertions.assertThat(capturedPrompt[0]).startsWith("You are a financial data judge");
+    }
+
+    @Test
+    void shouldModifyThresholdViaFunctionalOverload() {
+      // given — score 0.3 would fail default threshold (0.5) but pass custom threshold (0.2)
+      final ChatModelAdapter mockModel =
+          prompt -> "{\"score\": 0.3, \"reasoning\": \"Low match.\"}";
+      CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
+
+      final Variable variable = newVariable("result", "\"some text\"");
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then — should pass with lowered threshold
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .withJudgeConfig(config -> config.withThreshold(0.2))
+          .hasVariableSatisfiesJudge("result", "some expectation");
+    }
+
+    @Test
+    void shouldOverwriteOnMultipleFunctionalCalls() {
+      // given
+      final String[] capturedPrompt = new String[1];
+      final ChatModelAdapter mockModel =
+          prompt -> {
+            capturedPrompt[0] = prompt;
+            return "{\"score\": 0.9, \"reasoning\": \"match\"}";
+          };
+      CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
+
+      final Variable variable = newVariable("result", "\"Hello\"");
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when — second withJudgeConfig overwrites the first
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .withJudgeConfig(config -> config.withCustomPrompt("First prompt"))
+          .withJudgeConfig(config -> config.withCustomPrompt("Second prompt"))
+          .hasVariableSatisfiesJudge("result", "some expectation");
+
+      // then
+      Assertions.assertThat(capturedPrompt[0]).startsWith("Second prompt");
+    }
+
+    @Test
+    void shouldNotAffectGlobalConfigViaFunctionalOverload() {
+      // given
+      final ChatModelAdapter mockModel = prompt -> "{\"score\": 0.9, \"reasoning\": \"match\"}";
+      CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel).withThreshold(0.5));
+
+      final Variable variable = newVariable("result", "\"Hello\"");
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when — modify threshold locally
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .withJudgeConfig(config -> config.withThreshold(0.8))
+          .hasVariableSatisfiesJudge("result", "some expectation");
+
+      // then — global config unchanged
+      Assertions.assertThat(CamundaAssert.getJudgeConfig().getThreshold()).isEqualTo(0.5);
+    }
+
+    @Test
+    void shouldCreateBlankConfigWhenNoGlobalConfigSet() {
+      // given — no global judge config, set up everything inline
+      final ChatModelAdapter mockModel = prompt -> "{\"score\": 0.9, \"reasoning\": \"match\"}";
+
+      final Variable variable = newVariable("result", "\"Hello\"");
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then — withJudgeConfig creates a blank default, withChatModelAdapter sets the model
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .withJudgeConfig(config -> config.withChatModelAdapter(mockModel))
+          .hasVariableSatisfiesJudge("result", "should be a greeting");
+    }
+
+    @Test
+    void shouldThrowWhenBlankConfigUsedWithoutChatModel() {
+      // given — no global config, withJudgeConfig only modifies threshold (no chat model set)
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then — should fail at evaluation time because no chat model
+      assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .withJudgeConfig(config -> config.withThreshold(0.8))
+                      .hasVariableSatisfiesJudge("result", "some expectation"))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("ChatModelAdapter");
     }
 
     @Test
@@ -678,7 +803,7 @@ public class JudgeAssertTest {
 
       // when — use override on first chain
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
-          .withJudgeConfig(JudgeConfig.of(overrideModel))
+          .withJudgeConfig(config -> JudgeConfig.of(overrideModel))
           .hasVariableSatisfiesJudge("result", "some expectation");
 
       // then — new assertThat uses global default

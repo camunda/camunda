@@ -35,6 +35,16 @@ public interface JudgeConfig {
   double DEFAULT_THRESHOLD = 0.5;
 
   /**
+   * Creates a new JudgeConfig with default settings and no chat model. A chat model must be set via
+   * {@link #withChatModelAdapter(ChatModelAdapter)} before using the config for judge evaluations.
+   *
+   * @return a new JudgeConfig instance with default settings
+   */
+  static JudgeConfig defaults() {
+    return new JudgeConfigImpl(null, DEFAULT_THRESHOLD, null);
+  }
+
+  /**
    * Creates a new JudgeConfig with the given chat model and default threshold.
    *
    * @param chatModel the chat model adapter to use for judge evaluations
@@ -61,6 +71,14 @@ public interface JudgeConfig {
   }
 
   /**
+   * Returns a new JudgeConfig with the given chat model adapter, keeping all other settings.
+   *
+   * @param chatModel the chat model adapter to use for judge evaluations
+   * @return a new JudgeConfig instance with the updated chat model
+   */
+  JudgeConfig withChatModelAdapter(ChatModelAdapter chatModel);
+
+  /**
    * Returns a new JudgeConfig with the given threshold, keeping all other settings.
    *
    * @param threshold the threshold score (0-1) above which a judge evaluation passes
@@ -80,9 +98,9 @@ public interface JudgeConfig {
   JudgeConfig withCustomPrompt(String customPrompt);
 
   /**
-   * Returns the chat model adapter.
+   * Returns the chat model adapter, or {@code null} if not yet configured.
    *
-   * @return the chat model adapter
+   * @return the chat model adapter, or {@code null}
    */
   ChatModelAdapter getChatModel();
 

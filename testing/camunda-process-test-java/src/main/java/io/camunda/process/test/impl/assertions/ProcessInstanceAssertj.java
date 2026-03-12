@@ -33,6 +33,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.ThrowingConsumer;
@@ -405,11 +406,17 @@ public class ProcessInstanceAssertj
   }
 
   @Override
-  public ProcessInstanceAssert withJudgeConfig(final JudgeConfig judgeConfig) {
-    if (judgeConfig == null) {
-      throw new IllegalArgumentException("judgeConfig must not be null");
+  public ProcessInstanceAssert withJudgeConfig(final UnaryOperator<JudgeConfig> modifier) {
+    if (modifier == null) {
+      throw new IllegalArgumentException("modifier must not be null");
     }
-    variableAssertj.setJudgeConfig(judgeConfig);
+    final JudgeConfig currentConfig = variableAssertj.getJudgeConfig();
+    final JudgeConfig baseConfig = currentConfig != null ? currentConfig : JudgeConfig.defaults();
+    final JudgeConfig modifiedConfig = modifier.apply(baseConfig);
+    if (modifiedConfig == null) {
+      throw new IllegalArgumentException("modifier must not return null");
+    }
+    variableAssertj.setJudgeConfig(modifiedConfig);
     return this;
   }
 

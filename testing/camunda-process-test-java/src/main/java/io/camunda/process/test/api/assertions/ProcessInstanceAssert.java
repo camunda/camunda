@@ -17,6 +17,7 @@ package io.camunda.process.test.api.assertions;
 
 import io.camunda.process.test.api.judge.JudgeConfig;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 import org.assertj.core.api.ThrowingConsumer;
 
 /** The assertion object to verify a process instance. */
@@ -565,22 +566,31 @@ public interface ProcessInstanceAssert {
   ProcessInstanceAssert hasCorrelatedMessage(final String messageName, final String correlationKey);
 
   /**
-   * Overrides the {@link JudgeConfig} for subsequent judge assertions in this chain. The global
-   * default set via {@link io.camunda.process.test.api.CamundaAssert#setJudgeConfig(JudgeConfig)}
-   * is not affected. Each new {@code assertThat(pi)} call starts fresh from the global default.
+   * Modifies the current {@link JudgeConfig} for subsequent judge assertions in this chain. The
+   * modifier receives the current config (either the global default or a previously set override)
+   * and returns a new config. The global default is not affected.
    *
    * <p>Example usage:
    *
    * <pre>
    *   assertThat(pi)
-   *       .withJudgeConfig(customJudge)
+   *       .withJudgeConfig(config -&gt; config.withCustomPrompt("You are a financial data judge"))
    *       .hasVariableSatisfiesJudge("result", "should contain valid data");
    * </pre>
    *
-   * @param judgeConfig the judge configuration to use for subsequent judge assertions
+   * <p>If no judge config is currently set (neither globally nor locally), the modifier receives a
+   * default config with no chat model. Use {@link JudgeConfig#withChatModelAdapter} to set one:
+   *
+   * <pre>
+   *   assertThat(pi)
+   *       .withJudgeConfig(config -&gt; config.withChatModelAdapter(model::chat))
+   *       .hasVariableSatisfiesJudge("result", "should be valid");
+   * </pre>
+   *
+   * @param modifier a function that receives the current judge config and returns a modified one
    * @return the assertion object
    */
-  ProcessInstanceAssert withJudgeConfig(JudgeConfig judgeConfig);
+  ProcessInstanceAssert withJudgeConfig(UnaryOperator<JudgeConfig> modifier);
 
   /**
    * Verifies that a process variable's value satisfies a natural language expectation using an LLM
