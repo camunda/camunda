@@ -251,9 +251,12 @@ const TopPanel: React.FC = observer(() => {
 
   const {isModificationModeEnabled} = modificationsStore;
 
-  const {handleDrillDown} = useDrillDownNavigation(processInstanceId);
+  const {handleDrillDown, pendingDrillDownElementId} =
+    useDrillDownNavigation(processInstanceId);
 
-  const drilldownElements = useMemo(() => {
+  const customElementClasses = useMemo<
+    [elementId: string, className: string][]
+  >(() => {
     if (
       !IS_NEW_PROCESS_INSTANCE_PAGE ||
       isModificationModeEnabled ||
@@ -263,15 +266,25 @@ const TopPanel: React.FC = observer(() => {
       return [];
     }
 
-    return Object.entries(businessObjects)
+    const drilldownClasses: [string, string][] = Object.entries(businessObjects)
       .filter(([elementId, bo]) =>
         isDrillDownCandidate(elementId, bo, totalRunningInstancesByElement),
       )
-      .map(([elementId]) => elementId);
+      .map(([elementId]) => [elementId, 'op-drilldown'] as const);
+
+    if (pendingDrillDownElementId !== null) {
+      drilldownClasses.push([
+        pendingDrillDownElementId,
+        'op-drilldown-loading',
+      ]);
+    }
+
+    return drilldownClasses;
   }, [
     businessObjects,
     totalRunningInstancesByElement,
     isModificationModeEnabled,
+    pendingDrillDownElementId,
   ]);
 
   useEffect(() => {
@@ -418,9 +431,9 @@ const TopPanel: React.FC = observer(() => {
                   !isModificationModeEnabled ||
                   hasSelectedElementMultipleRunningInstances
                 }
-                drilldownElements={drilldownElements}
-                onElementDoubleClick={() => {
-                  handleDrillDown();
+                customElementClasses={customElementClasses}
+                onElementDoubleClick={(elementId) => {
+                  handleDrillDown(elementId);
                 }}
               >
                 {stateOverlays.map((overlay) => {

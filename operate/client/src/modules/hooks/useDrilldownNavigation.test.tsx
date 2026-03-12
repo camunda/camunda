@@ -35,6 +35,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 const PROCESS_INSTANCE_KEY = '2251799813685249';
+const ELEMENT_ID = 'confirmDelivery';
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -66,7 +67,7 @@ describe('useDrillDownNavigation', () => {
     );
 
     await act(async () => {
-      result.current.handleDrillDown();
+      result.current.handleDrillDown(ELEMENT_ID);
     });
 
     expect(mockNavigate).toHaveBeenCalledWith(
@@ -88,7 +89,7 @@ describe('useDrillDownNavigation', () => {
     );
 
     await act(async () => {
-      result.current.handleDrillDown();
+      result.current.handleDrillDown(ELEMENT_ID);
     });
 
     expect(mockNavigate).not.toHaveBeenCalled();
@@ -103,7 +104,7 @@ describe('useDrillDownNavigation', () => {
     );
 
     await act(async () => {
-      result.current.handleDrillDown();
+      result.current.handleDrillDown(ELEMENT_ID);
     });
 
     expect(mockNavigate).not.toHaveBeenCalled();
@@ -118,7 +119,7 @@ describe('useDrillDownNavigation', () => {
     );
 
     await act(async () => {
-      result.current.handleDrillDown();
+      result.current.handleDrillDown(ELEMENT_ID);
     });
 
     expect(mockNavigate).not.toHaveBeenCalled();
