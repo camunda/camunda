@@ -78,7 +78,7 @@ class BackupServiceTransitionStepTest {
     lenient().when(raftPartition.dataDirectory()).thenReturn(Path.of("/tmp/zeebe").toFile());
 
     lenient()
-        .when(actorSchedulingService.submitActor(any()))
+        .when(actorSchedulingService.submitActor(any(), any()))
         .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
 
     lenient()
