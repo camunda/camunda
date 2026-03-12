@@ -7,7 +7,6 @@
  */
 
 import {useCallback} from 'react';
-import type {InfiniteData} from '@tanstack/react-query';
 
 const ROW_HEIGHT = 64;
 const DEFAULT_PAGE_SIZE = 50;
@@ -65,22 +64,4 @@ function useDashboardScrollPagination(
   };
 }
 
-type PageResponse = {
-  items: unknown[];
-  page: {totalItems: number};
-};
-
-/**
- * Shared select function for dashboard paginated queries.
- * Flattens infinite query pages into a single items array with totalCount.
- */
-function flattenPaginatedPages<T extends PageResponse>(
-  data: InfiniteData<T>,
-): {items: T['items']; totalCount: number} {
-  return {
-    items: data.pages.flatMap((page) => page.items),
-    totalCount: data.pages[0]?.page.totalItems ?? 0,
-  };
-}
-
-export {useDashboardScrollPagination, flattenPaginatedPages};
+export {useDashboardScrollPagination};

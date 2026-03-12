@@ -22,10 +22,8 @@ import {
   PAGE_LIMIT as INCIDENT_PAGE_LIMIT,
 } from 'modules/queries/incidentStatistics/useIncidentProcessInstanceStatisticsByErrorPaginated';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
-import {
-  useDashboardScrollPagination,
-  flattenPaginatedPages,
-} from './useDashboardScrollPagination';
+import {useDashboardScrollPagination} from './useDashboardScrollPagination';
+import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 
 const Dashboard: React.FC = () => {
   const scrollableContentRef = useRef<HTMLDivElement>(null);
