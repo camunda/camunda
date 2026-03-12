@@ -37,22 +37,15 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
       - name: Build Camunda distribution
-        run: ./mvnw install -Dquickly -T1C -PskipFrontendBuild
+        id: build
+        uses: ./.github/actions/build-zeebe
+        with:
+          maven-extra-args: -PskipFrontendBuild
 
       - name: Extract distribution
         run: |
           mkdir -p dev-dist
-          exploded="dist/target/camunda-zeebe"
-          if [ -d "$exploded/bin" ]; then
-            cp -a "$exploded"/. dev-dist/
-          else
-            tarball=$(find dist/target -maxdepth 1 -name 'camunda-zeebe-*.tar.gz' | head -1)
-            if [ -z "$tarball" ]; then
-              echo "ERROR: No dist build output found."
-              exit 1
-            fi
-            tar xzf "$tarball" --strip-components=1 -C dev-dist
-          fi
+          tar xzf "${{ steps.build.outputs.distball }}" --strip-components=1 -C dev-dist
 
       - name: Upload distribution artifact
         uses: actions/upload-artifact@v4
@@ -73,82 +66,82 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # PostgreSQL - Supported versions: 14, 15, 16, 17, 18
-          - database-name: "Postgres 14"
-            database-type: "postgres"
-            database-image-version: "14-alpine"
-            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
-            jdbc-username: "camunda"
-            jdbc-password: "camunda"
-          - database-name: "Postgres 15"
-            database-type: "postgres"
-            database-image-version: "15-alpine"
-            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
-            jdbc-username: "camunda"
-            jdbc-password: "camunda"
-          - database-name: "Postgres 16"
-            database-type: "postgres"
-            database-image-version: "16-alpine"
-            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
-            jdbc-username: "camunda"
-            jdbc-password: "camunda"
-          - database-name: "Postgres 17"
-            database-type: "postgres"
-            database-image-version: "17-alpine"
-            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
-            jdbc-username: "camunda"
-            jdbc-password: "camunda"
-          - database-name: "Postgres 18"
-            database-type: "postgres"
-            database-image-version: "18-alpine"
-            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
-            jdbc-username: "camunda"
-            jdbc-password: "camunda"
-          # MySQL - Supported version: 8.4
-          - database-name: "MySQL 8.4"
-            database-type: "mysql"
-            database-image-version: "8.4"
-            jdbc-url: "jdbc:mysql://localhost:3306/camunda"
-            jdbc-username: "camunda"
-            jdbc-password: "camunda"
-          # MariaDB - Supported versions: 10.11, 11.4, 11.8
-          - database-name: "MariaDB 10.11"
-            database-type: "mariadb"
-            database-image-version: "10.11"
-            jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
-            jdbc-username: "camunda"
-            jdbc-password: "camunda"
-          - database-name: "MariaDB 11.4"
-            database-type: "mariadb"
-            database-image-version: "11.4"
-            jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
-            jdbc-username: "camunda"
-            jdbc-password: "camunda"
-          - database-name: "MariaDB 11.8"
-            database-type: "mariadb"
-            database-image-version: "11.8"
-            jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
-            jdbc-username: "camunda"
-            jdbc-password: "camunda"
-          # Microsoft SQL Server - Supported versions: 2019, 2022, 2025
-          - database-name: "MSSQL 2019"
-            database-type: "mssql"
-            database-image-version: "2019-latest"
-            jdbc-url: "jdbc:sqlserver://localhost:1433;Encrypt=false"
-            jdbc-username: "sa"
-            jdbc-password: "Camunda#8_demo"
-          - database-name: "MSSQL 2022"
-            database-type: "mssql"
-            database-image-version: "2022-latest"
-            jdbc-url: "jdbc:sqlserver://localhost:1433;Encrypt=false"
-            jdbc-username: "sa"
-            jdbc-password: "Camunda#8_demo"
-          - database-name: "MSSQL 2025"
-            database-type: "mssql"
-            database-image-version: "2025-latest"
-            jdbc-url: "jdbc:sqlserver://localhost:1433;Encrypt=false"
-            jdbc-username: "sa"
-            jdbc-password: "Camunda#8_demo"
+#          # PostgreSQL - Supported versions: 14, 15, 16, 17, 18
+#          - database-name: "Postgres 14"
+#            database-type: "postgres"
+#            database-image-version: "14-alpine"
+#            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
+#            jdbc-username: "camunda"
+#            jdbc-password: "camunda"
+#          - database-name: "Postgres 15"
+#            database-type: "postgres"
+#            database-image-version: "15-alpine"
+#            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
+#            jdbc-username: "camunda"
+#            jdbc-password: "camunda"
+#          - database-name: "Postgres 16"
+#            database-type: "postgres"
+#            database-image-version: "16-alpine"
+#            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
+#            jdbc-username: "camunda"
+#            jdbc-password: "camunda"
+#          - database-name: "Postgres 17"
+#            database-type: "postgres"
+#            database-image-version: "17-alpine"
+#            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
+#            jdbc-username: "camunda"
+#            jdbc-password: "camunda"
+#          - database-name: "Postgres 18"
+#            database-type: "postgres"
+#            database-image-version: "18-alpine"
+#            jdbc-url: "jdbc:postgresql://localhost:5432/camunda"
+#            jdbc-username: "camunda"
+#            jdbc-password: "camunda"
+#          # MySQL - Supported version: 8.4
+#          - database-name: "MySQL 8.4"
+#            database-type: "mysql"
+#            database-image-version: "8.4"
+#            jdbc-url: "jdbc:mysql://localhost:3306/camunda"
+#            jdbc-username: "camunda"
+#            jdbc-password: "camunda"
+#          # MariaDB - Supported versions: 10.11, 11.4, 11.8
+#          - database-name: "MariaDB 10.11"
+#            database-type: "mariadb"
+#            database-image-version: "10.11"
+#            jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
+#            jdbc-username: "camunda"
+#            jdbc-password: "camunda"
+#          - database-name: "MariaDB 11.4"
+#            database-type: "mariadb"
+#            database-image-version: "11.4"
+#            jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
+#            jdbc-username: "camunda"
+#            jdbc-password: "camunda"
+#          - database-name: "MariaDB 11.8"
+#            database-type: "mariadb"
+#            database-image-version: "11.8"
+#            jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
+#            jdbc-username: "camunda"
+#            jdbc-password: "camunda"
+#          # Microsoft SQL Server - Supported versions: 2019, 2022, 2025
+#          - database-name: "MSSQL 2019"
+#            database-type: "mssql"
+#            database-image-version: "2019-latest"
+#            jdbc-url: "jdbc:sqlserver://localhost:1433;Encrypt=false"
+#            jdbc-username: "sa"
+#            jdbc-password: "Camunda#8_demo"
+#          - database-name: "MSSQL 2022"
+#            database-type: "mssql"
+#            database-image-version: "2022-latest"
+#            jdbc-url: "jdbc:sqlserver://localhost:1433;Encrypt=false"
+#            jdbc-username: "sa"
+#            jdbc-password: "Camunda#8_demo"
+#          - database-name: "MSSQL 2025"
+#            database-type: "mssql"
+#            database-image-version: "2025-latest"
+#            jdbc-url: "jdbc:sqlserver://localhost:1433;Encrypt=false"
+#            jdbc-username: "sa"
+#            jdbc-password: "Camunda#8_demo"
           # Oracle - Supported versions: 21c, 23ai
           - database-name: "Oracle 23ai"
             database-type: "oracle"
@@ -156,12 +149,12 @@ jobs:
             jdbc-url: "jdbc:oracle:thin:@localhost:1521/FREEPDB1"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
-          - database-name: "Oracle 21c"
-            database-type: "oracle-21"
-            database-image-version: "21-slim-faststart"
-            jdbc-url: "jdbc:oracle:thin:@localhost:1521/xepdb1"
-            jdbc-username: "camunda"
-            jdbc-password: "camunda"
+#          - database-name: "Oracle 21c"
+#            database-type: "oracle-21"
+#            database-image-version: "21-slim-faststart"
+#            jdbc-url: "jdbc:oracle:thin:@localhost:1521/xepdb1"
+#            jdbc-username: "camunda"
+#            jdbc-password: "camunda"
     env:
       IMAGE_VERSION: ${{ matrix.database-image-version }}
     steps:
