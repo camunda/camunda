@@ -91,7 +91,7 @@ paths:
       operationId: getJobWorkerStatistics
       summary: Get job statistics by worker
       description: |
-        Returns aggregated metrics per worker for the given jobType.
+        Get statistics about jobs, grouped by worker, for a given job type.
       requestBody:
         required: true
         content:
@@ -363,7 +363,7 @@ components:
         - failed
       properties:
         worker:
-          description: The worker identifier.
+          description: The name of the worker activating the jobs, mostly used for logging purposes.
           type: string
           example: "worker-1"
         created:
