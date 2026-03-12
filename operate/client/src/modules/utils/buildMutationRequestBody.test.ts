@@ -189,7 +189,7 @@ describe('buildMutationRequestBody', () => {
         elementInstanceState: {$eq: 'ACTIVE'},
         errorMessage: 'some error',
         tenantId: 'tenant-xyz',
-        batchOperationKey: 'batch-123',
+        batchOperationId: 'batch-123',
         parentProcessInstanceKey: 'parent-456',
         hasRetriesLeft: true,
         incidentErrorHashCode: 37136123613781,
