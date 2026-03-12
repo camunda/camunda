@@ -410,7 +410,7 @@ jobs:
         run: |
           cd load-tests/setup/${{ env.NAMESPACE }}
 
-          # Build additional load test configuration
+          # Build load test configuration
           load_test_config="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} \
                             --set global.image.repository=${{ env.IMAGE_REPOSITORY }} \
                             --set global.image.pullSecrets[0].name=harbor-registry \
@@ -421,6 +421,39 @@ jobs:
             load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
           fi
 
+<<<<<<< HEAD
+=======
+          # Resolve image registry/repository based on whether official images are used
+          image_registry="${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}"
+          camunda_repo="${{ inputs.use-official-docker-images && 'camunda/camunda' || 'team-zeebe/camunda' }}"
+          optimize_repo="${{ inputs.use-official-docker-images && 'camunda/optimize' || 'team-zeebe/optimize' }}"
+          image_tag="${{ needs.calculate-image-tag.outputs.image-tag }}"
+
+          # Build platform configuration
+          additional_platform_config="--set global.image.tag=${image_tag} \
+            --set orchestration.image.registry=${image_registry} \
+            --set orchestration.image.repository=${camunda_repo} \
+            --set orchestration.image.tag=${image_tag}"
+
+          # Append optimize image config if enabled
+          if [[ "${{ inputs.enable-optimize }}" == "true" ]]; then
+            additional_platform_config+=" \
+              --set optimize.image.registry=${image_registry} \
+              --set optimize.image.repository=${optimize_repo} \
+              --set optimize.image.tag=${image_tag}"
+          fi
+
+          # Append user-provided helm values if present
+          if [[ -n "${{ inputs.platform-helm-values }}" ]]; then
+            additional_platform_config+=" ${{ inputs.platform-helm-values }}"
+          fi
+
+          # Append scenario-specific platform configuration if present (e.g. max scenario disables consistency checks)
+          if [[ -n "${{ needs.calculate-scenario-config.outputs.platform-additional-config }}" ]]; then
+            additional_platform_config+=" ${{ needs.calculate-scenario-config.outputs.platform-additional-config }}"
+          fi
+
+>>>>>>> 017ca0a0 (feat: enhance load test configuration with dynamic image registry and repository settings)
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
             enable_optimize=${{ inputs.enable-optimize }} \
