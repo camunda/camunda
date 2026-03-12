@@ -84,12 +84,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final AuthorizationCheckBehavior authCheckBehavior) {
     commandProcessors =
         new UserTaskCommandProcessors(
-            state,
-            keyGenerator,
-            bpmnBehaviors,
-            writers,
-            asyncRequestBehavior,
-            authCheckBehavior);
+            state, keyGenerator, bpmnBehaviors, writers, asyncRequestBehavior, authCheckBehavior);
     processState = state.getProcessState();
     this.userTaskState = userTaskState;
     elementInstanceState = state.getElementInstanceState();
