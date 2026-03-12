@@ -30,6 +30,7 @@ import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.configuration.CoverageReportConfiguration;
 import io.camunda.process.test.impl.configuration.JudgeConfiguration;
+import io.camunda.process.test.impl.configuration.JudgeConfiguration.AwsCredentialsConfiguration;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
@@ -333,7 +334,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private JudgeConfigBootstrapData.ProviderConfig createProviderConfig(
       final JudgeConfiguration.ChatModelConfiguration chatModel) {
-    final JudgeConfiguration.CredentialsConfiguration credentials = chatModel.getCredentials();
+    final AwsCredentialsConfiguration credentials = chatModel.getCredentials();
     final String provider = chatModel.getProvider().trim().toLowerCase();
     switch (provider) {
       case JudgeConfigBootstrapData.ProviderConfig.PROVIDER_OPENAI:
