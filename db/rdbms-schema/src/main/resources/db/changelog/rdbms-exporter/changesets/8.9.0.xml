@@ -494,7 +494,7 @@
       </column>
       <column name="TENANT_KEY" type="BIGINT"/>
       <column name="NAME" type="NVARCHAR(${userCharColumnSize})"/>
-      <column name="DESCRIPTION" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="DESCRIPTION" type="CLOB"/>
     </createTable>
 
     <createIndex tableName="${prefix}TENANT"
@@ -529,7 +529,7 @@
       </column>
       <column name="ROLE_KEY" type="BIGINT"/>
       <column name="NAME" type="NVARCHAR(${userCharColumnSize})"/>
-      <column name="DESCRIPTION" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="DESCRIPTION" type="CLOB"/>
     </createTable>
 
     <createIndex tableName="${prefix}ROLES"
@@ -561,7 +561,7 @@
       </column>
       <column name="GROUP_KEY" type="BIGINT"/>
       <column name="NAME" type="NVARCHAR(${userCharColumnSize})"/>
-      <column name="DESCRIPTION" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="DESCRIPTION" type="CLOB"/>
     </createTable>
 
     <createIndex tableName="${prefix}GROUP_"
@@ -1260,35 +1260,6 @@
     <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_PD_KEY">
       <column name="PROCESS_DEFINITION_KEY"/>
     </createIndex>
-  </changeSet>
-
-  <!-- VARCHAR->CLOB conversion via a multi-step approach to ensure compatibility across all
-       databases (e.g. Oracle does not support direct VARCHAR2->CLOB alteration: ORA-22858) -->
-  <changeSet id="alter_tenant_description_to_clob" author="camunda">
-    <addColumn tableName="${prefix}TENANT">
-      <column name="DESCRIPTION_CLOB" type="CLOB"/>
-    </addColumn>
-    <sql>UPDATE ${prefix}TENANT SET DESCRIPTION_CLOB = DESCRIPTION</sql>
-    <dropColumn tableName="${prefix}TENANT" columnName="DESCRIPTION"/>
-    <renameColumn tableName="${prefix}TENANT" oldColumnName="DESCRIPTION_CLOB" newColumnName="DESCRIPTION"/>
-  </changeSet>
-
-  <changeSet id="alter_role_description_to_clob" author="camunda">
-    <addColumn tableName="${prefix}ROLES">
-      <column name="DESCRIPTION_CLOB" type="CLOB"/>
-    </addColumn>
-    <sql>UPDATE ${prefix}ROLES SET DESCRIPTION_CLOB = DESCRIPTION</sql>
-    <dropColumn tableName="${prefix}ROLES" columnName="DESCRIPTION"/>
-    <renameColumn tableName="${prefix}ROLES" oldColumnName="DESCRIPTION_CLOB" newColumnName="DESCRIPTION"/>
-  </changeSet>
-
-  <changeSet id="alter_group_description_to_clob" author="camunda">
-    <addColumn tableName="${prefix}GROUP_">
-      <column name="DESCRIPTION_CLOB" type="CLOB"/>
-    </addColumn>
-    <sql>UPDATE ${prefix}GROUP_ SET DESCRIPTION_CLOB = DESCRIPTION</sql>
-    <dropColumn tableName="${prefix}GROUP_" columnName="DESCRIPTION"/>
-    <renameColumn tableName="${prefix}GROUP_" oldColumnName="DESCRIPTION_CLOB" newColumnName="DESCRIPTION"/>
   </changeSet>
 
   <changeSet id="create_audit_log_entity_key_index" author="camunda">
