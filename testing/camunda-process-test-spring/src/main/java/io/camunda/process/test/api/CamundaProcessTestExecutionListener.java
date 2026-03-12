@@ -193,11 +193,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     final CamundaDataSource dataSource = new CamundaDataSource(client);
     CamundaAssert.initialize(dataSource);
 
-    // re-initialize judge config (reset in afterTestMethod clears the ThreadLocal)
-    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
-        testContext.getApplicationContext().getBean(CamundaProcessTestRuntimeConfiguration.class);
-    initializeJudgeConfig(testContext, runtimeConfiguration);
-
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
 
