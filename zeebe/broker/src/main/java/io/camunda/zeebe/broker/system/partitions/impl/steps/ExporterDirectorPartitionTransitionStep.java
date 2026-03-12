@@ -28,7 +28,9 @@ import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -110,7 +112,9 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
     final var exporterDescriptors = getEnabledExporterDescriptors(context);
     final BrokerCfg brokerCfg = context.getBrokerCfg();
     final ExportingCfg exportingCfg = brokerCfg.getExporting();
-    final var exporterFilter = SkipPositionsFilter.of(exportingCfg.skipRecords());
+    final int partitionId = context.getPartitionId();
+    final var exporterFilter =
+        SkipPositionsFilter.of(computeSkipPositions(exportingCfg, partitionId));
     final ExporterMode exporterMode =
         targetRole == Role.LEADER ? ExporterMode.ACTIVE : ExporterMode.PASSIVE;
     final ExporterDirectorContext exporterCtx =
@@ -158,6 +162,23 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
           }
         });
     return startFuture;
+  }
+
+  private static Set<Long> computeSkipPositions(
+      final ExportingCfg exportingCfg, final int partitionId) {
+    final Set<Long> globalPositions = exportingCfg.skipRecords();
+    final Set<Long> partitionPositions =
+        exportingCfg.skipRecordsForPartitions().getOrDefault(partitionId, Set.of());
+
+    if (partitionPositions.isEmpty()) {
+      return globalPositions;
+    } else if (globalPositions.isEmpty()) {
+      return partitionPositions;
+    } else {
+      final Set<Long> combined = new HashSet<>(globalPositions);
+      combined.addAll(partitionPositions);
+      return combined;
+    }
   }
 
   private void deleteOrEnableExportersIfConfigChanged(
