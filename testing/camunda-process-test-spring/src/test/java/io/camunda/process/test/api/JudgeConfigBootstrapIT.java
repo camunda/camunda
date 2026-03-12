@@ -51,6 +51,15 @@ public class JudgeConfigBootstrapIT {
   }
 
   @Configuration
+  static class GenericChatModelAdapterConfig {
+
+    @Bean("my-generic")
+    ChatModelAdapter genericAdapter() {
+      return ADAPTER_A;
+    }
+  }
+
+  @Configuration
   static class MultipleChatModelAdapterConfig {
 
     @Bean("my-custom")
@@ -210,7 +219,7 @@ public class JudgeConfigBootstrapIT {
   class WithSingleChatModelAdapterBean {
 
     @Test
-    void shouldUseSingleBeanRegardlessOfProviderProperty() {
+    void shouldUseSingleBeanWhenNoProviderConfigured() {
       final JudgeConfig config = CamundaAssert.getJudgeConfig();
       assertThat(config).isNotNull();
       assertThat(config.getChatModel()).isSameAs(ADAPTER_A);
@@ -283,7 +292,7 @@ public class JudgeConfigBootstrapIT {
         "camunda.process-test.judge.threshold=0.6",
       })
   @CamundaSpringProcessTest
-  @Import(JudgeConfigBootstrapIT.ChatModelAdapterConfig.class)
+  @Import(JudgeConfigBootstrapIT.GenericChatModelAdapterConfig.class)
   class GenericProviderWithCustomProperties {
 
     @Autowired CamundaProcessTestRuntimeConfiguration runtimeConfig;

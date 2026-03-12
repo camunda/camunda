@@ -80,6 +80,36 @@ class JudgeConfigResolverTest {
   }
 
   @Test
+  void shouldMatchSingleBeanByNameWhenProviderConfigured() {
+    when(applicationContext.getBeansOfType(ChatModelAdapter.class))
+        .thenReturn(Map.of("my-adapter", ADAPTER_A));
+
+    final JudgeConfiguration config = new JudgeConfiguration();
+    config.getChatModel().setProvider("my-adapter");
+
+    final Optional<JudgeConfig> result = JudgeConfigResolver.resolve(applicationContext, config);
+
+    assertThat(result).isPresent();
+    assertThat(result.get().getChatModel()).isSameAs(ADAPTER_A);
+  }
+
+  @Test
+  void shouldFallBackToSpiWhenSingleBeanAndProviderDoesNotMatch() {
+    when(applicationContext.getBeansOfType(ChatModelAdapter.class))
+        .thenReturn(Map.of("my-adapter", ADAPTER_A));
+
+    final JudgeConfiguration config = new JudgeConfiguration();
+    config.getChatModel().setProvider("openai");
+    config.getChatModel().setModel("gpt-4o");
+    config.getChatModel().setApiKey("sk-test");
+
+    final Optional<JudgeConfig> result = JudgeConfigResolver.resolve(applicationContext, config);
+
+    assertThat(result).isPresent();
+    assertThat(result.get().getChatModel()).isNotSameAs(ADAPTER_A);
+  }
+
+  @Test
   void shouldSelectBeanByProviderName() {
     when(applicationContext.getBeansOfType(ChatModelAdapter.class))
         .thenReturn(Map.of("my-custom", ADAPTER_A, "another", ADAPTER_B));
