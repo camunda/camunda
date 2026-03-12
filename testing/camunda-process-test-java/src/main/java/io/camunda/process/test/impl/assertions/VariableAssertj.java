@@ -21,28 +21,36 @@ import static org.assertj.core.api.Assertions.fail;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.response.ElementInstance;
+import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.assertions.ElementSelector;
+import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper.JsonMappingException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.ThrowingConsumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(VariableAssertj.class);
 
   private final CamundaDataSource dataSource;
   private final CamundaAssertAwaitBehavior awaitBehavior;
   private final CamundaAssertJsonMapper jsonMapper;
-  private final VariableFetcher variableFetcher;
+  private JudgeConfig judgeConfig;
 
   public VariableAssertj(
       final CamundaDataSource dataSource,
@@ -53,7 +61,6 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     this.dataSource = dataSource;
     this.awaitBehavior = awaitBehavior;
     this.jsonMapper = jsonMapper;
-    this.variableFetcher = new VariableFetcher(dataSource);
   }
 
   public void hasLocalVariableNames(
@@ -67,14 +74,13 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         instance ->
             hasVariableNames(
                 () ->
-                    variableFetcher.getLocalProcessInstanceVariables(
+                    getLocalProcessInstanceVariables(
                         processInstanceKey, instance.getElementInstanceKey()),
                 variableNames));
   }
 
   public void hasVariableNames(final long processInstanceKey, final String... variableNames) {
-    hasVariableNames(
-        () -> variableFetcher.getGlobalProcessInstanceVariables(processInstanceKey), variableNames);
+    hasVariableNames(() -> getGlobalProcessInstanceVariables(processInstanceKey), variableNames);
   }
 
   private void hasVariableNames(
@@ -113,7 +119,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                 variableName,
                 variableValue,
                 () ->
-                    variableFetcher.getLocalProcessInstanceVariables(
+                    getLocalProcessInstanceVariables(
                         processInstanceKey, instance.getElementInstanceKey())));
   }
 
@@ -121,9 +127,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final long processInstanceKey, final String variableName, final Object variableValue) {
 
     hasVariable(
-        variableName,
-        variableValue,
-        () -> variableFetcher.getGlobalProcessInstanceVariables(processInstanceKey));
+        variableName, variableValue, () -> getGlobalProcessInstanceVariables(processInstanceKey));
   }
 
   private void hasVariable(
@@ -167,7 +171,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                 variableValueType,
                 requirement,
                 () ->
-                    variableFetcher.getLocalProcessInstanceVariables(
+                    getLocalProcessInstanceVariables(
                         processInstanceKey, instance.getElementInstanceKey())));
   }
 
@@ -181,7 +185,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         variableName,
         variableValueType,
         requirement,
-        () -> variableFetcher.getGlobalProcessInstanceVariables(processInstanceKey));
+        () -> getGlobalProcessInstanceVariables(processInstanceKey));
   }
 
   private <T> void hasVariableSatisfies(
@@ -240,16 +244,14 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
             hasVariables(
                 expectedVariables,
                 () ->
-                    variableFetcher.getLocalProcessInstanceVariables(
+                    getLocalProcessInstanceVariables(
                         processInstanceKey, instance.getElementInstanceKey())));
   }
 
   public void hasVariables(
       final long processInstanceKey, final Map<String, Object> expectedVariables) {
 
-    hasVariables(
-        expectedVariables,
-        () -> variableFetcher.getGlobalProcessInstanceVariables(processInstanceKey));
+    hasVariables(expectedVariables, () -> getGlobalProcessInstanceVariables(processInstanceKey));
   }
 
   private void hasVariables(
@@ -323,5 +325,199 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final Consumer<ElementInstanceFilter> filter,
       final Consumer<List<ElementInstance>> assertion) {
     awaitBehavior.untilAsserted(() -> dataSource.findElementInstances(filter), assertion);
+  }
+
+  // --- Judge evaluation methods ---
+
+  void setJudgeConfig(final JudgeConfig judgeConfig) {
+    this.judgeConfig = judgeConfig;
+  }
+
+  public void hasVariableSatisfiesJudge(
+      final long processInstanceKey, final String variableName, final String expectation) {
+
+    assertJudgeConfigured();
+    hasVariableSatisfiesJudge(
+        processInstanceKey, variableName, expectation, judgeConfig.getThreshold());
+  }
+
+  public void hasVariableSatisfiesJudge(
+      final long processInstanceKey,
+      final String variableName,
+      final String expectation,
+      final double threshold) {
+
+    assertJudgeConfigured();
+    assertExpectationNotEmpty(expectation);
+    assertThresholdInRange(threshold);
+
+    final AtomicReference<String> capturedValue = new AtomicReference<>();
+    awaitBehavior.untilAsserted(
+        () -> {
+          final Map<String, String> variables =
+              getGlobalProcessInstanceVariables(processInstanceKey);
+
+          assertThat(variables)
+              .withFailMessage(
+                  "%s should have a variable '%s' but the variable doesn't exist.",
+                  actual, variableName)
+              .containsKey(variableName);
+
+          capturedValue.set(variables.get(variableName));
+        });
+
+    evaluateJudge(variableName, expectation, threshold, capturedValue.get());
+  }
+
+  public void hasLocalVariableSatisfiesJudge(
+      final long processInstanceKey,
+      final ElementSelector selector,
+      final String variableName,
+      final String expectation) {
+
+    assertJudgeConfigured();
+    hasLocalVariableSatisfiesJudge(
+        processInstanceKey, selector, variableName, expectation, judgeConfig.getThreshold());
+  }
+
+  public void hasLocalVariableSatisfiesJudge(
+      final long processInstanceKey,
+      final ElementSelector selector,
+      final String variableName,
+      final String expectation,
+      final double threshold) {
+
+    assertJudgeConfigured();
+    assertExpectationNotEmpty(expectation);
+    assertThresholdInRange(threshold);
+
+    final AtomicReference<String> capturedValue = new AtomicReference<>();
+    withLocalVariableAssertion(
+        processInstanceKey,
+        selector,
+        instance -> {
+          final Map<String, String> variables =
+              getLocalProcessInstanceVariables(
+                  processInstanceKey, instance.getElementInstanceKey());
+
+          assertThat(variables)
+              .withFailMessage(
+                  "%s should have a variable '%s' but the variable doesn't exist.",
+                  actual, variableName)
+              .containsKey(variableName);
+
+          capturedValue.set(variables.get(variableName));
+        });
+
+    evaluateJudge(variableName, expectation, threshold, capturedValue.get());
+  }
+
+  private void evaluateJudge(
+      final String variableName,
+      final String expectation,
+      final double threshold,
+      final String variableValue) {
+
+    final JudgeEvaluation evaluation =
+        new JudgeEvaluation(judgeConfig.getChatModel(), expectation, judgeConfig.getCustomPrompt());
+
+    try {
+      final JudgeEvaluation.Result result = evaluation.evaluate(variableValue);
+
+      if (!result.passed(threshold)) {
+        fail(
+            "%s variable '%s' did not satisfy judge expectation.\n"
+                + "  Expectation: %s\n"
+                + "  Actual value: %s\n"
+                + "  Score: %.2f (threshold: %.2f)\n"
+                + "  Reasoning: %s",
+            actual,
+            variableName,
+            expectation,
+            variableValue,
+            result.getScore(),
+            threshold,
+            result.getReasoning());
+      }
+    } catch (final JudgeResponseParseException e) {
+      fail(
+          "%s judge evaluation failed for variable '%s'.\n"
+              + "  The judge LLM returned an unparseable response.\n"
+              + "  Cause: %s\n"
+              + "  Raw response: %s",
+          actual, variableName, e.getCause().getMessage(), e.getRawResponse());
+    }
+  }
+
+  private void assertJudgeConfigured() {
+    if (judgeConfig == null) {
+      throw new IllegalStateException(
+          "JudgeConfig is not set. Ensure to provide a JudgeConfig instance to use judge assertions.");
+    }
+  }
+
+  private static void assertExpectationNotEmpty(final String expectation) {
+    if (expectation == null || expectation.trim().isEmpty()) {
+      throw new IllegalArgumentException("expectation must not be null or empty");
+    }
+  }
+
+  private static void assertThresholdInRange(final double threshold) {
+    if (threshold < 0.0 || threshold > 1.0) {
+      throw new IllegalArgumentException(
+          "threshold must be between 0.0 and 1.0, was: " + threshold);
+    }
+  }
+
+  // --- Variable fetching ---
+
+  private Map<String, String> getGlobalProcessInstanceVariables(final long processInstanceKey) {
+    final List<Variable> variables =
+        dataSource.findGlobalVariablesByProcessInstanceKey(processInstanceKey);
+    return toMap(ensureVariablesAreNotTruncated(variables));
+  }
+
+  private Map<String, String> getLocalProcessInstanceVariables(
+      final long processInstanceKey, final long elementInstanceKey) {
+    final List<Variable> variables =
+        dataSource.findVariables(
+            filter -> filter.processInstanceKey(processInstanceKey).scopeKey(elementInstanceKey));
+    return toMap(ensureVariablesAreNotTruncated(variables));
+  }
+
+  private List<Variable> ensureVariablesAreNotTruncated(final List<Variable> variablesToCheck) {
+    return variablesToCheck.stream()
+        .map(
+            variable -> {
+              if (variable.isTruncated()) {
+                return fetchCompleteVariableByKey(variable);
+              } else {
+                return variable;
+              }
+            })
+        .collect(Collectors.toList());
+  }
+
+  private Variable fetchCompleteVariableByKey(final Variable variable) {
+    try {
+      return dataSource.getVariable(variable.getVariableKey());
+    } catch (final Throwable t) {
+      final String expandVariableException =
+          String.format(
+              "Unable to fetch complete variable data for truncated variable [name: %s]. Will attempt to "
+                  + "complete the assertion based on the truncated value which may lead to errors.",
+              variable.getName());
+      LOG.warn(expandVariableException, t);
+      return variable;
+    }
+  }
+
+  private Map<String, String> toMap(final List<Variable> variables) {
+    return variables.stream()
+        // We're deliberately switching from the Collectors.toMap collector to a custom
+        // implementation because it's allowed to have Camunda Variables with null values
+        // However, the toMap collector does not allow null values and would throw an exception.
+        // See this Stack Overflow issue for more context: https://stackoverflow.com/a/24634007
+        .collect(HashMap::new, (m, v) -> m.put(v.getName(), v.getValue()), HashMap::putAll);
   }
 }
