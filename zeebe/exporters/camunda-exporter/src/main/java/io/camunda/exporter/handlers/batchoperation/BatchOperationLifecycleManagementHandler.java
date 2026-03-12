@@ -132,6 +132,29 @@ public class BatchOperationLifecycleManagementHandler
     }
   }
 
+  // Painless script that guards against state regression in multi-partition clusters.
+  // - If the incoming state is terminal, it is always applied (terminal states take priority).
+  // - If the incoming state is non-terminal (ACTIVE from RESUMED, or SUSPENDED), it is only
+  //   applied when the current stored state is also non-terminal, preventing a lagging distributed
+  //   event from overwriting a terminal state.
+  // - endDate and errors are updated only when the state transition is applied, ensuring that
+  //   late non-terminal events cannot clear or modify the end date or errors of a terminal
+  //   operation.
+  static final String CONDITIONAL_STATE_UPDATE_SCRIPT =
+      """
+      def terminalStates = ['COMPLETED', 'PARTIALLY_COMPLETED', 'FAILED', 'CANCELED'];
+      def isNewStateTerminal = terminalStates.contains(params.state);
+      def isCurrentStateTerminal = terminalStates.contains(ctx._source.state);
+      def shouldApplyState = isNewStateTerminal || !isCurrentStateTerminal;
+      if (shouldApplyState) {
+          ctx._source.state = params.state;
+          ctx._source.endDate = params.endDate;
+          if (params.containsKey('errors')) {
+              ctx._source.errors = params.errors;
+          }
+      }
+      """;
+
   @Override
   public void flush(final BatchOperationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
