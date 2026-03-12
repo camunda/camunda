@@ -56,7 +56,7 @@ function useHandleOperationSuccess() {
       }
 
       notificationsStore.displayNotification({
-        kind: 'success',
+        kind: 'info',
         title: 'Instance is scheduled for deletion',
         isDismissable: true,
       });
@@ -68,7 +68,7 @@ function useHandleOperationSuccess() {
       source === 'instance-header'
     ) {
       notificationsStore.displayNotification({
-        kind: 'success',
+        kind: 'info',
         title: 'Instance is scheduled for cancellation',
         isDismissable: true,
       });
@@ -80,7 +80,7 @@ function useHandleOperationSuccess() {
       source === 'instance-header'
     ) {
       notificationsStore.displayNotification({
-        kind: 'success',
+        kind: 'info',
         title: 'Incidents are scheduled for retry',
         isDismissable: true,
       });
