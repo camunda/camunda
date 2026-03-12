@@ -141,7 +141,8 @@ public class JudgeAssertTest {
 
       // when / then - should pass with low threshold
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
-          .hasVariableSatisfiesJudge("result", "some expectation", 0.2);
+          .withJudgeConfig(config -> config.withThreshold(0.2))
+          .hasVariableSatisfiesJudge("result", "some expectation");
     }
 
     @Test
@@ -418,7 +419,8 @@ public class JudgeAssertTest {
 
       // when / then
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
-          .hasLocalVariableSatisfiesJudge("task1", "localVar", "some expectation", 0.3);
+          .withJudgeConfig(config -> config.withThreshold(0.3))
+          .hasLocalVariableSatisfiesJudge("task1", "localVar", "some expectation");
     }
 
     @Test
