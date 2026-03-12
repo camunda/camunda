@@ -43,6 +43,16 @@ import org.slf4j.LoggerFactory;
  *   <li>Handling initialization and re-initialization scenarios
  * </ul>
  *
+ * <p><b>Design decision — serial scheduling:</b> Only one batch operation is processed at a time.
+ * This is intentional for two reasons:
+ *
+ * <ul>
+ *   <li>batch operations have lower priority than normal Zeebe record processing, so we limit their
+ *       resource footprint to avoid impacting stream processing throughput; and
+ *   <li>two concurrent batch operations could target overlapping process instances, leading to
+ *       write conflicts on the same records. Serial execution eliminates both problems.
+ * </ul>
+ *
  * <p>The scheduler uses an atomic execution flag to ensure only one batch operation execution cycle
  * runs at a time, and maintains state about currently initializing operations to prevent duplicate
  * processing.
