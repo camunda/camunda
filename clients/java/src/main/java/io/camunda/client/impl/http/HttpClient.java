@@ -18,6 +18,7 @@ package io.camunda.client.impl.http;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.impl.util.AddressUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +26,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
@@ -50,6 +52,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class HttpClient implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(HttpClient.class);
+  private static final AtomicBoolean INSECURE_CONNECTION_WARNING_LOGGED = new AtomicBoolean(false);
 
   private static final int MAX_RETRY_ATTEMPTS = 2;
 
@@ -79,6 +82,14 @@ public final class HttpClient implements AutoCloseable {
   }
 
   public void start() {
+    if (AddressUtil.isPlaintextConnection(address)
+        && INSECURE_CONNECTION_WARNING_LOGGED.compareAndSet(false, true)) {
+      LOGGER.warn(
+          "The REST API is configured to use HTTP without TLS ({}). "
+              + "This is not recommended for production environments as communication will not be encrypted. "
+              + "Consider using HTTPS to secure the connection.",
+          address);
+    }
     client.start();
   }
 

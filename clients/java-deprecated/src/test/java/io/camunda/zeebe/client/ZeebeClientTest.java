@@ -1015,4 +1015,32 @@ public final class ZeebeClientTest extends ClientTest {
     // then
     assertThat(builder.getDefaultRequestTimeoutOffset()).isEqualTo(Duration.ofMillis(100));
   }
+
+  @Test
+  public void shouldBuildClientWithInsecureHttpRestAddress() throws URISyntaxException {
+    // given - using HTTP (not HTTPS) should trigger a warning
+    final URI httpRestAddress = new URI("http://localhost:8080");
+
+    // when - client is built with insecure REST address
+    try (final ZeebeClient client =
+        ZeebeClient.newClientBuilder().restAddress(httpRestAddress).build()) {
+
+      // then - client should be successfully created (warning is logged)
+      assertThat(client.getConfiguration().getRestAddress()).isEqualTo(httpRestAddress);
+    }
+  }
+
+  @Test
+  public void shouldBuildClientWithSecureHttpsRestAddress() throws URISyntaxException {
+    // given - using HTTPS should NOT trigger a warning
+    final URI httpsRestAddress = new URI("https://localhost:8443");
+
+    // when - client is built with secure REST address
+    try (final ZeebeClient client =
+        ZeebeClient.newClientBuilder().restAddress(httpsRestAddress).build()) {
+
+      // then - client should be successfully created (no warning logged)
+      assertThat(client.getConfiguration().getRestAddress()).isEqualTo(httpsRestAddress);
+    }
+  }
 }

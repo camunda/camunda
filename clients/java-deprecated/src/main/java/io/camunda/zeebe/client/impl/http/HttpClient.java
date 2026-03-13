@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 public final class HttpClient implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(HttpClient.class);
   private static final AtomicBoolean DEPRECATION_WARNING_LOGGED = new AtomicBoolean(false);
+  private static final AtomicBoolean INSECURE_CONNECTION_WARNING_LOGGED = new AtomicBoolean(false);
 
   private static final int MAX_RETRY_ATTEMPTS = 2;
 
@@ -80,7 +81,23 @@ public final class HttpClient implements AutoCloseable {
   }
 
   public void start() {
+    if (isPlaintextConnection(address)
+        && INSECURE_CONNECTION_WARNING_LOGGED.compareAndSet(false, true)) {
+      LOGGER.warn(
+          "The REST API is configured to use HTTP without TLS ({}). "
+              + "This is not recommended for production environments as communication will not be encrypted. "
+              + "Consider using HTTPS to secure the connection.",
+          address);
+    }
     client.start();
+  }
+
+  private static boolean isPlaintextConnection(final URI address) {
+    if (address == null) {
+      return true;
+    }
+    final String scheme = address.getScheme();
+    return "http".equals(scheme) || "grpc".equals(scheme);
   }
 
   @Override
