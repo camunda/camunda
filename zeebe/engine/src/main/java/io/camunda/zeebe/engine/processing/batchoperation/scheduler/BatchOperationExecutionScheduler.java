@@ -163,9 +163,9 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         executionState.set(currentState.advanceTo(cursor));
         yield initialPollingInterval;
       }
-      case Failure(final var exception) -> {
+      case Failure(final var message, final var errorType) -> {
         batchOperationInitializer.appendFailedCommand(
-            taskResultBuilder, batchOperation.getKey(), exception);
+            taskResultBuilder, batchOperation.getKey(), message, errorType);
         yield initialPollingInterval;
       }
       case Retry(final var delay, final int numAttempts, final String endCursor) -> {

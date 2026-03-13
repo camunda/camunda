@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 import static io.camunda.zeebe.protocol.record.value.BatchOperationType.CANCEL_PROCESS_INSTANCE;
 import static org.mockito.Mockito.*;
 
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.BatchOperationInitializationException;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryResult;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
@@ -116,10 +115,10 @@ public class BatchOperationExecutionSchedulerTest {
     when(batchOperationState.getNextPendingBatchOperation())
         .thenReturn(Optional.of(batchOperation));
 
-    final var exception =
-        new BatchOperationInitializationException(
-            "Test error", BatchOperationErrorType.QUERY_FAILED, "cursor");
-    when(retryHandler.executeWithRetry(any(), anyInt())).thenReturn(RetryResult.failure(exception));
+    final var errorMessage = "Test error";
+    final var errorType = BatchOperationErrorType.QUERY_FAILED;
+    when(retryHandler.executeWithRetry(any(), anyInt()))
+        .thenReturn(RetryResult.failure(errorMessage, errorType));
 
     // when
     execute();
@@ -127,7 +126,7 @@ public class BatchOperationExecutionSchedulerTest {
     // then
     verify(retryHandler).executeWithRetry(any(), anyInt());
     verify(batchOperationInitializer)
-        .appendFailedCommand(taskResultBuilder, BATCH_OPERATION_KEY, exception);
+        .appendFailedCommand(taskResultBuilder, BATCH_OPERATION_KEY, errorMessage, errorType);
     verify(scheduleService, times(2)).runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any());
   }
 

@@ -126,8 +126,7 @@ public class BatchOperationInitializationBehavior {
       default ->
           new InitializationOutcome.Failed(
               "Unexpected InitializationOutcome result: " + result.getClass().getSimpleName(),
-              BatchOperationErrorType.UNKNOWN,
-              context.currentCursor());
+              BatchOperationErrorType.UNKNOWN);
     };
   }
 
@@ -143,8 +142,7 @@ public class BatchOperationInitializationBehavior {
       } else {
         return new Failed(
             String.format(ERROR_MSG_FAILED_FIRST_CHUNK_APPEND, itemCount),
-            BatchOperationErrorType.RESULT_BUFFER_SIZE_EXCEEDED,
-            context.currentCursor());
+            BatchOperationErrorType.RESULT_BUFFER_SIZE_EXCEEDED);
       }
     } else {
       continueInitialization(taskResultBuilder, context);
@@ -184,43 +182,14 @@ public class BatchOperationInitializationBehavior {
   public void appendFailedCommand(
       final TaskResultBuilder taskResultBuilder,
       final long batchOperationKey,
-      final BatchOperationInitializationException exception) {
-    commandAppender.appendFailureCommand(
-        taskResultBuilder, batchOperationKey, exception.getMessage(), exception.getErrorType());
+      final String message,
+      final BatchOperationErrorType errorType) {
+    commandAppender.appendFailureCommand(taskResultBuilder, batchOperationKey, message, errorType);
   }
 
   public record BatchOperationInitializationResult(
       long batchOperationKey, String searchResultCursor) {}
 
-  public static class BatchOperationInitializationException extends RuntimeException {
-    private final String endCursor;
-    private final BatchOperationErrorType errorType;
-
-    public BatchOperationInitializationException(final Throwable e, final String endCursor) {
-      super(
-          String.format(
-              "Failed to initialize batch operation with end cursor: %s. Reason: %s",
-              endCursor, e.getMessage()),
-          e);
-      this.endCursor = endCursor;
-      errorType = BatchOperationErrorType.QUERY_FAILED;
-    }
-
-    public BatchOperationInitializationException(
-        final String message, final BatchOperationErrorType errorType, final String endCursor) {
-      super(message);
-      this.endCursor = endCursor;
-      this.errorType = errorType;
-    }
-
-    public BatchOperationErrorType getErrorType() {
-      return errorType;
-    }
-
-    public String getEndCursor() {
-      return endCursor;
-    }
-  }
 
   /**
    * Represents the outcome of a batch operation initialization attempt.
@@ -241,7 +210,7 @@ public class BatchOperationInitializationBehavior {
     record NeedsRetry(String cursor, Throwable cause) implements InitializationOutcome {}
 
     /** A terminal failure occurred. Contains the error message and type. */
-    record Failed(String message, BatchOperationErrorType errorType, String cursor)
+    record Failed(String message, BatchOperationErrorType errorType)
         implements InitializationOutcome {}
   }
 }
