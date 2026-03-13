@@ -145,7 +145,8 @@ public class SearchQueryFilterMapper {
           .ifPresent(builder::tenantIdOperations);
       if (filter.getBatchOperationId() != null && filter.getBatchOperationKey() != null) {
         validationErrors.add(
-            ERROR_MESSAGE_ONLY_ONE_FIELD.formatted("batchOperationId, batchOperationKey"));
+            ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
+                List.of("batchOperationId", "batchOperationKey")));
       } else {
         final var batchOperationFilter =
             filter.getBatchOperationKey() != null
@@ -674,7 +675,8 @@ public class SearchQueryFilterMapper {
           .ifPresent(builder::tenantIdOperations);
       if (filter.getBatchOperationId() != null && filter.getBatchOperationKey() != null) {
         validationErrors.add(
-            ERROR_MESSAGE_ONLY_ONE_FIELD.formatted("batchOperationId, batchOperationKey"));
+            ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
+                List.of("batchOperationId", "batchOperationKey")));
       } else {
         final var batchOperationFilter =
             filter.getBatchOperationKey() != null
