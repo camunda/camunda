@@ -51,7 +51,7 @@ class BatchOperationInitializationBehaviorTest {
   void setUp() {
     initializer =
         new BatchOperationInitializationBehavior(
-            itemProviderFactory, chunkAppender, commandBuilder, PAGE_SIZE, metrics);
+            itemProviderFactory, chunkAppender, commandBuilder, metrics);
 
     // Default batch operation setup
     batchOperation =
@@ -64,13 +64,23 @@ class BatchOperationInitializationBehaviorTest {
             .setStatus(CREATED);
   }
 
+  /** Creates an InitializationContext from the batch operation for testing. */
+  private InitializationContext createContext() {
+    return new InitializationContext(batchOperation, SEARCH_CURSOR, PAGE_SIZE, 0, false);
+  }
+
+  /** Creates an InitializationContext with custom page size. */
+  private InitializationContext createContextWithPageSize(final int pageSize) {
+    return new InitializationContext(batchOperation, SEARCH_CURSOR, pageSize, 0, false);
+  }
+
   @Test
   void shouldReturnEarlyWhenBatchOperationIsSuspended() {
     // given
     batchOperation.setStatus(SUSPENDED);
 
     // when
-    final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
+    final var result = initializer.initializeBatchOperation(createContext(), taskResultBuilder);
 
     // then
     assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
@@ -86,7 +96,7 @@ class BatchOperationInitializationBehaviorTest {
         .thenReturn(new ChunkingOutcome.Finished(NEXT_SEARCH_CURSOR, 2));
 
     // when
-    final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
+    final var result = initializer.initializeBatchOperation(createContext(), taskResultBuilder);
 
     // then
     assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
@@ -113,7 +123,7 @@ class BatchOperationInitializationBehaviorTest {
         .thenReturn(new ChunkingOutcome.Finished("cursor2", 2));
 
     // when
-    final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
+    final var result = initializer.initializeBatchOperation(createContext(), taskResultBuilder);
 
     // then
     assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
@@ -133,19 +143,19 @@ class BatchOperationInitializationBehaviorTest {
         .thenReturn(new ChunkingOutcome.BufferFull(2));
 
     // when
-    final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
+    final var result = initializer.initializeBatchOperation(createContext(), taskResultBuilder);
 
     // then
-    assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
-    final var success = (InitializationOutcome.Success) result;
-    assertThat(success.cursor()).isEqualTo(SEARCH_CURSOR);
+    assertThat(result).isInstanceOf(InitializationOutcome.ReducePageSize.class);
+    final var reducePageSize = (InitializationOutcome.ReducePageSize) result;
+    assertThat(reducePageSize.newPageSize()).isEqualTo(PAGE_SIZE / 2);
 
     verify(commandBuilder)
         .appendInitializationCommand(
             eq(taskResultBuilder),
             eq(BATCH_OPERATION_KEY),
             anyString(),
-            eq(PAGE_SIZE / 2)); // Should reduce page size
+            eq(PAGE_SIZE / 2)); // Should write INITIALIZE with reduced page size
   }
 
   @Test
@@ -156,7 +166,7 @@ class BatchOperationInitializationBehaviorTest {
         .thenReturn(new ChunkingOutcome.BufferFull(2));
 
     // when
-    final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
+    final var result = initializer.initializeBatchOperation(createContext(), taskResultBuilder);
 
     // then
     assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
@@ -176,7 +186,7 @@ class BatchOperationInitializationBehaviorTest {
         .thenReturn(new ChunkingOutcome.FetchFailed(exception));
 
     // when
-    final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
+    final var result = initializer.initializeBatchOperation(createContext(), taskResultBuilder);
 
     // then
     assertThat(result).isInstanceOf(InitializationOutcome.NeedsRetry.class);
@@ -197,7 +207,7 @@ class BatchOperationInitializationBehaviorTest {
         .thenReturn(new ChunkingOutcome.FetchFailed(exception));
 
     // when
-    final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
+    final var result = initializer.initializeBatchOperation(createContext(), taskResultBuilder);
 
     // then
     assertThat(result).isInstanceOf(InitializationOutcome.NeedsRetry.class);
@@ -232,7 +242,7 @@ class BatchOperationInitializationBehaviorTest {
         .thenReturn(new ChunkingOutcome.Finished(NEXT_SEARCH_CURSOR, 0));
 
     // when
-    final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
+    final var result = initializer.initializeBatchOperation(createContext(), taskResultBuilder);
 
     // then
     assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
@@ -253,7 +263,7 @@ class BatchOperationInitializationBehaviorTest {
         .thenReturn(new ChunkingOutcome.Finished(NEXT_SEARCH_CURSOR, 3));
 
     // when
-    initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
+    initializer.initializeBatchOperation(createContext(), taskResultBuilder);
 
     // then
     verify(metrics).recordItemsPerPartition(8, BatchOperationType.CANCEL_PROCESS_INSTANCE); // 5 + 3

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 import com.google.common.base.Strings;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.Failed;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.NeedsRetry;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.ReducePageSize;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.Success;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryPolicy.RetryDecision.Fail;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryPolicy.RetryDecision.Retry;
@@ -67,6 +68,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   private static final Logger LOG = LoggerFactory.getLogger(BatchOperationExecutionScheduler.class);
 
   private final Duration initialPollingInterval;
+  private final int defaultPageSize;
   private final BatchOperationState batchOperationState;
   private final BatchOperationInitializationBehavior batchOperationInitializer;
   private final BatchOperationRetryPolicy retryPolicy;
@@ -79,10 +81,12 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final BatchOperationInitializationBehavior batchOperationInitializer,
       final BatchOperationRetryPolicy retryPolicy,
-      final Duration batchOperationSchedulerInterval) {
+      final Duration batchOperationSchedulerInterval,
+      final int defaultPageSize) {
 
     batchOperationState = scheduledTaskStateFactory.get().getBatchOperationState();
     initialPollingInterval = batchOperationSchedulerInterval;
+    this.defaultPageSize = defaultPageSize;
 
     this.batchOperationInitializer = batchOperationInitializer;
     this.retryPolicy = retryPolicy;
@@ -153,8 +157,10 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       return initialPollingInterval;
     }
 
+    // Build context with in-memory overrides (cursor for retries, page size for buffer-full)
+    final var context = currentState.buildContext(batchOperation, defaultPageSize);
     final var outcome =
-        batchOperationInitializer.initializeBatchOperation(batchOperation, taskResultBuilder);
+        batchOperationInitializer.initializeBatchOperation(context, taskResultBuilder);
 
     return switch (outcome) {
       case Success(final var cursor) -> {
@@ -165,6 +171,14 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         batchOperationInitializer.appendFailedCommand(
             taskResultBuilder, batchOperation.getKey(), message, errorType);
         yield initialPollingInterval;
+      }
+      case ReducePageSize(final int newPageSize) -> {
+        LOG.debug(
+            "Buffer full for batch operation {}, reducing page size to {}",
+            batchOperation.getKey(),
+            newPageSize);
+        executionState.set(currentState.withReducedPageSize(newPageSize));
+        yield Duration.ZERO; // Retry immediately with smaller page size
       }
       case NeedsRetry(final var cursor, final var cause) ->
           handleRetry(taskResultBuilder, batchOperation, currentState, cursor, cause);
@@ -230,16 +244,24 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
    *
    * <p>However, if retries are in flight ({@code numAttempts > 0}), we should NOT skip — retries
    * are intentional re-executions after transient failures.
+   *
+   * <p>The state also tracks a reduced page size when buffer-full scenarios require smaller
+   * fetches. This avoids writing INITIALIZE commands just to persist the page size change.
    */
   static final class ExecutionLoopState {
     private final long batchOperationKey;
-    private final String lastKnownCursor;
+    private final String cursor;
+    private final int pageSize; // 0 means use default
     private final int numAttempts;
 
     private ExecutionLoopState(
-        final long batchOperationKey, final String lastKnownCursor, final int numAttempts) {
+        final long batchOperationKey,
+        final String cursor,
+        final int pageSize,
+        final int numAttempts) {
       this.batchOperationKey = batchOperationKey;
-      this.lastKnownCursor = lastKnownCursor;
+      this.cursor = cursor;
+      this.pageSize = pageSize;
       this.numAttempts = numAttempts;
     }
 
@@ -248,44 +270,62 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       return new ExecutionLoopState(
           batchOperation.getKey(),
           Strings.nullToEmpty(batchOperation.getInitializationSearchCursor()),
+          0,
           0);
     }
 
-    /** Advances to a new cursor after successful page processing. Resets retry count. */
+    /**
+     * Advances to a new cursor after successful page processing. Resets page size and retry count.
+     */
     ExecutionLoopState advanceTo(final String newCursor) {
-      return new ExecutionLoopState(batchOperationKey, newCursor, 0);
+      return new ExecutionLoopState(batchOperationKey, newCursor, 0, 0);
     }
 
-    /** Prepares for a retry attempt with the given cursor and attempt count. */
-    ExecutionLoopState retryWith(final String cursor, final int attempts) {
-      return new ExecutionLoopState(batchOperationKey, cursor, attempts);
+    /**
+     * Prepares for a retry attempt with the given cursor and attempt count. Preserves page size.
+     */
+    ExecutionLoopState retryWith(final String newCursor, final int attempts) {
+      return new ExecutionLoopState(batchOperationKey, newCursor, pageSize, attempts);
+    }
+
+    /** Reduces page size for next attempt due to buffer full. */
+    ExecutionLoopState withReducedPageSize(final int newPageSize) {
+      return new ExecutionLoopState(batchOperationKey, cursor, newPageSize, 0);
+    }
+
+    /**
+     * Builds an {@link InitializationContext} using in-memory overrides where applicable.
+     *
+     * <p>Uses:
+     *
+     * <ul>
+     *   <li>In-memory cursor when retrying ({@code numAttempts > 0}) to avoid stale cursor race
+     *   <li>In-memory page size when reduced ({@code pageSize > 0}) to avoid stale page size race
+     *   <li>Persisted values otherwise
+     * </ul>
+     */
+    InitializationContext buildContext(
+        final PersistedBatchOperation batchOperation, final int defaultPageSize) {
+      final String effectiveCursor =
+          numAttempts > 0 ? cursor : batchOperation.getInitializationSearchCursor();
+      final int effectivePageSize =
+          pageSize > 0
+              ? pageSize
+              : batchOperation.getInitializationSearchQueryPageSize(defaultPageSize);
+      return new InitializationContext(
+          batchOperation, effectiveCursor, effectivePageSize, 0, false);
     }
 
     /**
      * Determines whether initialization should be skipped for the given batch operation.
      *
-     * <p>Precondition: This method assumes the state tracks the same batch operation as the one
-     * passed in (same key). This is guaranteed by {@link
-     * BatchOperationExecutionScheduler#getOrCreateState}, which resets state when the key changes.
-     *
-     * <p>We skip if BOTH of the following are true:
-     *
-     * <ul>
-     *   <li>Our in-memory cursor differs from the persisted cursor — this means we already appended
-     *       an INITIALIZE command that advanced our cursor, but the stream processor has NOT yet
-     *       processed it to update the persisted state. We're "ahead" and waiting for it to catch
-     *       up.
-     *   <li>No retries are in flight ({@code numAttempts == 0}) — retries are intentional
-     *       re-executions after transient failures and should proceed even if cursors differ.
-     * </ul>
-     *
-     * <p>Once the stream processor processes our command, the persisted cursor will match our
-     * in-memory cursor, and the next scheduler run will proceed (cursors equal → don't skip).
+     * <p>We skip when our in-memory cursor differs from the persisted cursor AND we're not in a
+     * retry. This means we appended an INITIALIZE command that hasn't been processed yet.
      */
     boolean shouldSkipInitialization(final PersistedBatchOperation batchOperation) {
       return batchOperationKey == batchOperation.getKey()
-          && !Objects.equals(lastKnownCursor, batchOperation.getInitializationSearchCursor())
-          && numAttempts == 0;
+          && numAttempts == 0
+          && !Objects.equals(cursor, batchOperation.getInitializationSearchCursor());
     }
 
     int numAttempts() {

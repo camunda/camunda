@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperatio
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.ChunkingOutcome.Finished;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.Failed;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.NeedsRetry;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.ReducePageSize;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.Success;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
@@ -57,18 +58,15 @@ public class BatchOperationInitializationBehavior {
   private final BatchOperationMetrics metrics;
   private final BatchOperationCommands commands;
   private final BatchOperationChunkAppender chunkAppender;
-  private final int queryPageSize;
 
   public BatchOperationInitializationBehavior(
       final ItemProviderFactory itemProviderFactory,
       final BatchOperationChunkAppender chunkAppender,
       final BatchOperationCommands commands,
-      final int queryPageSize,
       final BatchOperationMetrics metrics) {
     this.itemProviderFactory = itemProviderFactory;
     this.commands = commands;
     this.chunkAppender = chunkAppender;
-    this.queryPageSize = queryPageSize;
     this.metrics = metrics;
   }
 
@@ -88,19 +86,21 @@ public class BatchOperationInitializationBehavior {
    * <p>This method returns an {@link InitializationOutcome} indicating success, need for retry, or
    * terminal failure. It does not throw exceptions for control flow.
    *
-   * @param batchOperation the batch operation to initialize
+   * @param initialContext the initialization context (cursor, page size, etc.) built by the
+   *     scheduler
    * @param taskResultBuilder the builder to append task results
    * @return the outcome of the initialization attempt
    */
   public InitializationOutcome initializeBatchOperation(
-      final PersistedBatchOperation batchOperation, final TaskResultBuilder taskResultBuilder) {
+      final InitializationContext initialContext, final TaskResultBuilder taskResultBuilder) {
+    final var batchOperation = initialContext.operation();
     if (batchOperation.isSuspended()) {
       LOG.trace("Batch operation {} is suspended.", batchOperation.getKey());
       return new Success(batchOperation.getInitializationSearchCursor());
     }
 
     final var itemProvider = itemProviderFactory.fromBatchOperation(batchOperation);
-    var context = InitializationContext.fromBatchOperation(batchOperation, queryPageSize);
+    var context = initialContext;
 
     var result = chunkAppender.fetchAndChunkNextPage(itemProvider, context, taskResultBuilder);
     while (result instanceof Continue(final var endCursor, final int itemsProcessed)) {
@@ -138,7 +138,7 @@ public class BatchOperationInitializationBehavior {
       if (context.pageSize() > 1) {
         final var reducedContext = context.withHalvedPageSize();
         continueInitialization(taskResultBuilder, reducedContext);
-        return new Success(Strings.nullToEmpty(reducedContext.currentCursor()));
+        return new ReducePageSize(reducedContext.pageSize());
       } else {
         return new Failed(
             String.format(ERROR_MSG_FAILED_FIRST_CHUNK_APPEND, itemCount),
@@ -195,6 +195,7 @@ public class BatchOperationInitializationBehavior {
    * <ul>
    *   <li>{@link Success} - initialization completed successfully or made progress
    *   <li>{@link NeedsRetry} - a transient failure occurred, retry is possible
+   *   <li>{@link ReducePageSize} - buffer was full, retry with smaller page size
    *   <li>{@link Failed} - a terminal failure occurred, no retry possible
    * </ul>
    */
@@ -204,6 +205,12 @@ public class BatchOperationInitializationBehavior {
 
     /** A transient failure occurred. Contains the cursor to resume from and the cause. */
     record NeedsRetry(String cursor, Throwable cause) implements InitializationOutcome {}
+
+    /**
+     * Buffer was full before any chunks were appended. Retry immediately with reduced page size. No
+     * command is written — the scheduler tracks the reduced page size in memory.
+     */
+    record ReducePageSize(int newPageSize) implements InitializationOutcome {}
 
     /** A terminal failure occurred. Contains the error message and type. */
     record Failed(String message, BatchOperationErrorType errorType)
