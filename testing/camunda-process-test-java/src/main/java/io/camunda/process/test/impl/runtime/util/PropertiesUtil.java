@@ -125,18 +125,7 @@ public class PropertiesUtil {
    * <p>Example: {@code judge.chatModel.apiKey} becomes {@code JUDGE_CHATMODEL_APIKEY}.
    */
   static String toEnvVarName(final String propertyName) {
-    final StringBuilder result = new StringBuilder();
-    for (int i = 0; i < propertyName.length(); i++) {
-      final char c = propertyName.charAt(i);
-      if (c == '.') {
-        result.append('_');
-      } else if (c == '-') {
-        // hyphens are removed per Spring relaxed binding
-      } else {
-        result.append(Character.toUpperCase(c));
-      }
-    }
-    return result.toString();
+    return propertyName.toUpperCase().replace('.', '_').replace("-", "");
   }
 
   /**
