@@ -342,7 +342,9 @@ const List: FC = () => {
                   ),
                   entityType: spaceAndCapitalize(log.entityType),
                   reference: (
-                    <CodeSnippet type="inline">{log.entityKey}</CodeSnippet>
+                    <CodeSnippet type="inline">
+                      {log.entityDescription?.trim() || log.entityKey}
+                    </CodeSnippet>
                   ),
                   property: <CellProperty item={log} />,
                   actorId: log.actorId ? (

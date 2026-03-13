@@ -157,7 +157,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 entityKeyData.label
               )}
               &nbsp;
-              {auditLog.entityDescription ?? entityKeyData.name}
+              {auditLog.entityDescription?.trim() || entityKeyData.name}
             </SecondColumn>
           </VerticallyAlignedRow>
           {['USER_TASK', 'INCIDENT', 'VARIABLE'].includes(
