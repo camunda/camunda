@@ -12,18 +12,14 @@ import static io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.isRoc
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
-import io.camunda.zeebe.db.impl.rocksdb.Loggers;
 import org.agrona.LangUtil;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.Transaction;
-import org.slf4j.Logger;
 
 public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
-
-  private static final Logger LOG = Loggers.DB_LOGGER;
 
   private final long nativeHandle;
   private final TransactionRenovator transactionRenovator;
@@ -133,7 +129,6 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     } catch (final RocksDBException rdbex) {
       final String errorMessage = "Unexpected error occurred during RocksDB transaction commit.";
       if (isRocksDbExceptionRecoverable(rdbex)) {
-        LOG.debug(errorMessage, rdbex);
         throw new ZeebeDbException(errorMessage, rdbex);
       }
       throw rdbex;
@@ -147,7 +142,6 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     } catch (final RocksDBException rdbex) {
       final String errorMessage = "Unexpected error occurred during RocksDB transaction commit.";
       if (isRocksDbExceptionRecoverable(rdbex)) {
-        LOG.debug(errorMessage, rdbex);
         throw new ZeebeDbException(errorMessage, rdbex);
       }
       throw rdbex;
@@ -161,7 +155,6 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     } catch (final RocksDBException rdbex) {
       final String errorMessage = "Unexpected error occurred during RocksDB transaction rollback.";
       if (isRocksDbExceptionRecoverable(rdbex)) {
-        LOG.debug(errorMessage, rdbex);
         throw new ZeebeDbException(errorMessage, rdbex);
       }
       throw rdbex;
