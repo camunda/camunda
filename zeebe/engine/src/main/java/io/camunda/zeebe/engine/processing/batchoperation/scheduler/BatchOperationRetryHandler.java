@@ -9,26 +9,21 @@ package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.Failed;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.NeedsRetry;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.Success;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import java.time.Duration;
 import java.util.Set;
 
 /**
- * Handles retry logic for batch operations with configurable retry policies.
+ * Evaluates retry policy for batch operation failures.
  *
  * <p>This handler implements exponential backoff retry strategy with configurable parameters for
- * initial delay, maximum delay, maximum retries, and backoff factor. It also supports immediate
- * failure for certain types of exceptions that should not be retried.
+ * initial delay, maximum delay, maximum retries, and backoff factor. It determines whether a
+ * failure should be retried or should fail immediately.
  *
  * <p>The handler will immediately fail operations that encounter exceptions with specific reasons
  * such as NOT_FOUND, NOT_UNIQUE, SECONDARY_STORAGE_NOT_SET, or FORBIDDEN.
  *
- * @see RetryableOperation
- * @see RetryResult
+ * @see RetryDecision
  */
 public class BatchOperationRetryHandler {
   private static final Set<Reason> FAIL_IMMEDIATELY_REASONS =
@@ -52,31 +47,19 @@ public class BatchOperationRetryHandler {
   }
 
   /**
-   * Executes a retryable operation with retry logic.
+   * Evaluates whether a transient failure should be retried or should fail permanently.
    *
-   * <p>This method will execute the provided operation and evaluate its outcome. If the operation
-   * returns a {@link NeedsRetry} outcome with a recoverable failure, it will return a {@link
-   * RetryResult.Retry} indicating the next delay. If the operation fails irrecoverably or exceeds
-   * the maximum number of retries, it will return a {@link RetryResult.Failure}.
-   *
-   * @param operation the operation to execute
-   * @param numAttempts the current number of attempts made to execute the operation
-   * @return the result of the retry operation
+   * @param cursor the cursor to resume from if retrying
+   * @param cause the exception that caused the failure
+   * @param numAttempts the current number of attempts made
+   * @return a decision indicating whether to retry (with delay) or fail permanently
    */
-  public RetryResult executeWithRetry(final RetryableOperation operation, final int numAttempts) {
-    final var outcome = operation.execute();
-    return switch (outcome) {
-      case Success(final var cursor) -> RetryResult.success(cursor);
-      case Failed(final var message, final var errorType) ->
-          RetryResult.failure(message, errorType);
-      case NeedsRetry(final var cursor, final var cause) -> {
-        if (shouldFailImmediately(cause) || numAttempts >= maxRetries) {
-          yield RetryResult.failure(formatErrorMessage(cursor, cause), BatchOperationErrorType.QUERY_FAILED);
-        }
-        final Duration nextDelay = calculateNextDelay(numAttempts);
-        yield RetryResult.retry(nextDelay, numAttempts + 1, cursor);
-      }
-    };
+  public RetryDecision evaluate(final String cursor, final Throwable cause, final int numAttempts) {
+    if (shouldFailImmediately(cause) || numAttempts >= maxRetries) {
+      return RetryDecision.fail(formatErrorMessage(cursor, cause), BatchOperationErrorType.QUERY_FAILED);
+    }
+    final Duration nextDelay = calculateNextDelay(numAttempts);
+    return RetryDecision.retry(nextDelay, numAttempts + 1, cursor);
   }
 
   private String formatErrorMessage(final String cursor, final Throwable cause) {
@@ -101,40 +84,19 @@ public class BatchOperationRetryHandler {
   }
 
   /**
-   * Represents the result of a retry operation.
-   *
-   * <p>This interface defines three possible outcomes: success, failure, and retry. Each outcome
-   * carries relevant data such as batch operation key, search result cursor, or exception details.
+   * Represents the decision of whether to retry or fail permanently.
    */
-  public sealed interface RetryResult
-      permits RetryResult.Success, RetryResult.Failure, RetryResult.Retry {
-    static Success success(final String searchResultCursor) {
-      return new Success(searchResultCursor);
+  public sealed interface RetryDecision {
+    static Fail fail(final String message, final BatchOperationErrorType errorType) {
+      return new Fail(message, errorType);
     }
 
-    static Failure failure(final String message, final BatchOperationErrorType errorType) {
-      return new Failure(message, errorType);
+    static Retry retry(final Duration delay, final int numAttempts, final String cursor) {
+      return new Retry(delay, numAttempts, cursor);
     }
 
-    static Retry retry(final Duration delay, final int numAttempts, final String endCursor) {
-      return new Retry(delay, numAttempts, endCursor);
-    }
+    record Fail(String message, BatchOperationErrorType errorType) implements RetryDecision {}
 
-    record Success(String searchResultCursor) implements RetryResult {}
-
-    record Failure(String message, BatchOperationErrorType errorType) implements RetryResult {}
-
-    record Retry(Duration delay, int numAttempts, String endCursor) implements RetryResult {}
-  }
-
-  /**
-   * Represents a retryable operation that can be executed with retry logic.
-   *
-   * <p>This functional interface allows defining operations that return an {@link
-   * InitializationOutcome} indicating success, need for retry, or terminal failure.
-   */
-  @FunctionalInterface
-  public interface RetryableOperation {
-    InitializationOutcome execute();
+    record Retry(Duration delay, int numAttempts, String cursor) implements RetryDecision {}
   }
 }

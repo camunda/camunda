@@ -10,7 +10,8 @@ package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 import static io.camunda.zeebe.protocol.record.value.BatchOperationType.CANCEL_PROCESS_INSTANCE;
 import static org.mockito.Mockito.*;
 
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryResult;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryDecision;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
@@ -73,43 +74,46 @@ public class BatchOperationExecutionSchedulerTest {
   }
 
   @Test
-  public void shouldDelegateToRetryHandlerWhenBatchOperationExists() {
+  public void shouldCallInitializerDirectlyWhenBatchOperationExists() {
     // given
     final var batchOperation = createBatchOperation();
     when(batchOperationState.getNextPendingBatchOperation())
         .thenReturn(Optional.of(batchOperation));
 
-    when(retryHandler.executeWithRetry(any(), anyInt())).thenReturn(RetryResult.success("cursor"));
+    when(batchOperationInitializer.initializeBatchOperation(any(), any()))
+        .thenReturn(new InitializationOutcome.Success("cursor"));
 
     // when
     execute();
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verify(retryHandler).executeWithRetry(any(), anyInt());
+    verify(batchOperationInitializer).initializeBatchOperation(batchOperation, taskResultBuilder);
+    verifyNoInteractions(retryHandler);
     verify(scheduleService, times(2)).runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any());
   }
 
   @Test
-  public void shouldHandleRetryResultSuccess() {
+  public void shouldHandleInitializationSuccess() {
     // given
     final var batchOperation = createBatchOperation();
     when(batchOperationState.getNextPendingBatchOperation())
         .thenReturn(Optional.of(batchOperation));
 
-    when(retryHandler.executeWithRetry(any(), anyInt()))
-        .thenReturn(RetryResult.success("new-cursor"));
+    when(batchOperationInitializer.initializeBatchOperation(any(), any()))
+        .thenReturn(new InitializationOutcome.Success("new-cursor"));
 
     // when
     execute();
 
     // then
-    verify(retryHandler).executeWithRetry(any(), anyInt());
+    verify(batchOperationInitializer).initializeBatchOperation(batchOperation, taskResultBuilder);
+    verifyNoInteractions(retryHandler);
     verify(scheduleService, times(2)).runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any());
   }
 
   @Test
-  public void shouldHandleRetryResultFailure() {
+  public void shouldHandleInitializationFailed() {
     // given
     final var batchOperation = createBatchOperation();
     when(batchOperationState.getNextPendingBatchOperation())
@@ -117,38 +121,70 @@ public class BatchOperationExecutionSchedulerTest {
 
     final var errorMessage = "Test error";
     final var errorType = BatchOperationErrorType.QUERY_FAILED;
-    when(retryHandler.executeWithRetry(any(), anyInt()))
-        .thenReturn(RetryResult.failure(errorMessage, errorType));
+    when(batchOperationInitializer.initializeBatchOperation(any(), any()))
+        .thenReturn(new InitializationOutcome.Failed(errorMessage, errorType));
 
     // when
     execute();
 
     // then
-    verify(retryHandler).executeWithRetry(any(), anyInt());
+    verify(batchOperationInitializer).initializeBatchOperation(batchOperation, taskResultBuilder);
     verify(batchOperationInitializer)
         .appendFailedCommand(taskResultBuilder, BATCH_OPERATION_KEY, errorMessage, errorType);
+    verifyNoInteractions(retryHandler);
     verify(scheduleService, times(2)).runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any());
   }
 
   @Test
-  public void shouldHandleRetryResultRetry() {
+  public void shouldDelegateToRetryHandlerOnNeedsRetry() {
     // given
     final var batchOperation = createBatchOperation();
     when(batchOperationState.getNextPendingBatchOperation())
         .thenReturn(Optional.of(batchOperation));
 
+    final var cause = new RuntimeException("Transient failure");
+    when(batchOperationInitializer.initializeBatchOperation(any(), any()))
+        .thenReturn(new InitializationOutcome.NeedsRetry("cursor", cause));
+
     final var retryDelay = Duration.ofMillis(500);
-    when(retryHandler.executeWithRetry(any(), anyInt()))
-        .thenReturn(RetryResult.retry(retryDelay, 1, "cursor"));
+    when(retryHandler.evaluate(eq("cursor"), eq(cause), eq(0)))
+        .thenReturn(RetryDecision.retry(retryDelay, 1, "cursor"));
 
     // when
     execute();
 
     // then
-    verify(retryHandler).executeWithRetry(any(), anyInt());
+    verify(batchOperationInitializer).initializeBatchOperation(batchOperation, taskResultBuilder);
+    verify(retryHandler).evaluate("cursor", cause, 0);
     verify(scheduleService)
         .runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any()); // initial schedule
     verify(scheduleService).runDelayedAsync(eq(retryDelay), any(), any()); // retry schedule
+  }
+
+  @Test
+  public void shouldHandleRetryDecisionFail() {
+    // given
+    final var batchOperation = createBatchOperation();
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation));
+
+    final var cause = new RuntimeException("Non-retryable failure");
+    when(batchOperationInitializer.initializeBatchOperation(any(), any()))
+        .thenReturn(new InitializationOutcome.NeedsRetry("cursor", cause));
+
+    final var errorMessage = "Failed after retries";
+    final var errorType = BatchOperationErrorType.QUERY_FAILED;
+    when(retryHandler.evaluate(any(), any(), anyInt()))
+        .thenReturn(RetryDecision.fail(errorMessage, errorType));
+
+    // when
+    execute();
+
+    // then
+    verify(retryHandler).evaluate("cursor", cause, 0);
+    verify(batchOperationInitializer)
+        .appendFailedCommand(taskResultBuilder, BATCH_OPERATION_KEY, errorMessage, errorType);
+    verify(scheduleService, times(2)).runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any());
   }
 
   @Test
@@ -159,14 +195,15 @@ public class BatchOperationExecutionSchedulerTest {
         .thenReturn(Optional.of(batchOperation))
         .thenReturn(Optional.of(batchOperation.setInitializationSearchCursor("cursor2")));
 
-    when(retryHandler.executeWithRetry(any(), anyInt())).thenReturn(RetryResult.success("cursor1"));
+    when(batchOperationInitializer.initializeBatchOperation(any(), any()))
+        .thenReturn(new InitializationOutcome.Success("cursor1"));
 
     // when - execute twice
     execute();
     execute();
 
     // then - should only process the first one, skip the second due to cursor change
-    verify(retryHandler, times(1)).executeWithRetry(any(), anyInt());
+    verify(batchOperationInitializer, times(1)).initializeBatchOperation(any(), any());
   }
 
   @Test
@@ -177,14 +214,15 @@ public class BatchOperationExecutionSchedulerTest {
         .thenReturn(Optional.of(batchOperation))
         .thenReturn(Optional.of(batchOperation));
 
-    when(retryHandler.executeWithRetry(any(), anyInt())).thenReturn(RetryResult.success("cursor1"));
+    when(batchOperationInitializer.initializeBatchOperation(any(), any()))
+        .thenReturn(new InitializationOutcome.Success("cursor1"));
 
     // when - execute twice
     execute();
     execute();
 
     // then - should process both since cursor is the same
-    verify(retryHandler, times(2)).executeWithRetry(any(), anyInt());
+    verify(batchOperationInitializer, times(2)).initializeBatchOperation(any(), any());
   }
 
   @Test
@@ -197,16 +235,16 @@ public class BatchOperationExecutionSchedulerTest {
         .thenReturn(Optional.of(batchOperation1))
         .thenReturn(Optional.of(batchOperation2));
 
-    when(retryHandler.executeWithRetry(any(), anyInt()))
-        .thenReturn(RetryResult.success("cursor1"))
-        .thenReturn(RetryResult.success("cursor2"));
+    when(batchOperationInitializer.initializeBatchOperation(any(), any()))
+        .thenReturn(new InitializationOutcome.Success("cursor1"))
+        .thenReturn(new InitializationOutcome.Success("cursor2"));
 
     // when
     execute();
     execute();
 
     // then - should process both operations
-    verify(retryHandler, times(2)).executeWithRetry(any(), anyInt());
+    verify(batchOperationInitializer, times(2)).initializeBatchOperation(any(), any());
   }
 
   @Test
@@ -216,13 +254,96 @@ public class BatchOperationExecutionSchedulerTest {
     when(batchOperationState.getNextPendingBatchOperation())
         .thenReturn(Optional.of(batchOperation));
 
-    when(retryHandler.executeWithRetry(any(), anyInt())).thenReturn(RetryResult.success("cursor"));
+    when(batchOperationInitializer.initializeBatchOperation(any(), any()))
+        .thenReturn(new InitializationOutcome.Success("cursor"));
 
     // when
     execute();
 
     // then
     verify(scheduleService, times(2)).runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any());
+  }
+
+  @Test
+  public void shouldPassCorrectNumAttemptsToRetryHandlerOnSubsequentRetries() {
+    // given
+    final var batchOperation = createBatchOperation();
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation));
+
+    final var cause = new RuntimeException("Transient failure");
+    when(batchOperationInitializer.initializeBatchOperation(any(), any()))
+        .thenReturn(new InitializationOutcome.NeedsRetry("cursor", cause));
+
+    // First call returns retry with numAttempts=1, second call returns retry with numAttempts=2
+    when(retryHandler.evaluate(any(), any(), eq(0)))
+        .thenReturn(RetryDecision.retry(Duration.ofMillis(100), 1, "cursor"));
+    when(retryHandler.evaluate(any(), any(), eq(1)))
+        .thenReturn(RetryDecision.retry(Duration.ofMillis(200), 2, "cursor"));
+
+    // when - execute twice (simulating retry)
+    execute();
+    execute();
+
+    // then - verify numAttempts increments
+    verify(retryHandler).evaluate("cursor", cause, 0); // first execution
+    verify(retryHandler).evaluate("cursor", cause, 1); // second execution after retry
+  }
+
+  @Test
+  public void shouldNotSkipWhenRetryInProgress() {
+    // given - batch operation with cursor "cursor1"
+    final var batchOperation = createBatchOperation().setInitializationSearchCursor("cursor1");
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation))
+        // Second call: cursor still "cursor1" (command not yet processed)
+        .thenReturn(Optional.of(batchOperation));
+
+    final var cause = new RuntimeException("Transient failure");
+    when(batchOperationInitializer.initializeBatchOperation(any(), any()))
+        .thenReturn(new InitializationOutcome.NeedsRetry("cursor2", cause));
+
+    // First retry decision advances cursor to "cursor2" with numAttempts=1
+    when(retryHandler.evaluate(any(), any(), eq(0)))
+        .thenReturn(RetryDecision.retry(Duration.ofMillis(100), 1, "cursor2"));
+    // Second call should still proceed because numAttempts > 0
+    when(retryHandler.evaluate(any(), any(), eq(1)))
+        .thenReturn(
+            RetryDecision.fail("Max retries exceeded", BatchOperationErrorType.QUERY_FAILED));
+
+    // when - execute twice
+    execute();
+    execute();
+
+    // then - both executions should call initializer (not skipped due to retry in progress)
+    verify(batchOperationInitializer, times(2)).initializeBatchOperation(any(), any());
+  }
+
+  @Test
+  public void shouldResetNumAttemptsOnSuccess() {
+    // given
+    final var batchOperation = createBatchOperation().setInitializationSearchCursor("cursor1");
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation))
+        .thenReturn(Optional.of(batchOperation.setInitializationSearchCursor("cursor2")));
+
+    final var cause = new RuntimeException("Transient failure");
+    // First call: needs retry
+    when(batchOperationInitializer.initializeBatchOperation(any(), any()))
+        .thenReturn(new InitializationOutcome.NeedsRetry("cursor2", cause))
+        .thenReturn(new InitializationOutcome.Success("cursor3"));
+
+    when(retryHandler.evaluate(any(), any(), eq(0)))
+        .thenReturn(RetryDecision.retry(Duration.ofMillis(100), 1, "cursor2"));
+
+    // when - first execution triggers retry, second succeeds
+    execute();
+    execute();
+
+    // then - initializer should be called twice
+    verify(batchOperationInitializer, times(2)).initializeBatchOperation(any(), any());
+    // And retry handler only once (success doesn't call retry handler)
+    verify(retryHandler, times(1)).evaluate(any(), any(), anyInt());
   }
 
   /** Bypasses the scheduling mechanism and executes the task directly */
