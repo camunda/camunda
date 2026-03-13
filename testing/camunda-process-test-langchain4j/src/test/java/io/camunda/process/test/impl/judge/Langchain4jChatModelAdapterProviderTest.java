@@ -21,35 +21,39 @@ import io.camunda.process.test.api.judge.BaseProviderConfig;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.ChatModelAdapterProvider;
 import io.camunda.process.test.api.judge.ProviderConfig;
-import java.util.Optional;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class Langchain4jChatModelAdapterProviderTest {
 
-  private final ChatModelAdapterProvider provider = new Langchain4jChatModelAdapterProvider();
-
   @ParameterizedTest(name = "{0}")
   @MethodSource("providerConfigurations")
-  void shouldCreateAdapterForKnownProvider(final String providerName, final ProviderConfig config) {
+  void shouldCreateAdapterForKnownProvider(
+      final String providerName,
+      final ChatModelAdapterProvider provider,
+      final ProviderConfig config) {
     // when
-    final Optional<ChatModelAdapter> adapter = provider.create(config);
+    final ChatModelAdapter adapter = provider.create(config);
 
     // then
-    assertThat(adapter).isPresent();
+    assertThat(adapter).isNotNull();
   }
 
   static Stream<Arguments> providerConfigurations() {
     return Stream.of(
-        Arguments.of("openai", new BaseProviderConfig.OpenAiConfig("gpt-4o", "test-key")),
+        Arguments.of(
+            "openai",
+            new OpenAiChatModelAdapterProvider(),
+            new BaseProviderConfig.OpenAiConfig("gpt-4o", "test-key")),
         Arguments.of(
             "anthropic",
+            new AnthropicChatModelAdapterProvider(),
             new BaseProviderConfig.AnthropicConfig("claude-3-5-sonnet-20241022", "test-key")),
         Arguments.of(
             "amazon-bedrock",
+            new BedrockChatModelAdapterProvider(),
             new BaseProviderConfig.AmazonBedrockConfig(
                 "anthropic.claude-3-5-sonnet-20241022-v2:0",
                 "us-east-1",
@@ -58,20 +62,8 @@ public class Langchain4jChatModelAdapterProviderTest {
                 "test-secret-key")),
         Arguments.of(
             "openai-compatible",
+            new OpenAiCompatibleChatModelAdapterProvider(),
             new BaseProviderConfig.OpenAiCompatibleConfig(
                 "mistral-7b", "http://localhost:11434/v1", null)));
-  }
-
-  @Test
-  void shouldReturnEmptyForUnknownProvider() {
-    // given
-    final ProviderConfig unknownConfig =
-        new BaseProviderConfig.GenericConfig("unknown-provider", "test-model");
-
-    // when
-    final Optional<ChatModelAdapter> adapter = provider.create(unknownConfig);
-
-    // then
-    assertThat(adapter).isEmpty();
   }
 }

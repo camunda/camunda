@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.judge;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.ChatModelAdapterProvider;
 import io.camunda.process.test.api.judge.ProviderConfig;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 
@@ -33,17 +34,21 @@ public final class ChatModelAdapterResolver {
   /**
    * Resolves a {@link ChatModelAdapter} from the given provider configuration.
    *
+   * <p>Matches the configured {@link ProviderConfig#getProvider()} against each registered {@link
+   * ChatModelAdapterProvider#getProviderName()} and delegates creation to the first match.
+   *
    * @param config the provider-specific configuration
    * @return an {@link Optional} containing the resolved {@link ChatModelAdapter}, or {@link
-   *     Optional#empty()} if no adapter could be resolved
+   *     Optional#empty()} if no matching provider could be found
    */
   public Optional<ChatModelAdapter> resolve(final ProviderConfig config) {
+    Objects.requireNonNull(config.getProvider(), "config provider must not be null");
+
     for (final ChatModelAdapterProvider provider :
         ServiceLoader.load(
             ChatModelAdapterProvider.class, ChatModelAdapterProvider.class.getClassLoader())) {
-      final Optional<ChatModelAdapter> adapter = provider.create(config);
-      if (adapter.isPresent()) {
-        return adapter;
+      if (Objects.equals(provider.getProviderName(), config.getProvider())) {
+        return Optional.of(provider.create(config));
       }
     }
     return Optional.empty();

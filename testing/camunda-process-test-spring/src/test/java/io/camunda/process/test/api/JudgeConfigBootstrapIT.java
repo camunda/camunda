@@ -24,7 +24,7 @@ import io.camunda.process.test.api.judge.ChatModelAdapterProvider;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.ProviderConfig;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
-import io.camunda.process.test.impl.judge.Langchain4jChatModelAdapterProvider;
+import io.camunda.process.test.impl.judge.OpenAiChatModelAdapterProvider;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -322,14 +322,7 @@ public class JudgeConfigBootstrapIT {
   @Nested
   class InvalidConfiguration {
 
-    private final ChatModelAdapterProvider provider = new Langchain4jChatModelAdapterProvider();
-
-    @Test
-    void shouldReturnEmptyWhenProviderIsUnknown() {
-      final ProviderConfig config =
-          new BaseProviderConfig.GenericConfig("unknown-provider", "test-model");
-      assertThat(provider.create(config)).isEmpty();
-    }
+    private final ChatModelAdapterProvider provider = new OpenAiChatModelAdapterProvider();
 
     @Test
     void shouldThrowWhenRequiredFieldMissing() {

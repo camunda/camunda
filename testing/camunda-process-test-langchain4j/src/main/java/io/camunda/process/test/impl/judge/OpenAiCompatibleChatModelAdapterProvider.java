@@ -13,28 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.utils;
+package io.camunda.process.test.impl.judge;
 
+import io.camunda.process.test.api.judge.BaseProviderConfig;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.ChatModelAdapterProvider;
 import io.camunda.process.test.api.judge.ProviderConfig;
 
-/**
- * A test-scoped {@link ChatModelAdapterProvider} registered via SPI for verifying ServiceLoader
- * discovery in {@code JudgeAssertBootstrapIT}. Always returns a fake {@link ChatModelAdapter} that
- * scores 1.0.
- */
-public class FakeChatModelAdapterProvider implements ChatModelAdapterProvider {
-
-  public static final String FAKE_REASONING = "{\"score\": 1.0, \"reasoning\": \"fake\"}";
+public class OpenAiCompatibleChatModelAdapterProvider implements ChatModelAdapterProvider {
 
   @Override
   public String getProviderName() {
-    return "fake-provider";
+    return ProviderConfig.PROVIDER_OPENAI_COMPATIBLE;
   }
 
   @Override
   public ChatModelAdapter create(final ProviderConfig config) {
-    return prompt -> FAKE_REASONING;
+    return OpenAiCompatibleChatModelBuilder.build(
+            (BaseProviderConfig.OpenAiCompatibleConfig) config)
+        ::chat;
   }
 }
