@@ -187,10 +187,6 @@ public class BatchOperationInitializationBehavior {
     commandAppender.appendFailureCommand(taskResultBuilder, batchOperationKey, message, errorType);
   }
 
-  public record BatchOperationInitializationResult(
-      long batchOperationKey, String searchResultCursor) {}
-
-
   /**
    * Represents the outcome of a batch operation initialization attempt.
    *
