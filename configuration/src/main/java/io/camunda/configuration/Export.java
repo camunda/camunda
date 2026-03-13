@@ -34,6 +34,9 @@ public class Export {
    * is preventing processing or exporting to continue. Record positions defined to skip in this
    * definition will be skipped only for the specified partition. The value is a map of partition id
    * to a comma-separated list of record positions to skip. Whitespace is ignored.
+   *
+   * <p><b> Backwards compatibility with the legacy `zeebe.broker.exporting.skip-records` is broken
+   * deliberately as this configuration should only be used for recovery purposes</b>
    */
   private Map<Integer, Set<Long>> skipRecords = Map.of();
 

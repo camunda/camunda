@@ -16,6 +16,9 @@ import java.util.Set;
 /**
  * Exporting component configuration. This configuration pertains to configurations that are common
  * to all exporters.
+ *
+ * <p><b> Backwards compatibility with the legacy `zeebe.broker.exporting.skip-records` is broken
+ * deliberately as this configuration should only be used for recovery purposes</b>
  */
 public record ExportingCfg(Map<Integer, Set<Long>> skipRecords, Duration distributionInterval) {
 
