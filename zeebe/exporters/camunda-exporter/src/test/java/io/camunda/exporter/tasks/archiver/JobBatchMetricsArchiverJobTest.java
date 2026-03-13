@@ -43,7 +43,7 @@ final class JobBatchMetricsArchiverJobTest extends ArchiverJobRecordingMetricsAb
   @BeforeEach
   void setUp() {
     // given
-    repository.batch = new BasicArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batches = List.of(new BasicArchiveBatch("2024-01-01", List.of("1", "2", "3")));
   }
 
   @AfterEach

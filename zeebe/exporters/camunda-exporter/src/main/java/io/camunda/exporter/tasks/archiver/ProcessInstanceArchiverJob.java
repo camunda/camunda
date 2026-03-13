@@ -32,6 +32,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
   private final HistoryConfiguration config;
   private final ListViewTemplate processInstanceTemplate;
   private final List<ProcessInstanceDependant> processInstanceDependants;
+  private final RecentlyArchivedProcessInstances recentlyArchivedProcessInstances;
 
   public ProcessInstanceArchiverJob(
       final HistoryConfiguration config,
@@ -39,6 +40,26 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
       final ListViewTemplate processInstanceTemplate,
       final List<ProcessInstanceDependant> processInstanceDependants,
       final CamundaExporterMetrics metrics,
+      final Logger logger,
+      final Executor executor) {
+    this(
+        config,
+        repository,
+        processInstanceTemplate,
+        processInstanceDependants,
+        metrics,
+        new RecentlyArchivedProcessInstances(config.getRolloverBatchSize()),
+        logger,
+        executor);
+  }
+
+  ProcessInstanceArchiverJob(
+      final HistoryConfiguration config,
+      final ArchiverRepository repository,
+      final ListViewTemplate processInstanceTemplate,
+      final List<ProcessInstanceDependant> processInstanceDependants,
+      final CamundaExporterMetrics metrics,
+      final RecentlyArchivedProcessInstances recentlyArchivedProcessInstances,
       final Logger logger,
       final Executor executor) {
     super(
@@ -54,6 +75,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
         processInstanceDependants.stream()
             .sorted(Comparator.comparing(ProcessInstanceDependant::getFullQualifiedName))
             .toList(); // sort to ensure the execution order is stable
+    this.recentlyArchivedProcessInstances = recentlyArchivedProcessInstances;
   }
 
   @Override
@@ -63,7 +85,11 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
 
   @Override
   CompletableFuture<ProcessInstanceArchiveBatch> getNextBatch() {
-    return getArchiverRepository().getProcessInstancesNextBatch(config.getRolloverBatchSize());
+    final var overRequest =
+        Math.min(100, recentlyArchivedProcessInstances.getRecentlyArchiveCount());
+    return getArchiverRepository()
+        .getProcessInstancesNextBatch(config.getRolloverBatchSize() + overRequest)
+        .thenApply(this::deduplicateAndLimitBatch);
   }
 
   @Override
@@ -75,7 +101,12 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
   protected CompletableFuture<Integer> archive(
       final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
     return archiveProcessDependants(batch)
-        .thenComposeAsync(v -> super.archive(templateDescriptor, batch), getExecutor());
+        .thenComposeAsync(v -> super.archive(templateDescriptor, batch), getExecutor())
+        .thenApply(
+            archived -> {
+              recentlyArchivedProcessInstances.markRecentlyArchived(batch);
+              return archived;
+            });
   }
 
   @Override
@@ -108,6 +139,14 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
           batch.rootProcessInstanceKeys().stream().map(String::valueOf).toList());
     }
     return idsMap;
+  }
+
+  private ProcessInstanceArchiveBatch deduplicateAndLimitBatch(
+      final ProcessInstanceArchiveBatch batch) {
+    final var deduped = recentlyArchivedProcessInstances.deduplicate(batch);
+    final var duplication = batch.size() - deduped.size();
+    exporterMetrics.recordProcessInstancesArchivingDeDuplicated(duplication);
+    return deduped.limit(config.getRolloverBatchSize());
   }
 
   private CompletableFuture<Void> archiveProcessDependants(
