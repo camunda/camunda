@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.PageProcessingResult;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.ChunkingOutcome;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
@@ -83,7 +83,7 @@ class BatchOperationInitializationBehaviorTest {
   void shouldInitializeSuccessfullyWithSinglePageAndFinish() {
     // given
     when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
-        .thenReturn(new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 2));
+        .thenReturn(new ChunkingOutcome.Finished(NEXT_SEARCH_CURSOR, 2));
 
     // when
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
@@ -109,8 +109,8 @@ class BatchOperationInitializationBehaviorTest {
   void shouldHandleMultiplePagesSuccessfully() {
     // given
     when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
-        .thenReturn(new PageProcessingResult.Continue("cursor1", 2))
-        .thenReturn(new PageProcessingResult.Finished("cursor2", 2));
+        .thenReturn(new ChunkingOutcome.Continue("cursor1", 2))
+        .thenReturn(new ChunkingOutcome.Finished("cursor2", 2));
 
     // when
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
@@ -130,7 +130,7 @@ class BatchOperationInitializationBehaviorTest {
   void shouldHandleFailedChunkAppendWithoutPreviousChunks() {
     // given
     when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
-        .thenReturn(new PageProcessingResult.BufferFull(2));
+        .thenReturn(new ChunkingOutcome.BufferFull(2));
 
     // when
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
@@ -152,8 +152,8 @@ class BatchOperationInitializationBehaviorTest {
   void shouldHandleFailedChunkAppendWithPreviousChunks() {
     // given - First page succeeds, second page fails to fit in buffer
     when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
-        .thenReturn(new PageProcessingResult.Continue("cursor1", 2))
-        .thenReturn(new PageProcessingResult.BufferFull(2));
+        .thenReturn(new ChunkingOutcome.Continue("cursor1", 2))
+        .thenReturn(new ChunkingOutcome.BufferFull(2));
 
     // when
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
@@ -173,7 +173,7 @@ class BatchOperationInitializationBehaviorTest {
     // given
     final var exception = new RuntimeException("Database connection failed");
     when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
-        .thenReturn(new PageProcessingResult.FetchFailed(exception));
+        .thenReturn(new ChunkingOutcome.FetchFailed(exception));
 
     // when
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
@@ -193,8 +193,8 @@ class BatchOperationInitializationBehaviorTest {
     // given - First page succeeds, second page fetch fails
     final var exception = new RuntimeException("Database connection failed");
     when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
-        .thenReturn(new PageProcessingResult.Continue("cursor1", 2))
-        .thenReturn(new PageProcessingResult.FetchFailed(exception));
+        .thenReturn(new ChunkingOutcome.Continue("cursor1", 2))
+        .thenReturn(new ChunkingOutcome.FetchFailed(exception));
 
     // when
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
@@ -229,7 +229,7 @@ class BatchOperationInitializationBehaviorTest {
   void shouldHandleEmptyPageSuccessfully() {
     // given
     when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
-        .thenReturn(new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 0));
+        .thenReturn(new ChunkingOutcome.Finished(NEXT_SEARCH_CURSOR, 0));
 
     // when
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
@@ -250,7 +250,7 @@ class BatchOperationInitializationBehaviorTest {
     // given
     batchOperation.setNumTotalItems(5);
     when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
-        .thenReturn(new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 3));
+        .thenReturn(new ChunkingOutcome.Finished(NEXT_SEARCH_CURSOR, 3));
 
     // when
     initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
@@ -264,7 +264,7 @@ class BatchOperationInitializationBehaviorTest {
     // given
     batchOperation.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
     when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
-        .thenReturn(new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 2));
+        .thenReturn(new ChunkingOutcome.Finished(NEXT_SEARCH_CURSOR, 2));
 
     // when
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
