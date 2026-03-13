@@ -2,8 +2,6 @@
 ################################################### Global cluster configuration
 ########################################################################################
 global:
-  elasticsearch:
-    enabled: false
   postgresql:
     auth:
       database: camunda
@@ -62,12 +60,6 @@ orchestration:
         camunda.data.secondary-storage.rdbms.history.default-history-ttl: PT1H
         camunda.data.secondary-storage.rdbms.history.min-history-cleanup-interval: PT1S
         camunda.data.secondary-storage.rdbms.history.max-history-cleanup-interval: PT1M
-
-########################################################################################
-################################################### Disable ElasticSearch for RDBMS
-########################################################################################
-elasticsearch:
-  enabled: false
 
 ###########################################################################
 #
