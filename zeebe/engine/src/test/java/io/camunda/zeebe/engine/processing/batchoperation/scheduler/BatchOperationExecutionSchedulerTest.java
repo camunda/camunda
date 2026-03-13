@@ -142,6 +142,29 @@ public class BatchOperationExecutionSchedulerTest {
   }
 
   @Test
+  public void shouldReducePageSizeAndRetryImmediatelyOnBufferFull() {
+    // given
+    final var batchOperation = createBatchOperation();
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation));
+
+    final int reducedPageSize = 50;
+    when(batchOperationInitializer.initializeBatchOperation(any(), any()))
+        .thenReturn(new InitializationOutcome.ReducePageSize(reducedPageSize))
+        .thenReturn(new InitializationOutcome.Success("cursor"));
+
+    // when - first execution returns ReducePageSize, second succeeds
+    execute();
+    execute();
+
+    // then - initializer should be called twice
+    verify(batchOperationInitializer, times(2)).initializeBatchOperation(any(), any());
+    // First call scheduled with SCHEDULER_INTERVAL (initial), second with Duration.ZERO (immediate
+    // retry)
+    verify(scheduleService).runDelayedAsync(eq(Duration.ZERO), any(), any());
+  }
+
+  @Test
   public void shouldDelegateToRetryHandlerOnNeedsRetry() {
     // given
     final var batchOperation = createBatchOperation();
@@ -194,8 +217,11 @@ public class BatchOperationExecutionSchedulerTest {
   }
 
   @Test
-  public void shouldSkipReInitializationForSameBatchOperationWithDifferentCursor() {
-    // given
+  public void shouldSkipWhenCommandInFlight() {
+    // given - first execution advances in-memory cursor to "cursor1"
+    // second execution sees persisted cursor changed to "cursor2" (command was processed)
+    // but our in-memory cursor is still "cursor1" (different from persisted)
+    // this indicates a command is in-flight, so we skip
     final var batchOperation = createBatchOperation().setInitializationSearchCursor("cursor1");
     when(batchOperationState.getNextPendingBatchOperation())
         .thenReturn(Optional.of(batchOperation))
@@ -208,13 +234,13 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
     execute();
 
-    // then - should only process the first one, skip the second due to cursor change
+    // then - should only process the first one, skip the second (command in-flight)
     verify(batchOperationInitializer, times(1)).initializeBatchOperation(any(), any());
   }
 
   @Test
-  public void shouldProcessSameBatchOperationWithSameCursor() {
-    // given
+  public void shouldContinueWhenPersistedStateCaughtUp() {
+    // given - both executions see the same cursor (persisted state caught up with in-memory)
     final var batchOperation = createBatchOperation().setInitializationSearchCursor("cursor1");
     when(batchOperationState.getNextPendingBatchOperation())
         .thenReturn(Optional.of(batchOperation))
@@ -227,7 +253,7 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
     execute();
 
-    // then - should process both since cursor is the same
+    // then - should process both since cursors match (no command in-flight)
     verify(batchOperationInitializer, times(2)).initializeBatchOperation(any(), any());
   }
 
@@ -331,25 +357,29 @@ public class BatchOperationExecutionSchedulerTest {
     final var batchOperation = createBatchOperation().setInitializationSearchCursor("cursor1");
     when(batchOperationState.getNextPendingBatchOperation())
         .thenReturn(Optional.of(batchOperation))
-        .thenReturn(Optional.of(batchOperation.setInitializationSearchCursor("cursor2")));
+        .thenReturn(Optional.of(batchOperation.setInitializationSearchCursor("cursor2")))
+        .thenReturn(Optional.of(batchOperation.setInitializationSearchCursor("cursor3")));
 
     final var cause = new RuntimeException("Transient failure");
-    // First call: needs retry
+    // First call: needs retry (numAttempts goes to 1)
+    // Second call: success (numAttempts should reset to 0)
+    // Third call: needs retry again (should use numAttempts=0, not 1)
     when(batchOperationInitializer.initializeBatchOperation(any(), any()))
         .thenReturn(new InitializationOutcome.NeedsRetry("cursor2", cause))
-        .thenReturn(new InitializationOutcome.Success("cursor3"));
+        .thenReturn(new InitializationOutcome.Success("cursor3"))
+        .thenReturn(new InitializationOutcome.NeedsRetry("cursor4", cause));
 
     when(retryPolicy.evaluate(any(), any(), eq(0)))
         .thenReturn(RetryDecision.retry(Duration.ofMillis(100), 1, "cursor2"));
 
-    // when - first execution triggers retry, second succeeds
+    // when - first needs retry, second succeeds, third needs retry again
+    execute();
     execute();
     execute();
 
-    // then - initializer should be called twice
-    verify(batchOperationInitializer, times(2)).initializeBatchOperation(any(), any());
-    // And retry handler only once (success doesn't call retry handler)
-    verify(retryPolicy, times(1)).evaluate(any(), any(), anyInt());
+    // then - retry policy should be called twice, both times with numAttempts=0
+    // (proving that success reset the counter)
+    verify(retryPolicy, times(2)).evaluate(any(), any(), eq(0));
   }
 
   /** Bypasses the scheduling mechanism and executes the task directly */
