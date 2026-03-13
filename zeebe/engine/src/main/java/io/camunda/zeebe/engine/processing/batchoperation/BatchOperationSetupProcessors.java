@@ -85,7 +85,6 @@ public final class BatchOperationSetupProcessors {
             new ItemProviderFactory(searchClientsProxy, batchOperationMetrics, partitionId),
             new BatchOperationChunkAppender(engineConfiguration.getBatchOperationChunkSize()),
             new BatchOperationCommands(partitionId),
-            engineConfiguration.getBatchOperationQueryPageSize(),
             batchOperationMetrics);
 
     final var retryHandler =
@@ -184,6 +183,7 @@ public final class BatchOperationSetupProcessors {
                 scheduledTaskStateFactory,
                 batchOperationInitializer,
                 retryHandler,
-                engineConfiguration.getBatchOperationSchedulerInterval()));
+                engineConfiguration.getBatchOperationSchedulerInterval(),
+                engineConfiguration.getBatchOperationQueryPageSize()));
   }
 }
