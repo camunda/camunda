@@ -37,9 +37,9 @@ const BottomPanelTabs: React.FC = () => {
     },
     {
       label: 'Variables',
-      to: {pathname: Paths.processInstance(processInstanceId)},
+      to: {pathname: Paths.processInstanceVariables({processInstanceId})},
       key: 'variables',
-      selected: currentPage === 'process-details',
+      selected: currentPage === 'process-details-variables',
       title: 'Variables',
       visible: true,
     },
