@@ -113,9 +113,9 @@ public class BatchOperationInitializationBehavior {
         context = context.withNextPage(endCursor, itemsProcessed);
         finishInitialization(batchOperation, taskResultBuilder);
         startExecutionPhase(taskResultBuilder, context);
-        yield new Success("finished");
+        yield new Success(endCursor);
       }
-      case BufferFull ignored -> handleFailedChunkAppend(taskResultBuilder, context);
+      case final BufferFull ignored -> handleFailedChunkAppend(taskResultBuilder, context);
       case FetchFailed(final var cause) -> {
         if (context.hasAppendedChunks()) {
           continueInitialization(taskResultBuilder, context);
