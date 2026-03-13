@@ -7,7 +7,12 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {createMemoryRouter, RouterProvider} from 'react-router-dom';
+import {
+  createMemoryRouter,
+  Navigate,
+  RouterProvider,
+  useLocation,
+} from 'react-router-dom';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {Paths} from 'modules/Routes';
@@ -20,6 +25,16 @@ import {LocationLog} from 'modules/utils/LocationLog';
 
 const PROCESS_INSTANCE_ID = '123';
 
+const RedirectToVariables: React.FC = () => {
+  const location = useLocation();
+  return (
+    <Navigate
+      to={{pathname: 'variables', search: location.search}}
+      replace
+    />
+  );
+};
+
 function getWrapper(initialPath?: string) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     const router = createMemoryRouter(
@@ -28,7 +43,11 @@ function getWrapper(initialPath?: string) {
           path: Paths.processInstance(undefined, true),
           element: children,
           children: [
-            {index: true, element: <LocationLog />},
+            {index: true, element: <RedirectToVariables />},
+            {
+              path: Paths.processInstanceVariables({isRelative: true}),
+              element: <LocationLog />,
+            },
             {
               path: Paths.processInstanceDetails({isRelative: true}),
               element: <LocationLog />,
@@ -58,7 +77,10 @@ function getWrapper(initialPath?: string) {
       ],
       {
         initialEntries: [
-          initialPath ?? Paths.processInstance(PROCESS_INSTANCE_ID),
+          initialPath ??
+            Paths.processInstanceVariables({
+              processInstanceId: PROCESS_INSTANCE_ID,
+            }),
         ],
       },
     );
@@ -208,7 +230,9 @@ describe('<BottomPanelTabs />', () => {
     const {user} = render(<BottomPanelTabs />, {wrapper: getWrapper()});
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      Paths.processInstance(PROCESS_INSTANCE_ID),
+      Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
     );
 
     await user.click(screen.getByRole('link', {name: /^Listeners$/i}));
@@ -230,7 +254,9 @@ describe('<BottomPanelTabs />', () => {
     await user.click(screen.getByRole('link', {name: /^Variables$/i}));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      Paths.processInstance(PROCESS_INSTANCE_ID),
+      Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
     );
   });
 
@@ -331,7 +357,9 @@ describe('<BottomPanelTabs />', () => {
     await user.click(screen.getByRole('link', {name: /^Variables$/i}));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
-      Paths.processInstance(PROCESS_INSTANCE_ID),
+      Paths.processInstanceVariables({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
     );
     expect(screen.getByTestId('search')).toHaveTextContent(
       '?elementId=someElement',
