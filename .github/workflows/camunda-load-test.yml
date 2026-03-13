@@ -71,7 +71,7 @@ on:
         description: 'Enable Optimize for load testing'
         type: boolean
         required: false
-        default: false
+        default: true
       build-frontend:
         description: 'Build the frontend as part of the load test image build'
         type: boolean
@@ -144,7 +144,7 @@ on:
         description: 'Enable Optimize for load testing'
         type: boolean
         required: false
-        default: false
+        default: true
       build-frontend:
         description: 'Build the frontend as part of the load test image build'
         type: boolean
