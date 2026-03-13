@@ -37,11 +37,13 @@ public class BatchOperationExecutionSchedulerTest {
 
   public static final Duration SCHEDULER_INTERVAL = Duration.ofSeconds(1);
   public static final long BATCH_OPERATION_KEY = 123456789L;
+  private static final int DEFAULT_PAGE_SIZE = 100;
 
   @Mock private Supplier<ScheduledTaskState> scheduledTaskStateFactory;
   @Mock private TaskResultBuilder taskResultBuilder;
   @Mock private ReadonlyStreamProcessorContext streamProcessorContext;
   @Mock private ProcessingScheduleService scheduleService;
+
   @Mock private BatchOperationState batchOperationState;
   @Mock private BatchOperationInitializationBehavior batchOperationInitializer;
   @Mock private BatchOperationRetryPolicy retryPolicy;
@@ -56,7 +58,11 @@ public class BatchOperationExecutionSchedulerTest {
 
     scheduler =
         new BatchOperationExecutionScheduler(
-            scheduledTaskStateFactory, batchOperationInitializer, retryPolicy, SCHEDULER_INTERVAL);
+            scheduledTaskStateFactory,
+            batchOperationInitializer,
+            retryPolicy,
+            SCHEDULER_INTERVAL,
+            DEFAULT_PAGE_SIZE);
   }
 
   @Test
@@ -88,7 +94,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verify(batchOperationInitializer).initializeBatchOperation(batchOperation, taskResultBuilder);
+    verify(batchOperationInitializer).initializeBatchOperation(any(), eq(taskResultBuilder));
     verifyNoInteractions(retryPolicy);
     verify(scheduleService, times(2)).runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any());
   }
@@ -107,7 +113,7 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
 
     // then
-    verify(batchOperationInitializer).initializeBatchOperation(batchOperation, taskResultBuilder);
+    verify(batchOperationInitializer).initializeBatchOperation(any(), eq(taskResultBuilder));
     verifyNoInteractions(retryPolicy);
     verify(scheduleService, times(2)).runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any());
   }
@@ -128,7 +134,7 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
 
     // then
-    verify(batchOperationInitializer).initializeBatchOperation(batchOperation, taskResultBuilder);
+    verify(batchOperationInitializer).initializeBatchOperation(any(), eq(taskResultBuilder));
     verify(batchOperationInitializer)
         .appendFailedCommand(taskResultBuilder, BATCH_OPERATION_KEY, errorMessage, errorType);
     verifyNoInteractions(retryPolicy);
@@ -154,7 +160,7 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
 
     // then
-    verify(batchOperationInitializer).initializeBatchOperation(batchOperation, taskResultBuilder);
+    verify(batchOperationInitializer).initializeBatchOperation(any(), eq(taskResultBuilder));
     verify(retryPolicy).evaluate("cursor", cause, 0);
     verify(scheduleService)
         .runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any()); // initial schedule
