@@ -175,6 +175,11 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
                         return CompletableFuture.failedFuture(new RuntimeException(errorMessage));
                       }
                       final var deleted = response.items().size();
+                      logger.debug(
+                          "Deleted {} documents from index '{}' by id with values: {}",
+                          deleted,
+                          sourceIndexName,
+                          ids);
                       return CompletableFuture.completedFuture(deleted);
                     },
                     executor));
