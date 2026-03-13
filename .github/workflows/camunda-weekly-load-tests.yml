@@ -57,7 +57,7 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.test-data.outputs.test }}-typical
-      ttl: ${{ inputs.ttl || 28 }}
+      ttl: ${{ fromJSON(inputs.ttl || '28') }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: typical
       build-frontend: true
@@ -69,7 +69,7 @@ jobs:
     secrets: inherit
     with:
       name: ${{ needs.test-data.outputs.test }}-rdbms-realistic
-      ttl: ${{ inputs.ttl || 28 }}
+      ttl: ${{ fromJSON(inputs.ttl || '28') }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       secondary-storage-type: 'postgresql'
       build-frontend: true
@@ -82,7 +82,7 @@ jobs:
       - test-data
     with:
       name: ${{ needs.test-data.outputs.test }}-realistic
-      ttl: ${{ inputs.ttl || 28 }}
+      ttl: ${{ fromJSON(inputs.ttl || '28') }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: realistic
       build-frontend: true
@@ -94,7 +94,7 @@ jobs:
       - test-data
     with:
       name: ${{ needs.test-data.outputs.test }}-latency
-      ttl: ${{ inputs.ttl || 28 }}
+      ttl: ${{ fromJSON(inputs.ttl || '28') }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: latency
       build-frontend: true
