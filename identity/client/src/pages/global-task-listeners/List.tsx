@@ -81,6 +81,8 @@ const List: FC = () => {
     eventTypes: listener.eventTypes.includes("all")
       ? t("eventTypeAll")
       : listener.eventTypes.join(", "),
+    // Keep a reference to the original listener object for use in edit and delete actions
+    originalListener: listener,
   }));
 
   return (
@@ -115,13 +117,15 @@ const List: FC = () => {
           {
             label: t("editGlobalTaskListener"),
             icon: Edit,
-            onClick: (entity) => editGlobalTaskListener(entity),
+            onClick: (entity) =>
+              editGlobalTaskListener(entity.originalListener),
           },
           {
             label: t("delete"),
             icon: TrashCan,
             isDangerous: true,
-            onClick: (entity) => deleteGlobalTaskListener(entity),
+            onClick: (entity) =>
+              deleteGlobalTaskListener(entity.originalListener),
           },
         ]}
         searchPlaceholder={t("searchById")}
