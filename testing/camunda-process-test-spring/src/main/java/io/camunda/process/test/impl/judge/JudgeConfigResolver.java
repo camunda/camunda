@@ -61,7 +61,7 @@ public final class JudgeConfigResolver {
     }
 
     final Optional<ChatModelAdapter> spiAdapter =
-        new ChatModelAdapterResolver().resolve(judgeConfiguration.toProviderConfig());
+        ChatModelAdapterResolver.resolve(judgeConfiguration.toProviderConfig());
     if (spiAdapter.isEmpty()) {
       throw new IllegalStateException(
           "Judge configuration is present but no ChatModelAdapterProvider could be resolved. "
