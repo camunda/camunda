@@ -66,6 +66,9 @@
           "$ref": "#/definitions/AssertUserTaskInstruction"
         },
         {
+          "$ref": "#/definitions/AssertVariableJudgeInstruction"
+        },
+        {
           "$ref": "#/definitions/AssertVariablesInstruction"
         },
         {
@@ -1050,6 +1053,50 @@
       "required": [
         "type",
         "jobType"
+      ],
+      "additionalProperties": false
+    },
+    "AssertVariableJudgeInstruction": {
+      "description": "An instruction to assert a process variable using an LLM judge evaluation.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "ASSERT_VARIABLE_JUDGE"
+        },
+        "processInstanceSelector": {
+          "description": "The selector to identify the process instance.",
+          "$ref": "#/definitions/ProcessInstanceSelector"
+        },
+        "variableName": {
+          "description": "The name of the variable to evaluate.",
+          "type": "string"
+        },
+        "expectation": {
+          "description": "The semantic expectation for the variable value.",
+          "type": "string"
+        },
+        "elementSelector": {
+          "description": "The selector to identify the element for local variables. Optional.",
+          "$ref": "#/definitions/ElementSelector"
+        },
+        "threshold": {
+          "description": "The threshold for scoring determining pass or fail. Overrides the preconfigured threshold. Optional.",
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "customPrompt": {
+          "description": "A custom prompt for the judge evaluation. Overrides the preconfigured custom prompt. Optional.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "processInstanceSelector",
+        "variableName",
+        "expectation"
       ],
       "additionalProperties": false
     },
