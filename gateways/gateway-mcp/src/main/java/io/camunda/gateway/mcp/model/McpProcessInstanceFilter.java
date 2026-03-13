@@ -16,6 +16,7 @@ import io.camunda.gateway.protocol.model.simple.ProcessInstanceFilter;
  */
 @JsonIgnoreProperties({
   "batchOperationId",
+  "batchOperationKey",
   "elementId",
   "elementInstanceState",
   "errorMessage",
