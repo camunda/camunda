@@ -69,7 +69,6 @@ class BatchOperationInitializationBehaviorTest {
     return new InitializationContext(batchOperation, SEARCH_CURSOR, PAGE_SIZE, 0, false);
   }
 
-
   @Test
   void shouldReturnEarlyWhenBatchOperationIsSuspended() {
     // given
@@ -97,7 +96,7 @@ class BatchOperationInitializationBehaviorTest {
     // then
     assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
     final var success = (InitializationOutcome.Success) result;
-    assertThat(success.cursor()).isEqualTo("finished");
+    assertThat(success.cursor()).isEqualTo(NEXT_SEARCH_CURSOR);
 
     verify(commandBuilder)
         .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY);
@@ -124,7 +123,7 @@ class BatchOperationInitializationBehaviorTest {
     // then
     assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
     final var success = (InitializationOutcome.Success) result;
-    assertThat(success.cursor()).isEqualTo("finished");
+    assertThat(success.cursor()).isEqualTo("cursor2");
 
     verify(commandBuilder)
         .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY);
@@ -164,7 +163,8 @@ class BatchOperationInitializationBehaviorTest {
     // when
     final var result = initializer.initializeBatchOperation(createContext(), taskResultBuilder);
 
-    // then - returns Success (meaning "progress made, continue later") with cursor at last successful page
+    // then - returns Success (meaning "progress made, continue later") with cursor at last
+    // successful page
     assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
     final var success = (InitializationOutcome.Success) result;
     assertThat(success.cursor()).isEqualTo("cursor1");
@@ -244,7 +244,7 @@ class BatchOperationInitializationBehaviorTest {
     // then
     assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
     final var success = (InitializationOutcome.Success) result;
-    assertThat(success.cursor()).isEqualTo("finished");
+    assertThat(success.cursor()).isEqualTo(NEXT_SEARCH_CURSOR);
 
     verify(commandBuilder)
         .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY);
@@ -282,8 +282,7 @@ class BatchOperationInitializationBehaviorTest {
     assertThat(result).isInstanceOf(InitializationOutcome.Failed.class);
     final var failed = (InitializationOutcome.Failed) result;
     assertThat(failed.message()).contains("Result buffer too small");
-    assertThat(failed.errorType())
-        .isEqualTo(BatchOperationErrorType.RESULT_BUFFER_SIZE_EXCEEDED);
+    assertThat(failed.errorType()).isEqualTo(BatchOperationErrorType.RESULT_BUFFER_SIZE_EXCEEDED);
 
     // No INITIALIZE command should be written for terminal failure
     verify(commandBuilder, never())
