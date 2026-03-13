@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.search.filter.Operation.eq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -345,7 +346,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
   }
 
   @Test
@@ -355,17 +356,14 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
     final var request =
         """
             {
-                "filter": {
-                    "batchOperationId": {"$eq": "op-id-1"}
-                }
+              "filter": {
+                "batchOperationId": {"$eq": "op-id-1"}
+              }
             }""";
     final var expectedFilter =
-        new ProcessInstanceFilter.Builder()
-            .batchOperationIdOperations(Operation.eq("op-id-1"))
-            .build();
+        new ProcessInstanceFilter.Builder().batchOperationIdOperations(eq("op-id-1")).build();
 
-    when(processInstanceServices.search(queryCaptor.capture(), any()))
-        .thenReturn(SEARCH_QUERY_RESULT);
+    when(processInstanceServices.search(queryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient
@@ -384,7 +382,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
 
     verify(processInstanceServices)
-        .search(eq(new ProcessInstanceQuery.Builder().filter(expectedFilter).build()), any());
+        .search(new ProcessInstanceQuery.Builder().filter(expectedFilter).build());
   }
 
   @Test
@@ -703,7 +701,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         "state",
         ops -> new ProcessInstanceFilter.Builder().stateOperations(ops).build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(ProcessInstanceStateEnum.ACTIVE))),
+            List.of(eq(String.valueOf(ProcessInstanceStateEnum.ACTIVE))),
             List.of(Operation.neq(String.valueOf(ProcessInstanceStateEnum.COMPLETED))),
             List.of(
                 Operation.in(
@@ -832,8 +830,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
     final var expectedFilter =
         new ProcessInstanceFilter.Builder()
-            .stateOperations(Operation.eq("ACTIVE"))
-            .tenantIdOperations(Operation.eq("tenant"));
+            .stateOperations(eq("ACTIVE"))
+            .tenantIdOperations(eq("tenant"));
     orFilters.forEach(expectedFilter::addOrOperation);
 
     when(processInstanceServices.search(queryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);
