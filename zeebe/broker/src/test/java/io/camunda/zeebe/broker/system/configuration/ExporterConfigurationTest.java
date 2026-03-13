@@ -39,7 +39,9 @@ class ExporterConfigurationTest {
     final BrokerCfg cfg = TestConfigReader.readConfig("exporters", environment);
     final ExportingCfg exportingCfg = cfg.getExporting();
     // then
-    assertThat(exportingCfg.skipRecords()).containsEntry(1, Set.of(999L));
+    assertThat(exportingCfg.skipRecords())
+        .containsEntry(1, Set.of(999L))
+        .containsEntry(2, Set.of(100L));
   }
 
   @Test
