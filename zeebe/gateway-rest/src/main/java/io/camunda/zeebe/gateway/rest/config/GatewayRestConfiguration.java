@@ -11,9 +11,12 @@ import java.time.Duration;
 
 public class GatewayRestConfiguration {
 
+  private static final int DEFAULT_MAX_NAME_FIELD_LENGTH = 32 * 1024;
+
   private final ProcessCacheConfiguration processCache = new ProcessCacheConfiguration();
   private final ApiExecutorConfiguration apiExecutor = new ApiExecutorConfiguration();
   private final JobMetricsConfiguration jobMetrics = new JobMetricsConfiguration();
+  private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
 
   public ProcessCacheConfiguration getProcessCache() {
     return processCache;
@@ -25,6 +28,20 @@ public class GatewayRestConfiguration {
 
   public JobMetricsConfiguration getJobMetrics() {
     return jobMetrics;
+  }
+
+  /**
+   * Maximum allowed length for name-type fields (e.g. message names, variable names) validated
+   * across REST and gRPC gateway requests.
+   *
+   * <p>Defaults to {@link #DEFAULT_MAX_NAME_FIELD_LENGTH}.
+   */
+  public int getMaxNameFieldLength() {
+    return maxNameFieldLength;
+  }
+
+  public void setMaxNameFieldLength(final int maxNameFieldLength) {
+    this.maxNameFieldLength = maxNameFieldLength;
   }
 
   public static class ProcessCacheConfiguration {

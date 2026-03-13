@@ -17,7 +17,7 @@ import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
-import io.camunda.zeebe.gateway.rest.config.ProcessEngineConfiguration;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
@@ -39,11 +39,11 @@ public class MessageController {
       final MessageServices messageServices,
       final MultiTenancyConfiguration multiTenancyCfg,
       final CamundaAuthenticationProvider authenticationProvider,
-      final ProcessEngineConfiguration processEngineConfiguration) {
+      final GatewayRestConfiguration gatewayRestConfiguration) {
     this.messageServices = messageServices;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
-    this.maxNameFieldLength = processEngineConfiguration.getMaxNameFieldLength();
+    this.maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
   }
 
   @CamundaPostMapping(path = "/publication")
