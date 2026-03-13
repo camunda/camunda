@@ -11,6 +11,8 @@ const testRailOptions = {
 
 const isV2StatelessTestsOnly = process.env.V2_STATELESS_TESTS === 'true';
 const isApiTestsOnly = process.env.API_TESTS_ONLY === 'true';
+const isRDBMSApiTestsOnly = process.env.DATABASE === 'RDBMS';
+
 
 // Default: V2 mode (unless explicitly disabled with CAMUNDA_TASKLIST_V2_MODE_ENABLED=false)
 const isV2ModeEnabled =
@@ -66,15 +68,20 @@ const changedFolders =
     ? args[changedFoldersArgIndex + 1].split(',')
     : [];
 
+const apiTestMatch = isRDBMSApiTestsOnly
+    ? ['tests/api/v2/**/*.spec.ts']
+    : ['tests/api/**/*.spec.ts'];
+
+const apiTestIgnore = [
+  'tests/api/v2/clock/*.spec.ts',
+  'tests/api/v2/usage-metrics/*.spec.ts',
+];
 // Projects
 const normalProjects = [
   {
     name: 'api-tests',
-    testMatch: ['tests/api/**/*.spec.ts'],
-    testIgnore: [
-      'tests/api/v2/clock/*.spec.ts',
-      'tests/api/v2/usage-metrics/*.spec.ts',
-    ],
+    testMatch: apiTestMatch,
+    testIgnore: apiTestIgnore,
     use: devices['Desktop Chrome'],
     teardown: 'api-tests-subset',
   },
