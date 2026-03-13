@@ -44,7 +44,7 @@ public class Export {
    * their position for a specific partition. This is useful for debugging or skipping a record that
    * is preventing processing or exporting to continue. Record positions defined to skip in this
    * definition will be skipped only for the specified partition. The value is a map of partition id
-   * to a comma-separated list of records ids to skip. Whitespace is ignored.
+   * to a comma-separated list of record positions to skip. Whitespace is ignored.
    */
   private Map<Integer, Set<Long>> skipRecordsForPartitions = Map.of();
 
