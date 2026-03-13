@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 import static io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus.CREATED;
 import static io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus.SUSPENDED;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -23,8 +22,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.BatchOperationInitializationException;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.PageProcessingResult;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.BatchOperationInitializationException;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
@@ -75,8 +75,9 @@ class BatchOperationInitializationBehaviorTest {
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
 
     // then
-    assertThat(result.batchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
-    assertThat(result.searchResultCursor()).isEqualTo(SEARCH_CURSOR);
+    assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
+    final var success = (InitializationOutcome.Success) result;
+    assertThat(success.cursor()).isEqualTo(SEARCH_CURSOR);
     verify(chunkAppender, never()).fetchAndChunkNextPage(any(), any(), any());
   }
 
@@ -90,8 +91,9 @@ class BatchOperationInitializationBehaviorTest {
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
 
     // then
-    assertThat(result.batchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
-    assertThat(result.searchResultCursor()).isEqualTo("finished");
+    assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
+    final var success = (InitializationOutcome.Success) result;
+    assertThat(success.cursor()).isEqualTo("finished");
 
     verify(commandBuilder)
         .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY);
@@ -116,8 +118,9 @@ class BatchOperationInitializationBehaviorTest {
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
 
     // then
-    assertThat(result.batchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
-    assertThat(result.searchResultCursor()).isEqualTo("finished");
+    assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
+    final var success = (InitializationOutcome.Success) result;
+    assertThat(success.cursor()).isEqualTo("finished");
 
     verify(commandBuilder)
         .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY);
@@ -135,8 +138,9 @@ class BatchOperationInitializationBehaviorTest {
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
 
     // then
-    assertThat(result.batchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
-    assertThat(result.searchResultCursor()).isEqualTo(SEARCH_CURSOR);
+    assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
+    final var success = (InitializationOutcome.Success) result;
+    assertThat(success.cursor()).isEqualTo(SEARCH_CURSOR);
 
     verify(commandBuilder)
         .appendInitializationCommand(
@@ -157,8 +161,9 @@ class BatchOperationInitializationBehaviorTest {
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
 
     // then
-    assertThat(result.batchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
-    assertThat(result.searchResultCursor()).isEqualTo("cursor1");
+    assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
+    final var success = (InitializationOutcome.Success) result;
+    assertThat(success.cursor()).isEqualTo("cursor1");
 
     verify(commandBuilder)
         .appendInitializationCommand(
@@ -166,19 +171,20 @@ class BatchOperationInitializationBehaviorTest {
   }
 
   @Test
-  void shouldThrowExceptionWhenFetchFailsWithoutPreviousChunks() {
+  void shouldReturnNeedsRetryWhenFetchFailsWithoutPreviousChunks() {
     // given
     final var exception = new RuntimeException("Database connection failed");
     when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.FetchFailed(exception));
 
-    // when & then
-    assertThatThrownBy(
-            () -> initializer.initializeBatchOperation(batchOperation, taskResultBuilder))
-        .isInstanceOf(BatchOperationInitializationException.class)
-        .hasMessageContaining(
-            "Failed to initialize batch operation with end cursor: " + SEARCH_CURSOR)
-        .hasCause(exception);
+    // when
+    final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
+
+    // then
+    assertThat(result).isInstanceOf(InitializationOutcome.NeedsRetry.class);
+    final var needsRetry = (InitializationOutcome.NeedsRetry) result;
+    assertThat(needsRetry.cursor()).isEqualTo(SEARCH_CURSOR);
+    assertThat(needsRetry.cause()).isSameAs(exception);
 
     verify(commandBuilder, never())
         .appendInitializationCommand(any(), anyLong(), anyString(), anyInt());
@@ -192,12 +198,14 @@ class BatchOperationInitializationBehaviorTest {
         .thenReturn(new PageProcessingResult.Continue("cursor1", 2))
         .thenReturn(new PageProcessingResult.FetchFailed(exception));
 
-    // when & then
-    assertThatThrownBy(
-            () -> initializer.initializeBatchOperation(batchOperation, taskResultBuilder))
-        .isInstanceOf(BatchOperationInitializationException.class)
-        .hasMessageContaining("Failed to initialize batch operation with end cursor: cursor1")
-        .hasCause(exception);
+    // when
+    final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
+
+    // then
+    assertThat(result).isInstanceOf(InitializationOutcome.NeedsRetry.class);
+    final var needsRetry = (InitializationOutcome.NeedsRetry) result;
+    assertThat(needsRetry.cursor()).isEqualTo("cursor1");
+    assertThat(needsRetry.cause()).isSameAs(exception);
 
     verify(commandBuilder)
         .appendInitializationCommand(
@@ -230,8 +238,9 @@ class BatchOperationInitializationBehaviorTest {
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
 
     // then
-    assertThat(result.batchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
-    assertThat(result.searchResultCursor()).isEqualTo("finished");
+    assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
+    final var success = (InitializationOutcome.Success) result;
+    assertThat(success.cursor()).isEqualTo("finished");
 
     verify(commandBuilder)
         .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY);
@@ -264,8 +273,9 @@ class BatchOperationInitializationBehaviorTest {
     final var result = initializer.initializeBatchOperation(batchOperation, taskResultBuilder);
 
     // then
-    assertThat(result.batchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
-    assertThat(result.searchResultCursor()).isEqualTo("finished");
+    assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
+    final var success = (InitializationOutcome.Success) result;
+    assertThat(success.cursor()).isEqualTo("finished");
     verify(commandBuilder)
         .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY);
     verify(commandBuilder).appendExecutionCommand(taskResultBuilder, BATCH_OPERATION_KEY);

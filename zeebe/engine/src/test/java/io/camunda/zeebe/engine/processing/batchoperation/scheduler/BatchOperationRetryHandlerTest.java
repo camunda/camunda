@@ -13,10 +13,10 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.BatchOperationInitializationException;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.BatchOperationInitializationResult;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryResult;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryableOperation;
+import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,7 +29,6 @@ class BatchOperationRetryHandlerTest {
   private static final Duration MAX_RETRY_DELAY = Duration.ofSeconds(5);
   private static final int MAX_RETRIES = 3;
   private static final int BACKOFF_FACTOR = 2;
-  private static final long BATCH_OPERATION_KEY = 12345L;
   private static final int NUM_ATTEMPTS = 0;
   private BatchOperationRetryHandler retryHandler;
   private RetryableOperation operation;
@@ -45,9 +44,7 @@ class BatchOperationRetryHandlerTest {
   @Test
   void shouldReturnSuccessWhenOperationSucceeds() {
     // given
-    final var expectedResult =
-        new BatchOperationInitializationResult(BATCH_OPERATION_KEY, "new-cursor");
-    when(operation.execute()).thenReturn(expectedResult);
+    when(operation.execute()).thenReturn(new InitializationOutcome.Success("new-cursor"));
 
     // when
     final var result = retryHandler.executeWithRetry(operation, NUM_ATTEMPTS);
@@ -59,13 +56,12 @@ class BatchOperationRetryHandlerTest {
   }
 
   @Test
-  void shouldRetryWhenOperationFailsWithRetryableException() {
+  void shouldRetryWhenOperationReturnsNeedsRetryWithRetryableCause() {
     // given
     final var retryableException =
         new CamundaSearchException("Temporary failure", Reason.CONNECTION_FAILED);
-    final var initException =
-        new BatchOperationInitializationException(retryableException, "test-end-cursor");
-    when(operation.execute()).thenThrow(initException);
+    when(operation.execute())
+        .thenReturn(new InitializationOutcome.NeedsRetry("test-end-cursor", retryableException));
 
     // when
     final var result = retryHandler.executeWithRetry(operation, NUM_ATTEMPTS);
@@ -83,9 +79,8 @@ class BatchOperationRetryHandlerTest {
     // given
     final var retryableException =
         new CamundaSearchException("Temporary failure", Reason.CONNECTION_FAILED);
-    final var initException =
-        new BatchOperationInitializationException(retryableException, "cursor");
-    when(operation.execute()).thenThrow(initException);
+    when(operation.execute())
+        .thenReturn(new InitializationOutcome.NeedsRetry("cursor", retryableException));
 
     // when
     final var result = retryHandler.executeWithRetry(operation, MAX_RETRIES);
@@ -93,7 +88,7 @@ class BatchOperationRetryHandlerTest {
     // then
     assertThat(result).isInstanceOf(RetryResult.Failure.class);
     final var failure = (RetryResult.Failure) result;
-    assertThat(failure.exception()).isEqualTo(initException);
+    assertThat(failure.exception().getCause()).isEqualTo(retryableException);
   }
 
   @ParameterizedTest
@@ -103,9 +98,8 @@ class BatchOperationRetryHandlerTest {
   void shouldFailImmediatelyForNonRetryableReasons(final Reason reason) {
     // given
     final var nonRetryableException = new CamundaSearchException("Non-retryable", reason);
-    final var initException =
-        new BatchOperationInitializationException(nonRetryableException, "cursor");
-    when(operation.execute()).thenThrow(initException);
+    when(operation.execute())
+        .thenReturn(new InitializationOutcome.NeedsRetry("cursor", nonRetryableException));
 
     // when
     final var result = retryHandler.executeWithRetry(operation, NUM_ATTEMPTS);
@@ -113,20 +107,37 @@ class BatchOperationRetryHandlerTest {
     // then
     assertThat(result).isInstanceOf(RetryResult.Failure.class);
     final var failure = (RetryResult.Failure) result;
-    assertThat(failure.exception()).isEqualTo(initException);
+    assertThat(failure.exception().getCause()).isEqualTo(nonRetryableException);
   }
 
   @Test
   void shouldRetryForNonCamundaSearchExceptions() {
     // given
     final var genericException = new RuntimeException("Generic error");
-    final var initException = new BatchOperationInitializationException(genericException, "cursor");
-    when(operation.execute()).thenThrow(initException);
+    when(operation.execute())
+        .thenReturn(new InitializationOutcome.NeedsRetry("cursor", genericException));
 
     // when
     final var result = retryHandler.executeWithRetry(operation, NUM_ATTEMPTS);
 
     // then
     assertThat(result).isInstanceOf(RetryResult.Retry.class);
+  }
+
+  @Test
+  void shouldReturnFailureWhenOperationReturnsFailed() {
+    // given
+    when(operation.execute())
+        .thenReturn(
+            new InitializationOutcome.Failed(
+                "Terminal failure", BatchOperationErrorType.QUERY_FAILED, "cursor"));
+
+    // when
+    final var result = retryHandler.executeWithRetry(operation, NUM_ATTEMPTS);
+
+    // then
+    assertThat(result).isInstanceOf(RetryResult.Failure.class);
+    final var failure = (RetryResult.Failure) result;
+    assertThat(failure.exception().getMessage()).isEqualTo("Terminal failure");
   }
 }
