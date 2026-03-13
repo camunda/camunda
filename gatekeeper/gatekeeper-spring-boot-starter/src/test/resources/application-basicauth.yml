@@ -1,0 +1,4 @@
+camunda:
+  security:
+    authentication:
+      method: BASIC
