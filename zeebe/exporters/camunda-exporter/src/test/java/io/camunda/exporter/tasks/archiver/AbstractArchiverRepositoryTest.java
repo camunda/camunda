@@ -57,7 +57,9 @@ abstract class AbstractArchiverRepositoryTest {
 
   static Stream<Named<Function<ArchiverRepository, CompletableFuture<?>>>> archiveBatchSuppliers() {
     return Stream.of(
-        Named.of("getProcessInstancesNextBatch", ArchiverRepository::getProcessInstancesNextBatch),
+        Named.of(
+            "getProcessInstancesNextBatch",
+            archiverRepository -> archiverRepository.getProcessInstancesNextBatch(100)),
         Named.of("getBatchOperationsNextBatch", ArchiverRepository::getBatchOperationsNextBatch),
         Named.of("getUsageMetricTUNextBatch", ArchiverRepository::getUsageMetricTUNextBatch),
         Named.of("getUsageMetricNextBatch", ArchiverRepository::getUsageMetricNextBatch),

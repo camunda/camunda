@@ -29,7 +29,7 @@ public interface ArchiverRepository extends AutoCloseable {
           UsageMetricTemplate.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName,
           UsageMetricTUTemplate.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName);
 
-  CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch();
+  CompletableFuture<ProcessInstanceArchiveBatch> getProcessInstancesNextBatch(final int size);
 
   CompletableFuture<BasicArchiveBatch> getBatchOperationsNextBatch();
 
