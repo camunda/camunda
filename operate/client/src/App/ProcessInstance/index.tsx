@@ -11,7 +11,7 @@ import {InstanceDetail} from '../Layout/InstanceDetail';
 import {Breadcrumb} from './Breadcrumb';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from './useProcessInstancePageParams';
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {reaction, when} from 'mobx';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
@@ -19,7 +19,13 @@ import {elementTimeStampStore} from 'modules/stores/elementTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {ProcessInstanceHeader as ProcessInstanceHeaderNext} from './ProcessInstanceHeaderNext';
 import {TopPanel} from './TopPanel';
-import {BottomPanel, ModificationFooter, Buttons} from './styled';
+import {
+  BottomPanel,
+  BottomPanelNew,
+  BottomPanelStacked,
+  ModificationFooter,
+  Buttons,
+} from './styled';
 import {ElementInstanceLog} from './ElementInstanceLog';
 import {Button, Modal} from '@carbon/react';
 import {tracking} from 'modules/tracking';
@@ -42,6 +48,14 @@ import {Locations, Paths} from 'modules/Routes';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
 import {BottomPanelTabs} from './BottomPanelTabs';
+import {
+  ResizablePanel,
+  SplitDirection,
+} from 'modules/components/ResizablePanel';
+import {
+  useMatchMedia,
+  isWidthAboveBreakpoint,
+} from 'modules/hooks/useMatchMedia';
 
 const onProcessInstanceTabTransition = ({
   currentLocation,
@@ -65,6 +79,40 @@ const onProcessInstanceTabTransition = ({
     nextProcessInstance !== null &&
     currentProcessInstance.params.processInstanceId ===
       nextProcessInstance.params.processInstanceId
+  );
+};
+
+const BottomPanelContent: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isDesktop = useMatchMedia(isWidthAboveBreakpoint('lg'));
+
+  if (isDesktop) {
+    const panelMinWidth =
+      (containerRef.current?.clientWidth ?? 0) / 4 || undefined;
+
+    return (
+      <BottomPanelNew ref={containerRef}>
+        <ResizablePanel
+          panelId="process-instance-bottom-panel"
+          direction={SplitDirection.Horizontal}
+          minWidths={
+            panelMinWidth !== undefined
+              ? [panelMinWidth, panelMinWidth]
+              : undefined
+          }
+        >
+          <ElementInstanceLog />
+          <BottomPanelTabs />
+        </ResizablePanel>
+      </BottomPanelNew>
+    );
+  }
+
+  return (
+    <BottomPanelStacked>
+      <ElementInstanceLog />
+      <BottomPanelTabs />
+    </BottomPanelStacked>
   );
 };
 
@@ -199,20 +247,16 @@ const ProcessInstance: React.FC = observer(() => {
             }
             topPanel={<TopPanel />}
             bottomPanel={
-              <BottomPanel
-                $shouldExpandPanel={
-                  IS_NEW_PROCESS_INSTANCE_PAGE ? false : isListenerTabSelected
-                }
-              >
-                <ElementInstanceLog />
-                {IS_NEW_PROCESS_INSTANCE_PAGE ? (
-                  <BottomPanelTabs />
-                ) : (
+              IS_NEW_PROCESS_INSTANCE_PAGE ? (
+                <BottomPanelContent />
+              ) : (
+                <BottomPanel $shouldExpandPanel={isListenerTabSelected}>
+                  <ElementInstanceLog />
                   <VariablePanel
                     setListenerTabVisibility={setListenerTabVisibility}
                   />
-                )}
-              </BottomPanel>
+                </BottomPanel>
+              )
             }
             footer={
               isModificationModeEnabled ? (
