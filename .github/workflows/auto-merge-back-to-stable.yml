@@ -223,10 +223,12 @@ jobs:
           SHA: ${{ github.event.pull_request.head.sha }}
           CHECKS_PATTERN: ${{ steps.get_required_checks.outputs.checks_pattern }}
         run: |
-          TIMEOUT_MINUTES=30
+          TIMEOUT_MINUTES=50
           POLL_INTERVAL=30
           MAX_WAIT=$((TIMEOUT_MINUTES * 60))
           ELAPSED=0
+          MAX_API_RETRIES=3
+          API_RETRY_DELAY=5
 
           IFS='|' read -ra REQUIRED_CHECKS <<< "$CHECKS_PATTERN"
           echo "Waiting for required checks: ${REQUIRED_CHECKS[*]}"
@@ -234,14 +236,51 @@ jobs:
           echo ""
 
           while [ $ELAPSED -lt $MAX_WAIT ]; do
-            # filter=all includes re-runs so we always see the most recent attempt
-            RUNS_JSON=$(gh api "repos/${{ github.repository }}/commits/${SHA}/check-runs?filter=all&per_page=100" \
-              --paginate --jq '.check_runs[] | {name: .name, id: .id, status: .status, conclusion: .conclusion}' \
-              | jq -s '.')
+            # Fetch check runs with retry logic for transient API/parse failures
+            API_ATTEMPT=1
+            API_SUCCESS=false
+            while [ $API_ATTEMPT -le $MAX_API_RETRIES ]; do
+              set +e
+              RUNS_RAW=$(gh api "repos/${{ github.repository }}/commits/${SHA}/check-runs?filter=all&per_page=100" \
+                --paginate --jq '.check_runs[] | {name: .name, id: .id, status: .status, conclusion: .conclusion}' 2>&1)
+              GH_STATUS=$?
+              set -e
+              if [ $GH_STATUS -ne 0 ]; then
+                echo "⚠️  gh api failed (attempt $API_ATTEMPT/$MAX_API_RETRIES, exit $GH_STATUS)"
+                API_ATTEMPT=$((API_ATTEMPT + 1))
+                sleep "$API_RETRY_DELAY"
+                continue
+              fi
+              set +e
+              RUNS_JSON=$(printf '%s\n' "$RUNS_RAW" | jq -s '.' 2>&1)
+              JQ_STATUS=$?
+              set -e
+              if [ $JQ_STATUS -ne 0 ]; then
+                echo "⚠️  jq parse failed (attempt $API_ATTEMPT/$MAX_API_RETRIES, exit $JQ_STATUS)"
+                API_ATTEMPT=$((API_ATTEMPT + 1))
+                sleep "$API_RETRY_DELAY"
+                continue
+              fi
+              API_SUCCESS=true
+              break
+            done
+
+            if [ "$API_SUCCESS" != "true" ]; then
+              echo "⚠️  Failed to fetch check runs after $MAX_API_RETRIES attempts, will retry next poll"
+              ELAPSED=$((ELAPSED + POLL_INTERVAL))
+              if [ $ELAPSED -ge $MAX_WAIT ]; then
+                echo ""
+                echo "❌ Timed out waiting for checks after ${TIMEOUT_MINUTES} minutes"
+                exit 1
+              fi
+              echo "--- Waiting ${POLL_INTERVAL}s (${ELAPSED}s/${MAX_WAIT}s) ---"
+              sleep "$POLL_INTERVAL"
+              continue
+            fi
 
             ALL_PASSED=true
             for CHECK in "${REQUIRED_CHECKS[@]}"; do
-              # Pick the run with the highest id (most recent, handles re-runs)
+              # Pick the latest run for this check name
               LATEST=$(echo "$RUNS_JSON" | jq -r --arg name "$CHECK" \
                 '[.[] | select(.name == $name)] | sort_by(.id) | last // empty')
 
@@ -424,12 +463,23 @@ jobs:
           echo "⏱️  Timeout waiting for merge (${TIMEOUT_MINUTES} minutes) - manual intervention required"
           exit 1
       
-      - name: Report auto-merge result to Zeebe
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig    
+      - name: Report auto-merge result to Monorepo Release Process
         if: always() && env.DRY_RUN != 'true'
         continue-on-error: true
         uses: camunda-community-hub/camunda-platform-8-github-action@8.3.0
         with:
-          clientConfig: ${{ secrets.TEST_CLUSTER_ZEEBE_CLIENT_CONFIG }}
+          clientConfig: ${{ steps.secrets.outputs.clientConfig }}
           operation: publishMessage
           messageName: Automerge result Camunda
           correlationKey: ${{ github.event.pull_request.id }}
