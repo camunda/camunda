@@ -63,7 +63,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
 
   @Override
   CompletableFuture<ProcessInstanceArchiveBatch> getNextBatch() {
-    return getArchiverRepository().getProcessInstancesNextBatch();
+    return getArchiverRepository().getProcessInstancesNextBatch(config.getRolloverBatchSize());
   }
 
   @Override
