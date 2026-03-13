@@ -216,7 +216,7 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toProcessInstance(entity);
 
     // then
-    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.rootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -271,7 +271,7 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toProcessInstance(entity);
 
     // then
-    assertThat(response.getRootProcessInstanceKey()).isNull();
+    assertThat(response.rootProcessInstanceKey()).isNull();
   }
 
   @Test
@@ -308,7 +308,7 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toUserTask(entity);
 
     // then
-    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.rootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -334,7 +334,7 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toIncident(entity);
 
     // then
-    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.rootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -360,7 +360,7 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toIncident(entity);
 
     // then
-    assertThat(response.getState()).isEqualTo(IncidentStateEnum.UNKNOWN);
+    assertThat(response.state()).isEqualTo(IncidentStateEnum.UNKNOWN);
   }
 
   @Test
@@ -389,7 +389,7 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toElementInstance(entity);
 
     // then
-    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.rootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -474,7 +474,7 @@ class SearchQueryResponseMapperTest {
             new SearchQueryResult<JobEntity>(1, false, List.of(entity), null, null));
 
     // then
-    assertThat(jobs.getItems().getFirst().getRootProcessInstanceKey()).isEqualTo("999");
+    assertThat(jobs.items().getFirst().rootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -490,6 +490,12 @@ class SearchQueryResponseMapperTest {
             .processInstanceKey(789L)
             .rootProcessInstanceKey(null)
             .tenantId("tenant")
+            .elementInstanceKey(0L)
+            .hasFailedWithRetriesLeft(false)
+            .processDefinitionId("")
+            .processDefinitionKey(0L)
+            .retries(0)
+            .worker("")
             .build();
 
     // when
@@ -498,7 +504,7 @@ class SearchQueryResponseMapperTest {
             new SearchQueryResult<JobEntity>(1, false, List.of(entity), null, null));
 
     // then
-    assertThat(jobs.getItems().getFirst().getRootProcessInstanceKey()).isNull();
+    assertThat(jobs.items().getFirst().rootProcessInstanceKey()).isNull();
   }
 
   @Test
@@ -527,7 +533,7 @@ class SearchQueryResponseMapperTest {
                 1, false, List.of(entity), null, null));
 
     // then
-    assertThat(subscriptions.getItems().getFirst().getRootProcessInstanceKey()).isEqualTo("999");
+    assertThat(subscriptions.items().getFirst().rootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -540,6 +546,10 @@ class SearchQueryResponseMapperTest {
             .rootProcessInstanceKey(null)
             .messageSubscriptionState(MessageSubscriptionState.CREATED)
             .tenantId("tenant")
+            .processDefinitionId("")
+            .flowNodeId("")
+            .dateTime(OffsetDateTime.now())
+            .messageName("")
             .build();
 
     // when
@@ -549,7 +559,7 @@ class SearchQueryResponseMapperTest {
                 1, false, List.of(entity), null, null));
 
     // then
-    assertThat(subscriptions.getItems().getFirst().getRootProcessInstanceKey()).isNull();
+    assertThat(subscriptions.items().getFirst().rootProcessInstanceKey()).isNull();
   }
 
   @Test
@@ -579,7 +589,7 @@ class SearchQueryResponseMapperTest {
                 1, false, List.of(entity), null, null));
 
     // then
-    assertThat(subscriptions.getItems().getFirst().getRootProcessInstanceKey()).isEqualTo("999");
+    assertThat(subscriptions.items().getFirst().rootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -591,6 +601,14 @@ class SearchQueryResponseMapperTest {
             .processInstanceKey(789L)
             .rootProcessInstanceKey(null)
             .tenantId("tenant")
+            .correlationTime(OffsetDateTime.now())
+            .flowNodeId("")
+            .messageKey(0L)
+            .messageName("")
+            .partitionId(0)
+            .processDefinitionId("")
+            .processDefinitionKey(0L)
+            .subscriptionKey(0L)
             .build();
 
     // when
@@ -600,7 +618,7 @@ class SearchQueryResponseMapperTest {
                 1, false, List.of(entity), null, null));
 
     // then
-    assertThat(subscriptions.getItems().getFirst().getRootProcessInstanceKey()).isNull();
+    assertThat(subscriptions.items().getFirst().rootProcessInstanceKey()).isNull();
   }
 
   @Test
@@ -649,7 +667,7 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toAuditLog(entity);
 
     // then
-    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.rootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -662,6 +680,8 @@ class SearchQueryResponseMapperTest {
             .entityType(AuditLogEntityType.PROCESS_INSTANCE)
             .operationType(AuditLogOperationType.CREATE)
             .timestamp(OffsetDateTime.now())
+            .result(AuditLogOperationResult.SUCCESS)
+            .category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
             .processInstanceKey(789L)
             .rootProcessInstanceKey(null)
             .build();
@@ -670,7 +690,7 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toAuditLog(entity);
 
     // then
-    assertThat(response.getRootProcessInstanceKey()).isNull();
+    assertThat(response.rootProcessInstanceKey()).isNull();
   }
 
   @Test
@@ -707,7 +727,7 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toUserTask(entity);
 
     // then
-    assertThat(response.getRootProcessInstanceKey()).isNull();
+    assertThat(response.rootProcessInstanceKey()).isNull();
   }
 
   @Test
@@ -733,7 +753,7 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toIncident(entity);
 
     // then
-    assertThat(response.getRootProcessInstanceKey()).isNull();
+    assertThat(response.rootProcessInstanceKey()).isNull();
   }
 
   @Test
@@ -762,7 +782,7 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toElementInstance(entity);
 
     // then
-    assertThat(response.getRootProcessInstanceKey()).isNull();
+    assertThat(response.rootProcessInstanceKey()).isNull();
   }
 
   @Test

@@ -10,89 +10,87 @@ package io.camunda.gateway.mapping.http.search;
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
-import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 import io.camunda.authentication.entity.CamundaUserDTO;
+import io.camunda.gateway.mapping.http.search.contract.AuditLogContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.AuthorizationContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.BatchOperationItemResponseContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.BatchOperationResponseContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.ClusterVariableContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.CorrelatedMessageSubscriptionContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.DecisionDefinitionContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.DecisionInstanceContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.DecisionRequirementsContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.ElementInstanceContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.FormContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.GlobalTaskListenerContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.GroupContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.IncidentContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.JobContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.MappingRuleContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.MemberContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.MessageSubscriptionContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.ProcessDefinitionContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.ProcessInstanceCallHierarchyEntryContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.ProcessInstanceContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.RoleContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryPage;
 import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
+import io.camunda.gateway.mapping.http.search.contract.TenantContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.UserContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.UserTaskContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.VariableContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuditLogStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedAuthorizationStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemResponseStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationResponseStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableSearchStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedCorrelatedMessageSubscriptionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionDefinitionStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionRequirementsStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedElementInstanceStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedFormStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGlobalTaskListenerStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupClientStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedGroupUserStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedIncidentStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedJobSearchStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMappingRuleStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedMessageSubscriptionStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCallHierarchyEntryStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleClientStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleGroupStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedRoleUserStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantClientStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantGroupStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedTenantUserStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedUserTaskStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableSearchStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableStrictContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
-import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
-import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
-import io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum;
-import io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum;
-import io.camunda.gateway.protocol.model.AuditLogResult;
-import io.camunda.gateway.protocol.model.AuditLogResultEnum;
-import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
-import io.camunda.gateway.protocol.model.AuthorizationResult;
-import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
-import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.CamundaUserResult;
-import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionResult;
-import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionSearchQueryResult;
-import io.camunda.gateway.protocol.model.DecisionDefinitionResult;
-import io.camunda.gateway.protocol.model.DecisionDefinitionSearchQueryResult;
 import io.camunda.gateway.protocol.model.DecisionInstanceGetQueryResult;
-import io.camunda.gateway.protocol.model.DecisionRequirementsResult;
-import io.camunda.gateway.protocol.model.DecisionRequirementsSearchQueryResult;
-import io.camunda.gateway.protocol.model.ElementInstanceResult;
-import io.camunda.gateway.protocol.model.ElementInstanceSearchQueryResult;
-import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
-import io.camunda.gateway.protocol.model.FormResult;
 import io.camunda.gateway.protocol.model.GlobalJobStatisticsQueryResult;
-import io.camunda.gateway.protocol.model.GlobalListenerSourceEnum;
-import io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum;
-import io.camunda.gateway.protocol.model.GlobalTaskListenerResult;
-import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryResult;
-import io.camunda.gateway.protocol.model.GroupClientResult;
-import io.camunda.gateway.protocol.model.GroupClientSearchResult;
-import io.camunda.gateway.protocol.model.GroupResult;
-import io.camunda.gateway.protocol.model.GroupSearchQueryResult;
-import io.camunda.gateway.protocol.model.GroupUserResult;
-import io.camunda.gateway.protocol.model.GroupUserSearchResult;
-import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionQueryResult;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionResult;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByErrorQueryResult;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByErrorResult;
-import io.camunda.gateway.protocol.model.IncidentResult;
-import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
-import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.gateway.protocol.model.JobErrorStatisticsItem;
 import io.camunda.gateway.protocol.model.JobErrorStatisticsQueryResult;
-import io.camunda.gateway.protocol.model.JobKindEnum;
-import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
-import io.camunda.gateway.protocol.model.JobSearchQueryResult;
-import io.camunda.gateway.protocol.model.JobSearchResult;
-import io.camunda.gateway.protocol.model.JobStateEnum;
 import io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsItem;
 import io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobTypeStatisticsItem;
 import io.camunda.gateway.protocol.model.JobTypeStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobWorkerStatisticsItem;
 import io.camunda.gateway.protocol.model.JobWorkerStatisticsQueryResult;
-import io.camunda.gateway.protocol.model.MappingRuleResult;
-import io.camunda.gateway.protocol.model.MappingRuleSearchQueryResult;
-import io.camunda.gateway.protocol.model.MessageSubscriptionResult;
-import io.camunda.gateway.protocol.model.MessageSubscriptionSearchQueryResult;
-import io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum;
-import io.camunda.gateway.protocol.model.OwnerTypeEnum;
-import io.camunda.gateway.protocol.model.PermissionTypeEnum;
 import io.camunda.gateway.protocol.model.ProcessDefinitionElementStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceStatisticsResult;
@@ -102,37 +100,13 @@ import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionSta
 import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsResult;
 import io.camunda.gateway.protocol.model.ProcessElementStatisticsResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceElementStatisticsQueryResult;
-import io.camunda.gateway.protocol.model.ProcessInstanceResult;
-import io.camunda.gateway.protocol.model.ProcessInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlowResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlowsQueryResult;
-import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
-import io.camunda.gateway.protocol.model.ResourceTypeEnum;
-import io.camunda.gateway.protocol.model.RoleClientResult;
-import io.camunda.gateway.protocol.model.RoleClientSearchResult;
-import io.camunda.gateway.protocol.model.RoleGroupResult;
-import io.camunda.gateway.protocol.model.RoleGroupSearchResult;
-import io.camunda.gateway.protocol.model.RoleResult;
-import io.camunda.gateway.protocol.model.RoleSearchQueryResult;
-import io.camunda.gateway.protocol.model.RoleUserResult;
-import io.camunda.gateway.protocol.model.RoleUserSearchResult;
 import io.camunda.gateway.protocol.model.SearchQueryPageResponse;
 import io.camunda.gateway.protocol.model.StatusMetric;
-import io.camunda.gateway.protocol.model.TenantClientResult;
-import io.camunda.gateway.protocol.model.TenantClientSearchResult;
-import io.camunda.gateway.protocol.model.TenantGroupResult;
-import io.camunda.gateway.protocol.model.TenantGroupSearchResult;
 import io.camunda.gateway.protocol.model.TenantResult;
-import io.camunda.gateway.protocol.model.TenantSearchQueryResult;
-import io.camunda.gateway.protocol.model.TenantUserResult;
-import io.camunda.gateway.protocol.model.TenantUserSearchResult;
 import io.camunda.gateway.protocol.model.UsageMetricsResponse;
 import io.camunda.gateway.protocol.model.UsageMetricsResponseItem;
-import io.camunda.gateway.protocol.model.UserResult;
-import io.camunda.gateway.protocol.model.UserSearchResult;
-import io.camunda.gateway.protocol.model.UserTaskResult;
-import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
-import io.camunda.gateway.protocol.model.UserTaskStateEnum;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -178,14 +152,11 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.entity.ClusterMetadata.AppName;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -240,12 +211,12 @@ public final class SearchQueryResponseMapper {
   public static StrictSearchQueryResult<GeneratedProcessDefinitionStrictContract>
       toProcessDefinitionSearchQueryResponse(
           final SearchQueryResult<ProcessDefinitionEntity> result) {
-    final var page = toStrictSearchQueryPage(result);
     return new StrictSearchQueryResult<>(
         ofNullable(result.items())
-            .map(SearchQueryResponseMapper::toProcessDefinitions)
+            .map(
+                entities -> entities.stream().map(ProcessDefinitionContractAdapter::adapt).toList())
             .orElseGet(Collections::emptyList),
-        page);
+        toStrictSearchQueryPage(result));
   }
 
   public static ProcessDefinitionElementStatisticsQueryResult
@@ -393,183 +364,133 @@ public final class SearchQueryResponseMapper {
         .tenantId(result.tenantId());
   }
 
-  public static ProcessInstanceSearchQueryResult toProcessInstanceSearchQueryResponse(
-      final SearchQueryResult<ProcessInstanceEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new ProcessInstanceSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toProcessInstances)
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedProcessInstanceStrictContract>
+      toProcessInstanceSearchQueryResponse(final SearchQueryResult<ProcessInstanceEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(ProcessInstanceContractAdapter::adapt)
+            .orElseGet(Collections::emptyList),
+        toStrictSearchQueryPage(result));
   }
 
-  public static JobSearchQueryResult toJobSearchQueryResponse(
+  public static StrictSearchQueryResult<GeneratedJobSearchStrictContract> toJobSearchQueryResponse(
       final SearchQueryResult<JobEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new JobSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toJobs)
-                .orElseGet(Collections::emptyList));
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items()).map(JobContractAdapter::adapt).orElseGet(Collections::emptyList),
+        toStrictSearchQueryPage(result));
   }
 
-  public static RoleSearchQueryResult toRoleSearchQueryResponse(
+  public static StrictSearchQueryResult<GeneratedRoleStrictContract> toRoleSearchQueryResponse(
       final SearchQueryResult<RoleEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new RoleSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items()).map(SearchQueryResponseMapper::toRoles).orElseGet(List::of));
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items()).map(RoleContractAdapter::adapt).orElseGet(List::of),
+        toStrictSearchQueryPage(result));
   }
 
-  public static RoleGroupSearchResult toRoleGroupSearchQueryResponse(
-      final SearchQueryResult<RoleMemberEntity> result) {
-    return new RoleGroupSearchResult()
-        .page(toSearchQueryPageResponse(result))
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toRoleGroups)
-                .orElseGet(List::of));
+  public static StrictSearchQueryResult<GeneratedRoleGroupStrictContract>
+      toRoleGroupSearchQueryResponse(final SearchQueryResult<RoleMemberEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items()).map(MemberContractAdapter::toRoleGroups).orElseGet(List::of),
+        toStrictSearchQueryPage(result));
   }
 
-  public static RoleUserSearchResult toRoleUserSearchQueryResponse(
-      final SearchQueryResult<RoleMemberEntity> result) {
-    return new RoleUserSearchResult()
-        .page(toSearchQueryPageResponse(result))
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toRoleUsers)
-                .orElseGet(List::of));
+  public static StrictSearchQueryResult<GeneratedRoleUserStrictContract>
+      toRoleUserSearchQueryResponse(final SearchQueryResult<RoleMemberEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items()).map(MemberContractAdapter::toRoleUsers).orElseGet(List::of),
+        toStrictSearchQueryPage(result));
   }
 
-  public static RoleClientSearchResult toRoleClientSearchQueryResponse(
-      final SearchQueryResult<RoleMemberEntity> result) {
-    return new RoleClientSearchResult()
-        .page(toSearchQueryPageResponse(result))
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toRoleClients)
-                .orElseGet(List::of));
+  public static StrictSearchQueryResult<GeneratedRoleClientStrictContract>
+      toRoleClientSearchQueryResponse(final SearchQueryResult<RoleMemberEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items()).map(MemberContractAdapter::toRoleClients).orElseGet(List::of),
+        toStrictSearchQueryPage(result));
   }
 
-  public static GroupSearchQueryResult toGroupSearchQueryResponse(
+  public static StrictSearchQueryResult<GeneratedGroupStrictContract> toGroupSearchQueryResponse(
       final SearchQueryResult<GroupEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new GroupSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toGroups)
-                .orElseGet(List::of));
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items()).map(GroupContractAdapter::adapt).orElseGet(List::of),
+        toStrictSearchQueryPage(result));
   }
 
-  public static GroupUserSearchResult toGroupUserSearchQueryResponse(
-      final SearchQueryResult<GroupMemberEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new GroupUserSearchResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toGroupUsers)
-                .orElseGet(List::of));
+  public static StrictSearchQueryResult<GeneratedGroupUserStrictContract>
+      toGroupUserSearchQueryResponse(final SearchQueryResult<GroupMemberEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items()).map(MemberContractAdapter::toGroupUsers).orElseGet(List::of),
+        toStrictSearchQueryPage(result));
   }
 
-  public static GroupClientSearchResult toGroupClientSearchQueryResponse(
-      final SearchQueryResult<GroupMemberEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new GroupClientSearchResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toGroupClients)
-                .orElseGet(List::of));
+  public static StrictSearchQueryResult<GeneratedGroupClientStrictContract>
+      toGroupClientSearchQueryResponse(final SearchQueryResult<GroupMemberEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items()).map(MemberContractAdapter::toGroupClients).orElseGet(List::of),
+        toStrictSearchQueryPage(result));
   }
 
-  public static TenantSearchQueryResult toTenantSearchQueryResponse(
+  public static StrictSearchQueryResult<GeneratedTenantStrictContract> toTenantSearchQueryResponse(
       final SearchQueryResult<TenantEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new TenantSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toTenants)
-                .orElseGet(List::of));
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items()).map(TenantContractAdapter::adapt).orElseGet(List::of),
+        toStrictSearchQueryPage(result));
   }
 
-  public static TenantGroupSearchResult toTenantGroupSearchQueryResponse(
-      final SearchQueryResult<TenantMemberEntity> result) {
-    return new TenantGroupSearchResult()
-        .page(toSearchQueryPageResponse(result))
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toTenantGroups)
-                .orElseGet(List::of));
+  public static StrictSearchQueryResult<GeneratedTenantGroupStrictContract>
+      toTenantGroupSearchQueryResponse(final SearchQueryResult<TenantMemberEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items()).map(MemberContractAdapter::toTenantGroups).orElseGet(List::of),
+        toStrictSearchQueryPage(result));
   }
 
-  public static TenantUserSearchResult toTenantUserSearchQueryResponse(
-      final SearchQueryResult<TenantMemberEntity> result) {
-    return new TenantUserSearchResult()
-        .page(toSearchQueryPageResponse(result))
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toTenantUsers)
-                .orElseGet(List::of));
+  public static StrictSearchQueryResult<GeneratedTenantUserStrictContract>
+      toTenantUserSearchQueryResponse(final SearchQueryResult<TenantMemberEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items()).map(MemberContractAdapter::toTenantUsers).orElseGet(List::of),
+        toStrictSearchQueryPage(result));
   }
 
-  public static TenantClientSearchResult toTenantClientSearchQueryResponse(
-      final SearchQueryResult<TenantMemberEntity> result) {
-    return new TenantClientSearchResult()
-        .page(toSearchQueryPageResponse(result))
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toTenantClients)
-                .orElseGet(List::of));
+  public static StrictSearchQueryResult<GeneratedTenantClientStrictContract>
+      toTenantClientSearchQueryResponse(final SearchQueryResult<TenantMemberEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items()).map(MemberContractAdapter::toTenantClients).orElseGet(List::of),
+        toStrictSearchQueryPage(result));
   }
 
-  public static MappingRuleSearchQueryResult toMappingRuleSearchQueryResponse(
-      final SearchQueryResult<MappingRuleEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new MappingRuleSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toMappingRules)
-                .orElseGet(List::of));
+  public static StrictSearchQueryResult<GeneratedMappingRuleStrictContract>
+      toMappingRuleSearchQueryResponse(final SearchQueryResult<MappingRuleEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items()).map(MappingRuleContractAdapter::adapt).orElseGet(List::of),
+        toStrictSearchQueryPage(result));
   }
 
-  public static DecisionDefinitionSearchQueryResult toDecisionDefinitionSearchQueryResponse(
-      final SearchQueryResult<DecisionDefinitionEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new DecisionDefinitionSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toDecisionDefinitions)
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedDecisionDefinitionStrictContract>
+      toDecisionDefinitionSearchQueryResponse(
+          final SearchQueryResult<DecisionDefinitionEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(DecisionDefinitionContractAdapter::adapt)
+            .orElseGet(Collections::emptyList),
+        toStrictSearchQueryPage(result));
   }
 
-  public static DecisionRequirementsSearchQueryResult toDecisionRequirementsSearchQueryResponse(
-      final SearchQueryResult<DecisionRequirementsEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new DecisionRequirementsSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toDecisionRequirements)
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedDecisionRequirementsStrictContract>
+      toDecisionRequirementsSearchQueryResponse(
+          final SearchQueryResult<DecisionRequirementsEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(DecisionRequirementsContractAdapter::adapt)
+            .orElseGet(Collections::emptyList),
+        toStrictSearchQueryPage(result));
   }
 
-  public static ElementInstanceSearchQueryResult toElementInstanceSearchQueryResponse(
-      final SearchQueryResult<FlowNodeInstanceEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new ElementInstanceSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(instances -> toElementInstance(instances))
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedElementInstanceStrictContract>
+      toElementInstanceSearchQueryResponse(final SearchQueryResult<FlowNodeInstanceEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(ElementInstanceContractAdapter::adapt)
+            .orElseGet(Collections::emptyList),
+        toStrictSearchQueryPage(result));
   }
 
   public static StrictSearchQueryResult<GeneratedDecisionInstanceStrictContract>
@@ -581,25 +502,22 @@ public final class SearchQueryResponseMapper {
     return new StrictSearchQueryResult<>(items, page);
   }
 
-  public static UserTaskSearchQueryResult toUserTaskSearchQueryResponse(
-      final SearchQueryResult<UserTaskEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new UserTaskSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(tasks -> toUserTasks(tasks))
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedUserTaskStrictContract>
+      toUserTaskSearchQueryResponse(final SearchQueryResult<UserTaskEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(UserTaskContractAdapter::adapt)
+            .orElseGet(Collections::emptyList),
+        toStrictSearchQueryPage(result));
   }
 
-  public static UserSearchResult toUserSearchQueryResponse(
+  public static StrictSearchQueryResult<GeneratedUserStrictContract> toUserSearchQueryResponse(
       final SearchQueryResult<UserEntity> result) {
-    return new UserSearchResult()
-        .page(toSearchQueryPageResponse(result))
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toUsers)
-                .orElseGet(Collections::emptyList));
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(UserContractAdapter::adapt)
+            .orElseGet(Collections::emptyList),
+        toStrictSearchQueryPage(result));
   }
 
   public static StrictSearchQueryResult<GeneratedBatchOperationResponseStrictContract>
@@ -623,38 +541,33 @@ public final class SearchQueryResponseMapper {
         page);
   }
 
-  public static IncidentSearchQueryResult toIncidentSearchQueryResponse(
-      final SearchQueryResult<IncidentEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new IncidentSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toIncidents)
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedIncidentStrictContract>
+      toIncidentSearchQueryResponse(final SearchQueryResult<IncidentEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(IncidentContractAdapter::adapt)
+            .orElseGet(Collections::emptyList),
+        toStrictSearchQueryPage(result));
   }
 
-  public static MessageSubscriptionSearchQueryResult toMessageSubscriptionSearchQueryResponse(
-      final SearchQueryResult<MessageSubscriptionEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new MessageSubscriptionSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toMessageSubscriptions)
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedMessageSubscriptionStrictContract>
+      toMessageSubscriptionSearchQueryResponse(
+          final SearchQueryResult<MessageSubscriptionEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(MessageSubscriptionContractAdapter::adapt)
+            .orElseGet(Collections::emptyList),
+        toStrictSearchQueryPage(result));
   }
 
-  public static CorrelatedMessageSubscriptionSearchQueryResult
+  public static StrictSearchQueryResult<GeneratedCorrelatedMessageSubscriptionStrictContract>
       toCorrelatedMessageSubscriptionSearchQueryResponse(
           final SearchQueryResult<CorrelatedMessageSubscriptionEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new CorrelatedMessageSubscriptionSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toCorrelatedMessageSubscriptions)
-                .orElseGet(Collections::emptyList));
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(CorrelatedMessageSubscriptionContractAdapter::adapt)
+            .orElseGet(Collections::emptyList),
+        toStrictSearchQueryPage(result));
   }
 
   private static SearchQueryPageResponse toSearchQueryPageResponse(
@@ -672,71 +585,14 @@ public final class SearchQueryResponseMapper {
         result.total(), result.hasMoreTotalItems(), result.startCursor(), result.endCursor());
   }
 
-  private static List<GeneratedProcessDefinitionStrictContract> toProcessDefinitions(
-      final List<ProcessDefinitionEntity> processDefinitions) {
-    return processDefinitions.stream().map(SearchQueryResponseMapper::toProcessDefinition).toList();
-  }
-
   public static GeneratedProcessDefinitionStrictContract toProcessDefinition(
       final ProcessDefinitionEntity entity) {
     return ProcessDefinitionContractAdapter.adapt(entity);
   }
 
-  private static List<ProcessInstanceResult> toProcessInstances(
-      final List<ProcessInstanceEntity> instances) {
-    return instances.stream().map(SearchQueryResponseMapper::toProcessInstance).toList();
-  }
-
-  private static List<JobSearchResult> toJobs(final List<JobEntity> jobs) {
-    return jobs.stream().map(SearchQueryResponseMapper::toJob).toList();
-  }
-
-  private static JobSearchResult toJob(final JobEntity job) {
-    return new JobSearchResult()
-        .jobKey(KeyUtil.keyToString(job.jobKey()))
-        .type(job.type())
-        .worker(job.worker())
-        .state(JobStateEnum.fromValue(job.state().name()))
-        .kind(JobKindEnum.fromValue(job.kind().name()))
-        .listenerEventType(JobListenerEventTypeEnum.fromValue(job.listenerEventType().name()))
-        .retries(job.retries())
-        .isDenied(job.isDenied())
-        .deniedReason(job.deniedReason())
-        .hasFailedWithRetriesLeft(job.hasFailedWithRetriesLeft())
-        .errorCode(job.errorCode())
-        .errorMessage(job.errorMessage())
-        .customHeaders(job.customHeaders())
-        .deadline(formatDate(job.deadline()))
-        .endTime(formatDate(job.endTime()))
-        .processDefinitionId(job.processDefinitionId())
-        .processDefinitionKey(KeyUtil.keyToString(job.processDefinitionKey()))
-        .processInstanceKey(KeyUtil.keyToString(job.processInstanceKey()))
-        .rootProcessInstanceKey(KeyUtil.keyToString(job.rootProcessInstanceKey()))
-        .elementId(job.elementId())
-        .elementInstanceKey(KeyUtil.keyToString(job.elementInstanceKey()))
-        .tenantId(job.tenantId())
-        .creationTime(formatDate(job.creationTime()))
-        .lastUpdateTime(formatDate(job.lastUpdateTime()));
-  }
-
-  public static ProcessInstanceResult toProcessInstance(final ProcessInstanceEntity p) {
-    return new ProcessInstanceResult()
-        .processInstanceKey(KeyUtil.keyToString(p.processInstanceKey()))
-        .rootProcessInstanceKey(KeyUtil.keyToString(p.rootProcessInstanceKey()))
-        .processDefinitionId(p.processDefinitionId())
-        .processDefinitionName(p.processDefinitionName())
-        .processDefinitionVersion(p.processDefinitionVersion())
-        .processDefinitionVersionTag(p.processDefinitionVersionTag())
-        .processDefinitionKey(KeyUtil.keyToString(p.processDefinitionKey()))
-        .parentProcessInstanceKey(KeyUtil.keyToString(p.parentProcessInstanceKey()))
-        .parentElementInstanceKey(KeyUtil.keyToString(p.parentFlowNodeInstanceKey()))
-        .startDate(formatDate(p.startDate()))
-        .endDate(formatDate(p.endDate()))
-        .state(toProtocolState(p.state()))
-        .hasIncident(p.hasIncident())
-        .tenantId(p.tenantId())
-        .tags(p.tags())
-        .businessId(emptyToNull(p.businessId()));
+  public static GeneratedProcessInstanceStrictContract toProcessInstance(
+      final ProcessInstanceEntity entity) {
+    return ProcessInstanceContractAdapter.adapt(entity);
   }
 
   public static List<GeneratedBatchOperationResponseStrictContract> toBatchOperations(
@@ -768,304 +624,51 @@ public final class SearchQueryResponseMapper {
     return BatchOperationItemResponseContractAdapter.adapt(entity);
   }
 
-  private static List<RoleResult> toRoles(final List<RoleEntity> roles) {
-    return roles.stream().map(SearchQueryResponseMapper::toRole).toList();
+  public static GeneratedRoleStrictContract toRole(final RoleEntity entity) {
+    return RoleContractAdapter.adapt(entity);
   }
 
-  public static RoleResult toRole(final RoleEntity roleEntity) {
-    return new RoleResult()
-        .roleId(roleEntity.roleId())
-        .description(roleEntity.description())
-        .name(roleEntity.name());
+  public static GeneratedGroupStrictContract toGroup(final GroupEntity entity) {
+    return GroupContractAdapter.adapt(entity);
   }
 
-  private static List<GroupResult> toGroups(final List<GroupEntity> groups) {
-    return groups.stream().map(SearchQueryResponseMapper::toGroup).toList();
+  public static GeneratedTenantStrictContract toTenant(final TenantEntity entity) {
+    return TenantContractAdapter.adapt(entity);
   }
 
-  public static GroupResult toGroup(final GroupEntity groupEntity) {
-    return new GroupResult()
-        .groupId(groupEntity.groupId())
-        .name(groupEntity.name())
-        .description(groupEntity.description());
+  public static GeneratedMappingRuleStrictContract toMappingRule(final MappingRuleEntity entity) {
+    return MappingRuleContractAdapter.adapt(entity);
   }
 
-  private static List<GroupUserResult> toGroupUsers(final List<GroupMemberEntity> groupMembers) {
-    return groupMembers.stream().map(SearchQueryResponseMapper::toGroupUser).toList();
+  public static GeneratedElementInstanceStrictContract toElementInstance(
+      final FlowNodeInstanceEntity entity) {
+    return ElementInstanceContractAdapter.adapt(entity);
   }
 
-  private static GroupUserResult toGroupUser(final GroupMemberEntity groupMember) {
-    return new GroupUserResult().username(groupMember.id());
+  public static GeneratedDecisionDefinitionStrictContract toDecisionDefinition(
+      final DecisionDefinitionEntity entity) {
+    return DecisionDefinitionContractAdapter.adapt(entity);
   }
 
-  private static List<GroupClientResult> toGroupClients(
-      final List<GroupMemberEntity> groupMembers) {
-    return groupMembers.stream().map(SearchQueryResponseMapper::toGroupClient).toList();
+  public static GeneratedDecisionRequirementsStrictContract toDecisionRequirements(
+      final DecisionRequirementsEntity entity) {
+    return DecisionRequirementsContractAdapter.adapt(entity);
   }
 
-  private static GroupClientResult toGroupClient(final GroupMemberEntity groupMember) {
-    return new GroupClientResult().clientId(groupMember.id());
+  public static GeneratedIncidentStrictContract toIncident(final IncidentEntity entity) {
+    return IncidentContractAdapter.adapt(entity);
   }
 
-  private static List<TenantResult> toTenants(final List<TenantEntity> tenants) {
-    return tenants.stream().map(SearchQueryResponseMapper::toTenant).toList();
+  public static GeneratedUserTaskStrictContract toUserTask(final UserTaskEntity entity) {
+    return UserTaskContractAdapter.adapt(entity);
   }
 
-  public static TenantResult toTenant(final TenantEntity tenantEntity) {
-    return new TenantResult()
-        .name(tenantEntity.name())
-        .description(tenantEntity.description())
-        .tenantId(tenantEntity.tenantId());
+  public static GeneratedFormStrictContract toFormItem(final FormEntity entity) {
+    return FormContractAdapter.adapt(entity);
   }
 
-  private static List<TenantUserResult> toTenantUsers(final List<TenantMemberEntity> members) {
-    return members.stream().map(SearchQueryResponseMapper::toTenantUser).toList();
-  }
-
-  private static List<TenantClientResult> toTenantClients(final List<TenantMemberEntity> members) {
-    return members.stream().map(SearchQueryResponseMapper::toTenantClient).toList();
-  }
-
-  private static List<TenantGroupResult> toTenantGroups(final List<TenantMemberEntity> members) {
-    return members.stream().map(SearchQueryResponseMapper::toTenantGroup).toList();
-  }
-
-  private static TenantGroupResult toTenantGroup(final TenantMemberEntity tenantMember) {
-    return new TenantGroupResult().groupId(tenantMember.id());
-  }
-
-  private static TenantUserResult toTenantUser(final TenantMemberEntity tenantMember) {
-    return new TenantUserResult().username(tenantMember.id());
-  }
-
-  private static TenantClientResult toTenantClient(final TenantMemberEntity tenantMember) {
-    return new TenantClientResult().clientId(tenantMember.id());
-  }
-
-  private static List<RoleGroupResult> toRoleGroups(final List<RoleMemberEntity> members) {
-    return members.stream().map(SearchQueryResponseMapper::toRoleGroup).toList();
-  }
-
-  private static List<RoleUserResult> toRoleUsers(final List<RoleMemberEntity> members) {
-    return members.stream().map(SearchQueryResponseMapper::toRoleUser).toList();
-  }
-
-  private static List<RoleClientResult> toRoleClients(final List<RoleMemberEntity> members) {
-    return members.stream().map(SearchQueryResponseMapper::toRoleClient).toList();
-  }
-
-  private static RoleGroupResult toRoleGroup(final RoleMemberEntity roleMember) {
-    return new RoleGroupResult().groupId(roleMember.id());
-  }
-
-  private static RoleUserResult toRoleUser(final RoleMemberEntity roleMember) {
-    return new RoleUserResult().username(roleMember.id());
-  }
-
-  private static RoleClientResult toRoleClient(final RoleMemberEntity roleMember) {
-    return new RoleClientResult().clientId(roleMember.id());
-  }
-
-  private static List<MappingRuleResult> toMappingRules(
-      final List<MappingRuleEntity> mappingRules) {
-    return mappingRules.stream().map(SearchQueryResponseMapper::toMappingRule).toList();
-  }
-
-  public static MappingRuleResult toMappingRule(final MappingRuleEntity mappingRuleEntity) {
-    return new MappingRuleResult()
-        .claimName(mappingRuleEntity.claimName())
-        .claimValue(mappingRuleEntity.claimValue())
-        .mappingRuleId(mappingRuleEntity.mappingRuleId())
-        .name(mappingRuleEntity.name());
-  }
-
-  private static List<DecisionDefinitionResult> toDecisionDefinitions(
-      final List<DecisionDefinitionEntity> instances) {
-    return instances.stream().map(SearchQueryResponseMapper::toDecisionDefinition).toList();
-  }
-
-  private static List<DecisionRequirementsResult> toDecisionRequirements(
-      final List<DecisionRequirementsEntity> instances) {
-    return instances.stream().map(SearchQueryResponseMapper::toDecisionRequirements).toList();
-  }
-
-  private static List<ElementInstanceResult> toElementInstance(
-      final List<FlowNodeInstanceEntity> instances) {
-    return instances.stream().map(SearchQueryResponseMapper::toElementInstance).toList();
-  }
-
-  public static ElementInstanceResult toElementInstance(final FlowNodeInstanceEntity instance) {
-    return new ElementInstanceResult()
-        .elementInstanceKey(KeyUtil.keyToString(instance.flowNodeInstanceKey()))
-        .elementId(instance.flowNodeId())
-        .elementName(instance.flowNodeName())
-        .processDefinitionKey(KeyUtil.keyToString(instance.processDefinitionKey()))
-        .processDefinitionId(instance.processDefinitionId())
-        .processInstanceKey(KeyUtil.keyToString(instance.processInstanceKey()))
-        .rootProcessInstanceKey(KeyUtil.keyToString(instance.rootProcessInstanceKey()))
-        .incidentKey(KeyUtil.keyToString(instance.incidentKey()))
-        .hasIncident(instance.hasIncident())
-        .startDate(formatDate(instance.startDate()))
-        .endDate(formatDate(instance.endDate()))
-        .state(ElementInstanceStateEnum.fromValue(instance.state().name()))
-        .type(ElementInstanceResult.TypeEnum.fromValue(instance.type().name()))
-        .tenantId(instance.tenantId());
-  }
-
-  public static DecisionDefinitionResult toDecisionDefinition(final DecisionDefinitionEntity d) {
-    return new DecisionDefinitionResult()
-        .tenantId(d.tenantId())
-        .decisionDefinitionKey(KeyUtil.keyToString(d.decisionDefinitionKey()))
-        .name(d.name())
-        .version(d.version())
-        .decisionDefinitionId(d.decisionDefinitionId())
-        .decisionRequirementsKey(KeyUtil.keyToString(d.decisionRequirementsKey()))
-        .decisionRequirementsId(d.decisionRequirementsId())
-        .decisionRequirementsName(d.decisionRequirementsName())
-        .decisionRequirementsVersion(d.decisionRequirementsVersion());
-  }
-
-  public static DecisionRequirementsResult toDecisionRequirements(
-      final DecisionRequirementsEntity d) {
-    return new DecisionRequirementsResult()
-        .tenantId(d.tenantId())
-        .decisionRequirementsKey(KeyUtil.keyToString(d.decisionRequirementsKey()))
-        .decisionRequirementsName(d.name())
-        .version(d.version())
-        .resourceName(d.resourceName())
-        .decisionRequirementsId(d.decisionRequirementsId());
-  }
-
-  private static List<UserTaskResult> toUserTasks(final List<UserTaskEntity> tasks) {
-    return tasks.stream()
-        .map(
-            (final UserTaskEntity t) -> {
-              return toUserTask(t);
-            })
-        .toList();
-  }
-
-  public static List<IncidentResult> toIncidents(final List<IncidentEntity> incidents) {
-    return incidents.stream().map(SearchQueryResponseMapper::toIncident).toList();
-  }
-
-  public static IncidentResult toIncident(final IncidentEntity t) {
-    return new IncidentResult()
-        .incidentKey(KeyUtil.keyToString(t.incidentKey()))
-        .processDefinitionKey(KeyUtil.keyToString(t.processDefinitionKey()))
-        .processDefinitionId(t.processDefinitionId())
-        .processInstanceKey(KeyUtil.keyToString(t.processInstanceKey()))
-        .rootProcessInstanceKey(KeyUtil.keyToString(t.rootProcessInstanceKey()))
-        .errorType(IncidentErrorTypeEnum.fromValue(t.errorType().name()))
-        .errorMessage(t.errorMessage())
-        .elementId(t.flowNodeId())
-        .elementInstanceKey(KeyUtil.keyToString(t.flowNodeInstanceKey()))
-        .creationTime(formatDate(t.creationTime()))
-        .state(
-            t.state() != null
-                ? IncidentStateEnum.fromValue(t.state().name())
-                : IncidentStateEnum.UNKNOWN)
-        .jobKey(KeyUtil.keyToString(t.jobKey()))
-        .tenantId(t.tenantId());
-  }
-
-  private static List<MessageSubscriptionResult> toMessageSubscriptions(
-      final List<MessageSubscriptionEntity> messageSubscriptions) {
-    return messageSubscriptions.stream()
-        .map(SearchQueryResponseMapper::toMessageSubscription)
-        .toList();
-  }
-
-  private static MessageSubscriptionResult toMessageSubscription(
-      final MessageSubscriptionEntity messageSubscription) {
-    return new MessageSubscriptionResult()
-        .messageSubscriptionKey(KeyUtil.keyToString(messageSubscription.messageSubscriptionKey()))
-        .processDefinitionId(messageSubscription.processDefinitionId())
-        .processDefinitionKey(KeyUtil.keyToString(messageSubscription.processDefinitionKey()))
-        .processInstanceKey(KeyUtil.keyToString(messageSubscription.processInstanceKey()))
-        .rootProcessInstanceKey(KeyUtil.keyToString(messageSubscription.rootProcessInstanceKey()))
-        .elementId(messageSubscription.flowNodeId())
-        .elementInstanceKey(KeyUtil.keyToString(messageSubscription.flowNodeInstanceKey()))
-        .messageSubscriptionState(
-            MessageSubscriptionStateEnum.fromValue(
-                messageSubscription.messageSubscriptionState().name()))
-        .lastUpdatedDate(formatDate(messageSubscription.dateTime()))
-        .messageName(messageSubscription.messageName())
-        .correlationKey(messageSubscription.correlationKey())
-        .tenantId(messageSubscription.tenantId());
-  }
-
-  private static List<CorrelatedMessageSubscriptionResult> toCorrelatedMessageSubscriptions(
-      final List<CorrelatedMessageSubscriptionEntity> correlatedMessageSubscriptions) {
-    return correlatedMessageSubscriptions.stream()
-        .map(SearchQueryResponseMapper::toCorrelatedMessageSubscription)
-        .toList();
-  }
-
-  private static CorrelatedMessageSubscriptionResult toCorrelatedMessageSubscription(
-      final CorrelatedMessageSubscriptionEntity correlatedMessageSubscription) {
-    return new CorrelatedMessageSubscriptionResult()
-        .correlationKey(correlatedMessageSubscription.correlationKey())
-        .correlationTime(formatDate(correlatedMessageSubscription.correlationTime()))
-        .elementId(correlatedMessageSubscription.flowNodeId())
-        .elementInstanceKey(
-            KeyUtil.keyToString(correlatedMessageSubscription.flowNodeInstanceKey()))
-        .messageKey(KeyUtil.keyToString(correlatedMessageSubscription.messageKey()))
-        .messageName(correlatedMessageSubscription.messageName())
-        .partitionId(correlatedMessageSubscription.partitionId())
-        .processDefinitionId(correlatedMessageSubscription.processDefinitionId())
-        .processDefinitionKey(
-            KeyUtil.keyToString(correlatedMessageSubscription.processDefinitionKey()))
-        .processInstanceKey(KeyUtil.keyToString(correlatedMessageSubscription.processInstanceKey()))
-        .rootProcessInstanceKey(
-            KeyUtil.keyToString(correlatedMessageSubscription.rootProcessInstanceKey()))
-        .subscriptionKey(KeyUtil.keyToString(correlatedMessageSubscription.subscriptionKey()))
-        .tenantId(correlatedMessageSubscription.tenantId());
-  }
-
-  public static UserTaskResult toUserTask(final UserTaskEntity t) {
-    return new UserTaskResult()
-        .tenantId(t.tenantId())
-        .userTaskKey(KeyUtil.keyToString(t.userTaskKey()))
-        .name(t.name())
-        .processInstanceKey(KeyUtil.keyToString(t.processInstanceKey()))
-        .rootProcessInstanceKey(KeyUtil.keyToString(t.rootProcessInstanceKey()))
-        .processDefinitionKey(KeyUtil.keyToString(t.processDefinitionKey()))
-        .elementInstanceKey(KeyUtil.keyToString(t.elementInstanceKey()))
-        .processDefinitionId(t.processDefinitionId())
-        .processName(t.processName())
-        .state(UserTaskStateEnum.fromValue(t.state().name()))
-        .assignee(t.assignee())
-        .candidateUsers(t.candidateUsers())
-        .candidateGroups(t.candidateGroups())
-        .formKey(KeyUtil.keyToString(t.formKey()))
-        .elementId(t.elementId())
-        .creationDate(formatDate(t.creationDate()))
-        .completionDate(formatDate(t.completionDate()))
-        .dueDate(formatDate(t.dueDate()))
-        .followUpDate(formatDate(t.followUpDate()))
-        .externalFormReference(t.externalFormReference())
-        .processDefinitionVersion(t.processDefinitionVersion())
-        .customHeaders(t.customHeaders())
-        .priority(t.priority())
-        .tags(t.tags());
-  }
-
-  public static FormResult toFormItem(final FormEntity f) {
-    return new FormResult()
-        .formKey(KeyUtil.keyToString(f.formKey()))
-        .formId(f.formId())
-        .version(f.version())
-        .schema(f.schema())
-        .tenantId(f.tenantId());
-  }
-
-  public static List<UserResult> toUsers(final List<UserEntity> users) {
-    return users.stream().map(SearchQueryResponseMapper::toUser).toList();
-  }
-
-  public static UserResult toUser(final UserEntity user) {
-    return new UserResult().username(user.username()).email(user.email()).name(user.name());
+  public static GeneratedUserStrictContract toUser(final UserEntity entity) {
+    return UserContractAdapter.adapt(entity);
   }
 
   public static CamundaUserResult toCamundaUser(final CamundaUserDTO camundaUser) {
@@ -1074,7 +677,15 @@ public final class SearchQueryResponseMapper {
         .username(camundaUser.username())
         .email(camundaUser.email())
         .authorizedComponents(camundaUser.authorizedComponents())
-        .tenants(toTenants(camundaUser.tenants()))
+        .tenants(
+            camundaUser.tenants().stream()
+                .map(
+                    t ->
+                        new TenantResult()
+                            .name(t.name())
+                            .description(t.description())
+                            .tenantId(t.tenantId()))
+                .toList())
         .groups(camundaUser.groups())
         .roles(camundaUser.roles())
         .salesPlanType(camundaUser.salesPlanType())
@@ -1142,120 +753,31 @@ public final class SearchQueryResponseMapper {
     return ClusterVariableContractAdapter.toItemProjection(clusterVariableEntity);
   }
 
-  public static AuthorizationSearchResult toAuthorizationSearchQueryResponse(
-      final SearchQueryResult<AuthorizationEntity> result) {
-    return new AuthorizationSearchResult()
-        .page(toSearchQueryPageResponse(result))
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toAuthorizations)
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedAuthorizationStrictContract>
+      toAuthorizationSearchQueryResponse(final SearchQueryResult<AuthorizationEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(AuthorizationContractAdapter::adapt)
+            .orElseGet(Collections::emptyList),
+        toStrictSearchQueryPage(result));
   }
 
-  public static List<AuthorizationResult> toAuthorizations(
-      final List<AuthorizationEntity> authorizations) {
-    return authorizations.stream().map(SearchQueryResponseMapper::toAuthorization).toList();
+  public static GeneratedAuthorizationStrictContract toAuthorization(
+      final AuthorizationEntity entity) {
+    return AuthorizationContractAdapter.adapt(entity);
   }
 
-  public static AuthorizationResult toAuthorization(final AuthorizationEntity authorization) {
-    return new AuthorizationResult()
-        .authorizationKey(KeyUtil.keyToString(authorization.authorizationKey()))
-        .ownerId(authorization.ownerId())
-        .ownerType(OwnerTypeEnum.fromValue(authorization.ownerType()))
-        .resourceType(ResourceTypeEnum.valueOf(authorization.resourceType()))
-        .resourceId(defaultIfEmpty(authorization.resourceId(), null))
-        .resourcePropertyName(defaultIfEmpty(authorization.resourcePropertyName(), null))
-        .permissionTypes(
-            authorization.permissionTypes().stream()
-                .map(PermissionType::name)
-                .map(PermissionTypeEnum::fromValue)
-                .toList());
+  public static StrictSearchQueryResult<GeneratedAuditLogStrictContract>
+      toAuditLogSearchQueryResponse(final SearchQueryResult<AuditLogEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(AuditLogContractAdapter::adapt)
+            .orElseGet(Collections::emptyList),
+        toStrictSearchQueryPage(result));
   }
 
-  public static AuditLogSearchQueryResult toAuditLogSearchQueryResponse(
-      final SearchQueryResult<AuditLogEntity> result) {
-    return new AuditLogSearchQueryResult()
-        .items(toAuditLogs(result.items()))
-        .page(toSearchQueryPageResponse(result));
-  }
-
-  private static List<AuditLogResult> toAuditLogs(final List<AuditLogEntity> auditLogs) {
-    return auditLogs.stream().map(SearchQueryResponseMapper::toAuditLog).toList();
-  }
-
-  public static AuditLogResult toAuditLog(final AuditLogEntity auditLog) {
-    return new AuditLogResult()
-        .auditLogKey(auditLog.auditLogKey())
-        .entityKey(auditLog.entityKey())
-        .entityType(
-            ofNullable(auditLog.entityType())
-                .map(Enum::name)
-                .map(AuditLogEntityTypeEnum::fromValue)
-                .orElse(null))
-        .operationType(
-            ofNullable(auditLog.operationType())
-                .map(Enum::name)
-                .map(AuditLogOperationTypeEnum::fromValue)
-                .orElse(null))
-        .batchOperationKey(KeyUtil.keyToString(auditLog.batchOperationKey()))
-        .batchOperationType(
-            ofNullable(auditLog.batchOperationType())
-                .map(Enum::name)
-                .map(BatchOperationTypeEnum::fromValue)
-                .orElse(null))
-        .timestamp(formatDate(auditLog.timestamp()))
-        .actorId(auditLog.actorId())
-        .actorType(
-            ofNullable(auditLog.actorType())
-                .map(Enum::name)
-                .map(AuditLogActorTypeEnum::fromValue)
-                .orElse(null))
-        .agentElementId(auditLog.agentElementId())
-        .tenantId(auditLog.tenantId())
-        .result(
-            ofNullable(auditLog.result())
-                .map(Enum::name)
-                .map(AuditLogResultEnum::fromValue)
-                .orElse(null))
-        .annotation(auditLog.annotation())
-        .category(
-            ofNullable(auditLog.category())
-                .map(Enum::name)
-                .map(AuditLogCategoryEnum::fromValue)
-                .orElse(null))
-        .processDefinitionId(auditLog.processDefinitionId())
-        .processDefinitionKey(KeyUtil.keyToString(auditLog.processDefinitionKey()))
-        .processInstanceKey(KeyUtil.keyToString(auditLog.processInstanceKey()))
-        .rootProcessInstanceKey(KeyUtil.keyToString(auditLog.rootProcessInstanceKey()))
-        .elementInstanceKey(KeyUtil.keyToString(auditLog.elementInstanceKey()))
-        .jobKey(KeyUtil.keyToString(auditLog.jobKey()))
-        .userTaskKey(KeyUtil.keyToString(auditLog.userTaskKey()))
-        .decisionRequirementsId(auditLog.decisionRequirementsId())
-        .decisionRequirementsKey(KeyUtil.keyToString(auditLog.decisionRequirementsKey()))
-        .decisionDefinitionId(auditLog.decisionDefinitionId())
-        .decisionDefinitionKey(KeyUtil.keyToString(auditLog.decisionDefinitionKey()))
-        .decisionEvaluationKey(KeyUtil.keyToString(auditLog.decisionEvaluationKey()))
-        .deploymentKey(KeyUtil.keyToString(auditLog.deploymentKey()))
-        .formKey(KeyUtil.keyToString(auditLog.formKey()))
-        .resourceKey(KeyUtil.keyToString(auditLog.resourceKey()))
-        .relatedEntityKey(auditLog.relatedEntityKey())
-        .relatedEntityType(
-            ofNullable(auditLog.relatedEntityType())
-                .map(Enum::name)
-                .map(AuditLogEntityTypeEnum::fromValue)
-                .orElse(null))
-        .entityDescription(auditLog.entityDescription());
-  }
-
-  private static ProcessInstanceStateEnum toProtocolState(
-      final ProcessInstanceEntity.ProcessInstanceState value) {
-    if (value == null) {
-      return null;
-    }
-    if (value == ProcessInstanceEntity.ProcessInstanceState.CANCELED) {
-      return ProcessInstanceStateEnum.TERMINATED;
-    }
-    return ProcessInstanceStateEnum.fromValue(value.name());
+  public static GeneratedAuditLogStrictContract toAuditLog(final AuditLogEntity entity) {
+    return AuditLogContractAdapter.adapt(entity);
   }
 
   public static List<GeneratedProcessInstanceCallHierarchyEntryStrictContract>
@@ -1423,47 +945,18 @@ public final class SearchQueryResponseMapper {
         .lastUpdatedAt(formatDate(metric.lastUpdatedAt()));
   }
 
-  public static GlobalTaskListenerSearchQueryResult toGlobalTaskListenerSearchQueryResponse(
-      final SearchQueryResult<GlobalListenerEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new GlobalTaskListenerSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(
-                    entities ->
-                        entities.stream()
-                            .map(SearchQueryResponseMapper::toGlobalTaskListenerResult)
-                            .toList())
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedGlobalTaskListenerStrictContract>
+      toGlobalTaskListenerSearchQueryResponse(
+          final SearchQueryResult<GlobalListenerEntity> result) {
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(GlobalTaskListenerContractAdapter::adapt)
+            .orElseGet(Collections::emptyList),
+        toStrictSearchQueryPage(result));
   }
 
-  public static GlobalTaskListenerResult toGlobalTaskListenerResult(
+  public static GeneratedGlobalTaskListenerStrictContract toGlobalTaskListenerResult(
       final GlobalListenerEntity entity) {
-    return new GlobalTaskListenerResult()
-        .id(entity.listenerId())
-        .type(entity.type())
-        .retries(entity.retries())
-        .eventTypes(
-            entity.eventTypes().stream().map(GlobalTaskListenerEventTypeEnum::fromValue).toList())
-        .afterNonGlobal(entity.afterNonGlobal())
-        .priority(entity.priority())
-        .source(GlobalListenerSourceEnum.fromValue(entity.source().name()));
-  }
-
-  // sometimes we've seen null for properties that should not be null; log a warning if that happens
-  // so we can at least return data - rather than erroring out the whole response
-  private static <T, R> Optional<R> warnIfNull(
-      final T entity, final Function<T, R> mapper, final String propertyName) {
-    final R value = mapper.apply(entity);
-    if (value == null) {
-      LOGGER.warn("{} value is null for entity: {}", propertyName, entity);
-      return Optional.empty();
-    }
-    return Optional.of(value);
-  }
-
-  private static String emptyToNull(final String value) {
-    return value == null || value.isEmpty() ? null : value;
+    return GlobalTaskListenerContractAdapter.adapt(entity);
   }
 }
