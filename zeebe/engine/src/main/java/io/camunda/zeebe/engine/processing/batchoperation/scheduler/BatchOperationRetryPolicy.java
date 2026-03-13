@@ -75,9 +75,15 @@ public class BatchOperationRetryPolicy {
   }
 
   private Duration calculateNextDelay(final int attemptNumber) {
-    final var calculatedDelay =
-        initialRetryDelay.multipliedBy((int) Math.pow(backoffFactor, attemptNumber));
-    return maxRetryDelay.compareTo(calculatedDelay) < 0 ? maxRetryDelay : calculatedDelay;
+    // Use iterative multiplication with early-cap to avoid overflow from Math.pow
+    Duration delay = initialRetryDelay;
+    for (int i = 0; i < attemptNumber; i++) {
+      delay = delay.multipliedBy(backoffFactor);
+      if (delay.compareTo(maxRetryDelay) >= 0) {
+        return maxRetryDelay;
+      }
+    }
+    return delay;
   }
 
   public int getMaxRetries() {
