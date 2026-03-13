@@ -130,7 +130,8 @@ public class PropertiesUtil {
    * CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_APIKEY}.
    */
   static String toEnvVarName(final String propertyName) {
-    return CAMUNDA_PROCESS_TEST_PREFIX + propertyName.toUpperCase().replace('.', '_').replace("-", "");
+    return CAMUNDA_PROCESS_TEST_PREFIX
+        + propertyName.toUpperCase().replace('.', '_').replace("-", "");
   }
 
   /**
