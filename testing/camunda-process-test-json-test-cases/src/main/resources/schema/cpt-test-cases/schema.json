@@ -66,7 +66,7 @@
           "$ref": "#/definitions/AssertUserTaskInstruction"
         },
         {
-          "$ref": "#/definitions/AssertVariableSatisfiesJudgeInstruction"
+          "$ref": "#/definitions/AssertVariableJudgeInstruction"
         },
         {
           "$ref": "#/definitions/AssertVariablesInstruction"
@@ -1056,14 +1056,14 @@
       ],
       "additionalProperties": false
     },
-    "AssertVariableSatisfiesJudgeInstruction": {
+    "AssertVariableJudgeInstruction": {
       "description": "An instruction to assert a process variable using an LLM judge evaluation.",
       "type": "object",
       "properties": {
         "type": {
           "description": "The type of the instruction.",
           "type": "string",
-          "const": "ASSERT_VARIABLE_SATISFIES_JUDGE"
+          "const": "ASSERT_VARIABLE_JUDGE"
         },
         "processInstanceSelector": {
           "description": "The selector to identify the process instance.",
@@ -1082,7 +1082,7 @@
           "$ref": "#/definitions/ElementSelector"
         },
         "threshold": {
-          "description": "The score threshold above which the judge assertion passes. Must be between 0.0 and 1.0; higher values are stricter. Overrides the preconfigured threshold. Optional; defaults to the preconfigured JudgeConfig threshold (0.5 unless otherwise configured) when omitted.",
+          "description": "The threshold for scoring determining pass or fail. Overrides the preconfigured threshold. Optional.",
           "type": "number",
           "minimum": 0.0,
           "maximum": 1.0
