@@ -16,6 +16,7 @@
 package io.camunda.process.test.api.judge;
 
 import io.camunda.process.test.impl.judge.JudgeConfigImpl;
+import java.util.Optional;
 
 /**
  * Configuration for the LLM judge used in judge assertions.
@@ -112,9 +113,9 @@ public interface JudgeConfig {
   double getThreshold();
 
   /**
-   * Returns the custom prompt, or {@code null} if the default should be used.
+   * Returns the custom prompt, or empty if the default should be used.
    *
-   * @return the custom prompt, or {@code null}
+   * @return the custom prompt
    */
-  String getCustomPrompt();
+  Optional<String> getCustomPrompt();
 }

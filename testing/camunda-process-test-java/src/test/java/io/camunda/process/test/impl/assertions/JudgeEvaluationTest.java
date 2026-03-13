@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class JudgeEvaluationTest {
@@ -28,7 +29,7 @@ class JudgeEvaluationTest {
     final String markdownResponse =
         "```json\n{\"score\": 0.85, \"reasoning\": \"Good match.\"}\n```";
     final JudgeEvaluation evaluation =
-        new JudgeEvaluation(prompt -> markdownResponse, "some expectation", null);
+        new JudgeEvaluation(prompt -> markdownResponse, "some expectation", Optional.empty());
 
     // when
     final JudgeEvaluation.Result result = evaluation.evaluate("some value");
@@ -43,7 +44,9 @@ class JudgeEvaluationTest {
     // given
     final JudgeEvaluation evaluation =
         new JudgeEvaluation(
-            prompt -> "{\"score\": 1.5, \"reasoning\": \"Over the top.\"}", "expectation", null);
+            prompt -> "{\"score\": 1.5, \"reasoning\": \"Over the top.\"}",
+            "expectation",
+            Optional.empty());
 
     // when
     final JudgeEvaluation.Result result = evaluation.evaluate("some value");
@@ -57,7 +60,9 @@ class JudgeEvaluationTest {
     // given
     final JudgeEvaluation evaluation =
         new JudgeEvaluation(
-            prompt -> "{\"score\": -0.3, \"reasoning\": \"Negative.\"}", "expectation", null);
+            prompt -> "{\"score\": -0.3, \"reasoning\": \"Negative.\"}",
+            "expectation",
+            Optional.empty());
 
     // when
     final JudgeEvaluation.Result result = evaluation.evaluate("some value");
@@ -75,7 +80,7 @@ class JudgeEvaluationTest {
               throw new RuntimeException("Connection refused");
             },
             "expectation",
-            null);
+            Optional.empty());
 
     // when / then
     assertThatThrownBy(() -> evaluation.evaluate("some value"))
@@ -86,7 +91,8 @@ class JudgeEvaluationTest {
   @Test
   void shouldThrowParseExceptionWhenLlmReturnsEmptyResponse() {
     // given
-    final JudgeEvaluation evaluation = new JudgeEvaluation(prompt -> "", "expectation", null);
+    final JudgeEvaluation evaluation =
+        new JudgeEvaluation(prompt -> "", "expectation", Optional.empty());
 
     // when / then
     assertThatThrownBy(() -> evaluation.evaluate("some value"))
@@ -99,7 +105,8 @@ class JudgeEvaluationTest {
   @Test
   void shouldThrowParseExceptionWhenLlmReturnsNullResponse() {
     // given
-    final JudgeEvaluation evaluation = new JudgeEvaluation(prompt -> null, "expectation", null);
+    final JudgeEvaluation evaluation =
+        new JudgeEvaluation(prompt -> null, "expectation", Optional.empty());
 
     // when / then
     assertThatThrownBy(() -> evaluation.evaluate("some value"))

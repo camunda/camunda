@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.assertions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,17 +76,19 @@ class JudgeEvaluation {
 
   private final ChatModelAdapter chatModel;
   private final String expectation;
-  private final String customPrompt;
+  private final Optional<String> customPrompt;
 
   public JudgeEvaluation(
-      final ChatModelAdapter chatModel, final String expectation, final String customPrompt) {
+      final ChatModelAdapter chatModel,
+      final String expectation,
+      final Optional<String> customPrompt) {
     this.chatModel = chatModel;
     this.expectation = expectation;
     this.customPrompt = customPrompt;
     LOG.debug(
         "Created JudgeEvaluation with expectation='{}', customPrompt={}",
         expectation,
-        customPrompt != null ? "provided" : "null");
+        customPrompt.isPresent() ? "provided" : "empty");
   }
 
   public Result evaluate(final String input) throws JudgeResponseParseException {
@@ -104,10 +107,10 @@ class JudgeEvaluation {
   }
 
   private String buildPrompt(final String expectation, final String input) {
-    final boolean usingCustomPrompt = customPrompt != null && !customPrompt.trim().isEmpty();
+    final boolean usingCustomPrompt = customPrompt.isPresent();
     LOG.debug("Building prompt with {} criteria", usingCustomPrompt ? "custom" : "default");
 
-    final String criteria = usingCustomPrompt ? customPrompt : DEFAULT_EVALUATION_CRITERIA;
+    final String criteria = customPrompt.orElse(DEFAULT_EVALUATION_CRITERIA);
     final String data = String.format(DATA_INJECTION_TEMPLATE, expectation, input);
     return criteria
         + "\n\n"
