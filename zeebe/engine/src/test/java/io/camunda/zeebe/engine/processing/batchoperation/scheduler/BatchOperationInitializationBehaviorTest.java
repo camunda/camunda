@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.BatchOperationInitializationException;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.PageProcessingResult;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
@@ -40,7 +40,7 @@ class BatchOperationInitializationBehaviorTest {
   private static final int PAGE_SIZE = 100;
 
   private final ItemProviderFactory itemProviderFactory = mock(ItemProviderFactory.class);
-  private final BatchOperationPageProcessor pageProcessor = mock(BatchOperationPageProcessor.class);
+  private final BatchOperationChunkAppender chunkAppender = mock(BatchOperationChunkAppender.class);
   private final BatchOperationCommandAppender commandBuilder =
       mock(BatchOperationCommandAppender.class);
   private final BatchOperationMetrics metrics = mock(BatchOperationMetrics.class);
@@ -53,7 +53,7 @@ class BatchOperationInitializationBehaviorTest {
   void setUp() {
     initializer =
         new BatchOperationInitializationBehavior(
-            itemProviderFactory, pageProcessor, commandBuilder, PAGE_SIZE, metrics);
+            itemProviderFactory, chunkAppender, commandBuilder, PAGE_SIZE, metrics);
 
     // Default batch operation setup
     batchOperation =
@@ -77,13 +77,13 @@ class BatchOperationInitializationBehaviorTest {
     // then
     assertThat(result.batchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
     assertThat(result.searchResultCursor()).isEqualTo(SEARCH_CURSOR);
-    verify(pageProcessor, never()).processNextPage(any(), any(), any());
+    verify(chunkAppender, never()).processNextPage(any(), any(), any());
   }
 
   @Test
   void shouldInitializeSuccessfullyWithSinglePageAndFinish() {
     // given
-    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 2));
 
     // when
@@ -108,7 +108,7 @@ class BatchOperationInitializationBehaviorTest {
   @Test
   void shouldHandleMultiplePagesSuccessfully() {
     // given
-    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.Continue("cursor1", 2))
         .thenReturn(new PageProcessingResult.Finished("cursor2", 2));
 
@@ -128,7 +128,7 @@ class BatchOperationInitializationBehaviorTest {
   @Test
   void shouldHandleFailedChunkAppendWithoutPreviousChunks() {
     // given
-    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.BufferFull(2));
 
     // when
@@ -149,7 +149,7 @@ class BatchOperationInitializationBehaviorTest {
   @Test
   void shouldHandleFailedChunkAppendWithPreviousChunks() {
     // given - First page succeeds, second page fails to fit in buffer
-    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.Continue("cursor1", 2))
         .thenReturn(new PageProcessingResult.BufferFull(2));
 
@@ -169,7 +169,7 @@ class BatchOperationInitializationBehaviorTest {
   void shouldThrowExceptionWhenFetchFailsWithoutPreviousChunks() {
     // given
     final var exception = new RuntimeException("Database connection failed");
-    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.FetchFailed(exception));
 
     // when & then
@@ -188,7 +188,7 @@ class BatchOperationInitializationBehaviorTest {
   void shouldContinueInitializationWhenFetchFailsWithPreviousChunks() {
     // given - First page succeeds, second page fetch fails
     final var exception = new RuntimeException("Database connection failed");
-    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.Continue("cursor1", 2))
         .thenReturn(new PageProcessingResult.FetchFailed(exception));
 
@@ -223,7 +223,7 @@ class BatchOperationInitializationBehaviorTest {
   @Test
   void shouldHandleEmptyPageSuccessfully() {
     // given
-    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 0));
 
     // when
@@ -243,7 +243,7 @@ class BatchOperationInitializationBehaviorTest {
   void shouldUpdateTotalItemsCountCorrectly() {
     // given
     batchOperation.setNumTotalItems(5);
-    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 3));
 
     // when
@@ -257,7 +257,7 @@ class BatchOperationInitializationBehaviorTest {
   void shouldInitializeDeleteProcessInstanceBatchOperation() {
     // given
     batchOperation.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
-    when(pageProcessor.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 2));
 
     // when

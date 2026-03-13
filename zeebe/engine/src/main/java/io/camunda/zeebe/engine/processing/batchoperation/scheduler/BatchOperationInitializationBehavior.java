@@ -10,10 +10,10 @@ package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 import com.google.common.base.Strings;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult.BufferFull;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult.Continue;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult.FetchFailed;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult.Finished;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.PageProcessingResult.BufferFull;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.PageProcessingResult.Continue;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.PageProcessingResult.FetchFailed;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.PageProcessingResult.Finished;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -35,11 +35,11 @@ import org.slf4j.LoggerFactory;
  * <p>The initialization process creates an {@link
  * io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider} once per batch
  * operation via {@link ItemProviderFactory}, then fetches and processes items in pages via {@link
- * BatchOperationPageProcessor}, and builds commands through {@link BatchOperationCommandAppender}.
+ * BatchOperationChunkAppender}, and builds commands through {@link BatchOperationCommandAppender}.
  * If chunk appending fails, it attempts to reduce the page size and retry, or marks the operation
  * as failed if the minimum page size is reached.
  *
- * @see BatchOperationPageProcessor
+ * @see BatchOperationChunkAppender
  * @see BatchOperationCommandAppender
  * @see ItemProviderFactory
  * @see PersistedBatchOperation
@@ -53,18 +53,18 @@ public class BatchOperationInitializationBehavior {
   private final ItemProviderFactory itemProviderFactory;
   private final BatchOperationMetrics metrics;
   private final BatchOperationCommandAppender commandAppender;
-  private final BatchOperationPageProcessor pageProcessor;
+  private final BatchOperationChunkAppender chunkAppender;
   private final int queryPageSize;
 
   public BatchOperationInitializationBehavior(
       final ItemProviderFactory itemProviderFactory,
-      final BatchOperationPageProcessor pageProcessor,
+      final BatchOperationChunkAppender chunkAppender,
       final BatchOperationCommandAppender commandAppender,
       final int queryPageSize,
       final BatchOperationMetrics metrics) {
     this.itemProviderFactory = itemProviderFactory;
     this.commandAppender = commandAppender;
-    this.pageProcessor = pageProcessor;
+    this.chunkAppender = chunkAppender;
     this.queryPageSize = queryPageSize;
     this.metrics = metrics;
   }
@@ -101,10 +101,10 @@ public class BatchOperationInitializationBehavior {
     final var itemProvider = itemProviderFactory.fromBatchOperation(batchOperation);
     var context = InitializationContext.fromBatchOperation(batchOperation, queryPageSize);
 
-    var result = pageProcessor.processNextPage(itemProvider, context, taskResultBuilder);
+    var result = chunkAppender.processNextPage(itemProvider, context, taskResultBuilder);
     while (result instanceof Continue(final var endCursor, final int itemsProcessed)) {
       context = context.withNextPage(endCursor, itemsProcessed);
-      result = pageProcessor.processNextPage(itemProvider, context, taskResultBuilder);
+      result = chunkAppender.processNextPage(itemProvider, context, taskResultBuilder);
     }
 
     return switch (result) {
