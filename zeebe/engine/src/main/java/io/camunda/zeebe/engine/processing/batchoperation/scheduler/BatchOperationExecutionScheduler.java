@@ -11,7 +11,8 @@ import com.google.common.base.Strings;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.Failed;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.NeedsRetry;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.Success;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryDecision;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryPolicy.RetryDecision.Fail;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryPolicy.RetryDecision.Retry;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -60,7 +61,7 @@ import org.slf4j.LoggerFactory;
  *
  * @see StreamProcessorLifecycleAware
  * @see BatchOperationInitializationBehavior
- * @see BatchOperationRetryHandler
+ * @see BatchOperationRetryPolicy
  */
 public class BatchOperationExecutionScheduler implements StreamProcessorLifecycleAware {
   private static final Logger LOG = LoggerFactory.getLogger(BatchOperationExecutionScheduler.class);
@@ -68,7 +69,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   private final Duration initialPollingInterval;
   private final BatchOperationState batchOperationState;
   private final BatchOperationInitializationBehavior batchOperationInitializer;
-  private final BatchOperationRetryHandler retryHandler;
+  private final BatchOperationRetryPolicy retryPolicy;
   private final AtomicBoolean executing = new AtomicBoolean(false);
   private final AtomicReference<ExecutionLoopState> executionState = new AtomicReference<>();
 
@@ -77,14 +78,14 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   public BatchOperationExecutionScheduler(
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final BatchOperationInitializationBehavior batchOperationInitializer,
-      final BatchOperationRetryHandler retryHandler,
+      final BatchOperationRetryPolicy retryPolicy,
       final Duration batchOperationSchedulerInterval) {
 
     batchOperationState = scheduledTaskStateFactory.get().getBatchOperationState();
     initialPollingInterval = batchOperationSchedulerInterval;
 
     this.batchOperationInitializer = batchOperationInitializer;
-    this.retryHandler = retryHandler;
+    this.retryPolicy = retryPolicy;
   }
 
   @Override
@@ -177,18 +178,18 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       final String cursor,
       final Throwable cause) {
 
-    final var decision = retryHandler.evaluate(cursor, cause, currentState.numAttempts());
+    final var decision = retryPolicy.evaluate(cursor, cause, currentState.numAttempts());
 
     return switch (decision) {
-      case RetryDecision.Fail(final var message, final var errorType) -> {
+      case Fail(final var message, final var errorType) -> {
         batchOperationInitializer.appendFailedCommand(
             taskResultBuilder, batchOperation.getKey(), message, errorType);
         yield initialPollingInterval;
       }
-      case RetryDecision.Retry(final var delay, final int numAttempts, final String retryCursor) -> {
+      case Retry(final var delay, final int numAttempts, final String retryCursor) -> {
         LOG.warn(
             "Retryable operation failed, retries left: {}, retrying in {} ms",
-            retryHandler.getMaxRetries() - numAttempts,
+            retryPolicy.getMaxRetries() - numAttempts,
             delay.toMillis());
         executionState.set(currentState.retryWith(retryCursor, numAttempts));
         yield delay;
