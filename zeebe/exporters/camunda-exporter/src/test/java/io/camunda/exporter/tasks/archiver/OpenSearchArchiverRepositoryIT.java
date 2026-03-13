@@ -113,6 +113,7 @@ final class OpenSearchArchiverRepositoryIT {
 
     // delete all policies created during the tests
     deleteAllTestPolicies();
+    resetIndexStateManagementJobInterval();
   }
 
   @BeforeEach
@@ -904,8 +905,6 @@ final class OpenSearchArchiverRepositoryIT {
             () ->
                 assertThat(getIndexPolicyMinAge(historicalIndex, policyName))
                     .isEqualTo(updatedMinAge));
-
-    changeIndexStateManagementJobInterval(5);
   }
 
   @Test
@@ -1375,6 +1374,14 @@ final class OpenSearchArchiverRepositoryIT {
                     Map.of(
                         "plugins.index_state_management.job_interval",
                         org.opensearch.client.json.JsonData.of(interval))));
+  }
+
+  private void resetIndexStateManagementJobInterval() {
+    try {
+      changeIndexStateManagementJobInterval(5);
+    } catch (final Exception e) {
+      LOGGER.warn("Could not reset ISM job interval", e);
+    }
   }
 
   private record TestAuditLogDocument(String id, String entityType) implements TDocument {}

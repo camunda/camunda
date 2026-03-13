@@ -479,8 +479,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final String indexNamePattern) {
     final var status = response.getStatus();
 
-    // change_policy returns 400 when zero indices match the resolved pattern, and 404 when the
-    // index does not exist yet — both are harmless, there are no managed indices to update.
+    // change_policy returns 400 or 404 when no managed indices match the resolved pattern —
+    // both are harmless since there are simply no managed indices to update.
     if ((status == 400 || status == 404) && "change_policy".equals(operation)) {
       logger.debug(
           "No managed indices to update for pattern '{}' (change_policy '{}' returned {})",
