@@ -4,6 +4,6 @@ dependencies:
   version: 1.8.3
 - name: camunda-platform
   repository: https://helm.camunda.io
-  version: 14.0.0-alpha4
-digest: sha256:e5814076f3ccdcfd97b20bafbfc939feef335309777957946afa0945841932cd
-generated: "2026-03-02T06:55:10.716089427Z"
+  version: 14.0.0-alpha5
+digest: sha256:6c366fdcbfdd8c85862ee16835db7eb5dd483e80bbde07a60d0c27284ed66332
+generated: "2026-03-13T08:18:28.314247944Z"
