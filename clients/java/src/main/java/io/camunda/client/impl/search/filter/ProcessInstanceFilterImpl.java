@@ -259,6 +259,20 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
+  public ProcessInstanceFilter batchOperationKey(final String batchOperationKey) {
+    batchOperationKey(b -> b.eq(batchOperationKey));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter batchOperationKey(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setBatchOperationKey(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public ProcessInstanceFilter errorMessage(final String errorMessage) {
     errorMessage(b -> b.eq(errorMessage));
     return this;
