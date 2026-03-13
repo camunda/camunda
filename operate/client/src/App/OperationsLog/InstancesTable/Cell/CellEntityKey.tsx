@@ -41,7 +41,7 @@ const CellEntityKey: React.FC<Props> = ({
           label
         )}
       </div>
-      {item.entityDescription ?? <em>{name}</em>}
+      {item.entityDescription?.trim() || <em>{name}</em>}
     </div>
   );
 };
