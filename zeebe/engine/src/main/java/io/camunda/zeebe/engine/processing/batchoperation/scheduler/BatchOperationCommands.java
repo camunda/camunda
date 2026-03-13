@@ -21,15 +21,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class is responsible for appending commands related to batch operations, such as
- * initialization, execution, and failure handling. It provides methods to append these commands to
- * a {@link TaskResultBuilder}.
+ * Utility class for creating and appending batch operation commands to a {@link TaskResultBuilder}.
  */
-public class BatchOperationCommandAppender {
-  private static final Logger LOG = LoggerFactory.getLogger(BatchOperationCommandAppender.class);
+public class BatchOperationCommands {
+  private static final Logger LOG = LoggerFactory.getLogger(BatchOperationCommands.class);
   private final int partitionId;
 
-  public BatchOperationCommandAppender(final int partitionId) {
+  public BatchOperationCommands(final int partitionId) {
     this.partitionId = partitionId;
   }
 
