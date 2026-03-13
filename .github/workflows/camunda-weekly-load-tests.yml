@@ -118,14 +118,14 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":warning: *Medic load test creation failed:*"
+                    "text": ":warning: *Weekly Medic load test creation failed:*"
                   }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "@zeebe-medic Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                    "text": "@reliability-testing-team Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
                   }
                 }
               ]
