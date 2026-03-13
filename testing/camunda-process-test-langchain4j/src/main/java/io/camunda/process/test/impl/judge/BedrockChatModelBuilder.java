@@ -20,7 +20,6 @@ import static io.camunda.process.test.impl.judge.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.bedrock.BedrockChatModel;
 import dev.langchain4j.model.chat.ChatModel;
-import io.camunda.process.test.api.judge.BaseProviderConfig;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;

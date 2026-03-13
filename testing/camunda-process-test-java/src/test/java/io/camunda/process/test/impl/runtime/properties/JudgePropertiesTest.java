@@ -18,9 +18,8 @@ package io.camunda.process.test.impl.runtime.properties;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.process.test.api.judge.BaseProviderConfig;
 import io.camunda.process.test.api.judge.ProviderConfig;
-import java.util.Map;
+import io.camunda.process.test.impl.judge.BaseProviderConfig;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
 
@@ -123,7 +122,7 @@ public class JudgePropertiesTest {
     assertThat(config).isExactlyInstanceOf(BaseProviderConfig.GenericConfig.class);
     assertThat(config.getProvider()).isEqualTo("my-custom-llm");
     assertThat(config.getModel()).isEqualTo("custom-model");
-    assertThat(((BaseProviderConfig.GenericConfig) config).getCustomProperties()).isEmpty();
+    assertThat(config.getCustomProperties()).isEmpty();
   }
 
   @Test
@@ -140,9 +139,7 @@ public class JudgePropertiesTest {
 
     // then
     assertThat(config).isExactlyInstanceOf(BaseProviderConfig.GenericConfig.class);
-    final Map<String, String> customProps =
-        ((BaseProviderConfig.GenericConfig) config).getCustomProperties();
-    assertThat(customProps)
+    assertThat(config.getCustomProperties())
         .containsEntry("endpoint", "http://localhost:8080")
         .containsEntry("temperature", "0.7")
         .hasSize(2);
