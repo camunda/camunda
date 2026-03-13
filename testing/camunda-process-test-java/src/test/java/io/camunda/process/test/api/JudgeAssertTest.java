@@ -34,6 +34,7 @@ import io.camunda.process.test.utils.VariableBuilder;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -527,10 +528,10 @@ public class JudgeAssertTest {
     @Test
     void shouldPassCustomPromptToLlm() {
       // given
-      final String[] capturedPrompt = new String[1];
+      final AtomicReference<String> capturedPrompt = new AtomicReference<>();
       final ChatModelAdapter mockModel =
           prompt -> {
-            capturedPrompt[0] = prompt;
+            capturedPrompt.set(prompt);
             return "{\"score\": 1.0, \"reasoning\": \"match\"}";
           };
       CamundaAssert.setJudgeConfig(
@@ -547,7 +548,7 @@ public class JudgeAssertTest {
           .hasVariableSatisfiesJudge("result", "should be a greeting");
 
       // then
-      Assertions.assertThat(capturedPrompt[0])
+      Assertions.assertThat(capturedPrompt.get())
           .startsWith("You are a domain-specific evaluator.")
           .doesNotContain("You are an impartial judge")
           .contains("<expectation>\nshould be a greeting\n</expectation>")
