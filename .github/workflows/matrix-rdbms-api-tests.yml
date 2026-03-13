@@ -6,8 +6,8 @@ name: RDBMS API Tests
 
 on:
   workflow_dispatch:
-  pull_request:
-    types: [opened, edited, synchronize]
+#  pull_request:
+#    types: [opened, edited, synchronize]
   schedule:
     - cron: "0 5 * * Mon-Fri"
 
