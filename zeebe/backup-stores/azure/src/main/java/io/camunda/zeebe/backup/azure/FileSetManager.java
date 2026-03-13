@@ -29,12 +29,7 @@ import java.util.stream.Collectors;
 
 final class FileSetManager {
   private static final long MB = 1024 * 1024;
-  private static final ParallelTransferOptions SNAPSHOT_FILES_OPTS =
-      new ParallelTransferOptions()
-          .setBlockSizeLong(MB)
-          .setMaxSingleUploadSizeLong(MB)
-          .setMaxConcurrency(1);
-  private static final ParallelTransferOptions SEGMENT_FILES_OPTS =
+  private static final ParallelTransferOptions CHUNKED_FILE_OPTS =
       new ParallelTransferOptions()
           .setBlockSizeLong(4 * MB)
           .setMaxSingleUploadSizeLong(8 * MB)
@@ -63,7 +58,7 @@ final class FileSetManager {
       final BlobClient blobClient = containerClient.getBlobClient(fileSetPath + fileName);
 
       try {
-        upload(blobClient, filePath, fileSetName);
+        upload(blobClient, filePath);
       } catch (final BlobStorageException e) {
         if (e.getErrorCode() == BlobErrorCode.BLOB_ALREADY_EXISTS) {
           throw new BlobAlreadyExists("File already exists.", e.getCause());
@@ -121,12 +116,10 @@ final class FileSetManager {
     }
   }
 
-  private void upload(final BlobClient blobClient, final Path filePath, final String fileSetName) {
+  private void upload(final BlobClient blobClient, final Path filePath) {
     blobClient.uploadFromFile(
         filePath.toString(),
-        fileSetName.equals(AzureBackupStore.SNAPSHOT_FILESET_NAME)
-            ? SNAPSHOT_FILES_OPTS
-            : SEGMENT_FILES_OPTS,
+        CHUNKED_FILE_OPTS,
         new BlobHttpHeaders(),
         null,
         null,
