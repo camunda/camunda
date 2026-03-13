@@ -28,6 +28,7 @@ import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -165,7 +166,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
 
   private static Set<Long> computeSkipPositions(
       final ExportingCfg exportingCfg, final int partitionId) {
-    return exportingCfg.skipRecords().getOrDefault(partitionId, Set.of());
+    final var positions = exportingCfg.skipRecords().getOrDefault(partitionId, Set.of());
+    return positions == null ? Collections.emptySet() : positions;
   }
 
   private void deleteOrEnableExportersIfConfigChanged(
