@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -190,10 +189,9 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         () -> getGlobalProcessInstanceVariables(processInstanceKey));
   }
 
-  private <T> void hasVariableSatisfies(
+  private void hasVariableSatisfies(
       final String variableName,
-      final Class<T> variableValueType,
-      final ThrowingConsumer<T> requirement,
+      final ThrowingConsumer<String> rawRequirement,
       final Supplier<Map<String, String>> actualVariablesSupplier) {
 
     awaitBehavior.untilAsserted(
@@ -206,16 +204,26 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                   actual, variableName)
               .containsKey(variableName);
 
-          final String actualVariable = variables.get(variableName);
-          try {
-            final T actualValue = jsonMapper.readJson(actualVariable, variableValueType);
+          rawRequirement.accept(variables.get(variableName));
+        });
+  }
 
+  private <T> void hasVariableSatisfies(
+      final String variableName,
+      final Class<T> variableValueType,
+      final ThrowingConsumer<T> requirement,
+      final Supplier<Map<String, String>> actualVariablesSupplier) {
+
+    hasVariableSatisfies(
+        variableName,
+        rawValue -> {
+          try {
+            final T actualValue = jsonMapper.readJson(rawValue, variableValueType);
             requirement.accept(actualValue);
           } catch (final AssertionError e) {
             fail(
                 "%s should have a variable '%s' but the following requirement was not satisfied: %s.",
                 actual, variableName, e.getMessage());
-
           } catch (final JsonMappingException e) {
             final Throwable reason =
                 Optional.ofNullable(e.getCause())
@@ -231,7 +239,8 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
             fail(failureMessage);
           }
-        });
+        },
+        actualVariablesSupplier);
   }
 
   public void hasLocalVariables(
@@ -345,18 +354,10 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     assertJudgeHasAllRequiredSettings();
     assertExpectationNotEmpty(expectation);
 
-    final Map<String, String> variables =
-        awaitBehavior.until(
-            () -> getGlobalProcessInstanceVariables(processInstanceKey),
-            vars ->
-                assertThat(vars)
-                    .withFailMessage(
-                        "%s should have a variable '%s' but the variable doesn't exist.",
-                        actual, variableName)
-                    .containsKey(variableName));
-
-    evaluateJudge(
-        variableName, expectation, judgeConfig.getThreshold(), variables.get(variableName));
+    hasVariableSatisfies(
+        variableName,
+        rawValue -> evaluateJudge(variableName, expectation, judgeConfig.getThreshold(), rawValue),
+        () -> getGlobalProcessInstanceVariables(processInstanceKey));
   }
 
   public void hasLocalVariableSatisfiesJudge(
@@ -368,25 +369,17 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     assertJudgeHasAllRequiredSettings();
     assertExpectationNotEmpty(expectation);
 
-    final AtomicReference<String> capturedValue = new AtomicReference<>();
     withLocalVariableAssertion(
         processInstanceKey,
         selector,
-        instance -> {
-          final Map<String, String> variables =
-              getLocalProcessInstanceVariables(
-                  processInstanceKey, instance.getElementInstanceKey());
-
-          assertThat(variables)
-              .withFailMessage(
-                  "%s should have a variable '%s' but the variable doesn't exist.",
-                  actual, variableName)
-              .containsKey(variableName);
-
-          capturedValue.set(variables.get(variableName));
-        });
-
-    evaluateJudge(variableName, expectation, judgeConfig.getThreshold(), capturedValue.get());
+        instance ->
+            hasVariableSatisfies(
+                variableName,
+                rawValue ->
+                    evaluateJudge(variableName, expectation, judgeConfig.getThreshold(), rawValue),
+                () ->
+                    getLocalProcessInstanceVariables(
+                        processInstanceKey, instance.getElementInstanceKey())));
   }
 
   private void evaluateJudge(
