@@ -1163,6 +1163,14 @@ service Gateway {
       INVALID_ARGUMENT:
         - the given variables document is not a valid JSON document; valid documents are expected to
           be JSON documents where the root node is an object.
+      DEADLINE_EXCEEDED:
+        - the request timed out between the gateway and the broker. This can happen for general
+          timeout reasons (for example transient communication delays). On user-task-listener-
+          related operations, this can additionally happen when the corresponding listener job is
+          not completed within the request timeout.
+
+    If this happens repeatedly, retry with backoff and check listener worker availability and
+    health.
    */
   rpc SetVariables (SetVariablesRequest) returns (SetVariablesResponse) {
   }
