@@ -27,6 +27,8 @@ const TabContent = styled.div`
   min-height: 0;
   overflow: hidden;
   padding-top: var(--cds-spacing-05);
+  display: flex;
+  flex-direction: column;
 `;
 
 export {Container, TabContent};
