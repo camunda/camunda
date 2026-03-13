@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.PageProcessingResult;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.ChunkingOutcome;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
@@ -63,8 +63,8 @@ class BatchOperationChunkAppenderTest {
         processor.fetchAndChunkNextPage(mockItemProvider, context, mockTaskResultBuilder);
 
     // then
-    assertThat(result).isInstanceOf(PageProcessingResult.Continue.class);
-    final var continueResult = (PageProcessingResult.Continue) result;
+    assertThat(result).isInstanceOf(ChunkingOutcome.Continue.class);
+    final var continueResult = (ChunkingOutcome.Continue) result;
     assertThat(continueResult.endCursor()).isEqualTo("cursor123");
     assertThat(continueResult.itemsProcessed()).isEqualTo(2);
 
@@ -97,8 +97,8 @@ class BatchOperationChunkAppenderTest {
         processor.fetchAndChunkNextPage(mockItemProvider, context, mockTaskResultBuilder);
 
     // then
-    assertThat(result).isInstanceOf(PageProcessingResult.Finished.class);
-    final var finishedResult = (PageProcessingResult.Finished) result;
+    assertThat(result).isInstanceOf(ChunkingOutcome.Finished.class);
+    final var finishedResult = (ChunkingOutcome.Finished) result;
     assertThat(finishedResult.endCursor()).isEqualTo("cursor456");
     assertThat(finishedResult.itemsProcessed()).isEqualTo(5);
 
@@ -128,8 +128,8 @@ class BatchOperationChunkAppenderTest {
         processor.fetchAndChunkNextPage(mockItemProvider, context, mockTaskResultBuilder);
 
     // then
-    assertThat(result).isInstanceOf(PageProcessingResult.BufferFull.class);
-    final var bufferFullResult = (PageProcessingResult.BufferFull) result;
+    assertThat(result).isInstanceOf(ChunkingOutcome.BufferFull.class);
+    final var bufferFullResult = (ChunkingOutcome.BufferFull) result;
     assertThat(bufferFullResult.itemsProcessed()).isEqualTo(2);
 
     verify(mockTaskResultBuilder, never())
@@ -156,8 +156,8 @@ class BatchOperationChunkAppenderTest {
         processor.fetchAndChunkNextPage(mockItemProvider, context, mockTaskResultBuilder);
 
     // then
-    assertThat(result).isInstanceOf(PageProcessingResult.Finished.class);
-    final var finishedResult = (PageProcessingResult.Finished) result;
+    assertThat(result).isInstanceOf(ChunkingOutcome.Finished.class);
+    final var finishedResult = (ChunkingOutcome.Finished) result;
     assertThat(finishedResult.endCursor()).isNull();
     assertThat(finishedResult.itemsProcessed()).isZero();
 
@@ -227,8 +227,8 @@ class BatchOperationChunkAppenderTest {
         largeChunkProcessor.fetchAndChunkNextPage(mockItemProvider, context, mockTaskResultBuilder);
 
     // then
-    assertThat(result).isInstanceOf(PageProcessingResult.Continue.class);
-    final var continueResult = (PageProcessingResult.Continue) result;
+    assertThat(result).isInstanceOf(ChunkingOutcome.Continue.class);
+    final var continueResult = (ChunkingOutcome.Continue) result;
     assertThat(continueResult.itemsProcessed()).isEqualTo(3);
 
     // Should create only 1 chunk since all items fit in chunk size 10
@@ -253,8 +253,8 @@ class BatchOperationChunkAppenderTest {
         processor.fetchAndChunkNextPage(mockItemProvider, context, mockTaskResultBuilder);
 
     // then
-    assertThat(result).isInstanceOf(PageProcessingResult.FetchFailed.class);
-    final var fetchFailedResult = (PageProcessingResult.FetchFailed) result;
+    assertThat(result).isInstanceOf(ChunkingOutcome.FetchFailed.class);
+    final var fetchFailedResult = (ChunkingOutcome.FetchFailed) result;
     assertThat(fetchFailedResult.cause()).isSameAs(exception);
 
     verify(mockTaskResultBuilder, never())
