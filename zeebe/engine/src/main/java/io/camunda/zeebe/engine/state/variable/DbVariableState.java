@@ -72,7 +72,7 @@ public class DbVariableState implements MutableVariableState {
   private final DirectBuffer variableNameView = new UnsafeBuffer(0, 0);
 
   // (scope key) => (set of variable names on that scope) — LRU cache for fast removeAllVariables
-  private final Cache<Long, Set<String>> variableNameCache =
+  private final Cache<Long, Set<DirectBuffer>> variableNameCache =
       Caffeine.newBuilder()
           .maximumSize(VARIABLE_NAME_CACHE_MAX_SIZE)
           .expireAfterAccess(VARIABLE_NAME_CACHE_EXPIRY)
@@ -143,10 +143,9 @@ public class DbVariableState implements MutableVariableState {
 
     variablesColumnFamily.upsert(scopeKeyVariableNameKey, newVariable);
 
-    final Set<String> cachedNames = variableNameCache.getIfPresent(scopeKey);
-    if (cachedNames != null) {
-      cachedNames.add(BufferUtil.bufferAsString(variableNameView));
-    }
+    variableNameCache
+        .get(scopeKey, k -> new HashSet<>())
+        .add(BufferUtil.cloneBuffer(variableNameView));
   }
 
   @Override
@@ -155,8 +154,6 @@ public class DbVariableState implements MutableVariableState {
     this.parentKey.set(parentKey);
 
     childParentColumnFamily.insert(this.childKey, this.parentKey);
-
-    variableNameCache.put(childKey, new HashSet<>());
   }
 
   @Override
@@ -173,12 +170,12 @@ public class DbVariableState implements MutableVariableState {
 
   @Override
   public void removeAllVariables(final long scopeKey) {
-    final Set<String> cachedNames = variableNameCache.getIfPresent(scopeKey);
+    final Set<DirectBuffer> cachedNames = variableNameCache.getIfPresent(scopeKey);
     if (cachedNames != null) {
       try {
         this.scopeKey.wrapLong(scopeKey);
-        for (final String name : cachedNames) {
-          variableName.wrapString(name);
+        for (final DirectBuffer name : cachedNames) {
+          variableName.wrapBuffer(name);
           variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey);
         }
       } finally {
@@ -191,6 +188,19 @@ public class DbVariableState implements MutableVariableState {
           (dbString, variable1) -> variablesColumnFamily.deleteExisting(scopeKeyVariableNameKey),
           () -> false);
     }
+  }
+
+  @Override
+  public void storeVariableDocumentState(final long key, final VariableDocumentRecord record) {
+    scopeKey.wrapLong(record.getScopeKey());
+    variableDocumentStateToWrite.setKey(key).setRecord(record);
+    variableDocumentStateByScopeKeyColumnFamily.insert(scopeKey, variableDocumentStateToWrite);
+  }
+
+  @Override
+  public void removeVariableDocumentState(final long scopeKey) {
+    this.scopeKey.wrapLong(scopeKey);
+    variableDocumentStateByScopeKeyColumnFamily.deleteIfExists(this.scopeKey);
   }
 
   @Override
@@ -359,19 +369,6 @@ public class DbVariableState implements MutableVariableState {
 
     final ParentScopeKey parentScopeKey = childParentColumnFamily.get(childKey);
     return parentScopeKey != null ? parentScopeKey.get() : NO_PARENT;
-  }
-
-  @Override
-  public void storeVariableDocumentState(final long key, final VariableDocumentRecord record) {
-    scopeKey.wrapLong(record.getScopeKey());
-    variableDocumentStateToWrite.setKey(key).setRecord(record);
-    variableDocumentStateByScopeKeyColumnFamily.insert(scopeKey, variableDocumentStateToWrite);
-  }
-
-  @Override
-  public void removeVariableDocumentState(final long scopeKey) {
-    this.scopeKey.wrapLong(scopeKey);
-    variableDocumentStateByScopeKeyColumnFamily.deleteIfExists(this.scopeKey);
   }
 
   @Override
