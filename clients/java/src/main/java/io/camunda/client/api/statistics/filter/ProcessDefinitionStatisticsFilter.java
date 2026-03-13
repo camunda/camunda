@@ -101,13 +101,31 @@ public interface ProcessDefinitionStatisticsFilter extends ProcessDefinitionStat
   @Override
   ProcessDefinitionStatisticsFilter variables(final Map<String, Object> variableValueFilters);
 
-  /** Filter by batchOperationId */
+  /**
+   * Filter by batchOperationId.
+   *
+   * @deprecated Use {@link #batchOperationKey(String)} instead.
+   */
+  @Deprecated
   @Override
   ProcessDefinitionStatisticsFilter batchOperationId(final String batchOperationId);
 
-  /** Filter by batchOperationId using {@link StringProperty} */
+  /**
+   * Filter by batchOperationId using {@link StringProperty}.
+   *
+   * @deprecated Use {@link #batchOperationKey(Consumer)} instead.
+   */
+  @Deprecated
   @Override
   ProcessDefinitionStatisticsFilter batchOperationId(final Consumer<StringProperty> fn);
+
+  /** Filter by batchOperationKey */
+  @Override
+  ProcessDefinitionStatisticsFilter batchOperationKey(final String batchOperationKey);
+
+  /** Filter by batchOperationKey using {@link StringProperty} */
+  @Override
+  ProcessDefinitionStatisticsFilter batchOperationKey(final Consumer<StringProperty> fn);
 
   /** Filter by error message */
   @Override
