@@ -96,8 +96,8 @@ public final class MsgPackReadingBoundaryCheckingExceptionTest {
           {
             new byte[] {(byte) FIXSTR_PREFIX | (byte) 0x01},
             codeUnderTest(MsgPackReader::readToken),
-            IllegalArgumentException.class,
-            "offset=1 length=1 not valid for capacity=1"
+            IndexOutOfBoundsException.class,
+            "Range [1, 1 + 1) out of bounds for length 1"
           },
         });
   }
