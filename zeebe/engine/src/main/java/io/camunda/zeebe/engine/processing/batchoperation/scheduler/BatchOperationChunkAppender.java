@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
  * the task result builder. It handles the logic for chunking items and ensuring that the task
  * result can accommodate the new records.
  */
-public class BatchOperationPageProcessor {
-  private static final Logger LOG = LoggerFactory.getLogger(BatchOperationPageProcessor.class);
+public class BatchOperationChunkAppender {
+  private static final Logger LOG = LoggerFactory.getLogger(BatchOperationChunkAppender.class);
   // These empty records are used only for size checking in canAppendChunks,
   // to ensure that the size check accounts for the largest possible record types
   // that may be appended. They are not used for actual data processing.
@@ -46,7 +46,7 @@ public class BatchOperationPageProcessor {
 
   private final int chunkSize;
 
-  public BatchOperationPageProcessor(final int chunkSize) {
+  public BatchOperationChunkAppender(final int chunkSize) {
     this.chunkSize = chunkSize;
   }
 
@@ -148,7 +148,7 @@ public class BatchOperationPageProcessor {
     final var command = new BatchOperationChunkRecord();
     command.setBatchOperationKey(batchOperationKey);
     command.setItems(
-        chunkItems.stream().map(BatchOperationPageProcessor::mapItem).collect(Collectors.toSet()));
+        chunkItems.stream().map(BatchOperationChunkAppender::mapItem).collect(Collectors.toSet()));
     return command;
   }
 

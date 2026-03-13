@@ -16,10 +16,10 @@ import io.camunda.zeebe.engine.processing.batchoperation.handlers.MigrateProcess
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ModifyProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ResolveIncidentBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationCommandAppender;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationExecutionScheduler;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -77,7 +77,7 @@ public final class BatchOperationSetupProcessors {
     final var batchOperationInitializer =
         new BatchOperationInitializationBehavior(
             new ItemProviderFactory(searchClientsProxy, batchOperationMetrics, partitionId),
-            new BatchOperationPageProcessor(engineConfiguration.getBatchOperationChunkSize()),
+            new BatchOperationChunkAppender(engineConfiguration.getBatchOperationChunkSize()),
             new BatchOperationCommandAppender(partitionId),
             engineConfiguration.getBatchOperationQueryPageSize(),
             batchOperationMetrics);

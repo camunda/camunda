@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.PageProcessingResult;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
@@ -30,18 +30,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-class BatchOperationPageProcessorTest {
+class BatchOperationChunkAppenderTest {
 
   private static final long BATCH_OPERATION_KEY = 123L;
   private static final int CHUNK_SIZE = 2;
 
-  private BatchOperationPageProcessor processor;
+  private BatchOperationChunkAppender processor;
   private ItemProvider mockItemProvider;
   private TaskResultBuilder mockTaskResultBuilder;
 
   @BeforeEach
   void setUp() {
-    processor = new BatchOperationPageProcessor(CHUNK_SIZE);
+    processor = new BatchOperationChunkAppender(CHUNK_SIZE);
     mockItemProvider = mock(ItemProvider.class);
     mockTaskResultBuilder = mock(TaskResultBuilder.class);
   }
@@ -205,7 +205,7 @@ class BatchOperationPageProcessorTest {
   @Test
   void shouldHandleDifferentChunkSizes() {
     // given
-    final var largeChunkProcessor = new BatchOperationPageProcessor(10);
+    final var largeChunkProcessor = new BatchOperationChunkAppender(10);
     final var items = List.of(new Item(100L, 200L), new Item(101L, 201L), new Item(102L, 202L));
     final var page = new ItemPage(items, "cursor", 3L, false);
     final var context = createContext("cursor0", 10);
