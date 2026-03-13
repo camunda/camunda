@@ -56,7 +56,8 @@ public class BatchOperationRetryPolicy {
    */
   public RetryDecision evaluate(final String cursor, final Throwable cause, final int numAttempts) {
     if (shouldFailImmediately(cause) || numAttempts >= maxRetries) {
-      return RetryDecision.fail(formatErrorMessage(cursor, cause), BatchOperationErrorType.QUERY_FAILED);
+      return RetryDecision.fail(
+          formatErrorMessage(cursor, cause), BatchOperationErrorType.QUERY_FAILED);
     }
     final Duration nextDelay = calculateNextDelay(numAttempts);
     return RetryDecision.retry(nextDelay, numAttempts + 1, cursor);
@@ -83,9 +84,7 @@ public class BatchOperationRetryPolicy {
     return maxRetries;
   }
 
-  /**
-   * Represents the decision of whether to retry or fail permanently.
-   */
+  /** Represents the decision of whether to retry or fail permanently. */
   public sealed interface RetryDecision {
     static Fail fail(final String message, final BatchOperationErrorType errorType) {
       return new Fail(message, errorType);
