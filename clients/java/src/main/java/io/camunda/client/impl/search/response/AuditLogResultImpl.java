@@ -23,6 +23,8 @@ import io.camunda.client.api.search.enums.AuditLogResultEnum;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.client.impl.util.EnumUtil;
+import io.camunda.client.impl.util.ParseUtil;
+import java.time.OffsetDateTime;
 
 public class AuditLogResultImpl implements AuditLogResult {
 
@@ -32,7 +34,7 @@ public class AuditLogResultImpl implements AuditLogResult {
   private AuditLogOperationTypeEnum operationType;
   private String batchOperationKey;
   private BatchOperationType batchOperationType;
-  private String timestamp;
+  private OffsetDateTime timestamp;
   private String actorId;
   private AuditLogActorTypeEnum actorType;
   private String agentElementId;
@@ -66,7 +68,7 @@ public class AuditLogResultImpl implements AuditLogResult {
     operationType = EnumUtil.convert(item.getOperationType(), AuditLogOperationTypeEnum.class);
     batchOperationKey = item.getBatchOperationKey();
     batchOperationType = EnumUtil.convert(item.getBatchOperationType(), BatchOperationType.class);
-    timestamp = item.getTimestamp();
+    timestamp = ParseUtil.parseOffsetDateTimeOrNull(item.getTimestamp());
     actorId = item.getActorId();
     actorType = EnumUtil.convert(item.getActorType(), AuditLogActorTypeEnum.class);
     agentElementId = item.getAgentElementId();
@@ -145,11 +147,11 @@ public class AuditLogResultImpl implements AuditLogResult {
   }
 
   @Override
-  public String getTimestamp() {
+  public OffsetDateTime getTimestamp() {
     return timestamp;
   }
 
-  public void setTimestamp(final String timestamp) {
+  public void setTimestamp(final OffsetDateTime timestamp) {
     this.timestamp = timestamp;
   }
 
