@@ -28,6 +28,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -825,6 +826,34 @@ public class UserTaskControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("urls")
+  void shouldReturnGatewayTimeoutWhenCompleteTaskTimesOut(final String baseUrl) {
+    // given
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(new TimeoutException("Task listener blocked completion"))));
+
+    // when / then
+    webClient
+        .post()
+        .uri(baseUrl + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.GATEWAY_TIMEOUT)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.title")
+        .isEqualTo("DEADLINE_EXCEEDED")
+        .jsonPath("$.detail")
+        .isEqualTo("Expected to handle request, but request timed out between gateway and broker")
+        .jsonPath("$.status")
+        .isEqualTo(504);
+  }
+
+  @ParameterizedTest
+  @MethodSource("urls")
   void shouldYieldConflictWhenInvalidState(final String baseUrl) {
     // given
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
@@ -1169,6 +1198,80 @@ public class UserTaskControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("urls")
+  void shouldReturnGatewayTimeoutWhenAssignTaskTimesOut(final String baseUrl) {
+    // given
+    Mockito.when(userTaskServices.assignUserTask(anyLong(), anyString(), anyString(), anyBoolean()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(new TimeoutException("Task listener blocked assignment"))));
+
+    final var request =
+        """
+            {
+              "assignee": "Test Assignee"
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(baseUrl + "/1/assignment")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.GATEWAY_TIMEOUT)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.title")
+        .isEqualTo("DEADLINE_EXCEEDED")
+        .jsonPath("$.detail")
+        .isEqualTo("Expected to handle request, but request timed out between gateway and broker")
+        .jsonPath("$.status")
+        .isEqualTo(504);
+  }
+
+  @ParameterizedTest
+  @MethodSource("urls")
+  void shouldReturnGatewayTimeoutWhenUpdateTaskTimesOut(final String baseUrl) {
+    // given
+    Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(new TimeoutException("Task listener blocked update"))));
+
+    final var request =
+        """
+            {
+              "changeset": {
+                "priority": 50
+              }
+            }""";
+
+    // when / then
+    webClient
+        .patch()
+        .uri(baseUrl + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.GATEWAY_TIMEOUT)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.title")
+        .isEqualTo("DEADLINE_EXCEEDED")
+        .jsonPath("$.detail")
+        .isEqualTo("Expected to handle request, but request timed out between gateway and broker")
+        .jsonPath("$.status")
+        .isEqualTo(504);
+  }
+
+  @ParameterizedTest
+  @MethodSource("urls")
   void shouldUnassignTask(final String baseUrl) {
     // given
     Mockito.when(userTaskServices.unassignUserTask(anyLong(), anyString()))
@@ -1184,5 +1287,33 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEmpty();
 
     Mockito.verify(userTaskServices).unassignUserTask(2251799813685732L, "unassign");
+  }
+
+  @ParameterizedTest
+  @MethodSource("urls")
+  void shouldReturnGatewayTimeoutWhenUnassignTaskTimesOut(final String baseUrl) {
+    // given
+    Mockito.when(userTaskServices.unassignUserTask(anyLong(), anyString()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapError(new TimeoutException("Task listener blocked unassignment"))));
+
+    // when / then
+    webClient
+        .delete()
+        .uri(baseUrl + "/1/assignee")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.GATEWAY_TIMEOUT)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.title")
+        .isEqualTo("DEADLINE_EXCEEDED")
+        .jsonPath("$.detail")
+        .isEqualTo("Expected to handle request, but request timed out between gateway and broker")
+        .jsonPath("$.status")
+        .isEqualTo(504);
   }
 }
