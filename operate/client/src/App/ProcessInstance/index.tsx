@@ -176,6 +176,11 @@ const ProcessInstance: React.FC = observer(() => {
       >
         {processInstance && (
           <InstanceDetail
+            className={
+              IS_NEW_PROCESS_INSTANCE_PAGE
+                ? 'camunda-process-instance-page'
+                : undefined
+            }
             hasLoadingOverlay={modificationStatus === 'applying-modifications'}
             breadcrumb={
               isBreadcrumbVisible && callHierarchy ? (
