@@ -36,6 +36,11 @@ public class ProcessDefinitionStatisticsDbReader
       final ProcessDefinitionFlowNodeStatisticsQuery query,
       final ResourceAccessChecks resourceAccessChecks) {
     LOG.trace("[RDBMS DB] Query process definition flow node statistics with filter {}", query);
+
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+      return List.of();
+    }
+
     return processDefinitionMapper.flowNodeStatistics(query.filter());
   }
 }
