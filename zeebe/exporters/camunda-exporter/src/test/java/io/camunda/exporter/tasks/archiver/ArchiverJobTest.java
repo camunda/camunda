@@ -52,7 +52,7 @@ final class ArchiverJobTest {
   @Test
   void shouldReturnZeroIfNoBatchGiven() {
     // given no batch
-    repository.batch = null;
+    repository.batches = List.of();
 
     // when
     final int count = job.execute().toCompletableFuture().join();
@@ -70,7 +70,7 @@ final class ArchiverJobTest {
   @Test
   void shouldReturnZeroIfNoBatchIdsGiven() {
     // given
-    repository.batch = new ArchiveBatch.BasicArchiveBatch("2024-01-01", List.of());
+    repository.batches = List.of(new ArchiveBatch.BasicArchiveBatch("2024-01-01", List.of()));
 
     // when
     final int count = job.execute().toCompletableFuture().join();
@@ -88,7 +88,8 @@ final class ArchiverJobTest {
   @Test
   void shouldMoveInstancesById() {
     // given
-    repository.batch = new ArchiveBatch.BasicArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batches =
+        List.of(new ArchiveBatch.BasicArchiveBatch("2024-01-01", List.of("1", "2", "3")));
 
     // when
     final int count = job.execute().toCompletableFuture().join();
