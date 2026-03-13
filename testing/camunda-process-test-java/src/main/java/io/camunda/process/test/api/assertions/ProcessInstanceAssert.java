@@ -578,15 +578,6 @@ public interface ProcessInstanceAssert {
    *       .hasVariableSatisfiesJudge("result", "should contain valid data");
    * </pre>
    *
-   * <p>If no judge config is currently set (neither globally nor locally), the modifier receives a
-   * default config with no chat model. Use {@link JudgeConfig#withChatModelAdapter} to set one:
-   *
-   * <pre>
-   *   assertThat(pi)
-   *       .withJudgeConfig(config -&gt; config.withChatModelAdapter(model::chat))
-   *       .hasVariableSatisfiesJudge("result", "should be valid");
-   * </pre>
-   *
    * @param modifier a function that receives the current judge config and returns a modified one
    * @return the assertion object
    */
