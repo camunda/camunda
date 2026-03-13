@@ -7,6 +7,7 @@
  */
 
 import styled from 'styled-components';
+import {breakpoints} from '@carbon/elements';
 import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
 import {ErrorMessage as BaseErrorMessage} from 'modules/components/ErrorMessage';
 
@@ -20,9 +21,11 @@ const Container = styled.div`
   width: 100%;
   overflow: hidden;
 
-  @media (max-width: 66rem) {
+  @media (max-width: ${breakpoints.lg.width}) {
     border-right: none;
     border-bottom: solid 1px var(--cds-border-subtle-01);
+    min-height: 250px;
+    flex: 1;
   }
 `;
 
