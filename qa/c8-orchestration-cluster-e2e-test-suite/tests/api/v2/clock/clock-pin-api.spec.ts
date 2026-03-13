@@ -15,11 +15,9 @@ import {
 } from '../../../../utils/http';
 import {deploy} from '../../../../utils/zeebeClient';
 import {createProcessInstanceAndRetrieveTimeStamp} from '@requestHelpers';
-import {defaultAssertionOptions} from '../../../../utils/constants';
 
 test.describe('Pin Clock API Tests', () => {
   let processDefinitionId: string;
-
   test.beforeAll(async ({request}) => {
     await test.step('Deploy process definition', async () => {
       const deployment = await deploy([
@@ -30,37 +28,31 @@ test.describe('Pin Clock API Tests', () => {
     });
 
     await test.step('Reset clock to ensure clean state', async () => {
-      await expect(async () => {
-        const res = await request.post(buildUrl('/clock/reset'), {
-          headers: jsonHeaders(),
-        });
+      const res = await request.post(buildUrl('/clock/reset'), {
+        headers: jsonHeaders(),
+      });
 
-        await assertStatusCode(res, 204);
-      }).toPass(defaultAssertionOptions);
+      await assertStatusCode(res, 204);
     });
   });
 
   test.afterAll(async ({request}) => {
-    await expect(async () => {
-      const res = await request.post(buildUrl('/clock/reset'), {
-        headers: jsonHeaders(),
-      });
-      await assertStatusCode(res, 204);
-    }).toPass(defaultAssertionOptions);
+    const res = await request.post(buildUrl('/clock/reset'), {
+      headers: jsonHeaders(),
+    });
+    await assertStatusCode(res, 204);
   });
 
   test('Pin clock to a fixed instant', async ({request}) => {
     const timestamp = Date.parse('2025-01-01T00:00:00Z');
 
     await test.step('Pin clock to fixed instant and verify', async () => {
-      await expect(async () => {
-        const pin = await request.put(buildUrl('/clock'), {
-          data: {timestamp},
-          headers: jsonHeaders(),
-        });
+      const pin = await request.put(buildUrl('/clock'), {
+        data: {timestamp},
+        headers: jsonHeaders(),
+      });
 
-        await assertStatusCode(pin, 204);
-      }).toPass(defaultAssertionOptions);
+      await assertStatusCode(pin, 204);
     });
 
     await test.step('Create process instances and verify pinned start and end dates', async () => {
@@ -73,27 +65,23 @@ test.describe('Pin Clock API Tests', () => {
     });
 
     await test.step('Reset clock', async () => {
-      await expect(async () => {
-        const res = await request.post(buildUrl('/clock/reset'), {
-          headers: jsonHeaders(),
-        });
-        await assertStatusCode(res, 204);
-      }).toPass(defaultAssertionOptions);
+      const res = await request.post(buildUrl('/clock/reset'), {
+        headers: jsonHeaders(),
+      });
+      await assertStatusCode(res, 204);
     });
   });
 
   test('Pin clock - bad request', async ({request}) => {
     const someInvalidData = 'meow';
-    await expect(async () => {
-      const pin = await request.put(buildUrl('/clock'), {
-        data: {timestamp: someInvalidData},
-        headers: jsonHeaders(),
-      });
+    const pin = await request.put(buildUrl('/clock'), {
+      data: {timestamp: someInvalidData},
+      headers: jsonHeaders(),
+    });
 
-      await assertBadRequest(
-        pin,
-        'Request property [timestamp] cannot be parsed',
-      );
-    }).toPass(defaultAssertionOptions);
+    await assertBadRequest(
+      pin,
+      'Request property [timestamp] cannot be parsed',
+    );
   });
 });
