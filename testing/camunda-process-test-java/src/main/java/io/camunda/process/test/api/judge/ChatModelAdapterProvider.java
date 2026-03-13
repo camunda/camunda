@@ -31,6 +31,7 @@ public interface ChatModelAdapterProvider {
    * @param config the provider-specific configuration
    * @return an {@link Optional} containing the created {@link ChatModelAdapter}, or {@link
    *     Optional#empty()} if this provider does not support the given configuration
+   * @throws IllegalStateException if the configuration is recognized but invalid or incomplete
    */
   Optional<ChatModelAdapter> create(ProviderConfig config);
 }
