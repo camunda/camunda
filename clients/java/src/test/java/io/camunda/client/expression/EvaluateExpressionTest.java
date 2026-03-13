@@ -23,6 +23,7 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import io.camunda.client.api.response.EvaluateExpressionResponse;
 import io.camunda.client.protocol.rest.ExpressionEvaluationRequest;
 import io.camunda.client.protocol.rest.ExpressionEvaluationResult;
+import io.camunda.client.protocol.rest.ExpressionEvaluationWarningItem;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import io.camunda.client.util.RestGatewayService;
@@ -217,7 +218,10 @@ public final class EvaluateExpressionTest extends ClientRestTest {
     // given
     final String expression = "=x + y";
     final Object resultValue = 30;
-    final List<String> warnings = Arrays.asList("Warning 1", "Warning 2");
+    final List<ExpressionEvaluationWarningItem> warnings =
+        Arrays.asList(
+            new ExpressionEvaluationWarningItem().message("Warning 1"),
+            new ExpressionEvaluationWarningItem().message("Warning 2"));
     gatewayService.onExpressionEvaluationRequest(
         new ExpressionEvaluationResult()
             .expression(expression)
