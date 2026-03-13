@@ -363,12 +363,10 @@
     SELECT pi.PROCESS_DEFINITION_ID,
     pi.TENANT_ID,
     (SELECT pd.NAME
-      FROM ${prefix}PROCESS_INSTANCE pi2
-      JOIN ${prefix}PROCESS_DEFINITION pd ON pd.PROCESS_DEFINITION_KEY = pi2.PROCESS_DEFINITION_KEY
-      <where>
-        pi2.PROCESS_DEFINITION_ID = pi.PROCESS_DEFINITION_ID AND pi2.TENANT_ID = pi.TENANT_ID
-      </where>
-      ORDER BY pi2.VERSION DESC
+        FROM ${prefix}PROCESS_DEFINITION pd
+        WHERE pd.PROCESS_DEFINITION_ID = pi.PROCESS_DEFINITION_ID
+            AND pd.TENANT_ID = pi.TENANT_ID
+        ORDER BY pd.VERSION DESC
       <choose>
         <when test="_databaseId == 'mssql'">
           <!-- MSSQL needs an OFFSET when sorting in subselects -->
