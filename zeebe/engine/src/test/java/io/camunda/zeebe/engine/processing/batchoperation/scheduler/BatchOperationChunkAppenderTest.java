@@ -128,8 +128,6 @@ class BatchOperationChunkAppenderTest {
 
     // then
     assertThat(result).isInstanceOf(ChunkingOutcome.BufferFull.class);
-    final var bufferFullResult = (ChunkingOutcome.BufferFull) result;
-    assertThat(bufferFullResult.itemsProcessed()).isEqualTo(2);
 
     verify(mockTaskResultBuilder, never())
         .appendCommandRecord(

@@ -71,7 +71,7 @@ public class BatchOperationChunkAppender {
     final boolean appendedChunks = appendChunks(taskResultBuilder, batchOperationKey, page.items());
 
     if (!appendedChunks) {
-      return new ChunkingOutcome.BufferFull(page.items().size());
+      return new ChunkingOutcome.BufferFull();
     }
     if (page.isLastPage()) {
       return new ChunkingOutcome.Finished(page.endCursor(), page.items().size());
@@ -176,7 +176,7 @@ public class BatchOperationChunkAppender {
     record Finished(String endCursor, int itemsProcessed) implements ChunkingOutcome {}
 
     /** Chunks could not fit in the result buffer. */
-    record BufferFull(int itemsProcessed) implements ChunkingOutcome {}
+    record BufferFull() implements ChunkingOutcome {}
 
     /** Fetching the page from the item provider failed. */
     record FetchFailed(Exception cause) implements ChunkingOutcome {}
