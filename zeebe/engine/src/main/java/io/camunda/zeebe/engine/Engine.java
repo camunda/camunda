@@ -62,6 +62,7 @@ public class Engine implements RecordProcessor {
   private final ProcessingResultBuilderMutex resultBuilderMutex =
       new ProcessingResultBuilderMutex();
 
+  
   private Writers writers;
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private final EngineConfiguration config;
