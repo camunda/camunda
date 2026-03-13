@@ -29,6 +29,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -110,7 +111,9 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
     final var exporterDescriptors = getEnabledExporterDescriptors(context);
     final BrokerCfg brokerCfg = context.getBrokerCfg();
     final ExportingCfg exportingCfg = brokerCfg.getExporting();
-    final var exporterFilter = SkipPositionsFilter.of(exportingCfg.skipRecords());
+    final int partitionId = context.getPartitionId();
+    final var skipRecords = exportingCfg.skipRecords().getOrDefault(partitionId, Set.of());
+    final var exporterFilter = SkipPositionsFilter.of(skipRecords);
     final ExporterMode exporterMode =
         targetRole == Role.LEADER ? ExporterMode.ACTIVE : ExporterMode.PASSIVE;
     final ExporterDirectorContext exporterCtx =
