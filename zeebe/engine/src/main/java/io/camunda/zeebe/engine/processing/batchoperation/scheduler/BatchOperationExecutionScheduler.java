@@ -8,9 +8,10 @@
 package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 
 import com.google.common.base.Strings;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryResult.Failure;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryResult.Retry;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryResult.Success;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.Failed;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.NeedsRetry;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.Success;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryDecision;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -151,29 +152,45 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       return initialPollingInterval;
     }
 
-    final var retryResult =
-        retryHandler.executeWithRetry(
-            () ->
-                batchOperationInitializer.initializeBatchOperation(
-                    batchOperation, taskResultBuilder),
-            currentState.numAttempts());
+    final var outcome =
+        batchOperationInitializer.initializeBatchOperation(batchOperation, taskResultBuilder);
 
-    return switch (retryResult) {
+    return switch (outcome) {
       case Success(final var cursor) -> {
         executionState.set(currentState.advanceTo(cursor));
         yield initialPollingInterval;
       }
-      case Failure(final var message, final var errorType) -> {
+      case Failed(final var message, final var errorType) -> {
         batchOperationInitializer.appendFailedCommand(
             taskResultBuilder, batchOperation.getKey(), message, errorType);
         yield initialPollingInterval;
       }
-      case Retry(final var delay, final int numAttempts, final String endCursor) -> {
+      case NeedsRetry(final var cursor, final var cause) ->
+          handleRetry(taskResultBuilder, batchOperation, currentState, cursor, cause);
+    };
+  }
+
+  private Duration handleRetry(
+      final TaskResultBuilder taskResultBuilder,
+      final PersistedBatchOperation batchOperation,
+      final ExecutionLoopState currentState,
+      final String cursor,
+      final Throwable cause) {
+
+    final var decision = retryHandler.evaluate(cursor, cause, currentState.numAttempts());
+
+    return switch (decision) {
+      case RetryDecision.Fail(final var message, final var errorType) -> {
+        batchOperationInitializer.appendFailedCommand(
+            taskResultBuilder, batchOperation.getKey(), message, errorType);
+        yield initialPollingInterval;
+      }
+      case RetryDecision.Retry(final var delay, final int numAttempts, final String retryCursor) -> {
         LOG.warn(
             "Retryable operation failed, retries left: {}, retrying in {} ms",
             retryHandler.getMaxRetries() - numAttempts,
             delay.toMillis());
-        executionState.set(currentState.retryWith(endCursor, numAttempts));
+        executionState.set(currentState.retryWith(retryCursor, numAttempts));
         yield delay;
       }
     };
