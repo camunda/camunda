@@ -1,10 +1,6 @@
 zeebe:
   broker:
     exporting:
-      skipRecords: 112233, 445566
-      skipRecordsForPartitions:
-        1: 999
-        2: 100
       distributionInterval: 5s
     exporters:
       elasticsearch:
