@@ -16,6 +16,7 @@
   <name>Zeebe Distribution</name>
 
   <properties>
+    <spring-boot.run.mainClass>io.camunda.application.StandaloneCamunda</spring-boot.run.mainClass>
     <spring-boot.run.jvmArguments>${jvm.module.opens}</spring-boot.run.jvmArguments>
   </properties>
 
@@ -1138,6 +1139,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
+          <mainClass>${spring-boot.run.mainClass}</mainClass>
           <jvmArguments>${spring-boot.run.jvmArguments}</jvmArguments>
         </configuration>
         <executions>
