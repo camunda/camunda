@@ -1126,7 +1126,10 @@ paths:
         - User task
       operationId: completeUserTask
       summary: Complete user task
-      description: Completes a user task with the given key.
+      description: >
+        Completes a user task with the given key. Completion waits for blocking task listeners on
+        this lifecycle transition. If listener processing is delayed beyond the request timeout,
+        this endpoint can return 504.
       parameters:
         - name: userTaskKey
           in: path
@@ -1163,6 +1166,8 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: '#/components/responses/GatewayTimeoutTaskListenerBlocking'
       x-eventually-consistent: false
   /user-tasks/{userTaskKey}/assignment:
     post:
@@ -1170,7 +1175,10 @@ paths:
         - User task
       operationId: assignUserTask
       summary: Assign user task
-      description: Assigns a user task with the given key to the given assignee.
+      description: >
+        Assigns a user task with the given key to the given assignee. Assignment waits for
+        blocking task listeners on this lifecycle transition. If listener processing is delayed
+        beyond the request timeout, this endpoint can return 504.
       parameters:
         - name: userTaskKey
           in: path
@@ -1207,6 +1215,8 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: '#/components/responses/GatewayTimeoutTaskListenerBlocking'
       x-eventually-consistent: false
   /user-tasks/{userTaskKey}:
     get:
@@ -1251,7 +1261,10 @@ paths:
         - User task
       operationId: updateUserTask
       summary: Update user task
-      description: Update a user task with the given key.
+      description: >
+        Update a user task with the given key. Updates wait for blocking task listeners on this
+        lifecycle transition. If listener processing is delayed beyond the request timeout, this
+        endpoint can return 504.Update a user task with the given key.
       parameters:
         - name: userTaskKey
           in: path
@@ -1288,6 +1301,8 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: '#/components/responses/GatewayTimeoutTaskListenerBlocking'
       x-eventually-consistent: false
   /user-tasks/{userTaskKey}/form:
     get:
@@ -1336,7 +1351,10 @@ paths:
         - User task
       operationId: unassignUserTask
       summary: Unassign user task
-      description: Removes the assignee of a task with the given key.
+      description: >
+        Removes the assignee of a task with the given key. Unassignment waits for blocking task
+        listeners on this lifecycle transition. If listener processing is delayed beyond the
+        request timeout, this endpoint can return 504.
       parameters:
         - name: userTaskKey
           in: path
@@ -1367,6 +1385,8 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: '#/components/responses/GatewayTimeoutTaskListenerBlocking'
       x-eventually-consistent: false
   /user-tasks/search:
     post:
