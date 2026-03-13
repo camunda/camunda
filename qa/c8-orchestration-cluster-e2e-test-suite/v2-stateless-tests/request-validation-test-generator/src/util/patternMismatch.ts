@@ -16,7 +16,10 @@ export function buildGuaranteedPatternMismatch(
 ): string | undefined {
   let rx: RegExp | undefined;
   try {
-    rx = new RegExp(pattern);
+    // Use the Unicode flag when the pattern contains Unicode property escapes (\p{...})
+    // so that JS can compile patterns like \p{L}, \p{N} from the OpenAPI specs.
+    const flags = /\\p\{/.test(pattern) ? 'u' : '';
+    rx = new RegExp(pattern, flags);
   } catch {
     return undefined;
   }

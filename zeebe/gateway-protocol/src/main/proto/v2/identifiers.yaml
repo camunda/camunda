@@ -7,7 +7,7 @@ components:
       type: string
       x-semantic-type: ProcessDefinitionId
       minLength: 1
-      pattern: ^[a-zA-Z_][a-zA-Z0-9_\-\.]*$
+      pattern: ^[\p{L}_][\p{L}\p{N}_\-\.]*$
       example: new-account-onboarding-workflow
 
     ElementId:
@@ -30,8 +30,7 @@ components:
       x-semantic-type: DecisionDefinitionId
       type: string
       minLength: 1
-      maxLength: 256
-      pattern: ^[A-Za-z0-9_@.+-]+$
+      pattern: ^[\p{L}_][\p{L}\p{N}_\-\.]*$
       example: new-hire-onboarding-workflow
 
     GlobalListenerId:

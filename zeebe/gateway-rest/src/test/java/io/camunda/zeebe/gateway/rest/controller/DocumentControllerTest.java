@@ -463,7 +463,7 @@ public class DocumentControllerTest extends RestControllerTest {
   @Test
   void shouldRejectDocumentWithInvalidProcessDefinitionId() {
     // given — a processDefinitionId starting with a digit is invalid per the
-    // BPMN identifier pattern ^[a-zA-Z_][a-zA-Z0-9_\-.]*$
+    // BPMN identifier pattern ^[\p{L}_][\p{L}\p{N}_\-.]*$
     final var content = new byte[] {1, 2, 3};
     final var contentType = MediaType.APPLICATION_OCTET_STREAM;
 
@@ -489,7 +489,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .jsonPath("$.detail")
         .isEqualTo(
             "The provided processDefinitionId contains illegal characters. "
-                + "It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\-.]*$'.");
+                + "It must match the pattern '^[\\p{L}_][\\p{L}\\p{N}_\\-.]*$'.");
 
     verify(documentServices, never()).createDocument(any(), any());
   }
@@ -682,7 +682,7 @@ public class DocumentControllerTest extends RestControllerTest {
   @Test
   void shouldRejectBatchDocumentWithInvalidProcessDefinitionId() throws Exception {
     // given — a processDefinitionId starting with a digit is invalid per the
-    // BPMN identifier pattern ^[a-zA-Z_][a-zA-Z0-9_\-.]*$
+    // BPMN identifier pattern ^[\p{L}_][\p{L}\p{N}_\-.]*$
     final var content = new byte[] {1, 2, 3};
     final var contentType = MediaType.APPLICATION_OCTET_STREAM;
     final var mapper = new ObjectMapper();
@@ -711,7 +711,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .jsonPath("$.detail")
         .isEqualTo(
             "The provided processDefinitionId contains illegal characters. "
-                + "It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\-.]*$'.");
+                + "It must match the pattern '^[\\p{L}_][\\p{L}\\p{N}_\\-.]*$'.");
 
     verify(documentServices, never()).createDocumentBatch(any(), any());
   }
