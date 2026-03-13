@@ -23,7 +23,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.PageProcessingResult;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.BatchOperationInitializationException;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
@@ -217,11 +216,10 @@ class BatchOperationInitializationBehaviorTest {
     // given
     final var errorMessage = "Test error message";
     final var errorType = BatchOperationErrorType.QUERY_FAILED;
-    final var exception =
-        new BatchOperationInitializationException(errorMessage, errorType, "test-cursor");
 
     // when
-    initializer.appendFailedCommand(taskResultBuilder, batchOperation.getKey(), exception);
+    initializer.appendFailedCommand(
+        taskResultBuilder, batchOperation.getKey(), errorMessage, errorType);
 
     // then
     verify(commandBuilder)

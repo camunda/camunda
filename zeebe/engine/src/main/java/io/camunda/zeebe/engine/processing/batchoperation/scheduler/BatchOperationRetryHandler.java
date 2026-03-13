@@ -9,11 +9,11 @@ package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.BatchOperationInitializationException;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.Failed;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.NeedsRetry;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.Success;
+import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import java.time.Duration;
 import java.util.Set;
 
@@ -67,17 +67,22 @@ public class BatchOperationRetryHandler {
     final var outcome = operation.execute();
     return switch (outcome) {
       case Success(final var cursor) -> RetryResult.success(cursor);
-      case Failed(final var message, final var errorType, final var cursor) ->
-          RetryResult.failure(
-              new BatchOperationInitializationException(message, errorType, cursor));
+      case Failed(final var message, final var errorType) ->
+          RetryResult.failure(message, errorType);
       case NeedsRetry(final var cursor, final var cause) -> {
         if (shouldFailImmediately(cause) || numAttempts >= maxRetries) {
-          yield RetryResult.failure(new BatchOperationInitializationException(cause, cursor));
+          yield RetryResult.failure(formatErrorMessage(cursor, cause), BatchOperationErrorType.QUERY_FAILED);
         }
         final Duration nextDelay = calculateNextDelay(numAttempts);
         yield RetryResult.retry(nextDelay, numAttempts + 1, cursor);
       }
     };
+  }
+
+  private String formatErrorMessage(final String cursor, final Throwable cause) {
+    return String.format(
+        "Failed to initialize batch operation with end cursor: %s. Reason: %s",
+        cursor, cause.getMessage());
   }
 
   private boolean shouldFailImmediately(final Throwable cause) {
@@ -107,8 +112,8 @@ public class BatchOperationRetryHandler {
       return new Success(searchResultCursor);
     }
 
-    static Failure failure(final BatchOperationInitializationException exception) {
-      return new Failure(exception);
+    static Failure failure(final String message, final BatchOperationErrorType errorType) {
+      return new Failure(message, errorType);
     }
 
     static Retry retry(final Duration delay, final int numAttempts, final String endCursor) {
@@ -117,7 +122,7 @@ public class BatchOperationRetryHandler {
 
     record Success(String searchResultCursor) implements RetryResult {}
 
-    record Failure(BatchOperationInitializationException exception) implements RetryResult {}
+    record Failure(String message, BatchOperationErrorType errorType) implements RetryResult {}
 
     record Retry(Duration delay, int numAttempts, String endCursor) implements RetryResult {}
   }
