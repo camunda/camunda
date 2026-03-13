@@ -7,11 +7,13 @@
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+@JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedTenantClientStrictContract(String clientId) {

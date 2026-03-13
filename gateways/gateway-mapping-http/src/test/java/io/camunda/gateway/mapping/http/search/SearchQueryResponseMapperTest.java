@@ -10,8 +10,6 @@ package io.camunda.gateway.mapping.http.search;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
-import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.search.entities.AuditLogEntity;
@@ -71,14 +69,14 @@ class SearchQueryResponseMapperTest {
 
     final var response = SearchQueryResponseMapper.toProcessDefinition(entity);
 
-    assertThat(response.getProcessDefinitionKey()).isEqualTo("2251799813685001");
-    assertThat(response.getName()).isEqualTo("Demo Process");
-    assertThat(response.getResourceName()).isEqualTo("demo.bpmn");
-    assertThat(response.getVersion()).isEqualTo(1);
-    assertThat(response.getVersionTag()).isNull();
-    assertThat(response.getProcessDefinitionId()).isEqualTo("demo-process");
-    assertThat(response.getTenantId()).isEqualTo("tenant-a");
-    assertThat(response.getHasStartForm()).isFalse();
+    assertThat(response.processDefinitionKey()).isEqualTo("2251799813685001");
+    assertThat(response.name()).isEqualTo("Demo Process");
+    assertThat(response.resourceName()).isEqualTo("demo.bpmn");
+    assertThat(response.version()).isEqualTo(1);
+    assertThat(response.versionTag()).isNull();
+    assertThat(response.processDefinitionId()).isEqualTo("demo-process");
+    assertThat(response.tenantId()).isEqualTo("tenant-a");
+    assertThat(response.hasStartForm()).isFalse();
   }
 
   @Test
@@ -115,19 +113,17 @@ class SearchQueryResponseMapperTest {
             "errorMessage");
 
     // when
-    final BatchOperationItemResponse response =
-        SearchQueryResponseMapper.toBatchOperationItem(item);
+    final var response = SearchQueryResponseMapper.toBatchOperationItem(item);
 
     // then
-    assertThat(response.getBatchOperationKey()).isEqualTo("batchOperationKey");
-    assertThat(response.getOperationType())
-        .isEqualTo(BatchOperationTypeEnum.MIGRATE_PROCESS_INSTANCE);
-    assertThat(response.getItemKey()).isEqualTo("1234");
-    assertThat(response.getProcessInstanceKey()).isEqualTo("4321");
-    assertThat(response.getRootProcessInstanceKey()).isEqualTo("4320");
-    assertThat(response.getState()).isEqualTo(StateEnum.COMPLETED);
-    assertThat(response.getProcessedDate()).isEqualTo("2025-01-15T11:53:00.000Z");
-    assertThat(response.getErrorMessage()).isEqualTo("errorMessage");
+    assertThat(response.batchOperationKey()).isEqualTo("batchOperationKey");
+    assertThat(response.operationType()).isEqualTo(BatchOperationTypeEnum.MIGRATE_PROCESS_INSTANCE);
+    assertThat(response.itemKey()).isEqualTo("1234");
+    assertThat(response.processInstanceKey()).isEqualTo("4321");
+    assertThat(response.rootProcessInstanceKey()).isEqualTo("4320");
+    assertThat(response.state()).isEqualTo("COMPLETED");
+    assertThat(response.processedDate()).isEqualTo("2025-01-15T11:53:00.000Z");
+    assertThat(response.errorMessage()).isEqualTo("errorMessage");
   }
 
   @Test
@@ -148,7 +144,7 @@ class SearchQueryResponseMapperTest {
 
     final var response = SearchQueryResponseMapper.toBatchOperation(entity);
 
-    assertThat(response.getErrors()).isNotNull().isEmpty();
+    assertThat(response.errors()).isNotNull().isEmpty();
   }
 
   @Test
@@ -186,13 +182,12 @@ class SearchQueryResponseMapperTest {
             null); // errorMessage (optional)
 
     // when
-    final BatchOperationItemResponse response =
-        SearchQueryResponseMapper.toBatchOperationItem(item);
+    final var response = SearchQueryResponseMapper.toBatchOperationItem(item);
 
     // then
-    assertThat(response.getRootProcessInstanceKey()).isNull();
-    assertThat(response.getProcessedDate()).isNull();
-    assertThat(response.getErrorMessage()).isNull();
+    assertThat(response.rootProcessInstanceKey()).isNull();
+    assertThat(response.processedDate()).isNull();
+    assertThat(response.errorMessage()).isNull();
   }
 
   @Test
@@ -247,7 +242,7 @@ class SearchQueryResponseMapperTest {
 
     final var response = SearchQueryResponseMapper.toProcessInstanceCallHierarchyEntry(entity);
 
-    assertThat(response.getProcessDefinitionName()).isEqualTo("demo-process");
+    assertThat(response.processDefinitionName()).isEqualTo("demo-process");
   }
 
   @Test
@@ -424,7 +419,7 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toDecisionInstance(entity);
 
     // then
-    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.rootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -797,7 +792,7 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toDecisionInstance(entity);
 
     // then
-    assertThat(response.getRootProcessInstanceKey()).isNull();
+    assertThat(response.rootProcessInstanceKey()).isNull();
   }
 
   @Test

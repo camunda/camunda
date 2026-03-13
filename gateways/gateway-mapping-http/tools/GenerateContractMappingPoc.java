@@ -143,20 +143,6 @@ public class GenerateContractMappingPoc {
               plan.fields()),
           StandardCharsets.UTF_8);
       System.out.println("generated: " + ROOT.relativize(dtoFile));
-
-      if (validMappableSchemas.contains(plan.schema().schemaName())) {
-        final var mapperFile = packagePath.resolve(plan.mapperClass() + ".java");
-        Files.writeString(
-            mapperFile,
-            renderMapper(
-                plan.schema().fileName(),
-                plan.schema().schemaName(),
-                plan.dtoClass(),
-                plan.mapperClass(),
-                plan.fields()),
-            StandardCharsets.UTF_8);
-        System.out.println("generated: " + ROOT.relativize(mapperFile));
-      }
     }
   }
 
@@ -483,7 +469,8 @@ public class GenerateContractMappingPoc {
     final boolean hasLongKeyCoercion = !coercionFields.isEmpty();
     final boolean hasListCoercion = fields.stream().anyMatch(ContractField::hasStrictListType);
     final String imports =
-      "import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;\n"
+      "import com.fasterxml.jackson.annotation.JsonInclude;\n"
+        + "import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;\n"
         + (hasLongKeyCoercion ? "import io.camunda.gateway.mapping.http.util.KeyUtil;\n" : "")
         + "import jakarta.annotation.Generated;\n"
         + (hasListCoercion ? "import java.util.ArrayList;\n" : "")
@@ -574,6 +561,7 @@ package %s;
 
 %s
 
+@JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record %s(

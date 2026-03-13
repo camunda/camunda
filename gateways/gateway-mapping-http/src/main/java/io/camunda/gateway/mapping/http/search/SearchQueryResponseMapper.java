@@ -19,11 +19,14 @@ import io.camunda.gateway.mapping.http.search.contract.ClusterVariableContractAd
 import io.camunda.gateway.mapping.http.search.contract.DecisionInstanceContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.ProcessDefinitionContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.ProcessInstanceCallHierarchyEntryContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryPage;
+import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
 import io.camunda.gateway.mapping.http.search.contract.VariableContractAdapter;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationResponseMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionResultMapper;
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCallHierarchyEntryMapper;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemResponseStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationResponseStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCallHierarchyEntryStrictContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
@@ -34,10 +37,6 @@ import io.camunda.gateway.protocol.model.AuditLogResultEnum;
 import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
 import io.camunda.gateway.protocol.model.AuthorizationResult;
 import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
-import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
-import io.camunda.gateway.protocol.model.BatchOperationItemSearchQueryResult;
-import io.camunda.gateway.protocol.model.BatchOperationResponse;
-import io.camunda.gateway.protocol.model.BatchOperationSearchQueryResult;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.CamundaUserResult;
 import io.camunda.gateway.protocol.model.ClusterVariableResult;
@@ -48,8 +47,6 @@ import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionSearchQuer
 import io.camunda.gateway.protocol.model.DecisionDefinitionResult;
 import io.camunda.gateway.protocol.model.DecisionDefinitionSearchQueryResult;
 import io.camunda.gateway.protocol.model.DecisionInstanceGetQueryResult;
-import io.camunda.gateway.protocol.model.DecisionInstanceResult;
-import io.camunda.gateway.protocol.model.DecisionInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.DecisionRequirementsResult;
 import io.camunda.gateway.protocol.model.DecisionRequirementsSearchQueryResult;
 import io.camunda.gateway.protocol.model.ElementInstanceResult;
@@ -102,10 +99,7 @@ import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatist
 import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatisticsResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsResult;
-import io.camunda.gateway.protocol.model.ProcessDefinitionResult;
-import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
 import io.camunda.gateway.protocol.model.ProcessElementStatisticsResult;
-import io.camunda.gateway.protocol.model.ProcessInstanceCallHierarchyEntry;
 import io.camunda.gateway.protocol.model.ProcessInstanceElementStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQueryResult;
@@ -244,15 +238,15 @@ public final class SearchQueryResponseMapper {
     return response;
   }
 
-  public static ProcessDefinitionSearchQueryResult toProcessDefinitionSearchQueryResponse(
-      final SearchQueryResult<ProcessDefinitionEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new ProcessDefinitionSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toProcessDefinitions)
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedProcessDefinitionStrictContract>
+      toProcessDefinitionSearchQueryResponse(
+          final SearchQueryResult<ProcessDefinitionEntity> result) {
+    final var page = toStrictSearchQueryPage(result);
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(SearchQueryResponseMapper::toProcessDefinitions)
+            .orElseGet(Collections::emptyList),
+        page);
   }
 
   public static ProcessDefinitionElementStatisticsQueryResult
@@ -579,15 +573,13 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static DecisionInstanceSearchQueryResult toDecisionInstanceSearchQueryResponse(
-      final SearchQueryResult<DecisionInstanceEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new DecisionInstanceSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toDecisionInstances)
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedDecisionInstanceStrictContract>
+      toDecisionInstanceSearchQueryResponse(
+          final SearchQueryResult<DecisionInstanceEntity> result) {
+    final var page = toStrictSearchQueryPage(result);
+    final var items =
+        ofNullable(result.items()).map(SearchQueryResponseMapper::toDecisionInstances).orElse(null);
+    return new StrictSearchQueryResult<>(items, page);
   }
 
   public static UserTaskSearchQueryResult toUserTaskSearchQueryResponse(
@@ -611,26 +603,25 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static BatchOperationSearchQueryResult toBatchOperationSearchQueryResult(
-      final SearchQueryResult<BatchOperationEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new BatchOperationSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toBatchOperations)
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedBatchOperationResponseStrictContract>
+      toBatchOperationSearchQueryResult(final SearchQueryResult<BatchOperationEntity> result) {
+    final var page = toStrictSearchQueryPage(result);
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(SearchQueryResponseMapper::toBatchOperations)
+            .orElseGet(Collections::emptyList),
+        page);
   }
 
-  public static BatchOperationItemSearchQueryResult toBatchOperationItemSearchQueryResult(
-      final SearchQueryResult<BatchOperationItemEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new BatchOperationItemSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toBatchOperationItems)
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedBatchOperationItemResponseStrictContract>
+      toBatchOperationItemSearchQueryResult(
+          final SearchQueryResult<BatchOperationItemEntity> result) {
+    final var page = toStrictSearchQueryPage(result);
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(SearchQueryResponseMapper::toBatchOperationItems)
+            .orElseGet(Collections::emptyList),
+        page);
   }
 
   public static IncidentSearchQueryResult toIncidentSearchQueryResponse(
@@ -677,14 +668,19 @@ public final class SearchQueryResponseMapper {
         .endCursor(result.endCursor());
   }
 
-  private static List<ProcessDefinitionResult> toProcessDefinitions(
+  private static StrictSearchQueryPage toStrictSearchQueryPage(final SearchQueryResult<?> result) {
+    return new StrictSearchQueryPage(
+        result.total(), result.hasMoreTotalItems(), result.startCursor(), result.endCursor());
+  }
+
+  private static List<GeneratedProcessDefinitionStrictContract> toProcessDefinitions(
       final List<ProcessDefinitionEntity> processDefinitions) {
     return processDefinitions.stream().map(SearchQueryResponseMapper::toProcessDefinition).toList();
   }
 
-  public static ProcessDefinitionResult toProcessDefinition(final ProcessDefinitionEntity entity) {
-    final var strictContractView = ProcessDefinitionContractAdapter.adapt(entity);
-    return GeneratedProcessDefinitionResultMapper.toProtocol(strictContractView);
+  public static GeneratedProcessDefinitionStrictContract toProcessDefinition(
+      final ProcessDefinitionEntity entity) {
+    return ProcessDefinitionContractAdapter.adapt(entity);
   }
 
   private static List<ProcessInstanceResult> toProcessInstances(
@@ -744,34 +740,33 @@ public final class SearchQueryResponseMapper {
         .businessId(emptyToNull(p.businessId()));
   }
 
-  public static List<BatchOperationResponse> toBatchOperations(
+  public static List<GeneratedBatchOperationResponseStrictContract> toBatchOperations(
       final List<BatchOperationEntity> batchOperations) {
     return batchOperations.stream().map(SearchQueryResponseMapper::toBatchOperation).toList();
   }
 
-  public static BatchOperationResponse toBatchOperation(final BatchOperationEntity entity) {
-    final var strictContractView = BatchOperationResponseContractAdapter.adapt(entity);
-    return GeneratedBatchOperationResponseMapper.toProtocol(strictContractView);
+  public static GeneratedBatchOperationResponseStrictContract toBatchOperation(
+      final BatchOperationEntity entity) {
+    return BatchOperationResponseContractAdapter.adapt(entity);
   }
 
-  public static BatchOperationItemSearchQueryResult toBatchOperationItemSearchQueryResult(
-      final List<BatchOperationItemEntity> batchOperations) {
-    return new BatchOperationItemSearchQueryResult()
-        .items(
-            batchOperations.stream().map(SearchQueryResponseMapper::toBatchOperationItem).toList());
+  public static StrictSearchQueryResult<GeneratedBatchOperationItemResponseStrictContract>
+      toBatchOperationItemSearchQueryResult(final List<BatchOperationItemEntity> batchOperations) {
+    return new StrictSearchQueryResult<>(
+        batchOperations.stream().map(SearchQueryResponseMapper::toBatchOperationItem).toList(),
+        null);
   }
 
-  public static List<BatchOperationItemResponse> toBatchOperationItems(
+  public static List<GeneratedBatchOperationItemResponseStrictContract> toBatchOperationItems(
       final List<BatchOperationItemEntity> batchOperationItems) {
     return batchOperationItems.stream()
         .map(SearchQueryResponseMapper::toBatchOperationItem)
         .toList();
   }
 
-  public static BatchOperationItemResponse toBatchOperationItem(
+  public static GeneratedBatchOperationItemResponseStrictContract toBatchOperationItem(
       final BatchOperationItemEntity entity) {
-    final var strictContractView = BatchOperationItemResponseContractAdapter.adapt(entity);
-    return GeneratedBatchOperationItemResponseMapper.toProtocol(strictContractView);
+    return BatchOperationItemResponseContractAdapter.adapt(entity);
   }
 
   private static List<RoleResult> toRoles(final List<RoleEntity> roles) {
@@ -1094,12 +1089,13 @@ public final class SearchQueryResponseMapper {
         .collect(toMap(e -> e.getKey().getValue(), Map.Entry::getValue, (v1, v2) -> v1));
   }
 
-  private static List<DecisionInstanceResult> toDecisionInstances(
+  private static List<GeneratedDecisionInstanceStrictContract> toDecisionInstances(
       final List<DecisionInstanceEntity> instances) {
     return DecisionInstanceContractAdapter.toSearchProjections(instances);
   }
 
-  public static DecisionInstanceResult toDecisionInstance(final DecisionInstanceEntity entity) {
+  public static GeneratedDecisionInstanceStrictContract toDecisionInstance(
+      final DecisionInstanceEntity entity) {
     return DecisionInstanceContractAdapter.toSearchProjection(entity);
   }
 
@@ -1263,18 +1259,17 @@ public final class SearchQueryResponseMapper {
     return ProcessInstanceStateEnum.fromValue(value.name());
   }
 
-  public static List<ProcessInstanceCallHierarchyEntry> toProcessInstanceCallHierarchyEntries(
-      final List<ProcessInstanceEntity> processInstanceEntities) {
+  public static List<GeneratedProcessInstanceCallHierarchyEntryStrictContract>
+      toProcessInstanceCallHierarchyEntries(
+          final List<ProcessInstanceEntity> processInstanceEntities) {
     return processInstanceEntities.stream()
         .map(SearchQueryResponseMapper::toProcessInstanceCallHierarchyEntry)
         .toList();
   }
 
-  public static ProcessInstanceCallHierarchyEntry toProcessInstanceCallHierarchyEntry(
-      final ProcessInstanceEntity processInstanceEntity) {
-    final var strictContractView =
-        ProcessInstanceCallHierarchyEntryContractAdapter.adapt(processInstanceEntity);
-    return GeneratedProcessInstanceCallHierarchyEntryMapper.toProtocol(strictContractView);
+  public static GeneratedProcessInstanceCallHierarchyEntryStrictContract
+      toProcessInstanceCallHierarchyEntry(final ProcessInstanceEntity processInstanceEntity) {
+    return ProcessInstanceCallHierarchyEntryContractAdapter.adapt(processInstanceEntity);
   }
 
   private static List<ProcessDefinitionMessageSubscriptionStatisticsResult>

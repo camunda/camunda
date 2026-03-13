@@ -10,12 +10,10 @@ package io.camunda.gateway.mapping.http.search.contract;
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStrictContract.Fields;
 
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceResultMapper;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.protocol.model.DecisionDefinitionTypeEnum;
 import io.camunda.gateway.protocol.model.DecisionInstanceGetQueryResult;
-import io.camunda.gateway.protocol.model.DecisionInstanceResult;
 import io.camunda.gateway.protocol.model.DecisionInstanceStateEnum;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
@@ -38,14 +36,14 @@ public final class DecisionInstanceContractAdapter {
 
   private DecisionInstanceContractAdapter() {}
 
-  public static List<DecisionInstanceResult> toSearchProjections(
+  public static List<GeneratedDecisionInstanceStrictContract> toSearchProjections(
       final List<DecisionInstanceEntity> instances) {
     return instances.stream().map(DecisionInstanceContractAdapter::toSearchProjection).toList();
   }
 
-  public static DecisionInstanceResult toSearchProjection(final DecisionInstanceEntity entity) {
-    final var strictContractView = toStrictContract(entity);
-    return GeneratedDecisionInstanceResultMapper.toProtocol(strictContractView);
+  public static GeneratedDecisionInstanceStrictContract toSearchProjection(
+      final DecisionInstanceEntity entity) {
+    return toStrictContract(entity);
   }
 
   public static DecisionInstanceGetQueryResult toGetProjection(
