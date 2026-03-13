@@ -17,7 +17,7 @@ const Content = styled.div`
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding: var(--cds-spacing-03) var(--cds-spacing-05);
+  padding: 0 var(--cds-spacing-05);
 
   .cds--loading-overlay {
     position: absolute;

@@ -8,7 +8,7 @@
 
 import {Outlet} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
-import {Container} from './styled';
+import {Container, TabContent} from './styled';
 import {TabListNav} from './TabListNav';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {useCurrentPage} from 'modules/hooks/useCurrentPage';
@@ -91,7 +91,9 @@ const BottomPanelTabs: React.FC = () => {
   return (
     <Container>
       <TabListNav label="Process Instance Bottom Panel Tabs" items={tabItems} />
-      <Outlet />
+      <TabContent>
+        <Outlet />
+      </TabContent>
     </Container>
   );
 };
