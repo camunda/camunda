@@ -16,16 +16,16 @@ import java.util.Set;
 /**
  * Evaluates retry policy for batch operation failures.
  *
- * <p>This handler implements exponential backoff retry strategy with configurable parameters for
+ * <p>This policy implements exponential backoff retry strategy with configurable parameters for
  * initial delay, maximum delay, maximum retries, and backoff factor. It determines whether a
  * failure should be retried or should fail immediately.
  *
- * <p>The handler will immediately fail operations that encounter exceptions with specific reasons
+ * <p>The policy will immediately fail operations that encounter exceptions with specific reasons
  * such as NOT_FOUND, NOT_UNIQUE, SECONDARY_STORAGE_NOT_SET, or FORBIDDEN.
  *
  * @see RetryDecision
  */
-public class BatchOperationRetryHandler {
+public class BatchOperationRetryPolicy {
   private static final Set<Reason> FAIL_IMMEDIATELY_REASONS =
       Set.of(
           Reason.NOT_FOUND, Reason.NOT_UNIQUE, Reason.SECONDARY_STORAGE_NOT_SET, Reason.FORBIDDEN);
@@ -35,7 +35,7 @@ public class BatchOperationRetryHandler {
   private final int maxRetries;
   private final int backoffFactor;
 
-  public BatchOperationRetryHandler(
+  public BatchOperationRetryPolicy(
       final Duration initialRetryDelay,
       final Duration maxRetryDelay,
       final int maxRetries,

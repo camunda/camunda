@@ -40,8 +40,7 @@ class BatchOperationInitializationBehaviorTest {
 
   private final ItemProviderFactory itemProviderFactory = mock(ItemProviderFactory.class);
   private final BatchOperationChunkAppender chunkAppender = mock(BatchOperationChunkAppender.class);
-  private final BatchOperationCommandAppender commandBuilder =
-      mock(BatchOperationCommandAppender.class);
+  private final BatchOperationCommandAppender commandBuilder = mock(BatchOperationCommandAppender.class);
   private final BatchOperationMetrics metrics = mock(BatchOperationMetrics.class);
   private final TaskResultBuilder taskResultBuilder = mock(TaskResultBuilder.class);
   private PersistedBatchOperation batchOperation;

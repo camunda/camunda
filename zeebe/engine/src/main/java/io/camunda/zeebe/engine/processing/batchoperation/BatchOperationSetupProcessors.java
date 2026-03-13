@@ -22,7 +22,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperatio
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationCommandAppender;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationExecutionScheduler;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryPolicy;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -89,7 +89,7 @@ public final class BatchOperationSetupProcessors {
             batchOperationMetrics);
 
     final var retryHandler =
-        new BatchOperationRetryHandler(
+        new BatchOperationRetryPolicy(
             engineConfiguration.getBatchOperationQueryRetryInitialDelay(),
             engineConfiguration.getBatchOperationQueryRetryMaxDelay(),
             engineConfiguration.getBatchOperationQueryRetryMax(),
