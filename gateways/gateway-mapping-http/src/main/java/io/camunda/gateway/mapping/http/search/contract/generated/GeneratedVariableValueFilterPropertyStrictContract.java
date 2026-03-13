@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/variables.yaml#/components/schemas/VariableValueFilterProperty
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,15 +16,20 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
-public record GeneratedVariableValueFilterPropertyStrictContract(String name, Object value) {
+public record GeneratedVariableValueFilterPropertyStrictContract(
+    String name,
+    Object value
+) {
 
   public GeneratedVariableValueFilterPropertyStrictContract {
     Objects.requireNonNull(name, "name is required and must not be null");
     Objects.requireNonNull(value, "value is required and must not be null");
   }
+
 
   public static NameStep builder() {
     return new Builder();
@@ -44,10 +52,11 @@ public record GeneratedVariableValueFilterPropertyStrictContract(String name, Ob
       this.value = value;
       return this;
     }
-
     @Override
     public GeneratedVariableValueFilterPropertyStrictContract build() {
-      return new GeneratedVariableValueFilterPropertyStrictContract(this.name, this.value);
+      return new GeneratedVariableValueFilterPropertyStrictContract(
+          this.name,
+          this.value);
     }
   }
 
@@ -63,12 +72,13 @@ public record GeneratedVariableValueFilterPropertyStrictContract(String name, Ob
     GeneratedVariableValueFilterPropertyStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef NAME =
-        ContractPolicy.field("VariableValueFilterProperty", "name");
-    public static final ContractPolicy.FieldRef VALUE =
-        ContractPolicy.field("VariableValueFilterProperty", "value");
+    public static final ContractPolicy.FieldRef NAME = ContractPolicy.field("VariableValueFilterProperty", "name");
+    public static final ContractPolicy.FieldRef VALUE = ContractPolicy.field("VariableValueFilterProperty", "value");
 
     private Fields() {}
   }
+
+
 }

@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/cluster.yaml#/components/schemas/Partition
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,16 +16,22 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
-public record GeneratedPartitionStrictContract(Integer partitionId, String role, String health) {
+public record GeneratedPartitionStrictContract(
+    Integer partitionId,
+    String role,
+    String health
+) {
 
   public GeneratedPartitionStrictContract {
     Objects.requireNonNull(partitionId, "partitionId is required and must not be null");
     Objects.requireNonNull(role, "role is required and must not be null");
     Objects.requireNonNull(health, "health is required and must not be null");
   }
+
 
   public static PartitionIdStep builder() {
     return new Builder();
@@ -52,10 +61,12 @@ public record GeneratedPartitionStrictContract(Integer partitionId, String role,
       this.health = health;
       return this;
     }
-
     @Override
     public GeneratedPartitionStrictContract build() {
-      return new GeneratedPartitionStrictContract(this.partitionId, this.role, this.health);
+      return new GeneratedPartitionStrictContract(
+          this.partitionId,
+          this.role,
+          this.health);
     }
   }
 
@@ -75,13 +86,14 @@ public record GeneratedPartitionStrictContract(Integer partitionId, String role,
     GeneratedPartitionStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef PARTITION_ID =
-        ContractPolicy.field("Partition", "partitionId");
+    public static final ContractPolicy.FieldRef PARTITION_ID = ContractPolicy.field("Partition", "partitionId");
     public static final ContractPolicy.FieldRef ROLE = ContractPolicy.field("Partition", "role");
-    public static final ContractPolicy.FieldRef HEALTH =
-        ContractPolicy.field("Partition", "health");
+    public static final ContractPolicy.FieldRef HEALTH = ContractPolicy.field("Partition", "health");
 
     private Fields() {}
   }
+
+
 }

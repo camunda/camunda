@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/job-metrics.yaml#/components/schemas/JobErrorStatisticsFilter
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,6 +17,7 @@ import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
@@ -22,13 +26,15 @@ public record GeneratedJobErrorStatisticsFilterStrictContract(
     String to,
     String jobType,
     @Nullable Object errorCode,
-    @Nullable Object errorMessage) {
+    @Nullable Object errorMessage
+) {
 
   public GeneratedJobErrorStatisticsFilterStrictContract {
     Objects.requireNonNull(from, "from is required and must not be null");
     Objects.requireNonNull(to, "to is required and must not be null");
     Objects.requireNonNull(jobType, "jobType is required and must not be null");
   }
+
 
   public static FromStep builder() {
     return new Builder();
@@ -68,11 +74,11 @@ public record GeneratedJobErrorStatisticsFilterStrictContract(
     }
 
     @Override
-    public OptionalStep errorCode(
-        final @Nullable Object errorCode, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep errorCode(final @Nullable Object errorCode, final ContractPolicy.FieldPolicy<Object> policy) {
       this.errorCode = policy.apply(errorCode, Fields.ERROR_CODE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep errorMessage(final @Nullable Object errorMessage) {
@@ -81,8 +87,7 @@ public record GeneratedJobErrorStatisticsFilterStrictContract(
     }
 
     @Override
-    public OptionalStep errorMessage(
-        final @Nullable Object errorMessage, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep errorMessage(final @Nullable Object errorMessage, final ContractPolicy.FieldPolicy<Object> policy) {
       this.errorMessage = policy.apply(errorMessage, Fields.ERROR_MESSAGE, null);
       return this;
     }
@@ -90,7 +95,11 @@ public record GeneratedJobErrorStatisticsFilterStrictContract(
     @Override
     public GeneratedJobErrorStatisticsFilterStrictContract build() {
       return new GeneratedJobErrorStatisticsFilterStrictContract(
-          this.from, this.to, this.jobType, this.errorCode, this.errorMessage);
+          this.from,
+          this.to,
+          this.jobType,
+          this.errorCode,
+          this.errorMessage);
     }
   }
 
@@ -107,31 +116,29 @@ public record GeneratedJobErrorStatisticsFilterStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep errorCode(final @Nullable Object errorCode);
+  OptionalStep errorCode(final @Nullable Object errorCode);
 
-    OptionalStep errorCode(
-        final @Nullable Object errorCode, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep errorCode(final @Nullable Object errorCode, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep errorMessage(final @Nullable Object errorMessage);
 
-    OptionalStep errorMessage(
-        final @Nullable Object errorMessage, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep errorMessage(final @Nullable Object errorMessage);
+
+  OptionalStep errorMessage(final @Nullable Object errorMessage, final ContractPolicy.FieldPolicy<Object> policy);
+
 
     GeneratedJobErrorStatisticsFilterStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef FROM =
-        ContractPolicy.field("JobErrorStatisticsFilter", "from");
-    public static final ContractPolicy.FieldRef TO =
-        ContractPolicy.field("JobErrorStatisticsFilter", "to");
-    public static final ContractPolicy.FieldRef JOB_TYPE =
-        ContractPolicy.field("JobErrorStatisticsFilter", "jobType");
-    public static final ContractPolicy.FieldRef ERROR_CODE =
-        ContractPolicy.field("JobErrorStatisticsFilter", "errorCode");
-    public static final ContractPolicy.FieldRef ERROR_MESSAGE =
-        ContractPolicy.field("JobErrorStatisticsFilter", "errorMessage");
+    public static final ContractPolicy.FieldRef FROM = ContractPolicy.field("JobErrorStatisticsFilter", "from");
+    public static final ContractPolicy.FieldRef TO = ContractPolicy.field("JobErrorStatisticsFilter", "to");
+    public static final ContractPolicy.FieldRef JOB_TYPE = ContractPolicy.field("JobErrorStatisticsFilter", "jobType");
+    public static final ContractPolicy.FieldRef ERROR_CODE = ContractPolicy.field("JobErrorStatisticsFilter", "errorCode");
+    public static final ContractPolicy.FieldRef ERROR_MESSAGE = ContractPolicy.field("JobErrorStatisticsFilter", "errorMessage");
 
     private Fields() {}
   }
+
+
 }

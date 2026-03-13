@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/roles.yaml#/components/schemas/RoleUpdateResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,16 +17,21 @@ import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedRoleUpdateStrictContract(
-    String name, @Nullable String description, String roleId) {
+    String name,
+    @Nullable String description,
+    String roleId
+) {
 
   public GeneratedRoleUpdateStrictContract {
     Objects.requireNonNull(name, "name is required and must not be null");
     Objects.requireNonNull(roleId, "roleId is required and must not be null");
   }
+
 
   public static NameStep builder() {
     return new Builder();
@@ -55,15 +63,17 @@ public record GeneratedRoleUpdateStrictContract(
     }
 
     @Override
-    public OptionalStep description(
-        final @Nullable String description, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep description(final @Nullable String description, final ContractPolicy.FieldPolicy<String> policy) {
       this.description = policy.apply(description, Fields.DESCRIPTION, null);
       return this;
     }
 
     @Override
     public GeneratedRoleUpdateStrictContract build() {
-      return new GeneratedRoleUpdateStrictContract(this.name, this.description, this.roleId);
+      return new GeneratedRoleUpdateStrictContract(
+          this.name,
+          this.description,
+          this.roleId);
     }
   }
 
@@ -76,22 +86,22 @@ public record GeneratedRoleUpdateStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep description(final @Nullable String description);
+  OptionalStep description(final @Nullable String description);
 
-    OptionalStep description(
-        final @Nullable String description, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep description(final @Nullable String description, final ContractPolicy.FieldPolicy<String> policy);
+
 
     GeneratedRoleUpdateStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef NAME =
-        ContractPolicy.field("RoleUpdateResult", "name");
-    public static final ContractPolicy.FieldRef DESCRIPTION =
-        ContractPolicy.field("RoleUpdateResult", "description");
-    public static final ContractPolicy.FieldRef ROLE_ID =
-        ContractPolicy.field("RoleUpdateResult", "roleId");
+    public static final ContractPolicy.FieldRef NAME = ContractPolicy.field("RoleUpdateResult", "name");
+    public static final ContractPolicy.FieldRef DESCRIPTION = ContractPolicy.field("RoleUpdateResult", "description");
+    public static final ContractPolicy.FieldRef ROLE_ID = ContractPolicy.field("RoleUpdateResult", "roleId");
 
     private Fields() {}
   }
+
+
 }

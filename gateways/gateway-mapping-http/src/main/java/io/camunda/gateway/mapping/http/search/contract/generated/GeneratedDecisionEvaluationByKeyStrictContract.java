@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/decision-definitions.yaml#/components/schemas/DecisionEvaluationByKey
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -15,17 +18,18 @@ import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedDecisionEvaluationByKeyStrictContract(
     String decisionDefinitionKey,
     java.util.@Nullable Map<String, Object> variables,
-    @Nullable String tenantId) {
+    @Nullable String tenantId
+) {
 
   public GeneratedDecisionEvaluationByKeyStrictContract {
-    Objects.requireNonNull(
-        decisionDefinitionKey, "decisionDefinitionKey is required and must not be null");
+    Objects.requireNonNull(decisionDefinitionKey, "decisionDefinitionKey is required and must not be null");
   }
 
   public static String coerceDecisionDefinitionKey(final Object value) {
@@ -41,6 +45,8 @@ public record GeneratedDecisionEvaluationByKeyStrictContract(
     throw new IllegalArgumentException(
         "decisionDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
+
+
 
   public static DecisionDefinitionKeyStep builder() {
     return new Builder();
@@ -66,12 +72,11 @@ public record GeneratedDecisionEvaluationByKeyStrictContract(
     }
 
     @Override
-    public OptionalStep variables(
-        final java.util.@Nullable Map<String, Object> variables,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
+    public OptionalStep variables(final java.util.@Nullable Map<String, Object> variables, final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
       this.variables = policy.apply(variables, Fields.VARIABLES, null);
       return this;
     }
+
 
     @Override
     public OptionalStep tenantId(final @Nullable String tenantId) {
@@ -80,8 +85,7 @@ public record GeneratedDecisionEvaluationByKeyStrictContract(
     }
 
     @Override
-    public OptionalStep tenantId(
-        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep tenantId(final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
@@ -89,7 +93,9 @@ public record GeneratedDecisionEvaluationByKeyStrictContract(
     @Override
     public GeneratedDecisionEvaluationByKeyStrictContract build() {
       return new GeneratedDecisionEvaluationByKeyStrictContract(
-          coerceDecisionDefinitionKey(this.decisionDefinitionKey), this.variables, this.tenantId);
+          coerceDecisionDefinitionKey(this.decisionDefinitionKey),
+          this.variables,
+          this.tenantId);
     }
   }
 
@@ -98,28 +104,27 @@ public record GeneratedDecisionEvaluationByKeyStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep variables(final java.util.@Nullable Map<String, Object> variables);
+  OptionalStep variables(final java.util.@Nullable Map<String, Object> variables);
 
-    OptionalStep variables(
-        final java.util.@Nullable Map<String, Object> variables,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
+  OptionalStep variables(final java.util.@Nullable Map<String, Object> variables, final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
 
-    OptionalStep tenantId(final @Nullable String tenantId);
 
-    OptionalStep tenantId(
-        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep tenantId(final @Nullable String tenantId);
+
+  OptionalStep tenantId(final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+
 
     GeneratedDecisionEvaluationByKeyStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef DECISION_DEFINITION_KEY =
-        ContractPolicy.field("DecisionEvaluationByKey", "decisionDefinitionKey");
-    public static final ContractPolicy.FieldRef VARIABLES =
-        ContractPolicy.field("DecisionEvaluationByKey", "variables");
-    public static final ContractPolicy.FieldRef TENANT_ID =
-        ContractPolicy.field("DecisionEvaluationByKey", "tenantId");
+    public static final ContractPolicy.FieldRef DECISION_DEFINITION_KEY = ContractPolicy.field("DecisionEvaluationByKey", "decisionDefinitionKey");
+    public static final ContractPolicy.FieldRef VARIABLES = ContractPolicy.field("DecisionEvaluationByKey", "variables");
+    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("DecisionEvaluationByKey", "tenantId");
 
     private Fields() {}
   }
+
+
 }

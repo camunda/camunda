@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/tenants.yaml#/components/schemas/TenantClientResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,14 +16,18 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
-public record GeneratedTenantClientStrictContract(String clientId) {
+public record GeneratedTenantClientStrictContract(
+    String clientId
+) {
 
   public GeneratedTenantClientStrictContract {
     Objects.requireNonNull(clientId, "clientId is required and must not be null");
   }
+
 
   public static ClientIdStep builder() {
     return new Builder();
@@ -36,10 +43,10 @@ public record GeneratedTenantClientStrictContract(String clientId) {
       this.clientId = clientId;
       return this;
     }
-
     @Override
     public GeneratedTenantClientStrictContract build() {
-      return new GeneratedTenantClientStrictContract(this.clientId);
+      return new GeneratedTenantClientStrictContract(
+          this.clientId);
     }
   }
 
@@ -51,10 +58,12 @@ public record GeneratedTenantClientStrictContract(String clientId) {
     GeneratedTenantClientStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef CLIENT_ID =
-        ContractPolicy.field("TenantClientResult", "clientId");
+    public static final ContractPolicy.FieldRef CLIENT_ID = ContractPolicy.field("TenantClientResult", "clientId");
 
     private Fields() {}
   }
+
+
 }

@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/filters.yaml#/components/schemas/BasicStringFilter
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,6 +16,7 @@ import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
@@ -21,7 +25,9 @@ public record GeneratedBasicStringFilterStrictContract(
     @Nullable String neq,
     @Nullable Boolean exists,
     java.util.@Nullable List<String> in,
-    java.util.@Nullable List<String> notIn) {
+    java.util.@Nullable List<String> notIn
+) {
+
 
   public static OptionalStep builder() {
     return new Builder();
@@ -43,11 +49,11 @@ public record GeneratedBasicStringFilterStrictContract(
     }
 
     @Override
-    public OptionalStep eq(
-        final @Nullable String eq, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep eq(final @Nullable String eq, final ContractPolicy.FieldPolicy<String> policy) {
       this.eq = policy.apply(eq, Fields.EQ, null);
       return this;
     }
+
 
     @Override
     public OptionalStep neq(final @Nullable String neq) {
@@ -56,11 +62,11 @@ public record GeneratedBasicStringFilterStrictContract(
     }
 
     @Override
-    public OptionalStep neq(
-        final @Nullable String neq, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep neq(final @Nullable String neq, final ContractPolicy.FieldPolicy<String> policy) {
       this.neq = policy.apply(neq, Fields.NEQ, null);
       return this;
     }
+
 
     @Override
     public OptionalStep exists(final @Nullable Boolean exists) {
@@ -69,11 +75,11 @@ public record GeneratedBasicStringFilterStrictContract(
     }
 
     @Override
-    public OptionalStep exists(
-        final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public OptionalStep exists(final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.exists = policy.apply(exists, Fields.EXISTS, null);
       return this;
     }
+
 
     @Override
     public OptionalStep in(final java.util.@Nullable List<String> in) {
@@ -82,12 +88,11 @@ public record GeneratedBasicStringFilterStrictContract(
     }
 
     @Override
-    public OptionalStep in(
-        final java.util.@Nullable List<String> in,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
+    public OptionalStep in(final java.util.@Nullable List<String> in, final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
       this.in = policy.apply(in, Fields.IN, null);
       return this;
     }
+
 
     @Override
     public OptionalStep notIn(final java.util.@Nullable List<String> notIn) {
@@ -96,9 +101,7 @@ public record GeneratedBasicStringFilterStrictContract(
     }
 
     @Override
-    public OptionalStep notIn(
-        final java.util.@Nullable List<String> notIn,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
+    public OptionalStep notIn(final java.util.@Nullable List<String> notIn, final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
       this.notIn = policy.apply(notIn, Fields.NOT_IN, null);
       return this;
     }
@@ -106,51 +109,53 @@ public record GeneratedBasicStringFilterStrictContract(
     @Override
     public GeneratedBasicStringFilterStrictContract build() {
       return new GeneratedBasicStringFilterStrictContract(
-          this.eq, this.neq, this.exists, this.in, this.notIn);
+          this.eq,
+          this.neq,
+          this.exists,
+          this.in,
+          this.notIn);
     }
   }
 
   public interface OptionalStep {
-    OptionalStep eq(final @Nullable String eq);
+  OptionalStep eq(final @Nullable String eq);
 
-    OptionalStep eq(final @Nullable String eq, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep eq(final @Nullable String eq, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep neq(final @Nullable String neq);
 
-    OptionalStep neq(final @Nullable String neq, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep neq(final @Nullable String neq);
 
-    OptionalStep exists(final @Nullable Boolean exists);
+  OptionalStep neq(final @Nullable String neq, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep exists(
-        final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep in(final java.util.@Nullable List<String> in);
+  OptionalStep exists(final @Nullable Boolean exists);
 
-    OptionalStep in(
-        final java.util.@Nullable List<String> in,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
+  OptionalStep exists(final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep notIn(final java.util.@Nullable List<String> notIn);
 
-    OptionalStep notIn(
-        final java.util.@Nullable List<String> notIn,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
+  OptionalStep in(final java.util.@Nullable List<String> in);
+
+  OptionalStep in(final java.util.@Nullable List<String> in, final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
+
+
+  OptionalStep notIn(final java.util.@Nullable List<String> notIn);
+
+  OptionalStep notIn(final java.util.@Nullable List<String> notIn, final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
+
 
     GeneratedBasicStringFilterStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef EQ =
-        ContractPolicy.field("BasicStringFilter", "$eq");
-    public static final ContractPolicy.FieldRef NEQ =
-        ContractPolicy.field("BasicStringFilter", "$neq");
-    public static final ContractPolicy.FieldRef EXISTS =
-        ContractPolicy.field("BasicStringFilter", "$exists");
-    public static final ContractPolicy.FieldRef IN =
-        ContractPolicy.field("BasicStringFilter", "$in");
-    public static final ContractPolicy.FieldRef NOT_IN =
-        ContractPolicy.field("BasicStringFilter", "$notIn");
+    public static final ContractPolicy.FieldRef EQ = ContractPolicy.field("BasicStringFilter", "$eq");
+    public static final ContractPolicy.FieldRef NEQ = ContractPolicy.field("BasicStringFilter", "$neq");
+    public static final ContractPolicy.FieldRef EXISTS = ContractPolicy.field("BasicStringFilter", "$exists");
+    public static final ContractPolicy.FieldRef IN = ContractPolicy.field("BasicStringFilter", "$in");
+    public static final ContractPolicy.FieldRef NOT_IN = ContractPolicy.field("BasicStringFilter", "$notIn");
 
     private Fields() {}
   }
+
+
 }

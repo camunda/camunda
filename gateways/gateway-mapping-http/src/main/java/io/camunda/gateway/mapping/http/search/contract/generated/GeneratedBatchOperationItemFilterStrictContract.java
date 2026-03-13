@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/batch-operations.yaml#/components/schemas/BatchOperationItemFilter
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,6 +16,7 @@ import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
@@ -21,7 +25,9 @@ public record GeneratedBatchOperationItemFilterStrictContract(
     @Nullable Object itemKey,
     @Nullable Object processInstanceKey,
     @Nullable String state,
-    @Nullable Object operationType) {
+    @Nullable Object operationType
+) {
+
 
   public static OptionalStep builder() {
     return new Builder();
@@ -43,11 +49,11 @@ public record GeneratedBatchOperationItemFilterStrictContract(
     }
 
     @Override
-    public OptionalStep batchOperationKey(
-        final @Nullable Object batchOperationKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep batchOperationKey(final @Nullable Object batchOperationKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.batchOperationKey = policy.apply(batchOperationKey, Fields.BATCH_OPERATION_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep itemKey(final @Nullable Object itemKey) {
@@ -56,11 +62,11 @@ public record GeneratedBatchOperationItemFilterStrictContract(
     }
 
     @Override
-    public OptionalStep itemKey(
-        final @Nullable Object itemKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep itemKey(final @Nullable Object itemKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.itemKey = policy.apply(itemKey, Fields.ITEM_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep processInstanceKey(final @Nullable Object processInstanceKey) {
@@ -69,12 +75,11 @@ public record GeneratedBatchOperationItemFilterStrictContract(
     }
 
     @Override
-    public OptionalStep processInstanceKey(
-        final @Nullable Object processInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep processInstanceKey(final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep state(final @Nullable String state) {
@@ -83,11 +88,11 @@ public record GeneratedBatchOperationItemFilterStrictContract(
     }
 
     @Override
-    public OptionalStep state(
-        final @Nullable String state, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep state(final @Nullable String state, final ContractPolicy.FieldPolicy<String> policy) {
       this.state = policy.apply(state, Fields.STATE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep operationType(final @Nullable Object operationType) {
@@ -96,8 +101,7 @@ public record GeneratedBatchOperationItemFilterStrictContract(
     }
 
     @Override
-    public OptionalStep operationType(
-        final @Nullable Object operationType, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep operationType(final @Nullable Object operationType, final ContractPolicy.FieldPolicy<Object> policy) {
       this.operationType = policy.apply(operationType, Fields.OPERATION_TYPE, null);
       return this;
     }
@@ -114,46 +118,44 @@ public record GeneratedBatchOperationItemFilterStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep batchOperationKey(final @Nullable Object batchOperationKey);
+  OptionalStep batchOperationKey(final @Nullable Object batchOperationKey);
 
-    OptionalStep batchOperationKey(
-        final @Nullable Object batchOperationKey, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep batchOperationKey(final @Nullable Object batchOperationKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep itemKey(final @Nullable Object itemKey);
 
-    OptionalStep itemKey(
-        final @Nullable Object itemKey, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep itemKey(final @Nullable Object itemKey);
 
-    OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
+  OptionalStep itemKey(final @Nullable Object itemKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processInstanceKey(
-        final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep state(final @Nullable String state);
+  OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
 
-    OptionalStep state(
-        final @Nullable String state, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep processInstanceKey(final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep operationType(final @Nullable Object operationType);
 
-    OptionalStep operationType(
-        final @Nullable Object operationType, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep state(final @Nullable String state);
+
+  OptionalStep state(final @Nullable String state, final ContractPolicy.FieldPolicy<String> policy);
+
+
+  OptionalStep operationType(final @Nullable Object operationType);
+
+  OptionalStep operationType(final @Nullable Object operationType, final ContractPolicy.FieldPolicy<Object> policy);
+
 
     GeneratedBatchOperationItemFilterStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef BATCH_OPERATION_KEY =
-        ContractPolicy.field("BatchOperationItemFilter", "batchOperationKey");
-    public static final ContractPolicy.FieldRef ITEM_KEY =
-        ContractPolicy.field("BatchOperationItemFilter", "itemKey");
-    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY =
-        ContractPolicy.field("BatchOperationItemFilter", "processInstanceKey");
-    public static final ContractPolicy.FieldRef STATE =
-        ContractPolicy.field("BatchOperationItemFilter", "state");
-    public static final ContractPolicy.FieldRef OPERATION_TYPE =
-        ContractPolicy.field("BatchOperationItemFilter", "operationType");
+    public static final ContractPolicy.FieldRef BATCH_OPERATION_KEY = ContractPolicy.field("BatchOperationItemFilter", "batchOperationKey");
+    public static final ContractPolicy.FieldRef ITEM_KEY = ContractPolicy.field("BatchOperationItemFilter", "itemKey");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY = ContractPolicy.field("BatchOperationItemFilter", "processInstanceKey");
+    public static final ContractPolicy.FieldRef STATE = ContractPolicy.field("BatchOperationItemFilter", "state");
+    public static final ContractPolicy.FieldRef OPERATION_TYPE = ContractPolicy.field("BatchOperationItemFilter", "operationType");
 
     private Fields() {}
   }
+
+
 }

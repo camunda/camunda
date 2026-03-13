@@ -442,7 +442,7 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toVariableItem(entity);
 
     // then
-    assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
+    assertThat(response.rootProcessInstanceKey()).isEqualTo("999");
   }
 
   @Test
@@ -815,6 +815,6 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toVariableItem(entity);
 
     // then
-    assertThat(response.getRootProcessInstanceKey()).isNull();
+    assertThat(response.rootProcessInstanceKey()).isNull();
   }
 }

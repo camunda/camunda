@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/cluster-variables.yaml#/components/schemas/AdvancedClusterVariableScopeFilter
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,6 +16,7 @@ import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
@@ -21,7 +25,9 @@ public record GeneratedAdvancedClusterVariableScopeFilterStrictContract(
     io.camunda.gateway.protocol.model.@Nullable ClusterVariableScopeEnum neq,
     @Nullable Boolean exists,
     java.util.@Nullable List<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum> in,
-    @Nullable String like) {
+    @Nullable String like
+) {
+
 
   public static OptionalStep builder() {
     return new Builder();
@@ -37,36 +43,30 @@ public record GeneratedAdvancedClusterVariableScopeFilterStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep eq(
-        final io.camunda.gateway.protocol.model.@Nullable ClusterVariableScopeEnum eq) {
+    public OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable ClusterVariableScopeEnum eq) {
       this.eq = eq;
       return this;
     }
 
     @Override
-    public OptionalStep eq(
-        final io.camunda.gateway.protocol.model.@Nullable ClusterVariableScopeEnum eq,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum>
-            policy) {
+    public OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable ClusterVariableScopeEnum eq, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum> policy) {
       this.eq = policy.apply(eq, Fields.EQ, null);
       return this;
     }
 
+
     @Override
-    public OptionalStep neq(
-        final io.camunda.gateway.protocol.model.@Nullable ClusterVariableScopeEnum neq) {
+    public OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable ClusterVariableScopeEnum neq) {
       this.neq = neq;
       return this;
     }
 
     @Override
-    public OptionalStep neq(
-        final io.camunda.gateway.protocol.model.@Nullable ClusterVariableScopeEnum neq,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum>
-            policy) {
+    public OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable ClusterVariableScopeEnum neq, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum> policy) {
       this.neq = policy.apply(neq, Fields.NEQ, null);
       return this;
     }
+
 
     @Override
     public OptionalStep exists(final @Nullable Boolean exists) {
@@ -75,30 +75,24 @@ public record GeneratedAdvancedClusterVariableScopeFilterStrictContract(
     }
 
     @Override
-    public OptionalStep exists(
-        final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public OptionalStep exists(final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.exists = policy.apply(exists, Fields.EXISTS, null);
       return this;
     }
 
+
     @Override
-    public OptionalStep in(
-        final java.util.@Nullable List<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum>
-            in) {
+    public OptionalStep in(final java.util.@Nullable List<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum> in) {
       this.in = in;
       return this;
     }
 
     @Override
-    public OptionalStep in(
-        final java.util.@Nullable List<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum>
-            in,
-        final ContractPolicy.FieldPolicy<
-                java.util.List<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum>>
-            policy) {
+    public OptionalStep in(final java.util.@Nullable List<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum> in, final ContractPolicy.FieldPolicy<java.util.List<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum>> policy) {
       this.in = policy.apply(in, Fields.IN, null);
       return this;
     }
+
 
     @Override
     public OptionalStep like(final @Nullable String like) {
@@ -107,8 +101,7 @@ public record GeneratedAdvancedClusterVariableScopeFilterStrictContract(
     }
 
     @Override
-    public OptionalStep like(
-        final @Nullable String like, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep like(final @Nullable String like, final ContractPolicy.FieldPolicy<String> policy) {
       this.like = policy.apply(like, Fields.LIKE, null);
       return this;
     }
@@ -116,61 +109,53 @@ public record GeneratedAdvancedClusterVariableScopeFilterStrictContract(
     @Override
     public GeneratedAdvancedClusterVariableScopeFilterStrictContract build() {
       return new GeneratedAdvancedClusterVariableScopeFilterStrictContract(
-          this.eq, this.neq, this.exists, this.in, this.like);
+          this.eq,
+          this.neq,
+          this.exists,
+          this.in,
+          this.like);
     }
   }
 
   public interface OptionalStep {
-    OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable ClusterVariableScopeEnum eq);
+  OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable ClusterVariableScopeEnum eq);
 
-    OptionalStep eq(
-        final io.camunda.gateway.protocol.model.@Nullable ClusterVariableScopeEnum eq,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum>
-            policy);
+  OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable ClusterVariableScopeEnum eq, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum> policy);
 
-    OptionalStep neq(
-        final io.camunda.gateway.protocol.model.@Nullable ClusterVariableScopeEnum neq);
 
-    OptionalStep neq(
-        final io.camunda.gateway.protocol.model.@Nullable ClusterVariableScopeEnum neq,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum>
-            policy);
+  OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable ClusterVariableScopeEnum neq);
 
-    OptionalStep exists(final @Nullable Boolean exists);
+  OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable ClusterVariableScopeEnum neq, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum> policy);
 
-    OptionalStep exists(
-        final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep in(
-        final java.util.@Nullable List<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum>
-            in);
+  OptionalStep exists(final @Nullable Boolean exists);
 
-    OptionalStep in(
-        final java.util.@Nullable List<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum>
-            in,
-        final ContractPolicy.FieldPolicy<
-                java.util.List<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum>>
-            policy);
+  OptionalStep exists(final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep like(final @Nullable String like);
 
-    OptionalStep like(final @Nullable String like, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep in(final java.util.@Nullable List<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum> in);
+
+  OptionalStep in(final java.util.@Nullable List<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum> in, final ContractPolicy.FieldPolicy<java.util.List<io.camunda.gateway.protocol.model.ClusterVariableScopeEnum>> policy);
+
+
+  OptionalStep like(final @Nullable String like);
+
+  OptionalStep like(final @Nullable String like, final ContractPolicy.FieldPolicy<String> policy);
+
 
     GeneratedAdvancedClusterVariableScopeFilterStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef EQ =
-        ContractPolicy.field("AdvancedClusterVariableScopeFilter", "$eq");
-    public static final ContractPolicy.FieldRef NEQ =
-        ContractPolicy.field("AdvancedClusterVariableScopeFilter", "$neq");
-    public static final ContractPolicy.FieldRef EXISTS =
-        ContractPolicy.field("AdvancedClusterVariableScopeFilter", "$exists");
-    public static final ContractPolicy.FieldRef IN =
-        ContractPolicy.field("AdvancedClusterVariableScopeFilter", "$in");
-    public static final ContractPolicy.FieldRef LIKE =
-        ContractPolicy.field("AdvancedClusterVariableScopeFilter", "$like");
+    public static final ContractPolicy.FieldRef EQ = ContractPolicy.field("AdvancedClusterVariableScopeFilter", "$eq");
+    public static final ContractPolicy.FieldRef NEQ = ContractPolicy.field("AdvancedClusterVariableScopeFilter", "$neq");
+    public static final ContractPolicy.FieldRef EXISTS = ContractPolicy.field("AdvancedClusterVariableScopeFilter", "$exists");
+    public static final ContractPolicy.FieldRef IN = ContractPolicy.field("AdvancedClusterVariableScopeFilter", "$in");
+    public static final ContractPolicy.FieldRef LIKE = ContractPolicy.field("AdvancedClusterVariableScopeFilter", "$like");
 
     private Fields() {}
   }
+
+
 }

@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/process-instances.yaml#/components/schemas/ProcessInstanceCallHierarchyEntry
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,19 +17,20 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessInstanceCallHierarchyEntryStrictContract(
-    String processInstanceKey, String processDefinitionKey, String processDefinitionName) {
+    String processInstanceKey,
+    String processDefinitionKey,
+    String processDefinitionName
+) {
 
   public GeneratedProcessInstanceCallHierarchyEntryStrictContract {
-    Objects.requireNonNull(
-        processInstanceKey, "processInstanceKey is required and must not be null");
-    Objects.requireNonNull(
-        processDefinitionKey, "processDefinitionKey is required and must not be null");
-    Objects.requireNonNull(
-        processDefinitionName, "processDefinitionName is required and must not be null");
+    Objects.requireNonNull(processInstanceKey, "processInstanceKey is required and must not be null");
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey is required and must not be null");
+    Objects.requireNonNull(processDefinitionName, "processDefinitionName is required and must not be null");
   }
 
   public static String coerceProcessInstanceKey(final Object value) {
@@ -43,6 +47,7 @@ public record GeneratedProcessInstanceCallHierarchyEntryStrictContract(
         "processInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
   public static String coerceProcessDefinitionKey(final Object value) {
     if (value == null) {
       return null;
@@ -57,15 +62,13 @@ public record GeneratedProcessInstanceCallHierarchyEntryStrictContract(
         "processDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
+
   public static ProcessInstanceKeyStep builder() {
     return new Builder();
   }
 
-  public static final class Builder
-      implements ProcessInstanceKeyStep,
-          ProcessDefinitionKeyStep,
-          ProcessDefinitionNameStep,
-          OptionalStep {
+  public static final class Builder implements ProcessInstanceKeyStep, ProcessDefinitionKeyStep, ProcessDefinitionNameStep, OptionalStep {
     private Object processInstanceKey;
     private Object processDefinitionKey;
     private String processDefinitionName;
@@ -89,7 +92,6 @@ public record GeneratedProcessInstanceCallHierarchyEntryStrictContract(
       this.processDefinitionName = processDefinitionName;
       return this;
     }
-
     @Override
     public GeneratedProcessInstanceCallHierarchyEntryStrictContract build() {
       return new GeneratedProcessInstanceCallHierarchyEntryStrictContract(
@@ -115,14 +117,14 @@ public record GeneratedProcessInstanceCallHierarchyEntryStrictContract(
     GeneratedProcessInstanceCallHierarchyEntryStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY =
-        ContractPolicy.field("ProcessInstanceCallHierarchyEntry", "processInstanceKey");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY =
-        ContractPolicy.field("ProcessInstanceCallHierarchyEntry", "processDefinitionKey");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_NAME =
-        ContractPolicy.field("ProcessInstanceCallHierarchyEntry", "processDefinitionName");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY = ContractPolicy.field("ProcessInstanceCallHierarchyEntry", "processInstanceKey");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY = ContractPolicy.field("ProcessInstanceCallHierarchyEntry", "processDefinitionKey");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_NAME = ContractPolicy.field("ProcessInstanceCallHierarchyEntry", "processDefinitionName");
 
     private Fields() {}
   }
+
+
 }

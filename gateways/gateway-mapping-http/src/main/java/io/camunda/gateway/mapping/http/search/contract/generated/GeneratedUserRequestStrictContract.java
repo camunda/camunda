@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/users.yaml#/components/schemas/UserRequest
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,16 +17,22 @@ import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedUserRequestStrictContract(
-    String password, String username, @Nullable String name, @Nullable String email) {
+    String password,
+    String username,
+    @Nullable String name,
+    @Nullable String email
+) {
 
   public GeneratedUserRequestStrictContract {
     Objects.requireNonNull(password, "password is required and must not be null");
     Objects.requireNonNull(username, "username is required and must not be null");
   }
+
 
   public static PasswordStep builder() {
     return new Builder();
@@ -56,11 +65,11 @@ public record GeneratedUserRequestStrictContract(
     }
 
     @Override
-    public OptionalStep name(
-        final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep name(final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy) {
       this.name = policy.apply(name, Fields.NAME, null);
       return this;
     }
+
 
     @Override
     public OptionalStep email(final @Nullable String email) {
@@ -69,8 +78,7 @@ public record GeneratedUserRequestStrictContract(
     }
 
     @Override
-    public OptionalStep email(
-        final @Nullable String email, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep email(final @Nullable String email, final ContractPolicy.FieldPolicy<String> policy) {
       this.email = policy.apply(email, Fields.EMAIL, null);
       return this;
     }
@@ -78,7 +86,10 @@ public record GeneratedUserRequestStrictContract(
     @Override
     public GeneratedUserRequestStrictContract build() {
       return new GeneratedUserRequestStrictContract(
-          this.password, this.username, this.name, this.email);
+          this.password,
+          this.username,
+          this.name,
+          this.email);
     }
   }
 
@@ -91,27 +102,28 @@ public record GeneratedUserRequestStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep name(final @Nullable String name);
+  OptionalStep name(final @Nullable String name);
 
-    OptionalStep name(final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep name(final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep email(final @Nullable String email);
 
-    OptionalStep email(
-        final @Nullable String email, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep email(final @Nullable String email);
+
+  OptionalStep email(final @Nullable String email, final ContractPolicy.FieldPolicy<String> policy);
+
 
     GeneratedUserRequestStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef PASSWORD =
-        ContractPolicy.field("UserRequest", "password");
-    public static final ContractPolicy.FieldRef USERNAME =
-        ContractPolicy.field("UserRequest", "username");
+    public static final ContractPolicy.FieldRef PASSWORD = ContractPolicy.field("UserRequest", "password");
+    public static final ContractPolicy.FieldRef USERNAME = ContractPolicy.field("UserRequest", "username");
     public static final ContractPolicy.FieldRef NAME = ContractPolicy.field("UserRequest", "name");
-    public static final ContractPolicy.FieldRef EMAIL =
-        ContractPolicy.field("UserRequest", "email");
+    public static final ContractPolicy.FieldRef EMAIL = ContractPolicy.field("UserRequest", "email");
 
     private Fields() {}
   }
+
+
 }

@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/decision-definitions.yaml#/components/schemas/DecisionDefinitionFilter
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,6 +16,7 @@ import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
@@ -27,7 +31,8 @@ public record GeneratedDecisionDefinitionFilterStrictContract(
     @Nullable String decisionDefinitionKey,
     @Nullable String decisionRequirementsKey,
     @Nullable String decisionRequirementsName,
-    @Nullable Integer decisionRequirementsVersion) {
+    @Nullable Integer decisionRequirementsVersion
+) {
 
   public static String coerceDecisionDefinitionKey(final Object value) {
     if (value == null) {
@@ -43,6 +48,7 @@ public record GeneratedDecisionDefinitionFilterStrictContract(
         "decisionDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
   public static String coerceDecisionRequirementsKey(final Object value) {
     if (value == null) {
       return null;
@@ -54,9 +60,10 @@ public record GeneratedDecisionDefinitionFilterStrictContract(
       return KeyUtil.keyToString(numberValue.longValue());
     }
     throw new IllegalArgumentException(
-        "decisionRequirementsKey must be a String or Number, but was "
-            + value.getClass().getName());
+        "decisionRequirementsKey must be a String or Number, but was " + value.getClass().getName());
   }
+
+
 
   public static OptionalStep builder() {
     return new Builder();
@@ -83,13 +90,11 @@ public record GeneratedDecisionDefinitionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep decisionDefinitionId(
-        final @Nullable String decisionDefinitionId,
-        final ContractPolicy.FieldPolicy<String> policy) {
-      this.decisionDefinitionId =
-          policy.apply(decisionDefinitionId, Fields.DECISION_DEFINITION_ID, null);
+    public OptionalStep decisionDefinitionId(final @Nullable String decisionDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+      this.decisionDefinitionId = policy.apply(decisionDefinitionId, Fields.DECISION_DEFINITION_ID, null);
       return this;
     }
+
 
     @Override
     public OptionalStep name(final @Nullable String name) {
@@ -98,11 +103,11 @@ public record GeneratedDecisionDefinitionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep name(
-        final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep name(final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy) {
       this.name = policy.apply(name, Fields.NAME, null);
       return this;
     }
+
 
     @Override
     public OptionalStep isLatestVersion(final @Nullable Boolean isLatestVersion) {
@@ -111,11 +116,11 @@ public record GeneratedDecisionDefinitionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep isLatestVersion(
-        final @Nullable Boolean isLatestVersion, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public OptionalStep isLatestVersion(final @Nullable Boolean isLatestVersion, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.isLatestVersion = policy.apply(isLatestVersion, Fields.IS_LATEST_VERSION, null);
       return this;
     }
+
 
     @Override
     public OptionalStep version(final @Nullable Integer version) {
@@ -124,11 +129,11 @@ public record GeneratedDecisionDefinitionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep version(
-        final @Nullable Integer version, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public OptionalStep version(final @Nullable Integer version, final ContractPolicy.FieldPolicy<Integer> policy) {
       this.version = policy.apply(version, Fields.VERSION, null);
       return this;
     }
+
 
     @Override
     public OptionalStep decisionRequirementsId(final @Nullable String decisionRequirementsId) {
@@ -137,13 +142,11 @@ public record GeneratedDecisionDefinitionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep decisionRequirementsId(
-        final @Nullable String decisionRequirementsId,
-        final ContractPolicy.FieldPolicy<String> policy) {
-      this.decisionRequirementsId =
-          policy.apply(decisionRequirementsId, Fields.DECISION_REQUIREMENTS_ID, null);
+    public OptionalStep decisionRequirementsId(final @Nullable String decisionRequirementsId, final ContractPolicy.FieldPolicy<String> policy) {
+      this.decisionRequirementsId = policy.apply(decisionRequirementsId, Fields.DECISION_REQUIREMENTS_ID, null);
       return this;
     }
+
 
     @Override
     public OptionalStep tenantId(final @Nullable String tenantId) {
@@ -152,11 +155,11 @@ public record GeneratedDecisionDefinitionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep tenantId(
-        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep tenantId(final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
+
 
     @Override
     public OptionalStep decisionDefinitionKey(final @Nullable String decisionDefinitionKey) {
@@ -170,22 +173,17 @@ public record GeneratedDecisionDefinitionFilterStrictContract(
       return this;
     }
 
-    public Builder decisionDefinitionKey(
-        final @Nullable String decisionDefinitionKey,
-        final ContractPolicy.FieldPolicy<String> policy) {
-      this.decisionDefinitionKey =
-          policy.apply(decisionDefinitionKey, Fields.DECISION_DEFINITION_KEY, null);
+    public Builder decisionDefinitionKey(final @Nullable String decisionDefinitionKey, final ContractPolicy.FieldPolicy<String> policy) {
+      this.decisionDefinitionKey = policy.apply(decisionDefinitionKey, Fields.DECISION_DEFINITION_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep decisionDefinitionKey(
-        final @Nullable Object decisionDefinitionKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
-      this.decisionDefinitionKey =
-          policy.apply(decisionDefinitionKey, Fields.DECISION_DEFINITION_KEY, null);
+    public OptionalStep decisionDefinitionKey(final @Nullable Object decisionDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.decisionDefinitionKey = policy.apply(decisionDefinitionKey, Fields.DECISION_DEFINITION_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep decisionRequirementsKey(final @Nullable String decisionRequirementsKey) {
@@ -199,22 +197,17 @@ public record GeneratedDecisionDefinitionFilterStrictContract(
       return this;
     }
 
-    public Builder decisionRequirementsKey(
-        final @Nullable String decisionRequirementsKey,
-        final ContractPolicy.FieldPolicy<String> policy) {
-      this.decisionRequirementsKey =
-          policy.apply(decisionRequirementsKey, Fields.DECISION_REQUIREMENTS_KEY, null);
+    public Builder decisionRequirementsKey(final @Nullable String decisionRequirementsKey, final ContractPolicy.FieldPolicy<String> policy) {
+      this.decisionRequirementsKey = policy.apply(decisionRequirementsKey, Fields.DECISION_REQUIREMENTS_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep decisionRequirementsKey(
-        final @Nullable Object decisionRequirementsKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
-      this.decisionRequirementsKey =
-          policy.apply(decisionRequirementsKey, Fields.DECISION_REQUIREMENTS_KEY, null);
+    public OptionalStep decisionRequirementsKey(final @Nullable Object decisionRequirementsKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.decisionRequirementsKey = policy.apply(decisionRequirementsKey, Fields.DECISION_REQUIREMENTS_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep decisionRequirementsName(final @Nullable String decisionRequirementsName) {
@@ -223,27 +216,21 @@ public record GeneratedDecisionDefinitionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep decisionRequirementsName(
-        final @Nullable String decisionRequirementsName,
-        final ContractPolicy.FieldPolicy<String> policy) {
-      this.decisionRequirementsName =
-          policy.apply(decisionRequirementsName, Fields.DECISION_REQUIREMENTS_NAME, null);
+    public OptionalStep decisionRequirementsName(final @Nullable String decisionRequirementsName, final ContractPolicy.FieldPolicy<String> policy) {
+      this.decisionRequirementsName = policy.apply(decisionRequirementsName, Fields.DECISION_REQUIREMENTS_NAME, null);
       return this;
     }
 
+
     @Override
-    public OptionalStep decisionRequirementsVersion(
-        final @Nullable Integer decisionRequirementsVersion) {
+    public OptionalStep decisionRequirementsVersion(final @Nullable Integer decisionRequirementsVersion) {
       this.decisionRequirementsVersion = decisionRequirementsVersion;
       return this;
     }
 
     @Override
-    public OptionalStep decisionRequirementsVersion(
-        final @Nullable Integer decisionRequirementsVersion,
-        final ContractPolicy.FieldPolicy<Integer> policy) {
-      this.decisionRequirementsVersion =
-          policy.apply(decisionRequirementsVersion, Fields.DECISION_REQUIREMENTS_VERSION, null);
+    public OptionalStep decisionRequirementsVersion(final @Nullable Integer decisionRequirementsVersion, final ContractPolicy.FieldPolicy<Integer> policy) {
+      this.decisionRequirementsVersion = policy.apply(decisionRequirementsVersion, Fields.DECISION_REQUIREMENTS_VERSION, null);
       return this;
     }
 
@@ -264,98 +251,82 @@ public record GeneratedDecisionDefinitionFilterStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep decisionDefinitionId(final @Nullable String decisionDefinitionId);
+  OptionalStep decisionDefinitionId(final @Nullable String decisionDefinitionId);
 
-    OptionalStep decisionDefinitionId(
-        final @Nullable String decisionDefinitionId,
-        final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep decisionDefinitionId(final @Nullable String decisionDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep name(final @Nullable String name);
 
-    OptionalStep name(final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep name(final @Nullable String name);
 
-    OptionalStep isLatestVersion(final @Nullable Boolean isLatestVersion);
+  OptionalStep name(final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep isLatestVersion(
-        final @Nullable Boolean isLatestVersion, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep version(final @Nullable Integer version);
+  OptionalStep isLatestVersion(final @Nullable Boolean isLatestVersion);
 
-    OptionalStep version(
-        final @Nullable Integer version, final ContractPolicy.FieldPolicy<Integer> policy);
+  OptionalStep isLatestVersion(final @Nullable Boolean isLatestVersion, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep decisionRequirementsId(final @Nullable String decisionRequirementsId);
 
-    OptionalStep decisionRequirementsId(
-        final @Nullable String decisionRequirementsId,
-        final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep version(final @Nullable Integer version);
 
-    OptionalStep tenantId(final @Nullable String tenantId);
+  OptionalStep version(final @Nullable Integer version, final ContractPolicy.FieldPolicy<Integer> policy);
 
-    OptionalStep tenantId(
-        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep decisionDefinitionKey(final @Nullable String decisionDefinitionKey);
+  OptionalStep decisionRequirementsId(final @Nullable String decisionRequirementsId);
 
-    OptionalStep decisionDefinitionKey(final @Nullable Object decisionDefinitionKey);
+  OptionalStep decisionRequirementsId(final @Nullable String decisionRequirementsId, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep decisionDefinitionKey(
-        final @Nullable String decisionDefinitionKey,
-        final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep decisionDefinitionKey(
-        final @Nullable Object decisionDefinitionKey,
-        final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep tenantId(final @Nullable String tenantId);
 
-    OptionalStep decisionRequirementsKey(final @Nullable String decisionRequirementsKey);
+  OptionalStep tenantId(final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep decisionRequirementsKey(final @Nullable Object decisionRequirementsKey);
 
-    OptionalStep decisionRequirementsKey(
-        final @Nullable String decisionRequirementsKey,
-        final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep decisionDefinitionKey(final @Nullable String decisionDefinitionKey);
 
-    OptionalStep decisionRequirementsKey(
-        final @Nullable Object decisionRequirementsKey,
-        final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep decisionDefinitionKey(final @Nullable Object decisionDefinitionKey);
 
-    OptionalStep decisionRequirementsName(final @Nullable String decisionRequirementsName);
+  OptionalStep decisionDefinitionKey(final @Nullable String decisionDefinitionKey, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep decisionRequirementsName(
-        final @Nullable String decisionRequirementsName,
-        final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep decisionDefinitionKey(final @Nullable Object decisionDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep decisionRequirementsVersion(final @Nullable Integer decisionRequirementsVersion);
 
-    OptionalStep decisionRequirementsVersion(
-        final @Nullable Integer decisionRequirementsVersion,
-        final ContractPolicy.FieldPolicy<Integer> policy);
+  OptionalStep decisionRequirementsKey(final @Nullable String decisionRequirementsKey);
+
+  OptionalStep decisionRequirementsKey(final @Nullable Object decisionRequirementsKey);
+
+  OptionalStep decisionRequirementsKey(final @Nullable String decisionRequirementsKey, final ContractPolicy.FieldPolicy<String> policy);
+
+  OptionalStep decisionRequirementsKey(final @Nullable Object decisionRequirementsKey, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep decisionRequirementsName(final @Nullable String decisionRequirementsName);
+
+  OptionalStep decisionRequirementsName(final @Nullable String decisionRequirementsName, final ContractPolicy.FieldPolicy<String> policy);
+
+
+  OptionalStep decisionRequirementsVersion(final @Nullable Integer decisionRequirementsVersion);
+
+  OptionalStep decisionRequirementsVersion(final @Nullable Integer decisionRequirementsVersion, final ContractPolicy.FieldPolicy<Integer> policy);
+
 
     GeneratedDecisionDefinitionFilterStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef DECISION_DEFINITION_ID =
-        ContractPolicy.field("DecisionDefinitionFilter", "decisionDefinitionId");
-    public static final ContractPolicy.FieldRef NAME =
-        ContractPolicy.field("DecisionDefinitionFilter", "name");
-    public static final ContractPolicy.FieldRef IS_LATEST_VERSION =
-        ContractPolicy.field("DecisionDefinitionFilter", "isLatestVersion");
-    public static final ContractPolicy.FieldRef VERSION =
-        ContractPolicy.field("DecisionDefinitionFilter", "version");
-    public static final ContractPolicy.FieldRef DECISION_REQUIREMENTS_ID =
-        ContractPolicy.field("DecisionDefinitionFilter", "decisionRequirementsId");
-    public static final ContractPolicy.FieldRef TENANT_ID =
-        ContractPolicy.field("DecisionDefinitionFilter", "tenantId");
-    public static final ContractPolicy.FieldRef DECISION_DEFINITION_KEY =
-        ContractPolicy.field("DecisionDefinitionFilter", "decisionDefinitionKey");
-    public static final ContractPolicy.FieldRef DECISION_REQUIREMENTS_KEY =
-        ContractPolicy.field("DecisionDefinitionFilter", "decisionRequirementsKey");
-    public static final ContractPolicy.FieldRef DECISION_REQUIREMENTS_NAME =
-        ContractPolicy.field("DecisionDefinitionFilter", "decisionRequirementsName");
-    public static final ContractPolicy.FieldRef DECISION_REQUIREMENTS_VERSION =
-        ContractPolicy.field("DecisionDefinitionFilter", "decisionRequirementsVersion");
+    public static final ContractPolicy.FieldRef DECISION_DEFINITION_ID = ContractPolicy.field("DecisionDefinitionFilter", "decisionDefinitionId");
+    public static final ContractPolicy.FieldRef NAME = ContractPolicy.field("DecisionDefinitionFilter", "name");
+    public static final ContractPolicy.FieldRef IS_LATEST_VERSION = ContractPolicy.field("DecisionDefinitionFilter", "isLatestVersion");
+    public static final ContractPolicy.FieldRef VERSION = ContractPolicy.field("DecisionDefinitionFilter", "version");
+    public static final ContractPolicy.FieldRef DECISION_REQUIREMENTS_ID = ContractPolicy.field("DecisionDefinitionFilter", "decisionRequirementsId");
+    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("DecisionDefinitionFilter", "tenantId");
+    public static final ContractPolicy.FieldRef DECISION_DEFINITION_KEY = ContractPolicy.field("DecisionDefinitionFilter", "decisionDefinitionKey");
+    public static final ContractPolicy.FieldRef DECISION_REQUIREMENTS_KEY = ContractPolicy.field("DecisionDefinitionFilter", "decisionRequirementsKey");
+    public static final ContractPolicy.FieldRef DECISION_REQUIREMENTS_NAME = ContractPolicy.field("DecisionDefinitionFilter", "decisionRequirementsName");
+    public static final ContractPolicy.FieldRef DECISION_REQUIREMENTS_VERSION = ContractPolicy.field("DecisionDefinitionFilter", "decisionRequirementsVersion");
 
     private Fields() {}
   }
+
+
 }

@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/jobs.yaml#/components/schemas/JobSearchResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,6 +17,7 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
@@ -42,23 +46,19 @@ public record GeneratedJobSearchStrictContract(
     String type,
     String worker,
     @Nullable String creationTime,
-    @Nullable String lastUpdateTime) {
+    @Nullable String lastUpdateTime
+) {
 
   public GeneratedJobSearchStrictContract {
     Objects.requireNonNull(customHeaders, "customHeaders is required and must not be null");
-    Objects.requireNonNull(
-        elementInstanceKey, "elementInstanceKey is required and must not be null");
-    Objects.requireNonNull(
-        hasFailedWithRetriesLeft, "hasFailedWithRetriesLeft is required and must not be null");
+    Objects.requireNonNull(elementInstanceKey, "elementInstanceKey is required and must not be null");
+    Objects.requireNonNull(hasFailedWithRetriesLeft, "hasFailedWithRetriesLeft is required and must not be null");
     Objects.requireNonNull(jobKey, "jobKey is required and must not be null");
     Objects.requireNonNull(kind, "kind is required and must not be null");
     Objects.requireNonNull(listenerEventType, "listenerEventType is required and must not be null");
-    Objects.requireNonNull(
-        processDefinitionId, "processDefinitionId is required and must not be null");
-    Objects.requireNonNull(
-        processDefinitionKey, "processDefinitionKey is required and must not be null");
-    Objects.requireNonNull(
-        processInstanceKey, "processInstanceKey is required and must not be null");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId is required and must not be null");
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey is required and must not be null");
+    Objects.requireNonNull(processInstanceKey, "processInstanceKey is required and must not be null");
     Objects.requireNonNull(retries, "retries is required and must not be null");
     Objects.requireNonNull(state, "state is required and must not be null");
     Objects.requireNonNull(tenantId, "tenantId is required and must not be null");
@@ -80,6 +80,7 @@ public record GeneratedJobSearchStrictContract(
         "elementInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
   public static String coerceJobKey(final Object value) {
     if (value == null) {
       return null;
@@ -93,6 +94,7 @@ public record GeneratedJobSearchStrictContract(
     throw new IllegalArgumentException(
         "jobKey must be a String or Number, but was " + value.getClass().getName());
   }
+
 
   public static String coerceProcessDefinitionKey(final Object value) {
     if (value == null) {
@@ -108,6 +110,7 @@ public record GeneratedJobSearchStrictContract(
         "processDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
   public static String coerceProcessInstanceKey(final Object value) {
     if (value == null) {
       return null;
@@ -121,6 +124,7 @@ public record GeneratedJobSearchStrictContract(
     throw new IllegalArgumentException(
         "processInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
+
 
   public static String coerceRootProcessInstanceKey(final Object value) {
     if (value == null) {
@@ -136,26 +140,13 @@ public record GeneratedJobSearchStrictContract(
         "rootProcessInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
+
   public static CustomHeadersStep builder() {
     return new Builder();
   }
 
-  public static final class Builder
-      implements CustomHeadersStep,
-          ElementInstanceKeyStep,
-          HasFailedWithRetriesLeftStep,
-          JobKeyStep,
-          KindStep,
-          ListenerEventTypeStep,
-          ProcessDefinitionIdStep,
-          ProcessDefinitionKeyStep,
-          ProcessInstanceKeyStep,
-          RetriesStep,
-          StateStep,
-          TenantIdStep,
-          TypeStep,
-          WorkerStep,
-          OptionalStep {
+  public static final class Builder implements CustomHeadersStep, ElementInstanceKeyStep, HasFailedWithRetriesLeftStep, JobKeyStep, KindStep, ListenerEventTypeStep, ProcessDefinitionIdStep, ProcessDefinitionKeyStep, ProcessInstanceKeyStep, RetriesStep, StateStep, TenantIdStep, TypeStep, WorkerStep, OptionalStep {
     private java.util.Map<String, String> customHeaders;
     private String deadline;
     private String deniedReason;
@@ -214,8 +205,7 @@ public record GeneratedJobSearchStrictContract(
     }
 
     @Override
-    public ProcessDefinitionIdStep listenerEventType(
-        final io.camunda.gateway.protocol.model.JobListenerEventTypeEnum listenerEventType) {
+    public ProcessDefinitionIdStep listenerEventType(final io.camunda.gateway.protocol.model.JobListenerEventTypeEnum listenerEventType) {
       this.listenerEventType = listenerEventType;
       return this;
     }
@@ -275,11 +265,11 @@ public record GeneratedJobSearchStrictContract(
     }
 
     @Override
-    public OptionalStep deadline(
-        final @Nullable String deadline, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep deadline(final @Nullable String deadline, final ContractPolicy.FieldPolicy<String> policy) {
       this.deadline = policy.apply(deadline, Fields.DEADLINE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep deniedReason(final @Nullable String deniedReason) {
@@ -288,11 +278,11 @@ public record GeneratedJobSearchStrictContract(
     }
 
     @Override
-    public OptionalStep deniedReason(
-        final @Nullable String deniedReason, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep deniedReason(final @Nullable String deniedReason, final ContractPolicy.FieldPolicy<String> policy) {
       this.deniedReason = policy.apply(deniedReason, Fields.DENIED_REASON, null);
       return this;
     }
+
 
     @Override
     public OptionalStep elementId(final @Nullable String elementId) {
@@ -301,11 +291,11 @@ public record GeneratedJobSearchStrictContract(
     }
 
     @Override
-    public OptionalStep elementId(
-        final @Nullable String elementId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep elementId(final @Nullable String elementId, final ContractPolicy.FieldPolicy<String> policy) {
       this.elementId = policy.apply(elementId, Fields.ELEMENT_ID, null);
       return this;
     }
+
 
     @Override
     public OptionalStep endTime(final @Nullable String endTime) {
@@ -314,11 +304,11 @@ public record GeneratedJobSearchStrictContract(
     }
 
     @Override
-    public OptionalStep endTime(
-        final @Nullable String endTime, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep endTime(final @Nullable String endTime, final ContractPolicy.FieldPolicy<String> policy) {
       this.endTime = policy.apply(endTime, Fields.END_TIME, null);
       return this;
     }
+
 
     @Override
     public OptionalStep errorCode(final @Nullable String errorCode) {
@@ -327,11 +317,11 @@ public record GeneratedJobSearchStrictContract(
     }
 
     @Override
-    public OptionalStep errorCode(
-        final @Nullable String errorCode, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep errorCode(final @Nullable String errorCode, final ContractPolicy.FieldPolicy<String> policy) {
       this.errorCode = policy.apply(errorCode, Fields.ERROR_CODE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep errorMessage(final @Nullable String errorMessage) {
@@ -340,11 +330,11 @@ public record GeneratedJobSearchStrictContract(
     }
 
     @Override
-    public OptionalStep errorMessage(
-        final @Nullable String errorMessage, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep errorMessage(final @Nullable String errorMessage, final ContractPolicy.FieldPolicy<String> policy) {
       this.errorMessage = policy.apply(errorMessage, Fields.ERROR_MESSAGE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep isDenied(final @Nullable Boolean isDenied) {
@@ -353,11 +343,11 @@ public record GeneratedJobSearchStrictContract(
     }
 
     @Override
-    public OptionalStep isDenied(
-        final @Nullable Boolean isDenied, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public OptionalStep isDenied(final @Nullable Boolean isDenied, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.isDenied = policy.apply(isDenied, Fields.IS_DENIED, null);
       return this;
     }
+
 
     @Override
     public OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey) {
@@ -371,22 +361,17 @@ public record GeneratedJobSearchStrictContract(
       return this;
     }
 
-    public Builder rootProcessInstanceKey(
-        final @Nullable String rootProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<String> policy) {
-      this.rootProcessInstanceKey =
-          policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
+    public Builder rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+      this.rootProcessInstanceKey = policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(
-        final @Nullable Object rootProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
-      this.rootProcessInstanceKey =
-          policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
+    public OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.rootProcessInstanceKey = policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep creationTime(final @Nullable String creationTime) {
@@ -395,11 +380,11 @@ public record GeneratedJobSearchStrictContract(
     }
 
     @Override
-    public OptionalStep creationTime(
-        final @Nullable String creationTime, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep creationTime(final @Nullable String creationTime, final ContractPolicy.FieldPolicy<String> policy) {
       this.creationTime = policy.apply(creationTime, Fields.CREATION_TIME, null);
       return this;
     }
+
 
     @Override
     public OptionalStep lastUpdateTime(final @Nullable String lastUpdateTime) {
@@ -408,8 +393,7 @@ public record GeneratedJobSearchStrictContract(
     }
 
     @Override
-    public OptionalStep lastUpdateTime(
-        final @Nullable String lastUpdateTime, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep lastUpdateTime(final @Nullable String lastUpdateTime, final ContractPolicy.FieldPolicy<String> policy) {
       this.lastUpdateTime = policy.apply(lastUpdateTime, Fields.LAST_UPDATE_TIME, null);
       return this;
     }
@@ -465,8 +449,7 @@ public record GeneratedJobSearchStrictContract(
   }
 
   public interface ListenerEventTypeStep {
-    ProcessDefinitionIdStep listenerEventType(
-        final io.camunda.gateway.protocol.model.JobListenerEventTypeEnum listenerEventType);
+    ProcessDefinitionIdStep listenerEventType(final io.camunda.gateway.protocol.model.JobListenerEventTypeEnum listenerEventType);
   }
 
   public interface ProcessDefinitionIdStep {
@@ -502,116 +485,92 @@ public record GeneratedJobSearchStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep deadline(final @Nullable String deadline);
+  OptionalStep deadline(final @Nullable String deadline);
 
-    OptionalStep deadline(
-        final @Nullable String deadline, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep deadline(final @Nullable String deadline, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep deniedReason(final @Nullable String deniedReason);
 
-    OptionalStep deniedReason(
-        final @Nullable String deniedReason, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep deniedReason(final @Nullable String deniedReason);
 
-    OptionalStep elementId(final @Nullable String elementId);
+  OptionalStep deniedReason(final @Nullable String deniedReason, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep elementId(
-        final @Nullable String elementId, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep endTime(final @Nullable String endTime);
+  OptionalStep elementId(final @Nullable String elementId);
 
-    OptionalStep endTime(
-        final @Nullable String endTime, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep elementId(final @Nullable String elementId, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep errorCode(final @Nullable String errorCode);
 
-    OptionalStep errorCode(
-        final @Nullable String errorCode, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep endTime(final @Nullable String endTime);
 
-    OptionalStep errorMessage(final @Nullable String errorMessage);
+  OptionalStep endTime(final @Nullable String endTime, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep errorMessage(
-        final @Nullable String errorMessage, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep isDenied(final @Nullable Boolean isDenied);
+  OptionalStep errorCode(final @Nullable String errorCode);
 
-    OptionalStep isDenied(
-        final @Nullable Boolean isDenied, final ContractPolicy.FieldPolicy<Boolean> policy);
+  OptionalStep errorCode(final @Nullable String errorCode, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
 
-    OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
+  OptionalStep errorMessage(final @Nullable String errorMessage);
 
-    OptionalStep rootProcessInstanceKey(
-        final @Nullable String rootProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep errorMessage(final @Nullable String errorMessage, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep rootProcessInstanceKey(
-        final @Nullable Object rootProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep creationTime(final @Nullable String creationTime);
+  OptionalStep isDenied(final @Nullable Boolean isDenied);
 
-    OptionalStep creationTime(
-        final @Nullable String creationTime, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep isDenied(final @Nullable Boolean isDenied, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep lastUpdateTime(final @Nullable String lastUpdateTime);
 
-    OptionalStep lastUpdateTime(
-        final @Nullable String lastUpdateTime, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
+
+  OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
+
+  OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+
+  OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep creationTime(final @Nullable String creationTime);
+
+  OptionalStep creationTime(final @Nullable String creationTime, final ContractPolicy.FieldPolicy<String> policy);
+
+
+  OptionalStep lastUpdateTime(final @Nullable String lastUpdateTime);
+
+  OptionalStep lastUpdateTime(final @Nullable String lastUpdateTime, final ContractPolicy.FieldPolicy<String> policy);
+
 
     GeneratedJobSearchStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef CUSTOM_HEADERS =
-        ContractPolicy.field("JobSearchResult", "customHeaders");
-    public static final ContractPolicy.FieldRef DEADLINE =
-        ContractPolicy.field("JobSearchResult", "deadline");
-    public static final ContractPolicy.FieldRef DENIED_REASON =
-        ContractPolicy.field("JobSearchResult", "deniedReason");
-    public static final ContractPolicy.FieldRef ELEMENT_ID =
-        ContractPolicy.field("JobSearchResult", "elementId");
-    public static final ContractPolicy.FieldRef ELEMENT_INSTANCE_KEY =
-        ContractPolicy.field("JobSearchResult", "elementInstanceKey");
-    public static final ContractPolicy.FieldRef END_TIME =
-        ContractPolicy.field("JobSearchResult", "endTime");
-    public static final ContractPolicy.FieldRef ERROR_CODE =
-        ContractPolicy.field("JobSearchResult", "errorCode");
-    public static final ContractPolicy.FieldRef ERROR_MESSAGE =
-        ContractPolicy.field("JobSearchResult", "errorMessage");
-    public static final ContractPolicy.FieldRef HAS_FAILED_WITH_RETRIES_LEFT =
-        ContractPolicy.field("JobSearchResult", "hasFailedWithRetriesLeft");
-    public static final ContractPolicy.FieldRef IS_DENIED =
-        ContractPolicy.field("JobSearchResult", "isDenied");
-    public static final ContractPolicy.FieldRef JOB_KEY =
-        ContractPolicy.field("JobSearchResult", "jobKey");
-    public static final ContractPolicy.FieldRef KIND =
-        ContractPolicy.field("JobSearchResult", "kind");
-    public static final ContractPolicy.FieldRef LISTENER_EVENT_TYPE =
-        ContractPolicy.field("JobSearchResult", "listenerEventType");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID =
-        ContractPolicy.field("JobSearchResult", "processDefinitionId");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY =
-        ContractPolicy.field("JobSearchResult", "processDefinitionKey");
-    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY =
-        ContractPolicy.field("JobSearchResult", "processInstanceKey");
-    public static final ContractPolicy.FieldRef ROOT_PROCESS_INSTANCE_KEY =
-        ContractPolicy.field("JobSearchResult", "rootProcessInstanceKey");
-    public static final ContractPolicy.FieldRef RETRIES =
-        ContractPolicy.field("JobSearchResult", "retries");
-    public static final ContractPolicy.FieldRef STATE =
-        ContractPolicy.field("JobSearchResult", "state");
-    public static final ContractPolicy.FieldRef TENANT_ID =
-        ContractPolicy.field("JobSearchResult", "tenantId");
-    public static final ContractPolicy.FieldRef TYPE =
-        ContractPolicy.field("JobSearchResult", "type");
-    public static final ContractPolicy.FieldRef WORKER =
-        ContractPolicy.field("JobSearchResult", "worker");
-    public static final ContractPolicy.FieldRef CREATION_TIME =
-        ContractPolicy.field("JobSearchResult", "creationTime");
-    public static final ContractPolicy.FieldRef LAST_UPDATE_TIME =
-        ContractPolicy.field("JobSearchResult", "lastUpdateTime");
+    public static final ContractPolicy.FieldRef CUSTOM_HEADERS = ContractPolicy.field("JobSearchResult", "customHeaders");
+    public static final ContractPolicy.FieldRef DEADLINE = ContractPolicy.field("JobSearchResult", "deadline");
+    public static final ContractPolicy.FieldRef DENIED_REASON = ContractPolicy.field("JobSearchResult", "deniedReason");
+    public static final ContractPolicy.FieldRef ELEMENT_ID = ContractPolicy.field("JobSearchResult", "elementId");
+    public static final ContractPolicy.FieldRef ELEMENT_INSTANCE_KEY = ContractPolicy.field("JobSearchResult", "elementInstanceKey");
+    public static final ContractPolicy.FieldRef END_TIME = ContractPolicy.field("JobSearchResult", "endTime");
+    public static final ContractPolicy.FieldRef ERROR_CODE = ContractPolicy.field("JobSearchResult", "errorCode");
+    public static final ContractPolicy.FieldRef ERROR_MESSAGE = ContractPolicy.field("JobSearchResult", "errorMessage");
+    public static final ContractPolicy.FieldRef HAS_FAILED_WITH_RETRIES_LEFT = ContractPolicy.field("JobSearchResult", "hasFailedWithRetriesLeft");
+    public static final ContractPolicy.FieldRef IS_DENIED = ContractPolicy.field("JobSearchResult", "isDenied");
+    public static final ContractPolicy.FieldRef JOB_KEY = ContractPolicy.field("JobSearchResult", "jobKey");
+    public static final ContractPolicy.FieldRef KIND = ContractPolicy.field("JobSearchResult", "kind");
+    public static final ContractPolicy.FieldRef LISTENER_EVENT_TYPE = ContractPolicy.field("JobSearchResult", "listenerEventType");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID = ContractPolicy.field("JobSearchResult", "processDefinitionId");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY = ContractPolicy.field("JobSearchResult", "processDefinitionKey");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY = ContractPolicy.field("JobSearchResult", "processInstanceKey");
+    public static final ContractPolicy.FieldRef ROOT_PROCESS_INSTANCE_KEY = ContractPolicy.field("JobSearchResult", "rootProcessInstanceKey");
+    public static final ContractPolicy.FieldRef RETRIES = ContractPolicy.field("JobSearchResult", "retries");
+    public static final ContractPolicy.FieldRef STATE = ContractPolicy.field("JobSearchResult", "state");
+    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("JobSearchResult", "tenantId");
+    public static final ContractPolicy.FieldRef TYPE = ContractPolicy.field("JobSearchResult", "type");
+    public static final ContractPolicy.FieldRef WORKER = ContractPolicy.field("JobSearchResult", "worker");
+    public static final ContractPolicy.FieldRef CREATION_TIME = ContractPolicy.field("JobSearchResult", "creationTime");
+    public static final ContractPolicy.FieldRef LAST_UPDATE_TIME = ContractPolicy.field("JobSearchResult", "lastUpdateTime");
 
     private Fields() {}
   }
+
+
 }

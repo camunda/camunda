@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/decision-instances.yaml#/components/schemas/DecisionInstanceResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,6 +17,7 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
@@ -35,28 +39,20 @@ public record GeneratedDecisionInstanceStrictContract(
     String rootDecisionDefinitionKey,
     @Nullable String rootProcessInstanceKey,
     io.camunda.gateway.protocol.model.DecisionInstanceStateEnum state,
-    String tenantId) {
+    String tenantId
+) {
 
   public GeneratedDecisionInstanceStrictContract {
-    Objects.requireNonNull(
-        decisionDefinitionId, "decisionDefinitionId is required and must not be null");
-    Objects.requireNonNull(
-        decisionDefinitionKey, "decisionDefinitionKey is required and must not be null");
-    Objects.requireNonNull(
-        decisionDefinitionName, "decisionDefinitionName is required and must not be null");
-    Objects.requireNonNull(
-        decisionDefinitionType, "decisionDefinitionType is required and must not be null");
-    Objects.requireNonNull(
-        decisionDefinitionVersion, "decisionDefinitionVersion is required and must not be null");
-    Objects.requireNonNull(
-        decisionEvaluationInstanceKey,
-        "decisionEvaluationInstanceKey is required and must not be null");
-    Objects.requireNonNull(
-        decisionEvaluationKey, "decisionEvaluationKey is required and must not be null");
+    Objects.requireNonNull(decisionDefinitionId, "decisionDefinitionId is required and must not be null");
+    Objects.requireNonNull(decisionDefinitionKey, "decisionDefinitionKey is required and must not be null");
+    Objects.requireNonNull(decisionDefinitionName, "decisionDefinitionName is required and must not be null");
+    Objects.requireNonNull(decisionDefinitionType, "decisionDefinitionType is required and must not be null");
+    Objects.requireNonNull(decisionDefinitionVersion, "decisionDefinitionVersion is required and must not be null");
+    Objects.requireNonNull(decisionEvaluationInstanceKey, "decisionEvaluationInstanceKey is required and must not be null");
+    Objects.requireNonNull(decisionEvaluationKey, "decisionEvaluationKey is required and must not be null");
     Objects.requireNonNull(evaluationDate, "evaluationDate is required and must not be null");
     Objects.requireNonNull(result, "result is required and must not be null");
-    Objects.requireNonNull(
-        rootDecisionDefinitionKey, "rootDecisionDefinitionKey is required and must not be null");
+    Objects.requireNonNull(rootDecisionDefinitionKey, "rootDecisionDefinitionKey is required and must not be null");
     Objects.requireNonNull(state, "state is required and must not be null");
     Objects.requireNonNull(tenantId, "tenantId is required and must not be null");
   }
@@ -75,6 +71,7 @@ public record GeneratedDecisionInstanceStrictContract(
         "decisionDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
   public static String coerceDecisionEvaluationInstanceKey(final Object value) {
     if (value == null) {
       return null;
@@ -86,9 +83,9 @@ public record GeneratedDecisionInstanceStrictContract(
       return KeyUtil.keyToString(numberValue.longValue());
     }
     throw new IllegalArgumentException(
-        "decisionEvaluationInstanceKey must be a String or Number, but was "
-            + value.getClass().getName());
+        "decisionEvaluationInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
+
 
   public static String coerceDecisionEvaluationKey(final Object value) {
     if (value == null) {
@@ -104,6 +101,7 @@ public record GeneratedDecisionInstanceStrictContract(
         "decisionEvaluationKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
   public static String coerceElementInstanceKey(final Object value) {
     if (value == null) {
       return null;
@@ -117,6 +115,7 @@ public record GeneratedDecisionInstanceStrictContract(
     throw new IllegalArgumentException(
         "elementInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
+
 
   public static String coerceProcessDefinitionKey(final Object value) {
     if (value == null) {
@@ -132,6 +131,7 @@ public record GeneratedDecisionInstanceStrictContract(
         "processDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
   public static String coerceProcessInstanceKey(final Object value) {
     if (value == null) {
       return null;
@@ -146,6 +146,7 @@ public record GeneratedDecisionInstanceStrictContract(
         "processInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
   public static String coerceRootDecisionDefinitionKey(final Object value) {
     if (value == null) {
       return null;
@@ -157,9 +158,9 @@ public record GeneratedDecisionInstanceStrictContract(
       return KeyUtil.keyToString(numberValue.longValue());
     }
     throw new IllegalArgumentException(
-        "rootDecisionDefinitionKey must be a String or Number, but was "
-            + value.getClass().getName());
+        "rootDecisionDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
+
 
   public static String coerceRootProcessInstanceKey(final Object value) {
     if (value == null) {
@@ -175,24 +176,13 @@ public record GeneratedDecisionInstanceStrictContract(
         "rootProcessInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
+
   public static DecisionDefinitionIdStep builder() {
     return new Builder();
   }
 
-  public static final class Builder
-      implements DecisionDefinitionIdStep,
-          DecisionDefinitionKeyStep,
-          DecisionDefinitionNameStep,
-          DecisionDefinitionTypeStep,
-          DecisionDefinitionVersionStep,
-          DecisionEvaluationInstanceKeyStep,
-          DecisionEvaluationKeyStep,
-          EvaluationDateStep,
-          ResultStep,
-          RootDecisionDefinitionKeyStep,
-          StateStep,
-          TenantIdStep,
-          OptionalStep {
+  public static final class Builder implements DecisionDefinitionIdStep, DecisionDefinitionKeyStep, DecisionDefinitionNameStep, DecisionDefinitionTypeStep, DecisionDefinitionVersionStep, DecisionEvaluationInstanceKeyStep, DecisionEvaluationKeyStep, EvaluationDateStep, ResultStep, RootDecisionDefinitionKeyStep, StateStep, TenantIdStep, OptionalStep {
     private String decisionDefinitionId;
     private Object decisionDefinitionKey;
     private String decisionDefinitionName;
@@ -232,22 +222,19 @@ public record GeneratedDecisionInstanceStrictContract(
     }
 
     @Override
-    public DecisionDefinitionVersionStep decisionDefinitionType(
-        final io.camunda.gateway.protocol.model.DecisionDefinitionTypeEnum decisionDefinitionType) {
+    public DecisionDefinitionVersionStep decisionDefinitionType(final io.camunda.gateway.protocol.model.DecisionDefinitionTypeEnum decisionDefinitionType) {
       this.decisionDefinitionType = decisionDefinitionType;
       return this;
     }
 
     @Override
-    public DecisionEvaluationInstanceKeyStep decisionDefinitionVersion(
-        final Integer decisionDefinitionVersion) {
+    public DecisionEvaluationInstanceKeyStep decisionDefinitionVersion(final Integer decisionDefinitionVersion) {
       this.decisionDefinitionVersion = decisionDefinitionVersion;
       return this;
     }
 
     @Override
-    public DecisionEvaluationKeyStep decisionEvaluationInstanceKey(
-        final Object decisionEvaluationInstanceKey) {
+    public DecisionEvaluationKeyStep decisionEvaluationInstanceKey(final Object decisionEvaluationInstanceKey) {
       this.decisionEvaluationInstanceKey = decisionEvaluationInstanceKey;
       return this;
     }
@@ -277,8 +264,7 @@ public record GeneratedDecisionInstanceStrictContract(
     }
 
     @Override
-    public TenantIdStep state(
-        final io.camunda.gateway.protocol.model.DecisionInstanceStateEnum state) {
+    public TenantIdStep state(final io.camunda.gateway.protocol.model.DecisionInstanceStateEnum state) {
       this.state = state;
       return this;
     }
@@ -301,20 +287,17 @@ public record GeneratedDecisionInstanceStrictContract(
       return this;
     }
 
-    public Builder elementInstanceKey(
-        final @Nullable String elementInstanceKey,
-        final ContractPolicy.FieldPolicy<String> policy) {
+    public Builder elementInstanceKey(final @Nullable String elementInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
       this.elementInstanceKey = policy.apply(elementInstanceKey, Fields.ELEMENT_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep elementInstanceKey(
-        final @Nullable Object elementInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.elementInstanceKey = policy.apply(elementInstanceKey, Fields.ELEMENT_INSTANCE_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep evaluationFailure(final @Nullable String evaluationFailure) {
@@ -323,11 +306,11 @@ public record GeneratedDecisionInstanceStrictContract(
     }
 
     @Override
-    public OptionalStep evaluationFailure(
-        final @Nullable String evaluationFailure, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep evaluationFailure(final @Nullable String evaluationFailure, final ContractPolicy.FieldPolicy<String> policy) {
       this.evaluationFailure = policy.apply(evaluationFailure, Fields.EVALUATION_FAILURE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep processDefinitionKey(final @Nullable String processDefinitionKey) {
@@ -341,22 +324,17 @@ public record GeneratedDecisionInstanceStrictContract(
       return this;
     }
 
-    public Builder processDefinitionKey(
-        final @Nullable String processDefinitionKey,
-        final ContractPolicy.FieldPolicy<String> policy) {
-      this.processDefinitionKey =
-          policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
+    public Builder processDefinitionKey(final @Nullable String processDefinitionKey, final ContractPolicy.FieldPolicy<String> policy) {
+      this.processDefinitionKey = policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionKey(
-        final @Nullable Object processDefinitionKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
-      this.processDefinitionKey =
-          policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
+    public OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.processDefinitionKey = policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep processInstanceKey(final @Nullable String processInstanceKey) {
@@ -370,20 +348,17 @@ public record GeneratedDecisionInstanceStrictContract(
       return this;
     }
 
-    public Builder processInstanceKey(
-        final @Nullable String processInstanceKey,
-        final ContractPolicy.FieldPolicy<String> policy) {
+    public Builder processInstanceKey(final @Nullable String processInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
       this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep processInstanceKey(
-        final @Nullable Object processInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep processInstanceKey(final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey) {
@@ -397,20 +372,14 @@ public record GeneratedDecisionInstanceStrictContract(
       return this;
     }
 
-    public Builder rootProcessInstanceKey(
-        final @Nullable String rootProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<String> policy) {
-      this.rootProcessInstanceKey =
-          policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
+    public Builder rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+      this.rootProcessInstanceKey = policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(
-        final @Nullable Object rootProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
-      this.rootProcessInstanceKey =
-          policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
+    public OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.rootProcessInstanceKey = policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
@@ -450,18 +419,15 @@ public record GeneratedDecisionInstanceStrictContract(
   }
 
   public interface DecisionDefinitionTypeStep {
-    DecisionDefinitionVersionStep decisionDefinitionType(
-        final io.camunda.gateway.protocol.model.DecisionDefinitionTypeEnum decisionDefinitionType);
+    DecisionDefinitionVersionStep decisionDefinitionType(final io.camunda.gateway.protocol.model.DecisionDefinitionTypeEnum decisionDefinitionType);
   }
 
   public interface DecisionDefinitionVersionStep {
-    DecisionEvaluationInstanceKeyStep decisionDefinitionVersion(
-        final Integer decisionDefinitionVersion);
+    DecisionEvaluationInstanceKeyStep decisionDefinitionVersion(final Integer decisionDefinitionVersion);
   }
 
   public interface DecisionEvaluationInstanceKeyStep {
-    DecisionEvaluationKeyStep decisionEvaluationInstanceKey(
-        final Object decisionEvaluationInstanceKey);
+    DecisionEvaluationKeyStep decisionEvaluationInstanceKey(final Object decisionEvaluationInstanceKey);
   }
 
   public interface DecisionEvaluationKeyStep {
@@ -489,94 +455,72 @@ public record GeneratedDecisionInstanceStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep elementInstanceKey(final @Nullable String elementInstanceKey);
+  OptionalStep elementInstanceKey(final @Nullable String elementInstanceKey);
 
-    OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey);
+  OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey);
 
-    OptionalStep elementInstanceKey(
-        final @Nullable String elementInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep elementInstanceKey(final @Nullable String elementInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep elementInstanceKey(
-        final @Nullable Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep evaluationFailure(final @Nullable String evaluationFailure);
 
-    OptionalStep evaluationFailure(
-        final @Nullable String evaluationFailure, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep evaluationFailure(final @Nullable String evaluationFailure);
 
-    OptionalStep processDefinitionKey(final @Nullable String processDefinitionKey);
+  OptionalStep evaluationFailure(final @Nullable String evaluationFailure, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey);
 
-    OptionalStep processDefinitionKey(
-        final @Nullable String processDefinitionKey,
-        final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep processDefinitionKey(final @Nullable String processDefinitionKey);
 
-    OptionalStep processDefinitionKey(
-        final @Nullable Object processDefinitionKey,
-        final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey);
 
-    OptionalStep processInstanceKey(final @Nullable String processInstanceKey);
+  OptionalStep processDefinitionKey(final @Nullable String processDefinitionKey, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
+  OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processInstanceKey(
-        final @Nullable String processInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep processInstanceKey(
-        final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep processInstanceKey(final @Nullable String processInstanceKey);
 
-    OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
+  OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
 
-    OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
+  OptionalStep processInstanceKey(final @Nullable String processInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep rootProcessInstanceKey(
-        final @Nullable String rootProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep processInstanceKey(final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep rootProcessInstanceKey(
-        final @Nullable Object rootProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy);
+
+  OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
+
+  OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
+
+  OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+
+  OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+
 
     GeneratedDecisionInstanceStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef DECISION_DEFINITION_ID =
-        ContractPolicy.field("DecisionInstanceResult", "decisionDefinitionId");
-    public static final ContractPolicy.FieldRef DECISION_DEFINITION_KEY =
-        ContractPolicy.field("DecisionInstanceResult", "decisionDefinitionKey");
-    public static final ContractPolicy.FieldRef DECISION_DEFINITION_NAME =
-        ContractPolicy.field("DecisionInstanceResult", "decisionDefinitionName");
-    public static final ContractPolicy.FieldRef DECISION_DEFINITION_TYPE =
-        ContractPolicy.field("DecisionInstanceResult", "decisionDefinitionType");
-    public static final ContractPolicy.FieldRef DECISION_DEFINITION_VERSION =
-        ContractPolicy.field("DecisionInstanceResult", "decisionDefinitionVersion");
-    public static final ContractPolicy.FieldRef DECISION_EVALUATION_INSTANCE_KEY =
-        ContractPolicy.field("DecisionInstanceResult", "decisionEvaluationInstanceKey");
-    public static final ContractPolicy.FieldRef DECISION_EVALUATION_KEY =
-        ContractPolicy.field("DecisionInstanceResult", "decisionEvaluationKey");
-    public static final ContractPolicy.FieldRef ELEMENT_INSTANCE_KEY =
-        ContractPolicy.field("DecisionInstanceResult", "elementInstanceKey");
-    public static final ContractPolicy.FieldRef EVALUATION_DATE =
-        ContractPolicy.field("DecisionInstanceResult", "evaluationDate");
-    public static final ContractPolicy.FieldRef EVALUATION_FAILURE =
-        ContractPolicy.field("DecisionInstanceResult", "evaluationFailure");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY =
-        ContractPolicy.field("DecisionInstanceResult", "processDefinitionKey");
-    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY =
-        ContractPolicy.field("DecisionInstanceResult", "processInstanceKey");
-    public static final ContractPolicy.FieldRef RESULT =
-        ContractPolicy.field("DecisionInstanceResult", "result");
-    public static final ContractPolicy.FieldRef ROOT_DECISION_DEFINITION_KEY =
-        ContractPolicy.field("DecisionInstanceResult", "rootDecisionDefinitionKey");
-    public static final ContractPolicy.FieldRef ROOT_PROCESS_INSTANCE_KEY =
-        ContractPolicy.field("DecisionInstanceResult", "rootProcessInstanceKey");
-    public static final ContractPolicy.FieldRef STATE =
-        ContractPolicy.field("DecisionInstanceResult", "state");
-    public static final ContractPolicy.FieldRef TENANT_ID =
-        ContractPolicy.field("DecisionInstanceResult", "tenantId");
+    public static final ContractPolicy.FieldRef DECISION_DEFINITION_ID = ContractPolicy.field("DecisionInstanceResult", "decisionDefinitionId");
+    public static final ContractPolicy.FieldRef DECISION_DEFINITION_KEY = ContractPolicy.field("DecisionInstanceResult", "decisionDefinitionKey");
+    public static final ContractPolicy.FieldRef DECISION_DEFINITION_NAME = ContractPolicy.field("DecisionInstanceResult", "decisionDefinitionName");
+    public static final ContractPolicy.FieldRef DECISION_DEFINITION_TYPE = ContractPolicy.field("DecisionInstanceResult", "decisionDefinitionType");
+    public static final ContractPolicy.FieldRef DECISION_DEFINITION_VERSION = ContractPolicy.field("DecisionInstanceResult", "decisionDefinitionVersion");
+    public static final ContractPolicy.FieldRef DECISION_EVALUATION_INSTANCE_KEY = ContractPolicy.field("DecisionInstanceResult", "decisionEvaluationInstanceKey");
+    public static final ContractPolicy.FieldRef DECISION_EVALUATION_KEY = ContractPolicy.field("DecisionInstanceResult", "decisionEvaluationKey");
+    public static final ContractPolicy.FieldRef ELEMENT_INSTANCE_KEY = ContractPolicy.field("DecisionInstanceResult", "elementInstanceKey");
+    public static final ContractPolicy.FieldRef EVALUATION_DATE = ContractPolicy.field("DecisionInstanceResult", "evaluationDate");
+    public static final ContractPolicy.FieldRef EVALUATION_FAILURE = ContractPolicy.field("DecisionInstanceResult", "evaluationFailure");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY = ContractPolicy.field("DecisionInstanceResult", "processDefinitionKey");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY = ContractPolicy.field("DecisionInstanceResult", "processInstanceKey");
+    public static final ContractPolicy.FieldRef RESULT = ContractPolicy.field("DecisionInstanceResult", "result");
+    public static final ContractPolicy.FieldRef ROOT_DECISION_DEFINITION_KEY = ContractPolicy.field("DecisionInstanceResult", "rootDecisionDefinitionKey");
+    public static final ContractPolicy.FieldRef ROOT_PROCESS_INSTANCE_KEY = ContractPolicy.field("DecisionInstanceResult", "rootProcessInstanceKey");
+    public static final ContractPolicy.FieldRef STATE = ContractPolicy.field("DecisionInstanceResult", "state");
+    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("DecisionInstanceResult", "tenantId");
 
     private Fields() {}
   }
+
+
 }

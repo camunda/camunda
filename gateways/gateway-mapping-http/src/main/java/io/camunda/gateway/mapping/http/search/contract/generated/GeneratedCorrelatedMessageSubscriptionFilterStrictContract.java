@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/messages.yaml#/components/schemas/CorrelatedMessageSubscriptionFilter
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -12,6 +15,7 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
@@ -28,7 +32,9 @@ public record GeneratedCorrelatedMessageSubscriptionFilterStrictContract(
     @Nullable Object processDefinitionKey,
     @Nullable Object processInstanceKey,
     @Nullable Object subscriptionKey,
-    @Nullable Object tenantId) {
+    @Nullable Object tenantId
+) {
+
 
   public static OptionalStep builder() {
     return new Builder();
@@ -57,11 +63,11 @@ public record GeneratedCorrelatedMessageSubscriptionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep correlationKey(
-        final @Nullable Object correlationKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep correlationKey(final @Nullable Object correlationKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.correlationKey = policy.apply(correlationKey, Fields.CORRELATION_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep correlationTime(final @Nullable Object correlationTime) {
@@ -70,11 +76,11 @@ public record GeneratedCorrelatedMessageSubscriptionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep correlationTime(
-        final @Nullable Object correlationTime, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep correlationTime(final @Nullable Object correlationTime, final ContractPolicy.FieldPolicy<Object> policy) {
       this.correlationTime = policy.apply(correlationTime, Fields.CORRELATION_TIME, null);
       return this;
     }
+
 
     @Override
     public OptionalStep elementId(final @Nullable Object elementId) {
@@ -83,11 +89,11 @@ public record GeneratedCorrelatedMessageSubscriptionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep elementId(
-        final @Nullable Object elementId, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep elementId(final @Nullable Object elementId, final ContractPolicy.FieldPolicy<Object> policy) {
       this.elementId = policy.apply(elementId, Fields.ELEMENT_ID, null);
       return this;
     }
+
 
     @Override
     public OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey) {
@@ -96,12 +102,11 @@ public record GeneratedCorrelatedMessageSubscriptionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep elementInstanceKey(
-        final @Nullable Object elementInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.elementInstanceKey = policy.apply(elementInstanceKey, Fields.ELEMENT_INSTANCE_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep messageKey(final @Nullable Object messageKey) {
@@ -110,11 +115,11 @@ public record GeneratedCorrelatedMessageSubscriptionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep messageKey(
-        final @Nullable Object messageKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep messageKey(final @Nullable Object messageKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.messageKey = policy.apply(messageKey, Fields.MESSAGE_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep messageName(final @Nullable Object messageName) {
@@ -123,11 +128,11 @@ public record GeneratedCorrelatedMessageSubscriptionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep messageName(
-        final @Nullable Object messageName, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep messageName(final @Nullable Object messageName, final ContractPolicy.FieldPolicy<Object> policy) {
       this.messageName = policy.apply(messageName, Fields.MESSAGE_NAME, null);
       return this;
     }
+
 
     @Override
     public OptionalStep partitionId(final @Nullable Object partitionId) {
@@ -136,11 +141,11 @@ public record GeneratedCorrelatedMessageSubscriptionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep partitionId(
-        final @Nullable Object partitionId, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep partitionId(final @Nullable Object partitionId, final ContractPolicy.FieldPolicy<Object> policy) {
       this.partitionId = policy.apply(partitionId, Fields.PARTITION_ID, null);
       return this;
     }
+
 
     @Override
     public OptionalStep processDefinitionId(final @Nullable Object processDefinitionId) {
@@ -149,13 +154,11 @@ public record GeneratedCorrelatedMessageSubscriptionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep processDefinitionId(
-        final @Nullable Object processDefinitionId,
-        final ContractPolicy.FieldPolicy<Object> policy) {
-      this.processDefinitionId =
-          policy.apply(processDefinitionId, Fields.PROCESS_DEFINITION_ID, null);
+    public OptionalStep processDefinitionId(final @Nullable Object processDefinitionId, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.processDefinitionId = policy.apply(processDefinitionId, Fields.PROCESS_DEFINITION_ID, null);
       return this;
     }
+
 
     @Override
     public OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey) {
@@ -164,13 +167,11 @@ public record GeneratedCorrelatedMessageSubscriptionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep processDefinitionKey(
-        final @Nullable Object processDefinitionKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
-      this.processDefinitionKey =
-          policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
+    public OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.processDefinitionKey = policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep processInstanceKey(final @Nullable Object processInstanceKey) {
@@ -179,12 +180,11 @@ public record GeneratedCorrelatedMessageSubscriptionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep processInstanceKey(
-        final @Nullable Object processInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep processInstanceKey(final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep subscriptionKey(final @Nullable Object subscriptionKey) {
@@ -193,11 +193,11 @@ public record GeneratedCorrelatedMessageSubscriptionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep subscriptionKey(
-        final @Nullable Object subscriptionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep subscriptionKey(final @Nullable Object subscriptionKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.subscriptionKey = policy.apply(subscriptionKey, Fields.SUBSCRIPTION_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep tenantId(final @Nullable Object tenantId) {
@@ -206,8 +206,7 @@ public record GeneratedCorrelatedMessageSubscriptionFilterStrictContract(
     }
 
     @Override
-    public OptionalStep tenantId(
-        final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep tenantId(final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
@@ -231,97 +230,86 @@ public record GeneratedCorrelatedMessageSubscriptionFilterStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep correlationKey(final @Nullable Object correlationKey);
+  OptionalStep correlationKey(final @Nullable Object correlationKey);
 
-    OptionalStep correlationKey(
-        final @Nullable Object correlationKey, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep correlationKey(final @Nullable Object correlationKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep correlationTime(final @Nullable Object correlationTime);
 
-    OptionalStep correlationTime(
-        final @Nullable Object correlationTime, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep correlationTime(final @Nullable Object correlationTime);
 
-    OptionalStep elementId(final @Nullable Object elementId);
+  OptionalStep correlationTime(final @Nullable Object correlationTime, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep elementId(
-        final @Nullable Object elementId, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey);
+  OptionalStep elementId(final @Nullable Object elementId);
 
-    OptionalStep elementInstanceKey(
-        final @Nullable Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep elementId(final @Nullable Object elementId, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep messageKey(final @Nullable Object messageKey);
 
-    OptionalStep messageKey(
-        final @Nullable Object messageKey, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey);
 
-    OptionalStep messageName(final @Nullable Object messageName);
+  OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep messageName(
-        final @Nullable Object messageName, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep partitionId(final @Nullable Object partitionId);
+  OptionalStep messageKey(final @Nullable Object messageKey);
 
-    OptionalStep partitionId(
-        final @Nullable Object partitionId, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep messageKey(final @Nullable Object messageKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processDefinitionId(final @Nullable Object processDefinitionId);
 
-    OptionalStep processDefinitionId(
-        final @Nullable Object processDefinitionId,
-        final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep messageName(final @Nullable Object messageName);
 
-    OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey);
+  OptionalStep messageName(final @Nullable Object messageName, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processDefinitionKey(
-        final @Nullable Object processDefinitionKey,
-        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
+  OptionalStep partitionId(final @Nullable Object partitionId);
 
-    OptionalStep processInstanceKey(
-        final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep partitionId(final @Nullable Object partitionId, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep subscriptionKey(final @Nullable Object subscriptionKey);
 
-    OptionalStep subscriptionKey(
-        final @Nullable Object subscriptionKey, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep processDefinitionId(final @Nullable Object processDefinitionId);
 
-    OptionalStep tenantId(final @Nullable Object tenantId);
+  OptionalStep processDefinitionId(final @Nullable Object processDefinitionId, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep tenantId(
-        final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy);
+
+  OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey);
+
+  OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
+
+  OptionalStep processInstanceKey(final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep subscriptionKey(final @Nullable Object subscriptionKey);
+
+  OptionalStep subscriptionKey(final @Nullable Object subscriptionKey, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep tenantId(final @Nullable Object tenantId);
+
+  OptionalStep tenantId(final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy);
+
 
     GeneratedCorrelatedMessageSubscriptionFilterStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef CORRELATION_KEY =
-        ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "correlationKey");
-    public static final ContractPolicy.FieldRef CORRELATION_TIME =
-        ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "correlationTime");
-    public static final ContractPolicy.FieldRef ELEMENT_ID =
-        ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "elementId");
-    public static final ContractPolicy.FieldRef ELEMENT_INSTANCE_KEY =
-        ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "elementInstanceKey");
-    public static final ContractPolicy.FieldRef MESSAGE_KEY =
-        ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "messageKey");
-    public static final ContractPolicy.FieldRef MESSAGE_NAME =
-        ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "messageName");
-    public static final ContractPolicy.FieldRef PARTITION_ID =
-        ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "partitionId");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID =
-        ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "processDefinitionId");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY =
-        ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "processDefinitionKey");
-    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY =
-        ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "processInstanceKey");
-    public static final ContractPolicy.FieldRef SUBSCRIPTION_KEY =
-        ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "subscriptionKey");
-    public static final ContractPolicy.FieldRef TENANT_ID =
-        ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "tenantId");
+    public static final ContractPolicy.FieldRef CORRELATION_KEY = ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "correlationKey");
+    public static final ContractPolicy.FieldRef CORRELATION_TIME = ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "correlationTime");
+    public static final ContractPolicy.FieldRef ELEMENT_ID = ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "elementId");
+    public static final ContractPolicy.FieldRef ELEMENT_INSTANCE_KEY = ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "elementInstanceKey");
+    public static final ContractPolicy.FieldRef MESSAGE_KEY = ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "messageKey");
+    public static final ContractPolicy.FieldRef MESSAGE_NAME = ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "messageName");
+    public static final ContractPolicy.FieldRef PARTITION_ID = ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "partitionId");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID = ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "processDefinitionId");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY = ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "processDefinitionKey");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY = ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "processInstanceKey");
+    public static final ContractPolicy.FieldRef SUBSCRIPTION_KEY = ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "subscriptionKey");
+    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("CorrelatedMessageSubscriptionFilter", "tenantId");
 
     private Fields() {}
   }
+
+
 }

@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/cluster-variables.yaml#/components/schemas/ClusterVariableResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -12,24 +15,49 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
-public record GeneratedClusterVariableStrictContract(String value) {
+public record GeneratedClusterVariableStrictContract(
+    String name,
+    io.camunda.gateway.protocol.model.ClusterVariableScopeEnum scope,
+    @Nullable String tenantId,
+    String value
+) {
 
   public GeneratedClusterVariableStrictContract {
+    Objects.requireNonNull(name, "name is required and must not be null");
+    Objects.requireNonNull(scope, "scope is required and must not be null");
     Objects.requireNonNull(value, "value is required and must not be null");
   }
 
-  public static ValueStep builder() {
+
+  public static NameStep builder() {
     return new Builder();
   }
 
-  public static final class Builder implements ValueStep, OptionalStep {
+  public static final class Builder implements NameStep, ScopeStep, ValueStep, OptionalStep {
+    private String name;
+    private io.camunda.gateway.protocol.model.ClusterVariableScopeEnum scope;
+    private String tenantId;
     private String value;
 
     private Builder() {}
+
+    @Override
+    public ScopeStep name(final String name) {
+      this.name = name;
+      return this;
+    }
+
+    @Override
+    public ValueStep scope(final io.camunda.gateway.protocol.model.ClusterVariableScopeEnum scope) {
+      this.scope = scope;
+      return this;
+    }
 
     @Override
     public OptionalStep value(final String value) {
@@ -38,9 +66,33 @@ public record GeneratedClusterVariableStrictContract(String value) {
     }
 
     @Override
-    public GeneratedClusterVariableStrictContract build() {
-      return new GeneratedClusterVariableStrictContract(this.value);
+    public OptionalStep tenantId(final @Nullable String tenantId) {
+      this.tenantId = tenantId;
+      return this;
     }
+
+    @Override
+    public OptionalStep tenantId(final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+      this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
+      return this;
+    }
+
+    @Override
+    public GeneratedClusterVariableStrictContract build() {
+      return new GeneratedClusterVariableStrictContract(
+          this.name,
+          this.scope,
+          this.tenantId,
+          this.value);
+    }
+  }
+
+  public interface NameStep {
+    ScopeStep name(final String name);
+  }
+
+  public interface ScopeStep {
+    ValueStep scope(final io.camunda.gateway.protocol.model.ClusterVariableScopeEnum scope);
   }
 
   public interface ValueStep {
@@ -48,13 +100,23 @@ public record GeneratedClusterVariableStrictContract(String value) {
   }
 
   public interface OptionalStep {
+  OptionalStep tenantId(final @Nullable String tenantId);
+
+  OptionalStep tenantId(final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+
+
     GeneratedClusterVariableStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef VALUE =
-        ContractPolicy.field("ClusterVariableResult", "value");
+    public static final ContractPolicy.FieldRef NAME = ContractPolicy.field("ClusterVariableResult", "name");
+    public static final ContractPolicy.FieldRef SCOPE = ContractPolicy.field("ClusterVariableResult", "scope");
+    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("ClusterVariableResult", "tenantId");
+    public static final ContractPolicy.FieldRef VALUE = ContractPolicy.field("ClusterVariableResult", "value");
 
     private Fields() {}
   }
+
+
 }

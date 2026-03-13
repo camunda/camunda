@@ -191,22 +191,22 @@ mapping path.
 
 Entity → Adapter → GeneratedStrictContract → GeneratedResultMapper → Protocol DTO:
 
-|           Vertical                |                      Adapter                       |                    Generated mapper                        |
-|-----------------------------------|----------------------------------------------------|------------------------------------------------------------|
-| ProcessDefinition                 | `ProcessDefinitionContractAdapter`                 | `GeneratedProcessDefinitionResultMapper`                   |
-| DecisionInstance                  | `DecisionInstanceContractAdapter`                  | `GeneratedDecisionInstanceResultMapper`                    |
-| BatchOperation (main)             | `BatchOperationResponseContractAdapter`            | `GeneratedBatchOperationResponseMapper`                    |
-| BatchOperation (item)             | `BatchOperationItemResponseContractAdapter`        | `GeneratedBatchOperationItemResponseMapper`                |
-| ProcessInstanceCallHierarchyEntry | `ProcessInstanceCallHierarchyEntryContractAdapter` | `GeneratedProcessInstanceCallHierarchyEntryMapper`         |
+|             Vertical              |                      Adapter                       |                  Generated mapper                  |
+|-----------------------------------|----------------------------------------------------|----------------------------------------------------|
+| ProcessDefinition                 | `ProcessDefinitionContractAdapter`                 | `GeneratedProcessDefinitionResultMapper`           |
+| DecisionInstance                  | `DecisionInstanceContractAdapter`                  | `GeneratedDecisionInstanceResultMapper`            |
+| BatchOperation (main)             | `BatchOperationResponseContractAdapter`            | `GeneratedBatchOperationResponseMapper`            |
+| BatchOperation (item)             | `BatchOperationItemResponseContractAdapter`        | `GeneratedBatchOperationItemResponseMapper`        |
+| ProcessInstanceCallHierarchyEntry | `ProcessInstanceCallHierarchyEntryContractAdapter` | `GeneratedProcessInstanceCallHierarchyEntryMapper` |
 
 ### Verticals using strict contracts with manual protocol mapping
 
 Entity → Adapter → GeneratedStrictContract → hand-written protocol mapping:
 
-|    Vertical     |              Adapter              |                               Blocker for generated mapper                                |
-|-----------------|-----------------------------------|-------------------------------------------------------------------------------------------|
-| Variable        | `VariableContractAdapter`         | Composes from 3 strict contracts; generated mappers cover variant fields only             |
-| ClusterVariable | `ClusterVariableContractAdapter`  | Composes from 3 strict contracts; generated mappers cover variant fields only (same as Variable) |
+|    Vertical     |             Adapter              |                                   Blocker for generated mapper                                   |
+|-----------------|----------------------------------|--------------------------------------------------------------------------------------------------|
+| Variable        | `VariableContractAdapter`        | Composes from 3 strict contracts; generated mappers cover variant fields only                    |
+| ClusterVariable | `ClusterVariableContractAdapter` | Composes from 3 strict contracts; generated mappers cover variant fields only (same as Variable) |
 
 ### Generation coverage
 
@@ -257,12 +257,12 @@ public ResponseEntity<ProcessDefinitionSearchQueryResult> searchProcessDefinitio
 
 There are 82 `Either`-returning mapper methods across three files:
 
-| File                       | Methods | With semantic validation | Pure shape mapping |
-|----------------------------|---------|-------------------------|--------------------|
-| `SearchQueryRequestMapper` | 51      | 2 (3.9%)                | 49 (96.1%)         |
-| `RequestMapper`            | 30      | 27 (90%)                | 3 (10%)            |
-| `SimpleRequestMapper`      | 1       | 1                       | 0                  |
-| **Total**                  | **82**  | **30 (36.6%)**          | **52 (63.4%)**     |
+|            File            | Methods | With semantic validation | Pure shape mapping |
+|----------------------------|---------|--------------------------|--------------------|
+| `SearchQueryRequestMapper` | 51      | 2 (3.9%)                 | 49 (96.1%)         |
+| `RequestMapper`            | 30      | 27 (90%)                 | 3 (10%)            |
+| `SimpleRequestMapper`      | 1       | 1                        | 0                  |
+| **Total**                  | **82**  | **30 (36.6%)**           | **52 (63.4%)**     |
 
 The split follows endpoint type:
 
@@ -275,7 +275,7 @@ The split follows endpoint type:
 
 ### What is generatable on the request side
 
-| Concern                            | Generatable | Reason                                                      |
+|              Concern               | Generatable |                           Reason                            |
 |------------------------------------|-------------|-------------------------------------------------------------|
 | Controller routing and annotations | Yes         | Direct spec derivation (`operationId`, paths, HTTP methods) |
 | Request DTO shape                  | Yes         | Already generated by OpenAPI Generator                      |
@@ -290,10 +290,10 @@ generator can produce the `Either` skeleton with a hook for the validation lambd
 
 On both sides of the request/response boundary, the same separation of concerns applies:
 
-| Direction | Generated (mechanical)                    | Hand-written (policy)                     |
+| Direction |          Generated (mechanical)           |           Hand-written (policy)           |
 |-----------|-------------------------------------------|-------------------------------------------|
-| Response  | Key coercion, nested traversal, DTO shape | Null handling policy per field             |
-| Request   | Routing, query decomposition, DTO shape   | Semantic validation (cross-field, format)  |
+| Response  | Key coercion, nested traversal, DTO shape | Null handling policy per field            |
+| Request   | Routing, query decomposition, DTO shape   | Semantic validation (cross-field, format) |
 
 The mechanical work is schema-derivable. The policy work requires human judgment. Generation
 handles one; adapters/validators handle the other.
@@ -312,7 +312,7 @@ response verticals. Self-contained within `gateway-mapping-http`.
 - Hand-written contract adapters with explicit `FieldPolicy` per required field.
 - Shared policy utilities in `ContractPolicy`.
 - Tests per vertical: happy-path mapping, required non-null fails when source is null, required
-  nullable allows null.
+nullable allows null.
 
 **Demonstrates:**
 - Compile-time null handling via step builders.
@@ -325,12 +325,12 @@ Extends Stage 1 to all response verticals and adds static null-safety tooling.
 
 **Scope:**
 1. Resolve per-vertical incompatibility blockers (inline enums, `uniqueItems`, Map narrowing) to
-   bring remaining verticals onto the full generated pipeline.
+bring remaining verticals onto the full generated pipeline.
 2. Add contract adapters for all `SearchQueryResponseMapper` verticals.
 3. Enable JSpecify annotations (`@NullMarked`, `@Nullable`) in generated output.
 4. Enable NullAway or Error Prone nullness checking as a compiler plugin for the module.
 5. Add ArchUnit rules: forbid controllers from exposing `io.camunda.search.entities.*` types
-   directly; require all outbound response types to pass through the contract adaptation layer.
+directly; require all outbound response types to pass through the contract adaptation layer.
 
 **Demonstrates:**
 - Full response-side generation coverage.
@@ -344,19 +344,19 @@ search endpoints, and validation scaffolding for command endpoints.
 
 **Scope:**
 1. Generate controller method signatures, routing annotations, and `Either` fold wiring from the
-   OpenAPI spec.
+OpenAPI spec.
 2. Generate search query request mappers (filter/sort/page decomposition) — covers 49 of 51
-   search mapper methods with zero hand-written code.
+search mapper methods with zero hand-written code.
 3. Generate command endpoint skeletons with a validation hook for semantic validation lambdas.
 4. Evaluate replacing protocol DTOs with strict contracts as the serialization type, eliminating
-   the `toProtocol()` result mapper layer entirely.
+the `toProtocol()` result mapper layer entirely.
 
 **Demonstrates:**
 - Spec-driven endpoint development: define the schema in YAML, regenerate, write only
-  the contract adapter (response) and validation lambda (request).
+the contract adapter (response) and validation lambda (request).
 - One unified pattern for all endpoints instead of two parallel mapping systems.
 - "Adding a new search endpoint" reduces to: spec definition, regeneration, and a single
-  adapter file.
+adapter file.
 
 ### Future direction — unified codegen pipeline
 

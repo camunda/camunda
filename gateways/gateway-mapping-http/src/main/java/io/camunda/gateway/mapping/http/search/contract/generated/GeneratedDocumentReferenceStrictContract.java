@@ -4,15 +4,20 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/documents.yaml#/components/schemas/DocumentReference
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
@@ -22,11 +27,11 @@ public record GeneratedDocumentReferenceStrictContract(
     String storeId,
     String documentId,
     @Nullable String contentHash,
-    GeneratedDocumentMetadataResponseStrictContract metadata) {
+    GeneratedDocumentMetadataResponseStrictContract metadata
+) {
 
   public GeneratedDocumentReferenceStrictContract {
-    Objects.requireNonNull(
-        camundaDocumentType, "camunda.document.type is required and must not be null");
+    Objects.requireNonNull(camundaDocumentType, "camunda.document.type is required and must not be null");
     Objects.requireNonNull(storeId, "storeId is required and must not be null");
     Objects.requireNonNull(documentId, "documentId is required and must not be null");
     Objects.requireNonNull(metadata, "metadata is required and must not be null");
@@ -41,16 +46,16 @@ public record GeneratedDocumentReferenceStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "metadata must be a GeneratedDocumentMetadataResponseStrictContract, but was "
-            + value.getClass().getName());
+        "metadata must be a GeneratedDocumentMetadataResponseStrictContract, but was " + value.getClass().getName());
   }
+
+
 
   public static CamundaDocumentTypeStep builder() {
     return new Builder();
   }
 
-  public static final class Builder
-      implements CamundaDocumentTypeStep, StoreIdStep, DocumentIdStep, MetadataStep, OptionalStep {
+  public static final class Builder implements CamundaDocumentTypeStep, StoreIdStep, DocumentIdStep, MetadataStep, OptionalStep {
     private String camundaDocumentType;
     private String storeId;
     private String documentId;
@@ -90,8 +95,7 @@ public record GeneratedDocumentReferenceStrictContract(
     }
 
     @Override
-    public OptionalStep contentHash(
-        final @Nullable String contentHash, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep contentHash(final @Nullable String contentHash, final ContractPolicy.FieldPolicy<String> policy) {
       this.contentHash = policy.apply(contentHash, Fields.CONTENT_HASH, null);
       return this;
     }
@@ -124,26 +128,24 @@ public record GeneratedDocumentReferenceStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep contentHash(final @Nullable String contentHash);
+  OptionalStep contentHash(final @Nullable String contentHash);
 
-    OptionalStep contentHash(
-        final @Nullable String contentHash, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep contentHash(final @Nullable String contentHash, final ContractPolicy.FieldPolicy<String> policy);
+
 
     GeneratedDocumentReferenceStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef CAMUNDA_DOCUMENT_TYPE =
-        ContractPolicy.field("DocumentReference", "camunda.document.type");
-    public static final ContractPolicy.FieldRef STORE_ID =
-        ContractPolicy.field("DocumentReference", "storeId");
-    public static final ContractPolicy.FieldRef DOCUMENT_ID =
-        ContractPolicy.field("DocumentReference", "documentId");
-    public static final ContractPolicy.FieldRef CONTENT_HASH =
-        ContractPolicy.field("DocumentReference", "contentHash");
-    public static final ContractPolicy.FieldRef METADATA =
-        ContractPolicy.field("DocumentReference", "metadata");
+    public static final ContractPolicy.FieldRef CAMUNDA_DOCUMENT_TYPE = ContractPolicy.field("DocumentReference", "camunda.document.type");
+    public static final ContractPolicy.FieldRef STORE_ID = ContractPolicy.field("DocumentReference", "storeId");
+    public static final ContractPolicy.FieldRef DOCUMENT_ID = ContractPolicy.field("DocumentReference", "documentId");
+    public static final ContractPolicy.FieldRef CONTENT_HASH = ContractPolicy.field("DocumentReference", "contentHash");
+    public static final ContractPolicy.FieldRef METADATA = ContractPolicy.field("DocumentReference", "metadata");
 
     private Fields() {}
   }
+
+
 }

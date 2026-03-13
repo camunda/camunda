@@ -24,9 +24,13 @@ import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
 import io.camunda.gateway.mapping.http.search.contract.VariableContractAdapter;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemResponseStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationResponseStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableSearchStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCallHierarchyEntryStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableSearchStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableStrictContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
@@ -39,9 +43,6 @@ import io.camunda.gateway.protocol.model.AuthorizationResult;
 import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.CamundaUserResult;
-import io.camunda.gateway.protocol.model.ClusterVariableResult;
-import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryResult;
-import io.camunda.gateway.protocol.model.ClusterVariableSearchResult;
 import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionResult;
 import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionSearchQueryResult;
 import io.camunda.gateway.protocol.model.DecisionDefinitionResult;
@@ -132,8 +133,6 @@ import io.camunda.gateway.protocol.model.UserSearchResult;
 import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
 import io.camunda.gateway.protocol.model.UserTaskStateEnum;
-import io.camunda.gateway.protocol.model.VariableResult;
-import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -1104,41 +1103,41 @@ public final class SearchQueryResponseMapper {
     return DecisionInstanceContractAdapter.toGetProjection(entity);
   }
 
-  public static VariableSearchQueryResult toVariableSearchQueryResponse(
-      final SearchQueryResult<VariableEntity> result, final boolean truncateValues) {
-    final var page = toSearchQueryPageResponse(result);
-    return new VariableSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(entity -> VariableContractAdapter.toSearchProjections(entity, truncateValues))
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedVariableSearchStrictContract>
+      toVariableSearchQueryResponse(
+          final SearchQueryResult<VariableEntity> result, final boolean truncateValues) {
+    final var page = toStrictSearchQueryPage(result);
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(entities -> VariableContractAdapter.toSearchProjections(entities, truncateValues))
+            .orElseGet(Collections::emptyList),
+        page);
   }
 
-  public static VariableResult toVariableItem(final VariableEntity variableEntity) {
+  public static GeneratedVariableStrictContract toVariableItem(
+      final VariableEntity variableEntity) {
     return VariableContractAdapter.toItemProjection(variableEntity);
   }
 
-  public static ClusterVariableSearchQueryResult toClusterVariableSearchQueryResponse(
-      final SearchQueryResult<ClusterVariableEntity> result, final boolean truncateValues) {
-    final var page = toSearchQueryPageResponse(result);
-    return new ClusterVariableSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(
-                    clusterVariableEntities ->
-                        ClusterVariableContractAdapter.toSearchProjections(
-                            clusterVariableEntities, truncateValues))
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedClusterVariableSearchStrictContract>
+      toClusterVariableSearchQueryResponse(
+          final SearchQueryResult<ClusterVariableEntity> result, final boolean truncateValues) {
+    final var page = toStrictSearchQueryPage(result);
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(
+                entities ->
+                    ClusterVariableContractAdapter.toSearchProjections(entities, truncateValues))
+            .orElseGet(Collections::emptyList),
+        page);
   }
 
-  public static ClusterVariableSearchResult toClusterVariableSearchResult(
+  public static GeneratedClusterVariableSearchStrictContract toClusterVariableSearchResult(
       final ClusterVariableEntity clusterVariableEntity, final boolean truncateValues) {
     return ClusterVariableContractAdapter.toSearchProjection(clusterVariableEntity, truncateValues);
   }
 
-  public static ClusterVariableResult toClusterVariableResult(
+  public static GeneratedClusterVariableStrictContract toClusterVariableResult(
       final ClusterVariableEntity clusterVariableEntity) {
     return ClusterVariableContractAdapter.toItemProjection(clusterVariableEntity);
   }

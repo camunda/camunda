@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/roles.yaml#/components/schemas/RoleUserResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,14 +16,18 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
-public record GeneratedRoleUserStrictContract(String username) {
+public record GeneratedRoleUserStrictContract(
+    String username
+) {
 
   public GeneratedRoleUserStrictContract {
     Objects.requireNonNull(username, "username is required and must not be null");
   }
+
 
   public static UsernameStep builder() {
     return new Builder();
@@ -36,10 +43,10 @@ public record GeneratedRoleUserStrictContract(String username) {
       this.username = username;
       return this;
     }
-
     @Override
     public GeneratedRoleUserStrictContract build() {
-      return new GeneratedRoleUserStrictContract(this.username);
+      return new GeneratedRoleUserStrictContract(
+          this.username);
     }
   }
 
@@ -51,10 +58,12 @@ public record GeneratedRoleUserStrictContract(String username) {
     GeneratedRoleUserStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef USERNAME =
-        ContractPolicy.field("RoleUserResult", "username");
+    public static final ContractPolicy.FieldRef USERNAME = ContractPolicy.field("RoleUserResult", "username");
 
     private Fields() {}
   }
+
+
 }

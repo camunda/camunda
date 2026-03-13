@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/batch-operations.yaml#/components/schemas/ProcessInstanceMigrationBatchOperationPlan
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -15,19 +18,18 @@ import java.util.ArrayList;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessInstanceMigrationBatchOperationPlanStrictContract(
     String targetProcessDefinitionKey,
-    java.util.List<GeneratedMigrateProcessInstanceMappingInstructionStrictContract>
-        mappingInstructions) {
+    java.util.List<GeneratedMigrateProcessInstanceMappingInstructionStrictContract> mappingInstructions
+) {
 
   public GeneratedProcessInstanceMigrationBatchOperationPlanStrictContract {
-    Objects.requireNonNull(
-        targetProcessDefinitionKey, "targetProcessDefinitionKey is required and must not be null");
-    Objects.requireNonNull(
-        mappingInstructions, "mappingInstructions is required and must not be null");
+    Objects.requireNonNull(targetProcessDefinitionKey, "targetProcessDefinitionKey is required and must not be null");
+    Objects.requireNonNull(mappingInstructions, "mappingInstructions is required and must not be null");
   }
 
   public static String coerceTargetProcessDefinitionKey(final Object value) {
@@ -41,29 +43,24 @@ public record GeneratedProcessInstanceMigrationBatchOperationPlanStrictContract(
       return KeyUtil.keyToString(numberValue.longValue());
     }
     throw new IllegalArgumentException(
-        "targetProcessDefinitionKey must be a String or Number, but was "
-            + value.getClass().getName());
+        "targetProcessDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  public static java.util.List<GeneratedMigrateProcessInstanceMappingInstructionStrictContract>
-      coerceMappingInstructions(final Object value) {
+
+  public static java.util.List<GeneratedMigrateProcessInstanceMappingInstructionStrictContract> coerceMappingInstructions(final Object value) {
     if (value == null) {
       return null;
     }
     if (!(value instanceof java.util.List<?> listValue)) {
       throw new IllegalArgumentException(
-          "mappingInstructions must be a List of GeneratedMigrateProcessInstanceMappingInstructionStrictContract, but was "
-              + value.getClass().getName());
+          "mappingInstructions must be a List of GeneratedMigrateProcessInstanceMappingInstructionStrictContract, but was " + value.getClass().getName());
     }
 
-    final var result =
-        new ArrayList<GeneratedMigrateProcessInstanceMappingInstructionStrictContract>(
-            listValue.size());
+    final var result = new ArrayList<GeneratedMigrateProcessInstanceMappingInstructionStrictContract>(listValue.size());
     for (final var item : listValue) {
       if (item == null) {
         result.add(null);
-      } else if (item
-          instanceof GeneratedMigrateProcessInstanceMappingInstructionStrictContract strictItem) {
+      } else if (item instanceof GeneratedMigrateProcessInstanceMappingInstructionStrictContract strictItem) {
         result.add(strictItem);
 
       } else {
@@ -75,20 +72,20 @@ public record GeneratedProcessInstanceMigrationBatchOperationPlanStrictContract(
     return java.util.List.copyOf(result);
   }
 
+
+
   public static TargetProcessDefinitionKeyStep builder() {
     return new Builder();
   }
 
-  public static final class Builder
-      implements TargetProcessDefinitionKeyStep, MappingInstructionsStep, OptionalStep {
+  public static final class Builder implements TargetProcessDefinitionKeyStep, MappingInstructionsStep, OptionalStep {
     private Object targetProcessDefinitionKey;
     private Object mappingInstructions;
 
     private Builder() {}
 
     @Override
-    public MappingInstructionsStep targetProcessDefinitionKey(
-        final Object targetProcessDefinitionKey) {
+    public MappingInstructionsStep targetProcessDefinitionKey(final Object targetProcessDefinitionKey) {
       this.targetProcessDefinitionKey = targetProcessDefinitionKey;
       return this;
     }
@@ -98,7 +95,6 @@ public record GeneratedProcessInstanceMigrationBatchOperationPlanStrictContract(
       this.mappingInstructions = mappingInstructions;
       return this;
     }
-
     @Override
     public GeneratedProcessInstanceMigrationBatchOperationPlanStrictContract build() {
       return new GeneratedProcessInstanceMigrationBatchOperationPlanStrictContract(
@@ -119,13 +115,13 @@ public record GeneratedProcessInstanceMigrationBatchOperationPlanStrictContract(
     GeneratedProcessInstanceMigrationBatchOperationPlanStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef TARGET_PROCESS_DEFINITION_KEY =
-        ContractPolicy.field(
-            "ProcessInstanceMigrationBatchOperationPlan", "targetProcessDefinitionKey");
-    public static final ContractPolicy.FieldRef MAPPING_INSTRUCTIONS =
-        ContractPolicy.field("ProcessInstanceMigrationBatchOperationPlan", "mappingInstructions");
+    public static final ContractPolicy.FieldRef TARGET_PROCESS_DEFINITION_KEY = ContractPolicy.field("ProcessInstanceMigrationBatchOperationPlan", "targetProcessDefinitionKey");
+    public static final ContractPolicy.FieldRef MAPPING_INSTRUCTIONS = ContractPolicy.field("ProcessInstanceMigrationBatchOperationPlan", "mappingInstructions");
 
     private Fields() {}
   }
+
+
 }

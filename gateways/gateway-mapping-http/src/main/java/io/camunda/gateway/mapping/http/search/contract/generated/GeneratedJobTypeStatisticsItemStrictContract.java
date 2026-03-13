@@ -4,14 +4,19 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/job-metrics.yaml#/components/schemas/JobTypeStatisticsItem
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
+
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
@@ -21,7 +26,8 @@ public record GeneratedJobTypeStatisticsItemStrictContract(
     GeneratedStatusMetricStrictContract created,
     GeneratedStatusMetricStrictContract completed,
     GeneratedStatusMetricStrictContract failed,
-    Integer workers) {
+    Integer workers
+) {
 
   public GeneratedJobTypeStatisticsItemStrictContract {
     Objects.requireNonNull(jobType, "jobType is required and must not be null");
@@ -40,9 +46,9 @@ public record GeneratedJobTypeStatisticsItemStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "created must be a GeneratedStatusMetricStrictContract, but was "
-            + value.getClass().getName());
+        "created must be a GeneratedStatusMetricStrictContract, but was " + value.getClass().getName());
   }
+
 
   public static GeneratedStatusMetricStrictContract coerceCompleted(final Object value) {
     if (value == null) {
@@ -53,9 +59,9 @@ public record GeneratedJobTypeStatisticsItemStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "completed must be a GeneratedStatusMetricStrictContract, but was "
-            + value.getClass().getName());
+        "completed must be a GeneratedStatusMetricStrictContract, but was " + value.getClass().getName());
   }
+
 
   public static GeneratedStatusMetricStrictContract coerceFailed(final Object value) {
     if (value == null) {
@@ -66,16 +72,16 @@ public record GeneratedJobTypeStatisticsItemStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "failed must be a GeneratedStatusMetricStrictContract, but was "
-            + value.getClass().getName());
+        "failed must be a GeneratedStatusMetricStrictContract, but was " + value.getClass().getName());
   }
+
+
 
   public static JobTypeStep builder() {
     return new Builder();
   }
 
-  public static final class Builder
-      implements JobTypeStep, CreatedStep, CompletedStep, FailedStep, WorkersStep, OptionalStep {
+  public static final class Builder implements JobTypeStep, CreatedStep, CompletedStep, FailedStep, WorkersStep, OptionalStep {
     private String jobType;
     private Object created;
     private Object completed;
@@ -113,7 +119,6 @@ public record GeneratedJobTypeStatisticsItemStrictContract(
       this.workers = workers;
       return this;
     }
-
     @Override
     public GeneratedJobTypeStatisticsItemStrictContract build() {
       return new GeneratedJobTypeStatisticsItemStrictContract(
@@ -149,18 +154,16 @@ public record GeneratedJobTypeStatisticsItemStrictContract(
     GeneratedJobTypeStatisticsItemStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef JOB_TYPE =
-        ContractPolicy.field("JobTypeStatisticsItem", "jobType");
-    public static final ContractPolicy.FieldRef CREATED =
-        ContractPolicy.field("JobTypeStatisticsItem", "created");
-    public static final ContractPolicy.FieldRef COMPLETED =
-        ContractPolicy.field("JobTypeStatisticsItem", "completed");
-    public static final ContractPolicy.FieldRef FAILED =
-        ContractPolicy.field("JobTypeStatisticsItem", "failed");
-    public static final ContractPolicy.FieldRef WORKERS =
-        ContractPolicy.field("JobTypeStatisticsItem", "workers");
+    public static final ContractPolicy.FieldRef JOB_TYPE = ContractPolicy.field("JobTypeStatisticsItem", "jobType");
+    public static final ContractPolicy.FieldRef CREATED = ContractPolicy.field("JobTypeStatisticsItem", "created");
+    public static final ContractPolicy.FieldRef COMPLETED = ContractPolicy.field("JobTypeStatisticsItem", "completed");
+    public static final ContractPolicy.FieldRef FAILED = ContractPolicy.field("JobTypeStatisticsItem", "failed");
+    public static final ContractPolicy.FieldRef WORKERS = ContractPolicy.field("JobTypeStatisticsItem", "workers");
 
     private Fields() {}
   }
+
+
 }

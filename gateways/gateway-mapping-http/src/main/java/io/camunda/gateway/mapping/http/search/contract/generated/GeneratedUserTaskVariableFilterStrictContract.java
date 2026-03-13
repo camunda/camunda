@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/user-tasks.yaml#/components/schemas/UserTaskVariableFilter
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,10 +16,14 @@ import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
-public record GeneratedUserTaskVariableFilterStrictContract(@Nullable Object name) {
+public record GeneratedUserTaskVariableFilterStrictContract(
+    @Nullable Object name
+) {
+
 
   public static OptionalStep builder() {
     return new Builder();
@@ -34,30 +41,33 @@ public record GeneratedUserTaskVariableFilterStrictContract(@Nullable Object nam
     }
 
     @Override
-    public OptionalStep name(
-        final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep name(final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy) {
       this.name = policy.apply(name, Fields.NAME, null);
       return this;
     }
 
     @Override
     public GeneratedUserTaskVariableFilterStrictContract build() {
-      return new GeneratedUserTaskVariableFilterStrictContract(this.name);
+      return new GeneratedUserTaskVariableFilterStrictContract(
+          this.name);
     }
   }
 
   public interface OptionalStep {
-    OptionalStep name(final @Nullable Object name);
+  OptionalStep name(final @Nullable Object name);
 
-    OptionalStep name(final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep name(final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy);
+
 
     GeneratedUserTaskVariableFilterStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef NAME =
-        ContractPolicy.field("UserTaskVariableFilter", "name");
+    public static final ContractPolicy.FieldRef NAME = ContractPolicy.field("UserTaskVariableFilter", "name");
 
     private Fields() {}
   }
+
+
 }

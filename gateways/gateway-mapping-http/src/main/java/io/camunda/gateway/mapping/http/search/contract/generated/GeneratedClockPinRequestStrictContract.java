@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/clock.yaml#/components/schemas/ClockPinRequest
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,14 +16,18 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
-public record GeneratedClockPinRequestStrictContract(Long timestamp) {
+public record GeneratedClockPinRequestStrictContract(
+    Long timestamp
+) {
 
   public GeneratedClockPinRequestStrictContract {
     Objects.requireNonNull(timestamp, "timestamp is required and must not be null");
   }
+
 
   public static TimestampStep builder() {
     return new Builder();
@@ -36,10 +43,10 @@ public record GeneratedClockPinRequestStrictContract(Long timestamp) {
       this.timestamp = timestamp;
       return this;
     }
-
     @Override
     public GeneratedClockPinRequestStrictContract build() {
-      return new GeneratedClockPinRequestStrictContract(this.timestamp);
+      return new GeneratedClockPinRequestStrictContract(
+          this.timestamp);
     }
   }
 
@@ -51,10 +58,12 @@ public record GeneratedClockPinRequestStrictContract(Long timestamp) {
     GeneratedClockPinRequestStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef TIMESTAMP =
-        ContractPolicy.field("ClockPinRequest", "timestamp");
+    public static final ContractPolicy.FieldRef TIMESTAMP = ContractPolicy.field("ClockPinRequest", "timestamp");
 
     private Fields() {}
   }
+
+
 }

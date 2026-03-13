@@ -4,36 +4,40 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/users.yaml#/components/schemas/UserSearchQueryRequest
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedUserSearchQueryRequestStrictContract(
+    @Nullable Object page,
     java.util.@Nullable List<GeneratedUserSearchQuerySortRequestStrictContract> sort,
-    @Nullable GeneratedUserFilterStrictContract filter) {
+    @Nullable GeneratedUserFilterStrictContract filter
+) {
 
-  public static java.util.List<GeneratedUserSearchQuerySortRequestStrictContract> coerceSort(
-      final Object value) {
+  public static java.util.List<GeneratedUserSearchQuerySortRequestStrictContract> coerceSort(final Object value) {
     if (value == null) {
       return null;
     }
     if (!(value instanceof java.util.List<?> listValue)) {
       throw new IllegalArgumentException(
-          "sort must be a List of GeneratedUserSearchQuerySortRequestStrictContract, but was "
-              + value.getClass().getName());
+          "sort must be a List of GeneratedUserSearchQuerySortRequestStrictContract, but was " + value.getClass().getName());
     }
 
-    final var result =
-        new ArrayList<GeneratedUserSearchQuerySortRequestStrictContract>(listValue.size());
+    final var result = new ArrayList<GeneratedUserSearchQuerySortRequestStrictContract>(listValue.size());
     for (final var item : listValue) {
       if (item == null) {
         result.add(null);
@@ -49,6 +53,7 @@ public record GeneratedUserSearchQueryRequestStrictContract(
     return java.util.List.copyOf(result);
   }
 
+
   public static GeneratedUserFilterStrictContract coerceFilter(final Object value) {
     if (value == null) {
       return null;
@@ -58,23 +63,37 @@ public record GeneratedUserSearchQueryRequestStrictContract(
     }
 
     throw new IllegalArgumentException(
-        "filter must be a GeneratedUserFilterStrictContract, but was "
-            + value.getClass().getName());
+        "filter must be a GeneratedUserFilterStrictContract, but was " + value.getClass().getName());
   }
+
+
 
   public static OptionalStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements OptionalStep {
+    private Object page;
     private Object sort;
     private Object filter;
 
     private Builder() {}
 
     @Override
-    public OptionalStep sort(
-        final java.util.@Nullable List<GeneratedUserSearchQuerySortRequestStrictContract> sort) {
+    public OptionalStep page(final @Nullable Object page) {
+      this.page = page;
+      return this;
+    }
+
+    @Override
+    public OptionalStep page(final @Nullable Object page, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.page = policy.apply(page, Fields.PAGE, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep sort(final java.util.@Nullable List<GeneratedUserSearchQuerySortRequestStrictContract> sort) {
       this.sort = sort;
       return this;
     }
@@ -85,21 +104,17 @@ public record GeneratedUserSearchQueryRequestStrictContract(
       return this;
     }
 
-    public Builder sort(
-        final java.util.@Nullable List<GeneratedUserSearchQuerySortRequestStrictContract> sort,
-        final ContractPolicy.FieldPolicy<
-                java.util.List<GeneratedUserSearchQuerySortRequestStrictContract>>
-            policy) {
+    public Builder sort(final java.util.@Nullable List<GeneratedUserSearchQuerySortRequestStrictContract> sort, final ContractPolicy.FieldPolicy<java.util.List<GeneratedUserSearchQuerySortRequestStrictContract>> policy) {
       this.sort = policy.apply(sort, Fields.SORT, null);
       return this;
     }
 
     @Override
-    public OptionalStep sort(
-        final @Nullable Object sort, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep sort(final @Nullable Object sort, final ContractPolicy.FieldPolicy<Object> policy) {
       this.sort = policy.apply(sort, Fields.SORT, null);
       return this;
     }
+
 
     @Override
     public OptionalStep filter(final @Nullable GeneratedUserFilterStrictContract filter) {
@@ -113,16 +128,13 @@ public record GeneratedUserSearchQueryRequestStrictContract(
       return this;
     }
 
-    public Builder filter(
-        final @Nullable GeneratedUserFilterStrictContract filter,
-        final ContractPolicy.FieldPolicy<GeneratedUserFilterStrictContract> policy) {
+    public Builder filter(final @Nullable GeneratedUserFilterStrictContract filter, final ContractPolicy.FieldPolicy<GeneratedUserFilterStrictContract> policy) {
       this.filter = policy.apply(filter, Fields.FILTER, null);
       return this;
     }
 
     @Override
-    public OptionalStep filter(
-        final @Nullable Object filter, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep filter(final @Nullable Object filter, final ContractPolicy.FieldPolicy<Object> policy) {
       this.filter = policy.apply(filter, Fields.FILTER, null);
       return this;
     }
@@ -130,44 +142,47 @@ public record GeneratedUserSearchQueryRequestStrictContract(
     @Override
     public GeneratedUserSearchQueryRequestStrictContract build() {
       return new GeneratedUserSearchQueryRequestStrictContract(
-          coerceSort(this.sort), coerceFilter(this.filter));
+          this.page,
+          coerceSort(this.sort),
+          coerceFilter(this.filter));
     }
   }
 
   public interface OptionalStep {
-    OptionalStep sort(
-        final java.util.@Nullable List<GeneratedUserSearchQuerySortRequestStrictContract> sort);
+  OptionalStep page(final @Nullable Object page);
 
-    OptionalStep sort(final @Nullable Object sort);
+  OptionalStep page(final @Nullable Object page, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep sort(
-        final java.util.@Nullable List<GeneratedUserSearchQuerySortRequestStrictContract> sort,
-        final ContractPolicy.FieldPolicy<
-                java.util.List<GeneratedUserSearchQuerySortRequestStrictContract>>
-            policy);
 
-    OptionalStep sort(final @Nullable Object sort, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep sort(final java.util.@Nullable List<GeneratedUserSearchQuerySortRequestStrictContract> sort);
 
-    OptionalStep filter(final @Nullable GeneratedUserFilterStrictContract filter);
+  OptionalStep sort(final @Nullable Object sort);
 
-    OptionalStep filter(final @Nullable Object filter);
+  OptionalStep sort(final java.util.@Nullable List<GeneratedUserSearchQuerySortRequestStrictContract> sort, final ContractPolicy.FieldPolicy<java.util.List<GeneratedUserSearchQuerySortRequestStrictContract>> policy);
 
-    OptionalStep filter(
-        final @Nullable GeneratedUserFilterStrictContract filter,
-        final ContractPolicy.FieldPolicy<GeneratedUserFilterStrictContract> policy);
+  OptionalStep sort(final @Nullable Object sort, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep filter(
-        final @Nullable Object filter, final ContractPolicy.FieldPolicy<Object> policy);
+
+  OptionalStep filter(final @Nullable GeneratedUserFilterStrictContract filter);
+
+  OptionalStep filter(final @Nullable Object filter);
+
+  OptionalStep filter(final @Nullable GeneratedUserFilterStrictContract filter, final ContractPolicy.FieldPolicy<GeneratedUserFilterStrictContract> policy);
+
+  OptionalStep filter(final @Nullable Object filter, final ContractPolicy.FieldPolicy<Object> policy);
+
 
     GeneratedUserSearchQueryRequestStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef SORT =
-        ContractPolicy.field("UserSearchQueryRequest", "sort");
-    public static final ContractPolicy.FieldRef FILTER =
-        ContractPolicy.field("UserSearchQueryRequest", "filter");
+    public static final ContractPolicy.FieldRef PAGE = ContractPolicy.field("UserSearchQueryRequest", "page");
+    public static final ContractPolicy.FieldRef SORT = ContractPolicy.field("UserSearchQueryRequest", "sort");
+    public static final ContractPolicy.FieldRef FILTER = ContractPolicy.field("UserSearchQueryRequest", "filter");
 
     private Fields() {}
   }
+
+
 }

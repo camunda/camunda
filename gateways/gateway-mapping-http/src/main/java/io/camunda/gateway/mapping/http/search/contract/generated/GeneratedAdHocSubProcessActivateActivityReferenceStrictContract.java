@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/element-instances.yaml#/components/schemas/AdHocSubProcessActivateActivityReference
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,15 +17,19 @@ import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedAdHocSubProcessActivateActivityReferenceStrictContract(
-    String elementId, java.util.@Nullable Map<String, Object> variables) {
+    String elementId,
+    java.util.@Nullable Map<String, Object> variables
+) {
 
   public GeneratedAdHocSubProcessActivateActivityReferenceStrictContract {
     Objects.requireNonNull(elementId, "elementId is required and must not be null");
   }
+
 
   public static ElementIdStep builder() {
     return new Builder();
@@ -47,9 +54,7 @@ public record GeneratedAdHocSubProcessActivateActivityReferenceStrictContract(
     }
 
     @Override
-    public OptionalStep variables(
-        final java.util.@Nullable Map<String, Object> variables,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
+    public OptionalStep variables(final java.util.@Nullable Map<String, Object> variables, final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
       this.variables = policy.apply(variables, Fields.VARIABLES, null);
       return this;
     }
@@ -57,7 +62,8 @@ public record GeneratedAdHocSubProcessActivateActivityReferenceStrictContract(
     @Override
     public GeneratedAdHocSubProcessActivateActivityReferenceStrictContract build() {
       return new GeneratedAdHocSubProcessActivateActivityReferenceStrictContract(
-          this.elementId, this.variables);
+          this.elementId,
+          this.variables);
     }
   }
 
@@ -66,21 +72,21 @@ public record GeneratedAdHocSubProcessActivateActivityReferenceStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep variables(final java.util.@Nullable Map<String, Object> variables);
+  OptionalStep variables(final java.util.@Nullable Map<String, Object> variables);
 
-    OptionalStep variables(
-        final java.util.@Nullable Map<String, Object> variables,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
+  OptionalStep variables(final java.util.@Nullable Map<String, Object> variables, final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
+
 
     GeneratedAdHocSubProcessActivateActivityReferenceStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef ELEMENT_ID =
-        ContractPolicy.field("AdHocSubProcessActivateActivityReference", "elementId");
-    public static final ContractPolicy.FieldRef VARIABLES =
-        ContractPolicy.field("AdHocSubProcessActivateActivityReference", "variables");
+    public static final ContractPolicy.FieldRef ELEMENT_ID = ContractPolicy.field("AdHocSubProcessActivateActivityReference", "elementId");
+    public static final ContractPolicy.FieldRef VARIABLES = ContractPolicy.field("AdHocSubProcessActivateActivityReference", "variables");
 
     private Fields() {}
   }
+
+
 }

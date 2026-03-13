@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/process-definitions.yaml#/components/schemas/ProcessDefinitionInstanceVersionStatisticsQuerySortRequest
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,15 +17,19 @@ import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessDefinitionInstanceVersionStatisticsQuerySortRequestStrictContract(
-    String field, io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order) {
+    String field,
+    io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order
+) {
 
   public GeneratedProcessDefinitionInstanceVersionStatisticsQuerySortRequestStrictContract {
     Objects.requireNonNull(field, "field is required and must not be null");
   }
+
 
   public static FieldStep builder() {
     return new Builder();
@@ -41,25 +48,22 @@ public record GeneratedProcessDefinitionInstanceVersionStatisticsQuerySortReques
     }
 
     @Override
-    public OptionalStep order(
-        final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order) {
+    public OptionalStep order(final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order) {
       this.order = order;
       return this;
     }
 
     @Override
-    public OptionalStep order(
-        final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.SortOrderEnum> policy) {
+    public OptionalStep order(final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.SortOrderEnum> policy) {
       this.order = policy.apply(order, Fields.ORDER, null);
       return this;
     }
 
     @Override
-    public GeneratedProcessDefinitionInstanceVersionStatisticsQuerySortRequestStrictContract
-        build() {
+    public GeneratedProcessDefinitionInstanceVersionStatisticsQuerySortRequestStrictContract build() {
       return new GeneratedProcessDefinitionInstanceVersionStatisticsQuerySortRequestStrictContract(
-          this.field, this.order);
+          this.field,
+          this.order);
     }
   }
 
@@ -68,21 +72,21 @@ public record GeneratedProcessDefinitionInstanceVersionStatisticsQuerySortReques
   }
 
   public interface OptionalStep {
-    OptionalStep order(final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order);
+  OptionalStep order(final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order);
 
-    OptionalStep order(
-        final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.SortOrderEnum> policy);
+  OptionalStep order(final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.SortOrderEnum> policy);
+
 
     GeneratedProcessDefinitionInstanceVersionStatisticsQuerySortRequestStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef FIELD =
-        ContractPolicy.field("ProcessDefinitionInstanceVersionStatisticsQuerySortRequest", "field");
-    public static final ContractPolicy.FieldRef ORDER =
-        ContractPolicy.field("ProcessDefinitionInstanceVersionStatisticsQuerySortRequest", "order");
+    public static final ContractPolicy.FieldRef FIELD = ContractPolicy.field("ProcessDefinitionInstanceVersionStatisticsQuerySortRequest", "field");
+    public static final ContractPolicy.FieldRef ORDER = ContractPolicy.field("ProcessDefinitionInstanceVersionStatisticsQuerySortRequest", "order");
 
     private Fields() {}
   }
+
+
 }

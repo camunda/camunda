@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/problem-detail.yaml#/components/schemas/ProblemDetail
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,11 +16,17 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProblemDetailStrictContract(
-    String type, String title, Integer status, String detail, String instance) {
+    String type,
+    String title,
+    Integer status,
+    String detail,
+    String instance
+) {
 
   public GeneratedProblemDetailStrictContract {
     Objects.requireNonNull(type, "type is required and must not be null");
@@ -27,12 +36,12 @@ public record GeneratedProblemDetailStrictContract(
     Objects.requireNonNull(instance, "instance is required and must not be null");
   }
 
+
   public static TypeStep builder() {
     return new Builder();
   }
 
-  public static final class Builder
-      implements TypeStep, TitleStep, StatusStep, DetailStep, InstanceStep, OptionalStep {
+  public static final class Builder implements TypeStep, TitleStep, StatusStep, DetailStep, InstanceStep, OptionalStep {
     private String type;
     private String title;
     private Integer status;
@@ -70,11 +79,14 @@ public record GeneratedProblemDetailStrictContract(
       this.instance = instance;
       return this;
     }
-
     @Override
     public GeneratedProblemDetailStrictContract build() {
       return new GeneratedProblemDetailStrictContract(
-          this.type, this.title, this.status, this.detail, this.instance);
+          this.type,
+          this.title,
+          this.status,
+          this.detail,
+          this.instance);
     }
   }
 
@@ -102,18 +114,16 @@ public record GeneratedProblemDetailStrictContract(
     GeneratedProblemDetailStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef TYPE =
-        ContractPolicy.field("ProblemDetail", "type");
-    public static final ContractPolicy.FieldRef TITLE =
-        ContractPolicy.field("ProblemDetail", "title");
-    public static final ContractPolicy.FieldRef STATUS =
-        ContractPolicy.field("ProblemDetail", "status");
-    public static final ContractPolicy.FieldRef DETAIL =
-        ContractPolicy.field("ProblemDetail", "detail");
-    public static final ContractPolicy.FieldRef INSTANCE =
-        ContractPolicy.field("ProblemDetail", "instance");
+    public static final ContractPolicy.FieldRef TYPE = ContractPolicy.field("ProblemDetail", "type");
+    public static final ContractPolicy.FieldRef TITLE = ContractPolicy.field("ProblemDetail", "title");
+    public static final ContractPolicy.FieldRef STATUS = ContractPolicy.field("ProblemDetail", "status");
+    public static final ContractPolicy.FieldRef DETAIL = ContractPolicy.field("ProblemDetail", "detail");
+    public static final ContractPolicy.FieldRef INSTANCE = ContractPolicy.field("ProblemDetail", "instance");
 
     private Fields() {}
   }
+
+
 }

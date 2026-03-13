@@ -7,14 +7,9 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
-import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableResultBaseStrictContract.Fields;
-
-import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableResultBaseStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableSearchStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
-import io.camunda.gateway.protocol.model.VariableResult;
-import io.camunda.gateway.protocol.model.VariableSearchResult;
 import io.camunda.search.entities.VariableEntity;
 import java.util.List;
 
@@ -22,96 +17,85 @@ import java.util.List;
  * Contract adaptation layer for variable projections.
  *
  * <p>Policy in this adapter controls whether values are emitted as previews or full payloads based
- * on the operation context.
+ * on the operation context. The generated DTOs flatten the OpenAPI allOf inheritance so each
+ * projection is a self-contained record that Jackson can serialize directly.
  */
 public final class VariableContractAdapter {
 
   private VariableContractAdapter() {}
 
-  public static List<VariableSearchResult> toSearchProjections(
+  public static List<GeneratedVariableSearchStrictContract> toSearchProjections(
       final List<VariableEntity> variableEntities, final boolean truncateValues) {
     return variableEntities.stream()
         .map(entity -> toSearchProjection(entity, truncateValues))
         .toList();
   }
 
-  public static VariableSearchResult toSearchProjection(
-      final VariableEntity variableEntity, final boolean truncateValues) {
-    final var strictBase = toStrictBase(variableEntity);
-    final var strictSearch = toStrictSearch(variableEntity, truncateValues);
-    return new VariableSearchResult()
-        .variableKey(strictBase.variableKey())
-        .name(strictBase.name())
-        .value(strictSearch.value())
-        .processInstanceKey(strictBase.processInstanceKey())
-        .rootProcessInstanceKey(strictBase.rootProcessInstanceKey())
-        .tenantId(strictBase.tenantId())
-        .isTruncated(strictSearch.isTruncated())
-        .scopeKey(strictBase.scopeKey());
-  }
-
-  public static VariableResult toItemProjection(final VariableEntity variableEntity) {
-    final var strictBase = toStrictBase(variableEntity);
-    final var strictItem = toStrictItem(variableEntity);
-    return new VariableResult()
-        .variableKey(strictBase.variableKey())
-        .name(strictBase.name())
-        .value(strictItem.value())
-        .processInstanceKey(strictBase.processInstanceKey())
-        .rootProcessInstanceKey(strictBase.rootProcessInstanceKey())
-        .tenantId(strictBase.tenantId())
-        .scopeKey(strictBase.scopeKey());
-  }
-
-  private static GeneratedVariableResultBaseStrictContract toStrictBase(
-      final VariableEntity variableEntity) {
-    return GeneratedVariableResultBaseStrictContract.builder()
-        .name(ContractPolicy.requireNonNull(variableEntity.name(), Fields.NAME, variableEntity))
+  public static GeneratedVariableSearchStrictContract toSearchProjection(
+      final VariableEntity entity, final boolean truncateValues) {
+    return GeneratedVariableSearchStrictContract.builder()
+        .name(
+            ContractPolicy.requireNonNull(
+                entity.name(), GeneratedVariableSearchStrictContract.Fields.NAME, entity))
         .tenantId(
             ContractPolicy.requireNonNull(
-                variableEntity.tenantId(), Fields.TENANT_ID, variableEntity))
+                entity.tenantId(), GeneratedVariableSearchStrictContract.Fields.TENANT_ID, entity))
         .variableKey(
             ContractPolicy.requireNonNull(
-                variableEntity.variableKey(), Fields.VARIABLE_KEY, variableEntity))
+                entity.variableKey(),
+                GeneratedVariableSearchStrictContract.Fields.VARIABLE_KEY,
+                entity))
         .scopeKey(
             ContractPolicy.requireNonNull(
-                variableEntity.scopeKey(), Fields.SCOPE_KEY, variableEntity))
+                entity.scopeKey(), GeneratedVariableSearchStrictContract.Fields.SCOPE_KEY, entity))
         .processInstanceKey(
             ContractPolicy.requireNonNull(
-                variableEntity.processInstanceKey(), Fields.PROCESS_INSTANCE_KEY, variableEntity))
-        .rootProcessInstanceKey(variableEntity.rootProcessInstanceKey())
-        .build();
-  }
-
-  private static GeneratedVariableSearchStrictContract toStrictSearch(
-      final VariableEntity variableEntity, final boolean truncateValues) {
-    return GeneratedVariableSearchStrictContract.builder()
+                entity.processInstanceKey(),
+                GeneratedVariableSearchStrictContract.Fields.PROCESS_INSTANCE_KEY,
+                entity))
         .value(
             ContractPolicy.requireNonNull(
                 !truncateValues
                     ? ContractPolicy.resolvePreviewValue(
-                        variableEntity.value(),
-                        variableEntity.fullValue(),
-                        variableEntity.isPreview())
-                    : variableEntity.value(),
+                        entity.value(), entity.fullValue(), entity.isPreview())
+                    : entity.value(),
                 GeneratedVariableSearchStrictContract.Fields.VALUE,
-                variableEntity))
+                entity))
         .isTruncated(
             ContractPolicy.requireNonNull(
-                truncateValues && variableEntity.isPreview(),
+                truncateValues && entity.isPreview(),
                 GeneratedVariableSearchStrictContract.Fields.IS_TRUNCATED,
-                variableEntity))
+                entity))
+        .rootProcessInstanceKey(entity.rootProcessInstanceKey())
         .build();
   }
 
-  private static GeneratedVariableStrictContract toStrictItem(final VariableEntity variableEntity) {
+  public static GeneratedVariableStrictContract toItemProjection(final VariableEntity entity) {
     return GeneratedVariableStrictContract.builder()
+        .name(
+            ContractPolicy.requireNonNull(
+                entity.name(), GeneratedVariableStrictContract.Fields.NAME, entity))
+        .tenantId(
+            ContractPolicy.requireNonNull(
+                entity.tenantId(), GeneratedVariableStrictContract.Fields.TENANT_ID, entity))
+        .variableKey(
+            ContractPolicy.requireNonNull(
+                entity.variableKey(), GeneratedVariableStrictContract.Fields.VARIABLE_KEY, entity))
+        .scopeKey(
+            ContractPolicy.requireNonNull(
+                entity.scopeKey(), GeneratedVariableStrictContract.Fields.SCOPE_KEY, entity))
+        .processInstanceKey(
+            ContractPolicy.requireNonNull(
+                entity.processInstanceKey(),
+                GeneratedVariableStrictContract.Fields.PROCESS_INSTANCE_KEY,
+                entity))
         .value(
             ContractPolicy.requireNonNull(
                 ContractPolicy.resolvePreviewValue(
-                    variableEntity.value(), variableEntity.fullValue(), variableEntity.isPreview()),
+                    entity.value(), entity.fullValue(), entity.isPreview()),
                 GeneratedVariableStrictContract.Fields.VALUE,
-                variableEntity))
+                entity))
+        .rootProcessInstanceKey(entity.rootProcessInstanceKey())
         .build();
   }
 }

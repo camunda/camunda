@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/mapping-rules.yaml#/components/schemas/MappingRuleSearchQuerySortRequest
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,15 +17,19 @@ import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedMappingRuleSearchQuerySortRequestStrictContract(
-    String field, io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order) {
+    String field,
+    io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order
+) {
 
   public GeneratedMappingRuleSearchQuerySortRequestStrictContract {
     Objects.requireNonNull(field, "field is required and must not be null");
   }
+
 
   public static FieldStep builder() {
     return new Builder();
@@ -41,23 +48,22 @@ public record GeneratedMappingRuleSearchQuerySortRequestStrictContract(
     }
 
     @Override
-    public OptionalStep order(
-        final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order) {
+    public OptionalStep order(final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order) {
       this.order = order;
       return this;
     }
 
     @Override
-    public OptionalStep order(
-        final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.SortOrderEnum> policy) {
+    public OptionalStep order(final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.SortOrderEnum> policy) {
       this.order = policy.apply(order, Fields.ORDER, null);
       return this;
     }
 
     @Override
     public GeneratedMappingRuleSearchQuerySortRequestStrictContract build() {
-      return new GeneratedMappingRuleSearchQuerySortRequestStrictContract(this.field, this.order);
+      return new GeneratedMappingRuleSearchQuerySortRequestStrictContract(
+          this.field,
+          this.order);
     }
   }
 
@@ -66,21 +72,21 @@ public record GeneratedMappingRuleSearchQuerySortRequestStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep order(final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order);
+  OptionalStep order(final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order);
 
-    OptionalStep order(
-        final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.SortOrderEnum> policy);
+  OptionalStep order(final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.SortOrderEnum> policy);
+
 
     GeneratedMappingRuleSearchQuerySortRequestStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef FIELD =
-        ContractPolicy.field("MappingRuleSearchQuerySortRequest", "field");
-    public static final ContractPolicy.FieldRef ORDER =
-        ContractPolicy.field("MappingRuleSearchQuerySortRequest", "order");
+    public static final ContractPolicy.FieldRef FIELD = ContractPolicy.field("MappingRuleSearchQuerySortRequest", "field");
+    public static final ContractPolicy.FieldRef ORDER = ContractPolicy.field("MappingRuleSearchQuerySortRequest", "order");
 
     private Fields() {}
   }
+
+
 }

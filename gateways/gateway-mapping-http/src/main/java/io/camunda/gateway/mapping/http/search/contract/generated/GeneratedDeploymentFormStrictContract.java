@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/deployments.yaml#/components/schemas/DeploymentFormResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,11 +17,17 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedDeploymentFormStrictContract(
-    String formId, Integer version, String resourceName, String tenantId, String formKey) {
+    String formId,
+    Integer version,
+    String resourceName,
+    String tenantId,
+    String formKey
+) {
 
   public GeneratedDeploymentFormStrictContract {
     Objects.requireNonNull(formId, "formId is required and must not be null");
@@ -42,17 +51,13 @@ public record GeneratedDeploymentFormStrictContract(
         "formKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
+
   public static FormIdStep builder() {
     return new Builder();
   }
 
-  public static final class Builder
-      implements FormIdStep,
-          VersionStep,
-          ResourceNameStep,
-          TenantIdStep,
-          FormKeyStep,
-          OptionalStep {
+  public static final class Builder implements FormIdStep, VersionStep, ResourceNameStep, TenantIdStep, FormKeyStep, OptionalStep {
     private String formId;
     private Integer version;
     private String resourceName;
@@ -90,11 +95,14 @@ public record GeneratedDeploymentFormStrictContract(
       this.formKey = formKey;
       return this;
     }
-
     @Override
     public GeneratedDeploymentFormStrictContract build() {
       return new GeneratedDeploymentFormStrictContract(
-          this.formId, this.version, this.resourceName, this.tenantId, coerceFormKey(this.formKey));
+          this.formId,
+          this.version,
+          this.resourceName,
+          this.tenantId,
+          coerceFormKey(this.formKey));
     }
   }
 
@@ -122,18 +130,16 @@ public record GeneratedDeploymentFormStrictContract(
     GeneratedDeploymentFormStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef FORM_ID =
-        ContractPolicy.field("DeploymentFormResult", "formId");
-    public static final ContractPolicy.FieldRef VERSION =
-        ContractPolicy.field("DeploymentFormResult", "version");
-    public static final ContractPolicy.FieldRef RESOURCE_NAME =
-        ContractPolicy.field("DeploymentFormResult", "resourceName");
-    public static final ContractPolicy.FieldRef TENANT_ID =
-        ContractPolicy.field("DeploymentFormResult", "tenantId");
-    public static final ContractPolicy.FieldRef FORM_KEY =
-        ContractPolicy.field("DeploymentFormResult", "formKey");
+    public static final ContractPolicy.FieldRef FORM_ID = ContractPolicy.field("DeploymentFormResult", "formId");
+    public static final ContractPolicy.FieldRef VERSION = ContractPolicy.field("DeploymentFormResult", "version");
+    public static final ContractPolicy.FieldRef RESOURCE_NAME = ContractPolicy.field("DeploymentFormResult", "resourceName");
+    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("DeploymentFormResult", "tenantId");
+    public static final ContractPolicy.FieldRef FORM_KEY = ContractPolicy.field("DeploymentFormResult", "formKey");
 
     private Fields() {}
   }
+
+
 }

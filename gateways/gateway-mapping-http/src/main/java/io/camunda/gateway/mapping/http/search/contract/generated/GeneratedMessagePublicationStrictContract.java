@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/messages.yaml#/components/schemas/MessagePublicationResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,10 +17,14 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
-public record GeneratedMessagePublicationStrictContract(String tenantId, String messageKey) {
+public record GeneratedMessagePublicationStrictContract(
+    String tenantId,
+    String messageKey
+) {
 
   public GeneratedMessagePublicationStrictContract {
     Objects.requireNonNull(tenantId, "tenantId is required and must not be null");
@@ -37,6 +44,8 @@ public record GeneratedMessagePublicationStrictContract(String tenantId, String 
     throw new IllegalArgumentException(
         "messageKey must be a String or Number, but was " + value.getClass().getName());
   }
+
+
 
   public static TenantIdStep builder() {
     return new Builder();
@@ -59,11 +68,11 @@ public record GeneratedMessagePublicationStrictContract(String tenantId, String 
       this.messageKey = messageKey;
       return this;
     }
-
     @Override
     public GeneratedMessagePublicationStrictContract build() {
       return new GeneratedMessagePublicationStrictContract(
-          this.tenantId, coerceMessageKey(this.messageKey));
+          this.tenantId,
+          coerceMessageKey(this.messageKey));
     }
   }
 
@@ -79,12 +88,13 @@ public record GeneratedMessagePublicationStrictContract(String tenantId, String 
     GeneratedMessagePublicationStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef TENANT_ID =
-        ContractPolicy.field("MessagePublicationResult", "tenantId");
-    public static final ContractPolicy.FieldRef MESSAGE_KEY =
-        ContractPolicy.field("MessagePublicationResult", "messageKey");
+    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("MessagePublicationResult", "tenantId");
+    public static final ContractPolicy.FieldRef MESSAGE_KEY = ContractPolicy.field("MessagePublicationResult", "messageKey");
 
     private Fields() {}
   }
+
+
 }

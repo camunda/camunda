@@ -4,15 +4,20 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/process-instances.yaml#/components/schemas/BaseProcessInstanceFilterFields
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
@@ -35,21 +40,19 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     @Nullable Boolean hasElementInstanceIncident,
     @Nullable Object incidentErrorHashCode,
     java.util.@Nullable Set<String> tags,
-    @Nullable Object businessId) {
+    @Nullable Object businessId
+) {
 
-  public static java.util.List<GeneratedVariableValueFilterPropertyStrictContract> coerceVariables(
-      final Object value) {
+  public static java.util.List<GeneratedVariableValueFilterPropertyStrictContract> coerceVariables(final Object value) {
     if (value == null) {
       return null;
     }
     if (!(value instanceof java.util.List<?> listValue)) {
       throw new IllegalArgumentException(
-          "variables must be a List of GeneratedVariableValueFilterPropertyStrictContract, but was "
-              + value.getClass().getName());
+          "variables must be a List of GeneratedVariableValueFilterPropertyStrictContract, but was " + value.getClass().getName());
     }
 
-    final var result =
-        new ArrayList<GeneratedVariableValueFilterPropertyStrictContract>(listValue.size());
+    final var result = new ArrayList<GeneratedVariableValueFilterPropertyStrictContract>(listValue.size());
     for (final var item : listValue) {
       if (item == null) {
         result.add(null);
@@ -64,6 +67,8 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     }
     return java.util.List.copyOf(result);
   }
+
+
 
   public static OptionalStep builder() {
     return new Builder();
@@ -98,11 +103,11 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     }
 
     @Override
-    public OptionalStep startDate(
-        final @Nullable Object startDate, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep startDate(final @Nullable Object startDate, final ContractPolicy.FieldPolicy<Object> policy) {
       this.startDate = policy.apply(startDate, Fields.START_DATE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep endDate(final @Nullable Object endDate) {
@@ -111,11 +116,11 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     }
 
     @Override
-    public OptionalStep endDate(
-        final @Nullable Object endDate, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep endDate(final @Nullable Object endDate, final ContractPolicy.FieldPolicy<Object> policy) {
       this.endDate = policy.apply(endDate, Fields.END_DATE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep state(final @Nullable Object state) {
@@ -124,11 +129,11 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     }
 
     @Override
-    public OptionalStep state(
-        final @Nullable Object state, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep state(final @Nullable Object state, final ContractPolicy.FieldPolicy<Object> policy) {
       this.state = policy.apply(state, Fields.STATE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep hasIncident(final @Nullable Boolean hasIncident) {
@@ -137,11 +142,11 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     }
 
     @Override
-    public OptionalStep hasIncident(
-        final @Nullable Boolean hasIncident, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public OptionalStep hasIncident(final @Nullable Boolean hasIncident, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.hasIncident = policy.apply(hasIncident, Fields.HAS_INCIDENT, null);
       return this;
     }
+
 
     @Override
     public OptionalStep tenantId(final @Nullable Object tenantId) {
@@ -150,16 +155,14 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     }
 
     @Override
-    public OptionalStep tenantId(
-        final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep tenantId(final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
 
+
     @Override
-    public OptionalStep variables(
-        final java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract>
-            variables) {
+    public OptionalStep variables(final java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract> variables) {
       this.variables = variables;
       return this;
     }
@@ -170,22 +173,17 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
       return this;
     }
 
-    public Builder variables(
-        final java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract>
-            variables,
-        final ContractPolicy.FieldPolicy<
-                java.util.List<GeneratedVariableValueFilterPropertyStrictContract>>
-            policy) {
+    public Builder variables(final java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract> variables, final ContractPolicy.FieldPolicy<java.util.List<GeneratedVariableValueFilterPropertyStrictContract>> policy) {
       this.variables = policy.apply(variables, Fields.VARIABLES, null);
       return this;
     }
 
     @Override
-    public OptionalStep variables(
-        final @Nullable Object variables, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep variables(final @Nullable Object variables, final ContractPolicy.FieldPolicy<Object> policy) {
       this.variables = policy.apply(variables, Fields.VARIABLES, null);
       return this;
     }
+
 
     @Override
     public OptionalStep processInstanceKey(final @Nullable Object processInstanceKey) {
@@ -194,12 +192,11 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     }
 
     @Override
-    public OptionalStep processInstanceKey(
-        final @Nullable Object processInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep processInstanceKey(final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep parentProcessInstanceKey(final @Nullable Object parentProcessInstanceKey) {
@@ -208,13 +205,11 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     }
 
     @Override
-    public OptionalStep parentProcessInstanceKey(
-        final @Nullable Object parentProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
-      this.parentProcessInstanceKey =
-          policy.apply(parentProcessInstanceKey, Fields.PARENT_PROCESS_INSTANCE_KEY, null);
+    public OptionalStep parentProcessInstanceKey(final @Nullable Object parentProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.parentProcessInstanceKey = policy.apply(parentProcessInstanceKey, Fields.PARENT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep parentElementInstanceKey(final @Nullable Object parentElementInstanceKey) {
@@ -223,13 +218,11 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     }
 
     @Override
-    public OptionalStep parentElementInstanceKey(
-        final @Nullable Object parentElementInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
-      this.parentElementInstanceKey =
-          policy.apply(parentElementInstanceKey, Fields.PARENT_ELEMENT_INSTANCE_KEY, null);
+    public OptionalStep parentElementInstanceKey(final @Nullable Object parentElementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.parentElementInstanceKey = policy.apply(parentElementInstanceKey, Fields.PARENT_ELEMENT_INSTANCE_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep batchOperationId(final @Nullable Object batchOperationId) {
@@ -238,11 +231,11 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     }
 
     @Override
-    public OptionalStep batchOperationId(
-        final @Nullable Object batchOperationId, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep batchOperationId(final @Nullable Object batchOperationId, final ContractPolicy.FieldPolicy<Object> policy) {
       this.batchOperationId = policy.apply(batchOperationId, Fields.BATCH_OPERATION_ID, null);
       return this;
     }
+
 
     @Override
     public OptionalStep errorMessage(final @Nullable Object errorMessage) {
@@ -251,11 +244,11 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     }
 
     @Override
-    public OptionalStep errorMessage(
-        final @Nullable Object errorMessage, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep errorMessage(final @Nullable Object errorMessage, final ContractPolicy.FieldPolicy<Object> policy) {
       this.errorMessage = policy.apply(errorMessage, Fields.ERROR_MESSAGE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep hasRetriesLeft(final @Nullable Boolean hasRetriesLeft) {
@@ -264,11 +257,11 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     }
 
     @Override
-    public OptionalStep hasRetriesLeft(
-        final @Nullable Boolean hasRetriesLeft, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public OptionalStep hasRetriesLeft(final @Nullable Boolean hasRetriesLeft, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.hasRetriesLeft = policy.apply(hasRetriesLeft, Fields.HAS_RETRIES_LEFT, null);
       return this;
     }
+
 
     @Override
     public OptionalStep elementInstanceState(final @Nullable Object elementInstanceState) {
@@ -277,13 +270,11 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     }
 
     @Override
-    public OptionalStep elementInstanceState(
-        final @Nullable Object elementInstanceState,
-        final ContractPolicy.FieldPolicy<Object> policy) {
-      this.elementInstanceState =
-          policy.apply(elementInstanceState, Fields.ELEMENT_INSTANCE_STATE, null);
+    public OptionalStep elementInstanceState(final @Nullable Object elementInstanceState, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.elementInstanceState = policy.apply(elementInstanceState, Fields.ELEMENT_INSTANCE_STATE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep elementId(final @Nullable Object elementId) {
@@ -292,27 +283,24 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     }
 
     @Override
-    public OptionalStep elementId(
-        final @Nullable Object elementId, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep elementId(final @Nullable Object elementId, final ContractPolicy.FieldPolicy<Object> policy) {
       this.elementId = policy.apply(elementId, Fields.ELEMENT_ID, null);
       return this;
     }
 
+
     @Override
-    public OptionalStep hasElementInstanceIncident(
-        final @Nullable Boolean hasElementInstanceIncident) {
+    public OptionalStep hasElementInstanceIncident(final @Nullable Boolean hasElementInstanceIncident) {
       this.hasElementInstanceIncident = hasElementInstanceIncident;
       return this;
     }
 
     @Override
-    public OptionalStep hasElementInstanceIncident(
-        final @Nullable Boolean hasElementInstanceIncident,
-        final ContractPolicy.FieldPolicy<Boolean> policy) {
-      this.hasElementInstanceIncident =
-          policy.apply(hasElementInstanceIncident, Fields.HAS_ELEMENT_INSTANCE_INCIDENT, null);
+    public OptionalStep hasElementInstanceIncident(final @Nullable Boolean hasElementInstanceIncident, final ContractPolicy.FieldPolicy<Boolean> policy) {
+      this.hasElementInstanceIncident = policy.apply(hasElementInstanceIncident, Fields.HAS_ELEMENT_INSTANCE_INCIDENT, null);
       return this;
     }
+
 
     @Override
     public OptionalStep incidentErrorHashCode(final @Nullable Object incidentErrorHashCode) {
@@ -321,13 +309,11 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     }
 
     @Override
-    public OptionalStep incidentErrorHashCode(
-        final @Nullable Object incidentErrorHashCode,
-        final ContractPolicy.FieldPolicy<Object> policy) {
-      this.incidentErrorHashCode =
-          policy.apply(incidentErrorHashCode, Fields.INCIDENT_ERROR_HASH_CODE, null);
+    public OptionalStep incidentErrorHashCode(final @Nullable Object incidentErrorHashCode, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.incidentErrorHashCode = policy.apply(incidentErrorHashCode, Fields.INCIDENT_ERROR_HASH_CODE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep tags(final java.util.@Nullable Set<String> tags) {
@@ -336,12 +322,11 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     }
 
     @Override
-    public OptionalStep tags(
-        final java.util.@Nullable Set<String> tags,
-        final ContractPolicy.FieldPolicy<java.util.Set<String>> policy) {
+    public OptionalStep tags(final java.util.@Nullable Set<String> tags, final ContractPolicy.FieldPolicy<java.util.Set<String>> policy) {
       this.tags = policy.apply(tags, Fields.TAGS, null);
       return this;
     }
+
 
     @Override
     public OptionalStep businessId(final @Nullable Object businessId) {
@@ -350,8 +335,7 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
     }
 
     @Override
-    public OptionalStep businessId(
-        final @Nullable Object businessId, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep businessId(final @Nullable Object businessId, final ContractPolicy.FieldPolicy<Object> policy) {
       this.businessId = policy.apply(businessId, Fields.BUSINESS_ID, null);
       return this;
     }
@@ -381,154 +365,126 @@ public record GeneratedBaseProcessInstanceFilterFieldsStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep startDate(final @Nullable Object startDate);
+  OptionalStep startDate(final @Nullable Object startDate);
 
-    OptionalStep startDate(
-        final @Nullable Object startDate, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep startDate(final @Nullable Object startDate, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep endDate(final @Nullable Object endDate);
 
-    OptionalStep endDate(
-        final @Nullable Object endDate, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep endDate(final @Nullable Object endDate);
 
-    OptionalStep state(final @Nullable Object state);
+  OptionalStep endDate(final @Nullable Object endDate, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep state(
-        final @Nullable Object state, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep hasIncident(final @Nullable Boolean hasIncident);
+  OptionalStep state(final @Nullable Object state);
 
-    OptionalStep hasIncident(
-        final @Nullable Boolean hasIncident, final ContractPolicy.FieldPolicy<Boolean> policy);
+  OptionalStep state(final @Nullable Object state, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep tenantId(final @Nullable Object tenantId);
 
-    OptionalStep tenantId(
-        final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep hasIncident(final @Nullable Boolean hasIncident);
 
-    OptionalStep variables(
-        final java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract>
-            variables);
+  OptionalStep hasIncident(final @Nullable Boolean hasIncident, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep variables(final @Nullable Object variables);
 
-    OptionalStep variables(
-        final java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract>
-            variables,
-        final ContractPolicy.FieldPolicy<
-                java.util.List<GeneratedVariableValueFilterPropertyStrictContract>>
-            policy);
+  OptionalStep tenantId(final @Nullable Object tenantId);
 
-    OptionalStep variables(
-        final @Nullable Object variables, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep tenantId(final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
 
-    OptionalStep processInstanceKey(
-        final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep variables(final java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract> variables);
 
-    OptionalStep parentProcessInstanceKey(final @Nullable Object parentProcessInstanceKey);
+  OptionalStep variables(final @Nullable Object variables);
 
-    OptionalStep parentProcessInstanceKey(
-        final @Nullable Object parentProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep variables(final java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract> variables, final ContractPolicy.FieldPolicy<java.util.List<GeneratedVariableValueFilterPropertyStrictContract>> policy);
 
-    OptionalStep parentElementInstanceKey(final @Nullable Object parentElementInstanceKey);
+  OptionalStep variables(final @Nullable Object variables, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep parentElementInstanceKey(
-        final @Nullable Object parentElementInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep batchOperationId(final @Nullable Object batchOperationId);
+  OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
 
-    OptionalStep batchOperationId(
-        final @Nullable Object batchOperationId, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep processInstanceKey(final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep errorMessage(final @Nullable Object errorMessage);
 
-    OptionalStep errorMessage(
-        final @Nullable Object errorMessage, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep parentProcessInstanceKey(final @Nullable Object parentProcessInstanceKey);
 
-    OptionalStep hasRetriesLeft(final @Nullable Boolean hasRetriesLeft);
+  OptionalStep parentProcessInstanceKey(final @Nullable Object parentProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep hasRetriesLeft(
-        final @Nullable Boolean hasRetriesLeft, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep elementInstanceState(final @Nullable Object elementInstanceState);
+  OptionalStep parentElementInstanceKey(final @Nullable Object parentElementInstanceKey);
 
-    OptionalStep elementInstanceState(
-        final @Nullable Object elementInstanceState,
-        final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep parentElementInstanceKey(final @Nullable Object parentElementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep elementId(final @Nullable Object elementId);
 
-    OptionalStep elementId(
-        final @Nullable Object elementId, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep batchOperationId(final @Nullable Object batchOperationId);
 
-    OptionalStep hasElementInstanceIncident(final @Nullable Boolean hasElementInstanceIncident);
+  OptionalStep batchOperationId(final @Nullable Object batchOperationId, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep hasElementInstanceIncident(
-        final @Nullable Boolean hasElementInstanceIncident,
-        final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep incidentErrorHashCode(final @Nullable Object incidentErrorHashCode);
+  OptionalStep errorMessage(final @Nullable Object errorMessage);
 
-    OptionalStep incidentErrorHashCode(
-        final @Nullable Object incidentErrorHashCode,
-        final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep errorMessage(final @Nullable Object errorMessage, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep tags(final java.util.@Nullable Set<String> tags);
 
-    OptionalStep tags(
-        final java.util.@Nullable Set<String> tags,
-        final ContractPolicy.FieldPolicy<java.util.Set<String>> policy);
+  OptionalStep hasRetriesLeft(final @Nullable Boolean hasRetriesLeft);
 
-    OptionalStep businessId(final @Nullable Object businessId);
+  OptionalStep hasRetriesLeft(final @Nullable Boolean hasRetriesLeft, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep businessId(
-        final @Nullable Object businessId, final ContractPolicy.FieldPolicy<Object> policy);
+
+  OptionalStep elementInstanceState(final @Nullable Object elementInstanceState);
+
+  OptionalStep elementInstanceState(final @Nullable Object elementInstanceState, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep elementId(final @Nullable Object elementId);
+
+  OptionalStep elementId(final @Nullable Object elementId, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep hasElementInstanceIncident(final @Nullable Boolean hasElementInstanceIncident);
+
+  OptionalStep hasElementInstanceIncident(final @Nullable Boolean hasElementInstanceIncident, final ContractPolicy.FieldPolicy<Boolean> policy);
+
+
+  OptionalStep incidentErrorHashCode(final @Nullable Object incidentErrorHashCode);
+
+  OptionalStep incidentErrorHashCode(final @Nullable Object incidentErrorHashCode, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep tags(final java.util.@Nullable Set<String> tags);
+
+  OptionalStep tags(final java.util.@Nullable Set<String> tags, final ContractPolicy.FieldPolicy<java.util.Set<String>> policy);
+
+
+  OptionalStep businessId(final @Nullable Object businessId);
+
+  OptionalStep businessId(final @Nullable Object businessId, final ContractPolicy.FieldPolicy<Object> policy);
+
 
     GeneratedBaseProcessInstanceFilterFieldsStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef START_DATE =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "startDate");
-    public static final ContractPolicy.FieldRef END_DATE =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "endDate");
-    public static final ContractPolicy.FieldRef STATE =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "state");
-    public static final ContractPolicy.FieldRef HAS_INCIDENT =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "hasIncident");
-    public static final ContractPolicy.FieldRef TENANT_ID =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "tenantId");
-    public static final ContractPolicy.FieldRef VARIABLES =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "variables");
-    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "processInstanceKey");
-    public static final ContractPolicy.FieldRef PARENT_PROCESS_INSTANCE_KEY =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "parentProcessInstanceKey");
-    public static final ContractPolicy.FieldRef PARENT_ELEMENT_INSTANCE_KEY =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "parentElementInstanceKey");
-    public static final ContractPolicy.FieldRef BATCH_OPERATION_ID =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "batchOperationId");
-    public static final ContractPolicy.FieldRef ERROR_MESSAGE =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "errorMessage");
-    public static final ContractPolicy.FieldRef HAS_RETRIES_LEFT =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "hasRetriesLeft");
-    public static final ContractPolicy.FieldRef ELEMENT_INSTANCE_STATE =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "elementInstanceState");
-    public static final ContractPolicy.FieldRef ELEMENT_ID =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "elementId");
-    public static final ContractPolicy.FieldRef HAS_ELEMENT_INSTANCE_INCIDENT =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "hasElementInstanceIncident");
-    public static final ContractPolicy.FieldRef INCIDENT_ERROR_HASH_CODE =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "incidentErrorHashCode");
-    public static final ContractPolicy.FieldRef TAGS =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "tags");
-    public static final ContractPolicy.FieldRef BUSINESS_ID =
-        ContractPolicy.field("BaseProcessInstanceFilterFields", "businessId");
+    public static final ContractPolicy.FieldRef START_DATE = ContractPolicy.field("BaseProcessInstanceFilterFields", "startDate");
+    public static final ContractPolicy.FieldRef END_DATE = ContractPolicy.field("BaseProcessInstanceFilterFields", "endDate");
+    public static final ContractPolicy.FieldRef STATE = ContractPolicy.field("BaseProcessInstanceFilterFields", "state");
+    public static final ContractPolicy.FieldRef HAS_INCIDENT = ContractPolicy.field("BaseProcessInstanceFilterFields", "hasIncident");
+    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("BaseProcessInstanceFilterFields", "tenantId");
+    public static final ContractPolicy.FieldRef VARIABLES = ContractPolicy.field("BaseProcessInstanceFilterFields", "variables");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY = ContractPolicy.field("BaseProcessInstanceFilterFields", "processInstanceKey");
+    public static final ContractPolicy.FieldRef PARENT_PROCESS_INSTANCE_KEY = ContractPolicy.field("BaseProcessInstanceFilterFields", "parentProcessInstanceKey");
+    public static final ContractPolicy.FieldRef PARENT_ELEMENT_INSTANCE_KEY = ContractPolicy.field("BaseProcessInstanceFilterFields", "parentElementInstanceKey");
+    public static final ContractPolicy.FieldRef BATCH_OPERATION_ID = ContractPolicy.field("BaseProcessInstanceFilterFields", "batchOperationId");
+    public static final ContractPolicy.FieldRef ERROR_MESSAGE = ContractPolicy.field("BaseProcessInstanceFilterFields", "errorMessage");
+    public static final ContractPolicy.FieldRef HAS_RETRIES_LEFT = ContractPolicy.field("BaseProcessInstanceFilterFields", "hasRetriesLeft");
+    public static final ContractPolicy.FieldRef ELEMENT_INSTANCE_STATE = ContractPolicy.field("BaseProcessInstanceFilterFields", "elementInstanceState");
+    public static final ContractPolicy.FieldRef ELEMENT_ID = ContractPolicy.field("BaseProcessInstanceFilterFields", "elementId");
+    public static final ContractPolicy.FieldRef HAS_ELEMENT_INSTANCE_INCIDENT = ContractPolicy.field("BaseProcessInstanceFilterFields", "hasElementInstanceIncident");
+    public static final ContractPolicy.FieldRef INCIDENT_ERROR_HASH_CODE = ContractPolicy.field("BaseProcessInstanceFilterFields", "incidentErrorHashCode");
+    public static final ContractPolicy.FieldRef TAGS = ContractPolicy.field("BaseProcessInstanceFilterFields", "tags");
+    public static final ContractPolicy.FieldRef BUSINESS_ID = ContractPolicy.field("BaseProcessInstanceFilterFields", "businessId");
 
     private Fields() {}
   }
+
+
 }

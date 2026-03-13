@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/process-instances.yaml#/components/schemas/ProcessInstanceModificationTerminateByKeyInstruction
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,15 +17,16 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessInstanceModificationTerminateByKeyInstructionStrictContract(
-    String elementInstanceKey) {
+    String elementInstanceKey
+) {
 
   public GeneratedProcessInstanceModificationTerminateByKeyInstructionStrictContract {
-    Objects.requireNonNull(
-        elementInstanceKey, "elementInstanceKey is required and must not be null");
+    Objects.requireNonNull(elementInstanceKey, "elementInstanceKey is required and must not be null");
   }
 
   public static String coerceElementInstanceKey(final Object value) {
@@ -39,6 +43,8 @@ public record GeneratedProcessInstanceModificationTerminateByKeyInstructionStric
         "elementInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
+
   public static ElementInstanceKeyStep builder() {
     return new Builder();
   }
@@ -53,7 +59,6 @@ public record GeneratedProcessInstanceModificationTerminateByKeyInstructionStric
       this.elementInstanceKey = elementInstanceKey;
       return this;
     }
-
     @Override
     public GeneratedProcessInstanceModificationTerminateByKeyInstructionStrictContract build() {
       return new GeneratedProcessInstanceModificationTerminateByKeyInstructionStrictContract(
@@ -69,11 +74,12 @@ public record GeneratedProcessInstanceModificationTerminateByKeyInstructionStric
     GeneratedProcessInstanceModificationTerminateByKeyInstructionStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef ELEMENT_INSTANCE_KEY =
-        ContractPolicy.field(
-            "ProcessInstanceModificationTerminateByKeyInstruction", "elementInstanceKey");
+    public static final ContractPolicy.FieldRef ELEMENT_INSTANCE_KEY = ContractPolicy.field("ProcessInstanceModificationTerminateByKeyInstruction", "elementInstanceKey");
 
     private Fields() {}
   }
+
+
 }

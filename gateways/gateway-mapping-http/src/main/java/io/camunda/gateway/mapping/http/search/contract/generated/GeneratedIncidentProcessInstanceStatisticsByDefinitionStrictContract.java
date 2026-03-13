@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/incidents.yaml#/components/schemas/IncidentProcessInstanceStatisticsByDefinitionResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,6 +17,7 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
@@ -23,21 +27,16 @@ public record GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContra
     String processDefinitionName,
     Integer processDefinitionVersion,
     String tenantId,
-    Long activeInstancesWithErrorCount) {
+    Long activeInstancesWithErrorCount
+) {
 
   public GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContract {
-    Objects.requireNonNull(
-        processDefinitionId, "processDefinitionId is required and must not be null");
-    Objects.requireNonNull(
-        processDefinitionKey, "processDefinitionKey is required and must not be null");
-    Objects.requireNonNull(
-        processDefinitionName, "processDefinitionName is required and must not be null");
-    Objects.requireNonNull(
-        processDefinitionVersion, "processDefinitionVersion is required and must not be null");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId is required and must not be null");
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey is required and must not be null");
+    Objects.requireNonNull(processDefinitionName, "processDefinitionName is required and must not be null");
+    Objects.requireNonNull(processDefinitionVersion, "processDefinitionVersion is required and must not be null");
     Objects.requireNonNull(tenantId, "tenantId is required and must not be null");
-    Objects.requireNonNull(
-        activeInstancesWithErrorCount,
-        "activeInstancesWithErrorCount is required and must not be null");
+    Objects.requireNonNull(activeInstancesWithErrorCount, "activeInstancesWithErrorCount is required and must not be null");
   }
 
   public static String coerceProcessDefinitionKey(final Object value) {
@@ -54,18 +53,13 @@ public record GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContra
         "processDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
+
   public static ProcessDefinitionIdStep builder() {
     return new Builder();
   }
 
-  public static final class Builder
-      implements ProcessDefinitionIdStep,
-          ProcessDefinitionKeyStep,
-          ProcessDefinitionNameStep,
-          ProcessDefinitionVersionStep,
-          TenantIdStep,
-          ActiveInstancesWithErrorCountStep,
-          OptionalStep {
+  public static final class Builder implements ProcessDefinitionIdStep, ProcessDefinitionKeyStep, ProcessDefinitionNameStep, ProcessDefinitionVersionStep, TenantIdStep, ActiveInstancesWithErrorCountStep, OptionalStep {
     private String processDefinitionId;
     private Object processDefinitionKey;
     private String processDefinitionName;
@@ -110,7 +104,6 @@ public record GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContra
       this.activeInstancesWithErrorCount = activeInstancesWithErrorCount;
       return this;
     }
-
     @Override
     public GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContract build() {
       return new GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContract(
@@ -151,25 +144,17 @@ public record GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContra
     GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID =
-        ContractPolicy.field(
-            "IncidentProcessInstanceStatisticsByDefinitionResult", "processDefinitionId");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY =
-        ContractPolicy.field(
-            "IncidentProcessInstanceStatisticsByDefinitionResult", "processDefinitionKey");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_NAME =
-        ContractPolicy.field(
-            "IncidentProcessInstanceStatisticsByDefinitionResult", "processDefinitionName");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_VERSION =
-        ContractPolicy.field(
-            "IncidentProcessInstanceStatisticsByDefinitionResult", "processDefinitionVersion");
-    public static final ContractPolicy.FieldRef TENANT_ID =
-        ContractPolicy.field("IncidentProcessInstanceStatisticsByDefinitionResult", "tenantId");
-    public static final ContractPolicy.FieldRef ACTIVE_INSTANCES_WITH_ERROR_COUNT =
-        ContractPolicy.field(
-            "IncidentProcessInstanceStatisticsByDefinitionResult", "activeInstancesWithErrorCount");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID = ContractPolicy.field("IncidentProcessInstanceStatisticsByDefinitionResult", "processDefinitionId");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY = ContractPolicy.field("IncidentProcessInstanceStatisticsByDefinitionResult", "processDefinitionKey");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_NAME = ContractPolicy.field("IncidentProcessInstanceStatisticsByDefinitionResult", "processDefinitionName");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_VERSION = ContractPolicy.field("IncidentProcessInstanceStatisticsByDefinitionResult", "processDefinitionVersion");
+    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("IncidentProcessInstanceStatisticsByDefinitionResult", "tenantId");
+    public static final ContractPolicy.FieldRef ACTIVE_INSTANCES_WITH_ERROR_COUNT = ContractPolicy.field("IncidentProcessInstanceStatisticsByDefinitionResult", "activeInstancesWithErrorCount");
 
     private Fields() {}
   }
+
+
 }

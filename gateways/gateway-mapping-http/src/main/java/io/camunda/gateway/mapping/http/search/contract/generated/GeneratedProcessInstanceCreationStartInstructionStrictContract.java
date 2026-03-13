@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/process-instances.yaml#/components/schemas/ProcessInstanceCreationStartInstruction
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,14 +16,18 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
-public record GeneratedProcessInstanceCreationStartInstructionStrictContract(String elementId) {
+public record GeneratedProcessInstanceCreationStartInstructionStrictContract(
+    String elementId
+) {
 
   public GeneratedProcessInstanceCreationStartInstructionStrictContract {
     Objects.requireNonNull(elementId, "elementId is required and must not be null");
   }
+
 
   public static ElementIdStep builder() {
     return new Builder();
@@ -36,10 +43,10 @@ public record GeneratedProcessInstanceCreationStartInstructionStrictContract(Str
       this.elementId = elementId;
       return this;
     }
-
     @Override
     public GeneratedProcessInstanceCreationStartInstructionStrictContract build() {
-      return new GeneratedProcessInstanceCreationStartInstructionStrictContract(this.elementId);
+      return new GeneratedProcessInstanceCreationStartInstructionStrictContract(
+          this.elementId);
     }
   }
 
@@ -51,10 +58,12 @@ public record GeneratedProcessInstanceCreationStartInstructionStrictContract(Str
     GeneratedProcessInstanceCreationStartInstructionStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef ELEMENT_ID =
-        ContractPolicy.field("ProcessInstanceCreationStartInstruction", "elementId");
+    public static final ContractPolicy.FieldRef ELEMENT_ID = ContractPolicy.field("ProcessInstanceCreationStartInstruction", "elementId");
 
     private Fields() {}
   }
+
+
 }

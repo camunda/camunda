@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/documents.yaml#/components/schemas/DocumentCreationFailureDetail
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,11 +16,16 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedDocumentCreationFailureDetailStrictContract(
-    String fileName, Integer status, String title, String detail) {
+    String fileName,
+    Integer status,
+    String title,
+    String detail
+) {
 
   public GeneratedDocumentCreationFailureDetailStrictContract {
     Objects.requireNonNull(fileName, "fileName is required and must not be null");
@@ -26,12 +34,12 @@ public record GeneratedDocumentCreationFailureDetailStrictContract(
     Objects.requireNonNull(detail, "detail is required and must not be null");
   }
 
+
   public static FileNameStep builder() {
     return new Builder();
   }
 
-  public static final class Builder
-      implements FileNameStep, StatusStep, TitleStep, DetailStep, OptionalStep {
+  public static final class Builder implements FileNameStep, StatusStep, TitleStep, DetailStep, OptionalStep {
     private String fileName;
     private Integer status;
     private String title;
@@ -62,11 +70,13 @@ public record GeneratedDocumentCreationFailureDetailStrictContract(
       this.detail = detail;
       return this;
     }
-
     @Override
     public GeneratedDocumentCreationFailureDetailStrictContract build() {
       return new GeneratedDocumentCreationFailureDetailStrictContract(
-          this.fileName, this.status, this.title, this.detail);
+          this.fileName,
+          this.status,
+          this.title,
+          this.detail);
     }
   }
 
@@ -90,16 +100,15 @@ public record GeneratedDocumentCreationFailureDetailStrictContract(
     GeneratedDocumentCreationFailureDetailStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef FILE_NAME =
-        ContractPolicy.field("DocumentCreationFailureDetail", "fileName");
-    public static final ContractPolicy.FieldRef STATUS =
-        ContractPolicy.field("DocumentCreationFailureDetail", "status");
-    public static final ContractPolicy.FieldRef TITLE =
-        ContractPolicy.field("DocumentCreationFailureDetail", "title");
-    public static final ContractPolicy.FieldRef DETAIL =
-        ContractPolicy.field("DocumentCreationFailureDetail", "detail");
+    public static final ContractPolicy.FieldRef FILE_NAME = ContractPolicy.field("DocumentCreationFailureDetail", "fileName");
+    public static final ContractPolicy.FieldRef STATUS = ContractPolicy.field("DocumentCreationFailureDetail", "status");
+    public static final ContractPolicy.FieldRef TITLE = ContractPolicy.field("DocumentCreationFailureDetail", "title");
+    public static final ContractPolicy.FieldRef DETAIL = ContractPolicy.field("DocumentCreationFailureDetail", "detail");
 
     private Fields() {}
   }
+
+
 }

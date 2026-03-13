@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/global-listeners.yaml#/components/schemas/GlobalTaskListenerBase
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,71 +16,146 @@ import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedGlobalTaskListenerBaseStrictContract(
-    java.util.@Nullable List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>
-        eventTypes) {
+    @Nullable String type,
+    @Nullable Integer retries,
+    @Nullable Boolean afterNonGlobal,
+    @Nullable Integer priority,
+    java.util.@Nullable List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum> eventTypes
+) {
+
 
   public static OptionalStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements OptionalStep {
-    private java.util.List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>
-        eventTypes;
+    private String type;
+    private Integer retries;
+    private Boolean afterNonGlobal;
+    private Integer priority;
+    private java.util.List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum> eventTypes;
 
     private Builder() {}
 
     @Override
-    public OptionalStep eventTypes(
-        final java.util.@Nullable List<
-                io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>
-            eventTypes) {
+    public OptionalStep type(final @Nullable String type) {
+      this.type = type;
+      return this;
+    }
+
+    @Override
+    public OptionalStep type(final @Nullable String type, final ContractPolicy.FieldPolicy<String> policy) {
+      this.type = policy.apply(type, Fields.TYPE, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep retries(final @Nullable Integer retries) {
+      this.retries = retries;
+      return this;
+    }
+
+    @Override
+    public OptionalStep retries(final @Nullable Integer retries, final ContractPolicy.FieldPolicy<Integer> policy) {
+      this.retries = policy.apply(retries, Fields.RETRIES, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep afterNonGlobal(final @Nullable Boolean afterNonGlobal) {
+      this.afterNonGlobal = afterNonGlobal;
+      return this;
+    }
+
+    @Override
+    public OptionalStep afterNonGlobal(final @Nullable Boolean afterNonGlobal, final ContractPolicy.FieldPolicy<Boolean> policy) {
+      this.afterNonGlobal = policy.apply(afterNonGlobal, Fields.AFTER_NON_GLOBAL, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep priority(final @Nullable Integer priority) {
+      this.priority = priority;
+      return this;
+    }
+
+    @Override
+    public OptionalStep priority(final @Nullable Integer priority, final ContractPolicy.FieldPolicy<Integer> policy) {
+      this.priority = policy.apply(priority, Fields.PRIORITY, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep eventTypes(final java.util.@Nullable List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum> eventTypes) {
       this.eventTypes = eventTypes;
       return this;
     }
 
     @Override
-    public OptionalStep eventTypes(
-        final java.util.@Nullable List<
-                io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>
-            eventTypes,
-        final ContractPolicy.FieldPolicy<
-                java.util.List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>>
-            policy) {
+    public OptionalStep eventTypes(final java.util.@Nullable List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum> eventTypes, final ContractPolicy.FieldPolicy<java.util.List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>> policy) {
       this.eventTypes = policy.apply(eventTypes, Fields.EVENT_TYPES, null);
       return this;
     }
 
     @Override
     public GeneratedGlobalTaskListenerBaseStrictContract build() {
-      return new GeneratedGlobalTaskListenerBaseStrictContract(this.eventTypes);
+      return new GeneratedGlobalTaskListenerBaseStrictContract(
+          this.type,
+          this.retries,
+          this.afterNonGlobal,
+          this.priority,
+          this.eventTypes);
     }
   }
 
   public interface OptionalStep {
-    OptionalStep eventTypes(
-        final java.util.@Nullable List<
-                io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>
-            eventTypes);
+  OptionalStep type(final @Nullable String type);
 
-    OptionalStep eventTypes(
-        final java.util.@Nullable List<
-                io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>
-            eventTypes,
-        final ContractPolicy.FieldPolicy<
-                java.util.List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>>
-            policy);
+  OptionalStep type(final @Nullable String type, final ContractPolicy.FieldPolicy<String> policy);
+
+
+  OptionalStep retries(final @Nullable Integer retries);
+
+  OptionalStep retries(final @Nullable Integer retries, final ContractPolicy.FieldPolicy<Integer> policy);
+
+
+  OptionalStep afterNonGlobal(final @Nullable Boolean afterNonGlobal);
+
+  OptionalStep afterNonGlobal(final @Nullable Boolean afterNonGlobal, final ContractPolicy.FieldPolicy<Boolean> policy);
+
+
+  OptionalStep priority(final @Nullable Integer priority);
+
+  OptionalStep priority(final @Nullable Integer priority, final ContractPolicy.FieldPolicy<Integer> policy);
+
+
+  OptionalStep eventTypes(final java.util.@Nullable List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum> eventTypes);
+
+  OptionalStep eventTypes(final java.util.@Nullable List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum> eventTypes, final ContractPolicy.FieldPolicy<java.util.List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>> policy);
+
 
     GeneratedGlobalTaskListenerBaseStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef EVENT_TYPES =
-        ContractPolicy.field("GlobalTaskListenerBase", "eventTypes");
+    public static final ContractPolicy.FieldRef TYPE = ContractPolicy.field("GlobalTaskListenerBase", "type");
+    public static final ContractPolicy.FieldRef RETRIES = ContractPolicy.field("GlobalTaskListenerBase", "retries");
+    public static final ContractPolicy.FieldRef AFTER_NON_GLOBAL = ContractPolicy.field("GlobalTaskListenerBase", "afterNonGlobal");
+    public static final ContractPolicy.FieldRef PRIORITY = ContractPolicy.field("GlobalTaskListenerBase", "priority");
+    public static final ContractPolicy.FieldRef EVENT_TYPES = ContractPolicy.field("GlobalTaskListenerBase", "eventTypes");
 
     private Fields() {}
   }
+
+
 }

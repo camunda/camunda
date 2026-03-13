@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/user-tasks.yaml#/components/schemas/UserTaskVariableSearchQuerySortRequest
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,15 +17,19 @@ import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedUserTaskVariableSearchQuerySortRequestStrictContract(
-    String field, io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order) {
+    String field,
+    io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order
+) {
 
   public GeneratedUserTaskVariableSearchQuerySortRequestStrictContract {
     Objects.requireNonNull(field, "field is required and must not be null");
   }
+
 
   public static FieldStep builder() {
     return new Builder();
@@ -41,16 +48,13 @@ public record GeneratedUserTaskVariableSearchQuerySortRequestStrictContract(
     }
 
     @Override
-    public OptionalStep order(
-        final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order) {
+    public OptionalStep order(final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order) {
       this.order = order;
       return this;
     }
 
     @Override
-    public OptionalStep order(
-        final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.SortOrderEnum> policy) {
+    public OptionalStep order(final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.SortOrderEnum> policy) {
       this.order = policy.apply(order, Fields.ORDER, null);
       return this;
     }
@@ -58,7 +62,8 @@ public record GeneratedUserTaskVariableSearchQuerySortRequestStrictContract(
     @Override
     public GeneratedUserTaskVariableSearchQuerySortRequestStrictContract build() {
       return new GeneratedUserTaskVariableSearchQuerySortRequestStrictContract(
-          this.field, this.order);
+          this.field,
+          this.order);
     }
   }
 
@@ -67,21 +72,21 @@ public record GeneratedUserTaskVariableSearchQuerySortRequestStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep order(final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order);
+  OptionalStep order(final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order);
 
-    OptionalStep order(
-        final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.SortOrderEnum> policy);
+  OptionalStep order(final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order, final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.SortOrderEnum> policy);
+
 
     GeneratedUserTaskVariableSearchQuerySortRequestStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef FIELD =
-        ContractPolicy.field("UserTaskVariableSearchQuerySortRequest", "field");
-    public static final ContractPolicy.FieldRef ORDER =
-        ContractPolicy.field("UserTaskVariableSearchQuerySortRequest", "order");
+    public static final ContractPolicy.FieldRef FIELD = ContractPolicy.field("UserTaskVariableSearchQuerySortRequest", "field");
+    public static final ContractPolicy.FieldRef ORDER = ContractPolicy.field("UserTaskVariableSearchQuerySortRequest", "order");
 
     private Fields() {}
   }
+
+
 }

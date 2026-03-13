@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/process-instances.yaml#/components/schemas/ModifyProcessInstanceVariableInstruction
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,15 +17,19 @@ import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedModifyProcessInstanceVariableInstructionStrictContract(
-    java.util.Map<String, Object> variables, @Nullable String scopeId) {
+    java.util.Map<String, Object> variables,
+    @Nullable String scopeId
+) {
 
   public GeneratedModifyProcessInstanceVariableInstructionStrictContract {
     Objects.requireNonNull(variables, "variables is required and must not be null");
   }
+
 
   public static VariablesStep builder() {
     return new Builder();
@@ -47,8 +54,7 @@ public record GeneratedModifyProcessInstanceVariableInstructionStrictContract(
     }
 
     @Override
-    public OptionalStep scopeId(
-        final @Nullable String scopeId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep scopeId(final @Nullable String scopeId, final ContractPolicy.FieldPolicy<String> policy) {
       this.scopeId = policy.apply(scopeId, Fields.SCOPE_ID, null);
       return this;
     }
@@ -56,7 +62,8 @@ public record GeneratedModifyProcessInstanceVariableInstructionStrictContract(
     @Override
     public GeneratedModifyProcessInstanceVariableInstructionStrictContract build() {
       return new GeneratedModifyProcessInstanceVariableInstructionStrictContract(
-          this.variables, this.scopeId);
+          this.variables,
+          this.scopeId);
     }
   }
 
@@ -65,20 +72,21 @@ public record GeneratedModifyProcessInstanceVariableInstructionStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep scopeId(final @Nullable String scopeId);
+  OptionalStep scopeId(final @Nullable String scopeId);
 
-    OptionalStep scopeId(
-        final @Nullable String scopeId, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep scopeId(final @Nullable String scopeId, final ContractPolicy.FieldPolicy<String> policy);
+
 
     GeneratedModifyProcessInstanceVariableInstructionStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef VARIABLES =
-        ContractPolicy.field("ModifyProcessInstanceVariableInstruction", "variables");
-    public static final ContractPolicy.FieldRef SCOPE_ID =
-        ContractPolicy.field("ModifyProcessInstanceVariableInstruction", "scopeId");
+    public static final ContractPolicy.FieldRef VARIABLES = ContractPolicy.field("ModifyProcessInstanceVariableInstruction", "variables");
+    public static final ContractPolicy.FieldRef SCOPE_ID = ContractPolicy.field("ModifyProcessInstanceVariableInstruction", "scopeId");
 
     private Fields() {}
   }
+
+
 }

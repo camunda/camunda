@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/mapping-rules.yaml#/components/schemas/MappingRuleCreateUpdateRequest
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,11 +16,15 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedMappingRuleCreateUpdateRequestStrictContract(
-    String claimName, String claimValue, String name) {
+    String claimName,
+    String claimValue,
+    String name
+) {
 
   public GeneratedMappingRuleCreateUpdateRequestStrictContract {
     Objects.requireNonNull(claimName, "claimName is required and must not be null");
@@ -25,12 +32,12 @@ public record GeneratedMappingRuleCreateUpdateRequestStrictContract(
     Objects.requireNonNull(name, "name is required and must not be null");
   }
 
+
   public static ClaimNameStep builder() {
     return new Builder();
   }
 
-  public static final class Builder
-      implements ClaimNameStep, ClaimValueStep, NameStep, OptionalStep {
+  public static final class Builder implements ClaimNameStep, ClaimValueStep, NameStep, OptionalStep {
     private String claimName;
     private String claimValue;
     private String name;
@@ -54,11 +61,12 @@ public record GeneratedMappingRuleCreateUpdateRequestStrictContract(
       this.name = name;
       return this;
     }
-
     @Override
     public GeneratedMappingRuleCreateUpdateRequestStrictContract build() {
       return new GeneratedMappingRuleCreateUpdateRequestStrictContract(
-          this.claimName, this.claimValue, this.name);
+          this.claimName,
+          this.claimValue,
+          this.name);
     }
   }
 
@@ -78,14 +86,14 @@ public record GeneratedMappingRuleCreateUpdateRequestStrictContract(
     GeneratedMappingRuleCreateUpdateRequestStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef CLAIM_NAME =
-        ContractPolicy.field("MappingRuleCreateUpdateRequest", "claimName");
-    public static final ContractPolicy.FieldRef CLAIM_VALUE =
-        ContractPolicy.field("MappingRuleCreateUpdateRequest", "claimValue");
-    public static final ContractPolicy.FieldRef NAME =
-        ContractPolicy.field("MappingRuleCreateUpdateRequest", "name");
+    public static final ContractPolicy.FieldRef CLAIM_NAME = ContractPolicy.field("MappingRuleCreateUpdateRequest", "claimName");
+    public static final ContractPolicy.FieldRef CLAIM_VALUE = ContractPolicy.field("MappingRuleCreateUpdateRequest", "claimValue");
+    public static final ContractPolicy.FieldRef NAME = ContractPolicy.field("MappingRuleCreateUpdateRequest", "name");
 
     private Fields() {}
   }
+
+
 }

@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/users.yaml#/components/schemas/UserFilter
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,11 +16,16 @@ import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedUserFilterStrictContract(
-    @Nullable Object username, @Nullable Object name, @Nullable Object email) {
+    @Nullable Object username,
+    @Nullable Object name,
+    @Nullable Object email
+) {
+
 
   public static OptionalStep builder() {
     return new Builder();
@@ -37,11 +45,11 @@ public record GeneratedUserFilterStrictContract(
     }
 
     @Override
-    public OptionalStep username(
-        final @Nullable Object username, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep username(final @Nullable Object username, final ContractPolicy.FieldPolicy<Object> policy) {
       this.username = policy.apply(username, Fields.USERNAME, null);
       return this;
     }
+
 
     @Override
     public OptionalStep name(final @Nullable Object name) {
@@ -50,11 +58,11 @@ public record GeneratedUserFilterStrictContract(
     }
 
     @Override
-    public OptionalStep name(
-        final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep name(final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy) {
       this.name = policy.apply(name, Fields.NAME, null);
       return this;
     }
+
 
     @Override
     public OptionalStep email(final @Nullable Object email) {
@@ -63,42 +71,47 @@ public record GeneratedUserFilterStrictContract(
     }
 
     @Override
-    public OptionalStep email(
-        final @Nullable Object email, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep email(final @Nullable Object email, final ContractPolicy.FieldPolicy<Object> policy) {
       this.email = policy.apply(email, Fields.EMAIL, null);
       return this;
     }
 
     @Override
     public GeneratedUserFilterStrictContract build() {
-      return new GeneratedUserFilterStrictContract(this.username, this.name, this.email);
+      return new GeneratedUserFilterStrictContract(
+          this.username,
+          this.name,
+          this.email);
     }
   }
 
   public interface OptionalStep {
-    OptionalStep username(final @Nullable Object username);
+  OptionalStep username(final @Nullable Object username);
 
-    OptionalStep username(
-        final @Nullable Object username, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep username(final @Nullable Object username, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep name(final @Nullable Object name);
 
-    OptionalStep name(final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep name(final @Nullable Object name);
 
-    OptionalStep email(final @Nullable Object email);
+  OptionalStep name(final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep email(
-        final @Nullable Object email, final ContractPolicy.FieldPolicy<Object> policy);
+
+  OptionalStep email(final @Nullable Object email);
+
+  OptionalStep email(final @Nullable Object email, final ContractPolicy.FieldPolicy<Object> policy);
+
 
     GeneratedUserFilterStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef USERNAME =
-        ContractPolicy.field("UserFilter", "username");
+    public static final ContractPolicy.FieldRef USERNAME = ContractPolicy.field("UserFilter", "username");
     public static final ContractPolicy.FieldRef NAME = ContractPolicy.field("UserFilter", "name");
     public static final ContractPolicy.FieldRef EMAIL = ContractPolicy.field("UserFilter", "email");
 
     private Fields() {}
   }
+
+
 }

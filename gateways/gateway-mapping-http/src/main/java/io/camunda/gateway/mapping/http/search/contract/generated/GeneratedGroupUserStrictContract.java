@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/groups.yaml#/components/schemas/GroupUserResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,14 +16,18 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
-public record GeneratedGroupUserStrictContract(String username) {
+public record GeneratedGroupUserStrictContract(
+    String username
+) {
 
   public GeneratedGroupUserStrictContract {
     Objects.requireNonNull(username, "username is required and must not be null");
   }
+
 
   public static UsernameStep builder() {
     return new Builder();
@@ -36,10 +43,10 @@ public record GeneratedGroupUserStrictContract(String username) {
       this.username = username;
       return this;
     }
-
     @Override
     public GeneratedGroupUserStrictContract build() {
-      return new GeneratedGroupUserStrictContract(this.username);
+      return new GeneratedGroupUserStrictContract(
+          this.username);
     }
   }
 
@@ -51,10 +58,12 @@ public record GeneratedGroupUserStrictContract(String username) {
     GeneratedGroupUserStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef USERNAME =
-        ContractPolicy.field("GroupUserResult", "username");
+    public static final ContractPolicy.FieldRef USERNAME = ContractPolicy.field("GroupUserResult", "username");
 
     private Fields() {}
   }
+
+
 }

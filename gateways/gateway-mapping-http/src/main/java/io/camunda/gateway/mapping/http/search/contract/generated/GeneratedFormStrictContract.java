@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/form-models.yaml#/components/schemas/FormResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,11 +17,17 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedFormStrictContract(
-    String tenantId, String formId, String schema, Long version, String formKey) {
+    String tenantId,
+    String formId,
+    String schema,
+    Long version,
+    String formKey
+) {
 
   public GeneratedFormStrictContract {
     Objects.requireNonNull(tenantId, "tenantId is required and must not be null");
@@ -42,12 +51,13 @@ public record GeneratedFormStrictContract(
         "formKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
+
   public static TenantIdStep builder() {
     return new Builder();
   }
 
-  public static final class Builder
-      implements TenantIdStep, FormIdStep, SchemaStep, VersionStep, FormKeyStep, OptionalStep {
+  public static final class Builder implements TenantIdStep, FormIdStep, SchemaStep, VersionStep, FormKeyStep, OptionalStep {
     private String tenantId;
     private String formId;
     private String schema;
@@ -85,11 +95,14 @@ public record GeneratedFormStrictContract(
       this.formKey = formKey;
       return this;
     }
-
     @Override
     public GeneratedFormStrictContract build() {
       return new GeneratedFormStrictContract(
-          this.tenantId, this.formId, this.schema, this.version, coerceFormKey(this.formKey));
+          this.tenantId,
+          this.formId,
+          this.schema,
+          this.version,
+          coerceFormKey(this.formKey));
     }
   }
 
@@ -117,18 +130,16 @@ public record GeneratedFormStrictContract(
     GeneratedFormStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef TENANT_ID =
-        ContractPolicy.field("FormResult", "tenantId");
-    public static final ContractPolicy.FieldRef FORM_ID =
-        ContractPolicy.field("FormResult", "formId");
-    public static final ContractPolicy.FieldRef SCHEMA =
-        ContractPolicy.field("FormResult", "schema");
-    public static final ContractPolicy.FieldRef VERSION =
-        ContractPolicy.field("FormResult", "version");
-    public static final ContractPolicy.FieldRef FORM_KEY =
-        ContractPolicy.field("FormResult", "formKey");
+    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("FormResult", "tenantId");
+    public static final ContractPolicy.FieldRef FORM_ID = ContractPolicy.field("FormResult", "formId");
+    public static final ContractPolicy.FieldRef SCHEMA = ContractPolicy.field("FormResult", "schema");
+    public static final ContractPolicy.FieldRef VERSION = ContractPolicy.field("FormResult", "version");
+    public static final ContractPolicy.FieldRef FORM_KEY = ContractPolicy.field("FormResult", "formKey");
 
     private Fields() {}
   }
+
+
 }

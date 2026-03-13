@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/deployments.yaml#/components/schemas/DeploymentResourceResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,11 +16,17 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedDeploymentResourceStrictContract(
-    String resourceId, String resourceName, Integer version, String tenantId, String resourceKey) {
+    String resourceId,
+    String resourceName,
+    Integer version,
+    String tenantId,
+    String resourceKey
+) {
 
   public GeneratedDeploymentResourceStrictContract {
     Objects.requireNonNull(resourceId, "resourceId is required and must not be null");
@@ -27,17 +36,12 @@ public record GeneratedDeploymentResourceStrictContract(
     Objects.requireNonNull(resourceKey, "resourceKey is required and must not be null");
   }
 
+
   public static ResourceIdStep builder() {
     return new Builder();
   }
 
-  public static final class Builder
-      implements ResourceIdStep,
-          ResourceNameStep,
-          VersionStep,
-          TenantIdStep,
-          ResourceKeyStep,
-          OptionalStep {
+  public static final class Builder implements ResourceIdStep, ResourceNameStep, VersionStep, TenantIdStep, ResourceKeyStep, OptionalStep {
     private String resourceId;
     private String resourceName;
     private Integer version;
@@ -75,11 +79,14 @@ public record GeneratedDeploymentResourceStrictContract(
       this.resourceKey = resourceKey;
       return this;
     }
-
     @Override
     public GeneratedDeploymentResourceStrictContract build() {
       return new GeneratedDeploymentResourceStrictContract(
-          this.resourceId, this.resourceName, this.version, this.tenantId, this.resourceKey);
+          this.resourceId,
+          this.resourceName,
+          this.version,
+          this.tenantId,
+          this.resourceKey);
     }
   }
 
@@ -107,18 +114,16 @@ public record GeneratedDeploymentResourceStrictContract(
     GeneratedDeploymentResourceStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef RESOURCE_ID =
-        ContractPolicy.field("DeploymentResourceResult", "resourceId");
-    public static final ContractPolicy.FieldRef RESOURCE_NAME =
-        ContractPolicy.field("DeploymentResourceResult", "resourceName");
-    public static final ContractPolicy.FieldRef VERSION =
-        ContractPolicy.field("DeploymentResourceResult", "version");
-    public static final ContractPolicy.FieldRef TENANT_ID =
-        ContractPolicy.field("DeploymentResourceResult", "tenantId");
-    public static final ContractPolicy.FieldRef RESOURCE_KEY =
-        ContractPolicy.field("DeploymentResourceResult", "resourceKey");
+    public static final ContractPolicy.FieldRef RESOURCE_ID = ContractPolicy.field("DeploymentResourceResult", "resourceId");
+    public static final ContractPolicy.FieldRef RESOURCE_NAME = ContractPolicy.field("DeploymentResourceResult", "resourceName");
+    public static final ContractPolicy.FieldRef VERSION = ContractPolicy.field("DeploymentResourceResult", "version");
+    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("DeploymentResourceResult", "tenantId");
+    public static final ContractPolicy.FieldRef RESOURCE_KEY = ContractPolicy.field("DeploymentResourceResult", "resourceKey");
 
     private Fields() {}
   }
+
+
 }

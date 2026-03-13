@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/batch-operations.yaml#/components/schemas/BatchOperationError
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,11 +16,15 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedBatchOperationErrorStrictContract(
-    Integer partitionId, String type, String message) {
+    Integer partitionId,
+    String type,
+    String message
+) {
 
   public GeneratedBatchOperationErrorStrictContract {
     Objects.requireNonNull(partitionId, "partitionId is required and must not be null");
@@ -25,12 +32,12 @@ public record GeneratedBatchOperationErrorStrictContract(
     Objects.requireNonNull(message, "message is required and must not be null");
   }
 
+
   public static PartitionIdStep builder() {
     return new Builder();
   }
 
-  public static final class Builder
-      implements PartitionIdStep, TypeStep, MessageStep, OptionalStep {
+  public static final class Builder implements PartitionIdStep, TypeStep, MessageStep, OptionalStep {
     private Integer partitionId;
     private String type;
     private String message;
@@ -54,11 +61,12 @@ public record GeneratedBatchOperationErrorStrictContract(
       this.message = message;
       return this;
     }
-
     @Override
     public GeneratedBatchOperationErrorStrictContract build() {
       return new GeneratedBatchOperationErrorStrictContract(
-          this.partitionId, this.type, this.message);
+          this.partitionId,
+          this.type,
+          this.message);
     }
   }
 
@@ -78,14 +86,14 @@ public record GeneratedBatchOperationErrorStrictContract(
     GeneratedBatchOperationErrorStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef PARTITION_ID =
-        ContractPolicy.field("BatchOperationError", "partitionId");
-    public static final ContractPolicy.FieldRef TYPE =
-        ContractPolicy.field("BatchOperationError", "type");
-    public static final ContractPolicy.FieldRef MESSAGE =
-        ContractPolicy.field("BatchOperationError", "message");
+    public static final ContractPolicy.FieldRef PARTITION_ID = ContractPolicy.field("BatchOperationError", "partitionId");
+    public static final ContractPolicy.FieldRef TYPE = ContractPolicy.field("BatchOperationError", "type");
+    public static final ContractPolicy.FieldRef MESSAGE = ContractPolicy.field("BatchOperationError", "message");
 
     private Fields() {}
   }
+
+
 }

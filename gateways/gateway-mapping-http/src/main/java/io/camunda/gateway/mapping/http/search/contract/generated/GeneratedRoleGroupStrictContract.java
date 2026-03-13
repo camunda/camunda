@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/roles.yaml#/components/schemas/RoleGroupResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,14 +16,18 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
-public record GeneratedRoleGroupStrictContract(String groupId) {
+public record GeneratedRoleGroupStrictContract(
+    String groupId
+) {
 
   public GeneratedRoleGroupStrictContract {
     Objects.requireNonNull(groupId, "groupId is required and must not be null");
   }
+
 
   public static GroupIdStep builder() {
     return new Builder();
@@ -36,10 +43,10 @@ public record GeneratedRoleGroupStrictContract(String groupId) {
       this.groupId = groupId;
       return this;
     }
-
     @Override
     public GeneratedRoleGroupStrictContract build() {
-      return new GeneratedRoleGroupStrictContract(this.groupId);
+      return new GeneratedRoleGroupStrictContract(
+          this.groupId);
     }
   }
 
@@ -51,10 +58,12 @@ public record GeneratedRoleGroupStrictContract(String groupId) {
     GeneratedRoleGroupStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef GROUP_ID =
-        ContractPolicy.field("RoleGroupResult", "groupId");
+    public static final ContractPolicy.FieldRef GROUP_ID = ContractPolicy.field("RoleGroupResult", "groupId");
 
     private Fields() {}
   }
+
+
 }

@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/process-instances.yaml#/components/schemas/InferredAncestorKeyInstruction
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,14 +16,18 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
-public record GeneratedInferredAncestorKeyInstructionStrictContract(String ancestorScopeType) {
+public record GeneratedInferredAncestorKeyInstructionStrictContract(
+    String ancestorScopeType
+) {
 
   public GeneratedInferredAncestorKeyInstructionStrictContract {
     Objects.requireNonNull(ancestorScopeType, "ancestorScopeType is required and must not be null");
   }
+
 
   public static AncestorScopeTypeStep builder() {
     return new Builder();
@@ -36,10 +43,10 @@ public record GeneratedInferredAncestorKeyInstructionStrictContract(String ances
       this.ancestorScopeType = ancestorScopeType;
       return this;
     }
-
     @Override
     public GeneratedInferredAncestorKeyInstructionStrictContract build() {
-      return new GeneratedInferredAncestorKeyInstructionStrictContract(this.ancestorScopeType);
+      return new GeneratedInferredAncestorKeyInstructionStrictContract(
+          this.ancestorScopeType);
     }
   }
 
@@ -51,10 +58,12 @@ public record GeneratedInferredAncestorKeyInstructionStrictContract(String ances
     GeneratedInferredAncestorKeyInstructionStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef ANCESTOR_SCOPE_TYPE =
-        ContractPolicy.field("InferredAncestorKeyInstruction", "ancestorScopeType");
+    public static final ContractPolicy.FieldRef ANCESTOR_SCOPE_TYPE = ContractPolicy.field("InferredAncestorKeyInstruction", "ancestorScopeType");
 
     private Fields() {}
   }
+
+
 }

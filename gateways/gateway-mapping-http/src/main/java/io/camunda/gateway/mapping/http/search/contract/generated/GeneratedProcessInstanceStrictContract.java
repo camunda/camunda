@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/process-instances.yaml#/components/schemas/ProcessInstanceResult
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,6 +17,7 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
@@ -34,21 +38,18 @@ public record GeneratedProcessInstanceStrictContract(
     @Nullable String parentElementInstanceKey,
     @Nullable String rootProcessInstanceKey,
     java.util.Set<String> tags,
-    @Nullable String businessId) {
+    @Nullable String businessId
+) {
 
   public GeneratedProcessInstanceStrictContract {
-    Objects.requireNonNull(
-        processDefinitionId, "processDefinitionId is required and must not be null");
-    Objects.requireNonNull(
-        processDefinitionVersion, "processDefinitionVersion is required and must not be null");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId is required and must not be null");
+    Objects.requireNonNull(processDefinitionVersion, "processDefinitionVersion is required and must not be null");
     Objects.requireNonNull(startDate, "startDate is required and must not be null");
     Objects.requireNonNull(state, "state is required and must not be null");
     Objects.requireNonNull(hasIncident, "hasIncident is required and must not be null");
     Objects.requireNonNull(tenantId, "tenantId is required and must not be null");
-    Objects.requireNonNull(
-        processInstanceKey, "processInstanceKey is required and must not be null");
-    Objects.requireNonNull(
-        processDefinitionKey, "processDefinitionKey is required and must not be null");
+    Objects.requireNonNull(processInstanceKey, "processInstanceKey is required and must not be null");
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey is required and must not be null");
     Objects.requireNonNull(tags, "tags is required and must not be null");
   }
 
@@ -66,6 +67,7 @@ public record GeneratedProcessInstanceStrictContract(
         "processInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
   public static String coerceProcessDefinitionKey(final Object value) {
     if (value == null) {
       return null;
@@ -80,6 +82,7 @@ public record GeneratedProcessInstanceStrictContract(
         "processDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
   public static String coerceParentProcessInstanceKey(final Object value) {
     if (value == null) {
       return null;
@@ -91,9 +94,9 @@ public record GeneratedProcessInstanceStrictContract(
       return KeyUtil.keyToString(numberValue.longValue());
     }
     throw new IllegalArgumentException(
-        "parentProcessInstanceKey must be a String or Number, but was "
-            + value.getClass().getName());
+        "parentProcessInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
+
 
   public static String coerceParentElementInstanceKey(final Object value) {
     if (value == null) {
@@ -106,9 +109,9 @@ public record GeneratedProcessInstanceStrictContract(
       return KeyUtil.keyToString(numberValue.longValue());
     }
     throw new IllegalArgumentException(
-        "parentElementInstanceKey must be a String or Number, but was "
-            + value.getClass().getName());
+        "parentElementInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
+
 
   public static String coerceRootProcessInstanceKey(final Object value) {
     if (value == null) {
@@ -124,21 +127,13 @@ public record GeneratedProcessInstanceStrictContract(
         "rootProcessInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
+
+
   public static ProcessDefinitionIdStep builder() {
     return new Builder();
   }
 
-  public static final class Builder
-      implements ProcessDefinitionIdStep,
-          ProcessDefinitionVersionStep,
-          StartDateStep,
-          StateStep,
-          HasIncidentStep,
-          TenantIdStep,
-          ProcessInstanceKeyStep,
-          ProcessDefinitionKeyStep,
-          TagsStep,
-          OptionalStep {
+  public static final class Builder implements ProcessDefinitionIdStep, ProcessDefinitionVersionStep, StartDateStep, StateStep, HasIncidentStep, TenantIdStep, ProcessInstanceKeyStep, ProcessDefinitionKeyStep, TagsStep, OptionalStep {
     private String processDefinitionId;
     private String processDefinitionName;
     private Integer processDefinitionVersion;
@@ -177,8 +172,7 @@ public record GeneratedProcessInstanceStrictContract(
     }
 
     @Override
-    public HasIncidentStep state(
-        final io.camunda.gateway.protocol.model.ProcessInstanceStateEnum state) {
+    public HasIncidentStep state(final io.camunda.gateway.protocol.model.ProcessInstanceStateEnum state) {
       this.state = state;
       return this;
     }
@@ -220,29 +214,24 @@ public record GeneratedProcessInstanceStrictContract(
     }
 
     @Override
-    public OptionalStep processDefinitionName(
-        final @Nullable String processDefinitionName,
-        final ContractPolicy.FieldPolicy<String> policy) {
-      this.processDefinitionName =
-          policy.apply(processDefinitionName, Fields.PROCESS_DEFINITION_NAME, null);
+    public OptionalStep processDefinitionName(final @Nullable String processDefinitionName, final ContractPolicy.FieldPolicy<String> policy) {
+      this.processDefinitionName = policy.apply(processDefinitionName, Fields.PROCESS_DEFINITION_NAME, null);
       return this;
     }
 
+
     @Override
-    public OptionalStep processDefinitionVersionTag(
-        final @Nullable String processDefinitionVersionTag) {
+    public OptionalStep processDefinitionVersionTag(final @Nullable String processDefinitionVersionTag) {
       this.processDefinitionVersionTag = processDefinitionVersionTag;
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionVersionTag(
-        final @Nullable String processDefinitionVersionTag,
-        final ContractPolicy.FieldPolicy<String> policy) {
-      this.processDefinitionVersionTag =
-          policy.apply(processDefinitionVersionTag, Fields.PROCESS_DEFINITION_VERSION_TAG, null);
+    public OptionalStep processDefinitionVersionTag(final @Nullable String processDefinitionVersionTag, final ContractPolicy.FieldPolicy<String> policy) {
+      this.processDefinitionVersionTag = policy.apply(processDefinitionVersionTag, Fields.PROCESS_DEFINITION_VERSION_TAG, null);
       return this;
     }
+
 
     @Override
     public OptionalStep endDate(final @Nullable String endDate) {
@@ -251,11 +240,11 @@ public record GeneratedProcessInstanceStrictContract(
     }
 
     @Override
-    public OptionalStep endDate(
-        final @Nullable String endDate, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep endDate(final @Nullable String endDate, final ContractPolicy.FieldPolicy<String> policy) {
       this.endDate = policy.apply(endDate, Fields.END_DATE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep parentProcessInstanceKey(final @Nullable String parentProcessInstanceKey) {
@@ -269,22 +258,17 @@ public record GeneratedProcessInstanceStrictContract(
       return this;
     }
 
-    public Builder parentProcessInstanceKey(
-        final @Nullable String parentProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<String> policy) {
-      this.parentProcessInstanceKey =
-          policy.apply(parentProcessInstanceKey, Fields.PARENT_PROCESS_INSTANCE_KEY, null);
+    public Builder parentProcessInstanceKey(final @Nullable String parentProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+      this.parentProcessInstanceKey = policy.apply(parentProcessInstanceKey, Fields.PARENT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep parentProcessInstanceKey(
-        final @Nullable Object parentProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
-      this.parentProcessInstanceKey =
-          policy.apply(parentProcessInstanceKey, Fields.PARENT_PROCESS_INSTANCE_KEY, null);
+    public OptionalStep parentProcessInstanceKey(final @Nullable Object parentProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.parentProcessInstanceKey = policy.apply(parentProcessInstanceKey, Fields.PARENT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep parentElementInstanceKey(final @Nullable String parentElementInstanceKey) {
@@ -298,22 +282,17 @@ public record GeneratedProcessInstanceStrictContract(
       return this;
     }
 
-    public Builder parentElementInstanceKey(
-        final @Nullable String parentElementInstanceKey,
-        final ContractPolicy.FieldPolicy<String> policy) {
-      this.parentElementInstanceKey =
-          policy.apply(parentElementInstanceKey, Fields.PARENT_ELEMENT_INSTANCE_KEY, null);
+    public Builder parentElementInstanceKey(final @Nullable String parentElementInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+      this.parentElementInstanceKey = policy.apply(parentElementInstanceKey, Fields.PARENT_ELEMENT_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep parentElementInstanceKey(
-        final @Nullable Object parentElementInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
-      this.parentElementInstanceKey =
-          policy.apply(parentElementInstanceKey, Fields.PARENT_ELEMENT_INSTANCE_KEY, null);
+    public OptionalStep parentElementInstanceKey(final @Nullable Object parentElementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.parentElementInstanceKey = policy.apply(parentElementInstanceKey, Fields.PARENT_ELEMENT_INSTANCE_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey) {
@@ -327,22 +306,17 @@ public record GeneratedProcessInstanceStrictContract(
       return this;
     }
 
-    public Builder rootProcessInstanceKey(
-        final @Nullable String rootProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<String> policy) {
-      this.rootProcessInstanceKey =
-          policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
+    public Builder rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+      this.rootProcessInstanceKey = policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(
-        final @Nullable Object rootProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
-      this.rootProcessInstanceKey =
-          policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
+    public OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.rootProcessInstanceKey = policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep businessId(final @Nullable String businessId) {
@@ -351,8 +325,7 @@ public record GeneratedProcessInstanceStrictContract(
     }
 
     @Override
-    public OptionalStep businessId(
-        final @Nullable String businessId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep businessId(final @Nullable String businessId, final ContractPolicy.FieldPolicy<String> policy) {
       this.businessId = policy.apply(businessId, Fields.BUSINESS_ID, null);
       return this;
     }
@@ -416,101 +389,77 @@ public record GeneratedProcessInstanceStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep processDefinitionName(final @Nullable String processDefinitionName);
+  OptionalStep processDefinitionName(final @Nullable String processDefinitionName);
 
-    OptionalStep processDefinitionName(
-        final @Nullable String processDefinitionName,
-        final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep processDefinitionName(final @Nullable String processDefinitionName, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep processDefinitionVersionTag(final @Nullable String processDefinitionVersionTag);
 
-    OptionalStep processDefinitionVersionTag(
-        final @Nullable String processDefinitionVersionTag,
-        final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep processDefinitionVersionTag(final @Nullable String processDefinitionVersionTag);
 
-    OptionalStep endDate(final @Nullable String endDate);
+  OptionalStep processDefinitionVersionTag(final @Nullable String processDefinitionVersionTag, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep endDate(
-        final @Nullable String endDate, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep parentProcessInstanceKey(final @Nullable String parentProcessInstanceKey);
+  OptionalStep endDate(final @Nullable String endDate);
 
-    OptionalStep parentProcessInstanceKey(final @Nullable Object parentProcessInstanceKey);
+  OptionalStep endDate(final @Nullable String endDate, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep parentProcessInstanceKey(
-        final @Nullable String parentProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep parentProcessInstanceKey(
-        final @Nullable Object parentProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep parentProcessInstanceKey(final @Nullable String parentProcessInstanceKey);
 
-    OptionalStep parentElementInstanceKey(final @Nullable String parentElementInstanceKey);
+  OptionalStep parentProcessInstanceKey(final @Nullable Object parentProcessInstanceKey);
 
-    OptionalStep parentElementInstanceKey(final @Nullable Object parentElementInstanceKey);
+  OptionalStep parentProcessInstanceKey(final @Nullable String parentProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep parentElementInstanceKey(
-        final @Nullable String parentElementInstanceKey,
-        final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep parentProcessInstanceKey(final @Nullable Object parentProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep parentElementInstanceKey(
-        final @Nullable Object parentElementInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
+  OptionalStep parentElementInstanceKey(final @Nullable String parentElementInstanceKey);
 
-    OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
+  OptionalStep parentElementInstanceKey(final @Nullable Object parentElementInstanceKey);
 
-    OptionalStep rootProcessInstanceKey(
-        final @Nullable String rootProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep parentElementInstanceKey(final @Nullable String parentElementInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep rootProcessInstanceKey(
-        final @Nullable Object rootProcessInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep parentElementInstanceKey(final @Nullable Object parentElementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep businessId(final @Nullable String businessId);
 
-    OptionalStep businessId(
-        final @Nullable String businessId, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
+
+  OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
+
+  OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+
+  OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep businessId(final @Nullable String businessId);
+
+  OptionalStep businessId(final @Nullable String businessId, final ContractPolicy.FieldPolicy<String> policy);
+
 
     GeneratedProcessInstanceStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID =
-        ContractPolicy.field("ProcessInstanceResult", "processDefinitionId");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_NAME =
-        ContractPolicy.field("ProcessInstanceResult", "processDefinitionName");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_VERSION =
-        ContractPolicy.field("ProcessInstanceResult", "processDefinitionVersion");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_VERSION_TAG =
-        ContractPolicy.field("ProcessInstanceResult", "processDefinitionVersionTag");
-    public static final ContractPolicy.FieldRef START_DATE =
-        ContractPolicy.field("ProcessInstanceResult", "startDate");
-    public static final ContractPolicy.FieldRef END_DATE =
-        ContractPolicy.field("ProcessInstanceResult", "endDate");
-    public static final ContractPolicy.FieldRef STATE =
-        ContractPolicy.field("ProcessInstanceResult", "state");
-    public static final ContractPolicy.FieldRef HAS_INCIDENT =
-        ContractPolicy.field("ProcessInstanceResult", "hasIncident");
-    public static final ContractPolicy.FieldRef TENANT_ID =
-        ContractPolicy.field("ProcessInstanceResult", "tenantId");
-    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY =
-        ContractPolicy.field("ProcessInstanceResult", "processInstanceKey");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY =
-        ContractPolicy.field("ProcessInstanceResult", "processDefinitionKey");
-    public static final ContractPolicy.FieldRef PARENT_PROCESS_INSTANCE_KEY =
-        ContractPolicy.field("ProcessInstanceResult", "parentProcessInstanceKey");
-    public static final ContractPolicy.FieldRef PARENT_ELEMENT_INSTANCE_KEY =
-        ContractPolicy.field("ProcessInstanceResult", "parentElementInstanceKey");
-    public static final ContractPolicy.FieldRef ROOT_PROCESS_INSTANCE_KEY =
-        ContractPolicy.field("ProcessInstanceResult", "rootProcessInstanceKey");
-    public static final ContractPolicy.FieldRef TAGS =
-        ContractPolicy.field("ProcessInstanceResult", "tags");
-    public static final ContractPolicy.FieldRef BUSINESS_ID =
-        ContractPolicy.field("ProcessInstanceResult", "businessId");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID = ContractPolicy.field("ProcessInstanceResult", "processDefinitionId");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_NAME = ContractPolicy.field("ProcessInstanceResult", "processDefinitionName");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_VERSION = ContractPolicy.field("ProcessInstanceResult", "processDefinitionVersion");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_VERSION_TAG = ContractPolicy.field("ProcessInstanceResult", "processDefinitionVersionTag");
+    public static final ContractPolicy.FieldRef START_DATE = ContractPolicy.field("ProcessInstanceResult", "startDate");
+    public static final ContractPolicy.FieldRef END_DATE = ContractPolicy.field("ProcessInstanceResult", "endDate");
+    public static final ContractPolicy.FieldRef STATE = ContractPolicy.field("ProcessInstanceResult", "state");
+    public static final ContractPolicy.FieldRef HAS_INCIDENT = ContractPolicy.field("ProcessInstanceResult", "hasIncident");
+    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("ProcessInstanceResult", "tenantId");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY = ContractPolicy.field("ProcessInstanceResult", "processInstanceKey");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY = ContractPolicy.field("ProcessInstanceResult", "processDefinitionKey");
+    public static final ContractPolicy.FieldRef PARENT_PROCESS_INSTANCE_KEY = ContractPolicy.field("ProcessInstanceResult", "parentProcessInstanceKey");
+    public static final ContractPolicy.FieldRef PARENT_ELEMENT_INSTANCE_KEY = ContractPolicy.field("ProcessInstanceResult", "parentElementInstanceKey");
+    public static final ContractPolicy.FieldRef ROOT_PROCESS_INSTANCE_KEY = ContractPolicy.field("ProcessInstanceResult", "rootProcessInstanceKey");
+    public static final ContractPolicy.FieldRef TAGS = ContractPolicy.field("ProcessInstanceResult", "tags");
+    public static final ContractPolicy.FieldRef BUSINESS_ID = ContractPolicy.field("ProcessInstanceResult", "businessId");
 
     private Fields() {}
   }
+
+
 }

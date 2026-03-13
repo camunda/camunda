@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/process-instances.yaml#/components/schemas/ProcessInstanceCreationInstructionByKey
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -16,6 +19,7 @@ import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
@@ -23,8 +27,7 @@ public record GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
     String processDefinitionKey,
     @Nullable Integer processDefinitionVersion,
     java.util.@Nullable Map<String, Object> variables,
-    java.util.@Nullable List<GeneratedProcessInstanceCreationStartInstructionStrictContract>
-        startInstructions,
+    java.util.@Nullable List<GeneratedProcessInstanceCreationStartInstructionStrictContract> startInstructions,
     java.util.@Nullable List<Object> runtimeInstructions,
     @Nullable String tenantId,
     @Nullable Long operationReference,
@@ -32,11 +35,11 @@ public record GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
     @Nullable Long requestTimeout,
     java.util.@Nullable List<String> fetchVariables,
     java.util.@Nullable Set<String> tags,
-    @Nullable String businessId) {
+    @Nullable String businessId
+) {
 
   public GeneratedProcessInstanceCreationInstructionByKeyStrictContract {
-    Objects.requireNonNull(
-        processDefinitionKey, "processDefinitionKey is required and must not be null");
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey is required and must not be null");
   }
 
   public static String coerceProcessDefinitionKey(final Object value) {
@@ -53,25 +56,21 @@ public record GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
         "processDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  public static java.util.List<GeneratedProcessInstanceCreationStartInstructionStrictContract>
-      coerceStartInstructions(final Object value) {
+
+  public static java.util.List<GeneratedProcessInstanceCreationStartInstructionStrictContract> coerceStartInstructions(final Object value) {
     if (value == null) {
       return null;
     }
     if (!(value instanceof java.util.List<?> listValue)) {
       throw new IllegalArgumentException(
-          "startInstructions must be a List of GeneratedProcessInstanceCreationStartInstructionStrictContract, but was "
-              + value.getClass().getName());
+          "startInstructions must be a List of GeneratedProcessInstanceCreationStartInstructionStrictContract, but was " + value.getClass().getName());
     }
 
-    final var result =
-        new ArrayList<GeneratedProcessInstanceCreationStartInstructionStrictContract>(
-            listValue.size());
+    final var result = new ArrayList<GeneratedProcessInstanceCreationStartInstructionStrictContract>(listValue.size());
     for (final var item : listValue) {
       if (item == null) {
         result.add(null);
-      } else if (item
-          instanceof GeneratedProcessInstanceCreationStartInstructionStrictContract strictItem) {
+      } else if (item instanceof GeneratedProcessInstanceCreationStartInstructionStrictContract strictItem) {
         result.add(strictItem);
 
       } else {
@@ -82,6 +81,8 @@ public record GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
     }
     return java.util.List.copyOf(result);
   }
+
+
 
   public static ProcessDefinitionKeyStep builder() {
     return new Builder();
@@ -116,13 +117,11 @@ public record GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
     }
 
     @Override
-    public OptionalStep processDefinitionVersion(
-        final @Nullable Integer processDefinitionVersion,
-        final ContractPolicy.FieldPolicy<Integer> policy) {
-      this.processDefinitionVersion =
-          policy.apply(processDefinitionVersion, Fields.PROCESS_DEFINITION_VERSION, null);
+    public OptionalStep processDefinitionVersion(final @Nullable Integer processDefinitionVersion, final ContractPolicy.FieldPolicy<Integer> policy) {
+      this.processDefinitionVersion = policy.apply(processDefinitionVersion, Fields.PROCESS_DEFINITION_VERSION, null);
       return this;
     }
+
 
     @Override
     public OptionalStep variables(final java.util.@Nullable Map<String, Object> variables) {
@@ -131,18 +130,14 @@ public record GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
     }
 
     @Override
-    public OptionalStep variables(
-        final java.util.@Nullable Map<String, Object> variables,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
+    public OptionalStep variables(final java.util.@Nullable Map<String, Object> variables, final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
       this.variables = policy.apply(variables, Fields.VARIABLES, null);
       return this;
     }
 
+
     @Override
-    public OptionalStep startInstructions(
-        final java.util.@Nullable List<
-                GeneratedProcessInstanceCreationStartInstructionStrictContract>
-            startInstructions) {
+    public OptionalStep startInstructions(final java.util.@Nullable List<GeneratedProcessInstanceCreationStartInstructionStrictContract> startInstructions) {
       this.startInstructions = startInstructions;
       return this;
     }
@@ -153,39 +148,30 @@ public record GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
       return this;
     }
 
-    public Builder startInstructions(
-        final java.util.@Nullable List<
-                GeneratedProcessInstanceCreationStartInstructionStrictContract>
-            startInstructions,
-        final ContractPolicy.FieldPolicy<
-                java.util.List<GeneratedProcessInstanceCreationStartInstructionStrictContract>>
-            policy) {
+    public Builder startInstructions(final java.util.@Nullable List<GeneratedProcessInstanceCreationStartInstructionStrictContract> startInstructions, final ContractPolicy.FieldPolicy<java.util.List<GeneratedProcessInstanceCreationStartInstructionStrictContract>> policy) {
       this.startInstructions = policy.apply(startInstructions, Fields.START_INSTRUCTIONS, null);
       return this;
     }
 
     @Override
-    public OptionalStep startInstructions(
-        final @Nullable Object startInstructions, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep startInstructions(final @Nullable Object startInstructions, final ContractPolicy.FieldPolicy<Object> policy) {
       this.startInstructions = policy.apply(startInstructions, Fields.START_INSTRUCTIONS, null);
       return this;
     }
 
+
     @Override
-    public OptionalStep runtimeInstructions(
-        final java.util.@Nullable List<Object> runtimeInstructions) {
+    public OptionalStep runtimeInstructions(final java.util.@Nullable List<Object> runtimeInstructions) {
       this.runtimeInstructions = runtimeInstructions;
       return this;
     }
 
     @Override
-    public OptionalStep runtimeInstructions(
-        final java.util.@Nullable List<Object> runtimeInstructions,
-        final ContractPolicy.FieldPolicy<java.util.List<Object>> policy) {
-      this.runtimeInstructions =
-          policy.apply(runtimeInstructions, Fields.RUNTIME_INSTRUCTIONS, null);
+    public OptionalStep runtimeInstructions(final java.util.@Nullable List<Object> runtimeInstructions, final ContractPolicy.FieldPolicy<java.util.List<Object>> policy) {
+      this.runtimeInstructions = policy.apply(runtimeInstructions, Fields.RUNTIME_INSTRUCTIONS, null);
       return this;
     }
+
 
     @Override
     public OptionalStep tenantId(final @Nullable String tenantId) {
@@ -194,11 +180,11 @@ public record GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
     }
 
     @Override
-    public OptionalStep tenantId(
-        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep tenantId(final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
+
 
     @Override
     public OptionalStep operationReference(final @Nullable Long operationReference) {
@@ -207,11 +193,11 @@ public record GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
     }
 
     @Override
-    public OptionalStep operationReference(
-        final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy) {
+    public OptionalStep operationReference(final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy) {
       this.operationReference = policy.apply(operationReference, Fields.OPERATION_REFERENCE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep awaitCompletion(final @Nullable Boolean awaitCompletion) {
@@ -220,11 +206,11 @@ public record GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
     }
 
     @Override
-    public OptionalStep awaitCompletion(
-        final @Nullable Boolean awaitCompletion, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public OptionalStep awaitCompletion(final @Nullable Boolean awaitCompletion, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.awaitCompletion = policy.apply(awaitCompletion, Fields.AWAIT_COMPLETION, null);
       return this;
     }
+
 
     @Override
     public OptionalStep requestTimeout(final @Nullable Long requestTimeout) {
@@ -233,11 +219,11 @@ public record GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
     }
 
     @Override
-    public OptionalStep requestTimeout(
-        final @Nullable Long requestTimeout, final ContractPolicy.FieldPolicy<Long> policy) {
+    public OptionalStep requestTimeout(final @Nullable Long requestTimeout, final ContractPolicy.FieldPolicy<Long> policy) {
       this.requestTimeout = policy.apply(requestTimeout, Fields.REQUEST_TIMEOUT, null);
       return this;
     }
+
 
     @Override
     public OptionalStep fetchVariables(final java.util.@Nullable List<String> fetchVariables) {
@@ -246,12 +232,11 @@ public record GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
     }
 
     @Override
-    public OptionalStep fetchVariables(
-        final java.util.@Nullable List<String> fetchVariables,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
+    public OptionalStep fetchVariables(final java.util.@Nullable List<String> fetchVariables, final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
       this.fetchVariables = policy.apply(fetchVariables, Fields.FETCH_VARIABLES, null);
       return this;
     }
+
 
     @Override
     public OptionalStep tags(final java.util.@Nullable Set<String> tags) {
@@ -260,12 +245,11 @@ public record GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
     }
 
     @Override
-    public OptionalStep tags(
-        final java.util.@Nullable Set<String> tags,
-        final ContractPolicy.FieldPolicy<java.util.Set<String>> policy) {
+    public OptionalStep tags(final java.util.@Nullable Set<String> tags, final ContractPolicy.FieldPolicy<java.util.Set<String>> policy) {
       this.tags = policy.apply(tags, Fields.TAGS, null);
       return this;
     }
+
 
     @Override
     public OptionalStep businessId(final @Nullable String businessId) {
@@ -274,8 +258,7 @@ public record GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
     }
 
     @Override
-    public OptionalStep businessId(
-        final @Nullable String businessId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep businessId(final @Nullable String businessId, final ContractPolicy.FieldPolicy<String> policy) {
       this.businessId = policy.apply(businessId, Fields.BUSINESS_ID, null);
       return this;
     }
@@ -303,108 +286,85 @@ public record GeneratedProcessInstanceCreationInstructionByKeyStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep processDefinitionVersion(final @Nullable Integer processDefinitionVersion);
+  OptionalStep processDefinitionVersion(final @Nullable Integer processDefinitionVersion);
 
-    OptionalStep processDefinitionVersion(
-        final @Nullable Integer processDefinitionVersion,
-        final ContractPolicy.FieldPolicy<Integer> policy);
+  OptionalStep processDefinitionVersion(final @Nullable Integer processDefinitionVersion, final ContractPolicy.FieldPolicy<Integer> policy);
 
-    OptionalStep variables(final java.util.@Nullable Map<String, Object> variables);
 
-    OptionalStep variables(
-        final java.util.@Nullable Map<String, Object> variables,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
+  OptionalStep variables(final java.util.@Nullable Map<String, Object> variables);
 
-    OptionalStep startInstructions(
-        final java.util.@Nullable List<
-                GeneratedProcessInstanceCreationStartInstructionStrictContract>
-            startInstructions);
+  OptionalStep variables(final java.util.@Nullable Map<String, Object> variables, final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
 
-    OptionalStep startInstructions(final @Nullable Object startInstructions);
 
-    OptionalStep startInstructions(
-        final java.util.@Nullable List<
-                GeneratedProcessInstanceCreationStartInstructionStrictContract>
-            startInstructions,
-        final ContractPolicy.FieldPolicy<
-                java.util.List<GeneratedProcessInstanceCreationStartInstructionStrictContract>>
-            policy);
+  OptionalStep startInstructions(final java.util.@Nullable List<GeneratedProcessInstanceCreationStartInstructionStrictContract> startInstructions);
 
-    OptionalStep startInstructions(
-        final @Nullable Object startInstructions, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep startInstructions(final @Nullable Object startInstructions);
 
-    OptionalStep runtimeInstructions(final java.util.@Nullable List<Object> runtimeInstructions);
+  OptionalStep startInstructions(final java.util.@Nullable List<GeneratedProcessInstanceCreationStartInstructionStrictContract> startInstructions, final ContractPolicy.FieldPolicy<java.util.List<GeneratedProcessInstanceCreationStartInstructionStrictContract>> policy);
 
-    OptionalStep runtimeInstructions(
-        final java.util.@Nullable List<Object> runtimeInstructions,
-        final ContractPolicy.FieldPolicy<java.util.List<Object>> policy);
+  OptionalStep startInstructions(final @Nullable Object startInstructions, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep tenantId(final @Nullable String tenantId);
 
-    OptionalStep tenantId(
-        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep runtimeInstructions(final java.util.@Nullable List<Object> runtimeInstructions);
 
-    OptionalStep operationReference(final @Nullable Long operationReference);
+  OptionalStep runtimeInstructions(final java.util.@Nullable List<Object> runtimeInstructions, final ContractPolicy.FieldPolicy<java.util.List<Object>> policy);
 
-    OptionalStep operationReference(
-        final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy);
 
-    OptionalStep awaitCompletion(final @Nullable Boolean awaitCompletion);
+  OptionalStep tenantId(final @Nullable String tenantId);
 
-    OptionalStep awaitCompletion(
-        final @Nullable Boolean awaitCompletion, final ContractPolicy.FieldPolicy<Boolean> policy);
+  OptionalStep tenantId(final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep requestTimeout(final @Nullable Long requestTimeout);
 
-    OptionalStep requestTimeout(
-        final @Nullable Long requestTimeout, final ContractPolicy.FieldPolicy<Long> policy);
+  OptionalStep operationReference(final @Nullable Long operationReference);
 
-    OptionalStep fetchVariables(final java.util.@Nullable List<String> fetchVariables);
+  OptionalStep operationReference(final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy);
 
-    OptionalStep fetchVariables(
-        final java.util.@Nullable List<String> fetchVariables,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
 
-    OptionalStep tags(final java.util.@Nullable Set<String> tags);
+  OptionalStep awaitCompletion(final @Nullable Boolean awaitCompletion);
 
-    OptionalStep tags(
-        final java.util.@Nullable Set<String> tags,
-        final ContractPolicy.FieldPolicy<java.util.Set<String>> policy);
+  OptionalStep awaitCompletion(final @Nullable Boolean awaitCompletion, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep businessId(final @Nullable String businessId);
 
-    OptionalStep businessId(
-        final @Nullable String businessId, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep requestTimeout(final @Nullable Long requestTimeout);
+
+  OptionalStep requestTimeout(final @Nullable Long requestTimeout, final ContractPolicy.FieldPolicy<Long> policy);
+
+
+  OptionalStep fetchVariables(final java.util.@Nullable List<String> fetchVariables);
+
+  OptionalStep fetchVariables(final java.util.@Nullable List<String> fetchVariables, final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
+
+
+  OptionalStep tags(final java.util.@Nullable Set<String> tags);
+
+  OptionalStep tags(final java.util.@Nullable Set<String> tags, final ContractPolicy.FieldPolicy<java.util.Set<String>> policy);
+
+
+  OptionalStep businessId(final @Nullable String businessId);
+
+  OptionalStep businessId(final @Nullable String businessId, final ContractPolicy.FieldPolicy<String> policy);
+
 
     GeneratedProcessInstanceCreationInstructionByKeyStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY =
-        ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "processDefinitionKey");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_VERSION =
-        ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "processDefinitionVersion");
-    public static final ContractPolicy.FieldRef VARIABLES =
-        ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "variables");
-    public static final ContractPolicy.FieldRef START_INSTRUCTIONS =
-        ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "startInstructions");
-    public static final ContractPolicy.FieldRef RUNTIME_INSTRUCTIONS =
-        ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "runtimeInstructions");
-    public static final ContractPolicy.FieldRef TENANT_ID =
-        ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "tenantId");
-    public static final ContractPolicy.FieldRef OPERATION_REFERENCE =
-        ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "operationReference");
-    public static final ContractPolicy.FieldRef AWAIT_COMPLETION =
-        ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "awaitCompletion");
-    public static final ContractPolicy.FieldRef REQUEST_TIMEOUT =
-        ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "requestTimeout");
-    public static final ContractPolicy.FieldRef FETCH_VARIABLES =
-        ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "fetchVariables");
-    public static final ContractPolicy.FieldRef TAGS =
-        ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "tags");
-    public static final ContractPolicy.FieldRef BUSINESS_ID =
-        ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "businessId");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY = ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "processDefinitionKey");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_VERSION = ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "processDefinitionVersion");
+    public static final ContractPolicy.FieldRef VARIABLES = ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "variables");
+    public static final ContractPolicy.FieldRef START_INSTRUCTIONS = ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "startInstructions");
+    public static final ContractPolicy.FieldRef RUNTIME_INSTRUCTIONS = ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "runtimeInstructions");
+    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "tenantId");
+    public static final ContractPolicy.FieldRef OPERATION_REFERENCE = ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "operationReference");
+    public static final ContractPolicy.FieldRef AWAIT_COMPLETION = ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "awaitCompletion");
+    public static final ContractPolicy.FieldRef REQUEST_TIMEOUT = ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "requestTimeout");
+    public static final ContractPolicy.FieldRef FETCH_VARIABLES = ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "fetchVariables");
+    public static final ContractPolicy.FieldRef TAGS = ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "tags");
+    public static final ContractPolicy.FieldRef BUSINESS_ID = ContractPolicy.field("ProcessInstanceCreationInstructionByKey", "businessId");
 
     private Fields() {}
   }
+
+
 }

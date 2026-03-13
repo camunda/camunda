@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/system.yaml#/components/schemas/JobMetricsConfigurationResponse
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -12,6 +15,7 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
+
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
@@ -22,30 +26,24 @@ public record GeneratedJobMetricsConfigurationResponseStrictContract(
     Integer maxWorkerNameLength,
     Integer maxJobTypeLength,
     Integer maxTenantIdLength,
-    Integer maxUniqueKeys) {
+    Integer maxUniqueKeys
+) {
 
   public GeneratedJobMetricsConfigurationResponseStrictContract {
     Objects.requireNonNull(enabled, "enabled is required and must not be null");
     Objects.requireNonNull(exportInterval, "exportInterval is required and must not be null");
-    Objects.requireNonNull(
-        maxWorkerNameLength, "maxWorkerNameLength is required and must not be null");
+    Objects.requireNonNull(maxWorkerNameLength, "maxWorkerNameLength is required and must not be null");
     Objects.requireNonNull(maxJobTypeLength, "maxJobTypeLength is required and must not be null");
     Objects.requireNonNull(maxTenantIdLength, "maxTenantIdLength is required and must not be null");
     Objects.requireNonNull(maxUniqueKeys, "maxUniqueKeys is required and must not be null");
   }
 
+
   public static EnabledStep builder() {
     return new Builder();
   }
 
-  public static final class Builder
-      implements EnabledStep,
-          ExportIntervalStep,
-          MaxWorkerNameLengthStep,
-          MaxJobTypeLengthStep,
-          MaxTenantIdLengthStep,
-          MaxUniqueKeysStep,
-          OptionalStep {
+  public static final class Builder implements EnabledStep, ExportIntervalStep, MaxWorkerNameLengthStep, MaxJobTypeLengthStep, MaxTenantIdLengthStep, MaxUniqueKeysStep, OptionalStep {
     private Boolean enabled;
     private String exportInterval;
     private Integer maxWorkerNameLength;
@@ -90,7 +88,6 @@ public record GeneratedJobMetricsConfigurationResponseStrictContract(
       this.maxUniqueKeys = maxUniqueKeys;
       return this;
     }
-
     @Override
     public GeneratedJobMetricsConfigurationResponseStrictContract build() {
       return new GeneratedJobMetricsConfigurationResponseStrictContract(
@@ -131,20 +128,17 @@ public record GeneratedJobMetricsConfigurationResponseStrictContract(
     GeneratedJobMetricsConfigurationResponseStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef ENABLED =
-        ContractPolicy.field("JobMetricsConfigurationResponse", "enabled");
-    public static final ContractPolicy.FieldRef EXPORT_INTERVAL =
-        ContractPolicy.field("JobMetricsConfigurationResponse", "exportInterval");
-    public static final ContractPolicy.FieldRef MAX_WORKER_NAME_LENGTH =
-        ContractPolicy.field("JobMetricsConfigurationResponse", "maxWorkerNameLength");
-    public static final ContractPolicy.FieldRef MAX_JOB_TYPE_LENGTH =
-        ContractPolicy.field("JobMetricsConfigurationResponse", "maxJobTypeLength");
-    public static final ContractPolicy.FieldRef MAX_TENANT_ID_LENGTH =
-        ContractPolicy.field("JobMetricsConfigurationResponse", "maxTenantIdLength");
-    public static final ContractPolicy.FieldRef MAX_UNIQUE_KEYS =
-        ContractPolicy.field("JobMetricsConfigurationResponse", "maxUniqueKeys");
+    public static final ContractPolicy.FieldRef ENABLED = ContractPolicy.field("JobMetricsConfigurationResponse", "enabled");
+    public static final ContractPolicy.FieldRef EXPORT_INTERVAL = ContractPolicy.field("JobMetricsConfigurationResponse", "exportInterval");
+    public static final ContractPolicy.FieldRef MAX_WORKER_NAME_LENGTH = ContractPolicy.field("JobMetricsConfigurationResponse", "maxWorkerNameLength");
+    public static final ContractPolicy.FieldRef MAX_JOB_TYPE_LENGTH = ContractPolicy.field("JobMetricsConfigurationResponse", "maxJobTypeLength");
+    public static final ContractPolicy.FieldRef MAX_TENANT_ID_LENGTH = ContractPolicy.field("JobMetricsConfigurationResponse", "maxTenantIdLength");
+    public static final ContractPolicy.FieldRef MAX_UNIQUE_KEYS = ContractPolicy.field("JobMetricsConfigurationResponse", "maxUniqueKeys");
 
     private Fields() {}
   }
+
+
 }

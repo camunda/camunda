@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/batch-operations.yaml#/components/schemas/ProcessInstanceModificationMoveBatchOperationInstruction
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -13,23 +16,26 @@ import jakarta.annotation.Generated;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessInstanceModificationMoveBatchOperationInstructionStrictContract(
-    String sourceElementId, String targetElementId) {
+    String sourceElementId,
+    String targetElementId
+) {
 
   public GeneratedProcessInstanceModificationMoveBatchOperationInstructionStrictContract {
     Objects.requireNonNull(sourceElementId, "sourceElementId is required and must not be null");
     Objects.requireNonNull(targetElementId, "targetElementId is required and must not be null");
   }
 
+
   public static SourceElementIdStep builder() {
     return new Builder();
   }
 
-  public static final class Builder
-      implements SourceElementIdStep, TargetElementIdStep, OptionalStep {
+  public static final class Builder implements SourceElementIdStep, TargetElementIdStep, OptionalStep {
     private String sourceElementId;
     private String targetElementId;
 
@@ -46,11 +52,11 @@ public record GeneratedProcessInstanceModificationMoveBatchOperationInstructionS
       this.targetElementId = targetElementId;
       return this;
     }
-
     @Override
     public GeneratedProcessInstanceModificationMoveBatchOperationInstructionStrictContract build() {
       return new GeneratedProcessInstanceModificationMoveBatchOperationInstructionStrictContract(
-          this.sourceElementId, this.targetElementId);
+          this.sourceElementId,
+          this.targetElementId);
     }
   }
 
@@ -66,14 +72,13 @@ public record GeneratedProcessInstanceModificationMoveBatchOperationInstructionS
     GeneratedProcessInstanceModificationMoveBatchOperationInstructionStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef SOURCE_ELEMENT_ID =
-        ContractPolicy.field(
-            "ProcessInstanceModificationMoveBatchOperationInstruction", "sourceElementId");
-    public static final ContractPolicy.FieldRef TARGET_ELEMENT_ID =
-        ContractPolicy.field(
-            "ProcessInstanceModificationMoveBatchOperationInstruction", "targetElementId");
+    public static final ContractPolicy.FieldRef SOURCE_ELEMENT_ID = ContractPolicy.field("ProcessInstanceModificationMoveBatchOperationInstruction", "sourceElementId");
+    public static final ContractPolicy.FieldRef TARGET_ELEMENT_ID = ContractPolicy.field("ProcessInstanceModificationMoveBatchOperationInstruction", "targetElementId");
 
     private Fields() {}
   }
+
+
 }

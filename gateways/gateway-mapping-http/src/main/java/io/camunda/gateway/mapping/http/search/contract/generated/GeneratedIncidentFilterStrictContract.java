@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/incidents.yaml#/components/schemas/IncidentFilter
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -12,6 +15,7 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
@@ -28,7 +32,9 @@ public record GeneratedIncidentFilterStrictContract(
     @Nullable Object processDefinitionKey,
     @Nullable Object processInstanceKey,
     @Nullable Object elementInstanceKey,
-    @Nullable Object jobKey) {
+    @Nullable Object jobKey
+) {
+
 
   public static OptionalStep builder() {
     return new Builder();
@@ -57,13 +63,11 @@ public record GeneratedIncidentFilterStrictContract(
     }
 
     @Override
-    public OptionalStep processDefinitionId(
-        final @Nullable Object processDefinitionId,
-        final ContractPolicy.FieldPolicy<Object> policy) {
-      this.processDefinitionId =
-          policy.apply(processDefinitionId, Fields.PROCESS_DEFINITION_ID, null);
+    public OptionalStep processDefinitionId(final @Nullable Object processDefinitionId, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.processDefinitionId = policy.apply(processDefinitionId, Fields.PROCESS_DEFINITION_ID, null);
       return this;
     }
+
 
     @Override
     public OptionalStep errorType(final @Nullable Object errorType) {
@@ -72,11 +76,11 @@ public record GeneratedIncidentFilterStrictContract(
     }
 
     @Override
-    public OptionalStep errorType(
-        final @Nullable Object errorType, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep errorType(final @Nullable Object errorType, final ContractPolicy.FieldPolicy<Object> policy) {
       this.errorType = policy.apply(errorType, Fields.ERROR_TYPE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep errorMessage(final @Nullable Object errorMessage) {
@@ -85,11 +89,11 @@ public record GeneratedIncidentFilterStrictContract(
     }
 
     @Override
-    public OptionalStep errorMessage(
-        final @Nullable Object errorMessage, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep errorMessage(final @Nullable Object errorMessage, final ContractPolicy.FieldPolicy<Object> policy) {
       this.errorMessage = policy.apply(errorMessage, Fields.ERROR_MESSAGE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep elementId(final @Nullable Object elementId) {
@@ -98,11 +102,11 @@ public record GeneratedIncidentFilterStrictContract(
     }
 
     @Override
-    public OptionalStep elementId(
-        final @Nullable Object elementId, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep elementId(final @Nullable Object elementId, final ContractPolicy.FieldPolicy<Object> policy) {
       this.elementId = policy.apply(elementId, Fields.ELEMENT_ID, null);
       return this;
     }
+
 
     @Override
     public OptionalStep creationTime(final @Nullable Object creationTime) {
@@ -111,11 +115,11 @@ public record GeneratedIncidentFilterStrictContract(
     }
 
     @Override
-    public OptionalStep creationTime(
-        final @Nullable Object creationTime, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep creationTime(final @Nullable Object creationTime, final ContractPolicy.FieldPolicy<Object> policy) {
       this.creationTime = policy.apply(creationTime, Fields.CREATION_TIME, null);
       return this;
     }
+
 
     @Override
     public OptionalStep state(final @Nullable Object state) {
@@ -124,11 +128,11 @@ public record GeneratedIncidentFilterStrictContract(
     }
 
     @Override
-    public OptionalStep state(
-        final @Nullable Object state, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep state(final @Nullable Object state, final ContractPolicy.FieldPolicy<Object> policy) {
       this.state = policy.apply(state, Fields.STATE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep tenantId(final @Nullable Object tenantId) {
@@ -137,11 +141,11 @@ public record GeneratedIncidentFilterStrictContract(
     }
 
     @Override
-    public OptionalStep tenantId(
-        final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep tenantId(final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
+
 
     @Override
     public OptionalStep incidentKey(final @Nullable Object incidentKey) {
@@ -150,11 +154,11 @@ public record GeneratedIncidentFilterStrictContract(
     }
 
     @Override
-    public OptionalStep incidentKey(
-        final @Nullable Object incidentKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep incidentKey(final @Nullable Object incidentKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.incidentKey = policy.apply(incidentKey, Fields.INCIDENT_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey) {
@@ -163,13 +167,11 @@ public record GeneratedIncidentFilterStrictContract(
     }
 
     @Override
-    public OptionalStep processDefinitionKey(
-        final @Nullable Object processDefinitionKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
-      this.processDefinitionKey =
-          policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
+    public OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.processDefinitionKey = policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep processInstanceKey(final @Nullable Object processInstanceKey) {
@@ -178,12 +180,11 @@ public record GeneratedIncidentFilterStrictContract(
     }
 
     @Override
-    public OptionalStep processInstanceKey(
-        final @Nullable Object processInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep processInstanceKey(final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey) {
@@ -192,12 +193,11 @@ public record GeneratedIncidentFilterStrictContract(
     }
 
     @Override
-    public OptionalStep elementInstanceKey(
-        final @Nullable Object elementInstanceKey,
-        final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.elementInstanceKey = policy.apply(elementInstanceKey, Fields.ELEMENT_INSTANCE_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep jobKey(final @Nullable Object jobKey) {
@@ -206,8 +206,7 @@ public record GeneratedIncidentFilterStrictContract(
     }
 
     @Override
-    public OptionalStep jobKey(
-        final @Nullable Object jobKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep jobKey(final @Nullable Object jobKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.jobKey = policy.apply(jobKey, Fields.JOB_KEY, null);
       return this;
     }
@@ -231,97 +230,86 @@ public record GeneratedIncidentFilterStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep processDefinitionId(final @Nullable Object processDefinitionId);
+  OptionalStep processDefinitionId(final @Nullable Object processDefinitionId);
 
-    OptionalStep processDefinitionId(
-        final @Nullable Object processDefinitionId,
-        final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep processDefinitionId(final @Nullable Object processDefinitionId, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep errorType(final @Nullable Object errorType);
 
-    OptionalStep errorType(
-        final @Nullable Object errorType, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep errorType(final @Nullable Object errorType);
 
-    OptionalStep errorMessage(final @Nullable Object errorMessage);
+  OptionalStep errorType(final @Nullable Object errorType, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep errorMessage(
-        final @Nullable Object errorMessage, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep elementId(final @Nullable Object elementId);
+  OptionalStep errorMessage(final @Nullable Object errorMessage);
 
-    OptionalStep elementId(
-        final @Nullable Object elementId, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep errorMessage(final @Nullable Object errorMessage, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep creationTime(final @Nullable Object creationTime);
 
-    OptionalStep creationTime(
-        final @Nullable Object creationTime, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep elementId(final @Nullable Object elementId);
 
-    OptionalStep state(final @Nullable Object state);
+  OptionalStep elementId(final @Nullable Object elementId, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep state(
-        final @Nullable Object state, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep tenantId(final @Nullable Object tenantId);
+  OptionalStep creationTime(final @Nullable Object creationTime);
 
-    OptionalStep tenantId(
-        final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep creationTime(final @Nullable Object creationTime, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep incidentKey(final @Nullable Object incidentKey);
 
-    OptionalStep incidentKey(
-        final @Nullable Object incidentKey, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep state(final @Nullable Object state);
 
-    OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey);
+  OptionalStep state(final @Nullable Object state, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processDefinitionKey(
-        final @Nullable Object processDefinitionKey,
-        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
+  OptionalStep tenantId(final @Nullable Object tenantId);
 
-    OptionalStep processInstanceKey(
-        final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep tenantId(final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey);
 
-    OptionalStep elementInstanceKey(
-        final @Nullable Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+  OptionalStep incidentKey(final @Nullable Object incidentKey);
 
-    OptionalStep jobKey(final @Nullable Object jobKey);
+  OptionalStep incidentKey(final @Nullable Object incidentKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep jobKey(
-        final @Nullable Object jobKey, final ContractPolicy.FieldPolicy<Object> policy);
+
+  OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey);
+
+  OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
+
+  OptionalStep processInstanceKey(final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey);
+
+  OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep jobKey(final @Nullable Object jobKey);
+
+  OptionalStep jobKey(final @Nullable Object jobKey, final ContractPolicy.FieldPolicy<Object> policy);
+
 
     GeneratedIncidentFilterStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID =
-        ContractPolicy.field("IncidentFilter", "processDefinitionId");
-    public static final ContractPolicy.FieldRef ERROR_TYPE =
-        ContractPolicy.field("IncidentFilter", "errorType");
-    public static final ContractPolicy.FieldRef ERROR_MESSAGE =
-        ContractPolicy.field("IncidentFilter", "errorMessage");
-    public static final ContractPolicy.FieldRef ELEMENT_ID =
-        ContractPolicy.field("IncidentFilter", "elementId");
-    public static final ContractPolicy.FieldRef CREATION_TIME =
-        ContractPolicy.field("IncidentFilter", "creationTime");
-    public static final ContractPolicy.FieldRef STATE =
-        ContractPolicy.field("IncidentFilter", "state");
-    public static final ContractPolicy.FieldRef TENANT_ID =
-        ContractPolicy.field("IncidentFilter", "tenantId");
-    public static final ContractPolicy.FieldRef INCIDENT_KEY =
-        ContractPolicy.field("IncidentFilter", "incidentKey");
-    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY =
-        ContractPolicy.field("IncidentFilter", "processDefinitionKey");
-    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY =
-        ContractPolicy.field("IncidentFilter", "processInstanceKey");
-    public static final ContractPolicy.FieldRef ELEMENT_INSTANCE_KEY =
-        ContractPolicy.field("IncidentFilter", "elementInstanceKey");
-    public static final ContractPolicy.FieldRef JOB_KEY =
-        ContractPolicy.field("IncidentFilter", "jobKey");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID = ContractPolicy.field("IncidentFilter", "processDefinitionId");
+    public static final ContractPolicy.FieldRef ERROR_TYPE = ContractPolicy.field("IncidentFilter", "errorType");
+    public static final ContractPolicy.FieldRef ERROR_MESSAGE = ContractPolicy.field("IncidentFilter", "errorMessage");
+    public static final ContractPolicy.FieldRef ELEMENT_ID = ContractPolicy.field("IncidentFilter", "elementId");
+    public static final ContractPolicy.FieldRef CREATION_TIME = ContractPolicy.field("IncidentFilter", "creationTime");
+    public static final ContractPolicy.FieldRef STATE = ContractPolicy.field("IncidentFilter", "state");
+    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("IncidentFilter", "tenantId");
+    public static final ContractPolicy.FieldRef INCIDENT_KEY = ContractPolicy.field("IncidentFilter", "incidentKey");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY = ContractPolicy.field("IncidentFilter", "processDefinitionKey");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY = ContractPolicy.field("IncidentFilter", "processInstanceKey");
+    public static final ContractPolicy.FieldRef ELEMENT_INSTANCE_KEY = ContractPolicy.field("IncidentFilter", "elementInstanceKey");
+    public static final ContractPolicy.FieldRef JOB_KEY = ContractPolicy.field("IncidentFilter", "jobKey");
 
     private Fields() {}
   }
+
+
 }

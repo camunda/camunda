@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/filters.yaml#/components/schemas/AdvancedDateTimeFilter
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -12,6 +15,7 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+
 
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
@@ -24,7 +28,9 @@ public record GeneratedAdvancedDateTimeFilterStrictContract(
     @Nullable String gte,
     @Nullable String lt,
     @Nullable String lte,
-    java.util.@Nullable List<String> in) {
+    java.util.@Nullable List<String> in
+) {
+
 
   public static OptionalStep builder() {
     return new Builder();
@@ -49,11 +55,11 @@ public record GeneratedAdvancedDateTimeFilterStrictContract(
     }
 
     @Override
-    public OptionalStep eq(
-        final @Nullable String eq, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep eq(final @Nullable String eq, final ContractPolicy.FieldPolicy<String> policy) {
       this.eq = policy.apply(eq, Fields.EQ, null);
       return this;
     }
+
 
     @Override
     public OptionalStep neq(final @Nullable String neq) {
@@ -62,11 +68,11 @@ public record GeneratedAdvancedDateTimeFilterStrictContract(
     }
 
     @Override
-    public OptionalStep neq(
-        final @Nullable String neq, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep neq(final @Nullable String neq, final ContractPolicy.FieldPolicy<String> policy) {
       this.neq = policy.apply(neq, Fields.NEQ, null);
       return this;
     }
+
 
     @Override
     public OptionalStep exists(final @Nullable Boolean exists) {
@@ -75,11 +81,11 @@ public record GeneratedAdvancedDateTimeFilterStrictContract(
     }
 
     @Override
-    public OptionalStep exists(
-        final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public OptionalStep exists(final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.exists = policy.apply(exists, Fields.EXISTS, null);
       return this;
     }
+
 
     @Override
     public OptionalStep gt(final @Nullable String gt) {
@@ -88,11 +94,11 @@ public record GeneratedAdvancedDateTimeFilterStrictContract(
     }
 
     @Override
-    public OptionalStep gt(
-        final @Nullable String gt, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep gt(final @Nullable String gt, final ContractPolicy.FieldPolicy<String> policy) {
       this.gt = policy.apply(gt, Fields.GT, null);
       return this;
     }
+
 
     @Override
     public OptionalStep gte(final @Nullable String gte) {
@@ -101,11 +107,11 @@ public record GeneratedAdvancedDateTimeFilterStrictContract(
     }
 
     @Override
-    public OptionalStep gte(
-        final @Nullable String gte, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep gte(final @Nullable String gte, final ContractPolicy.FieldPolicy<String> policy) {
       this.gte = policy.apply(gte, Fields.GTE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep lt(final @Nullable String lt) {
@@ -114,11 +120,11 @@ public record GeneratedAdvancedDateTimeFilterStrictContract(
     }
 
     @Override
-    public OptionalStep lt(
-        final @Nullable String lt, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep lt(final @Nullable String lt, final ContractPolicy.FieldPolicy<String> policy) {
       this.lt = policy.apply(lt, Fields.LT, null);
       return this;
     }
+
 
     @Override
     public OptionalStep lte(final @Nullable String lte) {
@@ -127,11 +133,11 @@ public record GeneratedAdvancedDateTimeFilterStrictContract(
     }
 
     @Override
-    public OptionalStep lte(
-        final @Nullable String lte, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep lte(final @Nullable String lte, final ContractPolicy.FieldPolicy<String> policy) {
       this.lte = policy.apply(lte, Fields.LTE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep in(final java.util.@Nullable List<String> in) {
@@ -140,9 +146,7 @@ public record GeneratedAdvancedDateTimeFilterStrictContract(
     }
 
     @Override
-    public OptionalStep in(
-        final java.util.@Nullable List<String> in,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
+    public OptionalStep in(final java.util.@Nullable List<String> in, final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
       this.in = policy.apply(in, Fields.IN, null);
       return this;
     }
@@ -150,67 +154,74 @@ public record GeneratedAdvancedDateTimeFilterStrictContract(
     @Override
     public GeneratedAdvancedDateTimeFilterStrictContract build() {
       return new GeneratedAdvancedDateTimeFilterStrictContract(
-          this.eq, this.neq, this.exists, this.gt, this.gte, this.lt, this.lte, this.in);
+          this.eq,
+          this.neq,
+          this.exists,
+          this.gt,
+          this.gte,
+          this.lt,
+          this.lte,
+          this.in);
     }
   }
 
   public interface OptionalStep {
-    OptionalStep eq(final @Nullable String eq);
+  OptionalStep eq(final @Nullable String eq);
 
-    OptionalStep eq(final @Nullable String eq, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep eq(final @Nullable String eq, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep neq(final @Nullable String neq);
 
-    OptionalStep neq(final @Nullable String neq, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep neq(final @Nullable String neq);
 
-    OptionalStep exists(final @Nullable Boolean exists);
+  OptionalStep neq(final @Nullable String neq, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep exists(
-        final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep gt(final @Nullable String gt);
+  OptionalStep exists(final @Nullable Boolean exists);
 
-    OptionalStep gt(final @Nullable String gt, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep exists(final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep gte(final @Nullable String gte);
 
-    OptionalStep gte(final @Nullable String gte, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep gt(final @Nullable String gt);
 
-    OptionalStep lt(final @Nullable String lt);
+  OptionalStep gt(final @Nullable String gt, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep lt(final @Nullable String lt, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep lte(final @Nullable String lte);
+  OptionalStep gte(final @Nullable String gte);
 
-    OptionalStep lte(final @Nullable String lte, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep gte(final @Nullable String gte, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep in(final java.util.@Nullable List<String> in);
 
-    OptionalStep in(
-        final java.util.@Nullable List<String> in,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
+  OptionalStep lt(final @Nullable String lt);
+
+  OptionalStep lt(final @Nullable String lt, final ContractPolicy.FieldPolicy<String> policy);
+
+
+  OptionalStep lte(final @Nullable String lte);
+
+  OptionalStep lte(final @Nullable String lte, final ContractPolicy.FieldPolicy<String> policy);
+
+
+  OptionalStep in(final java.util.@Nullable List<String> in);
+
+  OptionalStep in(final java.util.@Nullable List<String> in, final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
+
 
     GeneratedAdvancedDateTimeFilterStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef EQ =
-        ContractPolicy.field("AdvancedDateTimeFilter", "$eq");
-    public static final ContractPolicy.FieldRef NEQ =
-        ContractPolicy.field("AdvancedDateTimeFilter", "$neq");
-    public static final ContractPolicy.FieldRef EXISTS =
-        ContractPolicy.field("AdvancedDateTimeFilter", "$exists");
-    public static final ContractPolicy.FieldRef GT =
-        ContractPolicy.field("AdvancedDateTimeFilter", "$gt");
-    public static final ContractPolicy.FieldRef GTE =
-        ContractPolicy.field("AdvancedDateTimeFilter", "$gte");
-    public static final ContractPolicy.FieldRef LT =
-        ContractPolicy.field("AdvancedDateTimeFilter", "$lt");
-    public static final ContractPolicy.FieldRef LTE =
-        ContractPolicy.field("AdvancedDateTimeFilter", "$lte");
-    public static final ContractPolicy.FieldRef IN =
-        ContractPolicy.field("AdvancedDateTimeFilter", "$in");
+    public static final ContractPolicy.FieldRef EQ = ContractPolicy.field("AdvancedDateTimeFilter", "$eq");
+    public static final ContractPolicy.FieldRef NEQ = ContractPolicy.field("AdvancedDateTimeFilter", "$neq");
+    public static final ContractPolicy.FieldRef EXISTS = ContractPolicy.field("AdvancedDateTimeFilter", "$exists");
+    public static final ContractPolicy.FieldRef GT = ContractPolicy.field("AdvancedDateTimeFilter", "$gt");
+    public static final ContractPolicy.FieldRef GTE = ContractPolicy.field("AdvancedDateTimeFilter", "$gte");
+    public static final ContractPolicy.FieldRef LT = ContractPolicy.field("AdvancedDateTimeFilter", "$lt");
+    public static final ContractPolicy.FieldRef LTE = ContractPolicy.field("AdvancedDateTimeFilter", "$lte");
+    public static final ContractPolicy.FieldRef IN = ContractPolicy.field("AdvancedDateTimeFilter", "$in");
 
     private Fields() {}
   }
+
+
 }

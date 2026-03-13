@@ -419,28 +419,39 @@ public class GenerateContractMappingPoc {
       SchemaDef schema, Map<SchemaKey, SchemaDef> allSchemas) {
     final var fields = new ArrayList<ContractField>();
     final var usedIdentifiers = new HashMap<String, Integer>();
-    final var required = schema.node().required();
+
+    // Flatten allOf: merge base schema properties before overlaying child properties.
+    final var mergedProperties = new LinkedHashMap<String, PropertyWithContext>();
+    final var mergedRequired = new LinkedHashSet<String>();
+    collectAllOfProperties(schema, allSchemas, mergedProperties, mergedRequired, new LinkedHashSet<>());
     for (var entry : schema.node().properties().entrySet()) {
+      mergedProperties.put(entry.getKey(), new PropertyWithContext(entry.getValue(), schema.fileName()));
+    }
+    mergedRequired.addAll(schema.node().required());
+
+    for (var entry : mergedProperties.entrySet()) {
       final var propertyName = entry.getKey();
-      final var node = entry.getValue();
-      final var isRequired = required.contains(propertyName);
+      final var propCtx = entry.getValue();
+      final var node = propCtx.node();
+      final var contextFile = propCtx.fileName();
+      final var isRequired = mergedRequired.contains(propertyName);
       final var isNullable = node.nullable() || !isRequired;
-        final var typeInfo = resolveTypeInfo(node, schema.fileName(), allSchemas, new ArrayDeque<>());
+        final var typeInfo = resolveTypeInfo(node, contextFile, allSchemas, new ArrayDeque<>());
         final var javaType = typeInfo.javaType();
       final var isLongKeyCoercion =
           "String".equals(javaType)
-              && isLongKeySemantic(node, schema.fileName(), allSchemas, new ArrayDeque<>());
+              && isLongKeySemantic(node, contextFile, allSchemas, new ArrayDeque<>());
       final var hasInlineEnum =
           "String".equals(javaType)
               && (!node.enumValues().isEmpty()
                   || ("string".equals(node.type()) && !node.allOfRefs().isEmpty()));
       final var hasUniqueItems =
-          isUniqueItemsArray(node, schema.fileName(), allSchemas);
+          isUniqueItemsArray(node, contextFile, allSchemas);
       // Detect field-level mapper incompatibilities:
       // 1. URI format: protocol generates java.net.URI, we have String
       // 2. Dotted property names with inline enum: produces invalid enum class name
       final var hasMapperFieldIncompatibility =
-          isUriFormat(node, schema.fileName(), allSchemas)
+          isUriFormat(node, contextFile, allSchemas)
               || (hasInlineEnum && propertyName.contains("."));
       final var identifier = uniqueIdentifier(toJavaIdentifier(propertyName), usedIdentifiers);
       final var mapperMethod = toJavaMethodName(propertyName);
@@ -459,6 +470,35 @@ public class GenerateContractMappingPoc {
               typeInfo));
     }
     return fields;
+  }
+
+  /**
+   * Recursively collects properties and required fields from allOf base schemas. Base properties are
+   * added first so child properties can override them.
+   */
+  private static void collectAllOfProperties(
+      SchemaDef schema,
+      Map<SchemaKey, SchemaDef> allSchemas,
+      Map<String, PropertyWithContext> properties,
+      Set<String> required,
+      Set<SchemaKey> visited) {
+    for (var ref : schema.node().allOfRefs()) {
+      final var key = toSchemaKey(ref, schema.fileName());
+      if (!visited.add(key)) {
+        continue;
+      }
+      final var baseSchemaDef = allSchemas.get(key);
+      if (baseSchemaDef == null) {
+        continue;
+      }
+      collectAllOfProperties(baseSchemaDef, allSchemas, properties, required, visited);
+      for (var entry : baseSchemaDef.node().properties().entrySet()) {
+        properties.put(
+            entry.getKey(),
+            new PropertyWithContext(entry.getValue(), baseSchemaDef.fileName()));
+      }
+      required.addAll(baseSchemaDef.node().required());
+    }
   }
 
   private static String renderStrictDto(
@@ -2011,4 +2051,6 @@ public final class %s {
   private record RefListParseResult(List<String> refs, int lastIndex) {}
 
   private record PropertiesParseResult(Map<String, Node> properties, int lastIndex) {}
+
+  private record PropertyWithContext(Node node, String fileName) {}
 }

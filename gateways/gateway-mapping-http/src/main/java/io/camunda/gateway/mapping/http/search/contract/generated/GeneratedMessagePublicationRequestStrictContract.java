@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/messages.yaml#/components/schemas/MessagePublicationRequest
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,6 +17,7 @@ import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
@@ -23,11 +27,13 @@ public record GeneratedMessagePublicationRequestStrictContract(
     @Nullable Long timeToLive,
     @Nullable String messageId,
     java.util.@Nullable Map<String, Object> variables,
-    @Nullable String tenantId) {
+    @Nullable String tenantId
+) {
 
   public GeneratedMessagePublicationRequestStrictContract {
     Objects.requireNonNull(name, "name is required and must not be null");
   }
+
 
   public static NameStep builder() {
     return new Builder();
@@ -56,11 +62,11 @@ public record GeneratedMessagePublicationRequestStrictContract(
     }
 
     @Override
-    public OptionalStep correlationKey(
-        final @Nullable String correlationKey, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep correlationKey(final @Nullable String correlationKey, final ContractPolicy.FieldPolicy<String> policy) {
       this.correlationKey = policy.apply(correlationKey, Fields.CORRELATION_KEY, null);
       return this;
     }
+
 
     @Override
     public OptionalStep timeToLive(final @Nullable Long timeToLive) {
@@ -69,11 +75,11 @@ public record GeneratedMessagePublicationRequestStrictContract(
     }
 
     @Override
-    public OptionalStep timeToLive(
-        final @Nullable Long timeToLive, final ContractPolicy.FieldPolicy<Long> policy) {
+    public OptionalStep timeToLive(final @Nullable Long timeToLive, final ContractPolicy.FieldPolicy<Long> policy) {
       this.timeToLive = policy.apply(timeToLive, Fields.TIME_TO_LIVE, null);
       return this;
     }
+
 
     @Override
     public OptionalStep messageId(final @Nullable String messageId) {
@@ -82,11 +88,11 @@ public record GeneratedMessagePublicationRequestStrictContract(
     }
 
     @Override
-    public OptionalStep messageId(
-        final @Nullable String messageId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep messageId(final @Nullable String messageId, final ContractPolicy.FieldPolicy<String> policy) {
       this.messageId = policy.apply(messageId, Fields.MESSAGE_ID, null);
       return this;
     }
+
 
     @Override
     public OptionalStep variables(final java.util.@Nullable Map<String, Object> variables) {
@@ -95,12 +101,11 @@ public record GeneratedMessagePublicationRequestStrictContract(
     }
 
     @Override
-    public OptionalStep variables(
-        final java.util.@Nullable Map<String, Object> variables,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
+    public OptionalStep variables(final java.util.@Nullable Map<String, Object> variables, final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
       this.variables = policy.apply(variables, Fields.VARIABLES, null);
       return this;
     }
+
 
     @Override
     public OptionalStep tenantId(final @Nullable String tenantId) {
@@ -109,8 +114,7 @@ public record GeneratedMessagePublicationRequestStrictContract(
     }
 
     @Override
-    public OptionalStep tenantId(
-        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep tenantId(final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
@@ -132,49 +136,45 @@ public record GeneratedMessagePublicationRequestStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep correlationKey(final @Nullable String correlationKey);
+  OptionalStep correlationKey(final @Nullable String correlationKey);
 
-    OptionalStep correlationKey(
-        final @Nullable String correlationKey, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep correlationKey(final @Nullable String correlationKey, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep timeToLive(final @Nullable Long timeToLive);
 
-    OptionalStep timeToLive(
-        final @Nullable Long timeToLive, final ContractPolicy.FieldPolicy<Long> policy);
+  OptionalStep timeToLive(final @Nullable Long timeToLive);
 
-    OptionalStep messageId(final @Nullable String messageId);
+  OptionalStep timeToLive(final @Nullable Long timeToLive, final ContractPolicy.FieldPolicy<Long> policy);
 
-    OptionalStep messageId(
-        final @Nullable String messageId, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep variables(final java.util.@Nullable Map<String, Object> variables);
+  OptionalStep messageId(final @Nullable String messageId);
 
-    OptionalStep variables(
-        final java.util.@Nullable Map<String, Object> variables,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
+  OptionalStep messageId(final @Nullable String messageId, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep tenantId(final @Nullable String tenantId);
 
-    OptionalStep tenantId(
-        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+  OptionalStep variables(final java.util.@Nullable Map<String, Object> variables);
+
+  OptionalStep variables(final java.util.@Nullable Map<String, Object> variables, final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
+
+
+  OptionalStep tenantId(final @Nullable String tenantId);
+
+  OptionalStep tenantId(final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+
 
     GeneratedMessagePublicationRequestStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef NAME =
-        ContractPolicy.field("MessagePublicationRequest", "name");
-    public static final ContractPolicy.FieldRef CORRELATION_KEY =
-        ContractPolicy.field("MessagePublicationRequest", "correlationKey");
-    public static final ContractPolicy.FieldRef TIME_TO_LIVE =
-        ContractPolicy.field("MessagePublicationRequest", "timeToLive");
-    public static final ContractPolicy.FieldRef MESSAGE_ID =
-        ContractPolicy.field("MessagePublicationRequest", "messageId");
-    public static final ContractPolicy.FieldRef VARIABLES =
-        ContractPolicy.field("MessagePublicationRequest", "variables");
-    public static final ContractPolicy.FieldRef TENANT_ID =
-        ContractPolicy.field("MessagePublicationRequest", "tenantId");
+    public static final ContractPolicy.FieldRef NAME = ContractPolicy.field("MessagePublicationRequest", "name");
+    public static final ContractPolicy.FieldRef CORRELATION_KEY = ContractPolicy.field("MessagePublicationRequest", "correlationKey");
+    public static final ContractPolicy.FieldRef TIME_TO_LIVE = ContractPolicy.field("MessagePublicationRequest", "timeToLive");
+    public static final ContractPolicy.FieldRef MESSAGE_ID = ContractPolicy.field("MessagePublicationRequest", "messageId");
+    public static final ContractPolicy.FieldRef VARIABLES = ContractPolicy.field("MessagePublicationRequest", "variables");
+    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("MessagePublicationRequest", "tenantId");
 
     private Fields() {}
   }
+
+
 }

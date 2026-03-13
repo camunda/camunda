@@ -4,6 +4,9 @@
  * with this work for additional information regarding copyright ownership.
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/search-models.yaml#/components/schemas/CursorForwardPagination
  */
 package io.camunda.gateway.mapping.http.search.contract.generated;
 
@@ -14,15 +17,19 @@ import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
+
 @JsonInclude(JsonInclude.Include.ALWAYS)
 @NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedCursorForwardPaginationStrictContract(
-    String after, @Nullable Integer limit) {
+    String after,
+    @Nullable Integer limit
+) {
 
   public GeneratedCursorForwardPaginationStrictContract {
     Objects.requireNonNull(after, "after is required and must not be null");
   }
+
 
   public static AfterStep builder() {
     return new Builder();
@@ -47,15 +54,16 @@ public record GeneratedCursorForwardPaginationStrictContract(
     }
 
     @Override
-    public OptionalStep limit(
-        final @Nullable Integer limit, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public OptionalStep limit(final @Nullable Integer limit, final ContractPolicy.FieldPolicy<Integer> policy) {
       this.limit = policy.apply(limit, Fields.LIMIT, null);
       return this;
     }
 
     @Override
     public GeneratedCursorForwardPaginationStrictContract build() {
-      return new GeneratedCursorForwardPaginationStrictContract(this.after, this.limit);
+      return new GeneratedCursorForwardPaginationStrictContract(
+          this.after,
+          this.limit);
     }
   }
 
@@ -64,20 +72,21 @@ public record GeneratedCursorForwardPaginationStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep limit(final @Nullable Integer limit);
+  OptionalStep limit(final @Nullable Integer limit);
 
-    OptionalStep limit(
-        final @Nullable Integer limit, final ContractPolicy.FieldPolicy<Integer> policy);
+  OptionalStep limit(final @Nullable Integer limit, final ContractPolicy.FieldPolicy<Integer> policy);
+
 
     GeneratedCursorForwardPaginationStrictContract build();
   }
 
+
   public static final class Fields {
-    public static final ContractPolicy.FieldRef AFTER =
-        ContractPolicy.field("CursorForwardPagination", "after");
-    public static final ContractPolicy.FieldRef LIMIT =
-        ContractPolicy.field("CursorForwardPagination", "limit");
+    public static final ContractPolicy.FieldRef AFTER = ContractPolicy.field("CursorForwardPagination", "after");
+    public static final ContractPolicy.FieldRef LIMIT = ContractPolicy.field("CursorForwardPagination", "limit");
 
     private Fields() {}
   }
+
+
 }
