@@ -13,14 +13,14 @@ Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
   secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, none. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
-  enable_optimize    Optional. true|false to enable Optimize. Default: false.
+  enable_optimize    Optional. true|false to enable Optimize. Default: true.
 
 Options:
   -h, --help         Show this help message.
 
 Examples:
   ./newLoadTest.sh demo
-  ./newLoadTest.sh perf opensearch 3 true
+  ./newLoadTest.sh perf opensearch 3 false
 EOF
 }
 
@@ -65,7 +65,7 @@ if ! [[ $ttl_days =~ $numberRegex ]] ; then
 fi
 
 # Validate enable_optimize value
-enable_optimize="${4:-false}"
+enable_optimize="${4:-true}"
 enable_optimize=$(echo "$enable_optimize" | tr '[:upper:]' '[:lower:]')
 if [[ "$enable_optimize" != "true" && "$enable_optimize" != "false" ]]; then
   echo "Error: Invalid enable_optimize value '$enable_optimize'"
