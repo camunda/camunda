@@ -167,6 +167,9 @@ final class CamundaExporterIT {
 
     exporter.export(record);
 
+    // flushes are now async so close() is called to force a wait for pending flushes to finish
+    exporter.close();
+
     // then
     assertThat(exporterController.getPosition()).isEqualTo(record.getPosition());
   }
@@ -191,10 +194,17 @@ final class CamundaExporterIT {
 
     exporter.export(record);
     exporter.export(record2);
+    exporter.close();
+
     // then
     verify(controllerSpy, never())
         .updateLastExportedRecordPosition(eq(record.getPosition()), any());
-    verify(controllerSpy).updateLastExportedRecordPosition(eq(record2.getPosition()), any());
+
+    // two update positions
+    // - one occurs from async flush completing and setting position
+    // - second occurs on close call which invokes a synchronous flush
+    verify(controllerSpy, times(2))
+        .updateLastExportedRecordPosition(eq(record2.getPosition()), any());
   }
 
   @ParameterizedTest
@@ -223,7 +233,11 @@ final class CamundaExporterIT {
 
     final var record = generateRecordWithSupportedBrokerVersion(ValueType.USER, UserIntent.CREATED);
 
-    assertThatThrownBy(() -> exporter.export(record))
+    exporter.export(record);
+
+    // the export above fails in the async supplier, and it requires a call to .join that future so
+    // that the error is surfaced
+    assertThatThrownBy(() -> controller.runScheduledTasks(Duration.ofSeconds(1)))
         .isInstanceOf(ExporterException.class)
         .hasMessageContaining("Connection refused");
 
@@ -236,6 +250,7 @@ final class CamundaExporterIT {
     final var record2 =
         generateRecordWithSupportedBrokerVersion(ValueType.USER, UserIntent.CREATED);
     exporter.export(record2);
+    exporter.close();
 
     await()
         .untilAsserted(() -> assertThat(controller.getPosition()).isEqualTo(record2.getPosition()));
@@ -295,6 +310,7 @@ final class CamundaExporterIT {
 
     // when
     camundaExporter.export(record);
+    camundaExporter.close();
 
     // then
     assertThat(expectedHandlers).isNotEmpty();
@@ -386,12 +402,14 @@ final class CamundaExporterIT {
             .setConfiguration(new ExporterTestConfiguration<>("camundaExporter", config));
 
     camundaExporter.configure(exporterTestContext);
-    camundaExporter.open(new ExporterTestController());
+    final var controller = new ExporterTestController();
+    camundaExporter.open(controller);
 
     // act
-    assertThatThrownBy(() -> camundaExporter.export(record))
+    camundaExporter.export(record);
+    assertThatThrownBy(() -> controller.runScheduledTasks(Duration.ofSeconds(1)))
         .isInstanceOf(ExporterException.class)
-        .cause()
+        .rootCause()
         .isInstanceOf(PersistenceException.class);
   }
 
@@ -473,6 +491,7 @@ final class CamundaExporterIT {
             r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
             UserIntent.CREATED);
     exporter.export(record);
+    exporter.close();
 
     // Position updated
     assertThat(secondController.getPosition()).isEqualTo(record.getPosition());
