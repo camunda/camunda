@@ -1,0 +1,44 @@
+{
+  "groups": [
+    {
+      "name": "camunda.process-test.judge",
+      "description": "Configuration for the AI judge used in agentic process test assertions."
+    },
+    {
+      "name": "camunda.process-test.judge.chat-model",
+      "description": "Configuration for the chat model used by the AI judge."
+    },
+    {
+      "name": "camunda.process-test.judge.chat-model.credentials",
+      "description": "AWS credentials for the Amazon Bedrock chat model provider."
+    }
+  ],
+  "hints": [
+    {
+      "name": "camunda.process-test.judge.chat-model.provider",
+      "values": [
+        {
+          "value": "openai",
+          "description": "Use OpenAI models (requires api-key and model)."
+        },
+        {
+          "value": "anthropic",
+          "description": "Use Anthropic models (requires api-key and model)."
+        },
+        {
+          "value": "amazon-bedrock",
+          "description": "Use Amazon Bedrock models (requires model; optionally credentials or api-key)."
+        },
+        {
+          "value": "openai-compatible",
+          "description": "Use an OpenAI-compatible API (requires base-url and model)."
+        }
+      ],
+      "providers": [
+        {
+          "name": "any"
+        }
+      ]
+    }
+  ]
+}

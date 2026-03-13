@@ -31,6 +31,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-process-test-langchain4j</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-spring-boot-starter</artifactId>
     </dependency>
 
@@ -181,7 +186,6 @@
       <artifactId>jackson-datatype-jsr310</artifactId>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 
   <build>
@@ -208,7 +212,14 @@
             <dependency>org.apache.httpcomponents.client5:httpclient5</dependency>
             <dependency>org.apache.httpcomponents.core5:httpcore5</dependency>
             <dependency>io.camunda:camunda-process-test-json-test-cases</dependency>
+            <dependency>io.camunda:camunda-process-test-langchain4j</dependency>
           </ignoredNonTestScopedDependencies>
+          <ignoredUnusedDeclaredDependencies>
+            <dep>dev.langchain4j:langchain4j-open-ai</dep>
+            <dep>dev.langchain4j:langchain4j-anthropic</dep>
+            <dep>dev.langchain4j:langchain4j-bedrock</dep>
+            <dep>io.camunda:camunda-process-test-langchain4j</dep>
+          </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
 

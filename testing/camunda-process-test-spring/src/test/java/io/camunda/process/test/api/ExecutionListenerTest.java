@@ -16,6 +16,7 @@
 package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -27,6 +28,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.properties.CamundaClientProperties;
+import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
@@ -51,6 +53,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -113,6 +116,11 @@ public class ExecutionListenerTest {
   @Mock private CamundaProcessTestContainerProvider containerProvider;
   @Mock private CamundaProcessTestContainerProvider anotherContainerProvider;
 
+  @AfterEach
+  void resetJudgeConfig() {
+    CamundaAssert.setJudgeConfig(null);
+  }
+
   @BeforeEach
   void configureMocks() {
     when(camundaRuntimeBuilder.build()).thenReturn(camundaContainerRuntime);
@@ -128,17 +136,27 @@ public class ExecutionListenerTest {
 
     when(processCoverageBuilder.build()).thenReturn(processCoverage);
     when(testContext.getApplicationContext()).thenReturn(applicationContext);
-    when(applicationContext.getBean(CamundaClientProxy.class)).thenReturn(camundaClientProxy);
-    when(applicationContext.getBean(ZeebeClientProxy.class)).thenReturn(zeebeClientProxy);
-    when(applicationContext.getBean(JsonMapper.class)).thenReturn(null);
-    when(applicationContext.getBean(io.camunda.zeebe.client.api.JsonMapper.class)).thenReturn(null);
-    when(applicationContext.getBean(CamundaProcessTestContextProxy.class))
+    lenient()
+        .when(applicationContext.getBean(CamundaClientProxy.class))
+        .thenReturn(camundaClientProxy);
+    lenient().when(applicationContext.getBean(ZeebeClientProxy.class)).thenReturn(zeebeClientProxy);
+    lenient().when(applicationContext.getBean(JsonMapper.class)).thenReturn(null);
+    lenient()
+        .when(applicationContext.getBean(io.camunda.zeebe.client.api.JsonMapper.class))
+        .thenReturn(null);
+    lenient()
+        .when(applicationContext.getBean(CamundaProcessTestContextProxy.class))
         .thenReturn(camundaProcessTestContextProxy);
-    when(applicationContext.getBean(TestCaseRunnerProxy.class)).thenReturn(testCaseRunnerProxy);
-    when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
+    lenient()
+        .when(applicationContext.getBean(TestCaseRunnerProxy.class))
+        .thenReturn(testCaseRunnerProxy);
+    lenient()
+        .when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
         .thenReturn(new CamundaProcessTestRuntimeConfiguration());
-    when(applicationContext.getBean(CamundaClientProperties.class))
+    lenient()
+        .when(applicationContext.getBean(CamundaClientProperties.class))
         .thenReturn(camundaClientProperties);
+    lenient().when(applicationContext.getBeansOfType(ChatModelAdapter.class)).thenReturn(Map.of());
   }
 
   @Test
@@ -478,6 +496,20 @@ public class ExecutionListenerTest {
     // then
     verify(camundaRuntimeBuilder).withContainerProvider(containerProvider);
     verify(camundaRuntimeBuilder).withContainerProvider(anotherContainerProvider);
+  }
+
+  @Test
+  void shouldNotInitializeJudgeConfigWhenNothingConfigured() {
+    // given
+    final CamundaProcessTestExecutionListener listener =
+        new CamundaProcessTestExecutionListener(
+            camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+    // when
+    listener.beforeTestClass(testContext);
+
+    // then
+    assertThat(CamundaAssert.getJudgeConfig()).isNull();
   }
 
   private void setManagementClientDummy(final CamundaProcessTestExecutionListener listener) {
