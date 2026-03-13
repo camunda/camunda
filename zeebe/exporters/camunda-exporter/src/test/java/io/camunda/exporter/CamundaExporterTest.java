@@ -264,5 +264,36 @@ final class CamundaExporterTest {
       final var lastTask = tasks.getLast();
       assertThat(lastTask.getDelay()).isEqualTo(Duration.ofMillis(700));
     }
+
+    @Test
+    void shouldKeepStableDelayAcrossMultipleFlushCycles() {
+      // Regression test: the rescheduled flush delay must remain stable across
+      // repeated flush cycles and not degrade to zero.
+
+      // given
+      final var clock = new MutableClock(0);
+      testContext.setClock(clock);
+      configuration.getBulk().setSize(1); // every export() triggers size-based flush
+      configuration.getBulk().setDelay(1); // 1 second
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController);
+
+      // when — four cycles of: advance 500ms, export (size flush), advance 500ms, run tasks
+      for (int cycle = 0; cycle < 4; cycle++) {
+        clock.advance(500);
+        exporter.export(stubRecord()); // size-based flush, sets lastFlushTimestamp
+        clock.advance(500);
+        testController.runScheduledTasks(Duration.ofHours(1));
+
+        // then — every cycle must retain a stable 500ms delay
+        final var tasks = testController.getScheduledTasks();
+        assertThat(tasks.getLast().getDelay())
+            .as("Rescheduled delay in cycle %d must not degrade", cycle)
+            .isEqualTo(Duration.ofMillis(500));
+      }
+    }
   }
 }
