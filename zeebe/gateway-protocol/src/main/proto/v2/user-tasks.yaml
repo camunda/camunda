@@ -11,7 +11,8 @@ paths:
       description: >
         Completes a user task with the given key. Completion waits for blocking task listeners on
         this lifecycle transition. If listener processing is delayed beyond the request timeout,
-        this endpoint can return 504.
+        this endpoint can return 504. Other gateway timeout causes are also possible. Retry with
+        backoff and inspect listener worker availability and logs when this repeats.
       parameters:
         - name: userTaskKey
           in: path
@@ -61,7 +62,9 @@ paths:
       description: >
         Assigns a user task with the given key to the given assignee. Assignment waits for
         blocking task listeners on this lifecycle transition. If listener processing is delayed
-        beyond the request timeout, this endpoint can return 504.
+        beyond the request timeout, this endpoint can return 504. Other gateway timeout causes are
+        also possible. Retry with backoff and inspect listener worker availability and logs when
+        this repeats.
       parameters:
         - name: userTaskKey
           in: path
@@ -147,7 +150,8 @@ paths:
       description: >
         Update a user task with the given key. Updates wait for blocking task listeners on this
         lifecycle transition. If listener processing is delayed beyond the request timeout, this
-        endpoint can return 504.
+        endpoint can return 504. Other gateway timeout causes are also possible. Retry with
+        backoff and inspect listener worker availability and logs when this repeats.
       parameters:
         - name: userTaskKey
           in: path
@@ -238,7 +242,9 @@ paths:
       description: >
         Removes the assignee of a task with the given key. Unassignment waits for blocking task
         listeners on this lifecycle transition. If listener processing is delayed beyond the
-        request timeout, this endpoint can return 504.
+        request timeout, this endpoint can return 504. Other gateway timeout causes are also
+        possible. Retry with backoff and inspect listener worker availability and logs when this
+        repeats.
       parameters:
         - name: userTaskKey
           in: path
