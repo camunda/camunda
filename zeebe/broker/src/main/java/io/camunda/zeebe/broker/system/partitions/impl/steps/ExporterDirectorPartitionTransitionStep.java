@@ -28,6 +28,7 @@ import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -112,8 +113,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
     final BrokerCfg brokerCfg = context.getBrokerCfg();
     final ExportingCfg exportingCfg = brokerCfg.getExporting();
     final int partitionId = context.getPartitionId();
-    final var exporterFilter =
-        SkipPositionsFilter.of(computeSkipPositions(exportingCfg, partitionId));
+    final var skipRecords = exportingCfg.skipRecords().getOrDefault(partitionId, Set.of());
+    final var exporterFilter = SkipPositionsFilter.of(skipRecords);
     final ExporterMode exporterMode =
         targetRole == Role.LEADER ? ExporterMode.ACTIVE : ExporterMode.PASSIVE;
     final ExporterDirectorContext exporterCtx =
@@ -158,11 +159,6 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
           }
         });
     return startFuture;
-  }
-
-  private static Set<Long> computeSkipPositions(
-      final ExportingCfg exportingCfg, final int partitionId) {
-    return exportingCfg.skipRecords().getOrDefault(partitionId, Set.of());
   }
 
   private void deleteOrEnableExportersIfConfigChanged(
