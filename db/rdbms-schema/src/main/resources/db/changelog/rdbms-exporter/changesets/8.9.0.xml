@@ -1177,11 +1177,11 @@
     <sql dbms="postgresql,mssql">
       CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_STATE_ACTIVE
         ON ${prefix}PROCESS_INSTANCE (STATE)
-        WHERE STATE = 'active'
+        WHERE STATE = 'ACTIVE'
     </sql>
     <sql dbms="oracle">
       CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_STATE_ACTIVE
-        ON ${prefix}PROCESS_INSTANCE (CASE WHEN STATE = 'active' THEN STATE END)
+        ON ${prefix}PROCESS_INSTANCE (CASE WHEN STATE = 'ACTIVE' THEN STATE END)
     </sql>
   </changeSet>
 
@@ -1202,11 +1202,11 @@
     <sql dbms="postgresql,mssql">
       CREATE INDEX ${prefix}IDX_FNI_STATE_ACTIVE
         ON ${prefix}FLOW_NODE_INSTANCE (STATE)
-        WHERE STATE = 'active'
+        WHERE STATE = 'ACTIVE'
     </sql>
     <sql dbms="oracle">
       CREATE INDEX ${prefix}IDX_FNI_STATE_ACTIVE
-        ON ${prefix}FLOW_NODE_INSTANCE (CASE WHEN STATE = 'active' THEN STATE END)
+        ON ${prefix}FLOW_NODE_INSTANCE (CASE WHEN STATE = 'ACTIVE' THEN STATE END)
     </sql>
   </changeSet>
 
@@ -1219,11 +1219,11 @@
     <sql dbms="postgresql,mssql">
       CREATE INDEX ${prefix}IDX_INCIDENT_STATE_ACTIVE
         ON ${prefix}INCIDENT (STATE)
-        WHERE STATE = 'active'
+        WHERE STATE = 'ACTIVE'
     </sql>
     <sql dbms="oracle">
       CREATE INDEX ${prefix}IDX_INCIDENT_STATE_ACTIVE
-        ON ${prefix}INCIDENT (CASE WHEN STATE = 'active' THEN STATE END)
+        ON ${prefix}INCIDENT (CASE WHEN STATE = 'ACTIVE' THEN STATE END)
     </sql>
   </changeSet>
 
