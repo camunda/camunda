@@ -138,13 +138,31 @@ public interface ProcessInstanceFilter extends ProcessInstanceFilterBase {
   @Override
   ProcessInstanceFilter variables(final Map<String, Object> variableValueFilters);
 
-  /** Filter by batchOperationId */
+  /**
+   * Filter by batchOperationId.
+   *
+   * @deprecated Use {@link #batchOperationKey(String)} instead.
+   */
+  @Deprecated
   @Override
   ProcessInstanceFilter batchOperationId(final String batchOperationId);
 
-  /** Filter by batchOperationId using {@link StringProperty} */
+  /**
+   * Filter by batchOperationId using {@link StringProperty}.
+   *
+   * @deprecated Use {@link #batchOperationKey(Consumer)} instead.
+   */
+  @Deprecated
   @Override
   ProcessInstanceFilter batchOperationId(final Consumer<StringProperty> fn);
+
+  /** Filter by batchOperationKey */
+  @Override
+  ProcessInstanceFilter batchOperationKey(final String batchOperationKey);
+
+  /** Filter by batchOperationKey using {@link StringProperty} */
+  @Override
+  ProcessInstanceFilter batchOperationKey(final Consumer<StringProperty> fn);
 
   /** Filter by error message */
   @Override

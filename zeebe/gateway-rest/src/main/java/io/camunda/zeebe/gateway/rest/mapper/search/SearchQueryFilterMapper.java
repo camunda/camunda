@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_NAME;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_VALUE;
+import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
@@ -119,9 +120,19 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
-      ofNullable(filter.getBatchOperationId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::batchOperationIdOperations);
+      if (filter.getBatchOperationId() != null && filter.getBatchOperationKey() != null) {
+        validationErrors.add(
+            ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
+                List.of("batchOperationId", "batchOperationKey")));
+      } else {
+        final var batchOperationFilter =
+            filter.getBatchOperationKey() != null
+                ? filter.getBatchOperationKey()
+                : filter.getBatchOperationId();
+        ofNullable(batchOperationFilter)
+            .map(mapToOperations(String.class))
+            .ifPresent(builder::batchOperationIdOperations);
+      }
       ofNullable(filter.getErrorMessage())
           .map(mapToOperations(String.class))
           .ifPresent(builder::errorMessageOperations);
@@ -438,9 +449,19 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
-      ofNullable(filter.getBatchOperationId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::batchOperationIdOperations);
+      if (filter.getBatchOperationId() != null && filter.getBatchOperationKey() != null) {
+        validationErrors.add(
+            ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
+                List.of("batchOperationId", "batchOperationKey")));
+      } else {
+        final var batchOperationFilter =
+            filter.getBatchOperationKey() != null
+                ? filter.getBatchOperationKey()
+                : filter.getBatchOperationId();
+        ofNullable(batchOperationFilter)
+            .map(mapToOperations(String.class))
+            .ifPresent(builder::batchOperationIdOperations);
+      }
       ofNullable(filter.getErrorMessage())
           .map(mapToOperations(String.class))
           .ifPresent(builder::errorMessageOperations);

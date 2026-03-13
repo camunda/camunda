@@ -6474,9 +6474,18 @@ components:
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
         batchOperationId:
-          description: The batch operation ID.
+          description: >
+            The batch operation id.
+
+            **Deprecated**: Use `batchOperationKey` instead. This field will be removed in a future release.
+            If both `batchOperationId` and `batchOperationKey` are provided, the request will be rejected with a 400 error.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
+          deprecated: true
+        batchOperationKey:
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+          description: The batch operation key.
         errorMessage:
           description: The error message related to the process.
           allOf:

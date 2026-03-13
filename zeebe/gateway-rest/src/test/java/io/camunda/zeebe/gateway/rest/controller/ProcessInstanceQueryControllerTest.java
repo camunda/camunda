@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.search.filter.Operation.eq;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -306,6 +307,82 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
+  }
+
+  @Test
+  void shouldRejectSearchWithBothBatchOperationIdAndBatchOperationKey() {
+    // given
+    final var request =
+        """
+            {
+                "filter": {
+                    "batchOperationId": {"$eq": "id-1"},
+                    "batchOperationKey": {"$eq": "key-1"}
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Only one of [batchOperationId, batchOperationKey] is allowed.",
+                  "instance": "%s"
+                }""",
+            PROCESS_INSTANCES_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
+  }
+
+  @Test
+  void shouldSearchProcessInstancesWithDeprecatedBatchOperationId() {
+    // given - batchOperationId is deprecated but should still be accepted for backward
+    // compatibility
+    final var request =
+        """
+            {
+              "filter": {
+                "batchOperationId": {"$eq": "op-id-1"}
+              }
+            }""";
+    final var expectedFilter =
+        new ProcessInstanceFilter.Builder().batchOperationIdOperations(eq("op-id-1")).build();
+
+    when(processInstanceServices.search(queryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .consumeWith(
+            result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
+
+    verify(processInstanceServices)
+        .search(new ProcessInstanceQuery.Builder().filter(expectedFilter).build());
   }
 
   @Test
@@ -624,7 +701,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         "state",
         ops -> new ProcessInstanceFilter.Builder().stateOperations(ops).build(),
         List.of(
-            List.of(Operation.eq(String.valueOf(ProcessInstanceStateEnum.ACTIVE))),
+            List.of(eq(String.valueOf(ProcessInstanceStateEnum.ACTIVE))),
             List.of(Operation.neq(String.valueOf(ProcessInstanceStateEnum.COMPLETED))),
             List.of(
                 Operation.in(
@@ -648,6 +725,10 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "errorMessage",
         ops -> new ProcessInstanceFilter.Builder().errorMessageOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "batchOperationKey",
+        ops -> new ProcessInstanceFilter.Builder().batchOperationIdOperations(ops).build());
     return streamBuilder.build();
   }
 
@@ -749,8 +830,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
     final var expectedFilter =
         new ProcessInstanceFilter.Builder()
-            .stateOperations(Operation.eq("ACTIVE"))
-            .tenantIdOperations(Operation.eq("tenant"));
+            .stateOperations(eq("ACTIVE"))
+            .tenantIdOperations(eq("tenant"));
     orFilters.forEach(expectedFilter::addOrOperation);
 
     when(processInstanceServices.search(queryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);

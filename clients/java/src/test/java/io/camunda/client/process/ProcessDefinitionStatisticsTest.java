@@ -16,6 +16,7 @@
 package io.camunda.client.process;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
@@ -238,5 +239,35 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
                 .processInstanceKey(new BasicStringFilterProperty().$eq("123"))
                 .elementId(new StringFilterProperty().$eq("elementId")),
             new BaseProcessInstanceFilterFields().hasElementInstanceIncident(true));
+  }
+
+  @Test
+  void
+      shouldThrowWhenSettingBatchOperationIdAfterBatchOperationKeyInProcessDefinitionStatisticsFilter() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newProcessDefinitionElementStatisticsRequest(PROCESS_DEFINITION_KEY)
+                    .filter(f -> f.batchOperationKey("key-1").batchOperationId("id-1"))
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("batchOperationKey");
+  }
+
+  @Test
+  void
+      shouldThrowWhenSettingBatchOperationKeyAfterBatchOperationIdInProcessDefinitionStatisticsFilter() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newProcessDefinitionElementStatisticsRequest(PROCESS_DEFINITION_KEY)
+                    .filter(f -> f.batchOperationId("id-1").batchOperationKey("key-1"))
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("batchOperationId");
   }
 }
