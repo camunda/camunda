@@ -345,22 +345,18 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     assertJudgeHasAllRequiredSettings();
     assertExpectationNotEmpty(expectation);
 
-    final AtomicReference<String> capturedValue = new AtomicReference<>();
-    awaitBehavior.untilAsserted(
-        () -> {
-          final Map<String, String> variables =
-              getGlobalProcessInstanceVariables(processInstanceKey);
+    final Map<String, String> variables =
+        awaitBehavior.until(
+            () -> getGlobalProcessInstanceVariables(processInstanceKey),
+            vars ->
+                assertThat(vars)
+                    .withFailMessage(
+                        "%s should have a variable '%s' but the variable doesn't exist.",
+                        actual, variableName)
+                    .containsKey(variableName));
 
-          assertThat(variables)
-              .withFailMessage(
-                  "%s should have a variable '%s' but the variable doesn't exist.",
-                  actual, variableName)
-              .containsKey(variableName);
-
-          capturedValue.set(variables.get(variableName));
-        });
-
-    evaluateJudge(variableName, expectation, judgeConfig.getThreshold(), capturedValue.get());
+    evaluateJudge(
+        variableName, expectation, judgeConfig.getThreshold(), variables.get(variableName));
   }
 
   public void hasLocalVariableSatisfiesJudge(
