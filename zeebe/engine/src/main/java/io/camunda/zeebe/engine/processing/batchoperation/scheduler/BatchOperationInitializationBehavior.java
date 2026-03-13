@@ -101,10 +101,10 @@ public class BatchOperationInitializationBehavior {
     final var itemProvider = itemProviderFactory.fromBatchOperation(batchOperation);
     var context = InitializationContext.fromBatchOperation(batchOperation, queryPageSize);
 
-    var result = chunkAppender.processNextPage(itemProvider, context, taskResultBuilder);
+    var result = chunkAppender.fetchAndChunkNextPage(itemProvider, context, taskResultBuilder);
     while (result instanceof Continue(final var endCursor, final int itemsProcessed)) {
       context = context.withNextPage(endCursor, itemsProcessed);
-      result = chunkAppender.processNextPage(itemProvider, context, taskResultBuilder);
+      result = chunkAppender.fetchAndChunkNextPage(itemProvider, context, taskResultBuilder);
     }
 
     return switch (result) {

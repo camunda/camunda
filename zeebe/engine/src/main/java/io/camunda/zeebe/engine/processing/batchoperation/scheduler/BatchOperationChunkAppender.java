@@ -64,7 +64,7 @@ public class BatchOperationChunkAppender {
    * @return a result indicating whether chunks were appended, the end cursor, number of items
    *     processed, and if it was the last page
    */
-  private PageProcessingResult processPage(
+  private PageProcessingResult chunkAndAppend(
       final long batchOperationKey,
       final ItemPage page,
       final TaskResultBuilder taskResultBuilder) {
@@ -80,8 +80,8 @@ public class BatchOperationChunkAppender {
   }
 
   /**
-   * Fetches the next page of items and processes it into chunks. If the fetch fails, a {@link
-   * PageProcessingResult.FetchFailed} is returned instead of throwing an exception.
+   * Fetches the next page of items and chunks them into the result buffer. If the fetch fails, a
+   * {@link PageProcessingResult.FetchFailed} is returned instead of throwing an exception.
    *
    * @param itemProvider the item provider to fetch the page from
    * @param context the current initialization context (cursor, page size)
@@ -89,7 +89,7 @@ public class BatchOperationChunkAppender {
    * @return the result of processing the page, or a {@link PageProcessingResult.FetchFailed} if the
    *     fetch fails
    */
-  public PageProcessingResult processNextPage(
+  public PageProcessingResult fetchAndChunkNextPage(
       final ItemProvider itemProvider,
       final InitializationContext context,
       final TaskResultBuilder taskResultBuilder) {
@@ -99,7 +99,7 @@ public class BatchOperationChunkAppender {
     } catch (final Exception e) {
       return new PageProcessingResult.FetchFailed(e);
     }
-    return processPage(context.operation().getKey(), page, taskResultBuilder);
+    return chunkAndAppend(context.operation().getKey(), page, taskResultBuilder);
   }
 
   private boolean appendChunks(
