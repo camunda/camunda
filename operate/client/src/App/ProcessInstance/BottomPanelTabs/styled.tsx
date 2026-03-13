@@ -22,4 +22,11 @@ const Container = styled.div`
   }
 `;
 
-export {Container};
+const TabContent = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding-top: var(--cds-spacing-05);
+`;
+
+export {Container, TabContent};
