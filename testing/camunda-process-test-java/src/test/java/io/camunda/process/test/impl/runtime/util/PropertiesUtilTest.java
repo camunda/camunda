@@ -31,15 +31,15 @@ class PropertiesUtilTest {
 
   @ParameterizedTest
   @CsvSource({
-    "judge.threshold,JUDGE_THRESHOLD",
-    "judge.customPrompt,JUDGE_CUSTOMPROMPT",
-    "judge.chatModel.provider,JUDGE_CHATMODEL_PROVIDER",
-    "judge.chatModel.apiKey,JUDGE_CHATMODEL_APIKEY",
-    "judge.chatModel.baseUrl,JUDGE_CHATMODEL_BASEURL",
-    "judge.chatModel.region,JUDGE_CHATMODEL_REGION",
-    "judge.chatModel.credentials.accessKey,JUDGE_CHATMODEL_CREDENTIALS_ACCESSKEY",
-    "judge.chatModel.credentials.secretKey,JUDGE_CHATMODEL_CREDENTIALS_SECRETKEY",
-    "some.kebab-case.property,SOME_KEBABCASE_PROPERTY",
+    "judge.threshold,CAMUNDA_PROCESSTEST_JUDGE_THRESHOLD",
+    "judge.customPrompt,CAMUNDA_PROCESSTEST_JUDGE_CUSTOMPROMPT",
+    "judge.chatModel.provider,CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_PROVIDER",
+    "judge.chatModel.apiKey,CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_APIKEY",
+    "judge.chatModel.baseUrl,CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_BASEURL",
+    "judge.chatModel.region,CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_REGION",
+    "judge.chatModel.credentials.accessKey,CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_CREDENTIALS_ACCESSKEY",
+    "judge.chatModel.credentials.secretKey,CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_CREDENTIALS_SECRETKEY",
+    "some.kebab-case.property,CAMUNDA_PROCESSTEST_SOME_KEBABCASE_PROPERTY",
   })
   void shouldConvertPropertyNameToEnvVarName(
       final String propertyName, final String expectedEnvVar) {
@@ -100,7 +100,8 @@ class PropertiesUtilTest {
 
       final Map<String, String> envVars =
           Collections.singletonMap(
-              "JUDGE_CHATMODEL_CUSTOMPROPERTIES_ENDPOINT", "http://env-resolved:9090");
+              "CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_CUSTOMPROPERTIES_ENDPOINT",
+              "http://env-resolved:9090");
 
       final Map<String, String> result =
           PropertiesUtil.getPropertyMapOrEmpty(
@@ -129,9 +130,11 @@ class PropertiesUtilTest {
       final Properties props = new Properties();
 
       final Map<String, String> envVars = new HashMap<>();
-      envVars.put("JUDGE_CHATMODEL_CUSTOMPROPERTIES_ENDPOINT", "http://discovered:8080");
-      envVars.put("JUDGE_CHATMODEL_CUSTOMPROPERTIES_TEMPERATURE", "0.9");
-      envVars.put("JUDGE_CHATMODEL_PROVIDER", "openai");
+      envVars.put(
+          "CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_CUSTOMPROPERTIES_ENDPOINT",
+          "http://discovered:8080");
+      envVars.put("CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_CUSTOMPROPERTIES_TEMPERATURE", "0.9");
+      envVars.put("CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_PROVIDER", "openai");
 
       final Map<String, String> result =
           PropertiesUtil.getPropertyMapOrEmpty(
@@ -148,7 +151,8 @@ class PropertiesUtilTest {
       final Properties props = new Properties();
 
       final Map<String, String> envVars =
-          Collections.singletonMap("JUDGE_CHATMODEL_CUSTOMPROPERTIES_MYKEY", "value");
+          Collections.singletonMap(
+              "CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_CUSTOMPROPERTIES_MYKEY", "value");
 
       final Map<String, String> result =
           PropertiesUtil.getPropertyMapOrEmpty(
@@ -164,7 +168,8 @@ class PropertiesUtilTest {
 
       final Map<String, String> envVars =
           Collections.singletonMap(
-              "JUDGE_CHATMODEL_CUSTOMPROPERTIES_ENDPOINT", "http://from-env:9090");
+              "CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_CUSTOMPROPERTIES_ENDPOINT",
+              "http://from-env:9090");
 
       final Map<String, String> result =
           PropertiesUtil.getPropertyMapOrEmpty(
@@ -179,7 +184,8 @@ class PropertiesUtilTest {
       props.setProperty("judge.chatModel.customProperties.endpoint", "http://from-props:8080");
 
       final Map<String, String> envVars =
-          Collections.singletonMap("JUDGE_CHATMODEL_CUSTOMPROPERTIES_TIMEOUT", "30");
+          Collections.singletonMap(
+              "CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_CUSTOMPROPERTIES_TIMEOUT", "30");
 
       final Map<String, String> result =
           PropertiesUtil.getPropertyMapOrEmpty(
@@ -196,7 +202,8 @@ class PropertiesUtilTest {
       final Properties props = new Properties();
       props.setProperty("prefix.a", "123");
 
-      final Map<String, String> envVars = Collections.singletonMap("PREFIX_B", "456");
+      final Map<String, String> envVars =
+          Collections.singletonMap("CAMUNDA_PROCESSTEST_PREFIX_B", "456");
 
       final Map<String, Integer> result =
           PropertiesUtil.getPropertyMapOrEmpty(props, "prefix", Integer::parseInt, envVars);
@@ -209,7 +216,8 @@ class PropertiesUtilTest {
       final Properties props = new Properties();
 
       final Map<String, String> envVars =
-          Collections.singletonMap("JUDGE_CHATMODEL_CUSTOMPROPERTIES_", "should-not-appear");
+          Collections.singletonMap(
+              "CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_CUSTOMPROPERTIES_", "should-not-appear");
 
       final Map<String, String> result =
           PropertiesUtil.getPropertyMapOrEmpty(
@@ -223,7 +231,8 @@ class PropertiesUtilTest {
       final Properties props = new Properties();
       props.setProperty("prefix.key", "${PLACEHOLDER}");
 
-      final Map<String, String> envVars = Collections.singletonMap("PREFIX_KEY", "");
+      final Map<String, String> envVars =
+          Collections.singletonMap("CAMUNDA_PROCESSTEST_PREFIX_KEY", "");
 
       final Map<String, String> result =
           PropertiesUtil.getPropertyMapOrEmpty(props, "prefix", Function.identity(), envVars);
