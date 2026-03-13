@@ -11,7 +11,7 @@ import static io.camunda.zeebe.protocol.record.value.BatchOperationType.CANCEL_P
 import static org.mockito.Mockito.*;
 
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryDecision;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryPolicy.RetryDecision;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
@@ -44,7 +44,7 @@ public class BatchOperationExecutionSchedulerTest {
   @Mock private ProcessingScheduleService scheduleService;
   @Mock private BatchOperationState batchOperationState;
   @Mock private BatchOperationInitializationBehavior batchOperationInitializer;
-  @Mock private BatchOperationRetryHandler retryHandler;
+  @Mock private BatchOperationRetryPolicy retryPolicy;
 
   @Captor private ArgumentCaptor<Task> taskCaptor;
 
@@ -56,7 +56,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     scheduler =
         new BatchOperationExecutionScheduler(
-            scheduledTaskStateFactory, batchOperationInitializer, retryHandler, SCHEDULER_INTERVAL);
+            scheduledTaskStateFactory, batchOperationInitializer, retryPolicy, SCHEDULER_INTERVAL);
   }
 
   @Test
@@ -69,7 +69,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
-    verifyNoInteractions(batchOperationInitializer, retryHandler);
+    verifyNoInteractions(batchOperationInitializer, retryPolicy);
     verify(scheduleService, times(2)).runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any());
   }
 
@@ -89,7 +89,7 @@ public class BatchOperationExecutionSchedulerTest {
     // then
     verify(batchOperationState).getNextPendingBatchOperation();
     verify(batchOperationInitializer).initializeBatchOperation(batchOperation, taskResultBuilder);
-    verifyNoInteractions(retryHandler);
+    verifyNoInteractions(retryPolicy);
     verify(scheduleService, times(2)).runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any());
   }
 
@@ -108,7 +108,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationInitializer).initializeBatchOperation(batchOperation, taskResultBuilder);
-    verifyNoInteractions(retryHandler);
+    verifyNoInteractions(retryPolicy);
     verify(scheduleService, times(2)).runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any());
   }
 
@@ -131,7 +131,7 @@ public class BatchOperationExecutionSchedulerTest {
     verify(batchOperationInitializer).initializeBatchOperation(batchOperation, taskResultBuilder);
     verify(batchOperationInitializer)
         .appendFailedCommand(taskResultBuilder, BATCH_OPERATION_KEY, errorMessage, errorType);
-    verifyNoInteractions(retryHandler);
+    verifyNoInteractions(retryPolicy);
     verify(scheduleService, times(2)).runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any());
   }
 
@@ -147,7 +147,7 @@ public class BatchOperationExecutionSchedulerTest {
         .thenReturn(new InitializationOutcome.NeedsRetry("cursor", cause));
 
     final var retryDelay = Duration.ofMillis(500);
-    when(retryHandler.evaluate(eq("cursor"), eq(cause), eq(0)))
+    when(retryPolicy.evaluate(eq("cursor"), eq(cause), eq(0)))
         .thenReturn(RetryDecision.retry(retryDelay, 1, "cursor"));
 
     // when
@@ -155,7 +155,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // then
     verify(batchOperationInitializer).initializeBatchOperation(batchOperation, taskResultBuilder);
-    verify(retryHandler).evaluate("cursor", cause, 0);
+    verify(retryPolicy).evaluate("cursor", cause, 0);
     verify(scheduleService)
         .runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any()); // initial schedule
     verify(scheduleService).runDelayedAsync(eq(retryDelay), any(), any()); // retry schedule
@@ -174,14 +174,14 @@ public class BatchOperationExecutionSchedulerTest {
 
     final var errorMessage = "Failed after retries";
     final var errorType = BatchOperationErrorType.QUERY_FAILED;
-    when(retryHandler.evaluate(any(), any(), anyInt()))
+    when(retryPolicy.evaluate(any(), any(), anyInt()))
         .thenReturn(RetryDecision.fail(errorMessage, errorType));
 
     // when
     execute();
 
     // then
-    verify(retryHandler).evaluate("cursor", cause, 0);
+    verify(retryPolicy).evaluate("cursor", cause, 0);
     verify(batchOperationInitializer)
         .appendFailedCommand(taskResultBuilder, BATCH_OPERATION_KEY, errorMessage, errorType);
     verify(scheduleService, times(2)).runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any());
@@ -276,9 +276,9 @@ public class BatchOperationExecutionSchedulerTest {
         .thenReturn(new InitializationOutcome.NeedsRetry("cursor", cause));
 
     // First call returns retry with numAttempts=1, second call returns retry with numAttempts=2
-    when(retryHandler.evaluate(any(), any(), eq(0)))
+    when(retryPolicy.evaluate(any(), any(), eq(0)))
         .thenReturn(RetryDecision.retry(Duration.ofMillis(100), 1, "cursor"));
-    when(retryHandler.evaluate(any(), any(), eq(1)))
+    when(retryPolicy.evaluate(any(), any(), eq(1)))
         .thenReturn(RetryDecision.retry(Duration.ofMillis(200), 2, "cursor"));
 
     // when - execute twice (simulating retry)
@@ -286,8 +286,8 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
 
     // then - verify numAttempts increments
-    verify(retryHandler).evaluate("cursor", cause, 0); // first execution
-    verify(retryHandler).evaluate("cursor", cause, 1); // second execution after retry
+    verify(retryPolicy).evaluate("cursor", cause, 0); // first execution
+    verify(retryPolicy).evaluate("cursor", cause, 1); // second execution after retry
   }
 
   @Test
@@ -304,10 +304,10 @@ public class BatchOperationExecutionSchedulerTest {
         .thenReturn(new InitializationOutcome.NeedsRetry("cursor2", cause));
 
     // First retry decision advances cursor to "cursor2" with numAttempts=1
-    when(retryHandler.evaluate(any(), any(), eq(0)))
+    when(retryPolicy.evaluate(any(), any(), eq(0)))
         .thenReturn(RetryDecision.retry(Duration.ofMillis(100), 1, "cursor2"));
     // Second call should still proceed because numAttempts > 0
-    when(retryHandler.evaluate(any(), any(), eq(1)))
+    when(retryPolicy.evaluate(any(), any(), eq(1)))
         .thenReturn(
             RetryDecision.fail("Max retries exceeded", BatchOperationErrorType.QUERY_FAILED));
 
@@ -333,7 +333,7 @@ public class BatchOperationExecutionSchedulerTest {
         .thenReturn(new InitializationOutcome.NeedsRetry("cursor2", cause))
         .thenReturn(new InitializationOutcome.Success("cursor3"));
 
-    when(retryHandler.evaluate(any(), any(), eq(0)))
+    when(retryPolicy.evaluate(any(), any(), eq(0)))
         .thenReturn(RetryDecision.retry(Duration.ofMillis(100), 1, "cursor2"));
 
     // when - first execution triggers retry, second succeeds
@@ -343,7 +343,7 @@ public class BatchOperationExecutionSchedulerTest {
     // then - initializer should be called twice
     verify(batchOperationInitializer, times(2)).initializeBatchOperation(any(), any());
     // And retry handler only once (success doesn't call retry handler)
-    verify(retryHandler, times(1)).evaluate(any(), any(), anyInt());
+    verify(retryPolicy, times(1)).evaluate(any(), any(), anyInt());
   }
 
   /** Bypasses the scheduling mechanism and executes the task directly */

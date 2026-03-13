@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryHandler.RetryDecision;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryPolicy.RetryDecision;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-class BatchOperationRetryHandlerTest {
+class BatchOperationRetryPolicyTest {
 
   private static final Duration INITIAL_RETRY_DELAY = Duration.ofMillis(100);
   private static final Duration MAX_RETRY_DELAY = Duration.ofSeconds(5);
@@ -28,12 +28,12 @@ class BatchOperationRetryHandlerTest {
   private static final int NUM_ATTEMPTS = 0;
   private static final String CURSOR = "test-cursor";
 
-  private BatchOperationRetryHandler retryHandler;
+  private BatchOperationRetryPolicy retryPolicy;
 
   @BeforeEach
   void setUp() {
-    retryHandler =
-        new BatchOperationRetryHandler(
+    retryPolicy =
+        new BatchOperationRetryPolicy(
             INITIAL_RETRY_DELAY, MAX_RETRY_DELAY, MAX_RETRIES, BACKOFF_FACTOR);
   }
 
@@ -44,7 +44,7 @@ class BatchOperationRetryHandlerTest {
         new CamundaSearchException("Temporary failure", Reason.CONNECTION_FAILED);
 
     // when
-    final var decision = retryHandler.evaluate(CURSOR, retryableException, NUM_ATTEMPTS);
+    final var decision = retryPolicy.evaluate(CURSOR, retryableException, NUM_ATTEMPTS);
 
     // then
     assertThat(decision).isInstanceOf(RetryDecision.Retry.class);
@@ -60,7 +60,7 @@ class BatchOperationRetryHandlerTest {
     final var exception = new RuntimeException("Transient failure");
 
     // when - second attempt (after first retry)
-    final var decision = retryHandler.evaluate(CURSOR, exception, 1);
+    final var decision = retryPolicy.evaluate(CURSOR, exception, 1);
 
     // then - delay should be doubled (100ms * 2^1 = 200ms)
     assertThat(decision).isInstanceOf(RetryDecision.Retry.class);
@@ -77,7 +77,7 @@ class BatchOperationRetryHandlerTest {
     // But max is 5000ms
 
     // when
-    final var decision = retryHandler.evaluate(CURSOR, exception, 2);
+    final var decision = retryPolicy.evaluate(CURSOR, exception, 2);
 
     // then - delay should be capped at max (100ms * 2^2 = 400ms, which is still under max)
     assertThat(decision).isInstanceOf(RetryDecision.Retry.class);
@@ -92,7 +92,7 @@ class BatchOperationRetryHandlerTest {
         new CamundaSearchException("Temporary failure", Reason.CONNECTION_FAILED);
 
     // when
-    final var decision = retryHandler.evaluate(CURSOR, retryableException, MAX_RETRIES);
+    final var decision = retryPolicy.evaluate(CURSOR, retryableException, MAX_RETRIES);
 
     // then
     assertThat(decision).isInstanceOf(RetryDecision.Fail.class);
@@ -110,7 +110,7 @@ class BatchOperationRetryHandlerTest {
     final var nonRetryableException = new CamundaSearchException("Non-retryable", reason);
 
     // when
-    final var decision = retryHandler.evaluate(CURSOR, nonRetryableException, NUM_ATTEMPTS);
+    final var decision = retryPolicy.evaluate(CURSOR, nonRetryableException, NUM_ATTEMPTS);
 
     // then
     assertThat(decision).isInstanceOf(RetryDecision.Fail.class);
@@ -125,7 +125,7 @@ class BatchOperationRetryHandlerTest {
     final var genericException = new RuntimeException("Generic error");
 
     // when
-    final var decision = retryHandler.evaluate(CURSOR, genericException, NUM_ATTEMPTS);
+    final var decision = retryPolicy.evaluate(CURSOR, genericException, NUM_ATTEMPTS);
 
     // then
     assertThat(decision).isInstanceOf(RetryDecision.Retry.class);
