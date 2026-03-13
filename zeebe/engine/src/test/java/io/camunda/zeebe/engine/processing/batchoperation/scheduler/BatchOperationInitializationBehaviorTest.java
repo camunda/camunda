@@ -69,10 +69,6 @@ class BatchOperationInitializationBehaviorTest {
     return new InitializationContext(batchOperation, SEARCH_CURSOR, PAGE_SIZE, 0, false);
   }
 
-  /** Creates an InitializationContext with custom page size. */
-  private InitializationContext createContextWithPageSize(final int pageSize) {
-    return new InitializationContext(batchOperation, SEARCH_CURSOR, pageSize, 0, false);
-  }
 
   @Test
   void shouldReturnEarlyWhenBatchOperationIsSuspended() {
@@ -140,7 +136,7 @@ class BatchOperationInitializationBehaviorTest {
   void shouldHandleFailedChunkAppendWithoutPreviousChunks() {
     // given
     when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
-        .thenReturn(new ChunkingOutcome.BufferFull(2));
+        .thenReturn(new ChunkingOutcome.BufferFull());
 
     // when
     final var result = initializer.initializeBatchOperation(createContext(), taskResultBuilder);
@@ -163,16 +159,17 @@ class BatchOperationInitializationBehaviorTest {
     // given - First page succeeds, second page fails to fit in buffer
     when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new ChunkingOutcome.Continue("cursor1", 2))
-        .thenReturn(new ChunkingOutcome.BufferFull(2));
+        .thenReturn(new ChunkingOutcome.BufferFull());
 
     // when
     final var result = initializer.initializeBatchOperation(createContext(), taskResultBuilder);
 
-    // then
+    // then - returns Success (meaning "progress made, continue later") with cursor at last successful page
     assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
     final var success = (InitializationOutcome.Success) result;
     assertThat(success.cursor()).isEqualTo("cursor1");
 
+    // INITIALIZE command written to persist progress
     verify(commandBuilder)
         .appendInitializationCommand(
             eq(taskResultBuilder), eq(BATCH_OPERATION_KEY), eq("cursor1"), eq(PAGE_SIZE));
@@ -293,5 +290,29 @@ class BatchOperationInitializationBehaviorTest {
     verify(metrics)
         .startTotalExecutionLatencyMeasure(
             BATCH_OPERATION_KEY, BatchOperationType.DELETE_PROCESS_INSTANCE);
+  }
+
+  @Test
+  void shouldFailWhenBufferFullAndPageSizeAlreadyMinimum() {
+    // given - page size is already 1, cannot reduce further
+    final var minPageSizeContext =
+        new InitializationContext(batchOperation, SEARCH_CURSOR, 1, 0, false);
+
+    when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
+        .thenReturn(new ChunkingOutcome.BufferFull());
+
+    // when
+    final var result = initializer.initializeBatchOperation(minPageSizeContext, taskResultBuilder);
+
+    // then - terminal failure since we can't reduce page size below 1
+    assertThat(result).isInstanceOf(InitializationOutcome.Failed.class);
+    final var failed = (InitializationOutcome.Failed) result;
+    assertThat(failed.message()).contains("Result buffer too small");
+    assertThat(failed.errorType())
+        .isEqualTo(BatchOperationErrorType.RESULT_BUFFER_SIZE_EXCEEDED);
+
+    // No INITIALIZE command should be written for terminal failure
+    verify(commandBuilder, never())
+        .appendInitializationCommand(any(), anyLong(), anyString(), anyInt());
   }
 }
