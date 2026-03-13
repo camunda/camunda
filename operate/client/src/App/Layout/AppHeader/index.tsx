@@ -185,7 +185,7 @@ const AppHeader: React.FC = observer(() => {
                 label: 'Processes',
                 isCurrentPage:
                   currentPage === 'processes' ||
-                  currentPage === 'process-details',
+                  currentPage?.startsWith('process-details') === true,
                 routeProps: {
                   to: Locations.processes(),
                   state: {refreshContent: true, hideOptionalFilters: true},
