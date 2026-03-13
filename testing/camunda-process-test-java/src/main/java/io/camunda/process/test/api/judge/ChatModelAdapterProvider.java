@@ -15,23 +15,29 @@
  */
 package io.camunda.process.test.api.judge;
 
-import java.util.Optional;
-
 /** SPI interface for creating a {@link ChatModelAdapter} from a {@link ProviderConfig}. */
 public interface ChatModelAdapterProvider {
 
   /**
+   * Returns the name of the provider this implementation handles (e.g. {@code "openai"}, {@code
+   * "anthropic"}). The resolver uses this name to match the provider against the configured {@link
+   * ProviderConfig#getProvider()}.
+   *
+   * @return the provider name, never {@code null}
+   */
+  String getProviderName();
+
+  /**
    * Creates a {@link ChatModelAdapter} from the given provider configuration.
    *
-   * <p>Implementations must return {@link Optional#empty()} when the given configuration is not
-   * supported by this provider. If the configuration is recognized but invalid or incomplete,
-   * implementations should throw an appropriate runtime exception (for example, an {@link
-   * IllegalStateException}) to signal misconfiguration.
+   * <p>This method is only called when the configured provider name matches {@link
+   * #getProviderName()}. If the configuration is invalid or incomplete, implementations should
+   * throw an appropriate runtime exception (for example, an {@link IllegalStateException}) to
+   * signal misconfiguration.
    *
    * @param config the provider-specific configuration
-   * @return an {@link Optional} containing the created {@link ChatModelAdapter}, or {@link
-   *     Optional#empty()} if this provider does not support the given configuration
-   * @throws IllegalStateException if the configuration is recognized but invalid or incomplete
+   * @return the created {@link ChatModelAdapter}, never {@code null}
+   * @throws IllegalStateException if the configuration is invalid or incomplete
    */
-  Optional<ChatModelAdapter> create(ProviderConfig config);
+  ChatModelAdapter create(ProviderConfig config);
 }
