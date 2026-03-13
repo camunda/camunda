@@ -54,7 +54,7 @@
     <version.commons-text>1.15.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.7.0</version.docker-java-api>
-    <version.elasticsearch>8.16.6</version.elasticsearch>
+    <version.elasticsearch>8.19.12</version.elasticsearch>
     <version.elasticsearch-java-client>8.19.12</version.elasticsearch-java-client>
     <version.error-prone>2.48.0</version.error-prone>
     <version.grpc>1.79.0</version.grpc>
@@ -2093,15 +2093,6 @@
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna-platform</artifactId>
         <version>${version.jna-platform}</version>
-      </dependency>
-
-      <!-- Override the transitive dependency from org.elasticsearch:elasticsearch,
-      replacing the discontinued org.lz4:lz4-java with the maintained fork at.yawk.lz4:lz4-java.
-      This override will remain necessary unless Elasticsearch itself adopts the maintained fork. -->
-      <dependency>
-        <groupId>at.yawk.lz4</groupId>
-        <artifactId>lz4-java</artifactId>
-        <version>${version.lz4}</version>
       </dependency>
 
       <dependency>
