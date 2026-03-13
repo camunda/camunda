@@ -32,10 +32,9 @@ public record InitializationContext(
         false);
   }
 
-  public InitializationContext withNextPage(
-      final String newCursor, final int newItems, final boolean appended) {
+  public InitializationContext withNextPage(final String newCursor, final int newItems) {
     return new InitializationContext(
-        operation, newCursor, pageSize, itemsProcessed + newItems, appended);
+        operation, newCursor, pageSize, itemsProcessed + newItems, true);
   }
 
   public InitializationContext withHalvedPageSize() {

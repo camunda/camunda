@@ -103,7 +103,7 @@ public class BatchOperationInitializationBehavior {
 
     var result = pageProcessor.processNextPage(itemProvider, context, taskResultBuilder);
     while (result instanceof Continue(final var endCursor, final int itemsProcessed)) {
-      context = context.withNextPage(endCursor, itemsProcessed, true);
+      context = context.withNextPage(endCursor, itemsProcessed);
       result = pageProcessor.processNextPage(itemProvider, context, taskResultBuilder);
     }
 
@@ -114,7 +114,7 @@ public class BatchOperationInitializationBehavior {
               BatchOperationErrorType.UNKNOWN,
               endCursor);
       case Finished(final var endCursor, final int itemsProcessed) -> {
-        context = context.withNextPage(endCursor, itemsProcessed, true);
+        context = context.withNextPage(endCursor, itemsProcessed);
         finishInitialization(batchOperation, taskResultBuilder);
         startExecutionPhase(taskResultBuilder, context);
         yield new BatchOperationInitializationResult(batchOperation.getKey(), "finished");
