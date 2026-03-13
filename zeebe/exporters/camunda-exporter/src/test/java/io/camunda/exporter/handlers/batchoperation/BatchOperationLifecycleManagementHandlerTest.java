@@ -269,7 +269,7 @@ class BatchOperationLifecycleManagementHandlerTest {
   }
 
   @Test
-  void shouldFlushEntity() throws Exception {
+  void shouldFlushEntityWithConditionalScript() throws Exception {
     // given
     final BatchRequest batchRequest = mock(BatchRequest.class);
     final BatchOperationEntity entity =
@@ -282,10 +282,50 @@ class BatchOperationLifecycleManagementHandlerTest {
     handler.flush(entity, batchRequest);
 
     // then
-    final var argumentCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(batchRequest).update(eq(indexName), eq("12345"), argumentCaptor.capture());
-    final Map<String, Object> updateFields = argumentCaptor.getValue();
-    assertThat(updateFields).containsEntry("state", BatchOperationState.CANCELED);
-    assertThat(updateFields).containsEntry("endDate", entity.getEndDate());
+    final var paramsCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(batchRequest)
+        .upsertWithScript(
+            eq(indexName),
+            eq("12345"),
+            eq(entity),
+            eq(BatchOperationLifecycleManagementHandler.CONDITIONAL_STATE_UPDATE_SCRIPT),
+            paramsCaptor.capture());
+    final Map<String, Object> params = paramsCaptor.getValue();
+    assertThat(params).containsEntry("state", "CANCELED");
+    assertThat(params).containsEntry("endDate", entity.getEndDate());
+    assertThat(params).doesNotContainKey("errors");
+  }
+
+  @Test
+  void shouldFlushEntityWithErrorsInScript() throws Exception {
+    // given
+    final BatchRequest batchRequest = mock(BatchRequest.class);
+    final var errorEntity =
+        new io.camunda.webapps.schema.entities.operation.BatchOperationErrorEntity()
+            .setPartitionId(1)
+            .setType("QUERY_FAILED")
+            .setMessage("error message");
+    final BatchOperationEntity entity =
+        new BatchOperationEntity()
+            .setId("12345")
+            .setState(BatchOperationState.FAILED)
+            .setEndDate(null)
+            .setErrors(List.of(errorEntity));
+
+    // when
+    handler.flush(entity, batchRequest);
+
+    // then - errors should be included in script params when present
+    final var paramsCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(batchRequest)
+        .upsertWithScript(
+            eq(indexName),
+            eq("12345"),
+            eq(entity),
+            eq(BatchOperationLifecycleManagementHandler.CONDITIONAL_STATE_UPDATE_SCRIPT),
+            paramsCaptor.capture());
+    final Map<String, Object> params = paramsCaptor.getValue();
+    assertThat(params).containsEntry("state", "FAILED");
+    assertThat(params).containsEntry("errors", List.of(errorEntity));
   }
 }

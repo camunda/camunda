@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class BatchOperationCreatedHandlerTest {
@@ -105,7 +106,7 @@ class BatchOperationCreatedHandlerTest {
   }
 
   @Test
-  void shouldAddEntityOnFlush() throws PersistenceException {
+  void shouldUpsertWithEmptyUpdateFieldsOnFlush() throws PersistenceException {
     // given
     final var entity = new BatchOperationEntity().setId("123");
     final var mockRequest = mock(BatchRequest.class);
@@ -114,6 +115,6 @@ class BatchOperationCreatedHandlerTest {
     underTest.flush(entity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, entity);
+    verify(mockRequest, times(1)).upsert(eq(indexName), eq("123"), eq(entity), eq(Map.of()));
   }
 }
