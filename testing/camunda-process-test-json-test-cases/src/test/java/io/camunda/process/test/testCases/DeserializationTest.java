@@ -24,7 +24,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.api.testCases.TestCases;
-import io.camunda.process.test.api.testCases.instructions.AssertVariableSatisfiesJudgeInstruction;
+import io.camunda.process.test.api.testCases.instructions.AssertVariableJudgeInstruction;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
 import java.io.IOException;
 import java.io.InputStream;
@@ -103,10 +103,10 @@ public class DeserializationTest {
 
     final List<TestCaseInstruction> instructions = testCase.getInstructions();
     assertThat(instructions).hasSize(1);
-    assertThat(instructions.get(0)).isInstanceOf(AssertVariableSatisfiesJudgeInstruction.class);
+    assertThat(instructions.get(0)).isInstanceOf(AssertVariableJudgeInstruction.class);
 
-    final AssertVariableSatisfiesJudgeInstruction judgeInstruction =
-        (AssertVariableSatisfiesJudgeInstruction) instructions.get(0);
+    final AssertVariableJudgeInstruction judgeInstruction =
+        (AssertVariableJudgeInstruction) instructions.get(0);
     assertThat(judgeInstruction.getVariableName()).isEqualTo("agentResponse");
     assertThat(judgeInstruction.getExpectation())
         .isEqualTo("should contain a valid summary of the financial report");
@@ -129,10 +129,9 @@ public class DeserializationTest {
 
     final List<TestCaseInstruction> instructions = testCase.getInstructions();
     assertThat(instructions).hasSize(1);
-    assertThat(instructions.get(0)).isInstanceOf(AssertVariableSatisfiesJudgeInstruction.class);
 
-    final AssertVariableSatisfiesJudgeInstruction judgeInstruction =
-        (AssertVariableSatisfiesJudgeInstruction) instructions.get(0);
+    final AssertVariableJudgeInstruction judgeInstruction =
+        (AssertVariableJudgeInstruction) instructions.get(0);
     assertThat(judgeInstruction.getVariableName()).isEqualTo("localResult");
     assertThat(judgeInstruction.getExpectation())
         .isEqualTo("should be a properly formatted JSON response");
