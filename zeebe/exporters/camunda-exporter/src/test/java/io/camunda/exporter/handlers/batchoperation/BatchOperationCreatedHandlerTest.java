@@ -206,15 +206,20 @@ class BatchOperationCreatedHandlerTest {
   }
 
   @Test
-  void shouldAddEntityOnFlush() throws PersistenceException {
+  void shouldUpsertWithEmptyUpdateFieldsOnFlush() throws PersistenceException {
     // given
-    final var entity = new BatchOperationEntity().setId("123");
+    final var entity =
+        new BatchOperationEntity()
+            .setId("123")
+            .setType(OperationType.RESOLVE_INCIDENT)
+            .setActorType(AuditLogActorType.USER)
+            .setActorId("username");
     final var mockRequest = mock(BatchRequest.class);
 
     // when
     underTest.flush(entity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, entity);
+    verify(mockRequest, times(1)).upsert(eq(indexName), eq("123"), eq(entity), eq(Map.of()));
   }
 }

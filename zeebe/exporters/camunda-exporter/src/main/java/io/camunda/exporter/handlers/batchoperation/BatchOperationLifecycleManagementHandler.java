@@ -37,9 +37,30 @@ import org.slf4j.LoggerFactory;
  */
 public class BatchOperationLifecycleManagementHandler
     implements ExportHandler<BatchOperationEntity, BatchOperationLifecycleManagementRecordValue> {
+  // Painless script that guards against state regression in multi-partition clusters.
+  // - If the incoming state is terminal, it is always applied (terminal states take priority).
+  // - If the incoming state is non-terminal (ACTIVE from RESUMED, or SUSPENDED), it is only
+  //   applied when the current stored state is also non-terminal, preventing a lagging distributed
+  //   event from overwriting a terminal state.
+  // - endDate and errors are updated only when the state transition is applied, ensuring that
+  //   late non-terminal events cannot clear or modify the end date or errors of a terminal
+  //   operation.
+  static final String CONDITIONAL_STATE_UPDATE_SCRIPT =
+      """
+      def terminalStates = ['COMPLETED', 'PARTIALLY_COMPLETED', 'FAILED', 'CANCELED'];
+      def isNewStateTerminal = terminalStates.contains(params.state);
+      def isCurrentStateTerminal = terminalStates.contains(ctx._source.state);
+      def shouldApplyState = isNewStateTerminal || !isCurrentStateTerminal;
+      if (shouldApplyState) {
+          ctx._source.state = params.state;
+          ctx._source.endDate = params.endDate;
+          if (params.containsKey('errors')) {
+              ctx._source.errors = params.errors;
+          }
+      }
+      """;
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BatchOperationLifecycleManagementHandler.class);
-
   private static final Set<Intent> EXPORTABLE_INTENTS =
       Set.of(CANCELED, SUSPENDED, RESUMED, COMPLETED, FAILED);
   private final String indexName;
@@ -114,13 +135,20 @@ public class BatchOperationLifecycleManagementHandler
   @Override
   public void flush(final BatchOperationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    final Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put(BatchOperationTemplate.STATE, entity.getState());
-    updateFields.put(BatchOperationTemplate.END_DATE, entity.getEndDate());
+    // Use upsertWithScript to be resilient against cross-partition ordering.
+    // CANCELED, SUSPENDED, and RESUMED events are distributed to all partitions, so each
+    // partition's exporter writes to the same document. A conditional Painless script prevents
+    // a lagging non-terminal state (e.g., ACTIVE from RESUMED) from overwriting a terminal state
+    // (e.g., COMPLETED) that was already written by the lead partition's exporter.
+    // If the document does not yet exist, the upsert creates it from the entity.
+    final Map<String, Object> scriptParams = new HashMap<>();
+    scriptParams.put(BatchOperationTemplate.STATE, entity.getState().name());
+    scriptParams.put(BatchOperationTemplate.END_DATE, entity.getEndDate());
     if (entity.getErrors() != null && !entity.getErrors().isEmpty()) {
-      updateFields.put(BatchOperationTemplate.ERRORS, entity.getErrors());
+      scriptParams.put(BatchOperationTemplate.ERRORS, entity.getErrors());
     }
-    batchRequest.update(indexName, entity.getId(), updateFields);
+    batchRequest.upsertWithScript(
+        indexName, entity.getId(), entity, CONDITIONAL_STATE_UPDATE_SCRIPT, scriptParams);
   }
 
   @Override

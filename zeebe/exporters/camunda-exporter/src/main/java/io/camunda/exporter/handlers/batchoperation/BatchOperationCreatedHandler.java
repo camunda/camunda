@@ -25,9 +25,10 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Handles the creation of a batch operation by inserting the corresponding {@link
+ * Handles the creation of a batch operation by upserting the corresponding {@link
  * BatchOperationEntity} with the batch operation details. This handler is responsible for
  * initializing the batch operation state and type, and updating the local cache for immediate
  * access.
@@ -92,7 +93,15 @@ public class BatchOperationCreatedHandler
   @Override
   public void flush(final BatchOperationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    // Use upsert instead of add (index) to prevent cross-partition document overwrites.
+    // The CREATED event is distributed to all partitions, so each partition's exporter writes to
+    // the same document. An index operation would fully replace the document, potentially
+    // overwriting operationsTotalCount increments or state transitions applied by other partitions.
+    // With upsert: if the document does not yet exist, it is created from the entity; if it
+    // already exists, the empty update map is a no-op — all fields in the CREATED event are
+    // idempotent across partitions (same values regardless of which partition exports), so there
+    // is nothing to update on an existing document.
+    batchRequest.upsert(indexName, entity.getId(), entity, Map.of());
   }
 
   @Override
