@@ -86,7 +86,9 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
   @Override
   CompletableFuture<ProcessInstanceArchiveBatch> getNextBatch() {
     final var overRequest =
-        Math.min(100, recentlyArchivedProcessInstances.getRecentlyArchiveCount());
+        Math.min(
+            config.getRolloverBatchSizeOverRequest(),
+            recentlyArchivedProcessInstances.getRecentlyArchiveCount());
     return getArchiverRepository()
         .getProcessInstancesNextBatch(config.getRolloverBatchSize() + overRequest)
         .thenApply(this::deduplicateAndLimitBatch);
