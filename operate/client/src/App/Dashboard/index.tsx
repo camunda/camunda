@@ -15,23 +15,42 @@ import {InstancesByProcessDefinition} from './InstancesByProcessDefinition';
 import {IncidentsByError} from './IncidentsByError';
 import {
   useProcessDefinitionStatisticsPaginated,
-  PAGES_LIMIT,
+  PAGE_LIMIT as PROCESS_PAGE_LIMIT,
 } from 'modules/queries/processDefinitionStatistics/useProcessDefinitionStatisticsPaginated';
+import {
+  useIncidentProcessInstanceStatisticsByErrorPaginated,
+  PAGE_LIMIT as INCIDENT_PAGE_LIMIT,
+} from 'modules/queries/incidentStatistics/useIncidentProcessInstanceStatisticsByErrorPaginated';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
-
-const ROW_HEIGHT = 64;
-const SMOOTH_SCROLL_STEP_SIZE = PAGES_LIMIT * ROW_HEIGHT;
+import {useDashboardScrollPagination} from './useDashboardScrollPagination';
+import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 
 const Dashboard: React.FC = () => {
   const scrollableContentRef = useRef<HTMLDivElement>(null);
   const incidentScrollableContentRef = useRef<HTMLDivElement>(null);
+
   const processStats = useProcessDefinitionStatisticsPaginated({
     enablePeriodicRefetch: true,
-    select: (data) => ({
-      items: data.pages.flatMap((page) => page.items),
-      totalCount: data.pages[0]?.page.totalItems ?? 0,
-    }),
+    select: flattenPaginatedPages,
   });
+
+  const incidentStats = useIncidentProcessInstanceStatisticsByErrorPaginated({
+    enablePeriodicRefetch: true,
+    enabled:
+      processStats.status !== 'success' ||
+      (processStats.data?.totalCount ?? 0) > 0,
+    select: flattenPaginatedPages,
+  });
+
+  const processScroll = useDashboardScrollPagination(
+    processStats,
+    PROCESS_PAGE_LIMIT,
+  );
+  const incidentScroll = useDashboardScrollPagination(
+    incidentStats,
+    INCIDENT_PAGE_LIMIT,
+  );
+
   const hasNoInstances =
     processStats.status === 'success' &&
     (processStats.data?.totalCount ?? 0) === 0;
@@ -39,21 +58,6 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     document.title = PAGE_TITLE.DASHBOARD;
   }, []);
-
-  const handleScrollStartReach = async (
-    scrollDown: (distance: number) => void,
-  ) => {
-    if (processStats.hasPreviousPage && !processStats.isFetchingPreviousPage) {
-      await processStats.fetchPreviousPage();
-      scrollDown(SMOOTH_SCROLL_STEP_SIZE);
-    }
-  };
-
-  const handleScrollEndReach = () => {
-    if (processStats.hasNextPage && !processStats.isFetchingNextPage) {
-      processStats.fetchNextPage();
-    }
-  };
 
   return (
     <Grid $numberOfColumns={hasNoInstances ? 1 : 2}>
@@ -71,10 +75,10 @@ const Dashboard: React.FC = () => {
               status={processStats.status}
               items={processStats.data?.items ?? []}
               scrollableContainerRef={scrollableContentRef}
-              isFetchingNextPage={processStats.isFetchingNextPage}
-              isFetchingPreviousPage={processStats.isFetchingPreviousPage}
-              onScrollStartReach={handleScrollStartReach}
-              onScrollEndReach={handleScrollEndReach}
+              isFetchingNextPage={processScroll.isFetchingNextPage}
+              isFetchingPreviousPage={processScroll.isFetchingPreviousPage}
+              onScrollStartReach={processScroll.handleScrollStartReach}
+              onScrollEndReach={processScroll.handleScrollEndReach}
             />
           )}
         </ScrollableContent>
@@ -85,7 +89,14 @@ const Dashboard: React.FC = () => {
           <TileTitle>Process Incidents by Error Message</TileTitle>
           <ScrollableContent ref={incidentScrollableContentRef}>
             <IncidentsByError
+              status={incidentStats.status}
+              items={incidentStats.data?.items ?? []}
+              totalCount={incidentStats.data?.totalCount ?? 0}
               scrollableContainerRef={incidentScrollableContentRef}
+              isFetchingNextPage={incidentScroll.isFetchingNextPage}
+              isFetchingPreviousPage={incidentScroll.isFetchingPreviousPage}
+              onScrollStartReach={incidentScroll.handleScrollStartReach}
+              onScrollEndReach={incidentScroll.handleScrollEndReach}
             />
           </ScrollableContent>
         </Tile>
