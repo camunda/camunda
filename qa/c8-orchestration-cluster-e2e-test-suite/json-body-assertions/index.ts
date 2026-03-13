@@ -282,6 +282,16 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
+  '/jobs/statistics/time-series': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/jobs/statistics/errors': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/license': {
     GET: {
       '200': 1,
@@ -484,6 +494,11 @@ export const RESPONSE_INDEX = {
     },
   },
   '/system/usage-metrics': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/system/configuration': {
     GET: {
       '200': 1,
     },
