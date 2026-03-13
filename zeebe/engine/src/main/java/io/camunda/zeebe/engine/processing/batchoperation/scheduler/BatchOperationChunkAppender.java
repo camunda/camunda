@@ -64,32 +64,32 @@ public class BatchOperationChunkAppender {
    * @return a result indicating whether chunks were appended, the end cursor, number of items
    *     processed, and if it was the last page
    */
-  private PageProcessingResult chunkAndAppend(
+  private ChunkingOutcome chunkAndAppend(
       final long batchOperationKey,
       final ItemPage page,
       final TaskResultBuilder taskResultBuilder) {
     final boolean appendedChunks = appendChunks(taskResultBuilder, batchOperationKey, page.items());
 
     if (!appendedChunks) {
-      return new PageProcessingResult.BufferFull(page.items().size());
+      return new ChunkingOutcome.BufferFull(page.items().size());
     }
     if (page.isLastPage()) {
-      return new PageProcessingResult.Finished(page.endCursor(), page.items().size());
+      return new ChunkingOutcome.Finished(page.endCursor(), page.items().size());
     }
-    return new PageProcessingResult.Continue(page.endCursor(), page.items().size());
+    return new ChunkingOutcome.Continue(page.endCursor(), page.items().size());
   }
 
   /**
    * Fetches the next page of items and chunks them into the result buffer. If the fetch fails, a
-   * {@link PageProcessingResult.FetchFailed} is returned instead of throwing an exception.
+   * {@link ChunkingOutcome.FetchFailed} is returned instead of throwing an exception.
    *
    * @param itemProvider the item provider to fetch the page from
    * @param context the current initialization context (cursor, page size)
    * @param taskResultBuilder the builder to append command records to
-   * @return the result of processing the page, or a {@link PageProcessingResult.FetchFailed} if the
+   * @return the result of processing the page, or a {@link ChunkingOutcome.FetchFailed} if the
    *     fetch fails
    */
-  public PageProcessingResult fetchAndChunkNextPage(
+  public ChunkingOutcome fetchAndChunkNextPage(
       final ItemProvider itemProvider,
       final InitializationContext context,
       final TaskResultBuilder taskResultBuilder) {
@@ -97,7 +97,7 @@ public class BatchOperationChunkAppender {
     try {
       page = itemProvider.fetchItemPage(context.currentCursor(), context.pageSize());
     } catch (final Exception e) {
-      return new PageProcessingResult.FetchFailed(e);
+      return new ChunkingOutcome.FetchFailed(e);
     }
     return chunkAndAppend(context.operation().getKey(), page, taskResultBuilder);
   }
@@ -159,7 +159,7 @@ public class BatchOperationChunkAppender {
   }
 
   /**
-   * Represents the outcome of processing a page of batch operation items.
+   * Represents the outcome of fetching and chunking a page of batch operation items.
    *
    * <ul>
    *   <li>{@link Continue} — chunks were appended, more pages remain
@@ -168,17 +168,17 @@ public class BatchOperationChunkAppender {
    *   <li>{@link FetchFailed} — fetching the page failed with an exception
    * </ul>
    */
-  public sealed interface PageProcessingResult {
+  public sealed interface ChunkingOutcome {
     /** Chunks were appended and more pages remain. */
-    record Continue(String endCursor, int itemsProcessed) implements PageProcessingResult {}
+    record Continue(String endCursor, int itemsProcessed) implements ChunkingOutcome {}
 
     /** Chunks were appended and this was the last page. */
-    record Finished(String endCursor, int itemsProcessed) implements PageProcessingResult {}
+    record Finished(String endCursor, int itemsProcessed) implements ChunkingOutcome {}
 
     /** Chunks could not fit in the result buffer. */
-    record BufferFull(int itemsProcessed) implements PageProcessingResult {}
+    record BufferFull(int itemsProcessed) implements ChunkingOutcome {}
 
     /** Fetching the page from the item provider failed. */
-    record FetchFailed(Exception cause) implements PageProcessingResult {}
+    record FetchFailed(Exception cause) implements ChunkingOutcome {}
   }
 }
