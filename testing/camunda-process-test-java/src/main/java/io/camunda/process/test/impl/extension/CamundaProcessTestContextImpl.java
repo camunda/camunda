@@ -105,8 +105,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public CamundaClient createClient(final Consumer<CamundaClientBuilder> modifier) {
     final CamundaClientBuilder builder = camundaClientBuilderFactory.get();
-    builder.preferRestOverGrpc(false);
-
     modifier.accept(builder);
 
     final CamundaClient client = builder.build();
