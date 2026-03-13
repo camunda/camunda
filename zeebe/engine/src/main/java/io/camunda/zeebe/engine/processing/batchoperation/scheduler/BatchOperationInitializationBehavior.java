@@ -38,12 +38,12 @@ import org.slf4j.LoggerFactory;
  *
  * <p>The initialization process creates an {@link ItemProvider} once per batch operation via {@link
  * ItemProviderFactory}, then fetches and processes items in pages via {@link
- * BatchOperationChunkAppender}, and builds commands through {@link BatchOperationCommandAppender}.
- * If chunk appending fails, it attempts to reduce the page size and retry, or marks the operation
- * as failed if the minimum page size is reached.
+ * BatchOperationChunkAppender}, and builds commands through {@link BatchOperationCommands}. If
+ * chunk appending fails, it attempts to reduce the page size and retry, or marks the operation as
+ * failed if the minimum page size is reached.
  *
  * @see BatchOperationChunkAppender
- * @see BatchOperationCommandAppender
+ * @see BatchOperationCommands
  * @see ItemProviderFactory
  * @see PersistedBatchOperation
  */
@@ -55,18 +55,18 @@ public class BatchOperationInitializationBehavior {
 
   private final ItemProviderFactory itemProviderFactory;
   private final BatchOperationMetrics metrics;
-  private final BatchOperationCommandAppender commandAppender;
+  private final BatchOperationCommands commands;
   private final BatchOperationChunkAppender chunkAppender;
   private final int queryPageSize;
 
   public BatchOperationInitializationBehavior(
       final ItemProviderFactory itemProviderFactory,
       final BatchOperationChunkAppender chunkAppender,
-      final BatchOperationCommandAppender commandAppender,
+      final BatchOperationCommands commands,
       final int queryPageSize,
       final BatchOperationMetrics metrics) {
     this.itemProviderFactory = itemProviderFactory;
-    this.commandAppender = commandAppender;
+    this.commands = commands;
     this.chunkAppender = chunkAppender;
     this.queryPageSize = queryPageSize;
     this.metrics = metrics;
@@ -152,7 +152,7 @@ public class BatchOperationInitializationBehavior {
 
   private void startExecutionPhase(
       final TaskResultBuilder resultBuilder, final InitializationContext context) {
-    commandAppender.appendExecutionCommand(resultBuilder, context.operation().getKey());
+    commands.appendExecutionCommand(resultBuilder, context.operation().getKey());
 
     metrics.recordItemsPerPartition(
         context.operation().getNumTotalItems() + context.itemsProcessed(),
@@ -165,14 +165,14 @@ public class BatchOperationInitializationBehavior {
 
   private void finishInitialization(
       final PersistedBatchOperation batchOperation, final TaskResultBuilder resultBuilder) {
-    commandAppender.appendFinishInitializationCommand(resultBuilder, batchOperation.getKey());
+    commands.appendFinishInitializationCommand(resultBuilder, batchOperation.getKey());
     metrics.recordInitialized(batchOperation.getBatchOperationType());
   }
 
   private void continueInitialization(
       final TaskResultBuilder taskResultBuilder, final InitializationContext context) {
 
-    commandAppender.appendInitializationCommand(
+    commands.appendInitializationCommand(
         taskResultBuilder,
         context.operation().getKey(),
         context.currentCursor(),
@@ -184,7 +184,7 @@ public class BatchOperationInitializationBehavior {
       final long batchOperationKey,
       final String message,
       final BatchOperationErrorType errorType) {
-    commandAppender.appendFailureCommand(taskResultBuilder, batchOperationKey, message, errorType);
+    commands.appendFailureCommand(taskResultBuilder, batchOperationKey, message, errorType);
   }
 
   /**
