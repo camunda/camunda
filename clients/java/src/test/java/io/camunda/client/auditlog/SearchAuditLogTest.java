@@ -28,6 +28,7 @@ import io.camunda.client.api.search.enums.AuditLogResultEnum;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.AuditLogFilter;
+import io.camunda.client.protocol.rest.AuditLogResult;
 import io.camunda.client.protocol.rest.AuditLogSearchQueryRequest;
 import io.camunda.client.protocol.rest.AuditLogSearchQueryResult;
 import io.camunda.client.protocol.rest.SortOrderEnum;
@@ -38,6 +39,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.instancio.Instancio;
+import org.instancio.Select;
 import org.junit.jupiter.api.Test;
 
 public class SearchAuditLogTest extends ClientRestTest {
@@ -45,7 +47,10 @@ public class SearchAuditLogTest extends ClientRestTest {
   @Test
   public void shouldSearchAuditLogsWithEmptyQuery() {
     // when
-    gatewayService.onSearchAuditLogRequest(Instancio.create(AuditLogSearchQueryResult.class));
+    gatewayService.onSearchAuditLogRequest(
+        Instancio.of(AuditLogSearchQueryResult.class)
+            .set(Select.field(AuditLogResult.class, "timestamp"), "2024-01-15T10:30:00+00:00")
+            .create());
     client.newAuditLogSearchRequest().send().join();
 
     // then
