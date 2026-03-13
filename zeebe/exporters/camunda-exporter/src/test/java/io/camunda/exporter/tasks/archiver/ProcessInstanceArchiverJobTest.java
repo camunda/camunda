@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
@@ -33,6 +34,7 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
 
   private final Executor executor = Runnable::run;
 
+  private final HistoryConfiguration historyConfiguration = new HistoryConfiguration();
   private final TestRepository repository = new TestRepository();
   private final ListViewTemplate processInstanceTemplate = new ListViewTemplate("", true);
   private final DecisionInstanceTemplate decisionInstanceTemplate =
@@ -45,6 +47,7 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
 
   private final ProcessInstanceArchiverJob job =
       new ProcessInstanceArchiverJob(
+          historyConfiguration,
           repository,
           processInstanceTemplate,
           List.of(decisionInstanceTemplate, sequenceFlowTemplate, auditLogTemplate),
@@ -84,7 +87,13 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
     // given
     final ProcessInstanceArchiverJob processInstanceJob =
         new ProcessInstanceArchiverJob(
-            repository, processInstanceTemplate, List.of(), metrics, LOGGER, executor);
+            historyConfiguration,
+            repository,
+            processInstanceTemplate,
+            List.of(),
+            metrics,
+            LOGGER,
+            executor);
 
     // when
     final int count = processInstanceJob.execute().toCompletableFuture().join();
@@ -169,7 +178,13 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
     final var dependant = new WeirdlyNamedDependant();
     final var job =
         new ProcessInstanceArchiverJob(
-            repository, processInstanceTemplate, List.of(dependant), metrics, LOGGER, executor);
+            historyConfiguration,
+            repository,
+            processInstanceTemplate,
+            List.of(dependant),
+            metrics,
+            LOGGER,
+            executor);
     repository.batch = new ProcessInstanceArchiveBatch("2024-01-01", List.of(1L, 2L), List.of());
 
     // when
