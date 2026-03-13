@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class ExporterConfigurationTest {
@@ -30,31 +31,6 @@ class ExporterConfigurationTest {
   }
 
   @Test
-  void shouldSetSkipPositionsFromEnvironment() {
-    // given
-    final var environment = new HashMap<String, String>();
-    environment.put("zeebe.broker.exporting.skipRecords", "1, 2, 3 , 3, 2, 1, 0");
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("exporters", environment);
-    final ExportingCfg exportingCfg = cfg.getExporting();
-
-    // then
-    assertThat(exportingCfg.skipRecords()).isEqualTo(Set.of(1L, 2L, 3L, 0L));
-  }
-
-  @Test
-  void shouldSetSkipPositionsFromConfigurationFile() {
-    // given
-    final var environment = new HashMap<String, String>();
-
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("exporters", environment);
-    final ExportingCfg exportingCfg = cfg.getExporting();
-    // then
-    assertThat(exportingCfg.skipRecords()).isEqualTo(Set.of(112233L, 445566L));
-  }
-
-  @Test
   void shouldSetSkipPositionsForPartitionFromConfigurationFile() {
     // given
     final var environment = new HashMap<String, String>();
@@ -63,42 +39,31 @@ class ExporterConfigurationTest {
     final BrokerCfg cfg = TestConfigReader.readConfig("exporters", environment);
     final ExportingCfg exportingCfg = cfg.getExporting();
     // then
-    assertThat(exportingCfg.skipRecordsForPartitions()).containsEntry(1, Set.of(999L));
+    assertThat(exportingCfg.skipRecords())
+        .containsEntry(1, Set.of(999L))
+        .containsEntry(2, Set.of(100L));
   }
 
   @Test
   void shouldSetSkipPositionsForPartitionFromEnvironment() {
     // given
     final var environment = new HashMap<String, String>();
-    environment.put("zeebe.broker.exporting.skipRecordsForPartitions.2", "1, 2, 3");
+    environment.put("zeebe.broker.exporting.skipRecords.2", "1, 2, 3");
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("exporters", environment);
     final ExportingCfg exportingCfg = cfg.getExporting();
 
     // then
-    assertThat(exportingCfg.skipRecordsForPartitions()).containsEntry(2, Set.of(1L, 2L, 3L));
+    assertThat(exportingCfg.skipRecords()).containsEntry(2, Set.of(1L, 2L, 3L));
   }
 
   @Test
   void shouldSetSkipPositions() {
     // given
-    final ExportingCfg exportingCfg = new ExportingCfg(Set.of(1L, 2L), null, null);
+    final ExportingCfg exportingCfg = new ExportingCfg(Map.of(1, Set.of(1L, 2L)), null);
 
     // then
-    assertThat(exportingCfg.skipRecords()).isEqualTo(Set.of(1L, 2L));
-  }
-
-  @Test
-  void shouldSetSkipPositionsForOtherExporters() {
-    // given
-    final var environment = new HashMap<String, String>();
-    environment.put("zeebe.broker.exporting.skipRecords", "1, 2, 3");
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("exporters", environment);
-    final ExportingCfg exportingCfg = cfg.getExporting();
-
-    // then
-    assertThat(exportingCfg.skipRecords()).isEqualTo(Set.of(1L, 2L, 3L));
+    assertThat(exportingCfg.skipRecords()).containsEntry(1, Set.of(1L, 2L));
   }
 
   @Test
