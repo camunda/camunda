@@ -713,3 +713,4 @@ Expected: All tests pass — existing BasicAuth tests, new OIDC API tests, new O
 git add -u
 git commit -m "style: apply spotless formatting"
 ```
+

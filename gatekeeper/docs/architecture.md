@@ -68,22 +68,22 @@ implement as **adapters**. The domain never reaches out to infrastructure — in
 in through the SPIs.
 
 ```
-                    ┌─────────────────────────┐
-                    │    gatekeeper-domain     │
-                    │                         │
-  Consumers ──────▶│  SPIs ◄── Models        │
-  implement         │  (ports)    (records)    │
-  these             │                         │
-                    └─────────────────────────┘
-                              ▲
-                              │ implements
-                    ┌─────────────────────────┐
-                    │  gatekeeper-spring-boot  │
-                    │       -starter           │
-                    │                         │
-                    │  Auto-config, filters,   │
-                    │  converters, holders     │
-                    └─────────────────────────┘
+                  ┌─────────────────────────┐
+                  │    gatekeeper-domain     │
+                  │                         │
+Consumers ──────▶│  SPIs ◄── Models        │
+implement         │  (ports)    (records)    │
+these             │                         │
+                  └─────────────────────────┘
+                            ▲
+                            │ implements
+                  ┌─────────────────────────┐
+                  │  gatekeeper-spring-boot  │
+                  │       -starter           │
+                  │                         │
+                  │  Auto-config, filters,   │
+                  │  converters, holders     │
+                  └─────────────────────────┘
 ```
 
 ### 2. Models Are Records
@@ -155,32 +155,32 @@ web components, tenants, groups, roles, and a `canLogout` flag.
 SPIs are grouped by concern. The table below indicates whether gatekeeper provides a default
 implementation or whether the consuming component must supply one.
 
-| SPI | Purpose | Default provided? |
-|-----|---------|-------------------|
-| `CamundaAuthenticationProvider` | Get current authentication | Yes (delegates to converter + holder chains) |
-| `CamundaAuthenticationConverter<T>` | Convert framework auth to `CamundaAuthentication` | Yes (OIDC and basic auth converters) |
-| `CamundaAuthenticationHolder` | Store/retrieve auth in request context | Yes (request-scoped and session-scoped) |
-| `MembershipResolver` | Resolve groups, roles, tenants from token claims | **No** — component must implement |
-| `CamundaUserProvider` | Get current user info and token | **No** — component must implement |
-| `SessionPersistencePort` | Persist web sessions | **No** — implement if using persistent sessions |
-| `SessionTokenService` | JWT session token lifecycle | Optional |
-| `TerminatedSessionPort` | Store revoked sessions | Optional |
-| `OidcConfigurationProvider` | Provide OIDC configs at runtime | Yes (from properties; override for dynamic IdP) |
-| `SecurityPathProvider` | Define URL patterns for security filter chains | **No** — component must implement |
-| `CookiePathResolver` | Resolve cookie path | Optional (uses config default) |
+|                 SPI                 |                      Purpose                      |                Default provided?                |
+|-------------------------------------|---------------------------------------------------|-------------------------------------------------|
+| `CamundaAuthenticationProvider`     | Get current authentication                        | Yes (delegates to converter + holder chains)    |
+| `CamundaAuthenticationConverter<T>` | Convert framework auth to `CamundaAuthentication` | Yes (OIDC and basic auth converters)            |
+| `CamundaAuthenticationHolder`       | Store/retrieve auth in request context            | Yes (request-scoped and session-scoped)         |
+| `MembershipResolver`                | Resolve groups, roles, tenants from token claims  | **No** — component must implement               |
+| `CamundaUserProvider`               | Get current user info and token                   | **No** — component must implement               |
+| `SessionPersistencePort`            | Persist web sessions                              | **No** — implement if using persistent sessions |
+| `SessionTokenService`               | JWT session token lifecycle                       | Optional                                        |
+| `TerminatedSessionPort`             | Store revoked sessions                            | Optional                                        |
+| `OidcConfigurationProvider`         | Provide OIDC configs at runtime                   | Yes (from properties; override for dynamic IdP) |
+| `SecurityPathProvider`              | Define URL patterns for security filter chains    | **No** — component must implement               |
+| `CookiePathResolver`                | Resolve cookie path                               | Optional (uses config default)                  |
 
 ## Auto-Configuration Activation
 
 The starter registers 6 auto-configuration classes, activated conditionally:
 
-| Auto-configuration | Activates when |
-|--------------------|----------------|
-| `GatekeeperAuthAutoConfiguration` | Always (core beans) |
-| `GatekeeperOidcAutoConfiguration` | `camunda.security.authentication.method=OIDC` |
-| `GatekeeperBasicAuthAutoConfiguration` | `camunda.security.authentication.method=BASIC` |
-| `GatekeeperSecurityFilterChainAutoConfiguration` | Always (security filter chain) |
-| `GatekeeperSessionAutoConfiguration` | Persistent sessions enabled |
-| `GatekeeperWebappFiltersAutoConfiguration` | Always (webapp-specific beans) |
+|                Auto-configuration                |                 Activates when                 |
+|--------------------------------------------------|------------------------------------------------|
+| `GatekeeperAuthAutoConfiguration`                | Always (core beans)                            |
+| `GatekeeperOidcAutoConfiguration`                | `camunda.security.authentication.method=OIDC`  |
+| `GatekeeperBasicAuthAutoConfiguration`           | `camunda.security.authentication.method=BASIC` |
+| `GatekeeperSecurityFilterChainAutoConfiguration` | Always (security filter chain)                 |
+| `GatekeeperSessionAutoConfiguration`             | Persistent sessions enabled                    |
+| `GatekeeperWebappFiltersAutoConfiguration`       | Always (webapp-specific beans)                 |
 
 Custom conditional annotations in `condition/`:
 - `@ConditionalOnAuthenticationMethod(OIDC)` / `@ConditionalOnAuthenticationMethod(BASIC)`
@@ -213,3 +213,4 @@ gatekeeper-domain  ◄──  gatekeeper-spring-boot-starter
 5. SPI classes must be interfaces
 6. Models must not depend on SPIs (layering)
 7. Exceptions must extend `RuntimeException`
+

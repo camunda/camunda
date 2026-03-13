@@ -7,9 +7,9 @@
  */
 package io.camunda.authentication.adapter;
 
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.gatekeeper.model.identity.UserProfile;
 import io.camunda.gatekeeper.spi.UserProfileProvider;
-import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.service.UserServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

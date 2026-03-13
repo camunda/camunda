@@ -18,10 +18,10 @@ import static org.mockito.Mockito.when;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.BasicAuth;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc;

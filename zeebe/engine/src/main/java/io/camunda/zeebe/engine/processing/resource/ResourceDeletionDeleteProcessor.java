@@ -10,9 +10,9 @@ package io.camunda.zeebe.engine.processing.resource;
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;

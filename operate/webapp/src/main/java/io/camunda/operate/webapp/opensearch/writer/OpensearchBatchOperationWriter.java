@@ -13,6 +13,7 @@ import static io.camunda.webapps.schema.entities.operation.OperationType.ADD_VAR
 import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_VARIABLE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
@@ -27,7 +28,6 @@ import io.camunda.operate.webapp.operation.dto.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.writer.ProcessInstanceSource;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;

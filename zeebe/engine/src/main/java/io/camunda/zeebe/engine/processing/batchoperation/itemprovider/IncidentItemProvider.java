@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation.itemprovider;
 
 import com.google.common.collect.Lists;
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.filter.IncidentFilter;
@@ -15,7 +16,6 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPageBuilders;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.util.FilterUtil;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;

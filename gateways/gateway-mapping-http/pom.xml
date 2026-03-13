@@ -44,6 +44,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>gatekeeper-domain</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-service</artifactId>
     </dependency>
 

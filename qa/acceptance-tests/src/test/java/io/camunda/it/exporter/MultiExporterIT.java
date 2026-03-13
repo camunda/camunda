@@ -13,11 +13,11 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.exporter.CamundaExporter;
+import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import io.camunda.it.document.DocumentClient;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbConfigurator;
 import io.camunda.search.connect.configuration.DatabaseType;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;

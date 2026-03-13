@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.JobEntity.JobKind;
@@ -20,7 +21,6 @@ import io.camunda.search.entities.JobEntity.ListenerEventType;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;

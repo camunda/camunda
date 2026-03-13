@@ -9,10 +9,10 @@ package io.camunda.search.clients.auth;
 
 import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.search.clients.auth.matcher.ResourcePropertyMatcherRegistry;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessProvider;

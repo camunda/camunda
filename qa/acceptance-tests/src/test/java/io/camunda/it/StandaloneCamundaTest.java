@@ -10,11 +10,11 @@ package io.camunda.it;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestOperateClient.ProcessInstanceResult;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;

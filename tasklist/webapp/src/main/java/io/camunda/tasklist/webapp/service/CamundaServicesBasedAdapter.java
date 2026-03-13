@@ -10,9 +10,9 @@ package io.camunda.tasklist.webapp.service;
 import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.getErrorMessageFromServiceException;
 
 import io.camunda.client.impl.command.StreamUtil;
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
+import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
 import io.camunda.gateway.mapping.http.validator.MultiTenancyValidator;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.JobServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;

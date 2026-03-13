@@ -14,8 +14,7 @@ import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
-import io.camunda.authentication.config.AuthenticationProperties;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer.Bean;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -170,7 +169,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   public T withBasicAuth() {
-    withProperty(AuthenticationProperties.METHOD, AuthenticationMethod.BASIC.name());
+    withProperty("camunda.security.authentication.method", AuthenticationMethod.BASIC.name());
     withAdditionalProfile(Profile.CONSOLIDATED_AUTH);
     return self();
   }
@@ -182,11 +181,11 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   public T withAuthenticationMethod(final AuthenticationMethod authenticationMethod) {
     return withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
-        .withProperty(AuthenticationProperties.METHOD, authenticationMethod.name());
+        .withProperty("camunda.security.authentication.method", authenticationMethod.name());
   }
 
   protected T withUnauthenticatedAccess(final boolean unprotectedApi) {
-    return withProperty(AuthenticationProperties.API_UNPROTECTED, unprotectedApi);
+    return withProperty("camunda.security.authentication.unprotected-api", unprotectedApi);
   }
 
   public final T withUnauthenticatedAccess() {
@@ -221,12 +220,14 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   public final Optional<AuthenticationMethod> apiAuthenticationMethod() {
-    if (property(AuthenticationProperties.API_UNPROTECTED, Boolean.class, true)) {
+    if (property("camunda.security.authentication.unprotected-api", Boolean.class, true)) {
       return Optional.empty();
     } else {
       return AuthenticationMethod.parse(
           property(
-              AuthenticationProperties.METHOD, String.class, AuthenticationMethod.BASIC.name()));
+              "camunda.security.authentication.method",
+              String.class,
+              AuthenticationMethod.BASIC.name()));
     }
   }
 

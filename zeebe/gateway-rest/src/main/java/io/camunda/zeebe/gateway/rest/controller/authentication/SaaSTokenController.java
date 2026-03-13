@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.authentication;
 
-import io.camunda.authentication.service.CamundaUserService;
+import io.camunda.gatekeeper.spi.CamundaUserProvider;
 import io.camunda.security.ConditionalOnSaaSConfigured;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
@@ -24,16 +24,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @ConditionalOnSecondaryStorageEnabled
 @RequestMapping("/v2/authentication")
 public class SaaSTokenController {
-  private final CamundaUserService camundaUserService;
+  private final CamundaUserProvider camundaUserProvider;
 
-  public SaaSTokenController(final CamundaUserService camundaUserService) {
-    this.camundaUserService = camundaUserService;
+  public SaaSTokenController(final CamundaUserProvider camundaUserProvider) {
+    this.camundaUserProvider = camundaUserProvider;
   }
 
   @Hidden
   @CamundaGetMapping(path = "/me/token")
   public ResponseEntity<String> getCurrentToken() {
-    final var token = camundaUserService.getUserToken();
+    final var token = camundaUserProvider.getUserToken();
 
     return token == null
         ? ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()

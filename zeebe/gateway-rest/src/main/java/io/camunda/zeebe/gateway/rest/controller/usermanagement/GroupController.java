@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 
 import io.camunda.authentication.ConditionalOnCamundaGroupsEnabled;
+import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.GroupMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
@@ -32,7 +33,6 @@ import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.validation.GroupValidator;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.GroupServices;

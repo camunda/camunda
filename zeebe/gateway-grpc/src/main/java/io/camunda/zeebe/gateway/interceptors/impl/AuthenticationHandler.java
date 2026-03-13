@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.gateway.interceptors.impl;
 
+import io.camunda.gatekeeper.auth.OidcGroupsLoader;
+import io.camunda.gatekeeper.auth.OidcPrincipalLoader;
+import io.camunda.gatekeeper.auth.OidcPrincipalLoader.OidcPrincipals;
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryBuilders;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.OidcGroupsLoader;
-import io.camunda.security.auth.OidcPrincipalLoader;
-import io.camunda.security.auth.OidcPrincipalLoader.OidcPrincipals;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.util.Either;

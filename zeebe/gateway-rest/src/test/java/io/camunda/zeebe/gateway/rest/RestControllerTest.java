@@ -10,9 +10,9 @@ package io.camunda.zeebe.gateway.rest;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.zeebe.gateway.rest.interceptor.SecondaryStorageInterceptor;

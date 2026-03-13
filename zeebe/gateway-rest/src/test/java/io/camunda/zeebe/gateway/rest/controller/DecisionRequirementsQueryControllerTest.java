@@ -14,6 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.DecisionRequirementsFilter;
@@ -22,7 +23,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;

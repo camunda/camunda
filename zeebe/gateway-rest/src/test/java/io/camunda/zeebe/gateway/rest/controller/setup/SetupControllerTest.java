@@ -14,12 +14,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
+import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.UserRequest;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;

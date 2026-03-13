@@ -11,8 +11,8 @@ import static io.camunda.security.configuration.MultiTenancyConfiguration.API_EN
 import static io.camunda.security.configuration.OidcAuthenticationConfiguration.GROUPS_CLAIM_PROPERTY;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.authentication.ConditionalOnAuthenticationMethod;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
+import io.camunda.gatekeeper.spring.condition.ConditionalOnAuthenticationMethod;
 import io.camunda.zeebe.gateway.rest.controller.EndpointAccessErrorFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;

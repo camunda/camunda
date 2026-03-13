@@ -11,6 +11,7 @@ import static io.camunda.search.entities.BatchOperationEntity.getBatchOperationK
 import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.BATCH_OPERATION_READ_AUTHORIZATION;
 
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.search.clients.BatchOperationSearchClient;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
@@ -18,7 +19,6 @@ import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;

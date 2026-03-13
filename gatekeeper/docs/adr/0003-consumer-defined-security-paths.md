@@ -57,3 +57,4 @@ public interface SecurityPathProvider {
 - Applications like Hub can define entirely different path sets without forking gatekeeper
 - The auto-configuration remains the same structure — only the source of path data changed
 - `webComponentNames()` returns bare identifiers (e.g., `"hub"`), not ant-style patterns
+

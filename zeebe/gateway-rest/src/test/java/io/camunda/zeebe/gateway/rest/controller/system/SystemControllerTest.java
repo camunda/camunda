@@ -12,13 +12,13 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.entities.UsageMetricStatisticsEntity.UsageMetricStatisticsEntityTenant;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUStatisticsEntityTenant;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;

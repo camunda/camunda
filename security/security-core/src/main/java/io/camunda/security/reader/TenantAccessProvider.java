@@ -7,7 +7,7 @@
  */
 package io.camunda.security.reader;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 
 public interface TenantAccessProvider {
 

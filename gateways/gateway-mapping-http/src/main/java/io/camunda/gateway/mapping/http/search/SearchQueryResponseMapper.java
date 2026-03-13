@@ -9,10 +9,9 @@ package io.camunda.gateway.mapping.http.search;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
 import static java.util.Optional.ofNullable;
-import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
-import io.camunda.authentication.entity.CamundaUserDTO;
+import io.camunda.gatekeeper.model.identity.CamundaUserInfo;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
@@ -188,7 +187,6 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.entity.ClusterMetadata.AppName;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collections;
@@ -1135,24 +1133,25 @@ public final class SearchQueryResponseMapper {
     return new UserResult().username(user.username()).email(user.email()).name(user.name());
   }
 
-  public static CamundaUserResult toCamundaUser(final CamundaUserDTO camundaUser) {
+  public static CamundaUserResult toCamundaUser(final CamundaUserInfo camundaUser) {
     return new CamundaUserResult()
         .displayName(camundaUser.displayName())
         .username(camundaUser.username())
         .email(camundaUser.email())
         .authorizedComponents(camundaUser.authorizedComponents())
-        .tenants(toTenants(camundaUser.tenants()))
+        .tenants(toTenantResultsFromIds(camundaUser.tenants()))
         .groups(camundaUser.groups())
         .roles(camundaUser.roles())
-        .salesPlanType(camundaUser.salesPlanType())
-        .c8Links(toCamundaUserResultC8Links(camundaUser.c8Links()))
+        .salesPlanType("")
+        .c8Links(Map.of())
         .canLogout(camundaUser.canLogout());
   }
 
-  private static Map<String, String> toCamundaUserResultC8Links(
-      final Map<AppName, String> c8Links) {
-    return c8Links.entrySet().stream()
-        .collect(toMap(e -> e.getKey().getValue(), Map.Entry::getValue, (v1, v2) -> v1));
+  private static List<TenantResult> toTenantResultsFromIds(final List<String> tenantIds) {
+    if (tenantIds == null) {
+      return List.of();
+    }
+    return tenantIds.stream().map(id -> new TenantResult().tenantId(id)).toList();
   }
 
   private static List<DecisionInstanceResult> toDecisionInstances(

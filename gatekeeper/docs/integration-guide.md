@@ -307,5 +307,6 @@ Before shipping your integration:
 - [ ] Implemented `SecurityPathProvider`
 - [ ] Implemented `MembershipResolver`
 - [ ] Implemented `CamundaUserProvider`
-- [ ] (If using persistent sessions) Implemented `SessionPersistencePort`
+- [ ](If using persistent sessions) Implemented `SessionPersistencePort`
 - [ ] Verified with `@ConditionalOnMissingBean` back-off — your beans take priority
+

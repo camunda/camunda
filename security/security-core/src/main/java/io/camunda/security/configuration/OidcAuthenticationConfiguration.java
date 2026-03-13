@@ -7,7 +7,7 @@
  */
 package io.camunda.security.configuration;
 
-import io.camunda.security.auth.OidcGroupsLoader;
+import io.camunda.gatekeeper.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.AssertionConfiguration.KidDigestAlgorithm;
 import io.camunda.security.configuration.AssertionConfiguration.KidEncoding;
 import io.camunda.security.configuration.AssertionConfiguration.KidSource;

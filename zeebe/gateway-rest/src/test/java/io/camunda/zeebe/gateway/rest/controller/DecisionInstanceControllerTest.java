@@ -13,8 +13,8 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
 import io.camunda.search.filter.DecisionInstanceFilter;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;

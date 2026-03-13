@@ -19,11 +19,11 @@ The gatekeeper module has integration tests for basic authentication (`BasicAuth
 - Uses `com.github.dasniko:testcontainers-keycloak` to run a Keycloak container
 - Realm `gatekeeper-test` configured via JSON realm import file at `src/test/resources/keycloak/gatekeeper-test-realm.json`
 - Realm contains:
-  - Two users: `demo` (password: `demo`) and `operator` (password: `operator`) — consistent with existing stub test data
-  - Confidential client `gatekeeper-test-client` with `client_secret_basic` authentication
-  - Direct access grants enabled (for obtaining tokens via password grant in API tests)
-  - Redirect URI pointing to the test app's `/sso-callback` callback (using wildcard `*` for port flexibility)
-  - Standard OIDC scopes: `openid`, `profile`, `email`
+- Two users: `demo` (password: `demo`) and `operator` (password: `operator`) — consistent with existing stub test data
+- Confidential client `gatekeeper-test-client` with `client_secret_basic` authentication
+- Direct access grants enabled (for obtaining tokens via password grant in API tests)
+- Redirect URI pointing to the test app's `/sso-callback` callback (using wildcard `*` for port flexibility)
+- Standard OIDC scopes: `openid`, `profile`, `email`
 
 **Dependencies (test scope in `gatekeeper-spring-boot-starter/pom.xml`):**
 - `org.testcontainers:testcontainers`
@@ -140,3 +140,4 @@ The only difference is the active profile (`oidc` vs `basicauth`), which switche
 - Logout flow
 - Multi-issuer OIDC configuration
 - Token refresh / session persistence
+

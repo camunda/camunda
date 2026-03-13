@@ -8,12 +8,12 @@
 package io.camunda.operate.webapp.zeebe.operation.adapter;
 
 import io.camunda.client.api.command.MigrationPlan;
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
+import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ConditionalOnOperateCompatibility;
 import io.camunda.operate.webapp.operation.dto.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.IncidentServices;

@@ -20,6 +20,10 @@
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>gatekeeper-domain</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-security-protocol</artifactId>
     </dependency>
     <dependency>

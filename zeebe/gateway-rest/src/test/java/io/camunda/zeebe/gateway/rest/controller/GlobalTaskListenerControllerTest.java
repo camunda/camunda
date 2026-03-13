@@ -12,12 +12,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
 import io.camunda.search.entities.GlobalListenerEntity;
 import io.camunda.search.entities.GlobalListenerSource;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GlobalListenerServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;

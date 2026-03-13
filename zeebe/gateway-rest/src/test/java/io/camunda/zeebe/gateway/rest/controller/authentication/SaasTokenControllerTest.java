@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.authentication;
 
 import static org.mockito.Mockito.when;
 
-import io.camunda.authentication.service.CamundaUserService;
+import io.camunda.gatekeeper.spi.CamundaUserProvider;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -28,12 +28,12 @@ class SaasTokenControllerTest {
   @TestPropertySource(properties = "spring.profiles.active=consolidated-auth")
   public class SaasNotConfiguredTest extends RestControllerTest {
 
-    @MockitoBean private CamundaUserService camundaUserService;
+    @MockitoBean private CamundaUserProvider camundaUserProvider;
 
     @Test
     void shouldReturn404WhenSaaSNotConfigured() {
       // when
-      when(camundaUserService.getUserToken()).thenReturn("{b: 'blah'}");
+      when(camundaUserProvider.getUserToken()).thenReturn("{b: 'blah'}");
       webClient
           .get()
           .uri(TOKEN_PATH)
@@ -54,12 +54,12 @@ class SaasTokenControllerTest {
       })
   public class SaasConfiguredTest extends RestControllerTest {
 
-    @MockitoBean private CamundaUserService camundaUserService;
+    @MockitoBean private CamundaUserProvider camundaUserProvider;
 
     @Test
     void shouldReturn200WhenSaaSConfigured() {
       // when
-      when(camundaUserService.getUserToken()).thenReturn("{b: 'blah'}");
+      when(camundaUserProvider.getUserToken()).thenReturn("{b: 'blah'}");
       webClient
           .get()
           .uri(TOKEN_PATH)
@@ -74,7 +74,7 @@ class SaasTokenControllerTest {
     @Test
     void shouldReturn401WhenSaaSConfiguredAndTokenNotFound() {
       // when
-      when(camundaUserService.getUserToken()).thenReturn(null);
+      when(camundaUserProvider.getUserToken()).thenReturn(null);
       webClient
           .get()
           .uri(TOKEN_PATH)

@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -l \"camunda-authentication\" /Users/ben.sheppard/code/camunda/*/pom.xml /Users/ben.sheppard/code/camunda/*/*/pom.xml 2>/dev/null | grep -v \".git\")",
+      "Bash(find /Users/ben.sheppard/code/camunda/authentication/src/main/java -name \"*.java\" -exec grep -l \"^public final class\\\\|^public class\" {} \\\\; | head -20)",
+      "Bash(mvn spotless:apply license:format -pl gatekeeper-domain -q 2>&1)",
+      "Bash(mvn spotless:apply -pl gatekeeper-domain -q 2>&1)",
+      "Bash(./mvnw spotless:apply license:format -pl gatekeeper-domain -q 2>&1)",
+      "Bash(mvn license:format -pl gatekeeper-domain -q -Dmaven.multiModuleProjectDirectory=/Users/ben.sheppard/code/camunda/gatekeeper 2>&1)",
+      "Bash(mvn test:*)",
+      "Bash(git add:*)",
+      "Bash(./mvnw license:format -pl gatekeeper-domain -q 2>&1)",
+      "Bash(mvn license:format -pl gatekeeper-domain -q 2>&1)",
+      "Bash(mvn license:format -pl gatekeeper-domain -Dmaven.multiModuleProjectDirectory=/Users/ben.sheppard/code/camunda/gatekeeper -q 2>&1)",
+      "Bash(mvn spotless:apply -pl gatekeeper-domain -Dmaven.multiModuleProjectDirectory=/Users/ben.sheppard/code/camunda/gatekeeper -q 2>&1)",
+      "Bash(ls mvnw* pom.xml 2>/dev/null; ls -la .mvn/ 2>/dev/null)",
+      "Bash(mvn license:format -pl gatekeeper-domain 2>&1 | tail -20)",
+      "Bash(mvn help:evaluate -Dexpression=maven.multiModuleProjectDirectory -q -DforceStdout 2>/dev/null)",
+      "Bash(mvn compile:*)",
+      "Bash(mvn spotless:apply -pl gatekeeper-domain -q 2>&1 && mvn compile -pl gatekeeper-domain -q 2>&1)",
+      "Bash(mvn spotless:apply -pl gatekeeper-domain -q 2>&1 && mvn test -pl gatekeeper-domain -q 2>&1)",
+      "Bash(./mvnw license:format -pl gatekeeper-spring-boot-starter -q 2>&1)",
+      "Bash(/Users/ben.sheppard/code/camunda/mvnw license:format -pl gatekeeper-spring-boot-starter -q 2>&1)",
+      "Bash(/Users/ben.sheppard/code/camunda/mvnw spotless:apply -pl gatekeeper-spring-boot-starter -q 2>&1)",
+      "Bash(/Users/ben.sheppard/code/camunda/mvnw test:*)",
+      "Bash(/Users/ben.sheppard/code/camunda/mvnw install:*)",
+      "Bash(mvn license:format -pl gatekeeper-spring-boot-starter -q 2>&1)",
+      "Bash(mvn spotless:apply -pl gatekeeper-spring-boot-starter -q 2>&1)",
+      "Bash(ls mvnw* pom.xml 2>/dev/null; which mvn 2>/dev/null)",
+      "Bash(mvn spotless:apply -pl gatekeeper-spring-boot-starter -q 2>&1 && mvn test -pl gatekeeper-spring-boot-starter -q 2>&1)",
+      "Bash(./mvnw license:format -q 2>&1 | tail -5)",
+      "Bash(grep -B 1 -A 1 \"^  @Bean$\" /Users/ben.sheppard/code/camunda/gatekeeper/gatekeeper-spring-boot-starter/src/main/java/io/camunda/gatekeeper/spring/autoconfigure/GatekeeperSecurityFilterChainAutoConfiguration.java | head -60)"
+    ]
+  }
+}

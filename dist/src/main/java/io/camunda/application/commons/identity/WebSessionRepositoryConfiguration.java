@@ -7,17 +7,18 @@
  */
 package io.camunda.application.commons.identity;
 
-import io.camunda.authentication.session.ConditionalOnPersistentWebSessionEnabled;
-import io.camunda.authentication.session.WebSessionDeletionTask;
-import io.camunda.authentication.session.WebSessionMapper;
-import io.camunda.authentication.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
-import io.camunda.authentication.session.WebSessionRepository;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionRdbmsClient;
 import io.camunda.db.rdbms.write.service.PersistentWebSessionWriter;
 import io.camunda.exporter.config.ConnectionTypes;
+import io.camunda.gatekeeper.spi.SessionPersistencePort;
+import io.camunda.gatekeeper.spring.condition.ConditionalOnPersistentWebSessionEnabled;
+import io.camunda.gatekeeper.spring.session.WebSessionDeletionTask;
+import io.camunda.gatekeeper.spring.session.WebSessionMapper;
+import io.camunda.gatekeeper.spring.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
+import io.camunda.gatekeeper.spring.session.WebSessionRepository;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.PersistentWebSessionClient;
@@ -29,6 +30,8 @@ import io.camunda.zeebe.util.error.FatalErrorHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.support.GenericConversionService;
@@ -39,6 +42,9 @@ import org.springframework.session.config.annotation.web.http.EnableSpringHttpSe
 @ConditionalOnPersistentWebSessionEnabled
 @ConditionalOnRestGatewayEnabled
 public class WebSessionRepositoryConfiguration {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(WebSessionRepositoryConfiguration.class);
 
   private final GenericConversionService conversionService;
   private final ConnectConfiguration connectConfiguration;
@@ -85,12 +91,11 @@ public class WebSessionRepositoryConfiguration {
 
   @Bean
   public WebSessionRepository webSessionRepository(
-      final PersistentWebSessionClient persistentWebSessionClient,
-      final HttpServletRequest request) {
+      final SessionPersistencePort sessionPersistencePort, final HttpServletRequest request) {
     final var webSessionAttributeConverter =
         new SpringBasedWebSessionAttributeConverter(conversionService);
     final var webSessionMapper = new WebSessionMapper(webSessionAttributeConverter);
-    return new WebSessionRepository(persistentWebSessionClient, webSessionMapper, request);
+    return new WebSessionRepository(sessionPersistencePort, webSessionMapper, request);
   }
 
   @Bean("persistentWebSessionDeletionTaskExecutor")
@@ -111,8 +116,7 @@ public class WebSessionRepositoryConfiguration {
     final var threadFactory =
         Thread.ofPlatform()
             .name("camunda-web-session-deletion-", 0)
-            .uncaughtExceptionHandler(
-                FatalErrorHandler.uncaughtExceptionHandler(WebSessionRepository.LOGGER))
+            .uncaughtExceptionHandler(FatalErrorHandler.uncaughtExceptionHandler(LOG))
             .factory();
     final var executor = new ScheduledThreadPoolExecutor(0, threadFactory);
     executor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);

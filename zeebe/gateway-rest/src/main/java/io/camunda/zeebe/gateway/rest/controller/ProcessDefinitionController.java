@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.FormResult;
@@ -24,7 +25,6 @@ import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuery;
 import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;

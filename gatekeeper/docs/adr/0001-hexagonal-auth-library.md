@@ -33,6 +33,7 @@ Create a new `gatekeeper` library with two modules following hexagonal architect
 - Session management, CSRF protection, handlers
 
 ### Key design rules (enforced by ArchUnit):
+
 - Domain must not depend on Spring, Jakarta Servlet, or Jackson runtime
 - Model classes must be records, enums, or sealed interfaces
 - SPIs must be interfaces
@@ -47,3 +48,4 @@ Create a new `gatekeeper` library with two modules following hexagonal architect
 - Spring Boot applications get full auto-configuration by adding the starter
 - The existing `camunda-authentication` module becomes a thin adapter layer implementing gatekeeper SPIs (see ADR-0002)
 - ArchUnit tests enforce the architectural boundaries at build time
+

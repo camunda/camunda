@@ -14,9 +14,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
 import io.camunda.gateway.protocol.model.MappingRuleCreateRequest;
 import io.camunda.gateway.protocol.model.MappingRuleUpdateRequest;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;

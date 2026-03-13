@@ -11,7 +11,6 @@ import static io.camunda.security.configuration.InitializationConfiguration.DEFA
 import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestWebappClient.TestLoggedInWebappClient;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -122,8 +121,7 @@ public class CsrfTokenIT {
       // then
       assertThat(loggedInClient.getCookies())
           .extracting(c -> c.getName())
-          .containsExactlyInAnyOrder(
-              WebSecurityConfig.SESSION_COOKIE, WebSecurityConfig.X_CSRF_TOKEN);
+          .containsExactlyInAnyOrder("camunda-session", "X-CSRF-TOKEN");
     }
   }
 
@@ -172,7 +170,7 @@ public class CsrfTokenIT {
       }
 
       if (includeCsrfToken) {
-        requestBuilder.header(WebSecurityConfig.X_CSRF_TOKEN, webappClient.getCsrfToken());
+        requestBuilder.header("X-CSRF-TOKEN", webappClient.getCsrfToken());
         requestBuilder.header(HttpHeaders.COOKIE, webappClient.getCsrfCookie().toString());
       }
 

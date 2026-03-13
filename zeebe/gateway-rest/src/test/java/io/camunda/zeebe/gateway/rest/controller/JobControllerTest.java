@@ -17,6 +17,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
@@ -25,7 +26,6 @@ import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;

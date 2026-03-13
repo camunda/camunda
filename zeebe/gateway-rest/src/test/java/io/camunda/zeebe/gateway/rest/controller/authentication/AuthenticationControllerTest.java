@@ -11,12 +11,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.authentication.entity.CamundaUserDTO;
-import io.camunda.authentication.service.CamundaUserService;
-import io.camunda.search.entities.TenantEntity;
+import io.camunda.gatekeeper.model.identity.CamundaUserInfo;
+import io.camunda.gatekeeper.spi.CamundaUserProvider;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -28,26 +26,23 @@ import org.springframework.test.json.JsonCompareMode;
 @ActiveProfiles("consolidated-auth")
 public class AuthenticationControllerTest extends RestControllerTest {
 
-  @MockitoBean private CamundaUserService camundaUserService;
+  @MockitoBean private CamundaUserProvider camundaUserProvider;
 
   @Test
   void getAuthorizationShouldReturnOk() {
     // given
-    final CamundaUserDTO camundaUserDTO =
-        new CamundaUserDTO(
+    final CamundaUserInfo camundaUserInfo =
+        new CamundaUserInfo(
             "camunda user",
             "camundaUSer",
             "camunda.user@email.com",
             List.of("test application"),
-            List.of(
-                new TenantEntity(100L, "testTenantId", "testTenantNem", "testTenantDescription")),
+            List.of("testTenantId"),
             List.of("test group"),
             List.of("test role"),
-            null,
-            Map.of(),
             true);
 
-    when(camundaUserService.getCurrentUser()).thenReturn(camundaUserDTO);
+    when(camundaUserProvider.getCurrentUser()).thenReturn(camundaUserInfo);
 
     // when
     webClient
@@ -65,16 +60,14 @@ public class AuthenticationControllerTest extends RestControllerTest {
                   "username": "camundaUSer",
                   "email": "camunda.user@email.com",
                   "authorizedComponents": ["test application"],
-                  "tenants": [{"tenantId":"testTenantId","name":"testTenantNem","description":"testTenantDescription"}],
+                  "tenants": ["testTenantId"],
                   "groups": ["test group"],
                   "roles": ["test role"],
-                  "salesPlanType": null,
-                  "c8Links": {},
                   "canLogout": true
                 }""",
             JsonCompareMode.STRICT);
 
     // then
-    verify(camundaUserService, times(1)).getCurrentUser();
+    verify(camundaUserProvider, times(1)).getCurrentUser();
   }
 }

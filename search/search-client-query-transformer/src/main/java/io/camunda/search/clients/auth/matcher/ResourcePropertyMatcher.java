@@ -7,7 +7,7 @@
  */
 package io.camunda.search.clients.auth.matcher;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import java.util.Set;
 
 /**

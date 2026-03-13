@@ -14,6 +14,7 @@ import static io.camunda.service.authorization.Authorizations.PROCESS_DEFINITION
 import static io.camunda.service.authorization.Authorizations.USER_TASK_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.USER_TASK_READ_BY_PROPERTIES_AUTHORIZATION;
 
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.FormEntity;
@@ -25,7 +26,6 @@ import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.UserTaskQuery.Builder;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.auth.condition.AuthorizationCondition;
 import io.camunda.security.auth.condition.AuthorizationConditions;

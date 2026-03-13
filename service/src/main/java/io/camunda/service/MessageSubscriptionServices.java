@@ -10,6 +10,7 @@ package io.camunda.service;
 import static io.camunda.service.authorization.Authorizations.MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
 
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.search.clients.MessageSubscriptionSearchClient;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
@@ -17,7 +18,6 @@ import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;

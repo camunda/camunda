@@ -13,7 +13,7 @@ import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNullElse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;

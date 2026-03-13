@@ -12,14 +12,14 @@ overlapping config classes without a big-bang change to `SecurityConfiguration` 
 
 ### Overlap analysis:
 
-| security-core class | gatekeeper equivalent | Match |
-|---|---|---|
-| `AuthorizationsConfiguration` | `AuthorizationConfig` (record) | Identical (single `enabled` field) |
-| `CsrfConfiguration` | `CsrfConfig` (record) | Partial (gatekeeper adds `allowedPaths`) |
-| `AuthenticationMethod` (enum) | `AuthenticationMethod` (enum) | Identical |
-| `AuthenticationConfiguration` | `AuthenticationConfig` (record) | Structural differences |
-| `OidcAuthenticationConfiguration` | `OidcConfig` (record) | Significant differences |
-| `MultiTenancyConfiguration` | `MultiTenancyConfig` (record) | Field mismatch |
+|        security-core class        |      gatekeeper equivalent      |                  Match                   |
+|-----------------------------------|---------------------------------|------------------------------------------|
+| `AuthorizationsConfiguration`     | `AuthorizationConfig` (record)  | Identical (single `enabled` field)       |
+| `CsrfConfiguration`               | `CsrfConfig` (record)           | Partial (gatekeeper adds `allowedPaths`) |
+| `AuthenticationMethod` (enum)     | `AuthenticationMethod` (enum)   | Identical                                |
+| `AuthenticationConfiguration`     | `AuthenticationConfig` (record) | Structural differences                   |
+| `OidcAuthenticationConfiguration` | `OidcConfig` (record)           | Significant differences                  |
+| `MultiTenancyConfiguration`       | `MultiTenancyConfig` (record)   | Field mismatch                           |
 
 ### Out of scope:
 
@@ -61,3 +61,4 @@ record. Read-only consumers switch to using the gatekeeper record.
   equality)
 - Some duplication remains intentionally where structural differences make migration costly
 - Phase 5 may conclude with "leave as-is" if cost exceeds benefit
+

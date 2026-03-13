@@ -10,6 +10,7 @@ package io.camunda.service;
 import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.GROUP_READ_AUTHORIZATION;
 
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
@@ -17,7 +18,6 @@ import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
