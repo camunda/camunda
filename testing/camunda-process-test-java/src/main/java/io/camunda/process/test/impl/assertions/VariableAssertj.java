@@ -56,11 +56,13 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final CamundaDataSource dataSource,
       final CamundaAssertAwaitBehavior awaitBehavior,
       final CamundaAssertJsonMapper jsonMapper,
+      final JudgeConfig judgeConfig,
       final String failureMessagePrefix) {
     super(failureMessagePrefix, VariableAssertj.class);
     this.dataSource = dataSource;
     this.awaitBehavior = awaitBehavior;
     this.jsonMapper = jsonMapper;
+    this.judgeConfig = judgeConfig;
   }
 
   public void hasLocalVariableNames(
