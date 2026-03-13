@@ -88,7 +88,8 @@ class BatchOperationRetryHandlerTest {
     // then
     assertThat(result).isInstanceOf(RetryResult.Failure.class);
     final var failure = (RetryResult.Failure) result;
-    assertThat(failure.exception().getCause()).isEqualTo(retryableException);
+    assertThat(failure.message()).contains("Temporary failure");
+    assertThat(failure.errorType()).isEqualTo(BatchOperationErrorType.QUERY_FAILED);
   }
 
   @ParameterizedTest
@@ -107,7 +108,8 @@ class BatchOperationRetryHandlerTest {
     // then
     assertThat(result).isInstanceOf(RetryResult.Failure.class);
     final var failure = (RetryResult.Failure) result;
-    assertThat(failure.exception().getCause()).isEqualTo(nonRetryableException);
+    assertThat(failure.message()).contains("Non-retryable");
+    assertThat(failure.errorType()).isEqualTo(BatchOperationErrorType.QUERY_FAILED);
   }
 
   @Test
@@ -130,7 +132,7 @@ class BatchOperationRetryHandlerTest {
     when(operation.execute())
         .thenReturn(
             new InitializationOutcome.Failed(
-                "Terminal failure", BatchOperationErrorType.QUERY_FAILED, "cursor"));
+                "Terminal failure", BatchOperationErrorType.QUERY_FAILED));
 
     // when
     final var result = retryHandler.executeWithRetry(operation, NUM_ATTEMPTS);
@@ -138,6 +140,7 @@ class BatchOperationRetryHandlerTest {
     // then
     assertThat(result).isInstanceOf(RetryResult.Failure.class);
     final var failure = (RetryResult.Failure) result;
-    assertThat(failure.exception().getMessage()).isEqualTo("Terminal failure");
+    assertThat(failure.message()).isEqualTo("Terminal failure");
+    assertThat(failure.errorType()).isEqualTo(BatchOperationErrorType.QUERY_FAILED);
   }
 }
