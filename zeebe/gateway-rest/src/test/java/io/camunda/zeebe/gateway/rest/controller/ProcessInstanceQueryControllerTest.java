@@ -381,6 +381,85 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldRejectSearchWithBothBatchOperationIdAndBatchOperationKey() {
+    // given
+    final var request =
+        """
+            {
+                "filter": {
+                    "batchOperationId": {"$eq": "id-1"},
+                    "batchOperationKey": {"$eq": "key-1"}
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Only one of [batchOperationId, batchOperationKey] is allowed.",
+                  "instance": "%s"
+                }""",
+            PROCESS_INSTANCES_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
+  }
+
+  @Test
+  void shouldSearchProcessInstancesWithDeprecatedBatchOperationId() {
+    // given - batchOperationId is deprecated but should still be accepted for backward
+    // compatibility
+    final var request =
+        """
+            {
+                "filter": {
+                    "batchOperationId": {"$eq": "op-id-1"}
+                }
+            }""";
+    final var expectedFilter =
+        new ProcessInstanceFilter.Builder()
+            .batchOperationIdOperations(Operation.eq("op-id-1"))
+            .build();
+
+    when(processInstanceServices.search(queryCaptor.capture(), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .consumeWith(
+            result -> assertJsonNonExtensible(EXPECTED_SEARCH_RESPONSE, result.getResponseBody()));
+
+    verify(processInstanceServices)
+        .search(eq(new ProcessInstanceQuery.Builder().filter(expectedFilter).build()), any());
+  }
+
+  @Test
   void shouldSearchProcessInstancessWithSorting() {
     // given
     when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
@@ -830,6 +909,10 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "errorMessage",
         ops -> new ProcessInstanceFilter.Builder().errorMessageOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "batchOperationKey",
+        ops -> new ProcessInstanceFilter.Builder().batchOperationIdOperations(ops).build());
     return streamBuilder.build();
   }
 
