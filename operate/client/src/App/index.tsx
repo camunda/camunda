@@ -39,10 +39,7 @@ import {useLocation} from 'react-router-dom';
 const RedirectToVariables: React.FC = () => {
   const location = useLocation();
   return (
-    <Navigate
-      to={{pathname: 'variables', search: location.search}}
-      replace
-    />
+    <Navigate to={{pathname: 'variables', search: location.search}} replace />
   );
 };
 
@@ -105,10 +102,7 @@ const routes = createRoutesFromElements(
       >
         {IS_NEW_PROCESS_INSTANCE_PAGE ? (
           <>
-            <Route
-              index
-              element={<RedirectToVariables />}
-            />
+            <Route index element={<RedirectToVariables />} />
             <Route
               path={Paths.processInstanceVariables({isRelative: true})}
               lazy={async () => {

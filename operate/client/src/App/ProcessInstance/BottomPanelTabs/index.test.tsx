@@ -28,10 +28,7 @@ const PROCESS_INSTANCE_ID = '123';
 const RedirectToVariables: React.FC = () => {
   const location = useLocation();
   return (
-    <Navigate
-      to={{pathname: 'variables', search: location.search}}
-      replace
-    />
+    <Navigate to={{pathname: 'variables', search: location.search}} replace />
   );
 };
 
