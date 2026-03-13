@@ -62,7 +62,7 @@ class JudgeConfigResolverTest {
     assertThat(result).isPresent();
     assertThat(result.get().getChatModel()).isSameAs(ADAPTER_A);
     assertThat(result.get().getThreshold()).isEqualTo(0.8);
-    assertThat(result.get().getCustomPrompt()).isEqualTo("Custom criteria");
+    assertThat(result.get().getCustomPrompt()).hasValue("Custom criteria");
   }
 
   @Test
@@ -76,7 +76,7 @@ class JudgeConfigResolverTest {
     assertThat(result).isPresent();
     assertThat(result.get().getChatModel()).isSameAs(ADAPTER_A);
     assertThat(result.get().getThreshold()).isEqualTo(0.5);
-    assertThat(result.get().getCustomPrompt()).isNull();
+    assertThat(result.get().getCustomPrompt()).isEmpty();
   }
 
   @Test

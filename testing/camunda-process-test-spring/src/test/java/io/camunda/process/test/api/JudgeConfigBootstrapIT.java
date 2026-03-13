@@ -101,7 +101,7 @@ public class JudgeConfigBootstrapIT {
       assertThat(config).isNotNull();
       assertThat(config.getChatModel()).isNotNull();
       assertThat(config.getThreshold()).isEqualTo(0.5);
-      assertThat(config.getCustomPrompt()).isNull();
+      assertThat(config.getCustomPrompt()).isEmpty();
     }
   }
 
@@ -184,7 +184,7 @@ public class JudgeConfigBootstrapIT {
       assertThat(config).isNotNull();
       assertThat(config.getChatModel()).isNotNull();
       assertThat(config.getThreshold()).isEqualTo(0.8);
-      assertThat(config.getCustomPrompt()).isEqualTo("Custom evaluation criteria");
+      assertThat(config.getCustomPrompt()).hasValue("Custom evaluation criteria");
     }
   }
 
@@ -224,7 +224,7 @@ public class JudgeConfigBootstrapIT {
       assertThat(config).isNotNull();
       assertThat(config.getChatModel()).isSameAs(ADAPTER_A);
       assertThat(config.getThreshold()).isEqualTo(0.145);
-      assertThat(config.getCustomPrompt()).isEqualTo("Custom prompt");
+      assertThat(config.getCustomPrompt()).hasValue("Custom prompt");
     }
   }
 

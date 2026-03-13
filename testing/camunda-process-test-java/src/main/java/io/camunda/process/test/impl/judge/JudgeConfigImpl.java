@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.judge;
 
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.JudgeConfig;
+import java.util.Optional;
 
 public final class JudgeConfigImpl implements JudgeConfig {
 
@@ -64,7 +65,7 @@ public final class JudgeConfigImpl implements JudgeConfig {
   }
 
   @Override
-  public String getCustomPrompt() {
-    return customPrompt;
+  public Optional<String> getCustomPrompt() {
+    return Optional.ofNullable(customPrompt);
   }
 }
