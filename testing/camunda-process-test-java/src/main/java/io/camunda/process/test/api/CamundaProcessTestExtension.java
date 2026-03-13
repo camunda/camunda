@@ -231,8 +231,8 @@ public class CamundaProcessTestExtension
       return;
     }
 
-    new ChatModelAdapterResolver()
-        .resolve(CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.toProviderConfig())
+    ChatModelAdapterResolver.resolve(
+            CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.toProviderConfig())
         .map(
             adapter ->
                 JudgeConfig.of(
