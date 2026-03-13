@@ -16,6 +16,7 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.UpdateUserTaskResponse;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public interface UpdateUserTaskCommandStep1 extends FinalCommandStep<UpdateUserTaskResponse> {
@@ -40,6 +41,16 @@ public interface UpdateUserTaskCommandStep1 extends FinalCommandStep<UpdateUserT
   UpdateUserTaskCommandStep1 dueDate(String dueDate);
 
   /**
+   * Set the due date to set in the user task. Use {@link #clearDueDate()} to remove the due date
+   * from the task.
+   *
+   * @param dueDate the due date to set
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  UpdateUserTaskCommandStep1 dueDate(OffsetDateTime dueDate);
+
+  /**
    * Clear the due date in the user task.
    *
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
@@ -56,6 +67,16 @@ public interface UpdateUserTaskCommandStep1 extends FinalCommandStep<UpdateUserT
    *     to the broker.
    */
   UpdateUserTaskCommandStep1 followUpDate(String followUpDate);
+
+  /**
+   * Set the follow-up date to set in the user task. Use {@link #clearFollowUpDate()} to remove the
+   * follow-up date from the task.
+   *
+   * @param followUpDate the follow-up date to set
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  UpdateUserTaskCommandStep1 followUpDate(OffsetDateTime followUpDate);
 
   /**
    * Clear the follow-up date in the user task.
