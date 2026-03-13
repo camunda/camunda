@@ -271,7 +271,7 @@ jobs:
           retention-days: 1
 
   api-tests-rdbms:
-    name: API Tests (RDBMS) (${{ matrix.branch }} / ${{ matrix.database-name }})
+    name: API Tests (RDBMS) (${{ matrix.branch }} / ${{ matrix.database.database-name }})
     needs: build-rdbms-dist
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 60
@@ -281,7 +281,7 @@ jobs:
       fail-fast: false
       matrix:
         branch: [ stable/8.9, main ]
-        include:
+        database:
           # PostgreSQL - Supported versions: 14, 15, 16, 17, 18
           - database-name: "Postgres 14"
             database-type: "postgres"
@@ -372,10 +372,10 @@ jobs:
             jdbc-username: "camunda"
             jdbc-password: "camunda"
     env:
-      IMAGE_VERSION: ${{ matrix.database-image-version }}
+      IMAGE_VERSION: ${{ matrix.database.database-image-version }}
     steps:
       - name: Resolve database container name
-        run: echo "DATABASE_CONTAINER=${{ matrix.database-type }}" >> "$GITHUB_ENV"
+        run: echo "DATABASE_CONTAINER=${{ matrix.database.database-type }}" >> "$GITHUB_ENV"
 
       - name: Checkout Code
         uses: actions/checkout@v6
@@ -414,7 +414,7 @@ jobs:
 
       - name: Wait for database readiness
         run: |
-          case "${{ matrix.database-type }}" in
+          case "${{ matrix.database.database-type }}" in
             postgres) PORT=5432 ;;
             mysql|mariadb) PORT=3306 ;;
             mssql) PORT=1433 ;;
@@ -438,7 +438,7 @@ jobs:
         run: |
           mkdir -p dev-dist/lib
 
-          case "${{ matrix.database-type }}" in
+          case "${{ matrix.database.database-type }}" in
             mysql)
               echo "Installing MySQL driver"
               curl -L -o dev-dist/lib/mysql-connector.jar \
@@ -464,12 +464,12 @@ jobs:
               ;;
 
             *)
-              echo "No JDBC driver mapping for ${{ matrix.database-type }}"
+              echo "No JDBC driver mapping for ${{ matrix.database.database-type }}"
               ;;
           esac
 
       # ── Start Camunda wired to the matrix DB ────────────────────────────────
-      - name: Start Camunda with ${{ matrix.branch }} / ${{ matrix.database-name }}
+      - name: Start Camunda with ${{ matrix.branch }} / ${{ matrix.database.database-name }}
         run: |
           export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin,operate,tasklist"
           export ZEEBE_CLOCK_CONTROLLED="true"
@@ -490,9 +490,9 @@ jobs:
 
           # RDBMS secondary storage — wired to the matrix database
           export CAMUNDA_DATA_SECONDARY_STORAGE_TYPE="rdbms"
-          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL="${{ matrix.jdbc-url }}"
-          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_USERNAME="${{ matrix.jdbc-username }}"
-          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_PASSWORD="${{ matrix.jdbc-password }}"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL="${{ matrix.database.jdbc-url }}"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_USERNAME="${{ matrix.database.jdbc-username }}"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_PASSWORD="${{ matrix.database.jdbc-password }}"
           export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_AUTO_DDL="true"
           export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_FLUSH_INTERVAL="PT0S"
           export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_HISTORY_DEFAULT_HISTORY_TTL="PT60S"
