@@ -17,7 +17,7 @@ public final class AuditLogConfiguration implements AuditLogCheck {
 
   private ActorAuditLogConfiguration user = ActorAuditLogConfiguration.logAll();
   private ActorAuditLogConfiguration client = ActorAuditLogConfiguration.logNone();
-  private ActorAuditLogConfiguration unknown = ActorAuditLogConfiguration.logAll();
+  private ActorAuditLogConfiguration unknown = ActorAuditLogConfiguration.logNone();
 
   public ActorAuditLogConfiguration getUser() {
     return user;

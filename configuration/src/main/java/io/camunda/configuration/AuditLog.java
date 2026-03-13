@@ -16,7 +16,7 @@ public class AuditLog {
 
   @NestedConfigurationProperty private AuditLogEntry user = AuditLogEntry.logAll();
   @NestedConfigurationProperty private AuditLogEntry client = AuditLogEntry.logNone();
-  @NestedConfigurationProperty private AuditLogEntry unknown = AuditLogEntry.logAll();
+  @NestedConfigurationProperty private AuditLogEntry unknown = AuditLogEntry.logNone();
 
   public boolean isEnabled() {
     return enabled;
