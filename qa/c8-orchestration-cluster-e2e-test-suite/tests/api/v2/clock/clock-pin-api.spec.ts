@@ -43,7 +43,8 @@ test.describe('Pin Clock API Tests', () => {
     await assertStatusCode(res, 204);
   });
 
-  test('Pin clock to a fixed instant', async ({request}) => {
+  //Skipped due to bug 48562: https://github.com/camunda/camunda/issues/48562
+  test.skip('Pin clock to a fixed instant', async ({request}) => {
     const timestamp = Date.parse('2025-01-01T00:00:00Z');
 
     await test.step('Pin clock to fixed instant and verify', async () => {
@@ -72,7 +73,8 @@ test.describe('Pin Clock API Tests', () => {
     });
   });
 
-  test('Pin clock - bad request', async ({request}) => {
+  //Skipped due to bug 48562: https://github.com/camunda/camunda/issues/48562
+  test.skip('Pin clock - bad request', async ({request}) => {
     const someInvalidData = 'meow';
     const pin = await request.put(buildUrl('/clock'), {
       data: {timestamp: someInvalidData},
