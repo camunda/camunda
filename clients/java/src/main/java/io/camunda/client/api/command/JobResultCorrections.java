@@ -15,6 +15,8 @@
  */
 package io.camunda.client.api.command;
 
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class JobResultCorrections {
@@ -49,6 +51,27 @@ public class JobResultCorrections {
   }
 
   /**
+   * Correct the due date of the task.
+   *
+   * @param dueDate due date of the task
+   * @return this corrections
+   */
+  public JobResultCorrections dueDate(final OffsetDateTime dueDate) {
+    this.dueDate = dueDate == null ? null : DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(dueDate);
+    return this;
+  }
+
+  /**
+   * Clear the due date of the task, removing any previously set value.
+   *
+   * @return this corrections
+   */
+  public JobResultCorrections clearDueDate() {
+    this.dueDate = "";
+    return this;
+  }
+
+  /**
    * Correct the follow up date of the task.
    *
    * @param followUpDate follow up date of the task
@@ -56,6 +79,28 @@ public class JobResultCorrections {
    */
   public JobResultCorrections followUpDate(final String followUpDate) {
     this.followUpDate = followUpDate;
+    return this;
+  }
+
+  /**
+   * Correct the follow up date of the task.
+   *
+   * @param followUpDate follow up date of the task
+   * @return this corrections
+   */
+  public JobResultCorrections followUpDate(final OffsetDateTime followUpDate) {
+    this.followUpDate =
+        followUpDate == null ? null : DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(followUpDate);
+    return this;
+  }
+
+  /**
+   * Clear the follow up date of the task, removing any previously set value.
+   *
+   * @return this corrections
+   */
+  public JobResultCorrections clearFollowUpDate() {
+    this.followUpDate = "";
     return this;
   }
 

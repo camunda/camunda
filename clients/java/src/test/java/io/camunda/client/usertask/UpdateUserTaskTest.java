@@ -29,13 +29,15 @@ import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 public final class UpdateUserTaskTest extends ClientRestTest {
 
   private static final String TEST_TIME =
-      OffsetDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneOffset.of("Z")).toString();
+      DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(
+          OffsetDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneOffset.of("Z")));
 
   @Test
   void shouldUpdateUserTask() {
@@ -185,6 +187,65 @@ public final class UpdateUserTaskTest extends ClientRestTest {
     assertThat(request.getChangeset())
         .isNotNull()
         .containsOnly(entry("candidateUsers", Arrays.asList("foo", "bar")));
+  }
+
+  @Test
+  void shouldUpdateUserTaskWithDueDateOffsetDateTime() {
+    // given
+    final OffsetDateTime dueDate =
+        OffsetDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneOffset.of("Z"));
+
+    // when
+    client.newUpdateUserTaskCommand(123L).dueDate(dueDate).send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isNull();
+    assertThat(request.getChangeset())
+        .isNotNull()
+        .containsOnly(entry("dueDate", DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(dueDate)));
+  }
+
+  @Test
+  void shouldUpdateUserTaskWithFollowUpDateOffsetDateTime() {
+    // given
+    final OffsetDateTime followUpDate =
+        OffsetDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneOffset.of("Z"));
+
+    // when
+    client.newUpdateUserTaskCommand(123L).followUpDate(followUpDate).send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getAction()).isNull();
+    assertThat(request.getChangeset())
+        .isNotNull()
+        .containsOnly(
+            entry("followUpDate", DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(followUpDate)));
+  }
+
+  @Test
+  void shouldRejectNullDueDateOffsetDateTime() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client.newUpdateUserTaskCommand(123L).dueDate((OffsetDateTime) null).send().join())
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldRejectNullFollowUpDateOffsetDateTime() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUpdateUserTaskCommand(123L)
+                    .followUpDate((OffsetDateTime) null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test

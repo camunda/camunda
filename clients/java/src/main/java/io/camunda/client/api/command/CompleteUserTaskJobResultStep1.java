@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.command;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
@@ -97,12 +98,42 @@ public interface CompleteUserTaskJobResultStep1 extends CompleteJobResult {
   CompleteUserTaskJobResultStep1 correctDueDate(final String dueDate);
 
   /**
+   * Correct the due date of the task.
+   *
+   * @param dueDate due date of the task
+   * @return this job result
+   */
+  CompleteUserTaskJobResultStep1 correctDueDate(final OffsetDateTime dueDate);
+
+  /**
+   * Clear the due date of the task, removing any previously set value.
+   *
+   * @return this job result
+   */
+  CompleteUserTaskJobResultStep1 clearDueDate();
+
+  /**
    * Correct the follow up date of the task.
    *
    * @param followUpDate follow up date of the task
    * @return this job result
    */
   CompleteUserTaskJobResultStep1 correctFollowUpDate(final String followUpDate);
+
+  /**
+   * Correct the follow up date of the task.
+   *
+   * @param followUpDate follow up date of the task
+   * @return this job result
+   */
+  CompleteUserTaskJobResultStep1 correctFollowUpDate(final OffsetDateTime followUpDate);
+
+  /**
+   * Clear the follow up date of the task, removing any previously set value.
+   *
+   * @return this job result
+   */
+  CompleteUserTaskJobResultStep1 clearFollowUpDate();
 
   /**
    * Correct the candidate groups of the task.
