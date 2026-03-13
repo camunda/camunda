@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -20,6 +21,7 @@ import org.slf4j.Logger;
 
 public class ProcessInstanceArchiverJob implements ArchiverJob {
 
+  private final HistoryConfiguration config;
   private final ArchiverRepository repository;
   private final ListViewTemplate template;
   private final List<ProcessInstanceDependant> dependants;
@@ -28,12 +30,14 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
   private final Executor executor;
 
   public ProcessInstanceArchiverJob(
+      final HistoryConfiguration config,
       final ArchiverRepository repository,
       final ListViewTemplate template,
       final List<ProcessInstanceDependant> dependants,
       final CamundaExporterMetrics metrics,
       final Logger logger,
       final Executor executor) {
+    this.config = config;
     this.repository = repository;
     this.template = template;
     this.dependants = dependants;

@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
@@ -28,6 +29,7 @@ final class ProcessInstanceArchiverJobTest {
       LoggerFactory.getLogger(ProcessInstanceArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
+  private final HistoryConfiguration historyConfiguration = new HistoryConfiguration();
   private final TestRepository repository = new TestRepository();
   private final ListViewTemplate processInstanceTemplate = new ListViewTemplate("", true);
   private final DecisionInstanceTemplate decisionInstanceTemplate =
@@ -37,6 +39,7 @@ final class ProcessInstanceArchiverJobTest {
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
   private final ProcessInstanceArchiverJob job =
       new ProcessInstanceArchiverJob(
+          historyConfiguration,
           repository,
           processInstanceTemplate,
           List.of(sequenceFlowTemplate, decisionInstanceTemplate),
@@ -99,7 +102,13 @@ final class ProcessInstanceArchiverJobTest {
     final var dependant = new WeirdlyNamedDependant();
     final var job =
         new ProcessInstanceArchiverJob(
-            repository, processInstanceTemplate, List.of(dependant), metrics, LOGGER, executor);
+            historyConfiguration,
+            repository,
+            processInstanceTemplate,
+            List.of(dependant),
+            metrics,
+            LOGGER,
+            executor);
     repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
 
     // when
