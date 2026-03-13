@@ -71,18 +71,37 @@ class BatchOperationRetryPolicyTest {
 
   @Test
   void shouldCapDelayAtMaxRetryDelay() {
-    // given
+    // given - a policy where the delay exceeds max before retries are exhausted
+    final var policyWithLowMaxDelay =
+        new BatchOperationRetryPolicy(Duration.ofMillis(100), Duration.ofMillis(500), 20, 2);
     final var exception = new RuntimeException("Transient failure");
-    // With initial 100ms and backoff factor 2, attempt 10 would give 100 * 2^10 = 102400ms
-    // But max is 5000ms
+    // With initial 100ms and backoff factor 2, attempt 5 would give 100 * 2^5 = 3200ms
+    // But max is 500ms
 
     // when
-    final var decision = retryPolicy.evaluate(CURSOR, exception, 2);
+    final var decision = policyWithLowMaxDelay.evaluate(CURSOR, exception, 5);
 
-    // then - delay should be capped at max (100ms * 2^2 = 400ms, which is still under max)
+    // then - delay should be capped at max
     assertThat(decision).isInstanceOf(RetryDecision.Retry.class);
     final var retry = (RetryDecision.Retry) decision;
-    assertThat(retry.delay()).isEqualTo(Duration.ofMillis(400));
+    assertThat(retry.delay()).isEqualTo(Duration.ofMillis(500));
+  }
+
+  @Test
+  void shouldHandleLargeAttemptNumbersWithoutOverflow() {
+    // given - a policy that allows many retries to test overflow protection
+    final var policyWithManyRetries =
+        new BatchOperationRetryPolicy(Duration.ofMillis(100), Duration.ofSeconds(10), 100, 2);
+    final var exception = new RuntimeException("Transient failure");
+
+    // when - attempt number that would overflow with Math.pow(2, 50)
+    final var decision = policyWithManyRetries.evaluate(CURSOR, exception, 50);
+
+    // then - should safely cap at max delay, not overflow
+    assertThat(decision).isInstanceOf(RetryDecision.Retry.class);
+    final var retry = (RetryDecision.Retry) decision;
+    assertThat(retry.delay()).isEqualTo(Duration.ofSeconds(10));
+    assertThat(retry.delay().isNegative()).isFalse();
   }
 
   @Test
