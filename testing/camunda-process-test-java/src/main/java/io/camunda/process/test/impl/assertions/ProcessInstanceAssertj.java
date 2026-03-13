@@ -85,11 +85,11 @@ public class ProcessInstanceAssertj
     this.elementSelector = elementSelector;
     elementAssertj = new ElementAssertj(dataSource, awaitBehavior, failureMessagePrefix);
     variableAssertj =
-        new VariableAssertj(dataSource, awaitBehavior, jsonMapper, failureMessagePrefix);
+        new VariableAssertj(
+            dataSource, awaitBehavior, jsonMapper, judgeConfig, failureMessagePrefix);
     incidentAssertj = new IncidentAssertj(dataSource, awaitBehavior, failureMessagePrefix);
     messageSubscriptionAssertj =
         new MessageSubscriptionAssertj(dataSource, awaitBehavior, failureMessagePrefix);
-    variableAssertj.setJudgeConfig(judgeConfig);
   }
 
   @Override
