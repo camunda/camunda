@@ -15,7 +15,6 @@
  */
 package io.camunda.process.test.impl.judge;
 
-import io.camunda.process.test.api.judge.BaseProviderConfig;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.ChatModelAdapterProvider;
 import io.camunda.process.test.api.judge.ProviderConfig;
@@ -24,7 +23,7 @@ public class AnthropicChatModelAdapterProvider implements ChatModelAdapterProvid
 
   @Override
   public String getProviderName() {
-    return ProviderConfig.PROVIDER_ANTHROPIC;
+    return BaseProviderConfig.PROVIDER_ANTHROPIC;
   }
 
   @Override

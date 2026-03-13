@@ -15,9 +15,9 @@
  */
 package io.camunda.process.test.impl.configuration;
 
-import io.camunda.process.test.api.judge.BaseProviderConfig;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.ProviderConfig;
+import io.camunda.process.test.impl.judge.BaseProviderConfig;
 import java.util.Collections;
 import java.util.Map;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -68,18 +68,18 @@ public class JudgeConfiguration {
     final AwsCredentialsConfiguration credentials = chatModel.getCredentials();
     final String provider = chatModel.getProvider().trim().toLowerCase();
     switch (provider) {
-      case ProviderConfig.PROVIDER_OPENAI:
+      case BaseProviderConfig.PROVIDER_OPENAI:
         return new BaseProviderConfig.OpenAiConfig(chatModel.getModel(), chatModel.getApiKey());
-      case ProviderConfig.PROVIDER_ANTHROPIC:
+      case BaseProviderConfig.PROVIDER_ANTHROPIC:
         return new BaseProviderConfig.AnthropicConfig(chatModel.getModel(), chatModel.getApiKey());
-      case ProviderConfig.PROVIDER_AMAZON_BEDROCK:
+      case BaseProviderConfig.PROVIDER_AMAZON_BEDROCK:
         return new BaseProviderConfig.AmazonBedrockConfig(
             chatModel.getModel(),
             chatModel.getRegion(),
             chatModel.getApiKey(),
             credentials != null ? credentials.getAccessKey() : null,
             credentials != null ? credentials.getSecretKey() : null);
-      case ProviderConfig.PROVIDER_OPENAI_COMPATIBLE:
+      case BaseProviderConfig.PROVIDER_OPENAI_COMPATIBLE:
         return new BaseProviderConfig.OpenAiCompatibleConfig(
             chatModel.getModel(), chatModel.getBaseUrl(), chatModel.getApiKey());
       default:

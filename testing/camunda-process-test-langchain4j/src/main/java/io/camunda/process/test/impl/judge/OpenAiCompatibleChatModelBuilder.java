@@ -20,7 +20,6 @@ import static io.camunda.process.test.impl.judge.ModelBuilderSupport.require;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
-import io.camunda.process.test.api.judge.BaseProviderConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

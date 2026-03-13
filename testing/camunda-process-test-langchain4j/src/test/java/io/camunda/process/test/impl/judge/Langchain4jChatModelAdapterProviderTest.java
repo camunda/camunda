@@ -17,7 +17,6 @@ package io.camunda.process.test.impl.judge;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.process.test.api.judge.BaseProviderConfig;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.ChatModelAdapterProvider;
 import io.camunda.process.test.api.judge.ProviderConfig;

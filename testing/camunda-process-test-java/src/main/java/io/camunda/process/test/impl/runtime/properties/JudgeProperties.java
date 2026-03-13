@@ -15,18 +15,18 @@
  */
 package io.camunda.process.test.impl.runtime.properties;
 
-import static io.camunda.process.test.api.judge.ProviderConfig.PROVIDER_AMAZON_BEDROCK;
-import static io.camunda.process.test.api.judge.ProviderConfig.PROVIDER_ANTHROPIC;
-import static io.camunda.process.test.api.judge.ProviderConfig.PROVIDER_OPENAI;
-import static io.camunda.process.test.api.judge.ProviderConfig.PROVIDER_OPENAI_COMPATIBLE;
+import static io.camunda.process.test.impl.judge.BaseProviderConfig.PROVIDER_AMAZON_BEDROCK;
+import static io.camunda.process.test.impl.judge.BaseProviderConfig.PROVIDER_ANTHROPIC;
+import static io.camunda.process.test.impl.judge.BaseProviderConfig.PROVIDER_OPENAI;
+import static io.camunda.process.test.impl.judge.BaseProviderConfig.PROVIDER_OPENAI_COMPATIBLE;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyMapOrEmpty;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-import io.camunda.process.test.api.judge.BaseProviderConfig;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.ProviderConfig;
+import io.camunda.process.test.impl.judge.BaseProviderConfig;
 import java.util.Map;
 import java.util.Properties;
 
