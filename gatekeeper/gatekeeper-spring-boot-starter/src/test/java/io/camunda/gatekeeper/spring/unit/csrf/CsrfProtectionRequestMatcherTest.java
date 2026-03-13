@@ -74,6 +74,32 @@ class CsrfProtectionRequestMatcherTest {
     assertThat(matcher.matches(request)).isFalse();
   }
 
+  @Test
+  void shouldNotMatchSwaggerUiRefererWithExtraPath() {
+    final var request = createRequest("POST", "/api/data");
+    request.setSession(new MockHttpSession());
+    request.setServerName("hel-1.operate.ultrawombat.com");
+    request.setScheme("https");
+    request.setServerPort(443);
+    request.addHeader(
+        "Referer",
+        "https://hel-1.operate.ultrawombat.com/00000000-0000-0000-0000-000000000000/swagger-ui/index.html");
+    assertThat(matcher.matches(request)).isFalse();
+  }
+
+  @Test
+  void shouldNotMatchSwaggerUiRefererWithExtraPathAndPort() {
+    final var request = createRequest("POST", "/api/data");
+    request.setSession(new MockHttpSession());
+    request.setServerName("hel-1.operate.ultrawombat.com");
+    request.setScheme("https");
+    request.setServerPort(12345);
+    request.addHeader(
+        "Referer",
+        "https://hel-1.operate.ultrawombat.com:12345/00000000-0000-0000-0000-000000000000/swagger-ui/index.html");
+    assertThat(matcher.matches(request)).isFalse();
+  }
+
   private MockHttpServletRequest createRequest(final String method, final String servletPath) {
     final var request = new MockHttpServletRequest(method, servletPath);
     request.setServletPath(servletPath);
