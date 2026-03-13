@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.state.variable;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
@@ -41,8 +43,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class DbVariableState implements MutableVariableState {
 
-  private static final int VARIABLE_NAME_CACHE_MAX_SIZE = 10_000;
-  private static final Duration VARIABLE_NAME_CACHE_EXPIRY = Duration.ofMinutes(5);
 
   private final MsgPackWriter writer = new MsgPackWriter();
   private final ExpandableArrayBuffer documentResultBuffer = new ExpandableArrayBuffer();
@@ -72,18 +72,33 @@ public class DbVariableState implements MutableVariableState {
   private final DirectBuffer variableNameView = new UnsafeBuffer(0, 0);
 
   // (scope key) => (set of variable names on that scope) — LRU cache for fast removeAllVariables
-  private final Cache<Long, Set<DirectBuffer>> variableNameCache =
-      Caffeine.newBuilder()
-          .maximumSize(VARIABLE_NAME_CACHE_MAX_SIZE)
-          .expireAfterAccess(VARIABLE_NAME_CACHE_EXPIRY)
-          .build();
+  private final Cache<Long, Set<DirectBuffer>> variableNameCache;
 
   // collecting variables
   private final ObjectHashSet<DirectBuffer> collectedVariables = new ObjectHashSet<>();
   private final ObjectHashSet<DirectBuffer> variablesToCollect = new ObjectHashSet<>();
 
+  @VisibleForTesting
   public DbVariableState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+    this(
+        zeebeDb,
+        transactionContext,
+        EngineConfiguration.DEFAULT_VARIABLE_NAMES_CACHE_CAPACITY,
+        EngineConfiguration.DEFAULT_VARIABLE_NAMES_CACHE_TTL);
+  }
+
+  public DbVariableState(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final int variableNamesCacheCapacity,
+      final Duration variableNamesCacheTtl) {
+    variableNameCache =
+        Caffeine.newBuilder()
+            .maximumSize(variableNamesCacheCapacity)
+            .expireAfterAccess(variableNamesCacheTtl)
+            .build();
+
     childKey = new DbLong();
     childParentColumnFamily =
         zeebeDb.createColumnFamily(
