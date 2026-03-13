@@ -24,6 +24,7 @@ import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Semaphore;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -80,6 +81,7 @@ public interface ListingBackups {
   default void canListManyBackups() throws IOException {
     // given
     final int backupCount = 2_000;
+    final var semaphore = new Semaphore(200);
     final var ids =
         IntStream.rangeClosed(1, backupCount)
             .mapToObj(i -> new BackupIdentifierImpl(1, 1, i))
@@ -89,14 +91,17 @@ public interface ListingBackups {
     CompletableFuture.allOf(
             ids.stream()
                 .map(
-                    id ->
-                        getStore()
-                            .save(
-                                new BackupImpl(
-                                    id,
-                                    backupTemplate.descriptor(),
-                                    backupTemplate.snapshot(),
-                                    backupTemplate.segments())))
+                    id -> {
+                      semaphore.acquireUninterruptibly();
+                      return getStore()
+                          .save(
+                              new BackupImpl(
+                                  id,
+                                  backupTemplate.descriptor(),
+                                  backupTemplate.snapshot(),
+                                  backupTemplate.segments()))
+                          .whenComplete((v, e) -> semaphore.release());
+                    })
                 .toArray(CompletableFuture[]::new))
         .join();
 
