@@ -162,7 +162,12 @@ public class ProcessingDbState implements MutableProcessingState {
     this.zeebeDb = zeebeDb;
     this.keyGenerator = Objects.requireNonNull(keyGenerator);
 
-    variableState = new DbVariableState(zeebeDb, transactionContext);
+    variableState =
+        new DbVariableState(
+            zeebeDb,
+            transactionContext,
+            config.getVariableNamesCacheCapacity(),
+            config.getVariableNamesCacheTtl());
     clusterVariableState = new DbClusterVariableState(zeebeDb, transactionContext);
     processState =
         new DbProcessState(zeebeDb, transactionContext, config, clock, expressionLanguageMetrics);
