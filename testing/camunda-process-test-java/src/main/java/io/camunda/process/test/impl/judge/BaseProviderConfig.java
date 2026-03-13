@@ -13,13 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.judge;
+package io.camunda.process.test.impl.judge;
 
+import io.camunda.process.test.api.judge.ProviderConfig;
 import java.util.Collections;
 import java.util.Map;
 
 /** Abstract base class for provider-specific configuration. */
 public abstract class BaseProviderConfig implements ProviderConfig {
+
+  public static final String PROVIDER_OPENAI = "openai";
+  public static final String PROVIDER_ANTHROPIC = "anthropic";
+  public static final String PROVIDER_AMAZON_BEDROCK = "amazon-bedrock";
+  public static final String PROVIDER_OPENAI_COMPATIBLE = "openai-compatible";
 
   private final String provider;
   private final String model;
@@ -54,6 +60,7 @@ public abstract class BaseProviderConfig implements ProviderConfig {
       this.customProperties = Collections.unmodifiableMap(customProperties);
     }
 
+    @Override
     public Map<String, String> getCustomProperties() {
       return customProperties;
     }

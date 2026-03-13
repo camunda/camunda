@@ -15,15 +15,33 @@
  */
 package io.camunda.process.test.api.judge;
 
-/** Interface for provider-specific configuration. */
+import java.util.Collections;
+import java.util.Map;
+
+/**
+ * Configuration interface that provides the settings needed by a {@link ChatModelAdapterProvider}
+ * to create a {@link ChatModelAdapter}. Implementations hold provider-specific details such as the
+ * provider name, model identifier, and optional custom properties.
+ */
 public interface ProviderConfig {
 
-  String PROVIDER_OPENAI = "openai";
-  String PROVIDER_ANTHROPIC = "anthropic";
-  String PROVIDER_AMAZON_BEDROCK = "amazon-bedrock";
-  String PROVIDER_OPENAI_COMPATIBLE = "openai-compatible";
-
+  /** Returns the name of the LLM provider (e.g. {@code "openai"}, {@code "anthropic"}). */
   String getProvider();
 
+  /**
+   * Returns the model identifier to use (e.g. {@code "gpt-4o"}, {@code
+   * "claude-sonnet-4-20250514"}).
+   */
   String getModel();
+
+  /**
+   * Returns additional, provider-specific properties as key-value pairs. This allows custom or
+   * generic providers to receive arbitrary configuration that is not covered by the standard
+   * fields.
+   *
+   * @return an unmodifiable map of custom properties, or an empty map if none are set
+   */
+  default Map<String, String> getCustomProperties() {
+    return Collections.emptyMap();
+  }
 }

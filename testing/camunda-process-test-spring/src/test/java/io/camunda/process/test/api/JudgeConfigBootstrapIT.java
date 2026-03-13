@@ -18,12 +18,12 @@ package io.camunda.process.test.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.process.test.api.judge.BaseProviderConfig;
 import io.camunda.process.test.api.judge.ChatModelAdapter;
 import io.camunda.process.test.api.judge.ChatModelAdapterProvider;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.judge.ProviderConfig;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
+import io.camunda.process.test.impl.judge.BaseProviderConfig;
 import io.camunda.process.test.impl.judge.OpenAiChatModelAdapterProvider;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -308,11 +308,9 @@ public class JudgeConfigBootstrapIT {
       // custom properties bound to GenericConfig
       final ProviderConfig providerConfig = runtimeConfig.getJudge().toProviderConfig();
       assertThat(providerConfig).isInstanceOf(BaseProviderConfig.GenericConfig.class);
-      final BaseProviderConfig.GenericConfig genericConfig =
-          (BaseProviderConfig.GenericConfig) providerConfig;
-      assertThat(genericConfig.getProvider()).isEqualTo("my-generic");
-      assertThat(genericConfig.getModel()).isEqualTo("custom-model");
-      assertThat(genericConfig.getCustomProperties())
+      assertThat(providerConfig.getProvider()).isEqualTo("my-generic");
+      assertThat(providerConfig.getModel()).isEqualTo("custom-model");
+      assertThat(providerConfig.getCustomProperties())
           .containsEntry("endpoint", "http://localhost:8080")
           .containsEntry("temperature", "0.7")
           .hasSize(2);
