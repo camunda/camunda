@@ -33,6 +33,7 @@ import io.camunda.process.test.utils.ProcessInstanceBuilder;
 import io.camunda.process.test.utils.VariableBuilder;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -612,17 +613,17 @@ public class JudgeAssertTest {
     @Test
     void shouldSwitchBetweenJudgesInSameChain() {
       // given — two judges that capture which one was called
-      final boolean[] judgeACalled = {false};
-      final boolean[] judgeBCalled = {false};
+      final AtomicBoolean judgeACalled = new AtomicBoolean(false);
+      final AtomicBoolean judgeBCalled = new AtomicBoolean(false);
 
       final ChatModelAdapter judgeA =
           prompt -> {
-            judgeACalled[0] = true;
+            judgeACalled.set(true);
             return "{\"score\": 0.9, \"reasoning\": \"Judge A.\"}";
           };
       final ChatModelAdapter judgeB =
           prompt -> {
-            judgeBCalled[0] = true;
+            judgeBCalled.set(true);
             return "{\"score\": 0.9, \"reasoning\": \"Judge B.\"}";
           };
 
@@ -641,8 +642,8 @@ public class JudgeAssertTest {
           .hasVariableSatisfiesJudge("varB", "expectation B");
 
       // then
-      Assertions.assertThat(judgeACalled[0]).isTrue();
-      Assertions.assertThat(judgeBCalled[0]).isTrue();
+      Assertions.assertThat(judgeACalled).isTrue();
+      Assertions.assertThat(judgeBCalled).isTrue();
     }
 
     @Test
@@ -787,10 +788,11 @@ public class JudgeAssertTest {
     @Test
     void shouldNotAffectGlobalDefaultForNewAssertThatCalls() {
       // given — global judge captures calls, override judge also captures
-      final boolean[] globalCalled = {false};
+      final AtomicBoolean globalCalled = new AtomicBoolean(false);
+
       final ChatModelAdapter globalModel =
           prompt -> {
-            globalCalled[0] = true;
+            globalCalled.set(true);
             return "{\"score\": 0.9, \"reasoning\": \"Global judge.\"}";
           };
       final ChatModelAdapter overrideModel =
@@ -809,11 +811,11 @@ public class JudgeAssertTest {
           .hasVariableSatisfiesJudge("result", "some expectation");
 
       // then — new assertThat uses global default
-      globalCalled[0] = false;
+      globalCalled.set(false);
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasVariableSatisfiesJudge("result", "some expectation");
 
-      Assertions.assertThat(globalCalled[0]).isTrue();
+      Assertions.assertThat(globalCalled).isTrue();
     }
   }
 }
