@@ -191,6 +191,20 @@ public class ProcessDefinitionStatisticsFilterImpl
   }
 
   @Override
+  public ProcessDefinitionStatisticsFilter batchOperationKey(final String batchOperationKey) {
+    batchOperationKey(b -> b.eq(batchOperationKey));
+    return this;
+  }
+
+  @Override
+  public ProcessDefinitionStatisticsFilter batchOperationKey(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setBatchOperationKey(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public ProcessDefinitionStatisticsFilter errorMessage(final String errorMessage) {
     errorMessage(b -> b.eq(errorMessage));
     return this;

@@ -206,6 +206,9 @@ public class SimpleSearchQueryMapper {
         .map(SimpleSearchQueryMapper::getBasicStringFilter)
         .ifPresent(target::parentElementInstanceKey);
 
+    ofNullable(source.getBatchOperationKey())
+        .map(SimpleSearchQueryMapper::getStringFilter)
+        .ifPresent(target::batchOperationKey);
     ofNullable(source.getBatchOperationId())
         .map(SimpleSearchQueryMapper::getStringFilter)
         .ifPresent(target::batchOperationId);
@@ -263,6 +266,7 @@ public class SimpleSearchQueryMapper {
         .parentProcessInstanceKey(source.getParentProcessInstanceKey())
         .parentElementInstanceKey(source.getParentElementInstanceKey())
         .batchOperationId(source.getBatchOperationId())
+        .batchOperationKey(source.getBatchOperationKey())
         .errorMessage(source.getErrorMessage())
         .hasRetriesLeft(source.getHasRetriesLeft())
         .elementInstanceState(source.getElementInstanceState())
