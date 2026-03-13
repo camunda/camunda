@@ -28,7 +28,9 @@ import java.util.stream.Collectors;
  * and lists.
  */
 public class PropertiesUtil {
+
   private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{.*}");
+  private static final String CAMUNDA_PROCESS_TEST_PREFIX = "CAMUNDA_PROCESSTEST_";
 
   /**
    * Reads a property and returns null if it doesn't exist or the value is a placeholder. Falls back
@@ -45,9 +47,9 @@ public class PropertiesUtil {
 
   /**
    * Reads a property and returns a default if it doesn't exist or the value is a placeholder. Falls
-   * back to the corresponding environment variable by replacing dots with underscores, removing
-   * hyphens, and uppercasing (e.g. {@code judge.chatModel.apiKey} maps to {@code
-   * JUDGE_CHATMODEL_APIKEY}).
+   * back to the corresponding environment variable by prepending {@code CAMUNDA_PROCESSTEST_},
+   * replacing dots with underscores, removing hyphens, and uppercasing (e.g. {@code
+   * judge.chatModel.apiKey} maps to {@code CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_APIKEY}).
    *
    * @param properties the properties object containing the property
    * @param propertyName the property key
@@ -119,13 +121,16 @@ public class PropertiesUtil {
   }
 
   /**
-   * Converts a property name to an environment variable name by replacing dots with underscores,
-   * removing hyphens, and uppercasing everything.
+   * Converts a property name to an environment variable name by prepending the {@code
+   * CAMUNDA_PROCESSTEST_} prefix, replacing dots with underscores, removing hyphens, and
+   * uppercasing everything. This matches the Spring Boot relaxed binding convention for the {@code
+   * camunda.process-test} configuration prefix.
    *
-   * <p>Example: {@code judge.chatModel.apiKey} becomes {@code JUDGE_CHATMODEL_APIKEY}.
+   * <p>Example: {@code judge.chatModel.apiKey} becomes {@code
+   * CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_APIKEY}.
    */
   static String toEnvVarName(final String propertyName) {
-    return propertyName.toUpperCase().replace('.', '_').replace("-", "");
+    return CAMUNDA_PROCESS_TEST_PREFIX + propertyName.toUpperCase().replace('.', '_').replace("-", "");
   }
 
   /**
