@@ -31,6 +31,8 @@ import java.util.ServiceLoader;
  */
 public final class ChatModelAdapterResolver {
 
+  private ChatModelAdapterResolver() {}
+
   /**
    * Resolves a {@link ChatModelAdapter} from the given provider configuration.
    *
@@ -41,7 +43,7 @@ public final class ChatModelAdapterResolver {
    * @return an {@link Optional} containing the resolved {@link ChatModelAdapter}, or {@link
    *     Optional#empty()} if no matching provider could be found
    */
-  public Optional<ChatModelAdapter> resolve(final ProviderConfig config) {
+  public static Optional<ChatModelAdapter> resolve(final ProviderConfig config) {
     Objects.requireNonNull(config.getProvider(), "config provider must not be null");
 
     for (final ChatModelAdapterProvider provider :
