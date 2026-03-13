@@ -214,7 +214,7 @@ class AdvancedSearchFilterUtilTest {
     // when/then
     assertThatThrownBy(() -> AdvancedSearchFilterUtil.mapToOperations(filter, Long.class))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Invalid value for key field: [abc] is not a valid number");
+        .hasMessage("Invalid value: [abc] is not a valid number");
   }
 
   @Test
@@ -226,6 +226,6 @@ class AdvancedSearchFilterUtilTest {
     // when/then
     assertThatThrownBy(() -> AdvancedSearchFilterUtil.mapToOperations(filter, Long.class))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Invalid value for key field: [] is not a valid number");
+        .hasMessage("Invalid value: [] is not a valid number");
   }
 }

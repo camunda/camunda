@@ -60,7 +60,7 @@ public class AdvancedSearchFilterUtil {
         return (T) Long.valueOf((String) value);
       } catch (final NumberFormatException e) {
         throw new IllegalArgumentException(
-            "Invalid value for key field: [%s] is not a valid number".formatted(value), e);
+            "Invalid value: [%s] is not a valid number".formatted(value), e);
       }
     }
 
