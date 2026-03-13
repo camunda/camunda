@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.api.IncidentApi;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionQuery;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionQueryResult;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByErrorQuery;
@@ -23,22 +24,17 @@ import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
-import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
-import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import jakarta.validation.ValidationException;
-import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequestMapping("v2/incidents")
-public class IncidentController {
+@RequestMapping("/v2")
+public class IncidentController implements IncidentApi {
 
   private final IncidentServices incidentServices;
   private final CamundaAuthenticationProvider authenticationProvider;
@@ -50,73 +46,75 @@ public class IncidentController {
     this.authenticationProvider = authenticationProvider;
   }
 
-  @CamundaPostMapping(path = "/{incidentKey}/resolution")
-  public CompletableFuture<ResponseEntity<Object>> incidentResolution(
-      @PathVariable final long incidentKey,
-      @RequestBody(required = false) final IncidentResolutionRequest incidentResolutionRequest) {
+  @Override
+  public ResponseEntity<Void> resolveIncident(
+      final String incidentKey,
+      final IncidentResolutionRequest incidentResolutionRequest) {
     final Long operationReference =
         incidentResolutionRequest == null
             ? null
             : incidentResolutionRequest.getOperationReference();
-    return RequestExecutor.executeServiceMethodWithNoContentResult(
+    return RequestExecutor.executeSync(
         () ->
             incidentServices.resolveIncident(
-                incidentKey,
+                Long.parseLong(incidentKey),
                 operationReference,
                 authenticationProvider.getCamundaAuthentication()));
   }
 
+  @Override
   @RequiresSecondaryStorage
-  @CamundaPostMapping(path = "/search")
   public ResponseEntity<IncidentSearchQueryResult> searchIncidents(
-      @RequestBody(required = false) final IncidentSearchQuery query) {
-    return SearchQueryRequestMapper.toIncidentQuery(query)
+      final IncidentSearchQuery incidentSearchQuery) {
+    return SearchQueryRequestMapper.toIncidentQuery(incidentSearchQuery)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
+  @Override
   @RequiresSecondaryStorage
-  @CamundaGetMapping(path = "/{incidentKey}")
-  public ResponseEntity<IncidentResult> getByKey(
-      @PathVariable("incidentKey") final Long incidentKey) {
+  public ResponseEntity<IncidentResult> getIncident(final String incidentKey) {
     try {
-      return ResponseEntity.ok()
-          .body(
-              SearchQueryResponseMapper.toIncident(
-                  incidentServices.getByKey(
-                      incidentKey, authenticationProvider.getCamundaAuthentication())));
+      return responseOk(
+          SearchQueryResponseMapper.toIncident(
+              incidentServices.getByKey(
+                  Long.parseLong(incidentKey),
+                  authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
   }
 
+  @Override
   @RequiresSecondaryStorage
-  @CamundaPostMapping(path = "/statistics/process-instances-by-error")
   public ResponseEntity<IncidentProcessInstanceStatisticsByErrorQueryResult>
-      processInstanceStatisticsByError(
-          @RequestBody(required = false)
-              final IncidentProcessInstanceStatisticsByErrorQuery query) {
-    return SearchQueryRequestMapper.toIncidentProcessInstanceStatisticsByErrorQuery(query)
+      getProcessInstanceStatisticsByError(
+          final IncidentProcessInstanceStatisticsByErrorQuery
+              incidentProcessInstanceStatisticsByErrorQuery) {
+    return SearchQueryRequestMapper.toIncidentProcessInstanceStatisticsByErrorQuery(
+            incidentProcessInstanceStatisticsByErrorQuery)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            this::getIncidentProcessInstanceStatisticsByError);
+            this::executeIncidentProcessInstanceStatisticsByError);
   }
 
+  @Override
   @RequiresSecondaryStorage
-  @CamundaPostMapping(path = "/statistics/process-instances-by-definition")
   public ResponseEntity<IncidentProcessInstanceStatisticsByDefinitionQueryResult>
-      incidentProcessInstanceStatisticsByDefinition(
-          @RequestBody() final IncidentProcessInstanceStatisticsByDefinitionQuery query) {
-    return SearchQueryRequestMapper.toIncidentProcessInstanceStatisticsByDefinitionQuery(query)
+      getProcessInstanceStatisticsByDefinition(
+          final IncidentProcessInstanceStatisticsByDefinitionQuery
+              incidentProcessInstanceStatisticsByDefinitionQuery) {
+    return SearchQueryRequestMapper.toIncidentProcessInstanceStatisticsByDefinitionQuery(
+            incidentProcessInstanceStatisticsByDefinitionQuery)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            this::searchIncidentProcessInstanceStatisticsByDefinition);
+            this::executeIncidentProcessInstanceStatisticsByDefinition);
   }
 
   private ResponseEntity<IncidentSearchQueryResult> search(final IncidentQuery query) {
     try {
       final var result =
           incidentServices.search(query, authenticationProvider.getCamundaAuthentication());
-      return ResponseEntity.ok(SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
+      return responseOk(SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
     } catch (final ValidationException e) {
       final var problemDetail =
           GatewayErrorMapper.createProblemDetail(
@@ -130,7 +128,7 @@ public class IncidentController {
   }
 
   private ResponseEntity<IncidentProcessInstanceStatisticsByErrorQueryResult>
-      getIncidentProcessInstanceStatisticsByError(
+      executeIncidentProcessInstanceStatisticsByError(
           final io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery query) {
     try {
       final var result =
@@ -151,7 +149,7 @@ public class IncidentController {
   }
 
   private ResponseEntity<IncidentProcessInstanceStatisticsByDefinitionQueryResult>
-      searchIncidentProcessInstanceStatisticsByDefinition(
+      executeIncidentProcessInstanceStatisticsByDefinition(
           final io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery query) {
     try {
       final var result =
@@ -170,5 +168,16 @@ public class IncidentController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
+  }
+
+  /**
+   * Type-erasing helper: the slice-2 mapper returns strict-contract records, while the generated
+   * API interface declares protocol-model return types. At runtime Jackson serializes the actual
+   * body regardless of the generic type, so the unchecked cast is safe. This bridge will be removed
+   * once the response types are unified.
+   */
+  @SuppressWarnings("unchecked")
+  private static <T> ResponseEntity<T> responseOk(final Object body) {
+    return (ResponseEntity<T>) ResponseEntity.ok(body);
   }
 }
