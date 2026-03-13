@@ -1129,7 +1129,8 @@ paths:
       description: >
         Completes a user task with the given key. Completion waits for blocking task listeners on
         this lifecycle transition. If listener processing is delayed beyond the request timeout,
-        this endpoint can return 504.
+        this endpoint can return 504. Other gateway timeout causes are also possible. Retry with
+        backoff and inspect listener worker availability and logs when this repeats.
       parameters:
         - name: userTaskKey
           in: path
@@ -1178,7 +1179,9 @@ paths:
       description: >
         Assigns a user task with the given key to the given assignee. Assignment waits for
         blocking task listeners on this lifecycle transition. If listener processing is delayed
-        beyond the request timeout, this endpoint can return 504.
+        beyond the request timeout, this endpoint can return 504. Other gateway timeout causes are
+        also possible. Retry with backoff and inspect listener worker availability and logs when
+        this repeats.
       parameters:
         - name: userTaskKey
           in: path
@@ -1354,7 +1357,9 @@ paths:
       description: >
         Removes the assignee of a task with the given key. Unassignment waits for blocking task
         listeners on this lifecycle transition. If listener processing is delayed beyond the
-        request timeout, this endpoint can return 504.
+        request timeout, this endpoint can return 504. Other gateway timeout causes are also
+        possible. Retry with backoff and inspect listener worker availability and logs when this
+        repeats.
       parameters:
         - name: userTaskKey
           in: path
@@ -2015,7 +2020,8 @@ paths:
         Cancels a running process instance. As a cancellation includes more than just the removal
         of the process instance resource, the cancellation resource must be posted. Cancellation
         can wait on listener-related processing; when that processing does not complete in time,
-        this endpoint can return 504.
+        this endpoint can return 504. Other gateway timeout causes are also possible. Retry with
+        backoff and inspect listener worker availability and logs when this repeats.
       parameters:
         - name: processInstanceKey
           in: path
@@ -5276,7 +5282,9 @@ paths:
         Updates all the variables of a particular scope (for example, process instance, element instance) with the given variable data.
         Specify the element instance in the `elementInstanceKey` parameter.
         Variable updates can be delayed by listener-related processing; if processing exceeds the
-        request timeout, this endpoint can return 504.
+        request timeout, this endpoint can return 504. Other gateway timeout causes are also
+        possible. Retry with backoff and inspect listener worker availability and logs when this
+        repeats.
       parameters:
         - name: elementInstanceKey
           in: path
