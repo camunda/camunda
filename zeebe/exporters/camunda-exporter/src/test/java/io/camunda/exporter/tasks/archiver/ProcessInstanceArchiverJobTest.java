@@ -8,6 +8,8 @@
 package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
@@ -22,6 +24,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +38,7 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
   private final Executor executor = Runnable::run;
 
   private final HistoryConfiguration historyConfiguration = new HistoryConfiguration();
-  private final TestRepository repository = new TestRepository();
+  private final TestRepository repository = spy(new TestRepository());
   private final ListViewTemplate processInstanceTemplate = new ListViewTemplate("", true);
   private final DecisionInstanceTemplate decisionInstanceTemplate =
       new DecisionInstanceTemplate("", true);
@@ -58,8 +61,10 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
   @BeforeEach
   void setUp() {
     // given
-    repository.batch =
-        new ProcessInstanceArchiveBatch("2024-01-01", List.of(1L, 2L, 3L), List.of());
+    repository.batches =
+        List.of(
+            new ProcessInstanceArchiveBatch("2024-01-01", List.of(1L, 2L, 3L), List.of()),
+            new ProcessInstanceArchiveBatch("2024-01-01", List.of(4L, 5L, 6L), List.of()));
   }
 
   @AfterEach
@@ -68,7 +73,7 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
   }
 
   @Override
-  ArchiverJob getArchiverJob() {
+  ProcessInstanceArchiverJob getArchiverJob() {
     return job;
   }
 
@@ -185,7 +190,8 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
             metrics,
             LOGGER,
             executor);
-    repository.batch = new ProcessInstanceArchiveBatch("2024-01-01", List.of(1L, 2L), List.of());
+    repository.batches =
+        List.of(new ProcessInstanceArchiveBatch("2024-01-01", List.of(1L, 2L), List.of()));
 
     // when
     final int count = job.execute().toCompletableFuture().join();
@@ -198,6 +204,48 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
         .contains(
             new DocumentMove(
                 "foo_", "foo_" + "2024-01-01", Map.of("bar", List.of("1", "2")), executor));
+  }
+
+  @Test
+  void shouldSkipAlreadyArchivedProcessInstances() {
+    // given - two batches of 3 with 2 IDs overlapping
+    repository.batches =
+        List.of(
+            new ProcessInstanceArchiveBatch("2024-01-01", List.of(1L, 2L, 3L), List.of()),
+            new ProcessInstanceArchiveBatch("2024-01-01", List.of(2L, 3L, 4L), List.of()));
+
+    // when
+    final var count =
+        getArchiverJob().execute().toCompletableFuture().join()
+            + getArchiverJob().execute().toCompletableFuture().join();
+
+    // then
+    assertThat(count).isEqualTo(4);
+    assertArchivingCounts(4);
+    assertThat(getMeterRegistry().counter(getJobMetricName(), "state", "deduplicated").count())
+        .isEqualTo(2);
+    assertArchiverTimer(2); // job executed twice
+
+    verify(repository).getProcessInstancesNextBatch(100);
+    // should over-request 2nd time so we can remove duplicates, but still have new
+    // docs to archive
+    verify(repository).getProcessInstancesNextBatch(103);
+  }
+
+  @Test
+  void shouldLimitProcessInstancesIfReturnedBatchIsTooLarge() {
+    final var ids = LongStream.range(1, 200L).boxed().toList();
+    repository.batches = List.of(new ProcessInstanceArchiveBatch("2024-01-01", ids, List.of()));
+
+    // when
+    final var count = getArchiverJob().execute().toCompletableFuture().join();
+
+    // then
+    assertThat(count).isEqualTo(100);
+    assertArchivingCounts(100);
+    assertThat(getMeterRegistry().counter(getJobMetricName(), "state", "duplicate").count())
+        .isEqualTo(0);
+    assertArchiverTimer(1);
   }
 
   private static final class WeirdlyNamedDependant implements ProcessInstanceDependant {
