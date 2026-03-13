@@ -1,0 +1,150 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/process-instances.yaml#/components/schemas/ProcessInstanceMigrationInstruction
+ */
+package io.camunda.gateway.mapping.http.search.contract.generated;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
+import jakarta.annotation.Generated;
+import java.util.ArrayList;
+import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+
+
+@JsonInclude(JsonInclude.Include.ALWAYS)
+@NullMarked
+@Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
+public record GeneratedProcessInstanceMigrationInstructionStrictContract(
+    String targetProcessDefinitionKey,
+    java.util.List<GeneratedMigrateProcessInstanceMappingInstructionStrictContract> mappingInstructions,
+    @Nullable Long operationReference
+) {
+
+  public GeneratedProcessInstanceMigrationInstructionStrictContract {
+    Objects.requireNonNull(targetProcessDefinitionKey, "targetProcessDefinitionKey is required and must not be null");
+    Objects.requireNonNull(mappingInstructions, "mappingInstructions is required and must not be null");
+  }
+
+  public static String coerceTargetProcessDefinitionKey(final Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof String stringValue) {
+      return stringValue;
+    }
+    if (value instanceof Number numberValue) {
+      return KeyUtil.keyToString(numberValue.longValue());
+    }
+    throw new IllegalArgumentException(
+        "targetProcessDefinitionKey must be a String or Number, but was " + value.getClass().getName());
+  }
+
+
+  public static java.util.List<GeneratedMigrateProcessInstanceMappingInstructionStrictContract> coerceMappingInstructions(final Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (!(value instanceof java.util.List<?> listValue)) {
+      throw new IllegalArgumentException(
+          "mappingInstructions must be a List of GeneratedMigrateProcessInstanceMappingInstructionStrictContract, but was " + value.getClass().getName());
+    }
+
+    final var result = new ArrayList<GeneratedMigrateProcessInstanceMappingInstructionStrictContract>(listValue.size());
+    for (final var item : listValue) {
+      if (item == null) {
+        result.add(null);
+      } else if (item instanceof GeneratedMigrateProcessInstanceMappingInstructionStrictContract strictItem) {
+        result.add(strictItem);
+
+      } else {
+        throw new IllegalArgumentException(
+            "mappingInstructions must contain only GeneratedMigrateProcessInstanceMappingInstructionStrictContract items, but got "
+                + item.getClass().getName());
+      }
+    }
+    return java.util.List.copyOf(result);
+  }
+
+
+
+  public static TargetProcessDefinitionKeyStep builder() {
+    return new Builder();
+  }
+
+  public static final class Builder implements TargetProcessDefinitionKeyStep, MappingInstructionsStep, OptionalStep {
+    private Object targetProcessDefinitionKey;
+    private Object mappingInstructions;
+    private Long operationReference;
+
+    private Builder() {}
+
+    @Override
+    public MappingInstructionsStep targetProcessDefinitionKey(final Object targetProcessDefinitionKey) {
+      this.targetProcessDefinitionKey = targetProcessDefinitionKey;
+      return this;
+    }
+
+    @Override
+    public OptionalStep mappingInstructions(final Object mappingInstructions) {
+      this.mappingInstructions = mappingInstructions;
+      return this;
+    }
+
+    @Override
+    public OptionalStep operationReference(final @Nullable Long operationReference) {
+      this.operationReference = operationReference;
+      return this;
+    }
+
+    @Override
+    public OptionalStep operationReference(final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy) {
+      this.operationReference = policy.apply(operationReference, Fields.OPERATION_REFERENCE, null);
+      return this;
+    }
+
+    @Override
+    public GeneratedProcessInstanceMigrationInstructionStrictContract build() {
+      return new GeneratedProcessInstanceMigrationInstructionStrictContract(
+          coerceTargetProcessDefinitionKey(this.targetProcessDefinitionKey),
+          coerceMappingInstructions(this.mappingInstructions),
+          this.operationReference);
+    }
+  }
+
+  public interface TargetProcessDefinitionKeyStep {
+    MappingInstructionsStep targetProcessDefinitionKey(final Object targetProcessDefinitionKey);
+  }
+
+  public interface MappingInstructionsStep {
+    OptionalStep mappingInstructions(final Object mappingInstructions);
+  }
+
+  public interface OptionalStep {
+  OptionalStep operationReference(final @Nullable Long operationReference);
+
+  OptionalStep operationReference(final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy);
+
+
+    GeneratedProcessInstanceMigrationInstructionStrictContract build();
+  }
+
+
+  public static final class Fields {
+    public static final ContractPolicy.FieldRef TARGET_PROCESS_DEFINITION_KEY = ContractPolicy.field("ProcessInstanceMigrationInstruction", "targetProcessDefinitionKey");
+    public static final ContractPolicy.FieldRef MAPPING_INSTRUCTIONS = ContractPolicy.field("ProcessInstanceMigrationInstruction", "mappingInstructions");
+    public static final ContractPolicy.FieldRef OPERATION_REFERENCE = ContractPolicy.field("ProcessInstanceMigrationInstruction", "operationReference");
+
+    private Fields() {}
+  }
+
+
+}

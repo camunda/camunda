@@ -25,7 +25,6 @@ import io.camunda.gateway.protocol.model.UserTaskSearchQuery;
 import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
 import io.camunda.gateway.protocol.model.UserTaskUpdateRequest;
 import io.camunda.gateway.protocol.model.UserTaskVariableSearchQueryRequest;
-import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
@@ -132,7 +131,7 @@ public class UserTaskController {
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{userTaskKey}/variables/search")
-  public ResponseEntity<VariableSearchQueryResult> searchVariables(
+  public ResponseEntity<Object> searchVariables(
       @PathVariable("userTaskKey") final long userTaskKey,
       @RequestBody(required = false)
           final UserTaskVariableSearchQueryRequest userTaskVariablesSearchQueryRequest,
@@ -167,7 +166,7 @@ public class UserTaskController {
     }
   }
 
-  private ResponseEntity<VariableSearchQueryResult> searchUserTaskVariableQuery(
+  private ResponseEntity<Object> searchUserTaskVariableQuery(
       final long userTaskKey, final VariableQuery query, final boolean truncateValues) {
     try {
       final var result =

@@ -13,6 +13,24 @@ import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 
 import io.camunda.authentication.entity.CamundaUserDTO;
+import io.camunda.gateway.mapping.http.search.contract.BatchOperationItemResponseContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.BatchOperationResponseContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.ClusterVariableContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.DecisionInstanceContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.ProcessDefinitionContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.ProcessInstanceCallHierarchyEntryContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryPage;
+import io.camunda.gateway.mapping.http.search.contract.StrictSearchQueryResult;
+import io.camunda.gateway.mapping.http.search.contract.VariableContractAdapter;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemResponseStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationResponseStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableSearchStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedDecisionInstanceStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessInstanceCallHierarchyEntryStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableSearchStrictContract;
+import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedVariableStrictContract;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.AuditLogActorTypeEnum;
 import io.camunda.gateway.protocol.model.AuditLogCategoryEnum;
@@ -23,35 +41,18 @@ import io.camunda.gateway.protocol.model.AuditLogResultEnum;
 import io.camunda.gateway.protocol.model.AuditLogSearchQueryResult;
 import io.camunda.gateway.protocol.model.AuthorizationResult;
 import io.camunda.gateway.protocol.model.AuthorizationSearchResult;
-import io.camunda.gateway.protocol.model.BatchOperationError;
-import io.camunda.gateway.protocol.model.BatchOperationError.TypeEnum;
-import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
-import io.camunda.gateway.protocol.model.BatchOperationItemSearchQueryResult;
-import io.camunda.gateway.protocol.model.BatchOperationResponse;
-import io.camunda.gateway.protocol.model.BatchOperationSearchQueryResult;
-import io.camunda.gateway.protocol.model.BatchOperationStateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.CamundaUserResult;
-import io.camunda.gateway.protocol.model.ClusterVariableResult;
-import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
-import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryResult;
-import io.camunda.gateway.protocol.model.ClusterVariableSearchResult;
 import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionResult;
 import io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionSearchQueryResult;
 import io.camunda.gateway.protocol.model.DecisionDefinitionResult;
 import io.camunda.gateway.protocol.model.DecisionDefinitionSearchQueryResult;
-import io.camunda.gateway.protocol.model.DecisionDefinitionTypeEnum;
 import io.camunda.gateway.protocol.model.DecisionInstanceGetQueryResult;
-import io.camunda.gateway.protocol.model.DecisionInstanceResult;
-import io.camunda.gateway.protocol.model.DecisionInstanceSearchQueryResult;
-import io.camunda.gateway.protocol.model.DecisionInstanceStateEnum;
 import io.camunda.gateway.protocol.model.DecisionRequirementsResult;
 import io.camunda.gateway.protocol.model.DecisionRequirementsSearchQueryResult;
 import io.camunda.gateway.protocol.model.ElementInstanceResult;
 import io.camunda.gateway.protocol.model.ElementInstanceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ElementInstanceStateEnum;
-import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
-import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
 import io.camunda.gateway.protocol.model.FormResult;
 import io.camunda.gateway.protocol.model.GlobalJobStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.GlobalListenerSourceEnum;
@@ -87,7 +88,6 @@ import io.camunda.gateway.protocol.model.JobWorkerStatisticsItem;
 import io.camunda.gateway.protocol.model.JobWorkerStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.MappingRuleResult;
 import io.camunda.gateway.protocol.model.MappingRuleSearchQueryResult;
-import io.camunda.gateway.protocol.model.MatchedDecisionRuleItem;
 import io.camunda.gateway.protocol.model.MessageSubscriptionResult;
 import io.camunda.gateway.protocol.model.MessageSubscriptionSearchQueryResult;
 import io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum;
@@ -100,10 +100,7 @@ import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatist
 import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatisticsResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsResult;
-import io.camunda.gateway.protocol.model.ProcessDefinitionResult;
-import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
 import io.camunda.gateway.protocol.model.ProcessElementStatisticsResult;
-import io.camunda.gateway.protocol.model.ProcessInstanceCallHierarchyEntry;
 import io.camunda.gateway.protocol.model.ProcessInstanceElementStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQueryResult;
@@ -136,22 +133,14 @@ import io.camunda.gateway.protocol.model.UserSearchResult;
 import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
 import io.camunda.gateway.protocol.model.UserTaskStateEnum;
-import io.camunda.gateway.protocol.model.VariableResult;
-import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
-import io.camunda.gateway.protocol.model.VariableSearchResult;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
-import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
-import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceInputEntity;
-import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceOutputEntity;
-import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
@@ -198,7 +187,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -249,15 +237,15 @@ public final class SearchQueryResponseMapper {
     return response;
   }
 
-  public static ProcessDefinitionSearchQueryResult toProcessDefinitionSearchQueryResponse(
-      final SearchQueryResult<ProcessDefinitionEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new ProcessDefinitionSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toProcessDefinitions)
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedProcessDefinitionStrictContract>
+      toProcessDefinitionSearchQueryResponse(
+          final SearchQueryResult<ProcessDefinitionEntity> result) {
+    final var page = toStrictSearchQueryPage(result);
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(SearchQueryResponseMapper::toProcessDefinitions)
+            .orElseGet(Collections::emptyList),
+        page);
   }
 
   public static ProcessDefinitionElementStatisticsQueryResult
@@ -584,15 +572,13 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static DecisionInstanceSearchQueryResult toDecisionInstanceSearchQueryResponse(
-      final SearchQueryResult<DecisionInstanceEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new DecisionInstanceSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toDecisionInstances)
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedDecisionInstanceStrictContract>
+      toDecisionInstanceSearchQueryResponse(
+          final SearchQueryResult<DecisionInstanceEntity> result) {
+    final var page = toStrictSearchQueryPage(result);
+    final var items =
+        ofNullable(result.items()).map(SearchQueryResponseMapper::toDecisionInstances).orElse(null);
+    return new StrictSearchQueryResult<>(items, page);
   }
 
   public static UserTaskSearchQueryResult toUserTaskSearchQueryResponse(
@@ -616,26 +602,25 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static BatchOperationSearchQueryResult toBatchOperationSearchQueryResult(
-      final SearchQueryResult<BatchOperationEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new BatchOperationSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toBatchOperations)
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedBatchOperationResponseStrictContract>
+      toBatchOperationSearchQueryResult(final SearchQueryResult<BatchOperationEntity> result) {
+    final var page = toStrictSearchQueryPage(result);
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(SearchQueryResponseMapper::toBatchOperations)
+            .orElseGet(Collections::emptyList),
+        page);
   }
 
-  public static BatchOperationItemSearchQueryResult toBatchOperationItemSearchQueryResult(
-      final SearchQueryResult<BatchOperationItemEntity> result) {
-    final var page = toSearchQueryPageResponse(result);
-    return new BatchOperationItemSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toBatchOperationItems)
-                .orElseGet(Collections::emptyList));
+  public static StrictSearchQueryResult<GeneratedBatchOperationItemResponseStrictContract>
+      toBatchOperationItemSearchQueryResult(
+          final SearchQueryResult<BatchOperationItemEntity> result) {
+    final var page = toStrictSearchQueryPage(result);
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(SearchQueryResponseMapper::toBatchOperationItems)
+            .orElseGet(Collections::emptyList),
+        page);
   }
 
   public static IncidentSearchQueryResult toIncidentSearchQueryResponse(
@@ -682,21 +667,19 @@ public final class SearchQueryResponseMapper {
         .endCursor(result.endCursor());
   }
 
-  private static List<ProcessDefinitionResult> toProcessDefinitions(
+  private static StrictSearchQueryPage toStrictSearchQueryPage(final SearchQueryResult<?> result) {
+    return new StrictSearchQueryPage(
+        result.total(), result.hasMoreTotalItems(), result.startCursor(), result.endCursor());
+  }
+
+  private static List<GeneratedProcessDefinitionStrictContract> toProcessDefinitions(
       final List<ProcessDefinitionEntity> processDefinitions) {
     return processDefinitions.stream().map(SearchQueryResponseMapper::toProcessDefinition).toList();
   }
 
-  public static ProcessDefinitionResult toProcessDefinition(final ProcessDefinitionEntity entity) {
-    return new ProcessDefinitionResult()
-        .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
-        .name(entity.name())
-        .resourceName(entity.resourceName())
-        .version(entity.version())
-        .versionTag(entity.versionTag())
-        .processDefinitionId(entity.processDefinitionId())
-        .tenantId(entity.tenantId())
-        .hasStartForm(StringUtils.isNotBlank(entity.formId()));
+  public static GeneratedProcessDefinitionStrictContract toProcessDefinition(
+      final ProcessDefinitionEntity entity) {
+    return ProcessDefinitionContractAdapter.adapt(entity);
   }
 
   private static List<ProcessInstanceResult> toProcessInstances(
@@ -756,83 +739,33 @@ public final class SearchQueryResponseMapper {
         .businessId(emptyToNull(p.businessId()));
   }
 
-  public static List<BatchOperationResponse> toBatchOperations(
+  public static List<GeneratedBatchOperationResponseStrictContract> toBatchOperations(
       final List<BatchOperationEntity> batchOperations) {
     return batchOperations.stream().map(SearchQueryResponseMapper::toBatchOperation).toList();
   }
 
-  public static BatchOperationResponse toBatchOperation(final BatchOperationEntity entity) {
-    return new BatchOperationResponse()
-        .batchOperationKey(entity.batchOperationKey())
-        .state(BatchOperationStateEnum.fromValue(entity.state().name()))
-        .batchOperationType(BatchOperationTypeEnum.fromValue(entity.operationType().name()))
-        .startDate(formatDate(entity.startDate()))
-        .endDate(formatDate(entity.endDate()))
-        .actorType(
-            ofNullable(entity.actorType())
-                .map(Enum::name)
-                .map(AuditLogActorTypeEnum::fromValue)
-                .orElse(null))
-        .actorId(entity.actorId())
-        .operationsTotalCount(entity.operationsTotalCount())
-        .operationsFailedCount(entity.operationsFailedCount())
-        .operationsCompletedCount(entity.operationsCompletedCount())
-        .errors(
-            ofNullable(entity.errors())
-                .map(
-                    errors ->
-                        errors.stream()
-                            .map(SearchQueryResponseMapper::toBatchOperationError)
-                            .toList())
-                .orElseGet(Collections::emptyList));
+  public static GeneratedBatchOperationResponseStrictContract toBatchOperation(
+      final BatchOperationEntity entity) {
+    return BatchOperationResponseContractAdapter.adapt(entity);
   }
 
-  public static BatchOperationItemSearchQueryResult toBatchOperationItemSearchQueryResult(
-      final List<BatchOperationItemEntity> batchOperations) {
-    return new BatchOperationItemSearchQueryResult()
-        .items(
-            batchOperations.stream().map(SearchQueryResponseMapper::toBatchOperationItem).toList());
+  public static StrictSearchQueryResult<GeneratedBatchOperationItemResponseStrictContract>
+      toBatchOperationItemSearchQueryResult(final List<BatchOperationItemEntity> batchOperations) {
+    return new StrictSearchQueryResult<>(
+        batchOperations.stream().map(SearchQueryResponseMapper::toBatchOperationItem).toList(),
+        null);
   }
 
-  public static List<BatchOperationItemResponse> toBatchOperationItems(
+  public static List<GeneratedBatchOperationItemResponseStrictContract> toBatchOperationItems(
       final List<BatchOperationItemEntity> batchOperationItems) {
     return batchOperationItems.stream()
         .map(SearchQueryResponseMapper::toBatchOperationItem)
         .toList();
   }
 
-  public static BatchOperationItemResponse toBatchOperationItem(
+  public static GeneratedBatchOperationItemResponseStrictContract toBatchOperationItem(
       final BatchOperationItemEntity entity) {
-    return new BatchOperationItemResponse()
-        .batchOperationKey(entity.batchOperationKey())
-        .operationType(
-            entity.operationType() != null
-                ? BatchOperationTypeEnum.fromValue(entity.operationType().name())
-                : null)
-        .itemKey(
-            warnIfNull(entity, BatchOperationItemEntity::itemKey, "itemKey")
-                .map(Object::toString)
-                .orElse(null))
-        .processInstanceKey(
-            warnIfNull(entity, BatchOperationItemEntity::processInstanceKey, "processInstanceKey")
-                .map(Object::toString)
-                .orElse(null))
-        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
-        .processedDate(formatDate(entity.processedDate()))
-        .errorMessage(entity.errorMessage())
-        .state(
-            warnIfNull(entity, BatchOperationItemEntity::state, "state")
-                .map(Enum::name)
-                .map(BatchOperationItemResponse.StateEnum::fromValue)
-                .orElse(null));
-  }
-
-  private static BatchOperationError toBatchOperationError(
-      final BatchOperationErrorEntity batchOperationErrorEntity) {
-    return new BatchOperationError()
-        .partitionId(batchOperationErrorEntity.partitionId())
-        .type(TypeEnum.fromValue(batchOperationErrorEntity.type()))
-        .message(batchOperationErrorEntity.message());
+    return BatchOperationItemResponseContractAdapter.adapt(entity);
   }
 
   private static List<RoleResult> toRoles(final List<RoleEntity> roles) {
@@ -1155,231 +1088,58 @@ public final class SearchQueryResponseMapper {
         .collect(toMap(e -> e.getKey().getValue(), Map.Entry::getValue, (v1, v2) -> v1));
   }
 
-  private static List<DecisionInstanceResult> toDecisionInstances(
+  private static List<GeneratedDecisionInstanceStrictContract> toDecisionInstances(
       final List<DecisionInstanceEntity> instances) {
-    return instances.stream().map(SearchQueryResponseMapper::toDecisionInstance).toList();
+    return DecisionInstanceContractAdapter.toSearchProjections(instances);
   }
 
-  public static DecisionInstanceResult toDecisionInstance(final DecisionInstanceEntity entity) {
-    return new DecisionInstanceResult()
-        .decisionEvaluationKey(KeyUtil.keyToString(entity.decisionInstanceKey()))
-        .decisionEvaluationInstanceKey(entity.decisionInstanceId())
-        .state(toDecisionInstanceStateEnum(entity.state()))
-        .evaluationDate(formatDate(entity.evaluationDate()))
-        .evaluationFailure(entity.evaluationFailure())
-        .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
-        .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
-        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
-        .elementInstanceKey(KeyUtil.keyToString(entity.flowNodeInstanceKey()))
-        .decisionDefinitionKey(KeyUtil.keyToString(entity.decisionDefinitionKey()))
-        .decisionDefinitionId(entity.decisionDefinitionId())
-        .decisionDefinitionName(entity.decisionDefinitionName())
-        .decisionDefinitionVersion(entity.decisionDefinitionVersion())
-        .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
-        .rootDecisionDefinitionKey(KeyUtil.keyToString(entity.rootDecisionDefinitionKey()))
-        .result(entity.result())
-        .tenantId(entity.tenantId());
+  public static GeneratedDecisionInstanceStrictContract toDecisionInstance(
+      final DecisionInstanceEntity entity) {
+    return DecisionInstanceContractAdapter.toSearchProjection(entity);
   }
 
   public static DecisionInstanceGetQueryResult toDecisionInstanceGetQueryResponse(
       final DecisionInstanceEntity entity) {
-    return new DecisionInstanceGetQueryResult()
-        .decisionEvaluationKey(KeyUtil.keyToString(entity.decisionInstanceKey()))
-        .decisionEvaluationInstanceKey(entity.decisionInstanceId())
-        .state(toDecisionInstanceStateEnum(entity.state()))
-        .evaluationDate(formatDate(entity.evaluationDate()))
-        .evaluationFailure(entity.evaluationFailure())
-        .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
-        .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
-        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
-        .elementInstanceKey(KeyUtil.keyToString(entity.flowNodeInstanceKey()))
-        .decisionDefinitionKey(KeyUtil.keyToString(entity.decisionDefinitionKey()))
-        .decisionDefinitionId(entity.decisionDefinitionId())
-        .decisionDefinitionName(entity.decisionDefinitionName())
-        .decisionDefinitionVersion(entity.decisionDefinitionVersion())
-        .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
-        .rootDecisionDefinitionKey(KeyUtil.keyToString(entity.rootDecisionDefinitionKey()))
-        .result(entity.result())
-        .evaluatedInputs(toEvaluatedInputs(entity.evaluatedInputs()))
-        .matchedRules(toMatchedRules(entity.evaluatedOutputs()))
-        .tenantId(entity.tenantId());
+    return DecisionInstanceContractAdapter.toGetProjection(entity);
   }
 
-  private static List<EvaluatedDecisionInputItem> toEvaluatedInputs(
-      final List<DecisionInstanceInputEntity> decisionInstanceInputEntities) {
-    if (decisionInstanceInputEntities == null) {
-      return null;
-    }
-    return decisionInstanceInputEntities.stream()
-        .map(
-            input ->
-                new EvaluatedDecisionInputItem()
-                    .inputId(input.inputId())
-                    .inputName(input.inputName())
-                    .inputValue(input.inputValue()))
-        .toList();
+  public static StrictSearchQueryResult<GeneratedVariableSearchStrictContract>
+      toVariableSearchQueryResponse(
+          final SearchQueryResult<VariableEntity> result, final boolean truncateValues) {
+    final var page = toStrictSearchQueryPage(result);
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(entities -> VariableContractAdapter.toSearchProjections(entities, truncateValues))
+            .orElseGet(Collections::emptyList),
+        page);
   }
 
-  private static List<MatchedDecisionRuleItem> toMatchedRules(
-      final List<DecisionInstanceOutputEntity> decisionInstanceOutputEntities) {
-    if (decisionInstanceOutputEntities == null) {
-      return null;
-    }
-    final var outputEntitiesMappedByRule =
-        decisionInstanceOutputEntities.stream()
-            .collect(Collectors.groupingBy(e -> new RuleIdentifier(e.ruleId(), e.ruleIndex())));
-    return outputEntitiesMappedByRule.entrySet().stream()
-        .map(
-            entry -> {
-              final var ruleIdentifier = entry.getKey();
-              final var outputs = entry.getValue();
-              return new MatchedDecisionRuleItem()
-                  .ruleId(ruleIdentifier.ruleId())
-                  .ruleIndex(ruleIdentifier.ruleIndex())
-                  .evaluatedOutputs(
-                      outputs.stream()
-                          .map(
-                              output ->
-                                  new EvaluatedDecisionOutputItem()
-                                      .outputId(output.outputId())
-                                      .outputName(output.outputName())
-                                      .outputValue(output.outputValue()))
-                          .toList());
-            })
-        .toList();
+  public static GeneratedVariableStrictContract toVariableItem(
+      final VariableEntity variableEntity) {
+    return VariableContractAdapter.toItemProjection(variableEntity);
   }
 
-  private static DecisionInstanceStateEnum toDecisionInstanceStateEnum(
-      final DecisionInstanceState state) {
-    if (state == null) {
-      return null;
-    }
-    return switch (state) {
-      case EVALUATED -> DecisionInstanceStateEnum.EVALUATED;
-      case FAILED -> DecisionInstanceStateEnum.FAILED;
-      case UNSPECIFIED -> DecisionInstanceStateEnum.UNSPECIFIED;
-      default -> DecisionInstanceStateEnum.UNKNOWN;
-    };
+  public static StrictSearchQueryResult<GeneratedClusterVariableSearchStrictContract>
+      toClusterVariableSearchQueryResponse(
+          final SearchQueryResult<ClusterVariableEntity> result, final boolean truncateValues) {
+    final var page = toStrictSearchQueryPage(result);
+    return new StrictSearchQueryResult<>(
+        ofNullable(result.items())
+            .map(
+                entities ->
+                    ClusterVariableContractAdapter.toSearchProjections(entities, truncateValues))
+            .orElseGet(Collections::emptyList),
+        page);
   }
 
-  private static DecisionDefinitionTypeEnum toDecisionDefinitionTypeEnum(
-      final DecisionDefinitionType decisionDefinitionType) {
-    if (decisionDefinitionType == null) {
-      return null;
-    }
-    return switch (decisionDefinitionType) {
-      case DECISION_TABLE -> DecisionDefinitionTypeEnum.DECISION_TABLE;
-      case LITERAL_EXPRESSION -> DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
-      case UNSPECIFIED -> DecisionDefinitionTypeEnum.UNSPECIFIED;
-      default -> DecisionDefinitionTypeEnum.UNKNOWN;
-    };
-  }
-
-  public static VariableSearchQueryResult toVariableSearchQueryResponse(
-      final SearchQueryResult<VariableEntity> result, final boolean truncateValues) {
-    final var page = toSearchQueryPageResponse(result);
-    return new VariableSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(entity -> toVariables(entity, truncateValues))
-                .orElseGet(Collections::emptyList));
-  }
-
-  private static List<VariableSearchResult> toVariables(
-      final List<VariableEntity> variableEntities, final boolean truncateValues) {
-    return variableEntities.stream().map(entity -> toVariable(entity, truncateValues)).toList();
-  }
-
-  private static VariableSearchResult toVariable(
-      final VariableEntity variableEntity, final boolean truncateValues) {
-    return new VariableSearchResult()
-        .variableKey(KeyUtil.keyToString(variableEntity.variableKey()))
-        .name(variableEntity.name())
-        .value(!truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value())
-        .processInstanceKey(KeyUtil.keyToString(variableEntity.processInstanceKey()))
-        .rootProcessInstanceKey(KeyUtil.keyToString(variableEntity.rootProcessInstanceKey()))
-        .tenantId(variableEntity.tenantId())
-        .isTruncated(truncateValues && variableEntity.isPreview())
-        .scopeKey(KeyUtil.keyToString(variableEntity.scopeKey()));
-  }
-
-  public static VariableResult toVariableItem(final VariableEntity variableEntity) {
-    return new VariableResult()
-        .variableKey(KeyUtil.keyToString(variableEntity.variableKey()))
-        .name(variableEntity.name())
-        .value(getFullValueIfPresent(variableEntity))
-        .processInstanceKey(KeyUtil.keyToString(variableEntity.processInstanceKey()))
-        .rootProcessInstanceKey(KeyUtil.keyToString(variableEntity.rootProcessInstanceKey()))
-        .tenantId(variableEntity.tenantId())
-        .scopeKey(KeyUtil.keyToString(variableEntity.scopeKey()));
-  }
-
-  private static String getFullValueIfPresent(final VariableEntity variableEntity) {
-    return variableEntity.isPreview() ? variableEntity.fullValue() : variableEntity.value();
-  }
-
-  public static ClusterVariableSearchQueryResult toClusterVariableSearchQueryResponse(
-      final SearchQueryResult<ClusterVariableEntity> result, final boolean truncateValues) {
-    final var page = toSearchQueryPageResponse(result);
-    return new ClusterVariableSearchQueryResult()
-        .page(page)
-        .items(
-            ofNullable(result.items())
-                .map(
-                    clusterVariableEntities ->
-                        toClusterVariablesSearchResult(clusterVariableEntities, truncateValues))
-                .orElseGet(Collections::emptyList));
-  }
-
-  private static List<ClusterVariableSearchResult> toClusterVariablesSearchResult(
-      final List<ClusterVariableEntity> clusterVariableEntities, final boolean truncateValues) {
-    return clusterVariableEntities.stream()
-        .map(
-            clusterVariableEntity ->
-                toClusterVariableSearchResult(clusterVariableEntity, truncateValues))
-        .toList();
-  }
-
-  public static ClusterVariableSearchResult toClusterVariableSearchResult(
+  public static GeneratedClusterVariableSearchStrictContract toClusterVariableSearchResult(
       final ClusterVariableEntity clusterVariableEntity, final boolean truncateValues) {
-    final var clusterVariableResult =
-        new ClusterVariableSearchResult()
-            .name(clusterVariableEntity.name())
-            .value(
-                !truncateValues
-                    ? getFullValueIfPresent(clusterVariableEntity)
-                    : clusterVariableEntity.value())
-            .isTruncated(truncateValues && clusterVariableEntity.isPreview());
-    return switch (clusterVariableEntity.scope()) {
-      case GLOBAL -> clusterVariableResult.scope(ClusterVariableScopeEnum.GLOBAL);
-      case TENANT ->
-          clusterVariableResult
-              .scope(ClusterVariableScopeEnum.TENANT)
-              .tenantId(clusterVariableEntity.tenantId());
-    };
+    return ClusterVariableContractAdapter.toSearchProjection(clusterVariableEntity, truncateValues);
   }
 
-  public static ClusterVariableResult toClusterVariableResult(
+  public static GeneratedClusterVariableStrictContract toClusterVariableResult(
       final ClusterVariableEntity clusterVariableEntity) {
-
-    final var clusterVariableResult =
-        new ClusterVariableResult()
-            .name(clusterVariableEntity.name())
-            .value(getFullValueIfPresent(clusterVariableEntity));
-    return switch (clusterVariableEntity.scope()) {
-      case GLOBAL -> clusterVariableResult.scope(ClusterVariableScopeEnum.GLOBAL);
-      case TENANT ->
-          clusterVariableResult
-              .scope(ClusterVariableScopeEnum.TENANT)
-              .tenantId(clusterVariableEntity.tenantId());
-    };
-  }
-
-  private static String getFullValueIfPresent(final ClusterVariableEntity clusterVariableEntity) {
-    return clusterVariableEntity.isPreview()
-        ? clusterVariableEntity.fullValue()
-        : clusterVariableEntity.value();
+    return ClusterVariableContractAdapter.toItemProjection(clusterVariableEntity);
   }
 
   public static AuthorizationSearchResult toAuthorizationSearchQueryResponse(
@@ -1498,22 +1258,17 @@ public final class SearchQueryResponseMapper {
     return ProcessInstanceStateEnum.fromValue(value.name());
   }
 
-  public static List<ProcessInstanceCallHierarchyEntry> toProcessInstanceCallHierarchyEntries(
-      final List<ProcessInstanceEntity> processInstanceEntities) {
+  public static List<GeneratedProcessInstanceCallHierarchyEntryStrictContract>
+      toProcessInstanceCallHierarchyEntries(
+          final List<ProcessInstanceEntity> processInstanceEntities) {
     return processInstanceEntities.stream()
         .map(SearchQueryResponseMapper::toProcessInstanceCallHierarchyEntry)
         .toList();
   }
 
-  public static ProcessInstanceCallHierarchyEntry toProcessInstanceCallHierarchyEntry(
-      final ProcessInstanceEntity processInstanceEntity) {
-    return new ProcessInstanceCallHierarchyEntry()
-        .processInstanceKey(KeyUtil.keyToString(processInstanceEntity.processInstanceKey()))
-        .processDefinitionKey(KeyUtil.keyToString(processInstanceEntity.processDefinitionKey()))
-        .processDefinitionName(
-            processInstanceEntity.processDefinitionName().isBlank()
-                ? processInstanceEntity.processDefinitionId()
-                : processInstanceEntity.processDefinitionName());
+  public static GeneratedProcessInstanceCallHierarchyEntryStrictContract
+      toProcessInstanceCallHierarchyEntry(final ProcessInstanceEntity processInstanceEntity) {
+    return ProcessInstanceCallHierarchyEntryContractAdapter.adapt(processInstanceEntity);
   }
 
   private static List<ProcessDefinitionMessageSubscriptionStatisticsResult>
@@ -1711,6 +1466,4 @@ public final class SearchQueryResponseMapper {
   private static String emptyToNull(final String value) {
     return value == null || value.isEmpty() ? null : value;
   }
-
-  private record RuleIdentifier(String ruleId, int ruleIndex) {}
 }
