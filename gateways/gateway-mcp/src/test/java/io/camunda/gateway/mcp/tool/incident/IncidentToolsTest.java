@@ -356,6 +356,53 @@ class IncidentToolsTest extends ToolsTest {
 
       assertTextContentFallback(result);
     }
+
+    @Test
+    void shouldFailSearchIncidentsOnInvalidKeyFilter() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchIncidents")
+                  .arguments(Map.of("filter", Map.of("processInstanceKey", "abc")))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNotNull();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getDetail())
+          .isEqualTo("Invalid value for key field: [abc] is not a valid number");
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+
+      assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldFailSearchIncidentsOnInvalidDateFilter() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchIncidents")
+                  .arguments(Map.of("filter", Map.of("creationTime", Map.of("from", "not-a-date"))))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNotNull();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getDetail()).contains("Failed to parse date-time: [not-a-date]");
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+
+      assertTextContentFallback(result);
+    }
   }
 
   @Nested

@@ -204,4 +204,28 @@ class AdvancedSearchFilterUtilTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Failed to parse date-time: [2023-11-11T10:10:10.1010+0100]");
   }
+
+  @Test
+  void shouldThrowExceptionWhenLongKeyInvalid() {
+    // given
+    final var filter = new BasicStringFilter();
+    filter.set$Eq("abc");
+
+    // when/then
+    assertThatThrownBy(() -> AdvancedSearchFilterUtil.mapToOperations(filter, Long.class))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Invalid value for key field: [abc] is not a valid number");
+  }
+
+  @Test
+  void shouldThrowExceptionWhenLongKeyEmpty() {
+    // given
+    final var filter = new BasicStringFilter();
+    filter.set$Eq("");
+
+    // when/then
+    assertThatThrownBy(() -> AdvancedSearchFilterUtil.mapToOperations(filter, Long.class))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Invalid value for key field: [] is not a valid number");
+  }
 }

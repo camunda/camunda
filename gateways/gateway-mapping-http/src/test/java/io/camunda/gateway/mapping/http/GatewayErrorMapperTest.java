@@ -225,6 +225,55 @@ public class GatewayErrorMapperTest {
     assertThat(problemDetail.getTitle()).isEqualTo(INVALID_ARGUMENT.name());
   }
 
+  @Test
+  void shouldMapIllegalArgumentExceptionDirectly() {
+    // given
+    final Throwable error =
+        new IllegalArgumentException("Invalid value for key field: [abc] is not a valid number");
+
+    // when
+    final ProblemDetail problemDetail = GatewayErrorMapper.mapErrorToProblem(error);
+
+    // then
+    assertThat(problemDetail).isNotNull();
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    assertThat(problemDetail.getDetail())
+        .isEqualTo("Invalid value for key field: [abc] is not a valid number");
+    assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+  }
+
+  @Test
+  void shouldMapNumberFormatExceptionDirectly() {
+    // given
+    final Throwable error = new NumberFormatException("For input string: \"not-a-number\"");
+
+    // when
+    final ProblemDetail problemDetail = GatewayErrorMapper.mapErrorToProblem(error);
+
+    // then
+    assertThat(problemDetail).isNotNull();
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    assertThat(problemDetail.getDetail()).isEqualTo("For input string: \"not-a-number\"");
+    assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+  }
+
+  @Test
+  void shouldMapWrappedIllegalArgumentException() {
+    // given
+    final Throwable error =
+        new CompletionException(
+            new IllegalArgumentException("Failed to parse date-time: [not-a-date]"));
+
+    // when
+    final ProblemDetail problemDetail = GatewayErrorMapper.mapErrorToProblem(error);
+
+    // then
+    assertThat(problemDetail).isNotNull();
+    assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    assertThat(problemDetail.getDetail()).isEqualTo("Failed to parse date-time: [not-a-date]");
+    assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+  }
+
   // Sample custom ServiceException for testing
   public static class TestServiceException extends ServiceException {
     public TestServiceException(final String message, final Status status) {

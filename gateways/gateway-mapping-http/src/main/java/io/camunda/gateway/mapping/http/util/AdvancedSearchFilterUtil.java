@@ -56,7 +56,12 @@ public class AdvancedSearchFilterUtil {
         throw new IllegalArgumentException("Failed to parse date-time: [%s]".formatted(value), e);
       }
     } else if (tClass == Long.class && value instanceof String) {
-      return (T) Long.valueOf((String) value);
+      try {
+        return (T) Long.valueOf((String) value);
+      } catch (final NumberFormatException e) {
+        throw new IllegalArgumentException(
+            "Invalid value for key field: [%s] is not a valid number".formatted(value), e);
+      }
     }
 
     throw new IllegalArgumentException(
