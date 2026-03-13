@@ -24,9 +24,9 @@ env-h2-up:
 	CAMUNDA_DATABASE_URL=jdbc:h2:mem:camunda \
 	CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=rdbms \
 	ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME=io.camunda.exporter.rdbms.RdbmsExporter \
-	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
-	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
-	  -Dspring.profiles.active=tasklist,broker,dev,dev-data,admin,consolidated-auth
+	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml spring-boot:run \
+	  -Dspring-boot.run.mainClass="io.camunda.application.StandaloneCamunda" \
+	  -Dspring-boot.run.profiles=tasklist,broker,dev,dev-data,admin,consolidated-auth
 
 .PHONY: env-up
 env-up: $(DATABASE) setup-maven-context
@@ -184,6 +184,6 @@ define run-env
 	@DATABASE=$(DATABASE) docker compose -f $(COMPOSE_FILE) up -d $(SERVICES)
 	@../mvnw clean install -B -T1C -DskipTests=true -DskipChecks -Dskip.fe.build=false -DskipQaBuild
 	@set -o allexport && source $(MAVEN_CONTEXT) && set +o allexport && rm -rf $(MAVEN_CONTEXT) && \
-        ../mvnw -f ../dist/pom.xml exec:java -Dexec.mainClass="$(MAIN_CLASS)" -Dspring.profiles.active=$(SPRING_PROFILES_ACTIVE)
+        ../mvnw -f ../dist/pom.xml spring-boot:run -Dspring-boot.run.mainClass="$(MAIN_CLASS)" -Dspring-boot.run.profiles=$(SPRING_PROFILES_ACTIVE)
 endef
 

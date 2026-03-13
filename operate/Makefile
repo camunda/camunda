@@ -14,9 +14,9 @@ env-h2-up:
 	CAMUNDA_DATABASE_URL=jdbc:h2:mem:camunda \
 	CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=rdbms \
 	ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME=io.camunda.exporter.rdbms.RdbmsExporter \
-	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
-	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
-	  -Dspring.profiles.active=operate,broker,dev,dev-data,admin,consolidated-auth
+	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml spring-boot:run \
+	  -Dspring-boot.run.mainClass="io.camunda.application.StandaloneCamunda" \
+	  -Dspring-boot.run.profiles=operate,broker,dev,dev-data,admin,consolidated-auth
 
 .PHONY: env-up
 env-up:
@@ -43,9 +43,9 @@ env-up:
 	CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://localhost:9200 \
 	CAMUNDA_DATABASE_URL=http://localhost:9200 \
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false \
-	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
-	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
-	  -Dspring.profiles.active=operate,broker,dev,dev-data,consolidated-auth
+	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml spring-boot:run \
+	  -Dspring-boot.run.mainClass="io.camunda.application.StandaloneCamunda" \
+	  -Dspring-boot.run.profiles=operate,broker,dev,dev-data,consolidated-auth
 
 env-os-up:
 	docker compose -f docker-compose.yml up -d opensearch zeebe-opensearch \
@@ -64,7 +64,8 @@ env-os-up:
       CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo \
       CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=true \
       CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false \
-         mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,auth -Dcamunda.operate.zeebe.compatibility.enabled=true
+      CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED=true \
+         mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml spring-boot:run -Dspring-boot.run.mainClass="io.camunda.application.StandaloneOperate" -Dspring-boot.run.profiles=dev,dev-data,auth
 
 # Look up for users (bender/bender etc) in: https://github.com/rroemhild/docker-test-openldap
 .PHONY: env-ldap-up
@@ -77,7 +78,8 @@ env-ldap-up:
        CAMUNDA_OPERATE_LDAP_MANAGERDN=cn=admin,dc=planetexpress,dc=com \
        CAMUNDA_OPERATE_LDAP_MANAGERPASSWORD=GoodNewsEveryone \
        CAMUNDA_OPERATE_LDAP_USERSEARCHFILTER=uid={0} \
-	   mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,ldap-auth -Dcamunda.operate.zeebe.compatibility.enabled=true
+       CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED=true \
+	   mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml spring-boot:run -Dspring-boot.run.mainClass="io.camunda.application.StandaloneOperate" -Dspring-boot.run.profiles=dev,dev-data,ldap-auth
 
 # Set the env var CAMUNDA_OPERATE_AUTH0_CLIENTSECRET in your shell please, eg: export CAMUNDA_OPERATE_AUTH0_CLIENTSECRET=<client-secret>
 .PHONY: env-sso-up
@@ -94,7 +96,8 @@ env-sso-up:
        CAMUNDA_OPERATE_AUTH0_ORGANIZATION=6ff582aa-a62e-4a28-aac7-4d2224d8c58a \
        CAMUNDA_OPERATE_AUTH0_ORGANIZATIONSKEY=https://camunda.com/orgs \
        CAMUNDA_OPERATE_CLOUD_CONSOLE_URL=https://console.cloud.ultrawombat.com/ \
-	   mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,sso-auth -Dcamunda.operate.zeebe.compatibility.enabled=true
+       CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED=true \
+	   mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml spring-boot:run -Dspring-boot.run.mainClass="io.camunda.application.StandaloneOperate" -Dspring-boot.run.profiles=dev,dev-data,sso-auth
 
 .PHONY: env-identity-up
 env-identity-up:
@@ -124,9 +127,9 @@ env-identity-up:
   CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo \
   CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=true \
   CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false \
-	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
-	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
-	  -Dspring.profiles.active=operate,broker,dev,dev-data,consolidated-auth,admin
+	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml spring-boot:run \
+	  -Dspring-boot.run.mainClass="io.camunda.application.StandaloneCamunda" \
+	  -Dspring-boot.run.profiles=operate,broker,dev,dev-data,consolidated-auth,admin
 
 
 .PHONY: env-down
@@ -180,6 +183,6 @@ start-e2e:
   CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false \
 	SERVER_PORT=8081 \
 	MANAGEMENT_SERVER_PORT=9601 \
-	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
-	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
-	  -Dspring.profiles.active=operate,broker,consolidated-auth
+	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml spring-boot:run \
+	  -Dspring-boot.run.mainClass="io.camunda.application.StandaloneCamunda" \
+	  -Dspring-boot.run.profiles=operate,broker,consolidated-auth
