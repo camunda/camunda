@@ -22,16 +22,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.process.test.api.testCases.TestCase;
+import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.api.testCases.TestCases;
+import io.camunda.process.test.api.testCases.instructions.AssertVariableJudgeInstruction;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class DeserializationTest {
 
   private static final String EMPTY_TEST_CASES = "/empty-test-cases.json";
   private static final String EXAMPLE_TEST_CASES = "/example-test-cases.json";
+  private static final String JUDGE_TEST_CASES = "/judge-test-cases.json";
 
   private final ObjectMapper objectMapper =
       new ObjectMapper()
@@ -80,5 +84,61 @@ public class DeserializationTest {
             testCaseInstructions ->
                 assertThat(testCaseInstructions.get(0))
                     .isInstanceOf(CreateProcessInstanceInstruction.class));
+  }
+
+  @Test
+  void shouldParseJudgeAssertionWithRequiredFieldsOnly() throws IOException {
+    // given
+    final InputStream json = getClass().getResourceAsStream(JUDGE_TEST_CASES);
+
+    // when
+    final TestCases testCases = objectMapper.readValue(json, TestCases.class);
+
+    // then
+    assertThat(testCases).isNotNull();
+    assertThat(testCases.getTestCases()).hasSize(2);
+
+    final TestCase testCase = testCases.getTestCases().get(0);
+    assertThat(testCase.getName()).isEqualTo("Judge assertion - global variable");
+
+    final List<TestCaseInstruction> instructions = testCase.getInstructions();
+    assertThat(instructions).hasSize(1);
+    assertThat(instructions.get(0)).isInstanceOf(AssertVariableJudgeInstruction.class);
+
+    final AssertVariableJudgeInstruction judgeInstruction =
+        (AssertVariableJudgeInstruction) instructions.get(0);
+    assertThat(judgeInstruction.getVariableName()).isEqualTo("agentResponse");
+    assertThat(judgeInstruction.getExpectation())
+        .isEqualTo("should contain a valid summary of the financial report");
+    assertThat(judgeInstruction.getElementSelector()).isEmpty();
+    assertThat(judgeInstruction.getThreshold()).isEmpty();
+    assertThat(judgeInstruction.getCustomPrompt()).isEmpty();
+  }
+
+  @Test
+  void shouldParseJudgeAssertionWithAllFields() throws IOException {
+    // given
+    final InputStream json = getClass().getResourceAsStream(JUDGE_TEST_CASES);
+
+    // when
+    final TestCases testCases = objectMapper.readValue(json, TestCases.class);
+
+    // then
+    final TestCase testCase = testCases.getTestCases().get(1);
+    assertThat(testCase.getName()).isEqualTo("Judge assertion - local variable with overrides");
+
+    final List<TestCaseInstruction> instructions = testCase.getInstructions();
+    assertThat(instructions).hasSize(1);
+
+    final AssertVariableJudgeInstruction judgeInstruction =
+        (AssertVariableJudgeInstruction) instructions.get(0);
+    assertThat(judgeInstruction.getVariableName()).isEqualTo("localResult");
+    assertThat(judgeInstruction.getExpectation())
+        .isEqualTo("should be a properly formatted JSON response");
+    assertThat(judgeInstruction.getElementSelector()).isPresent();
+    assertThat(judgeInstruction.getElementSelector().get().getElementId())
+        .hasValue("ai-subprocess");
+    assertThat(judgeInstruction.getThreshold()).hasValue(0.8);
+    assertThat(judgeInstruction.getCustomPrompt()).hasValue("You are evaluating data accuracy");
   }
 }
