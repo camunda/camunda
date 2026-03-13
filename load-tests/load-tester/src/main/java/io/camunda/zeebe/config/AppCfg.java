@@ -18,6 +18,7 @@ public class AppCfg {
   private StarterCfg starter;
   private WorkerCfg worker;
   private AuthCfg auth;
+  private BatchModificationCfg batchModification;
   private boolean monitorDataAvailability = true;
   private Duration monitorDataAvailabilityInterval = Duration.ofMillis(250);
   private boolean performReadBenchmarks = false;
@@ -100,5 +101,13 @@ public class AppCfg {
 
   public void setPerformReadBenchmarks(final boolean performReadBenchmarks) {
     this.performReadBenchmarks = performReadBenchmarks;
+  }
+
+  public BatchModificationCfg getBatchModification() {
+    return batchModification;
+  }
+
+  public void setBatchModification(final BatchModificationCfg batchModification) {
+    this.batchModification = batchModification;
   }
 }

@@ -51,6 +51,13 @@ public class ConfigTest {
     assertThat(starterCfg.getMsgName()).isEqualTo("msg");
     assertThat(starterCfg.isStartViaMessage()).isFalse();
 
+    // batch modification
+    final var batchModCfg = appCfg.getBatchModification();
+    assertThat(batchModCfg).isNotNull();
+    assertThat(batchModCfg.getInstanceCount()).isEqualTo(50000);
+    assertThat(batchModCfg.getSourceElement()).isEqualTo("userTaskA");
+    assertThat(batchModCfg.getTargetElement()).isEqualTo("userTaskB");
+
     // worker
     final var workerCfg = appCfg.getWorker();
     assertThat(workerCfg).isNotNull();
@@ -118,6 +125,13 @@ public class ConfigTest {
     assertThat(starterCfg.getDurationLimit()).isZero();
     assertThat(starterCfg.getMsgName()).isEqualTo("msg");
     assertThat(starterCfg.isStartViaMessage()).isFalse();
+
+    // batch modification
+    final var batchModCfg2 = appCfg.getBatchModification();
+    assertThat(batchModCfg2).isNotNull();
+    assertThat(batchModCfg2.getInstanceCount()).isEqualTo(50000);
+    assertThat(batchModCfg2.getSourceElement()).isEqualTo("userTaskA");
+    assertThat(batchModCfg2.getTargetElement()).isEqualTo("userTaskB");
 
     // worker
     final var workerCfg = appCfg.getWorker();
