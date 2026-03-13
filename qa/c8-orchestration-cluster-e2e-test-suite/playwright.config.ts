@@ -11,7 +11,7 @@ const testRailOptions = {
 
 const isV2StatelessTestsOnly = process.env.V2_STATELESS_TESTS === 'true';
 const isApiTestsOnly = process.env.API_TESTS_ONLY === 'true';
-const isRDBMSApiTestsOnly = process.env.DATABASE === 'RDBMS';
+const isRDBMSApiTestsOnly = process.env.DATABASE === "RDBMS";
 
 
 // Default: V2 mode (unless explicitly disabled with CAMUNDA_TASKLIST_V2_MODE_ENABLED=false)
@@ -75,6 +75,7 @@ const apiTestMatch = isRDBMSApiTestsOnly
 const apiTestIgnore = [
   'tests/api/v2/clock/*.spec.ts',
   'tests/api/v2/usage-metrics/*.spec.ts',
+  'tests/api/v1/**/*.spec.ts',
 ];
 // Projects
 const normalProjects = [

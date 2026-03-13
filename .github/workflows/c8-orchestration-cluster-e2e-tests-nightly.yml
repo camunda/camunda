@@ -551,7 +551,7 @@ jobs:
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
           DATABASE: "RDBMS"
-        run: npm run test -- --project=api-tests
+        run: DATABASE=RDBMS npm run test -- --project=api-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Stop Camunda
