@@ -165,7 +165,8 @@ orchestration:
         # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
         zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
         # AUDIT LOG CONFIG
-        camunda.data.audit-log.enabled: false
+        camunda.data.audit-log.enabled: true
+        camunda.data.audit-log.unknown.categories[0]: "USER_TASKS"
 
   # Zeebe config
   extraVolumes:
