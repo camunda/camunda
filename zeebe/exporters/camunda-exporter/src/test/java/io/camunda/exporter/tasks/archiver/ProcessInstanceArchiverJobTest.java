@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
@@ -213,6 +214,30 @@ final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAb
         List.of(
             new ProcessInstanceArchiveBatch("2024-01-01", List.of(1L, 2L, 3L), List.of()),
             new ProcessInstanceArchiveBatch("2024-01-01", List.of(2L, 3L, 4L), List.of()));
+
+    // when
+    final var count =
+        getArchiverJob().execute().toCompletableFuture().join()
+            + getArchiverJob().execute().toCompletableFuture().join();
+
+    // then
+    assertThat(count).isEqualTo(4);
+    assertArchivingCounts(4);
+    assertThat(getMeterRegistry().counter(getJobMetricName(), "state", "deduplicated").count())
+        .isEqualTo(2);
+    assertArchiverTimer(2); // job executed twice
+
+    verify(repository, times(2)).getProcessInstancesNextBatch(100);
+  }
+
+  @Test
+  void shouldOverRequestProcessInstanceBatchWhenEnabled() {
+    // given - two batches of 3 with 2 IDs overlapping
+    repository.batches =
+        List.of(
+            new ProcessInstanceArchiveBatch("2024-01-01", List.of(1L, 2L, 3L), List.of()),
+            new ProcessInstanceArchiveBatch("2024-01-01", List.of(2L, 3L, 4L), List.of()));
+    historyConfiguration.setRolloverBatchSizeOverRequest(100);
 
     // when
     final var count =

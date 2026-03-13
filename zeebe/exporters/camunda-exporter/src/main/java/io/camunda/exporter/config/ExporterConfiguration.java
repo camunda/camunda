@@ -227,6 +227,7 @@ public class ExporterConfiguration {
     private String rolloverInterval = "1d";
     private String usageMetricsRolloverInterval = "1M";
     private int rolloverBatchSize = 100;
+    private int rolloverBatchSizeOverRequest = 0;
     private String waitPeriodBeforeArchiving = "1h";
     private int delayBetweenRuns = 2000;
     private int maxDelayBetweenRuns = 60000;
@@ -275,6 +276,14 @@ public class ExporterConfiguration {
 
     public void setRolloverBatchSize(final int rolloverBatchSize) {
       this.rolloverBatchSize = rolloverBatchSize;
+    }
+
+    public int getRolloverBatchSizeOverRequest() {
+      return rolloverBatchSizeOverRequest;
+    }
+
+    public void setRolloverBatchSizeOverRequest(final int rolloverBatchSizeOverRequest) {
+      this.rolloverBatchSizeOverRequest = rolloverBatchSizeOverRequest;
     }
 
     public RetentionConfiguration getRetention() {
