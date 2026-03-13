@@ -407,7 +407,6 @@ components:
         - creationTime
         - state
         - errorType
-        - errorMessage
         - elementId
         - processDefinitionId
         - rootProcessInstanceKey

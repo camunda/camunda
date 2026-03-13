@@ -216,54 +216,6 @@ test.describe('Element Instance Incident Search API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  //Skipped due to bug 46661: https://github.com/camunda/camunda/issues/46661
-  test.skip('Search for incidents of a specific element instance - ascending order by errorMessage - Success', async ({
-    request,
-  }) => {
-    const errorMessage1 =
-      "Assertion failure on evaluate the expression '{meow:assert(foo, foo != null)}': The condition is not fulfilled The evaluation reported the following warnings:\n[NO_VARIABLE_FOUND] No variable found with name 'foo'\n[NO_VARIABLE_FOUND] No variable found with name 'foo'\n[ASSERT_FAILURE] The condition is not fulfilled";
-    const errorMessage2 = 'Simulated failure';
-    await expect(async () => {
-      const res = await request.post(
-        buildUrl(
-          `/element-instances/${state.elementInstanceKey}/incidents/search`,
-        ),
-        {
-          headers: jsonHeaders(),
-          data: {
-            sort: [
-              {
-                field: 'errorMessage',
-                order: 'ASC',
-              },
-            ],
-            filter: {
-              processDefinitionKey: state.processDefinitionKeyCalled,
-            },
-          },
-        },
-      );
-      await assertStatusCode(res, 200);
-      await validateResponse(
-        {
-          path: `/element-instances/{elementInstanceKey}/incidents/search`,
-          method: 'POST',
-          status: '200',
-        },
-        res,
-      );
-      const body = await res.json();
-      expect(body.page.totalItems).toEqual(2);
-      expect(body.items[0].errorMessage).toEqual(errorMessage2);
-      expect(body.items[1].errorMessage).toEqual(errorMessage1);
-      body.items.forEach((item: Record<string, string>) => {
-        expect(item.processDefinitionKey).toEqual(
-          state.processDefinitionKeyCalled,
-        );
-      });
-    }).toPass(defaultAssertionOptions);
-  });
-
   test('Search for incidents of a specific element instance - Empty Result - Success', async ({
     request,
   }) => {
