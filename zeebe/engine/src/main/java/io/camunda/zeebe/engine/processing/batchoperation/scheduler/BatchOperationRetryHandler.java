@@ -10,8 +10,10 @@ package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.BatchOperationInitializationException;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.BatchOperationInitializationResult;
-import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.Failed;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.NeedsRetry;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.Success;
 import java.time.Duration;
 import java.util.Set;
 
@@ -52,36 +54,35 @@ public class BatchOperationRetryHandler {
   /**
    * Executes a retryable operation with retry logic.
    *
-   * <p>This method will attempt to execute the provided operation, handling retries according to
-   * the configured parameters. If the operation fails with a recoverable exception, it will return
-   * a {@link RetryResult.Retry} indicating the next delay and updated context. If the operation
-   * fails irrecoverably or exceeds the maximum number of retries, it will return a {@link
-   * RetryResult.Failure}.
+   * <p>This method will execute the provided operation and evaluate its outcome. If the operation
+   * returns a {@link NeedsRetry} outcome with a recoverable failure, it will return a {@link
+   * RetryResult.Retry} indicating the next delay. If the operation fails irrecoverably or exceeds
+   * the maximum number of retries, it will return a {@link RetryResult.Failure}.
    *
    * @param operation the operation to execute
    * @param numAttempts the current number of attempts made to execute the operation
    * @return the result of the retry operation
    */
   public RetryResult executeWithRetry(final RetryableOperation operation, final int numAttempts) {
-    try {
-      final var result = operation.execute();
-      return RetryResult.success(result.searchResultCursor());
-    } catch (final BatchOperationInitializationException e) {
-      if (shouldFailImmediately(e) || numAttempts >= maxRetries) {
-        return RetryResult.failure(e);
+    final var outcome = operation.execute();
+    return switch (outcome) {
+      case Success(final var cursor) -> RetryResult.success(cursor);
+      case Failed(final var message, final var errorType, final var cursor) ->
+          RetryResult.failure(
+              new BatchOperationInitializationException(message, errorType, cursor));
+      case NeedsRetry(final var cursor, final var cause) -> {
+        if (shouldFailImmediately(cause) || numAttempts >= maxRetries) {
+          yield RetryResult.failure(new BatchOperationInitializationException(cause, cursor));
+        }
+        final Duration nextDelay = calculateNextDelay(numAttempts);
+        yield RetryResult.retry(nextDelay, numAttempts + 1, cursor);
       }
-      final Duration nextDelay = calculateNextDelay(numAttempts);
-      return RetryResult.retry(nextDelay, numAttempts + 1, e.getEndCursor());
-    }
+    };
   }
 
-  private boolean shouldFailImmediately(final BatchOperationInitializationException exception) {
-    if (BatchOperationErrorType.RESULT_BUFFER_SIZE_EXCEEDED.equals(exception.getErrorType())) {
-      return true;
-    }
-    return exception.getCause() instanceof CamundaSearchException
-        && FAIL_IMMEDIATELY_REASONS.contains(
-            ((CamundaSearchException) exception.getCause()).getReason());
+  private boolean shouldFailImmediately(final Throwable cause) {
+    return cause instanceof final CamundaSearchException searchException
+        && FAIL_IMMEDIATELY_REASONS.contains(searchException.getReason());
   }
 
   private Duration calculateNextDelay(final int attemptNumber) {
@@ -124,11 +125,11 @@ public class BatchOperationRetryHandler {
   /**
    * Represents a retryable operation that can be executed with retry logic.
    *
-   * <p>This functional interface allows defining operations that may require retries due to
-   * transient failures or other conditions.
+   * <p>This functional interface allows defining operations that return an {@link
+   * InitializationOutcome} indicating success, need for retry, or terminal failure.
    */
   @FunctionalInterface
   public interface RetryableOperation {
-    BatchOperationInitializationResult execute() throws BatchOperationInitializationException;
+    InitializationOutcome execute();
   }
 }

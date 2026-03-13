@@ -9,11 +9,15 @@ package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 
 import com.google.common.base.Strings;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.PageProcessingResult.BufferFull;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.PageProcessingResult.Continue;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.PageProcessingResult.FetchFailed;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender.PageProcessingResult.Finished;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.Failed;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.NeedsRetry;
+import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior.InitializationOutcome.Success;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -32,9 +36,8 @@ import org.slf4j.LoggerFactory;
  *   <li>Recording metrics for batch operation performance
  * </ul/>
  *
- * <p>The initialization process creates an {@link
- * io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider} once per batch
- * operation via {@link ItemProviderFactory}, then fetches and processes items in pages via {@link
+ * <p>The initialization process creates an {@link ItemProvider} once per batch operation via {@link
+ * ItemProviderFactory}, then fetches and processes items in pages via {@link
  * BatchOperationChunkAppender}, and builds commands through {@link BatchOperationCommandAppender}.
  * If chunk appending fails, it attempts to reduce the page size and retry, or marks the operation
  * as failed if the minimum page size is reached.
@@ -80,22 +83,20 @@ public class BatchOperationInitializationBehavior {
    *   <li>Handling chunk appending failures with retries and page size reduction
    *   <li>Transitioning to the execution phase once initialization is complete
    *   <li>Recording metrics for the operation
-   *   <li>Returning a result containing the batch operation key and search result cursor
    * </ul>
    *
-   * This method is designed to be resilient against failures during the initialization phase,
-   * allowing for retries and adjustments to the page size if necessary.
+   * <p>This method returns an {@link InitializationOutcome} indicating success, need for retry, or
+   * terminal failure. It does not throw exceptions for control flow.
    *
    * @param batchOperation the batch operation to initialize
    * @param taskResultBuilder the builder to append task results
-   * @return a result containing the batch operation key and search result cursor
+   * @return the outcome of the initialization attempt
    */
-  public BatchOperationInitializationResult initializeBatchOperation(
+  public InitializationOutcome initializeBatchOperation(
       final PersistedBatchOperation batchOperation, final TaskResultBuilder taskResultBuilder) {
     if (batchOperation.isSuspended()) {
       LOG.trace("Batch operation {} is suspended.", batchOperation.getKey());
-      return new BatchOperationInitializationResult(
-          batchOperation.getKey(), batchOperation.getInitializationSearchCursor());
+      return new Success(batchOperation.getInitializationSearchCursor());
     }
 
     final var itemProvider = itemProviderFactory.fromBatchOperation(batchOperation);
@@ -108,16 +109,11 @@ public class BatchOperationInitializationBehavior {
     }
 
     return switch (result) {
-      case Continue(final var endCursor, final int ignored) ->
-          throw new BatchOperationInitializationException(
-              "Unexpected Continue result after loop exit",
-              BatchOperationErrorType.UNKNOWN,
-              endCursor);
       case Finished(final var endCursor, final int itemsProcessed) -> {
         context = context.withNextPage(endCursor, itemsProcessed);
         finishInitialization(batchOperation, taskResultBuilder);
         startExecutionPhase(taskResultBuilder, context);
-        yield new BatchOperationInitializationResult(batchOperation.getKey(), "finished");
+        yield new Success("finished");
       }
       case BufferFull(final int itemCount) ->
           handleFailedChunkAppend(taskResultBuilder, context, itemCount);
@@ -125,12 +121,17 @@ public class BatchOperationInitializationBehavior {
         if (context.hasAppendedChunks()) {
           continueInitialization(taskResultBuilder, context);
         }
-        throw new BatchOperationInitializationException(cause, context.currentCursor());
+        yield new NeedsRetry(context.currentCursor(), cause);
       }
+      default ->
+          new InitializationOutcome.Failed(
+              "Unexpected InitializationOutcome result: " + result.getClass().getSimpleName(),
+              BatchOperationErrorType.UNKNOWN,
+              context.currentCursor());
     };
   }
 
-  private BatchOperationInitializationResult handleFailedChunkAppend(
+  private InitializationOutcome handleFailedChunkAppend(
       final TaskResultBuilder taskResultBuilder,
       final InitializationContext context,
       final int itemCount) {
@@ -138,17 +139,17 @@ public class BatchOperationInitializationBehavior {
       if (context.pageSize() > 1) {
         final var reducedContext = context.withHalvedPageSize();
         continueInitialization(taskResultBuilder, reducedContext);
+        return new Success(Strings.nullToEmpty(reducedContext.currentCursor()));
       } else {
-        throw new BatchOperationInitializationException(
+        return new Failed(
             String.format(ERROR_MSG_FAILED_FIRST_CHUNK_APPEND, itemCount),
             BatchOperationErrorType.RESULT_BUFFER_SIZE_EXCEEDED,
             context.currentCursor());
       }
     } else {
       continueInitialization(taskResultBuilder, context);
+      return new Success(Strings.nullToEmpty(context.currentCursor()));
     }
-    return new BatchOperationInitializationResult(
-        context.operation().getKey(), Strings.nullToEmpty(context.currentCursor()));
   }
 
   private void startExecutionPhase(
@@ -219,5 +220,28 @@ public class BatchOperationInitializationBehavior {
     public String getEndCursor() {
       return endCursor;
     }
+  }
+
+  /**
+   * Represents the outcome of a batch operation initialization attempt.
+   *
+   * <p>This sealed interface provides explicit outcomes without using exceptions for control flow:
+   *
+   * <ul>
+   *   <li>{@link Success} - initialization completed successfully or made progress
+   *   <li>{@link NeedsRetry} - a transient failure occurred, retry is possible
+   *   <li>{@link Failed} - a terminal failure occurred, no retry possible
+   * </ul>
+   */
+  public sealed interface InitializationOutcome {
+    /** Initialization succeeded or made progress. Contains the cursor for the next page. */
+    record Success(String cursor) implements InitializationOutcome {}
+
+    /** A transient failure occurred. Contains the cursor to resume from and the cause. */
+    record NeedsRetry(String cursor, Throwable cause) implements InitializationOutcome {}
+
+    /** A terminal failure occurred. Contains the error message and type. */
+    record Failed(String message, BatchOperationErrorType errorType, String cursor)
+        implements InitializationOutcome {}
   }
 }
