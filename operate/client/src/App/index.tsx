@@ -13,6 +13,7 @@ import {
   RouterProvider,
   createBrowserRouter,
   createRoutesFromElements,
+  useLocation,
 } from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -34,7 +35,6 @@ import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 import {PageErrorBoundary} from 'modules/components/PageErrorBoundary';
 import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
-import {useLocation} from 'react-router-dom';
 
 const RedirectToVariables: React.FC = () => {
   const location = useLocation();
