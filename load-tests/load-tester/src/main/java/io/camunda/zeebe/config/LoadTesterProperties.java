@@ -19,6 +19,11 @@ public class LoadTesterProperties {
   private boolean monitorDataAvailability = true;
   private Duration monitorDataAvailabilityInterval = Duration.ofMillis(250);
   private boolean performReadBenchmarks = false;
+<<<<<<< HEAD:load-tests/load-tester/src/main/java/io/camunda/zeebe/config/LoadTesterProperties.java
+=======
+  private boolean clientSideLoadBalancing = false;
+
+>>>>>>> e09b064f (test: client side load balancing config for load test):load-tests/load-tester/src/main/java/io/camunda/zeebe/config/AppCfg.java
   private String disabledQueries = "";
 
   @NestedConfigurationProperty private StarterProperties starter = new StarterProperties();
@@ -67,6 +72,7 @@ public class LoadTesterProperties {
         .toList();
   }
 
+<<<<<<< HEAD:load-tests/load-tester/src/main/java/io/camunda/zeebe/config/LoadTesterProperties.java
   public StarterProperties getStarter() {
     return starter;
   }
@@ -81,5 +87,13 @@ public class LoadTesterProperties {
 
   public void setWorker(final WorkerProperties worker) {
     this.worker = worker;
+=======
+  public boolean isClientSideLoadBalancing() {
+    return clientSideLoadBalancing;
+  }
+
+  public void setClientSideLoadBalancing(final boolean clientSideLoadBalancing) {
+    this.clientSideLoadBalancing = clientSideLoadBalancing;
+>>>>>>> e09b064f (test: client side load balancing config for load test):load-tests/load-tester/src/main/java/io/camunda/zeebe/config/AppCfg.java
   }
 }

@@ -28,11 +28,28 @@ class ConfigTest {
     // given / when - no external overrides, defaults come from LoadTesterProperties POJO
 
     // then
+<<<<<<< HEAD
     assertThat(properties.isMonitorDataAvailability()).isTrue();
     assertThat(properties.getMonitorDataAvailabilityInterval()).hasMillis(250);
     assertThat(properties.isPerformReadBenchmarks()).isFalse();
     assertThat(properties.getDisabledQueries()).isEmpty();
     assertThat(properties.getDisabledQueriesList()).isEmpty();
+=======
+    assertThat(appCfg.getBrokerUrl()).isEqualTo("http://localhost:26500");
+    assertThat(appCfg.getBrokerRestUrl()).isEqualTo("http://localhost:8080");
+    assertThat(appCfg.isPreferRest()).isTrue();
+    assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
+    assertThat(appCfg.isMonitorDataAvailability()).isTrue();
+    assertThat(appCfg.getMonitorDataAvailabilityInterval()).hasMillis(250);
+    assertThat(appCfg.isPerformReadBenchmarks()).isFalse();
+    assertThat(appCfg.getDisabledQueriesList()).isEmpty();
+    assertThat(appCfg.isClientSideLoadBalancing()).isFalse();
+
+    // authentication
+    final var authCfg = appCfg.getAuth();
+    assertThat(authCfg).isNotNull();
+    assertThat(authCfg.getType()).isEqualTo(AuthCfg.AuthType.NONE);
+>>>>>>> e09b064f (test: client side load balancing config for load test)
 
     // starter
     final var starterCfg = properties.getStarter();
@@ -71,9 +88,23 @@ class ConfigTest {
 
     @Autowired private LoadTesterProperties properties;
 
+<<<<<<< HEAD
     @Test
     void shouldReadDifferentAppConfig() {
       // given / when - overrides loaded from different-application.properties
+=======
+    // then
+    assertThat(appCfg.getBrokerUrl()).isEqualTo("http://localhost:26500");
+    assertThat(appCfg.getBrokerRestUrl()).isEqualTo("http://localhost:8081");
+    assertThat(appCfg.isPreferRest()).isTrue();
+    assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
+    assertThat(appCfg.isMonitorDataAvailability()).isFalse();
+    assertThat(appCfg.getMonitorDataAvailabilityInterval()).hasMillis(50);
+    assertThat(appCfg.isPerformReadBenchmarks()).isTrue();
+    assertThat(appCfg.getDisabledQueriesList())
+        .containsExactlyInAnyOrder("process_instances_active", "audit_log_by_category");
+    assertThat(appCfg.isClientSideLoadBalancing()).isTrue();
+>>>>>>> e09b064f (test: client side load balancing config for load test)
 
       // then
       assertThat(properties.isMonitorDataAvailability()).isFalse();
