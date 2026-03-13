@@ -311,20 +311,8 @@ final class CamundaExporterTest {
 
     @Test
     void shouldKeepStableDelayAcrossMultipleFlushCycles() {
-      // Regression test: the old code mutated the instance field 'delayMs' on
-      // every reschedule, causing it to degrade to 0 after a few cycles of:
-      //   (export → size-based flush → advance half-delay → run scheduled task).
-      //
-      // Trace of the old (buggy) delayMs field across cycles:
-      //   open:    delayMs = 1000
-      //   cycle 1: delayMs = max(0, 1000 - 500) = 500   (scheduled at 500ms)
-      //   cycle 2: delayMs = max(0,  500 - 500) = 0     (scheduled at 0ms!)
-      //   cycle 3: delayMs = max(0,    0 - 500) = 0     (permanently stuck)
-      //
-      // With the fix, nextDelayMs is a local variable computed fresh each time:
-      //   cycle 1: nextDelayMs = max(0, 1000 - 500) = 500
-      //   cycle 2: nextDelayMs = max(0, 1000 - 500) = 500  (always the same)
-      //   cycle 3: nextDelayMs = max(0, 1000 - 500) = 500
+      // Regression test: the rescheduled flush delay must remain stable across
+      // repeated flush cycles and not degrade to zero.
 
       // given
       final var clock = new MutableClock(0);
@@ -337,70 +325,19 @@ final class CamundaExporterTest {
       exporter.configure(testContext);
       exporter.open(testController);
 
-      // when — three cycles of: advance 500ms, export (size flush), advance 500ms, run tasks
-      for (int cycle = 0; cycle < 3; cycle++) {
+      // when — four cycles of: advance 500ms, export (size flush), advance 500ms, run tasks
+      for (int cycle = 0; cycle < 4; cycle++) {
         clock.advance(500);
         exporter.export(stubRecord()); // size-based flush, sets lastFlushTimestamp
         clock.advance(500);
         testController.runScheduledTasks(Duration.ofHours(1));
+
+        // then — every cycle must retain a stable 500ms delay
+        final var tasks = testController.getScheduledTasks();
+        assertThat(tasks.getLast().getDelay())
+            .as("Rescheduled delay in cycle %d must not degrade", cycle)
+            .isEqualTo(Duration.ofMillis(500));
       }
-
-      // then — the latest rescheduled task must retain a delay of 500ms
-      final var tasks = testController.getScheduledTasks();
-      final var lastTask = tasks.getLast();
-      assertThat(lastTask.getDelay())
-          .as(
-              "Rescheduled delay must not degrade to zero after repeated flush cycles "
-                  + "(old bug: instance field was mutated instead of using a local variable)")
-          .isEqualTo(Duration.ofMillis(500));
-    }
-
-    @Test
-    void shouldRecoverDelayAfterSizeBasedFlushUpdatesTimestamp() {
-      // Verifies that after a size-based flush updates lastFlushTimestamp,
-      // the next scheduled delay is computed correctly from the field constant.
-      //
-      // With the old bug, once delayMs degraded to 0 it could never recover,
-      // even when a fresh size-based flush reset lastFlushTimestamp. This caused
-      // the scheduled flush to fire at 0ms but with the guard check blocking it,
-      // effectively stopping periodic flushes forever.
-
-      // given — run three cycles to drive old-code delayMs to 0 (see test above)
-      final var clock = new MutableClock(0);
-      testContext.setClock(clock);
-      configuration.getBulk().setSize(1);
-      configuration.getBulk().setDelay(1); // 1 second
-      exporter =
-          new CamundaExporter(
-              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
-      exporter.configure(testContext);
-      exporter.open(testController);
-
-      for (int cycle = 0; cycle < 3; cycle++) {
-        clock.advance(500);
-        exporter.export(stubRecord());
-        clock.advance(500);
-        testController.runScheduledTasks(Duration.ofHours(1));
-      }
-      // At this point: clock=3000, lastFlushTimestamp=2500.
-      // Old code: delayMs=0 (permanently stuck).
-      // New code: local nextDelayMs was 500, field unchanged at 1000.
-
-      // when — one more cycle with a fresh size-based flush
-      clock.advance(500); // clock = 3500
-      exporter.export(stubRecord()); // size-based flush, lastFlushTimestamp = 3500
-      clock.advance(500); // clock = 4000
-      testController.runScheduledTasks(Duration.ofHours(1));
-
-      // then — the delay should still be 500ms (computed as max(0, 1000 - (4000-3500)))
-      // Old bug: delayMs field stayed at 0, so task is scheduled at 0ms.
-      final var tasks = testController.getScheduledTasks();
-      final var lastTask = tasks.getLast();
-      assertThat(lastTask.getDelay())
-          .as(
-              "After a fresh size-based flush, the rescheduled delay must recover; "
-                  + "old bug: delayMs field stayed at 0 permanently")
-          .isEqualTo(Duration.ofMillis(500));
     }
   }
 }
