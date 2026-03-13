@@ -381,6 +381,46 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldRejectSearchWithBothBatchOperationIdAndBatchOperationKey() {
+    // given
+    final var request =
+        """
+            {
+                "filter": {
+                    "batchOperationId": {"$eq": "id-1"},
+                    "batchOperationKey": {"$eq": "key-1"}
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Only one of batchOperationId, batchOperationKey is allowed.",
+                  "instance": "%s"
+                }""",
+            PROCESS_INSTANCES_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
+  }
+
+  @Test
   void shouldSearchProcessInstancessWithSorting() {
     // given
     when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
@@ -830,6 +870,10 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "errorMessage",
         ops -> new ProcessInstanceFilter.Builder().errorMessageOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "batchOperationKey",
+        ops -> new ProcessInstanceFilter.Builder().batchOperationIdOperations(ops).build());
     return streamBuilder.build();
   }
 
