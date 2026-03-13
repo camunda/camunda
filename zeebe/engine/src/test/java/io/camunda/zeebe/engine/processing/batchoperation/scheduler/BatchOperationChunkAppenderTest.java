@@ -48,7 +48,7 @@ class BatchOperationChunkAppenderTest {
   }
 
   @Test
-  void shouldProcessPageWithSingleChunk() {
+  void shouldChunkAndAppendWithSingleChunk() {
     // given
     final var item1 = new Item(100L, 200L, null);
     final var item2 = new Item(101L, 201L, null);
@@ -59,7 +59,8 @@ class BatchOperationChunkAppenderTest {
     when(mockTaskResultBuilder.canAppendRecords(any(), any())).thenReturn(true);
 
     // when
-    final var result = processor.processNextPage(mockItemProvider, context, mockTaskResultBuilder);
+    final var result =
+        processor.fetchAndChunkNextPage(mockItemProvider, context, mockTaskResultBuilder);
 
     // then
     assertThat(result).isInstanceOf(PageProcessingResult.Continue.class);
@@ -76,7 +77,7 @@ class BatchOperationChunkAppenderTest {
   }
 
   @Test
-  void shouldProcessPageWithMultipleChunks() {
+  void shouldChunkAndAppendWithMultipleChunks() {
     // given - 5 items with chunk size 2 should create 3 chunks (2+2+1)
     final var items =
         List.of(
@@ -92,7 +93,8 @@ class BatchOperationChunkAppenderTest {
     when(mockTaskResultBuilder.canAppendRecords(any(), any())).thenReturn(true);
 
     // when
-    final var result = processor.processNextPage(mockItemProvider, context, mockTaskResultBuilder);
+    final var result =
+        processor.fetchAndChunkNextPage(mockItemProvider, context, mockTaskResultBuilder);
 
     // then
     assertThat(result).isInstanceOf(PageProcessingResult.Finished.class);
@@ -122,7 +124,8 @@ class BatchOperationChunkAppenderTest {
         .thenReturn(false);
 
     // when
-    final var result = processor.processNextPage(mockItemProvider, context, mockTaskResultBuilder);
+    final var result =
+        processor.fetchAndChunkNextPage(mockItemProvider, context, mockTaskResultBuilder);
 
     // then
     assertThat(result).isInstanceOf(PageProcessingResult.BufferFull.class);
@@ -149,7 +152,8 @@ class BatchOperationChunkAppenderTest {
         .thenReturn(true);
 
     // when
-    final var result = processor.processNextPage(mockItemProvider, context, mockTaskResultBuilder);
+    final var result =
+        processor.fetchAndChunkNextPage(mockItemProvider, context, mockTaskResultBuilder);
 
     // then
     assertThat(result).isInstanceOf(PageProcessingResult.Finished.class);
@@ -180,7 +184,7 @@ class BatchOperationChunkAppenderTest {
     when(mockTaskResultBuilder.canAppendRecords(any(), any())).thenReturn(true);
 
     // when
-    processor.processNextPage(mockItemProvider, context, mockTaskResultBuilder);
+    processor.fetchAndChunkNextPage(mockItemProvider, context, mockTaskResultBuilder);
 
     // then
     final var chunkCaptor = ArgumentCaptor.forClass(BatchOperationChunkRecord.class);
@@ -220,7 +224,7 @@ class BatchOperationChunkAppenderTest {
 
     // when
     final var result =
-        largeChunkProcessor.processNextPage(mockItemProvider, context, mockTaskResultBuilder);
+        largeChunkProcessor.fetchAndChunkNextPage(mockItemProvider, context, mockTaskResultBuilder);
 
     // then
     assertThat(result).isInstanceOf(PageProcessingResult.Continue.class);
@@ -245,7 +249,8 @@ class BatchOperationChunkAppenderTest {
     when(mockItemProvider.fetchItemPage("cursor1", 50)).thenThrow(exception);
 
     // when
-    final var result = processor.processNextPage(mockItemProvider, context, mockTaskResultBuilder);
+    final var result =
+        processor.fetchAndChunkNextPage(mockItemProvider, context, mockTaskResultBuilder);
 
     // then
     assertThat(result).isInstanceOf(PageProcessingResult.FetchFailed.class);
@@ -266,7 +271,7 @@ class BatchOperationChunkAppenderTest {
     when(mockTaskResultBuilder.canAppendRecords(any(), any())).thenReturn(true);
 
     // when
-    processor.processNextPage(mockItemProvider, context, mockTaskResultBuilder);
+    processor.fetchAndChunkNextPage(mockItemProvider, context, mockTaskResultBuilder);
 
     // then
     verify(mockItemProvider).fetchItemPage("specific-cursor", 25);

@@ -77,13 +77,13 @@ class BatchOperationInitializationBehaviorTest {
     // then
     assertThat(result.batchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
     assertThat(result.searchResultCursor()).isEqualTo(SEARCH_CURSOR);
-    verify(chunkAppender, never()).processNextPage(any(), any(), any());
+    verify(chunkAppender, never()).fetchAndChunkNextPage(any(), any(), any());
   }
 
   @Test
   void shouldInitializeSuccessfullyWithSinglePageAndFinish() {
     // given
-    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 2));
 
     // when
@@ -108,7 +108,7 @@ class BatchOperationInitializationBehaviorTest {
   @Test
   void shouldHandleMultiplePagesSuccessfully() {
     // given
-    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.Continue("cursor1", 2))
         .thenReturn(new PageProcessingResult.Finished("cursor2", 2));
 
@@ -128,7 +128,7 @@ class BatchOperationInitializationBehaviorTest {
   @Test
   void shouldHandleFailedChunkAppendWithoutPreviousChunks() {
     // given
-    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.BufferFull(2));
 
     // when
@@ -149,7 +149,7 @@ class BatchOperationInitializationBehaviorTest {
   @Test
   void shouldHandleFailedChunkAppendWithPreviousChunks() {
     // given - First page succeeds, second page fails to fit in buffer
-    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.Continue("cursor1", 2))
         .thenReturn(new PageProcessingResult.BufferFull(2));
 
@@ -169,7 +169,7 @@ class BatchOperationInitializationBehaviorTest {
   void shouldThrowExceptionWhenFetchFailsWithoutPreviousChunks() {
     // given
     final var exception = new RuntimeException("Database connection failed");
-    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.FetchFailed(exception));
 
     // when & then
@@ -188,7 +188,7 @@ class BatchOperationInitializationBehaviorTest {
   void shouldContinueInitializationWhenFetchFailsWithPreviousChunks() {
     // given - First page succeeds, second page fetch fails
     final var exception = new RuntimeException("Database connection failed");
-    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.Continue("cursor1", 2))
         .thenReturn(new PageProcessingResult.FetchFailed(exception));
 
@@ -223,7 +223,7 @@ class BatchOperationInitializationBehaviorTest {
   @Test
   void shouldHandleEmptyPageSuccessfully() {
     // given
-    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 0));
 
     // when
@@ -243,7 +243,7 @@ class BatchOperationInitializationBehaviorTest {
   void shouldUpdateTotalItemsCountCorrectly() {
     // given
     batchOperation.setNumTotalItems(5);
-    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 3));
 
     // when
@@ -257,7 +257,7 @@ class BatchOperationInitializationBehaviorTest {
   void shouldInitializeDeleteProcessInstanceBatchOperation() {
     // given
     batchOperation.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
-    when(chunkAppender.processNextPage(any(), any(), eq(taskResultBuilder)))
+    when(chunkAppender.fetchAndChunkNextPage(any(), any(), eq(taskResultBuilder)))
         .thenReturn(new PageProcessingResult.Finished(NEXT_SEARCH_CURSOR, 2));
 
     // when
