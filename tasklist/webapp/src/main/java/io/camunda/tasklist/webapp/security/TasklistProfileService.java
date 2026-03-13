@@ -7,9 +7,7 @@
  */
 package io.camunda.tasklist.webapp.security;
 
-import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
-
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -33,7 +31,8 @@ public class TasklistProfileService {
 
   public boolean isLoginDelegated() {
     final var consolidatedAuthVariation =
-        AuthenticationMethod.parse(environment.getProperty(METHOD));
+        AuthenticationMethod.parse(
+            environment.getProperty("camunda.security.authentication.method"));
 
     return consolidatedAuthVariation.isPresent()
         && AuthenticationMethod.OIDC.equals(consolidatedAuthVariation.get());

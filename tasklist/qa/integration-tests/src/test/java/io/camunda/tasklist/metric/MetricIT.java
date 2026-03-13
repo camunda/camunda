@@ -13,7 +13,7 @@ import static io.camunda.tasklist.Metrics.TASKLIST_NAMESPACE;
 import static io.camunda.tasklist.util.CollectionUtil.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import java.io.IOException;

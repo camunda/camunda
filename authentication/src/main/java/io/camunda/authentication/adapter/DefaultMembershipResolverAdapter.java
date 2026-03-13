@@ -96,9 +96,7 @@ public final class DefaultMembershipResolverAdapter implements MembershipResolve
       groups = new HashSet<>(oidcGroupsLoader.load(tokenClaims));
     } else {
       groups =
-          groupServices
-              .getGroupsByMemberTypeAndMemberIds(ownerTypeToIds, anonymousAuth)
-              .stream()
+          groupServices.getGroupsByMemberTypeAndMemberIds(ownerTypeToIds, anonymousAuth).stream()
               .map(GroupEntity::groupId)
               .collect(Collectors.toSet());
     }
@@ -108,9 +106,7 @@ public final class DefaultMembershipResolverAdapter implements MembershipResolve
     }
 
     final var roles =
-        roleServices
-            .getRolesByMemberTypeAndMemberIds(ownerTypeToIds, anonymousAuth)
-            .stream()
+        roleServices.getRolesByMemberTypeAndMemberIds(ownerTypeToIds, anonymousAuth).stream()
             .map(RoleEntity::roleId)
             .collect(Collectors.toSet());
 
@@ -119,9 +115,7 @@ public final class DefaultMembershipResolverAdapter implements MembershipResolve
     }
 
     final var tenants =
-        tenantServices
-            .getTenantsByMemberTypeAndMemberIds(ownerTypeToIds, anonymousAuth)
-            .stream()
+        tenantServices.getTenantsByMemberTypeAndMemberIds(ownerTypeToIds, anonymousAuth).stream()
             .map(TenantEntity::tenantId)
             .toList();
 

@@ -21,6 +21,7 @@ keeps its `adapter/` package and its conditional annotations, but delegates all 
 infrastructure to gatekeeper.
 
 ### Adapter implementations:
+
 - `DefaultMembershipResolverAdapter` — bridges to the existing secondary storage for groups, roles, tenants
 - `NoDbMembershipResolverAdapter` — for deployments without a secondary user store
 - `BasicCamundaUserProviderAdapter` / `OidcCamundaUserProviderAdapter` — assemble `CamundaUserInfo` from existing services
@@ -30,6 +31,7 @@ infrastructure to gatekeeper.
 - `OidcConfigurationAdapter` — converts existing OIDC config properties to gatekeeper format
 
 ### What gets deleted from camunda-authentication:
+
 - All Spring Security configuration classes
 - OIDC classes (token refresh, JWK, user service)
 - Converters, holders, handlers, filters
@@ -40,11 +42,13 @@ infrastructure to gatekeeper.
 - Root-level conditional annotations (except `ConditionalOnCamundaGroupsEnabled` and `ConditionalOnInternalUserManagement`)
 
 ### What consuming modules change:
+
 - Import types from `io.camunda.gatekeeper.*` instead of `io.camunda.authentication.*`
 - Use `CamundaUserProvider` instead of `CamundaUserService`
 - Use `CamundaUserInfo` instead of `CamundaUserDTO`
 
 ### Dual type coexistence:
+
 During transition, two `CamundaAuthentication` types coexist — `security-core`'s and gatekeeper's.
 Adapters bridge between them. This is temporary until security-core consumers are migrated.
 
@@ -55,3 +59,4 @@ Adapters bridge between them. This is temporary until security-core consumers ar
 - gatekeeper-spring-boot-starter becomes the single source of auth infrastructure
 - Runtime behavior does not change — the adapters preserve existing semantics
 - Risk: adapter bugs could cause subtle behavioral differences during transition (mitigated by integration tests)
+

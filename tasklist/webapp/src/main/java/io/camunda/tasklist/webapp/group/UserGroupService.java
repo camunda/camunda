@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.group;
 
-import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
 import java.util.List;
 import org.springframework.stereotype.Component;
 

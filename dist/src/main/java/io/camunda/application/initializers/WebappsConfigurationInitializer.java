@@ -12,11 +12,10 @@ import static io.camunda.application.Profile.IDENTITY;
 import static io.camunda.application.Profile.OPERATE;
 import static io.camunda.application.Profile.STANDALONE;
 import static io.camunda.application.Profile.TASKLIST;
-import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
 
-import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.configuration.helpers.WebappsHelper;
-import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
+import io.camunda.gatekeeper.spring.autoconfigure.GatekeeperSecurityFilterChainAutoConfiguration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,7 +52,9 @@ public class WebappsConfigurationInitializer
       propertyMap.put("spring.thymeleaf.prefix", DEFAULT_RESOURCES_LOCATION);
 
       propertyMap.put("camunda.webapps.login-delegated", isLoginDelegated(context));
-      propertyMap.put("server.servlet.session.cookie.name", WebSecurityConfig.SESSION_COOKIE);
+      propertyMap.put(
+          "server.servlet.session.cookie.name",
+          GatekeeperSecurityFilterChainAutoConfiguration.SESSION_COOKIE);
     }
 
     // locations and home page
@@ -121,7 +122,8 @@ public class WebappsConfigurationInitializer
   }
 
   private boolean isLoginDelegated(final ConfigurableApplicationContext context) {
-    final var authenticationMethodProperty = context.getEnvironment().getProperty(METHOD);
+    final var authenticationMethodProperty =
+        context.getEnvironment().getProperty("camunda.security.authentication.method");
     final var authenticationMethod = AuthenticationMethod.parse(authenticationMethodProperty);
     return authenticationMethod.isPresent()
         && AuthenticationMethod.OIDC.equals(authenticationMethod.get());

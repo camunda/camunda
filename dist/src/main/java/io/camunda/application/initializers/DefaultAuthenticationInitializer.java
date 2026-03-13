@@ -11,7 +11,6 @@ import static io.camunda.application.Profile.CONSOLIDATED_AUTH;
 import static io.camunda.application.Profile.INSECURE;
 import static io.camunda.application.Profile.getWebappProfiles;
 
-import io.camunda.authentication.config.AuthenticationProperties;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.boot.env.DefaultPropertiesPropertySource;
@@ -45,7 +44,7 @@ public class DefaultAuthenticationInitializer
   }
 
   protected boolean shouldApplyDefaultAuthenticationProfile(final Environment environment) {
-    if (environment.getProperty(AuthenticationProperties.METHOD) != null) {
+    if (environment.getProperty("camunda.security.authentication.method") != null) {
       return false;
     }
     final Set<String> activeProfiles = Set.of(environment.getActiveProfiles());

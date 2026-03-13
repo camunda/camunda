@@ -49,8 +49,7 @@ public final class BasicCamundaUserProviderAdapter implements CamundaUserProvide
             auth -> {
               final var user =
                   userServices.getUser(
-                      auth.authenticatedUsername(),
-                      CamundaAuthentication.anonymous());
+                      auth.authenticatedUsername(), CamundaAuthentication.anonymous());
               final var authorizedComponents = getAuthorizedComponents(auth);
               final var tenantIds =
                   auth.authenticatedTenantIds() != null

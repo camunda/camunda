@@ -7,8 +7,8 @@
  */
 package io.camunda.authentication.adapter;
 
-import io.camunda.gatekeeper.spi.AdminUserCheckProvider;
 import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
+import io.camunda.gatekeeper.spi.AdminUserCheckProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.RoleServices;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;

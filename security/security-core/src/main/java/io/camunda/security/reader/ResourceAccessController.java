@@ -7,7 +7,7 @@
  */
 package io.camunda.security.reader;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import java.util.function.Function;
 
@@ -47,10 +47,7 @@ public interface ResourceAccessController {
    */
   boolean supports(SecurityContext securityContext);
 
-  /**
-   * Returns true if the given {@link io.camunda.security.auth.CamundaAuthentication authentication}
-   * is anonymous. *
-   */
+  /** Returns true if the given {@link CamundaAuthentication authentication} is anonymous. * */
   default boolean isAnonymousAuthentication(final CamundaAuthentication authentication) {
     return authentication.isAnonymous();
   }

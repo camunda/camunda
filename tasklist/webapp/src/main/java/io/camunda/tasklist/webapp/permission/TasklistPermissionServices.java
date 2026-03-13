@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.webapp.permission;
 
+import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.tasklist.util.LazySupplier;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;

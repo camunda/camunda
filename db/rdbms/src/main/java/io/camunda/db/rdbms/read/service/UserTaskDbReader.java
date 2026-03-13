@@ -16,12 +16,12 @@ import io.camunda.db.rdbms.read.domain.UserTaskDbQuery.UserTaskAuthorizationProp
 import io.camunda.db.rdbms.read.mapper.UserTaskEntityMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.columns.UserTaskSearchColumn;
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.search.clients.reader.UserTaskReader;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.util.NumberParsingUtil;
 import java.util.List;

@@ -12,7 +12,7 @@ import static io.camunda.tasklist.metric.MetricIT.ELEMENT_ID;
 import static io.camunda.tasklist.property.ElasticsearchProperties.DATE_FORMAT_DEFAULT;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricDTO;

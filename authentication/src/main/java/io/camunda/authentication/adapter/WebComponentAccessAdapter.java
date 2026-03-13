@@ -48,8 +48,7 @@ public final class WebComponentAccessAdapter implements WebComponentAccessProvid
       return false;
     }
     final var authorization = componentAccess.authorization();
-    return authorization.isWildcard()
-        || authorization.resourceIds().contains(component);
+    return authorization.isWildcard() || authorization.resourceIds().contains(component);
   }
 
   @Override

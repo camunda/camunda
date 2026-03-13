@@ -186,6 +186,7 @@ rm gatekeeper/gatekeeper-domain/src/test/java/io/camunda/gatekeeper/unit/model/i
 Remove the `AuthorizationConditions` exemption from the records-only rule.
 
 Open `gatekeeper-domain/src/test/java/io/camunda/gatekeeper/archunit/DomainArchTest.java` and remove the line:
+
 ```
 .and().doNotHaveSimpleName("AuthorizationConditions")
 ```
@@ -399,6 +400,7 @@ module that components implement to answer "can this identity do X?"
 - [ ] **Step 2: Update ADR index**
 
 Add to `docs/adr/README.md`:
+
 ```
 | [0005](0005-scope-gatekeeper-to-authentication.md) | Scope Gatekeeper to Authentication | Accepted |
 ```
@@ -515,3 +517,4 @@ git log main..HEAD --oneline
 ```bash
 git diff main..HEAD --stat | grep -i authorization || echo "Clean"
 ```
+

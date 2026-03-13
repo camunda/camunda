@@ -44,3 +44,4 @@ module that components implement to answer "can this identity do X?"
   gatekeeper's domain model
 - `SecurityContext` is simplified to carry only `CamundaAuthentication`
 - Consuming applications use `WebappFilterChainCustomizer` to add authorization filters
+

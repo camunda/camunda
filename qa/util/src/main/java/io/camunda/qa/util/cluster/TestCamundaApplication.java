@@ -17,7 +17,6 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.McpGatewayInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
-import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -32,12 +31,12 @@ import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverrid
 import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
+import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
@@ -169,7 +168,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     withBean("camunda", unifiedConfig, Camunda.class)
         .withBean("security-config", securityConfig, CamundaSecurityProperties.class)
         .withProperty(
-            AuthenticationProperties.API_UNPROTECTED,
+            "camunda.security.authentication.unprotected-api",
             securityConfig.getAuthentication().getUnprotectedApi())
         .withProperty(
             "camunda.security.authorizations.enabled",
@@ -203,7 +202,16 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   public TestCamundaApplication withProperty(final String key, final Object value) {
     // Since the security config is not constructed from the properties, we need to manually update
     // it when we override a property.
-    AuthenticationProperties.applyToSecurityConfig(securityConfig, key, value);
+    switch (key) {
+      case "camunda.security.authentication.method" ->
+          AuthenticationMethod.parse(String.valueOf(value))
+              .ifPresent(securityConfig.getAuthentication()::setMethod);
+      case "camunda.security.authentication.unprotected-api" ->
+          securityConfig
+              .getAuthentication()
+              .setUnprotectedApi(Boolean.parseBoolean(String.valueOf(value)));
+      default -> {}
+    }
     return super.withProperty(key, value);
   }
 
