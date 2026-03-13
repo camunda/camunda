@@ -18,6 +18,7 @@ package io.camunda.client.process;
 import static io.camunda.client.api.search.enums.ProcessInstanceState.ACTIVE;
 import static io.camunda.client.util.assertions.SortAssert.assertSort;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
@@ -409,5 +410,33 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         .filter(m -> Modifier.isPublic(m.getModifiers()) && !m.isSynthetic())
         .map(m -> m.getName() + Arrays.toString(m.getParameterTypes()))
         .collect(Collectors.toSet());
+  }
+
+  @Test
+  void shouldThrowWhenSettingBatchOperationIdAfterBatchOperationKeyInProcessInstanceFilter() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newProcessInstanceSearchRequest()
+                    .filter(f -> f.batchOperationKey("key-1").batchOperationId("id-1"))
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("batchOperationKey");
+  }
+
+  @Test
+  void shouldThrowWhenSettingBatchOperationKeyAfterBatchOperationIdInProcessInstanceFilter() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newProcessInstanceSearchRequest()
+                    .filter(f -> f.batchOperationId("id-1").batchOperationKey("key-1"))
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("batchOperationId");
   }
 }
