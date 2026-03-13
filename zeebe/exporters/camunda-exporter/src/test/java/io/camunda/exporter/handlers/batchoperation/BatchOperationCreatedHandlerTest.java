@@ -29,7 +29,6 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 class BatchOperationCreatedHandlerTest {
 
@@ -207,37 +206,12 @@ class BatchOperationCreatedHandlerTest {
   }
 
   @Test
-  void shouldUpsertEntityOnFlushWithoutNullActorFields() throws PersistenceException {
-    // given — entity with null actorType and actorId (e.g., broker < 8.9.0)
-    final var entity = new BatchOperationEntity().setId("123");
-    final var mockRequest = mock(BatchRequest.class);
-
-    // when
-    underTest.flush(entity, mockRequest);
-
-    // then — null actor fields must NOT be included in updateFields to avoid
-    // overwriting previously populated actor info from another partition
-    @SuppressWarnings("unchecked")
-    final ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
-    verify(mockRequest, times(1)).upsert(eq(indexName), eq("123"), eq(entity), captor.capture());
-
-    final Map<String, Object> updateFields = captor.getValue();
-    assertThat(updateFields).containsOnlyKeys(BatchOperationTemplate.TYPE);
-    assertThat(updateFields)
-        .doesNotContainKeys(
-            BatchOperationTemplate.ACTOR_TYPE,
-            BatchOperationTemplate.ACTOR_ID,
-            BatchOperationTemplate.STATE,
-            BatchOperationTemplate.OPERATIONS_TOTAL_COUNT,
-            BatchOperationTemplate.END_DATE);
-  }
-
-  @Test
-  void shouldUpsertEntityOnFlushWithNonNullActorFields() throws PersistenceException {
-    // given — entity with populated actor info
+  void shouldUpsertWithEmptyUpdateFieldsOnFlush() throws PersistenceException {
+    // given
     final var entity =
         new BatchOperationEntity()
-            .setId("456")
+            .setId("123")
+            .setType(OperationType.RESOLVE_INCIDENT)
             .setActorType(AuditLogActorType.USER)
             .setActorId("username");
     final var mockRequest = mock(BatchRequest.class);
@@ -245,24 +219,7 @@ class BatchOperationCreatedHandlerTest {
     // when
     underTest.flush(entity, mockRequest);
 
-    // then — non-null actor fields must be included in updateFields
-    @SuppressWarnings("unchecked")
-    final ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
-    verify(mockRequest, times(1)).upsert(eq(indexName), eq("456"), eq(entity), captor.capture());
-
-    final Map<String, Object> updateFields = captor.getValue();
-    assertThat(updateFields)
-        .containsOnlyKeys(
-            BatchOperationTemplate.TYPE,
-            BatchOperationTemplate.ACTOR_TYPE,
-            BatchOperationTemplate.ACTOR_ID);
-    assertThat(updateFields)
-        .containsEntry(BatchOperationTemplate.ACTOR_TYPE, AuditLogActorType.USER)
-        .containsEntry(BatchOperationTemplate.ACTOR_ID, "username");
-    assertThat(updateFields)
-        .doesNotContainKeys(
-            BatchOperationTemplate.STATE,
-            BatchOperationTemplate.OPERATIONS_TOTAL_COUNT,
-            BatchOperationTemplate.END_DATE);
+    // then
+    verify(mockRequest, times(1)).upsert(eq(indexName), eq("123"), eq(entity), eq(Map.of()));
   }
 }
