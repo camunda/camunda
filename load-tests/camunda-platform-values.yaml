@@ -5,9 +5,10 @@
 # The values are optimized for running the load tests with a Camunda cluster on GKE.
 #
 # This is a YAML-formatted file.
-# Per default we run with the Orchestration Cluster, Optimize, Elasticsearch as secondary storage
-# and Identity Keycloak as identity provider, but you can easily switch to other configurations by
-# changing the values in this file or by overriding them via the command line when installing the chart.
+# Per default we run with the Orchestration Cluster, Optimize, Connectors, Elasticsearch as secondary
+# storage and Identity Keycloak as identity provider with OIDC authentication, but you can easily
+# switch to other configurations by changing the values in this file or by overriding them via the
+# command line when installing the chart.
 
 ########################################################################################
 ################################################### Global cluster configuration
