@@ -31,6 +31,8 @@ public class FakeChatModelAdapterProvider implements ChatModelAdapterProvider {
 
   @Override
   public Optional<ChatModelAdapter> create(final ProviderConfig config) {
-    return Optional.of(prompt -> FAKE_REASONING);
+    return "fake-provider".equals(config.getProvider())
+        ? Optional.of(prompt -> FAKE_REASONING)
+        : Optional.empty();
   }
 }
