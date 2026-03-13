@@ -21,6 +21,7 @@ import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
 import io.camunda.client.api.search.enums.BatchOperationType;
+import java.time.OffsetDateTime;
 
 public interface AuditLogResult {
   String getAuditLogKey();
@@ -35,7 +36,7 @@ public interface AuditLogResult {
 
   BatchOperationType getBatchOperationType();
 
-  String getTimestamp();
+  OffsetDateTime getTimestamp();
 
   String getActorId();
 
