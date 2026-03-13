@@ -8,6 +8,7 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
+import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationResponseStrictContract.Fields;
 
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationErrorStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationResponseStrictContract;
@@ -33,22 +34,35 @@ public final class BatchOperationResponseContractAdapter {
   public static GeneratedBatchOperationResponseStrictContract adapt(
       final BatchOperationEntity entity) {
     return GeneratedBatchOperationResponseStrictContract.builder()
-        .batchOperationKey(entity.batchOperationKey(), ContractPolicy.requiredNonNull())
+        .batchOperationKey(
+            ContractPolicy.requireNonNull(
+                entity.batchOperationKey(), Fields.BATCH_OPERATION_KEY, entity))
         .state(
-            ContractPolicy.mapEnum(entity.state(), BatchOperationStateEnum::fromValue),
-            ContractPolicy.requiredNonNull())
+            ContractPolicy.requireNonNull(
+                ContractPolicy.mapEnum(entity.state(), BatchOperationStateEnum::fromValue),
+                Fields.STATE,
+                entity))
         .batchOperationType(
-            ContractPolicy.mapEnum(entity.operationType(), BatchOperationTypeEnum::fromValue),
-            ContractPolicy.requiredNonNull())
-        .operationsTotalCount(entity.operationsTotalCount(), ContractPolicy.requiredNonNull())
-        .operationsFailedCount(entity.operationsFailedCount(), ContractPolicy.requiredNonNull())
+            ContractPolicy.requireNonNull(
+                ContractPolicy.mapEnum(entity.operationType(), BatchOperationTypeEnum::fromValue),
+                Fields.BATCH_OPERATION_TYPE,
+                entity))
+        .operationsTotalCount(
+            ContractPolicy.requireNonNull(
+                entity.operationsTotalCount(), Fields.OPERATIONS_TOTAL_COUNT, entity))
+        .operationsFailedCount(
+            ContractPolicy.requireNonNull(
+                entity.operationsFailedCount(), Fields.OPERATIONS_FAILED_COUNT, entity))
         .operationsCompletedCount(
-            entity.operationsCompletedCount(), ContractPolicy.requiredNonNull())
+            ContractPolicy.requireNonNull(
+                entity.operationsCompletedCount(), Fields.OPERATIONS_COMPLETED_COUNT, entity))
         .errors(
-            ContractPolicy.nullToEmptyList(entity.errors()).stream()
-                .map(BatchOperationResponseContractAdapter::toBatchOperationError)
-                .toList(),
-            ContractPolicy.requiredNonNull())
+            ContractPolicy.requireNonNull(
+                ContractPolicy.nullToEmptyList(entity.errors()).stream()
+                    .map(BatchOperationResponseContractAdapter::toBatchOperationError)
+                    .toList(),
+                Fields.ERRORS,
+                entity))
         .startDate(formatDate(entity.startDate()))
         .endDate(formatDate(entity.endDate()))
         .actorType(ContractPolicy.mapEnum(entity.actorType(), AuditLogActorTypeEnum::fromValue))
@@ -59,9 +73,21 @@ public final class BatchOperationResponseContractAdapter {
   private static GeneratedBatchOperationErrorStrictContract toBatchOperationError(
       final BatchOperationEntity.BatchOperationErrorEntity batchOperationErrorEntity) {
     return GeneratedBatchOperationErrorStrictContract.builder()
-        .partitionId(batchOperationErrorEntity.partitionId(), ContractPolicy.requiredNonNull())
-        .type(batchOperationErrorEntity.type(), ContractPolicy.requiredNonNull())
-        .message(batchOperationErrorEntity.message(), ContractPolicy.requiredNonNull())
+        .partitionId(
+            ContractPolicy.requireNonNull(
+                batchOperationErrorEntity.partitionId(),
+                GeneratedBatchOperationErrorStrictContract.Fields.PARTITION_ID,
+                batchOperationErrorEntity))
+        .type(
+            ContractPolicy.requireNonNull(
+                batchOperationErrorEntity.type(),
+                GeneratedBatchOperationErrorStrictContract.Fields.TYPE,
+                batchOperationErrorEntity))
+        .message(
+            ContractPolicy.requireNonNull(
+                batchOperationErrorEntity.message(),
+                GeneratedBatchOperationErrorStrictContract.Fields.MESSAGE,
+                batchOperationErrorEntity))
         .build();
   }
 }

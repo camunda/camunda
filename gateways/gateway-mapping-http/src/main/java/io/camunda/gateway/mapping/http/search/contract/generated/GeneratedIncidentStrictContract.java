@@ -11,8 +11,10 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedIncidentStrictContract(
     String processDefinitionId,
@@ -131,14 +133,6 @@ public record GeneratedIncidentStrictContract(
         "jobKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ProcessDefinitionIdStep builder() {
     return new Builder();
   }
@@ -157,140 +151,103 @@ public record GeneratedIncidentStrictContract(
           ElementInstanceKeyStep,
           OptionalStep {
     private String processDefinitionId;
-    private ContractPolicy.FieldPolicy<String> processDefinitionIdPolicy;
     private io.camunda.gateway.protocol.model.IncidentErrorTypeEnum errorType;
-    private ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum>
-        errorTypePolicy;
     private String errorMessage;
-    private ContractPolicy.FieldPolicy<String> errorMessagePolicy;
     private String elementId;
-    private ContractPolicy.FieldPolicy<String> elementIdPolicy;
     private String creationTime;
-    private ContractPolicy.FieldPolicy<String> creationTimePolicy;
     private io.camunda.gateway.protocol.model.IncidentStateEnum state;
-    private ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.IncidentStateEnum>
-        statePolicy;
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
     private Object incidentKey;
-    private ContractPolicy.FieldPolicy<Object> incidentKeyPolicy;
     private Object processDefinitionKey;
-    private ContractPolicy.FieldPolicy<Object> processDefinitionKeyPolicy;
     private Object processInstanceKey;
-    private ContractPolicy.FieldPolicy<Object> processInstanceKeyPolicy;
     private Object rootProcessInstanceKey;
     private Object elementInstanceKey;
-    private ContractPolicy.FieldPolicy<Object> elementInstanceKeyPolicy;
     private Object jobKey;
 
     private Builder() {}
 
     @Override
-    public ErrorTypeStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+    public ErrorTypeStep processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
-      this.processDefinitionIdPolicy = policy;
       return this;
     }
 
     @Override
     public ErrorMessageStep errorType(
-        final io.camunda.gateway.protocol.model.IncidentErrorTypeEnum errorType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum>
-            policy) {
+        final io.camunda.gateway.protocol.model.IncidentErrorTypeEnum errorType) {
       this.errorType = errorType;
-      this.errorTypePolicy = policy;
       return this;
     }
 
     @Override
-    public ElementIdStep errorMessage(
-        final String errorMessage, final ContractPolicy.FieldPolicy<String> policy) {
+    public ElementIdStep errorMessage(final String errorMessage) {
       this.errorMessage = errorMessage;
-      this.errorMessagePolicy = policy;
       return this;
     }
 
     @Override
-    public CreationTimeStep elementId(
-        final String elementId, final ContractPolicy.FieldPolicy<String> policy) {
+    public CreationTimeStep elementId(final String elementId) {
       this.elementId = elementId;
-      this.elementIdPolicy = policy;
       return this;
     }
 
     @Override
-    public StateStep creationTime(
-        final String creationTime, final ContractPolicy.FieldPolicy<String> policy) {
+    public StateStep creationTime(final String creationTime) {
       this.creationTime = creationTime;
-      this.creationTimePolicy = policy;
       return this;
     }
 
     @Override
-    public TenantIdStep state(
-        final io.camunda.gateway.protocol.model.IncidentStateEnum state,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.IncidentStateEnum>
-            policy) {
+    public TenantIdStep state(final io.camunda.gateway.protocol.model.IncidentStateEnum state) {
       this.state = state;
-      this.statePolicy = policy;
       return this;
     }
 
     @Override
-    public IncidentKeyStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public IncidentKeyStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessDefinitionKeyStep incidentKey(
-        final Object incidentKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ProcessDefinitionKeyStep incidentKey(final Object incidentKey) {
       this.incidentKey = incidentKey;
-      this.incidentKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessInstanceKeyStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ProcessInstanceKeyStep processDefinitionKey(final Object processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
-      this.processDefinitionKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public ElementInstanceKeyStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ElementInstanceKeyStep processInstanceKey(final Object processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
-      this.processInstanceKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep elementInstanceKey(
-        final Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep elementInstanceKey(final Object elementInstanceKey) {
       this.elementInstanceKey = elementInstanceKey;
-      this.elementInstanceKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(final String rootProcessInstanceKey) {
+    public OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey) {
       this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(final Object rootProcessInstanceKey) {
+    public OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey) {
       this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
     public Builder rootProcessInstanceKey(
-        final String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.rootProcessInstanceKey =
           policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
@@ -298,32 +255,34 @@ public record GeneratedIncidentStrictContract(
 
     @Override
     public OptionalStep rootProcessInstanceKey(
-        final Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.rootProcessInstanceKey =
           policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep jobKey(final String jobKey) {
+    public OptionalStep jobKey(final @Nullable String jobKey) {
       this.jobKey = jobKey;
       return this;
     }
 
     @Override
-    public OptionalStep jobKey(final Object jobKey) {
+    public OptionalStep jobKey(final @Nullable Object jobKey) {
       this.jobKey = jobKey;
       return this;
     }
 
-    public Builder jobKey(final String jobKey, final ContractPolicy.FieldPolicy<String> policy) {
+    public Builder jobKey(
+        final @Nullable String jobKey, final ContractPolicy.FieldPolicy<String> policy) {
       this.jobKey = policy.apply(jobKey, Fields.JOB_KEY, null);
       return this;
     }
 
     @Override
     public OptionalStep jobKey(
-        final Object jobKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object jobKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.jobKey = policy.apply(jobKey, Fields.JOB_KEY, null);
       return this;
     }
@@ -331,115 +290,89 @@ public record GeneratedIncidentStrictContract(
     @Override
     public GeneratedIncidentStrictContract build() {
       return new GeneratedIncidentStrictContract(
-          applyRequiredPolicy(
-              this.processDefinitionId,
-              this.processDefinitionIdPolicy,
-              Fields.PROCESS_DEFINITION_ID),
-          applyRequiredPolicy(this.errorType, this.errorTypePolicy, Fields.ERROR_TYPE),
-          applyRequiredPolicy(this.errorMessage, this.errorMessagePolicy, Fields.ERROR_MESSAGE),
-          applyRequiredPolicy(this.elementId, this.elementIdPolicy, Fields.ELEMENT_ID),
-          applyRequiredPolicy(this.creationTime, this.creationTimePolicy, Fields.CREATION_TIME),
-          applyRequiredPolicy(this.state, this.statePolicy, Fields.STATE),
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID),
-          coerceIncidentKey(
-              applyRequiredPolicy(this.incidentKey, this.incidentKeyPolicy, Fields.INCIDENT_KEY)),
-          coerceProcessDefinitionKey(
-              applyRequiredPolicy(
-                  this.processDefinitionKey,
-                  this.processDefinitionKeyPolicy,
-                  Fields.PROCESS_DEFINITION_KEY)),
-          coerceProcessInstanceKey(
-              applyRequiredPolicy(
-                  this.processInstanceKey,
-                  this.processInstanceKeyPolicy,
-                  Fields.PROCESS_INSTANCE_KEY)),
+          this.processDefinitionId,
+          this.errorType,
+          this.errorMessage,
+          this.elementId,
+          this.creationTime,
+          this.state,
+          this.tenantId,
+          coerceIncidentKey(this.incidentKey),
+          coerceProcessDefinitionKey(this.processDefinitionKey),
+          coerceProcessInstanceKey(this.processInstanceKey),
           coerceRootProcessInstanceKey(this.rootProcessInstanceKey),
-          coerceElementInstanceKey(
-              applyRequiredPolicy(
-                  this.elementInstanceKey,
-                  this.elementInstanceKeyPolicy,
-                  Fields.ELEMENT_INSTANCE_KEY)),
+          coerceElementInstanceKey(this.elementInstanceKey),
           coerceJobKey(this.jobKey));
     }
   }
 
   public interface ProcessDefinitionIdStep {
-    ErrorTypeStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+    ErrorTypeStep processDefinitionId(final String processDefinitionId);
   }
 
   public interface ErrorTypeStep {
     ErrorMessageStep errorType(
-        final io.camunda.gateway.protocol.model.IncidentErrorTypeEnum errorType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum>
-            policy);
+        final io.camunda.gateway.protocol.model.IncidentErrorTypeEnum errorType);
   }
 
   public interface ErrorMessageStep {
-    ElementIdStep errorMessage(
-        final String errorMessage, final ContractPolicy.FieldPolicy<String> policy);
+    ElementIdStep errorMessage(final String errorMessage);
   }
 
   public interface ElementIdStep {
-    CreationTimeStep elementId(
-        final String elementId, final ContractPolicy.FieldPolicy<String> policy);
+    CreationTimeStep elementId(final String elementId);
   }
 
   public interface CreationTimeStep {
-    StateStep creationTime(
-        final String creationTime, final ContractPolicy.FieldPolicy<String> policy);
+    StateStep creationTime(final String creationTime);
   }
 
   public interface StateStep {
-    TenantIdStep state(
-        final io.camunda.gateway.protocol.model.IncidentStateEnum state,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.IncidentStateEnum>
-            policy);
+    TenantIdStep state(final io.camunda.gateway.protocol.model.IncidentStateEnum state);
   }
 
   public interface TenantIdStep {
-    IncidentKeyStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    IncidentKeyStep tenantId(final String tenantId);
   }
 
   public interface IncidentKeyStep {
-    ProcessDefinitionKeyStep incidentKey(
-        final Object incidentKey, final ContractPolicy.FieldPolicy<Object> policy);
+    ProcessDefinitionKeyStep incidentKey(final Object incidentKey);
   }
 
   public interface ProcessDefinitionKeyStep {
-    ProcessInstanceKeyStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+    ProcessInstanceKeyStep processDefinitionKey(final Object processDefinitionKey);
   }
 
   public interface ProcessInstanceKeyStep {
-    ElementInstanceKeyStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+    ElementInstanceKeyStep processInstanceKey(final Object processInstanceKey);
   }
 
   public interface ElementInstanceKeyStep {
-    OptionalStep elementInstanceKey(
-        final Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep elementInstanceKey(final Object elementInstanceKey);
   }
 
   public interface OptionalStep {
-    OptionalStep rootProcessInstanceKey(final String rootProcessInstanceKey);
+    OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
 
-    OptionalStep rootProcessInstanceKey(final Object rootProcessInstanceKey);
-
-    OptionalStep rootProcessInstanceKey(
-        final String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
 
     OptionalStep rootProcessInstanceKey(
-        final Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep jobKey(final String jobKey);
+    OptionalStep rootProcessInstanceKey(
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep jobKey(final Object jobKey);
+    OptionalStep jobKey(final @Nullable String jobKey);
 
-    OptionalStep jobKey(final String jobKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep jobKey(final @Nullable Object jobKey);
 
-    OptionalStep jobKey(final Object jobKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep jobKey(
+        final @Nullable String jobKey, final ContractPolicy.FieldPolicy<String> policy);
+
+    OptionalStep jobKey(
+        final @Nullable Object jobKey, final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedIncidentStrictContract build();
   }

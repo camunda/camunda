@@ -11,8 +11,10 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedTopologyResponseStrictContract(
     java.util.List<GeneratedBrokerInfoStrictContract> brokers,
@@ -60,14 +62,6 @@ public record GeneratedTopologyResponseStrictContract(
     return java.util.List.copyOf(result);
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static BrokersStep builder() {
     return new Builder();
   }
@@ -81,78 +75,60 @@ public record GeneratedTopologyResponseStrictContract(
           LastCompletedChangeIdStep,
           OptionalStep {
     private Object brokers;
-    private ContractPolicy.FieldPolicy<Object> brokersPolicy;
     private String clusterId;
     private Integer clusterSize;
-    private ContractPolicy.FieldPolicy<Integer> clusterSizePolicy;
     private Integer partitionsCount;
-    private ContractPolicy.FieldPolicy<Integer> partitionsCountPolicy;
     private Integer replicationFactor;
-    private ContractPolicy.FieldPolicy<Integer> replicationFactorPolicy;
     private String gatewayVersion;
-    private ContractPolicy.FieldPolicy<String> gatewayVersionPolicy;
     private String lastCompletedChangeId;
-    private ContractPolicy.FieldPolicy<String> lastCompletedChangeIdPolicy;
 
     private Builder() {}
 
     @Override
-    public ClusterSizeStep brokers(
-        final Object brokers, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ClusterSizeStep brokers(final Object brokers) {
       this.brokers = brokers;
-      this.brokersPolicy = policy;
       return this;
     }
 
     @Override
-    public PartitionsCountStep clusterSize(
-        final Integer clusterSize, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public PartitionsCountStep clusterSize(final Integer clusterSize) {
       this.clusterSize = clusterSize;
-      this.clusterSizePolicy = policy;
       return this;
     }
 
     @Override
-    public ReplicationFactorStep partitionsCount(
-        final Integer partitionsCount, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public ReplicationFactorStep partitionsCount(final Integer partitionsCount) {
       this.partitionsCount = partitionsCount;
-      this.partitionsCountPolicy = policy;
       return this;
     }
 
     @Override
-    public GatewayVersionStep replicationFactor(
-        final Integer replicationFactor, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public GatewayVersionStep replicationFactor(final Integer replicationFactor) {
       this.replicationFactor = replicationFactor;
-      this.replicationFactorPolicy = policy;
       return this;
     }
 
     @Override
-    public LastCompletedChangeIdStep gatewayVersion(
-        final String gatewayVersion, final ContractPolicy.FieldPolicy<String> policy) {
+    public LastCompletedChangeIdStep gatewayVersion(final String gatewayVersion) {
       this.gatewayVersion = gatewayVersion;
-      this.gatewayVersionPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep lastCompletedChangeId(
-        final String lastCompletedChangeId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep lastCompletedChangeId(final String lastCompletedChangeId) {
       this.lastCompletedChangeId = lastCompletedChangeId;
-      this.lastCompletedChangeIdPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep clusterId(final String clusterId) {
+    public OptionalStep clusterId(final @Nullable String clusterId) {
       this.clusterId = clusterId;
       return this;
     }
 
     @Override
     public OptionalStep clusterId(
-        final String clusterId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String clusterId, final ContractPolicy.FieldPolicy<String> policy) {
       this.clusterId = policy.apply(clusterId, Fields.CLUSTER_ID, null);
       return this;
     }
@@ -160,55 +136,45 @@ public record GeneratedTopologyResponseStrictContract(
     @Override
     public GeneratedTopologyResponseStrictContract build() {
       return new GeneratedTopologyResponseStrictContract(
-          coerceBrokers(applyRequiredPolicy(this.brokers, this.brokersPolicy, Fields.BROKERS)),
+          coerceBrokers(this.brokers),
           this.clusterId,
-          applyRequiredPolicy(this.clusterSize, this.clusterSizePolicy, Fields.CLUSTER_SIZE),
-          applyRequiredPolicy(
-              this.partitionsCount, this.partitionsCountPolicy, Fields.PARTITIONS_COUNT),
-          applyRequiredPolicy(
-              this.replicationFactor, this.replicationFactorPolicy, Fields.REPLICATION_FACTOR),
-          applyRequiredPolicy(
-              this.gatewayVersion, this.gatewayVersionPolicy, Fields.GATEWAY_VERSION),
-          applyRequiredPolicy(
-              this.lastCompletedChangeId,
-              this.lastCompletedChangeIdPolicy,
-              Fields.LAST_COMPLETED_CHANGE_ID));
+          this.clusterSize,
+          this.partitionsCount,
+          this.replicationFactor,
+          this.gatewayVersion,
+          this.lastCompletedChangeId);
     }
   }
 
   public interface BrokersStep {
-    ClusterSizeStep brokers(final Object brokers, final ContractPolicy.FieldPolicy<Object> policy);
+    ClusterSizeStep brokers(final Object brokers);
   }
 
   public interface ClusterSizeStep {
-    PartitionsCountStep clusterSize(
-        final Integer clusterSize, final ContractPolicy.FieldPolicy<Integer> policy);
+    PartitionsCountStep clusterSize(final Integer clusterSize);
   }
 
   public interface PartitionsCountStep {
-    ReplicationFactorStep partitionsCount(
-        final Integer partitionsCount, final ContractPolicy.FieldPolicy<Integer> policy);
+    ReplicationFactorStep partitionsCount(final Integer partitionsCount);
   }
 
   public interface ReplicationFactorStep {
-    GatewayVersionStep replicationFactor(
-        final Integer replicationFactor, final ContractPolicy.FieldPolicy<Integer> policy);
+    GatewayVersionStep replicationFactor(final Integer replicationFactor);
   }
 
   public interface GatewayVersionStep {
-    LastCompletedChangeIdStep gatewayVersion(
-        final String gatewayVersion, final ContractPolicy.FieldPolicy<String> policy);
+    LastCompletedChangeIdStep gatewayVersion(final String gatewayVersion);
   }
 
   public interface LastCompletedChangeIdStep {
-    OptionalStep lastCompletedChangeId(
-        final String lastCompletedChangeId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep lastCompletedChangeId(final String lastCompletedChangeId);
   }
 
   public interface OptionalStep {
-    OptionalStep clusterId(final String clusterId);
+    OptionalStep clusterId(final @Nullable String clusterId);
 
-    OptionalStep clusterId(final String clusterId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep clusterId(
+        final @Nullable String clusterId, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedTopologyResponseStrictContract build();
   }

@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedVariableValueFilterPropertyStrictContract(String name, Object value) {
 
@@ -19,54 +21,40 @@ public record GeneratedVariableValueFilterPropertyStrictContract(String name, Ob
     Objects.requireNonNull(value, "value is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static NameStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements NameStep, ValueStep, OptionalStep {
     private String name;
-    private ContractPolicy.FieldPolicy<String> namePolicy;
     private Object value;
-    private ContractPolicy.FieldPolicy<Object> valuePolicy;
 
     private Builder() {}
 
     @Override
-    public ValueStep name(final String name, final ContractPolicy.FieldPolicy<String> policy) {
+    public ValueStep name(final String name) {
       this.name = name;
-      this.namePolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep value(final Object value, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep value(final Object value) {
       this.value = value;
-      this.valuePolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedVariableValueFilterPropertyStrictContract build() {
-      return new GeneratedVariableValueFilterPropertyStrictContract(
-          applyRequiredPolicy(this.name, this.namePolicy, Fields.NAME),
-          applyRequiredPolicy(this.value, this.valuePolicy, Fields.VALUE));
+      return new GeneratedVariableValueFilterPropertyStrictContract(this.name, this.value);
     }
   }
 
   public interface NameStep {
-    ValueStep name(final String name, final ContractPolicy.FieldPolicy<String> policy);
+    ValueStep name(final String name);
   }
 
   public interface ValueStep {
-    OptionalStep value(final Object value, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep value(final Object value);
   }
 
   public interface OptionalStep {

@@ -10,8 +10,10 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedUserRequestStrictContract(
     String password, String username, @Nullable String name, @Nullable String email) {
@@ -21,64 +23,52 @@ public record GeneratedUserRequestStrictContract(
     Objects.requireNonNull(username, "username is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static PasswordStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements PasswordStep, UsernameStep, OptionalStep {
     private String password;
-    private ContractPolicy.FieldPolicy<String> passwordPolicy;
     private String username;
-    private ContractPolicy.FieldPolicy<String> usernamePolicy;
     private String name;
     private String email;
 
     private Builder() {}
 
     @Override
-    public UsernameStep password(
-        final String password, final ContractPolicy.FieldPolicy<String> policy) {
+    public UsernameStep password(final String password) {
       this.password = password;
-      this.passwordPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep username(
-        final String username, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep username(final String username) {
       this.username = username;
-      this.usernamePolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep name(final String name) {
+    public OptionalStep name(final @Nullable String name) {
       this.name = name;
       return this;
     }
 
     @Override
-    public OptionalStep name(final String name, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep name(
+        final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy) {
       this.name = policy.apply(name, Fields.NAME, null);
       return this;
     }
 
     @Override
-    public OptionalStep email(final String email) {
+    public OptionalStep email(final @Nullable String email) {
       this.email = email;
       return this;
     }
 
     @Override
-    public OptionalStep email(final String email, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep email(
+        final @Nullable String email, final ContractPolicy.FieldPolicy<String> policy) {
       this.email = policy.apply(email, Fields.EMAIL, null);
       return this;
     }
@@ -86,29 +76,27 @@ public record GeneratedUserRequestStrictContract(
     @Override
     public GeneratedUserRequestStrictContract build() {
       return new GeneratedUserRequestStrictContract(
-          applyRequiredPolicy(this.password, this.passwordPolicy, Fields.PASSWORD),
-          applyRequiredPolicy(this.username, this.usernamePolicy, Fields.USERNAME),
-          this.name,
-          this.email);
+          this.password, this.username, this.name, this.email);
     }
   }
 
   public interface PasswordStep {
-    UsernameStep password(final String password, final ContractPolicy.FieldPolicy<String> policy);
+    UsernameStep password(final String password);
   }
 
   public interface UsernameStep {
-    OptionalStep username(final String username, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep username(final String username);
   }
 
   public interface OptionalStep {
-    OptionalStep name(final String name);
+    OptionalStep name(final @Nullable String name);
 
-    OptionalStep name(final String name, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep name(final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep email(final String email);
+    OptionalStep email(final @Nullable String email);
 
-    OptionalStep email(final String email, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep email(
+        final @Nullable String email, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedUserRequestStrictContract build();
   }

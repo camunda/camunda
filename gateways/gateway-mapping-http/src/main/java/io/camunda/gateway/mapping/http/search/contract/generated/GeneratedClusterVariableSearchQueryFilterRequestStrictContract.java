@@ -9,8 +9,10 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedClusterVariableSearchQueryFilterRequestStrictContract(
     @Nullable Object name,
@@ -18,14 +20,6 @@ public record GeneratedClusterVariableSearchQueryFilterRequestStrictContract(
     @Nullable Object scope,
     @Nullable Object tenantId,
     @Nullable Boolean isTruncated) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
 
   public static OptionalStep builder() {
     return new Builder();
@@ -41,63 +35,66 @@ public record GeneratedClusterVariableSearchQueryFilterRequestStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep name(final Object name) {
+    public OptionalStep name(final @Nullable Object name) {
       this.name = name;
       return this;
     }
 
     @Override
-    public OptionalStep name(final Object name, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep name(
+        final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy) {
       this.name = policy.apply(name, Fields.NAME, null);
       return this;
     }
 
     @Override
-    public OptionalStep value(final Object value) {
+    public OptionalStep value(final @Nullable Object value) {
       this.value = value;
       return this;
     }
 
     @Override
-    public OptionalStep value(final Object value, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep value(
+        final @Nullable Object value, final ContractPolicy.FieldPolicy<Object> policy) {
       this.value = policy.apply(value, Fields.VALUE, null);
       return this;
     }
 
     @Override
-    public OptionalStep scope(final Object scope) {
+    public OptionalStep scope(final @Nullable Object scope) {
       this.scope = scope;
       return this;
     }
 
     @Override
-    public OptionalStep scope(final Object scope, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep scope(
+        final @Nullable Object scope, final ContractPolicy.FieldPolicy<Object> policy) {
       this.scope = policy.apply(scope, Fields.SCOPE, null);
       return this;
     }
 
     @Override
-    public OptionalStep tenantId(final Object tenantId) {
+    public OptionalStep tenantId(final @Nullable Object tenantId) {
       this.tenantId = tenantId;
       return this;
     }
 
     @Override
     public OptionalStep tenantId(
-        final Object tenantId, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep isTruncated(final Boolean isTruncated) {
+    public OptionalStep isTruncated(final @Nullable Boolean isTruncated) {
       this.isTruncated = isTruncated;
       return this;
     }
 
     @Override
     public OptionalStep isTruncated(
-        final Boolean isTruncated, final ContractPolicy.FieldPolicy<Boolean> policy) {
+        final @Nullable Boolean isTruncated, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.isTruncated = policy.apply(isTruncated, Fields.IS_TRUNCATED, null);
       return this;
     }
@@ -110,26 +107,29 @@ public record GeneratedClusterVariableSearchQueryFilterRequestStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep name(final Object name);
+    OptionalStep name(final @Nullable Object name);
 
-    OptionalStep name(final Object name, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep name(final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep value(final Object value);
+    OptionalStep value(final @Nullable Object value);
 
-    OptionalStep value(final Object value, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep value(
+        final @Nullable Object value, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep scope(final Object scope);
+    OptionalStep scope(final @Nullable Object scope);
 
-    OptionalStep scope(final Object scope, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep scope(
+        final @Nullable Object scope, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep tenantId(final Object tenantId);
+    OptionalStep tenantId(final @Nullable Object tenantId);
 
-    OptionalStep tenantId(final Object tenantId, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep tenantId(
+        final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep isTruncated(final Boolean isTruncated);
+    OptionalStep isTruncated(final @Nullable Boolean isTruncated);
 
     OptionalStep isTruncated(
-        final Boolean isTruncated, final ContractPolicy.FieldPolicy<Boolean> policy);
+        final @Nullable Boolean isTruncated, final ContractPolicy.FieldPolicy<Boolean> policy);
 
     GeneratedClusterVariableSearchQueryFilterRequestStrictContract build();
   }

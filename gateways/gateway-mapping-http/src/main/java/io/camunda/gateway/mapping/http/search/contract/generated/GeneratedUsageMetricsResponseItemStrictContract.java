@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedUsageMetricsResponseItemStrictContract(
     Long processInstances, Long decisionInstances, Long assignees) {
@@ -21,14 +23,6 @@ public record GeneratedUsageMetricsResponseItemStrictContract(
     Objects.requireNonNull(assignees, "assignees is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ProcessInstancesStep builder() {
     return new Builder();
   }
@@ -36,61 +30,46 @@ public record GeneratedUsageMetricsResponseItemStrictContract(
   public static final class Builder
       implements ProcessInstancesStep, DecisionInstancesStep, AssigneesStep, OptionalStep {
     private Long processInstances;
-    private ContractPolicy.FieldPolicy<Long> processInstancesPolicy;
     private Long decisionInstances;
-    private ContractPolicy.FieldPolicy<Long> decisionInstancesPolicy;
     private Long assignees;
-    private ContractPolicy.FieldPolicy<Long> assigneesPolicy;
 
     private Builder() {}
 
     @Override
-    public DecisionInstancesStep processInstances(
-        final Long processInstances, final ContractPolicy.FieldPolicy<Long> policy) {
+    public DecisionInstancesStep processInstances(final Long processInstances) {
       this.processInstances = processInstances;
-      this.processInstancesPolicy = policy;
       return this;
     }
 
     @Override
-    public AssigneesStep decisionInstances(
-        final Long decisionInstances, final ContractPolicy.FieldPolicy<Long> policy) {
+    public AssigneesStep decisionInstances(final Long decisionInstances) {
       this.decisionInstances = decisionInstances;
-      this.decisionInstancesPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep assignees(
-        final Long assignees, final ContractPolicy.FieldPolicy<Long> policy) {
+    public OptionalStep assignees(final Long assignees) {
       this.assignees = assignees;
-      this.assigneesPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedUsageMetricsResponseItemStrictContract build() {
       return new GeneratedUsageMetricsResponseItemStrictContract(
-          applyRequiredPolicy(
-              this.processInstances, this.processInstancesPolicy, Fields.PROCESS_INSTANCES),
-          applyRequiredPolicy(
-              this.decisionInstances, this.decisionInstancesPolicy, Fields.DECISION_INSTANCES),
-          applyRequiredPolicy(this.assignees, this.assigneesPolicy, Fields.ASSIGNEES));
+          this.processInstances, this.decisionInstances, this.assignees);
     }
   }
 
   public interface ProcessInstancesStep {
-    DecisionInstancesStep processInstances(
-        final Long processInstances, final ContractPolicy.FieldPolicy<Long> policy);
+    DecisionInstancesStep processInstances(final Long processInstances);
   }
 
   public interface DecisionInstancesStep {
-    AssigneesStep decisionInstances(
-        final Long decisionInstances, final ContractPolicy.FieldPolicy<Long> policy);
+    AssigneesStep decisionInstances(final Long decisionInstances);
   }
 
   public interface AssigneesStep {
-    OptionalStep assignees(final Long assignees, final ContractPolicy.FieldPolicy<Long> policy);
+    OptionalStep assignees(final Long assignees);
   }
 
   public interface OptionalStep {

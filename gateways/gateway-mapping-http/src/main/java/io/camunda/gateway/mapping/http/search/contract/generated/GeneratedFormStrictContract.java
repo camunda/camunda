@@ -11,7 +11,9 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedFormStrictContract(
     String tenantId, String formId, String schema, Long version, String formKey) {
@@ -38,14 +40,6 @@ public record GeneratedFormStrictContract(
         "formKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static TenantIdStep builder() {
     return new Builder();
   }
@@ -53,85 +47,68 @@ public record GeneratedFormStrictContract(
   public static final class Builder
       implements TenantIdStep, FormIdStep, SchemaStep, VersionStep, FormKeyStep, OptionalStep {
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
     private String formId;
-    private ContractPolicy.FieldPolicy<String> formIdPolicy;
     private String schema;
-    private ContractPolicy.FieldPolicy<String> schemaPolicy;
     private Long version;
-    private ContractPolicy.FieldPolicy<Long> versionPolicy;
     private Object formKey;
-    private ContractPolicy.FieldPolicy<Object> formKeyPolicy;
 
     private Builder() {}
 
     @Override
-    public FormIdStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public FormIdStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public SchemaStep formId(final String formId, final ContractPolicy.FieldPolicy<String> policy) {
+    public SchemaStep formId(final String formId) {
       this.formId = formId;
-      this.formIdPolicy = policy;
       return this;
     }
 
     @Override
-    public VersionStep schema(
-        final String schema, final ContractPolicy.FieldPolicy<String> policy) {
+    public VersionStep schema(final String schema) {
       this.schema = schema;
-      this.schemaPolicy = policy;
       return this;
     }
 
     @Override
-    public FormKeyStep version(final Long version, final ContractPolicy.FieldPolicy<Long> policy) {
+    public FormKeyStep version(final Long version) {
       this.version = version;
-      this.versionPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep formKey(
-        final Object formKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep formKey(final Object formKey) {
       this.formKey = formKey;
-      this.formKeyPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedFormStrictContract build() {
       return new GeneratedFormStrictContract(
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID),
-          applyRequiredPolicy(this.formId, this.formIdPolicy, Fields.FORM_ID),
-          applyRequiredPolicy(this.schema, this.schemaPolicy, Fields.SCHEMA),
-          applyRequiredPolicy(this.version, this.versionPolicy, Fields.VERSION),
-          coerceFormKey(applyRequiredPolicy(this.formKey, this.formKeyPolicy, Fields.FORM_KEY)));
+          this.tenantId, this.formId, this.schema, this.version, coerceFormKey(this.formKey));
     }
   }
 
   public interface TenantIdStep {
-    FormIdStep tenantId(final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    FormIdStep tenantId(final String tenantId);
   }
 
   public interface FormIdStep {
-    SchemaStep formId(final String formId, final ContractPolicy.FieldPolicy<String> policy);
+    SchemaStep formId(final String formId);
   }
 
   public interface SchemaStep {
-    VersionStep schema(final String schema, final ContractPolicy.FieldPolicy<String> policy);
+    VersionStep schema(final String schema);
   }
 
   public interface VersionStep {
-    FormKeyStep version(final Long version, final ContractPolicy.FieldPolicy<Long> policy);
+    FormKeyStep version(final Long version);
   }
 
   public interface FormKeyStep {
-    OptionalStep formKey(final Object formKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep formKey(final Object formKey);
   }
 
   public interface OptionalStep {

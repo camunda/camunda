@@ -9,24 +9,18 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedAdvancedIncidentErrorTypeFilterStrictContract(
-    @Nullable io.camunda.gateway.protocol.model.IncidentErrorTypeEnum eq,
-    @Nullable io.camunda.gateway.protocol.model.IncidentErrorTypeEnum neq,
+    io.camunda.gateway.protocol.model.@Nullable IncidentErrorTypeEnum eq,
+    io.camunda.gateway.protocol.model.@Nullable IncidentErrorTypeEnum neq,
     @Nullable Boolean exists,
-    @Nullable java.util.List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum> in,
-    @Nullable java.util.List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum> notIn,
+    java.util.@Nullable List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum> in,
+    java.util.@Nullable List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum> notIn,
     @Nullable String like) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
 
   public static OptionalStep builder() {
     return new Builder();
@@ -43,14 +37,15 @@ public record GeneratedAdvancedIncidentErrorTypeFilterStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep eq(final io.camunda.gateway.protocol.model.IncidentErrorTypeEnum eq) {
+    public OptionalStep eq(
+        final io.camunda.gateway.protocol.model.@Nullable IncidentErrorTypeEnum eq) {
       this.eq = eq;
       return this;
     }
 
     @Override
     public OptionalStep eq(
-        final io.camunda.gateway.protocol.model.IncidentErrorTypeEnum eq,
+        final io.camunda.gateway.protocol.model.@Nullable IncidentErrorTypeEnum eq,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum>
             policy) {
       this.eq = policy.apply(eq, Fields.EQ, null);
@@ -58,14 +53,15 @@ public record GeneratedAdvancedIncidentErrorTypeFilterStrictContract(
     }
 
     @Override
-    public OptionalStep neq(final io.camunda.gateway.protocol.model.IncidentErrorTypeEnum neq) {
+    public OptionalStep neq(
+        final io.camunda.gateway.protocol.model.@Nullable IncidentErrorTypeEnum neq) {
       this.neq = neq;
       return this;
     }
 
     @Override
     public OptionalStep neq(
-        final io.camunda.gateway.protocol.model.IncidentErrorTypeEnum neq,
+        final io.camunda.gateway.protocol.model.@Nullable IncidentErrorTypeEnum neq,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum>
             policy) {
       this.neq = policy.apply(neq, Fields.NEQ, null);
@@ -73,28 +69,29 @@ public record GeneratedAdvancedIncidentErrorTypeFilterStrictContract(
     }
 
     @Override
-    public OptionalStep exists(final Boolean exists) {
+    public OptionalStep exists(final @Nullable Boolean exists) {
       this.exists = exists;
       return this;
     }
 
     @Override
     public OptionalStep exists(
-        final Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
+        final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.exists = policy.apply(exists, Fields.EXISTS, null);
       return this;
     }
 
     @Override
     public OptionalStep in(
-        final java.util.List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum> in) {
+        final java.util.@Nullable List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum>
+            in) {
       this.in = in;
       return this;
     }
 
     @Override
     public OptionalStep in(
-        final java.util.List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum> in,
+        final java.util.@Nullable List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum> in,
         final ContractPolicy.FieldPolicy<
                 java.util.List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum>>
             policy) {
@@ -104,14 +101,16 @@ public record GeneratedAdvancedIncidentErrorTypeFilterStrictContract(
 
     @Override
     public OptionalStep notIn(
-        final java.util.List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum> notIn) {
+        final java.util.@Nullable List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum>
+            notIn) {
       this.notIn = notIn;
       return this;
     }
 
     @Override
     public OptionalStep notIn(
-        final java.util.List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum> notIn,
+        final java.util.@Nullable List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum>
+            notIn,
         final ContractPolicy.FieldPolicy<
                 java.util.List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum>>
             policy) {
@@ -120,13 +119,14 @@ public record GeneratedAdvancedIncidentErrorTypeFilterStrictContract(
     }
 
     @Override
-    public OptionalStep like(final String like) {
+    public OptionalStep like(final @Nullable String like) {
       this.like = like;
       return this;
     }
 
     @Override
-    public OptionalStep like(final String like, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep like(
+        final @Nullable String like, final ContractPolicy.FieldPolicy<String> policy) {
       this.like = policy.apply(like, Fields.LIKE, null);
       return this;
     }
@@ -139,45 +139,48 @@ public record GeneratedAdvancedIncidentErrorTypeFilterStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep eq(final io.camunda.gateway.protocol.model.IncidentErrorTypeEnum eq);
+    OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable IncidentErrorTypeEnum eq);
 
     OptionalStep eq(
-        final io.camunda.gateway.protocol.model.IncidentErrorTypeEnum eq,
+        final io.camunda.gateway.protocol.model.@Nullable IncidentErrorTypeEnum eq,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum>
             policy);
 
-    OptionalStep neq(final io.camunda.gateway.protocol.model.IncidentErrorTypeEnum neq);
+    OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable IncidentErrorTypeEnum neq);
 
     OptionalStep neq(
-        final io.camunda.gateway.protocol.model.IncidentErrorTypeEnum neq,
+        final io.camunda.gateway.protocol.model.@Nullable IncidentErrorTypeEnum neq,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum>
             policy);
 
-    OptionalStep exists(final Boolean exists);
+    OptionalStep exists(final @Nullable Boolean exists);
 
-    OptionalStep exists(final Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy);
-
-    OptionalStep in(
-        final java.util.List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum> in);
+    OptionalStep exists(
+        final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy);
 
     OptionalStep in(
-        final java.util.List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum> in,
+        final java.util.@Nullable List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum> in);
+
+    OptionalStep in(
+        final java.util.@Nullable List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum> in,
         final ContractPolicy.FieldPolicy<
                 java.util.List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum>>
             policy);
 
     OptionalStep notIn(
-        final java.util.List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum> notIn);
+        final java.util.@Nullable List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum>
+            notIn);
 
     OptionalStep notIn(
-        final java.util.List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum> notIn,
+        final java.util.@Nullable List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum>
+            notIn,
         final ContractPolicy.FieldPolicy<
                 java.util.List<io.camunda.gateway.protocol.model.IncidentErrorTypeEnum>>
             policy);
 
-    OptionalStep like(final String like);
+    OptionalStep like(final @Nullable String like);
 
-    OptionalStep like(final String like, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep like(final @Nullable String like, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedAdvancedIncidentErrorTypeFilterStrictContract build();
   }

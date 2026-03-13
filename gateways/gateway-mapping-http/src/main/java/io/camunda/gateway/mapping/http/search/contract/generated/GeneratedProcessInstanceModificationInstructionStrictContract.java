@@ -10,18 +10,18 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessInstanceModificationInstructionStrictContract(
     @Nullable Long operationReference,
-    @Nullable
-        java.util.List<GeneratedProcessInstanceModificationActivateInstructionStrictContract>
-            activateInstructions,
-    @Nullable
-        java.util.List<GeneratedProcessInstanceModificationMoveInstructionStrictContract>
-            moveInstructions,
-    @Nullable java.util.List<Object> terminateInstructions) {
+    java.util.@Nullable List<GeneratedProcessInstanceModificationActivateInstructionStrictContract>
+        activateInstructions,
+    java.util.@Nullable List<GeneratedProcessInstanceModificationMoveInstructionStrictContract>
+        moveInstructions,
+    java.util.@Nullable List<Object> terminateInstructions) {
 
   public static java.util.List<
           GeneratedProcessInstanceModificationActivateInstructionStrictContract>
@@ -85,14 +85,6 @@ public record GeneratedProcessInstanceModificationInstructionStrictContract(
     return java.util.List.copyOf(result);
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static OptionalStep builder() {
     return new Builder();
   }
@@ -106,34 +98,36 @@ public record GeneratedProcessInstanceModificationInstructionStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep operationReference(final Long operationReference) {
+    public OptionalStep operationReference(final @Nullable Long operationReference) {
       this.operationReference = operationReference;
       return this;
     }
 
     @Override
     public OptionalStep operationReference(
-        final Long operationReference, final ContractPolicy.FieldPolicy<Long> policy) {
+        final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy) {
       this.operationReference = policy.apply(operationReference, Fields.OPERATION_REFERENCE, null);
       return this;
     }
 
     @Override
     public OptionalStep activateInstructions(
-        final java.util.List<GeneratedProcessInstanceModificationActivateInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedProcessInstanceModificationActivateInstructionStrictContract>
             activateInstructions) {
       this.activateInstructions = activateInstructions;
       return this;
     }
 
     @Override
-    public OptionalStep activateInstructions(final Object activateInstructions) {
+    public OptionalStep activateInstructions(final @Nullable Object activateInstructions) {
       this.activateInstructions = activateInstructions;
       return this;
     }
 
     public Builder activateInstructions(
-        final java.util.List<GeneratedProcessInstanceModificationActivateInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedProcessInstanceModificationActivateInstructionStrictContract>
             activateInstructions,
         final ContractPolicy.FieldPolicy<
                 java.util.List<
@@ -146,7 +140,8 @@ public record GeneratedProcessInstanceModificationInstructionStrictContract(
 
     @Override
     public OptionalStep activateInstructions(
-        final Object activateInstructions, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object activateInstructions,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.activateInstructions =
           policy.apply(activateInstructions, Fields.ACTIVATE_INSTRUCTIONS, null);
       return this;
@@ -154,20 +149,22 @@ public record GeneratedProcessInstanceModificationInstructionStrictContract(
 
     @Override
     public OptionalStep moveInstructions(
-        final java.util.List<GeneratedProcessInstanceModificationMoveInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedProcessInstanceModificationMoveInstructionStrictContract>
             moveInstructions) {
       this.moveInstructions = moveInstructions;
       return this;
     }
 
     @Override
-    public OptionalStep moveInstructions(final Object moveInstructions) {
+    public OptionalStep moveInstructions(final @Nullable Object moveInstructions) {
       this.moveInstructions = moveInstructions;
       return this;
     }
 
     public Builder moveInstructions(
-        final java.util.List<GeneratedProcessInstanceModificationMoveInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedProcessInstanceModificationMoveInstructionStrictContract>
             moveInstructions,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedProcessInstanceModificationMoveInstructionStrictContract>>
@@ -178,20 +175,21 @@ public record GeneratedProcessInstanceModificationInstructionStrictContract(
 
     @Override
     public OptionalStep moveInstructions(
-        final Object moveInstructions, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object moveInstructions, final ContractPolicy.FieldPolicy<Object> policy) {
       this.moveInstructions = policy.apply(moveInstructions, Fields.MOVE_INSTRUCTIONS, null);
       return this;
     }
 
     @Override
-    public OptionalStep terminateInstructions(final java.util.List<Object> terminateInstructions) {
+    public OptionalStep terminateInstructions(
+        final java.util.@Nullable List<Object> terminateInstructions) {
       this.terminateInstructions = terminateInstructions;
       return this;
     }
 
     @Override
     public OptionalStep terminateInstructions(
-        final java.util.List<Object> terminateInstructions,
+        final java.util.@Nullable List<Object> terminateInstructions,
         final ContractPolicy.FieldPolicy<java.util.List<Object>> policy) {
       this.terminateInstructions =
           policy.apply(terminateInstructions, Fields.TERMINATE_INSTRUCTIONS, null);
@@ -209,19 +207,21 @@ public record GeneratedProcessInstanceModificationInstructionStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep operationReference(final Long operationReference);
+    OptionalStep operationReference(final @Nullable Long operationReference);
 
     OptionalStep operationReference(
-        final Long operationReference, final ContractPolicy.FieldPolicy<Long> policy);
+        final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy);
 
     OptionalStep activateInstructions(
-        final java.util.List<GeneratedProcessInstanceModificationActivateInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedProcessInstanceModificationActivateInstructionStrictContract>
             activateInstructions);
 
-    OptionalStep activateInstructions(final Object activateInstructions);
+    OptionalStep activateInstructions(final @Nullable Object activateInstructions);
 
     OptionalStep activateInstructions(
-        final java.util.List<GeneratedProcessInstanceModificationActivateInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedProcessInstanceModificationActivateInstructionStrictContract>
             activateInstructions,
         final ContractPolicy.FieldPolicy<
                 java.util.List<
@@ -229,28 +229,32 @@ public record GeneratedProcessInstanceModificationInstructionStrictContract(
             policy);
 
     OptionalStep activateInstructions(
-        final Object activateInstructions, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object activateInstructions,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
     OptionalStep moveInstructions(
-        final java.util.List<GeneratedProcessInstanceModificationMoveInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedProcessInstanceModificationMoveInstructionStrictContract>
             moveInstructions);
 
-    OptionalStep moveInstructions(final Object moveInstructions);
+    OptionalStep moveInstructions(final @Nullable Object moveInstructions);
 
     OptionalStep moveInstructions(
-        final java.util.List<GeneratedProcessInstanceModificationMoveInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedProcessInstanceModificationMoveInstructionStrictContract>
             moveInstructions,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedProcessInstanceModificationMoveInstructionStrictContract>>
             policy);
 
     OptionalStep moveInstructions(
-        final Object moveInstructions, final ContractPolicy.FieldPolicy<Object> policy);
-
-    OptionalStep terminateInstructions(final java.util.List<Object> terminateInstructions);
+        final @Nullable Object moveInstructions, final ContractPolicy.FieldPolicy<Object> policy);
 
     OptionalStep terminateInstructions(
-        final java.util.List<Object> terminateInstructions,
+        final java.util.@Nullable List<Object> terminateInstructions);
+
+    OptionalStep terminateInstructions(
+        final java.util.@Nullable List<Object> terminateInstructions,
         final ContractPolicy.FieldPolicy<java.util.List<Object>> policy);
 
     GeneratedProcessInstanceModificationInstructionStrictContract build();

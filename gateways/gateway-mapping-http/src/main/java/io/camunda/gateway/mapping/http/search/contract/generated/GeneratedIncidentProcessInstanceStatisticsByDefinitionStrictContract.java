@@ -11,7 +11,9 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContract(
     String processDefinitionId,
@@ -50,14 +52,6 @@ public record GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContra
         "processDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ProcessDefinitionIdStep builder() {
     return new Builder();
   }
@@ -71,124 +65,84 @@ public record GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContra
           ActiveInstancesWithErrorCountStep,
           OptionalStep {
     private String processDefinitionId;
-    private ContractPolicy.FieldPolicy<String> processDefinitionIdPolicy;
     private Object processDefinitionKey;
-    private ContractPolicy.FieldPolicy<Object> processDefinitionKeyPolicy;
     private String processDefinitionName;
-    private ContractPolicy.FieldPolicy<String> processDefinitionNamePolicy;
     private Integer processDefinitionVersion;
-    private ContractPolicy.FieldPolicy<Integer> processDefinitionVersionPolicy;
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
     private Long activeInstancesWithErrorCount;
-    private ContractPolicy.FieldPolicy<Long> activeInstancesWithErrorCountPolicy;
 
     private Builder() {}
 
     @Override
-    public ProcessDefinitionKeyStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+    public ProcessDefinitionKeyStep processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
-      this.processDefinitionIdPolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessDefinitionNameStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ProcessDefinitionNameStep processDefinitionKey(final Object processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
-      this.processDefinitionKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessDefinitionVersionStep processDefinitionName(
-        final String processDefinitionName, final ContractPolicy.FieldPolicy<String> policy) {
+    public ProcessDefinitionVersionStep processDefinitionName(final String processDefinitionName) {
       this.processDefinitionName = processDefinitionName;
-      this.processDefinitionNamePolicy = policy;
       return this;
     }
 
     @Override
-    public TenantIdStep processDefinitionVersion(
-        final Integer processDefinitionVersion, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public TenantIdStep processDefinitionVersion(final Integer processDefinitionVersion) {
       this.processDefinitionVersion = processDefinitionVersion;
-      this.processDefinitionVersionPolicy = policy;
       return this;
     }
 
     @Override
-    public ActiveInstancesWithErrorCountStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public ActiveInstancesWithErrorCountStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep activeInstancesWithErrorCount(
-        final Long activeInstancesWithErrorCount, final ContractPolicy.FieldPolicy<Long> policy) {
+    public OptionalStep activeInstancesWithErrorCount(final Long activeInstancesWithErrorCount) {
       this.activeInstancesWithErrorCount = activeInstancesWithErrorCount;
-      this.activeInstancesWithErrorCountPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContract build() {
       return new GeneratedIncidentProcessInstanceStatisticsByDefinitionStrictContract(
-          applyRequiredPolicy(
-              this.processDefinitionId,
-              this.processDefinitionIdPolicy,
-              Fields.PROCESS_DEFINITION_ID),
-          coerceProcessDefinitionKey(
-              applyRequiredPolicy(
-                  this.processDefinitionKey,
-                  this.processDefinitionKeyPolicy,
-                  Fields.PROCESS_DEFINITION_KEY)),
-          applyRequiredPolicy(
-              this.processDefinitionName,
-              this.processDefinitionNamePolicy,
-              Fields.PROCESS_DEFINITION_NAME),
-          applyRequiredPolicy(
-              this.processDefinitionVersion,
-              this.processDefinitionVersionPolicy,
-              Fields.PROCESS_DEFINITION_VERSION),
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID),
-          applyRequiredPolicy(
-              this.activeInstancesWithErrorCount,
-              this.activeInstancesWithErrorCountPolicy,
-              Fields.ACTIVE_INSTANCES_WITH_ERROR_COUNT));
+          this.processDefinitionId,
+          coerceProcessDefinitionKey(this.processDefinitionKey),
+          this.processDefinitionName,
+          this.processDefinitionVersion,
+          this.tenantId,
+          this.activeInstancesWithErrorCount);
     }
   }
 
   public interface ProcessDefinitionIdStep {
-    ProcessDefinitionKeyStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+    ProcessDefinitionKeyStep processDefinitionId(final String processDefinitionId);
   }
 
   public interface ProcessDefinitionKeyStep {
-    ProcessDefinitionNameStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+    ProcessDefinitionNameStep processDefinitionKey(final Object processDefinitionKey);
   }
 
   public interface ProcessDefinitionNameStep {
-    ProcessDefinitionVersionStep processDefinitionName(
-        final String processDefinitionName, final ContractPolicy.FieldPolicy<String> policy);
+    ProcessDefinitionVersionStep processDefinitionName(final String processDefinitionName);
   }
 
   public interface ProcessDefinitionVersionStep {
-    TenantIdStep processDefinitionVersion(
-        final Integer processDefinitionVersion, final ContractPolicy.FieldPolicy<Integer> policy);
+    TenantIdStep processDefinitionVersion(final Integer processDefinitionVersion);
   }
 
   public interface TenantIdStep {
-    ActiveInstancesWithErrorCountStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    ActiveInstancesWithErrorCountStep tenantId(final String tenantId);
   }
 
   public interface ActiveInstancesWithErrorCountStep {
-    OptionalStep activeInstancesWithErrorCount(
-        final Long activeInstancesWithErrorCount, final ContractPolicy.FieldPolicy<Long> policy);
+    OptionalStep activeInstancesWithErrorCount(final Long activeInstancesWithErrorCount);
   }
 
   public interface OptionalStep {

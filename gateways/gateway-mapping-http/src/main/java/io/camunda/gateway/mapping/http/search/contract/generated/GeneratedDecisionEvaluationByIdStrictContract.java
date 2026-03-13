@@ -10,25 +10,19 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedDecisionEvaluationByIdStrictContract(
     String decisionDefinitionId,
-    @Nullable java.util.Map<String, Object> variables,
+    java.util.@Nullable Map<String, Object> variables,
     @Nullable String tenantId) {
 
   public GeneratedDecisionEvaluationByIdStrictContract {
     Objects.requireNonNull(
         decisionDefinitionId, "decisionDefinitionId is required and must not be null");
-  }
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
   }
 
   public static DecisionDefinitionIdStep builder() {
@@ -37,43 +31,40 @@ public record GeneratedDecisionEvaluationByIdStrictContract(
 
   public static final class Builder implements DecisionDefinitionIdStep, OptionalStep {
     private String decisionDefinitionId;
-    private ContractPolicy.FieldPolicy<String> decisionDefinitionIdPolicy;
     private java.util.Map<String, Object> variables;
     private String tenantId;
 
     private Builder() {}
 
     @Override
-    public OptionalStep decisionDefinitionId(
-        final String decisionDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep decisionDefinitionId(final String decisionDefinitionId) {
       this.decisionDefinitionId = decisionDefinitionId;
-      this.decisionDefinitionIdPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep variables(final java.util.Map<String, Object> variables) {
+    public OptionalStep variables(final java.util.@Nullable Map<String, Object> variables) {
       this.variables = variables;
       return this;
     }
 
     @Override
     public OptionalStep variables(
-        final java.util.Map<String, Object> variables,
+        final java.util.@Nullable Map<String, Object> variables,
         final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
       this.variables = policy.apply(variables, Fields.VARIABLES, null);
       return this;
     }
 
     @Override
-    public OptionalStep tenantId(final String tenantId) {
+    public OptionalStep tenantId(final @Nullable String tenantId) {
       this.tenantId = tenantId;
       return this;
     }
 
     @Override
     public OptionalStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
@@ -81,30 +72,25 @@ public record GeneratedDecisionEvaluationByIdStrictContract(
     @Override
     public GeneratedDecisionEvaluationByIdStrictContract build() {
       return new GeneratedDecisionEvaluationByIdStrictContract(
-          applyRequiredPolicy(
-              this.decisionDefinitionId,
-              this.decisionDefinitionIdPolicy,
-              Fields.DECISION_DEFINITION_ID),
-          this.variables,
-          this.tenantId);
+          this.decisionDefinitionId, this.variables, this.tenantId);
     }
   }
 
   public interface DecisionDefinitionIdStep {
-    OptionalStep decisionDefinitionId(
-        final String decisionDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep decisionDefinitionId(final String decisionDefinitionId);
   }
 
   public interface OptionalStep {
-    OptionalStep variables(final java.util.Map<String, Object> variables);
+    OptionalStep variables(final java.util.@Nullable Map<String, Object> variables);
 
     OptionalStep variables(
-        final java.util.Map<String, Object> variables,
+        final java.util.@Nullable Map<String, Object> variables,
         final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
 
-    OptionalStep tenantId(final String tenantId);
+    OptionalStep tenantId(final @Nullable String tenantId);
 
-    OptionalStep tenantId(final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep tenantId(
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedDecisionEvaluationByIdStrictContract build();
   }

@@ -11,16 +11,17 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessInstanceModificationMoveInstructionStrictContract(
     Object sourceElementInstruction,
     String targetElementId,
     @Nullable Object ancestorScopeInstruction,
-    @Nullable
-        java.util.List<GeneratedModifyProcessInstanceVariableInstructionStrictContract>
-            variableInstructions) {
+    java.util.@Nullable List<GeneratedModifyProcessInstanceVariableInstructionStrictContract>
+        variableInstructions) {
 
   public GeneratedProcessInstanceModificationMoveInstructionStrictContract {
     Objects.requireNonNull(
@@ -58,14 +59,6 @@ public record GeneratedProcessInstanceModificationMoveInstructionStrictContract(
     return java.util.List.copyOf(result);
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static SourceElementInstructionStep builder() {
     return new Builder();
   }
@@ -73,39 +66,34 @@ public record GeneratedProcessInstanceModificationMoveInstructionStrictContract(
   public static final class Builder
       implements SourceElementInstructionStep, TargetElementIdStep, OptionalStep {
     private Object sourceElementInstruction;
-    private ContractPolicy.FieldPolicy<Object> sourceElementInstructionPolicy;
     private String targetElementId;
-    private ContractPolicy.FieldPolicy<String> targetElementIdPolicy;
     private Object ancestorScopeInstruction;
     private Object variableInstructions;
 
     private Builder() {}
 
     @Override
-    public TargetElementIdStep sourceElementInstruction(
-        final Object sourceElementInstruction, final ContractPolicy.FieldPolicy<Object> policy) {
+    public TargetElementIdStep sourceElementInstruction(final Object sourceElementInstruction) {
       this.sourceElementInstruction = sourceElementInstruction;
-      this.sourceElementInstructionPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep targetElementId(
-        final String targetElementId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep targetElementId(final String targetElementId) {
       this.targetElementId = targetElementId;
-      this.targetElementIdPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep ancestorScopeInstruction(final Object ancestorScopeInstruction) {
+    public OptionalStep ancestorScopeInstruction(final @Nullable Object ancestorScopeInstruction) {
       this.ancestorScopeInstruction = ancestorScopeInstruction;
       return this;
     }
 
     @Override
     public OptionalStep ancestorScopeInstruction(
-        final Object ancestorScopeInstruction, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object ancestorScopeInstruction,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.ancestorScopeInstruction =
           policy.apply(ancestorScopeInstruction, Fields.ANCESTOR_SCOPE_INSTRUCTION, null);
       return this;
@@ -113,20 +101,22 @@ public record GeneratedProcessInstanceModificationMoveInstructionStrictContract(
 
     @Override
     public OptionalStep variableInstructions(
-        final java.util.List<GeneratedModifyProcessInstanceVariableInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedModifyProcessInstanceVariableInstructionStrictContract>
             variableInstructions) {
       this.variableInstructions = variableInstructions;
       return this;
     }
 
     @Override
-    public OptionalStep variableInstructions(final Object variableInstructions) {
+    public OptionalStep variableInstructions(final @Nullable Object variableInstructions) {
       this.variableInstructions = variableInstructions;
       return this;
     }
 
     public Builder variableInstructions(
-        final java.util.List<GeneratedModifyProcessInstanceVariableInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedModifyProcessInstanceVariableInstructionStrictContract>
             variableInstructions,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedModifyProcessInstanceVariableInstructionStrictContract>>
@@ -138,7 +128,8 @@ public record GeneratedProcessInstanceModificationMoveInstructionStrictContract(
 
     @Override
     public OptionalStep variableInstructions(
-        final Object variableInstructions, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object variableInstructions,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.variableInstructions =
           policy.apply(variableInstructions, Fields.VARIABLE_INSTRUCTIONS, null);
       return this;
@@ -147,48 +138,46 @@ public record GeneratedProcessInstanceModificationMoveInstructionStrictContract(
     @Override
     public GeneratedProcessInstanceModificationMoveInstructionStrictContract build() {
       return new GeneratedProcessInstanceModificationMoveInstructionStrictContract(
-          applyRequiredPolicy(
-              this.sourceElementInstruction,
-              this.sourceElementInstructionPolicy,
-              Fields.SOURCE_ELEMENT_INSTRUCTION),
-          applyRequiredPolicy(
-              this.targetElementId, this.targetElementIdPolicy, Fields.TARGET_ELEMENT_ID),
+          this.sourceElementInstruction,
+          this.targetElementId,
           this.ancestorScopeInstruction,
           coerceVariableInstructions(this.variableInstructions));
     }
   }
 
   public interface SourceElementInstructionStep {
-    TargetElementIdStep sourceElementInstruction(
-        final Object sourceElementInstruction, final ContractPolicy.FieldPolicy<Object> policy);
+    TargetElementIdStep sourceElementInstruction(final Object sourceElementInstruction);
   }
 
   public interface TargetElementIdStep {
-    OptionalStep targetElementId(
-        final String targetElementId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep targetElementId(final String targetElementId);
   }
 
   public interface OptionalStep {
-    OptionalStep ancestorScopeInstruction(final Object ancestorScopeInstruction);
+    OptionalStep ancestorScopeInstruction(final @Nullable Object ancestorScopeInstruction);
 
     OptionalStep ancestorScopeInstruction(
-        final Object ancestorScopeInstruction, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object ancestorScopeInstruction,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
     OptionalStep variableInstructions(
-        final java.util.List<GeneratedModifyProcessInstanceVariableInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedModifyProcessInstanceVariableInstructionStrictContract>
             variableInstructions);
 
-    OptionalStep variableInstructions(final Object variableInstructions);
+    OptionalStep variableInstructions(final @Nullable Object variableInstructions);
 
     OptionalStep variableInstructions(
-        final java.util.List<GeneratedModifyProcessInstanceVariableInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedModifyProcessInstanceVariableInstructionStrictContract>
             variableInstructions,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedModifyProcessInstanceVariableInstructionStrictContract>>
             policy);
 
     OptionalStep variableInstructions(
-        final Object variableInstructions, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object variableInstructions,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedProcessInstanceModificationMoveInstructionStrictContract build();
   }

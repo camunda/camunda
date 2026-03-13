@@ -11,7 +11,9 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedMessageCorrelationStrictContract(
     String tenantId, String messageKey, String processInstanceKey) {
@@ -51,14 +53,6 @@ public record GeneratedMessageCorrelationStrictContract(
         "processInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static TenantIdStep builder() {
     return new Builder();
   }
@@ -66,64 +60,48 @@ public record GeneratedMessageCorrelationStrictContract(
   public static final class Builder
       implements TenantIdStep, MessageKeyStep, ProcessInstanceKeyStep, OptionalStep {
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
     private Object messageKey;
-    private ContractPolicy.FieldPolicy<Object> messageKeyPolicy;
     private Object processInstanceKey;
-    private ContractPolicy.FieldPolicy<Object> processInstanceKeyPolicy;
 
     private Builder() {}
 
     @Override
-    public MessageKeyStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public MessageKeyStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessInstanceKeyStep messageKey(
-        final Object messageKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ProcessInstanceKeyStep messageKey(final Object messageKey) {
       this.messageKey = messageKey;
-      this.messageKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep processInstanceKey(final Object processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
-      this.processInstanceKeyPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedMessageCorrelationStrictContract build() {
       return new GeneratedMessageCorrelationStrictContract(
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID),
-          coerceMessageKey(
-              applyRequiredPolicy(this.messageKey, this.messageKeyPolicy, Fields.MESSAGE_KEY)),
-          coerceProcessInstanceKey(
-              applyRequiredPolicy(
-                  this.processInstanceKey,
-                  this.processInstanceKeyPolicy,
-                  Fields.PROCESS_INSTANCE_KEY)));
+          this.tenantId,
+          coerceMessageKey(this.messageKey),
+          coerceProcessInstanceKey(this.processInstanceKey));
     }
   }
 
   public interface TenantIdStep {
-    MessageKeyStep tenantId(final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    MessageKeyStep tenantId(final String tenantId);
   }
 
   public interface MessageKeyStep {
-    ProcessInstanceKeyStep messageKey(
-        final Object messageKey, final ContractPolicy.FieldPolicy<Object> policy);
+    ProcessInstanceKeyStep messageKey(final Object messageKey);
   }
 
   public interface ProcessInstanceKeyStep {
-    OptionalStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep processInstanceKey(final Object processInstanceKey);
   }
 
   public interface OptionalStep {

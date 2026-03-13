@@ -11,8 +11,10 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedMessageSubscriptionStrictContract(
     String messageSubscriptionKey,
@@ -111,14 +113,6 @@ public record GeneratedMessageSubscriptionStrictContract(
         "elementInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static MessageSubscriptionKeyStep builder() {
     return new Builder();
   }
@@ -133,103 +127,79 @@ public record GeneratedMessageSubscriptionStrictContract(
           TenantIdStep,
           OptionalStep {
     private Object messageSubscriptionKey;
-    private ContractPolicy.FieldPolicy<Object> messageSubscriptionKeyPolicy;
     private String processDefinitionId;
-    private ContractPolicy.FieldPolicy<String> processDefinitionIdPolicy;
     private Object processDefinitionKey;
     private Object processInstanceKey;
     private Object rootProcessInstanceKey;
     private String elementId;
-    private ContractPolicy.FieldPolicy<String> elementIdPolicy;
     private Object elementInstanceKey;
     private io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum messageSubscriptionState;
-    private ContractPolicy.FieldPolicy<
-            io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum>
-        messageSubscriptionStatePolicy;
     private String lastUpdatedDate;
-    private ContractPolicy.FieldPolicy<String> lastUpdatedDatePolicy;
     private String messageName;
-    private ContractPolicy.FieldPolicy<String> messageNamePolicy;
     private String correlationKey;
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
 
     private Builder() {}
 
     @Override
-    public ProcessDefinitionIdStep messageSubscriptionKey(
-        final Object messageSubscriptionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ProcessDefinitionIdStep messageSubscriptionKey(final Object messageSubscriptionKey) {
       this.messageSubscriptionKey = messageSubscriptionKey;
-      this.messageSubscriptionKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public ElementIdStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+    public ElementIdStep processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
-      this.processDefinitionIdPolicy = policy;
       return this;
     }
 
     @Override
-    public MessageSubscriptionStateStep elementId(
-        final String elementId, final ContractPolicy.FieldPolicy<String> policy) {
+    public MessageSubscriptionStateStep elementId(final String elementId) {
       this.elementId = elementId;
-      this.elementIdPolicy = policy;
       return this;
     }
 
     @Override
     public LastUpdatedDateStep messageSubscriptionState(
         final io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum
-            messageSubscriptionState,
-        final ContractPolicy.FieldPolicy<
-                io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum>
-            policy) {
+            messageSubscriptionState) {
       this.messageSubscriptionState = messageSubscriptionState;
-      this.messageSubscriptionStatePolicy = policy;
       return this;
     }
 
     @Override
-    public MessageNameStep lastUpdatedDate(
-        final String lastUpdatedDate, final ContractPolicy.FieldPolicy<String> policy) {
+    public MessageNameStep lastUpdatedDate(final String lastUpdatedDate) {
       this.lastUpdatedDate = lastUpdatedDate;
-      this.lastUpdatedDatePolicy = policy;
       return this;
     }
 
     @Override
-    public TenantIdStep messageName(
-        final String messageName, final ContractPolicy.FieldPolicy<String> policy) {
+    public TenantIdStep messageName(final String messageName) {
       this.messageName = messageName;
-      this.messageNamePolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionKey(final String processDefinitionKey) {
+    public OptionalStep processDefinitionKey(final @Nullable String processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionKey(final Object processDefinitionKey) {
+    public OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
       return this;
     }
 
     public Builder processDefinitionKey(
-        final String processDefinitionKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String processDefinitionKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.processDefinitionKey =
           policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
       return this;
@@ -237,51 +207,55 @@ public record GeneratedMessageSubscriptionStrictContract(
 
     @Override
     public OptionalStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object processDefinitionKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.processDefinitionKey =
           policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep processInstanceKey(final String processInstanceKey) {
+    public OptionalStep processInstanceKey(final @Nullable String processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
       return this;
     }
 
     @Override
-    public OptionalStep processInstanceKey(final Object processInstanceKey) {
+    public OptionalStep processInstanceKey(final @Nullable Object processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
       return this;
     }
 
     public Builder processInstanceKey(
-        final String processInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String processInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
     public OptionalStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object processInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(final String rootProcessInstanceKey) {
+    public OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey) {
       this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(final Object rootProcessInstanceKey) {
+    public OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey) {
       this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
     public Builder rootProcessInstanceKey(
-        final String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.rootProcessInstanceKey =
           policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
@@ -289,46 +263,49 @@ public record GeneratedMessageSubscriptionStrictContract(
 
     @Override
     public OptionalStep rootProcessInstanceKey(
-        final Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.rootProcessInstanceKey =
           policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep elementInstanceKey(final String elementInstanceKey) {
+    public OptionalStep elementInstanceKey(final @Nullable String elementInstanceKey) {
       this.elementInstanceKey = elementInstanceKey;
       return this;
     }
 
     @Override
-    public OptionalStep elementInstanceKey(final Object elementInstanceKey) {
+    public OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey) {
       this.elementInstanceKey = elementInstanceKey;
       return this;
     }
 
     public Builder elementInstanceKey(
-        final String elementInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String elementInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.elementInstanceKey = policy.apply(elementInstanceKey, Fields.ELEMENT_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
     public OptionalStep elementInstanceKey(
-        final Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object elementInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.elementInstanceKey = policy.apply(elementInstanceKey, Fields.ELEMENT_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep correlationKey(final String correlationKey) {
+    public OptionalStep correlationKey(final @Nullable String correlationKey) {
       this.correlationKey = correlationKey;
       return this;
     }
 
     @Override
     public OptionalStep correlationKey(
-        final String correlationKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String correlationKey, final ContractPolicy.FieldPolicy<String> policy) {
       this.correlationKey = policy.apply(correlationKey, Fields.CORRELATION_KEY, null);
       return this;
     }
@@ -336,115 +313,100 @@ public record GeneratedMessageSubscriptionStrictContract(
     @Override
     public GeneratedMessageSubscriptionStrictContract build() {
       return new GeneratedMessageSubscriptionStrictContract(
-          coerceMessageSubscriptionKey(
-              applyRequiredPolicy(
-                  this.messageSubscriptionKey,
-                  this.messageSubscriptionKeyPolicy,
-                  Fields.MESSAGE_SUBSCRIPTION_KEY)),
-          applyRequiredPolicy(
-              this.processDefinitionId,
-              this.processDefinitionIdPolicy,
-              Fields.PROCESS_DEFINITION_ID),
+          coerceMessageSubscriptionKey(this.messageSubscriptionKey),
+          this.processDefinitionId,
           coerceProcessDefinitionKey(this.processDefinitionKey),
           coerceProcessInstanceKey(this.processInstanceKey),
           coerceRootProcessInstanceKey(this.rootProcessInstanceKey),
-          applyRequiredPolicy(this.elementId, this.elementIdPolicy, Fields.ELEMENT_ID),
+          this.elementId,
           coerceElementInstanceKey(this.elementInstanceKey),
-          applyRequiredPolicy(
-              this.messageSubscriptionState,
-              this.messageSubscriptionStatePolicy,
-              Fields.MESSAGE_SUBSCRIPTION_STATE),
-          applyRequiredPolicy(
-              this.lastUpdatedDate, this.lastUpdatedDatePolicy, Fields.LAST_UPDATED_DATE),
-          applyRequiredPolicy(this.messageName, this.messageNamePolicy, Fields.MESSAGE_NAME),
+          this.messageSubscriptionState,
+          this.lastUpdatedDate,
+          this.messageName,
           this.correlationKey,
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID));
+          this.tenantId);
     }
   }
 
   public interface MessageSubscriptionKeyStep {
-    ProcessDefinitionIdStep messageSubscriptionKey(
-        final Object messageSubscriptionKey, final ContractPolicy.FieldPolicy<Object> policy);
+    ProcessDefinitionIdStep messageSubscriptionKey(final Object messageSubscriptionKey);
   }
 
   public interface ProcessDefinitionIdStep {
-    ElementIdStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+    ElementIdStep processDefinitionId(final String processDefinitionId);
   }
 
   public interface ElementIdStep {
-    MessageSubscriptionStateStep elementId(
-        final String elementId, final ContractPolicy.FieldPolicy<String> policy);
+    MessageSubscriptionStateStep elementId(final String elementId);
   }
 
   public interface MessageSubscriptionStateStep {
     LastUpdatedDateStep messageSubscriptionState(
         final io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum
-            messageSubscriptionState,
-        final ContractPolicy.FieldPolicy<
-                io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum>
-            policy);
+            messageSubscriptionState);
   }
 
   public interface LastUpdatedDateStep {
-    MessageNameStep lastUpdatedDate(
-        final String lastUpdatedDate, final ContractPolicy.FieldPolicy<String> policy);
+    MessageNameStep lastUpdatedDate(final String lastUpdatedDate);
   }
 
   public interface MessageNameStep {
-    TenantIdStep messageName(
-        final String messageName, final ContractPolicy.FieldPolicy<String> policy);
+    TenantIdStep messageName(final String messageName);
   }
 
   public interface TenantIdStep {
-    OptionalStep tenantId(final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep tenantId(final String tenantId);
   }
 
   public interface OptionalStep {
-    OptionalStep processDefinitionKey(final String processDefinitionKey);
+    OptionalStep processDefinitionKey(final @Nullable String processDefinitionKey);
 
-    OptionalStep processDefinitionKey(final Object processDefinitionKey);
-
-    OptionalStep processDefinitionKey(
-        final String processDefinitionKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey);
 
     OptionalStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable String processDefinitionKey,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep processInstanceKey(final String processInstanceKey);
+    OptionalStep processDefinitionKey(
+        final @Nullable Object processDefinitionKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processInstanceKey(final Object processInstanceKey);
+    OptionalStep processInstanceKey(final @Nullable String processInstanceKey);
+
+    OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
 
     OptionalStep processInstanceKey(
-        final String processInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String processInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
 
     OptionalStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep rootProcessInstanceKey(final String rootProcessInstanceKey);
+    OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
 
-    OptionalStep rootProcessInstanceKey(final Object rootProcessInstanceKey);
-
-    OptionalStep rootProcessInstanceKey(
-        final String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
 
     OptionalStep rootProcessInstanceKey(
-        final Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep elementInstanceKey(final String elementInstanceKey);
+    OptionalStep rootProcessInstanceKey(
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep elementInstanceKey(final Object elementInstanceKey);
+    OptionalStep elementInstanceKey(final @Nullable String elementInstanceKey);
+
+    OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey);
 
     OptionalStep elementInstanceKey(
-        final String elementInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String elementInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
 
     OptionalStep elementInstanceKey(
-        final Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep correlationKey(final String correlationKey);
+    OptionalStep correlationKey(final @Nullable String correlationKey);
 
     OptionalStep correlationKey(
-        final String correlationKey, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String correlationKey, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedMessageSubscriptionStrictContract build();
   }

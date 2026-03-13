@@ -11,8 +11,10 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedActivatedJobStrictContract(
     String type,
@@ -143,14 +145,6 @@ public record GeneratedActivatedJobStrictContract(
         "rootProcessInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static TypeStep builder() {
     return new Builder();
   }
@@ -175,201 +169,145 @@ public record GeneratedActivatedJobStrictContract(
           TagsStep,
           OptionalStep {
     private String type;
-    private ContractPolicy.FieldPolicy<String> typePolicy;
     private String processDefinitionId;
-    private ContractPolicy.FieldPolicy<String> processDefinitionIdPolicy;
     private Integer processDefinitionVersion;
-    private ContractPolicy.FieldPolicy<Integer> processDefinitionVersionPolicy;
     private String elementId;
-    private ContractPolicy.FieldPolicy<String> elementIdPolicy;
     private java.util.Map<String, Object> customHeaders;
-    private ContractPolicy.FieldPolicy<java.util.Map<String, Object>> customHeadersPolicy;
     private String worker;
-    private ContractPolicy.FieldPolicy<String> workerPolicy;
     private Integer retries;
-    private ContractPolicy.FieldPolicy<Integer> retriesPolicy;
     private Long deadline;
-    private ContractPolicy.FieldPolicy<Long> deadlinePolicy;
     private java.util.Map<String, Object> variables;
-    private ContractPolicy.FieldPolicy<java.util.Map<String, Object>> variablesPolicy;
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
     private Object jobKey;
-    private ContractPolicy.FieldPolicy<Object> jobKeyPolicy;
     private Object processInstanceKey;
-    private ContractPolicy.FieldPolicy<Object> processInstanceKeyPolicy;
     private Object processDefinitionKey;
-    private ContractPolicy.FieldPolicy<Object> processDefinitionKeyPolicy;
     private Object elementInstanceKey;
-    private ContractPolicy.FieldPolicy<Object> elementInstanceKeyPolicy;
     private io.camunda.gateway.protocol.model.JobKindEnum kind;
-    private ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.JobKindEnum> kindPolicy;
     private io.camunda.gateway.protocol.model.JobListenerEventTypeEnum listenerEventType;
-    private ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.JobListenerEventTypeEnum>
-        listenerEventTypePolicy;
     private Object userTask;
     private java.util.Set<String> tags;
-    private ContractPolicy.FieldPolicy<java.util.Set<String>> tagsPolicy;
     private Object rootProcessInstanceKey;
 
     private Builder() {}
 
     @Override
-    public ProcessDefinitionIdStep type(
-        final String type, final ContractPolicy.FieldPolicy<String> policy) {
+    public ProcessDefinitionIdStep type(final String type) {
       this.type = type;
-      this.typePolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessDefinitionVersionStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+    public ProcessDefinitionVersionStep processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
-      this.processDefinitionIdPolicy = policy;
       return this;
     }
 
     @Override
-    public ElementIdStep processDefinitionVersion(
-        final Integer processDefinitionVersion, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public ElementIdStep processDefinitionVersion(final Integer processDefinitionVersion) {
       this.processDefinitionVersion = processDefinitionVersion;
-      this.processDefinitionVersionPolicy = policy;
       return this;
     }
 
     @Override
-    public CustomHeadersStep elementId(
-        final String elementId, final ContractPolicy.FieldPolicy<String> policy) {
+    public CustomHeadersStep elementId(final String elementId) {
       this.elementId = elementId;
-      this.elementIdPolicy = policy;
       return this;
     }
 
     @Override
-    public WorkerStep customHeaders(
-        final java.util.Map<String, Object> customHeaders,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
+    public WorkerStep customHeaders(final java.util.Map<String, Object> customHeaders) {
       this.customHeaders = customHeaders;
-      this.customHeadersPolicy = policy;
       return this;
     }
 
     @Override
-    public RetriesStep worker(
-        final String worker, final ContractPolicy.FieldPolicy<String> policy) {
+    public RetriesStep worker(final String worker) {
       this.worker = worker;
-      this.workerPolicy = policy;
       return this;
     }
 
     @Override
-    public DeadlineStep retries(
-        final Integer retries, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public DeadlineStep retries(final Integer retries) {
       this.retries = retries;
-      this.retriesPolicy = policy;
       return this;
     }
 
     @Override
-    public VariablesStep deadline(
-        final Long deadline, final ContractPolicy.FieldPolicy<Long> policy) {
+    public VariablesStep deadline(final Long deadline) {
       this.deadline = deadline;
-      this.deadlinePolicy = policy;
       return this;
     }
 
     @Override
-    public TenantIdStep variables(
-        final java.util.Map<String, Object> variables,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
+    public TenantIdStep variables(final java.util.Map<String, Object> variables) {
       this.variables = variables;
-      this.variablesPolicy = policy;
       return this;
     }
 
     @Override
-    public JobKeyStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public JobKeyStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessInstanceKeyStep jobKey(
-        final Object jobKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ProcessInstanceKeyStep jobKey(final Object jobKey) {
       this.jobKey = jobKey;
-      this.jobKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessDefinitionKeyStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ProcessDefinitionKeyStep processInstanceKey(final Object processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
-      this.processInstanceKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public ElementInstanceKeyStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ElementInstanceKeyStep processDefinitionKey(final Object processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
-      this.processDefinitionKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public KindStep elementInstanceKey(
-        final Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public KindStep elementInstanceKey(final Object elementInstanceKey) {
       this.elementInstanceKey = elementInstanceKey;
-      this.elementInstanceKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public ListenerEventTypeStep kind(
-        final io.camunda.gateway.protocol.model.JobKindEnum kind,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.JobKindEnum> policy) {
+    public ListenerEventTypeStep kind(final io.camunda.gateway.protocol.model.JobKindEnum kind) {
       this.kind = kind;
-      this.kindPolicy = policy;
       return this;
     }
 
     @Override
     public TagsStep listenerEventType(
-        final io.camunda.gateway.protocol.model.JobListenerEventTypeEnum listenerEventType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.JobListenerEventTypeEnum>
-            policy) {
+        final io.camunda.gateway.protocol.model.JobListenerEventTypeEnum listenerEventType) {
       this.listenerEventType = listenerEventType;
-      this.listenerEventTypePolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep tags(
-        final java.util.Set<String> tags,
-        final ContractPolicy.FieldPolicy<java.util.Set<String>> policy) {
+    public OptionalStep tags(final java.util.Set<String> tags) {
       this.tags = tags;
-      this.tagsPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep userTask(final GeneratedUserTaskPropertiesStrictContract userTask) {
+    public OptionalStep userTask(
+        final @Nullable GeneratedUserTaskPropertiesStrictContract userTask) {
       this.userTask = userTask;
       return this;
     }
 
     @Override
-    public OptionalStep userTask(final Object userTask) {
+    public OptionalStep userTask(final @Nullable Object userTask) {
       this.userTask = userTask;
       return this;
     }
 
     public Builder userTask(
-        final GeneratedUserTaskPropertiesStrictContract userTask,
+        final @Nullable GeneratedUserTaskPropertiesStrictContract userTask,
         final ContractPolicy.FieldPolicy<GeneratedUserTaskPropertiesStrictContract> policy) {
       this.userTask = policy.apply(userTask, Fields.USER_TASK, null);
       return this;
@@ -377,25 +315,26 @@ public record GeneratedActivatedJobStrictContract(
 
     @Override
     public OptionalStep userTask(
-        final Object userTask, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object userTask, final ContractPolicy.FieldPolicy<Object> policy) {
       this.userTask = policy.apply(userTask, Fields.USER_TASK, null);
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(final String rootProcessInstanceKey) {
+    public OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey) {
       this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(final Object rootProcessInstanceKey) {
+    public OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey) {
       this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
     public Builder rootProcessInstanceKey(
-        final String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.rootProcessInstanceKey =
           policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
@@ -403,7 +342,8 @@ public record GeneratedActivatedJobStrictContract(
 
     @Override
     public OptionalStep rootProcessInstanceKey(
-        final Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.rootProcessInstanceKey =
           policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
@@ -412,154 +352,120 @@ public record GeneratedActivatedJobStrictContract(
     @Override
     public GeneratedActivatedJobStrictContract build() {
       return new GeneratedActivatedJobStrictContract(
-          applyRequiredPolicy(this.type, this.typePolicy, Fields.TYPE),
-          applyRequiredPolicy(
-              this.processDefinitionId,
-              this.processDefinitionIdPolicy,
-              Fields.PROCESS_DEFINITION_ID),
-          applyRequiredPolicy(
-              this.processDefinitionVersion,
-              this.processDefinitionVersionPolicy,
-              Fields.PROCESS_DEFINITION_VERSION),
-          applyRequiredPolicy(this.elementId, this.elementIdPolicy, Fields.ELEMENT_ID),
-          applyRequiredPolicy(this.customHeaders, this.customHeadersPolicy, Fields.CUSTOM_HEADERS),
-          applyRequiredPolicy(this.worker, this.workerPolicy, Fields.WORKER),
-          applyRequiredPolicy(this.retries, this.retriesPolicy, Fields.RETRIES),
-          applyRequiredPolicy(this.deadline, this.deadlinePolicy, Fields.DEADLINE),
-          applyRequiredPolicy(this.variables, this.variablesPolicy, Fields.VARIABLES),
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID),
-          coerceJobKey(applyRequiredPolicy(this.jobKey, this.jobKeyPolicy, Fields.JOB_KEY)),
-          coerceProcessInstanceKey(
-              applyRequiredPolicy(
-                  this.processInstanceKey,
-                  this.processInstanceKeyPolicy,
-                  Fields.PROCESS_INSTANCE_KEY)),
-          coerceProcessDefinitionKey(
-              applyRequiredPolicy(
-                  this.processDefinitionKey,
-                  this.processDefinitionKeyPolicy,
-                  Fields.PROCESS_DEFINITION_KEY)),
-          coerceElementInstanceKey(
-              applyRequiredPolicy(
-                  this.elementInstanceKey,
-                  this.elementInstanceKeyPolicy,
-                  Fields.ELEMENT_INSTANCE_KEY)),
-          applyRequiredPolicy(this.kind, this.kindPolicy, Fields.KIND),
-          applyRequiredPolicy(
-              this.listenerEventType, this.listenerEventTypePolicy, Fields.LISTENER_EVENT_TYPE),
+          this.type,
+          this.processDefinitionId,
+          this.processDefinitionVersion,
+          this.elementId,
+          this.customHeaders,
+          this.worker,
+          this.retries,
+          this.deadline,
+          this.variables,
+          this.tenantId,
+          coerceJobKey(this.jobKey),
+          coerceProcessInstanceKey(this.processInstanceKey),
+          coerceProcessDefinitionKey(this.processDefinitionKey),
+          coerceElementInstanceKey(this.elementInstanceKey),
+          this.kind,
+          this.listenerEventType,
           coerceUserTask(this.userTask),
-          applyRequiredPolicy(this.tags, this.tagsPolicy, Fields.TAGS),
+          this.tags,
           coerceRootProcessInstanceKey(this.rootProcessInstanceKey));
     }
   }
 
   public interface TypeStep {
-    ProcessDefinitionIdStep type(
-        final String type, final ContractPolicy.FieldPolicy<String> policy);
+    ProcessDefinitionIdStep type(final String type);
   }
 
   public interface ProcessDefinitionIdStep {
-    ProcessDefinitionVersionStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+    ProcessDefinitionVersionStep processDefinitionId(final String processDefinitionId);
   }
 
   public interface ProcessDefinitionVersionStep {
-    ElementIdStep processDefinitionVersion(
-        final Integer processDefinitionVersion, final ContractPolicy.FieldPolicy<Integer> policy);
+    ElementIdStep processDefinitionVersion(final Integer processDefinitionVersion);
   }
 
   public interface ElementIdStep {
-    CustomHeadersStep elementId(
-        final String elementId, final ContractPolicy.FieldPolicy<String> policy);
+    CustomHeadersStep elementId(final String elementId);
   }
 
   public interface CustomHeadersStep {
-    WorkerStep customHeaders(
-        final java.util.Map<String, Object> customHeaders,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
+    WorkerStep customHeaders(final java.util.Map<String, Object> customHeaders);
   }
 
   public interface WorkerStep {
-    RetriesStep worker(final String worker, final ContractPolicy.FieldPolicy<String> policy);
+    RetriesStep worker(final String worker);
   }
 
   public interface RetriesStep {
-    DeadlineStep retries(final Integer retries, final ContractPolicy.FieldPolicy<Integer> policy);
+    DeadlineStep retries(final Integer retries);
   }
 
   public interface DeadlineStep {
-    VariablesStep deadline(final Long deadline, final ContractPolicy.FieldPolicy<Long> policy);
+    VariablesStep deadline(final Long deadline);
   }
 
   public interface VariablesStep {
-    TenantIdStep variables(
-        final java.util.Map<String, Object> variables,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
+    TenantIdStep variables(final java.util.Map<String, Object> variables);
   }
 
   public interface TenantIdStep {
-    JobKeyStep tenantId(final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    JobKeyStep tenantId(final String tenantId);
   }
 
   public interface JobKeyStep {
-    ProcessInstanceKeyStep jobKey(
-        final Object jobKey, final ContractPolicy.FieldPolicy<Object> policy);
+    ProcessInstanceKeyStep jobKey(final Object jobKey);
   }
 
   public interface ProcessInstanceKeyStep {
-    ProcessDefinitionKeyStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+    ProcessDefinitionKeyStep processInstanceKey(final Object processInstanceKey);
   }
 
   public interface ProcessDefinitionKeyStep {
-    ElementInstanceKeyStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+    ElementInstanceKeyStep processDefinitionKey(final Object processDefinitionKey);
   }
 
   public interface ElementInstanceKeyStep {
-    KindStep elementInstanceKey(
-        final Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+    KindStep elementInstanceKey(final Object elementInstanceKey);
   }
 
   public interface KindStep {
-    ListenerEventTypeStep kind(
-        final io.camunda.gateway.protocol.model.JobKindEnum kind,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.JobKindEnum> policy);
+    ListenerEventTypeStep kind(final io.camunda.gateway.protocol.model.JobKindEnum kind);
   }
 
   public interface ListenerEventTypeStep {
     TagsStep listenerEventType(
-        final io.camunda.gateway.protocol.model.JobListenerEventTypeEnum listenerEventType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.JobListenerEventTypeEnum>
-            policy);
+        final io.camunda.gateway.protocol.model.JobListenerEventTypeEnum listenerEventType);
   }
 
   public interface TagsStep {
-    OptionalStep tags(
-        final java.util.Set<String> tags,
-        final ContractPolicy.FieldPolicy<java.util.Set<String>> policy);
+    OptionalStep tags(final java.util.Set<String> tags);
   }
 
   public interface OptionalStep {
-    OptionalStep userTask(final GeneratedUserTaskPropertiesStrictContract userTask);
+    OptionalStep userTask(final @Nullable GeneratedUserTaskPropertiesStrictContract userTask);
 
-    OptionalStep userTask(final Object userTask);
+    OptionalStep userTask(final @Nullable Object userTask);
 
     OptionalStep userTask(
-        final GeneratedUserTaskPropertiesStrictContract userTask,
+        final @Nullable GeneratedUserTaskPropertiesStrictContract userTask,
         final ContractPolicy.FieldPolicy<GeneratedUserTaskPropertiesStrictContract> policy);
 
-    OptionalStep userTask(final Object userTask, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep userTask(
+        final @Nullable Object userTask, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep rootProcessInstanceKey(final String rootProcessInstanceKey);
+    OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
 
-    OptionalStep rootProcessInstanceKey(final Object rootProcessInstanceKey);
-
-    OptionalStep rootProcessInstanceKey(
-        final String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
 
     OptionalStep rootProcessInstanceKey(
-        final Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy);
+
+    OptionalStep rootProcessInstanceKey(
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedActivatedJobStrictContract build();
   }

@@ -11,7 +11,9 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedMessagePublicationStrictContract(String tenantId, String messageKey) {
 
@@ -34,58 +36,41 @@ public record GeneratedMessagePublicationStrictContract(String tenantId, String 
         "messageKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static TenantIdStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements TenantIdStep, MessageKeyStep, OptionalStep {
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
     private Object messageKey;
-    private ContractPolicy.FieldPolicy<Object> messageKeyPolicy;
 
     private Builder() {}
 
     @Override
-    public MessageKeyStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public MessageKeyStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep messageKey(
-        final Object messageKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep messageKey(final Object messageKey) {
       this.messageKey = messageKey;
-      this.messageKeyPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedMessagePublicationStrictContract build() {
       return new GeneratedMessagePublicationStrictContract(
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID),
-          coerceMessageKey(
-              applyRequiredPolicy(this.messageKey, this.messageKeyPolicy, Fields.MESSAGE_KEY)));
+          this.tenantId, coerceMessageKey(this.messageKey));
     }
   }
 
   public interface TenantIdStep {
-    MessageKeyStep tenantId(final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    MessageKeyStep tenantId(final String tenantId);
   }
 
   public interface MessageKeyStep {
-    OptionalStep messageKey(
-        final Object messageKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep messageKey(final Object messageKey);
   }
 
   public interface OptionalStep {

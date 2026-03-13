@@ -9,8 +9,10 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedUserTaskUpdateRequestStrictContract(
     @Nullable GeneratedChangesetStrictContract changeset, @Nullable String action) {
@@ -28,14 +30,6 @@ public record GeneratedUserTaskUpdateRequestStrictContract(
             + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static OptionalStep builder() {
     return new Builder();
   }
@@ -47,19 +41,19 @@ public record GeneratedUserTaskUpdateRequestStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep changeset(final GeneratedChangesetStrictContract changeset) {
+    public OptionalStep changeset(final @Nullable GeneratedChangesetStrictContract changeset) {
       this.changeset = changeset;
       return this;
     }
 
     @Override
-    public OptionalStep changeset(final Object changeset) {
+    public OptionalStep changeset(final @Nullable Object changeset) {
       this.changeset = changeset;
       return this;
     }
 
     public Builder changeset(
-        final GeneratedChangesetStrictContract changeset,
+        final @Nullable GeneratedChangesetStrictContract changeset,
         final ContractPolicy.FieldPolicy<GeneratedChangesetStrictContract> policy) {
       this.changeset = policy.apply(changeset, Fields.CHANGESET, null);
       return this;
@@ -67,20 +61,20 @@ public record GeneratedUserTaskUpdateRequestStrictContract(
 
     @Override
     public OptionalStep changeset(
-        final Object changeset, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object changeset, final ContractPolicy.FieldPolicy<Object> policy) {
       this.changeset = policy.apply(changeset, Fields.CHANGESET, null);
       return this;
     }
 
     @Override
-    public OptionalStep action(final String action) {
+    public OptionalStep action(final @Nullable String action) {
       this.action = action;
       return this;
     }
 
     @Override
     public OptionalStep action(
-        final String action, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String action, final ContractPolicy.FieldPolicy<String> policy) {
       this.action = policy.apply(action, Fields.ACTION, null);
       return this;
     }
@@ -93,19 +87,21 @@ public record GeneratedUserTaskUpdateRequestStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep changeset(final GeneratedChangesetStrictContract changeset);
+    OptionalStep changeset(final @Nullable GeneratedChangesetStrictContract changeset);
 
-    OptionalStep changeset(final Object changeset);
+    OptionalStep changeset(final @Nullable Object changeset);
 
     OptionalStep changeset(
-        final GeneratedChangesetStrictContract changeset,
+        final @Nullable GeneratedChangesetStrictContract changeset,
         final ContractPolicy.FieldPolicy<GeneratedChangesetStrictContract> policy);
 
-    OptionalStep changeset(final Object changeset, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep changeset(
+        final @Nullable Object changeset, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep action(final String action);
+    OptionalStep action(final @Nullable String action);
 
-    OptionalStep action(final String action, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep action(
+        final @Nullable String action, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedUserTaskUpdateRequestStrictContract build();
   }

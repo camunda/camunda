@@ -9,8 +9,10 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedVariableFilterStrictContract(
     @Nullable Object name,
@@ -20,14 +22,6 @@ public record GeneratedVariableFilterStrictContract(
     @Nullable Object variableKey,
     @Nullable Object scopeKey,
     @Nullable Object processInstanceKey) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
 
   public static OptionalStep builder() {
     return new Builder();
@@ -45,90 +39,93 @@ public record GeneratedVariableFilterStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep name(final Object name) {
+    public OptionalStep name(final @Nullable Object name) {
       this.name = name;
       return this;
     }
 
     @Override
-    public OptionalStep name(final Object name, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep name(
+        final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy) {
       this.name = policy.apply(name, Fields.NAME, null);
       return this;
     }
 
     @Override
-    public OptionalStep value(final Object value) {
+    public OptionalStep value(final @Nullable Object value) {
       this.value = value;
       return this;
     }
 
     @Override
-    public OptionalStep value(final Object value, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep value(
+        final @Nullable Object value, final ContractPolicy.FieldPolicy<Object> policy) {
       this.value = policy.apply(value, Fields.VALUE, null);
       return this;
     }
 
     @Override
-    public OptionalStep tenantId(final String tenantId) {
+    public OptionalStep tenantId(final @Nullable String tenantId) {
       this.tenantId = tenantId;
       return this;
     }
 
     @Override
     public OptionalStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep isTruncated(final Boolean isTruncated) {
+    public OptionalStep isTruncated(final @Nullable Boolean isTruncated) {
       this.isTruncated = isTruncated;
       return this;
     }
 
     @Override
     public OptionalStep isTruncated(
-        final Boolean isTruncated, final ContractPolicy.FieldPolicy<Boolean> policy) {
+        final @Nullable Boolean isTruncated, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.isTruncated = policy.apply(isTruncated, Fields.IS_TRUNCATED, null);
       return this;
     }
 
     @Override
-    public OptionalStep variableKey(final Object variableKey) {
+    public OptionalStep variableKey(final @Nullable Object variableKey) {
       this.variableKey = variableKey;
       return this;
     }
 
     @Override
     public OptionalStep variableKey(
-        final Object variableKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object variableKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.variableKey = policy.apply(variableKey, Fields.VARIABLE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep scopeKey(final Object scopeKey) {
+    public OptionalStep scopeKey(final @Nullable Object scopeKey) {
       this.scopeKey = scopeKey;
       return this;
     }
 
     @Override
     public OptionalStep scopeKey(
-        final Object scopeKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object scopeKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.scopeKey = policy.apply(scopeKey, Fields.SCOPE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep processInstanceKey(final Object processInstanceKey) {
+    public OptionalStep processInstanceKey(final @Nullable Object processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
       return this;
     }
 
     @Override
     public OptionalStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object processInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
       return this;
     }
@@ -147,36 +144,39 @@ public record GeneratedVariableFilterStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep name(final Object name);
+    OptionalStep name(final @Nullable Object name);
 
-    OptionalStep name(final Object name, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep name(final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep value(final Object value);
+    OptionalStep value(final @Nullable Object value);
 
-    OptionalStep value(final Object value, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep value(
+        final @Nullable Object value, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep tenantId(final String tenantId);
+    OptionalStep tenantId(final @Nullable String tenantId);
 
-    OptionalStep tenantId(final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep tenantId(
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep isTruncated(final Boolean isTruncated);
+    OptionalStep isTruncated(final @Nullable Boolean isTruncated);
 
     OptionalStep isTruncated(
-        final Boolean isTruncated, final ContractPolicy.FieldPolicy<Boolean> policy);
+        final @Nullable Boolean isTruncated, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep variableKey(final Object variableKey);
+    OptionalStep variableKey(final @Nullable Object variableKey);
 
     OptionalStep variableKey(
-        final Object variableKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object variableKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep scopeKey(final Object scopeKey);
+    OptionalStep scopeKey(final @Nullable Object scopeKey);
 
-    OptionalStep scopeKey(final Object scopeKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep scopeKey(
+        final @Nullable Object scopeKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processInstanceKey(final Object processInstanceKey);
+    OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
 
     OptionalStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedVariableFilterStrictContract build();
   }

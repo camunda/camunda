@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedGlobalTaskListenerStrictContract(
     String id, io.camunda.gateway.protocol.model.GlobalListenerSourceEnum source) {
@@ -20,61 +22,41 @@ public record GeneratedGlobalTaskListenerStrictContract(
     Objects.requireNonNull(source, "source is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static IdStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements IdStep, SourceStep, OptionalStep {
     private String id;
-    private ContractPolicy.FieldPolicy<String> idPolicy;
     private io.camunda.gateway.protocol.model.GlobalListenerSourceEnum source;
-    private ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.GlobalListenerSourceEnum>
-        sourcePolicy;
 
     private Builder() {}
 
     @Override
-    public SourceStep id(final String id, final ContractPolicy.FieldPolicy<String> policy) {
+    public SourceStep id(final String id) {
       this.id = id;
-      this.idPolicy = policy;
       return this;
     }
 
     @Override
     public OptionalStep source(
-        final io.camunda.gateway.protocol.model.GlobalListenerSourceEnum source,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.GlobalListenerSourceEnum>
-            policy) {
+        final io.camunda.gateway.protocol.model.GlobalListenerSourceEnum source) {
       this.source = source;
-      this.sourcePolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedGlobalTaskListenerStrictContract build() {
-      return new GeneratedGlobalTaskListenerStrictContract(
-          applyRequiredPolicy(this.id, this.idPolicy, Fields.ID),
-          applyRequiredPolicy(this.source, this.sourcePolicy, Fields.SOURCE));
+      return new GeneratedGlobalTaskListenerStrictContract(this.id, this.source);
     }
   }
 
   public interface IdStep {
-    SourceStep id(final String id, final ContractPolicy.FieldPolicy<String> policy);
+    SourceStep id(final String id);
   }
 
   public interface SourceStep {
-    OptionalStep source(
-        final io.camunda.gateway.protocol.model.GlobalListenerSourceEnum source,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.GlobalListenerSourceEnum>
-            policy);
+    OptionalStep source(final io.camunda.gateway.protocol.model.GlobalListenerSourceEnum source);
   }
 
   public interface OptionalStep {

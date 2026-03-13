@@ -9,19 +9,13 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedTenantFilterStrictContract(
     @Nullable String tenantId, @Nullable String name) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
 
   public static OptionalStep builder() {
     return new Builder();
@@ -34,26 +28,27 @@ public record GeneratedTenantFilterStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep tenantId(final String tenantId) {
+    public OptionalStep tenantId(final @Nullable String tenantId) {
       this.tenantId = tenantId;
       return this;
     }
 
     @Override
     public OptionalStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep name(final String name) {
+    public OptionalStep name(final @Nullable String name) {
       this.name = name;
       return this;
     }
 
     @Override
-    public OptionalStep name(final String name, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep name(
+        final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy) {
       this.name = policy.apply(name, Fields.NAME, null);
       return this;
     }
@@ -65,13 +60,14 @@ public record GeneratedTenantFilterStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep tenantId(final String tenantId);
+    OptionalStep tenantId(final @Nullable String tenantId);
 
-    OptionalStep tenantId(final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep tenantId(
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep name(final String name);
+    OptionalStep name(final @Nullable String name);
 
-    OptionalStep name(final String name, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep name(final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedTenantFilterStrictContract build();
   }

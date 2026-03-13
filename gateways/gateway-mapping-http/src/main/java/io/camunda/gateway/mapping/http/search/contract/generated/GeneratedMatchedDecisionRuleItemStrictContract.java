@@ -11,7 +11,9 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedMatchedDecisionRuleItemStrictContract(
     String ruleId,
@@ -52,14 +54,6 @@ public record GeneratedMatchedDecisionRuleItemStrictContract(
     return java.util.List.copyOf(result);
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static RuleIdStep builder() {
     return new Builder();
   }
@@ -67,61 +61,46 @@ public record GeneratedMatchedDecisionRuleItemStrictContract(
   public static final class Builder
       implements RuleIdStep, RuleIndexStep, EvaluatedOutputsStep, OptionalStep {
     private String ruleId;
-    private ContractPolicy.FieldPolicy<String> ruleIdPolicy;
     private Integer ruleIndex;
-    private ContractPolicy.FieldPolicy<Integer> ruleIndexPolicy;
     private Object evaluatedOutputs;
-    private ContractPolicy.FieldPolicy<Object> evaluatedOutputsPolicy;
 
     private Builder() {}
 
     @Override
-    public RuleIndexStep ruleId(
-        final String ruleId, final ContractPolicy.FieldPolicy<String> policy) {
+    public RuleIndexStep ruleId(final String ruleId) {
       this.ruleId = ruleId;
-      this.ruleIdPolicy = policy;
       return this;
     }
 
     @Override
-    public EvaluatedOutputsStep ruleIndex(
-        final Integer ruleIndex, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public EvaluatedOutputsStep ruleIndex(final Integer ruleIndex) {
       this.ruleIndex = ruleIndex;
-      this.ruleIndexPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep evaluatedOutputs(
-        final Object evaluatedOutputs, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep evaluatedOutputs(final Object evaluatedOutputs) {
       this.evaluatedOutputs = evaluatedOutputs;
-      this.evaluatedOutputsPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedMatchedDecisionRuleItemStrictContract build() {
       return new GeneratedMatchedDecisionRuleItemStrictContract(
-          applyRequiredPolicy(this.ruleId, this.ruleIdPolicy, Fields.RULE_ID),
-          applyRequiredPolicy(this.ruleIndex, this.ruleIndexPolicy, Fields.RULE_INDEX),
-          coerceEvaluatedOutputs(
-              applyRequiredPolicy(
-                  this.evaluatedOutputs, this.evaluatedOutputsPolicy, Fields.EVALUATED_OUTPUTS)));
+          this.ruleId, this.ruleIndex, coerceEvaluatedOutputs(this.evaluatedOutputs));
     }
   }
 
   public interface RuleIdStep {
-    RuleIndexStep ruleId(final String ruleId, final ContractPolicy.FieldPolicy<String> policy);
+    RuleIndexStep ruleId(final String ruleId);
   }
 
   public interface RuleIndexStep {
-    EvaluatedOutputsStep ruleIndex(
-        final Integer ruleIndex, final ContractPolicy.FieldPolicy<Integer> policy);
+    EvaluatedOutputsStep ruleIndex(final Integer ruleIndex);
   }
 
   public interface EvaluatedOutputsStep {
-    OptionalStep evaluatedOutputs(
-        final Object evaluatedOutputs, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep evaluatedOutputs(final Object evaluatedOutputs);
   }
 
   public interface OptionalStep {

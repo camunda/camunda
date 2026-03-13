@@ -11,7 +11,9 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessInstanceReferenceStrictContract(
     String processDefinitionKey, String processInstanceKey) {
@@ -51,14 +53,6 @@ public record GeneratedProcessInstanceReferenceStrictContract(
         "processInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ProcessDefinitionKeyStep builder() {
     return new Builder();
   }
@@ -66,52 +60,36 @@ public record GeneratedProcessInstanceReferenceStrictContract(
   public static final class Builder
       implements ProcessDefinitionKeyStep, ProcessInstanceKeyStep, OptionalStep {
     private Object processDefinitionKey;
-    private ContractPolicy.FieldPolicy<Object> processDefinitionKeyPolicy;
     private Object processInstanceKey;
-    private ContractPolicy.FieldPolicy<Object> processInstanceKeyPolicy;
 
     private Builder() {}
 
     @Override
-    public ProcessInstanceKeyStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ProcessInstanceKeyStep processDefinitionKey(final Object processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
-      this.processDefinitionKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep processInstanceKey(final Object processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
-      this.processInstanceKeyPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedProcessInstanceReferenceStrictContract build() {
       return new GeneratedProcessInstanceReferenceStrictContract(
-          coerceProcessDefinitionKey(
-              applyRequiredPolicy(
-                  this.processDefinitionKey,
-                  this.processDefinitionKeyPolicy,
-                  Fields.PROCESS_DEFINITION_KEY)),
-          coerceProcessInstanceKey(
-              applyRequiredPolicy(
-                  this.processInstanceKey,
-                  this.processInstanceKeyPolicy,
-                  Fields.PROCESS_INSTANCE_KEY)));
+          coerceProcessDefinitionKey(this.processDefinitionKey),
+          coerceProcessInstanceKey(this.processInstanceKey));
     }
   }
 
   public interface ProcessDefinitionKeyStep {
-    ProcessInstanceKeyStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+    ProcessInstanceKeyStep processDefinitionKey(final Object processDefinitionKey);
   }
 
   public interface ProcessInstanceKeyStep {
-    OptionalStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep processInstanceKey(final Object processInstanceKey);
   }
 
   public interface OptionalStep {

@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessElementStatisticsStrictContract(
     String elementId, Long active, Long canceled, Long incidents, Long completed) {
@@ -21,14 +23,6 @@ public record GeneratedProcessElementStatisticsStrictContract(
     Objects.requireNonNull(canceled, "canceled is required and must not be null");
     Objects.requireNonNull(incidents, "incidents is required and must not be null");
     Objects.requireNonNull(completed, "completed is required and must not be null");
-  }
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
   }
 
   public static ElementIdStep builder() {
@@ -43,86 +37,68 @@ public record GeneratedProcessElementStatisticsStrictContract(
           CompletedStep,
           OptionalStep {
     private String elementId;
-    private ContractPolicy.FieldPolicy<String> elementIdPolicy;
     private Long active;
-    private ContractPolicy.FieldPolicy<Long> activePolicy;
     private Long canceled;
-    private ContractPolicy.FieldPolicy<Long> canceledPolicy;
     private Long incidents;
-    private ContractPolicy.FieldPolicy<Long> incidentsPolicy;
     private Long completed;
-    private ContractPolicy.FieldPolicy<Long> completedPolicy;
 
     private Builder() {}
 
     @Override
-    public ActiveStep elementId(
-        final String elementId, final ContractPolicy.FieldPolicy<String> policy) {
+    public ActiveStep elementId(final String elementId) {
       this.elementId = elementId;
-      this.elementIdPolicy = policy;
       return this;
     }
 
     @Override
-    public CanceledStep active(final Long active, final ContractPolicy.FieldPolicy<Long> policy) {
+    public CanceledStep active(final Long active) {
       this.active = active;
-      this.activePolicy = policy;
       return this;
     }
 
     @Override
-    public IncidentsStep canceled(
-        final Long canceled, final ContractPolicy.FieldPolicy<Long> policy) {
+    public IncidentsStep canceled(final Long canceled) {
       this.canceled = canceled;
-      this.canceledPolicy = policy;
       return this;
     }
 
     @Override
-    public CompletedStep incidents(
-        final Long incidents, final ContractPolicy.FieldPolicy<Long> policy) {
+    public CompletedStep incidents(final Long incidents) {
       this.incidents = incidents;
-      this.incidentsPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep completed(
-        final Long completed, final ContractPolicy.FieldPolicy<Long> policy) {
+    public OptionalStep completed(final Long completed) {
       this.completed = completed;
-      this.completedPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedProcessElementStatisticsStrictContract build() {
       return new GeneratedProcessElementStatisticsStrictContract(
-          applyRequiredPolicy(this.elementId, this.elementIdPolicy, Fields.ELEMENT_ID),
-          applyRequiredPolicy(this.active, this.activePolicy, Fields.ACTIVE),
-          applyRequiredPolicy(this.canceled, this.canceledPolicy, Fields.CANCELED),
-          applyRequiredPolicy(this.incidents, this.incidentsPolicy, Fields.INCIDENTS),
-          applyRequiredPolicy(this.completed, this.completedPolicy, Fields.COMPLETED));
+          this.elementId, this.active, this.canceled, this.incidents, this.completed);
     }
   }
 
   public interface ElementIdStep {
-    ActiveStep elementId(final String elementId, final ContractPolicy.FieldPolicy<String> policy);
+    ActiveStep elementId(final String elementId);
   }
 
   public interface ActiveStep {
-    CanceledStep active(final Long active, final ContractPolicy.FieldPolicy<Long> policy);
+    CanceledStep active(final Long active);
   }
 
   public interface CanceledStep {
-    IncidentsStep canceled(final Long canceled, final ContractPolicy.FieldPolicy<Long> policy);
+    IncidentsStep canceled(final Long canceled);
   }
 
   public interface IncidentsStep {
-    CompletedStep incidents(final Long incidents, final ContractPolicy.FieldPolicy<Long> policy);
+    CompletedStep incidents(final Long incidents);
   }
 
   public interface CompletedStep {
-    OptionalStep completed(final Long completed, final ContractPolicy.FieldPolicy<Long> policy);
+    OptionalStep completed(final Long completed);
   }
 
   public interface OptionalStep {

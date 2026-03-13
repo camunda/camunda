@@ -10,8 +10,10 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedDecisionInstanceDeletionBatchOperationRequestStrictContract(
     GeneratedDecisionInstanceFilterStrictContract filter, @Nullable Long operationReference) {
@@ -33,42 +35,31 @@ public record GeneratedDecisionInstanceDeletionBatchOperationRequestStrictContra
             + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static FilterStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements FilterStep, OptionalStep {
     private Object filter;
-    private ContractPolicy.FieldPolicy<Object> filterPolicy;
     private Long operationReference;
 
     private Builder() {}
 
     @Override
-    public OptionalStep filter(
-        final Object filter, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep filter(final Object filter) {
       this.filter = filter;
-      this.filterPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep operationReference(final Long operationReference) {
+    public OptionalStep operationReference(final @Nullable Long operationReference) {
       this.operationReference = operationReference;
       return this;
     }
 
     @Override
     public OptionalStep operationReference(
-        final Long operationReference, final ContractPolicy.FieldPolicy<Long> policy) {
+        final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy) {
       this.operationReference = policy.apply(operationReference, Fields.OPERATION_REFERENCE, null);
       return this;
     }
@@ -76,20 +67,19 @@ public record GeneratedDecisionInstanceDeletionBatchOperationRequestStrictContra
     @Override
     public GeneratedDecisionInstanceDeletionBatchOperationRequestStrictContract build() {
       return new GeneratedDecisionInstanceDeletionBatchOperationRequestStrictContract(
-          coerceFilter(applyRequiredPolicy(this.filter, this.filterPolicy, Fields.FILTER)),
-          this.operationReference);
+          coerceFilter(this.filter), this.operationReference);
     }
   }
 
   public interface FilterStep {
-    OptionalStep filter(final Object filter, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep filter(final Object filter);
   }
 
   public interface OptionalStep {
-    OptionalStep operationReference(final Long operationReference);
+    OptionalStep operationReference(final @Nullable Long operationReference);
 
     OptionalStep operationReference(
-        final Long operationReference, final ContractPolicy.FieldPolicy<Long> policy);
+        final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy);
 
     GeneratedDecisionInstanceDeletionBatchOperationRequestStrictContract build();
   }

@@ -11,8 +11,10 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedDocumentMetadataResponseStrictContract(
     String contentType,
@@ -44,14 +46,6 @@ public record GeneratedDocumentMetadataResponseStrictContract(
         "processInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ContentTypeStep builder() {
     return new Builder();
   }
@@ -59,100 +53,90 @@ public record GeneratedDocumentMetadataResponseStrictContract(
   public static final class Builder
       implements ContentTypeStep, FileNameStep, SizeStep, CustomPropertiesStep, OptionalStep {
     private String contentType;
-    private ContractPolicy.FieldPolicy<String> contentTypePolicy;
     private String fileName;
-    private ContractPolicy.FieldPolicy<String> fileNamePolicy;
     private String expiresAt;
     private Long size;
-    private ContractPolicy.FieldPolicy<Long> sizePolicy;
     private String processDefinitionId;
     private Object processInstanceKey;
     private java.util.Map<String, Object> customProperties;
-    private ContractPolicy.FieldPolicy<java.util.Map<String, Object>> customPropertiesPolicy;
 
     private Builder() {}
 
     @Override
-    public FileNameStep contentType(
-        final String contentType, final ContractPolicy.FieldPolicy<String> policy) {
+    public FileNameStep contentType(final String contentType) {
       this.contentType = contentType;
-      this.contentTypePolicy = policy;
       return this;
     }
 
     @Override
-    public SizeStep fileName(
-        final String fileName, final ContractPolicy.FieldPolicy<String> policy) {
+    public SizeStep fileName(final String fileName) {
       this.fileName = fileName;
-      this.fileNamePolicy = policy;
       return this;
     }
 
     @Override
-    public CustomPropertiesStep size(
-        final Long size, final ContractPolicy.FieldPolicy<Long> policy) {
+    public CustomPropertiesStep size(final Long size) {
       this.size = size;
-      this.sizePolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep customProperties(
-        final java.util.Map<String, Object> customProperties,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
+    public OptionalStep customProperties(final java.util.Map<String, Object> customProperties) {
       this.customProperties = customProperties;
-      this.customPropertiesPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep expiresAt(final String expiresAt) {
+    public OptionalStep expiresAt(final @Nullable String expiresAt) {
       this.expiresAt = expiresAt;
       return this;
     }
 
     @Override
     public OptionalStep expiresAt(
-        final String expiresAt, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String expiresAt, final ContractPolicy.FieldPolicy<String> policy) {
       this.expiresAt = policy.apply(expiresAt, Fields.EXPIRES_AT, null);
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionId(final String processDefinitionId) {
+    public OptionalStep processDefinitionId(final @Nullable String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
       return this;
     }
 
     @Override
     public OptionalStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String processDefinitionId,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.processDefinitionId =
           policy.apply(processDefinitionId, Fields.PROCESS_DEFINITION_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep processInstanceKey(final String processInstanceKey) {
+    public OptionalStep processInstanceKey(final @Nullable String processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
       return this;
     }
 
     @Override
-    public OptionalStep processInstanceKey(final Object processInstanceKey) {
+    public OptionalStep processInstanceKey(final @Nullable Object processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
       return this;
     }
 
     public Builder processInstanceKey(
-        final String processInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String processInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
     public OptionalStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object processInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
       return this;
     }
@@ -160,55 +144,53 @@ public record GeneratedDocumentMetadataResponseStrictContract(
     @Override
     public GeneratedDocumentMetadataResponseStrictContract build() {
       return new GeneratedDocumentMetadataResponseStrictContract(
-          applyRequiredPolicy(this.contentType, this.contentTypePolicy, Fields.CONTENT_TYPE),
-          applyRequiredPolicy(this.fileName, this.fileNamePolicy, Fields.FILE_NAME),
+          this.contentType,
+          this.fileName,
           this.expiresAt,
-          applyRequiredPolicy(this.size, this.sizePolicy, Fields.SIZE),
+          this.size,
           this.processDefinitionId,
           coerceProcessInstanceKey(this.processInstanceKey),
-          applyRequiredPolicy(
-              this.customProperties, this.customPropertiesPolicy, Fields.CUSTOM_PROPERTIES));
+          this.customProperties);
     }
   }
 
   public interface ContentTypeStep {
-    FileNameStep contentType(
-        final String contentType, final ContractPolicy.FieldPolicy<String> policy);
+    FileNameStep contentType(final String contentType);
   }
 
   public interface FileNameStep {
-    SizeStep fileName(final String fileName, final ContractPolicy.FieldPolicy<String> policy);
+    SizeStep fileName(final String fileName);
   }
 
   public interface SizeStep {
-    CustomPropertiesStep size(final Long size, final ContractPolicy.FieldPolicy<Long> policy);
+    CustomPropertiesStep size(final Long size);
   }
 
   public interface CustomPropertiesStep {
-    OptionalStep customProperties(
-        final java.util.Map<String, Object> customProperties,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
+    OptionalStep customProperties(final java.util.Map<String, Object> customProperties);
   }
 
   public interface OptionalStep {
-    OptionalStep expiresAt(final String expiresAt);
+    OptionalStep expiresAt(final @Nullable String expiresAt);
 
-    OptionalStep expiresAt(final String expiresAt, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep expiresAt(
+        final @Nullable String expiresAt, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep processDefinitionId(final String processDefinitionId);
+    OptionalStep processDefinitionId(final @Nullable String processDefinitionId);
 
     OptionalStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String processDefinitionId,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep processInstanceKey(final String processInstanceKey);
+    OptionalStep processInstanceKey(final @Nullable String processInstanceKey);
 
-    OptionalStep processInstanceKey(final Object processInstanceKey);
-
-    OptionalStep processInstanceKey(
-        final String processInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
 
     OptionalStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable String processInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+
+    OptionalStep processInstanceKey(
+        final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedDocumentMetadataResponseStrictContract build();
   }

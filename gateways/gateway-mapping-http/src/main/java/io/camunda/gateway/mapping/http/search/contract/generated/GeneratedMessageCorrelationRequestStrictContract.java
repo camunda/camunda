@@ -10,25 +10,19 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedMessageCorrelationRequestStrictContract(
     String name,
     @Nullable String correlationKey,
-    @Nullable java.util.Map<String, Object> variables,
+    java.util.@Nullable Map<String, Object> variables,
     @Nullable String tenantId) {
 
   public GeneratedMessageCorrelationRequestStrictContract {
     Objects.requireNonNull(name, "name is required and must not be null");
-  }
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
   }
 
   public static NameStep builder() {
@@ -37,7 +31,6 @@ public record GeneratedMessageCorrelationRequestStrictContract(
 
   public static final class Builder implements NameStep, OptionalStep {
     private String name;
-    private ContractPolicy.FieldPolicy<String> namePolicy;
     private String correlationKey;
     private java.util.Map<String, Object> variables;
     private String tenantId;
@@ -45,48 +38,47 @@ public record GeneratedMessageCorrelationRequestStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep name(final String name, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep name(final String name) {
       this.name = name;
-      this.namePolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep correlationKey(final String correlationKey) {
+    public OptionalStep correlationKey(final @Nullable String correlationKey) {
       this.correlationKey = correlationKey;
       return this;
     }
 
     @Override
     public OptionalStep correlationKey(
-        final String correlationKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String correlationKey, final ContractPolicy.FieldPolicy<String> policy) {
       this.correlationKey = policy.apply(correlationKey, Fields.CORRELATION_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep variables(final java.util.Map<String, Object> variables) {
+    public OptionalStep variables(final java.util.@Nullable Map<String, Object> variables) {
       this.variables = variables;
       return this;
     }
 
     @Override
     public OptionalStep variables(
-        final java.util.Map<String, Object> variables,
+        final java.util.@Nullable Map<String, Object> variables,
         final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
       this.variables = policy.apply(variables, Fields.VARIABLES, null);
       return this;
     }
 
     @Override
-    public OptionalStep tenantId(final String tenantId) {
+    public OptionalStep tenantId(final @Nullable String tenantId) {
       this.tenantId = tenantId;
       return this;
     }
 
     @Override
     public OptionalStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
@@ -94,32 +86,30 @@ public record GeneratedMessageCorrelationRequestStrictContract(
     @Override
     public GeneratedMessageCorrelationRequestStrictContract build() {
       return new GeneratedMessageCorrelationRequestStrictContract(
-          applyRequiredPolicy(this.name, this.namePolicy, Fields.NAME),
-          this.correlationKey,
-          this.variables,
-          this.tenantId);
+          this.name, this.correlationKey, this.variables, this.tenantId);
     }
   }
 
   public interface NameStep {
-    OptionalStep name(final String name, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep name(final String name);
   }
 
   public interface OptionalStep {
-    OptionalStep correlationKey(final String correlationKey);
+    OptionalStep correlationKey(final @Nullable String correlationKey);
 
     OptionalStep correlationKey(
-        final String correlationKey, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String correlationKey, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep variables(final java.util.Map<String, Object> variables);
+    OptionalStep variables(final java.util.@Nullable Map<String, Object> variables);
 
     OptionalStep variables(
-        final java.util.Map<String, Object> variables,
+        final java.util.@Nullable Map<String, Object> variables,
         final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
 
-    OptionalStep tenantId(final String tenantId);
+    OptionalStep tenantId(final @Nullable String tenantId);
 
-    OptionalStep tenantId(final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep tenantId(
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedMessageCorrelationRequestStrictContract build();
   }

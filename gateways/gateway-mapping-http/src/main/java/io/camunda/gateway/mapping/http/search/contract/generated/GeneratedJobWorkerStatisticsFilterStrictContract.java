@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobWorkerStatisticsFilterStrictContract(
     String from, String to, String jobType) {
@@ -21,69 +23,51 @@ public record GeneratedJobWorkerStatisticsFilterStrictContract(
     Objects.requireNonNull(jobType, "jobType is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static FromStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements FromStep, ToStep, JobTypeStep, OptionalStep {
     private String from;
-    private ContractPolicy.FieldPolicy<String> fromPolicy;
     private String to;
-    private ContractPolicy.FieldPolicy<String> toPolicy;
     private String jobType;
-    private ContractPolicy.FieldPolicy<String> jobTypePolicy;
 
     private Builder() {}
 
     @Override
-    public ToStep from(final String from, final ContractPolicy.FieldPolicy<String> policy) {
+    public ToStep from(final String from) {
       this.from = from;
-      this.fromPolicy = policy;
       return this;
     }
 
     @Override
-    public JobTypeStep to(final String to, final ContractPolicy.FieldPolicy<String> policy) {
+    public JobTypeStep to(final String to) {
       this.to = to;
-      this.toPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep jobType(
-        final String jobType, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep jobType(final String jobType) {
       this.jobType = jobType;
-      this.jobTypePolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedJobWorkerStatisticsFilterStrictContract build() {
-      return new GeneratedJobWorkerStatisticsFilterStrictContract(
-          applyRequiredPolicy(this.from, this.fromPolicy, Fields.FROM),
-          applyRequiredPolicy(this.to, this.toPolicy, Fields.TO),
-          applyRequiredPolicy(this.jobType, this.jobTypePolicy, Fields.JOB_TYPE));
+      return new GeneratedJobWorkerStatisticsFilterStrictContract(this.from, this.to, this.jobType);
     }
   }
 
   public interface FromStep {
-    ToStep from(final String from, final ContractPolicy.FieldPolicy<String> policy);
+    ToStep from(final String from);
   }
 
   public interface ToStep {
-    JobTypeStep to(final String to, final ContractPolicy.FieldPolicy<String> policy);
+    JobTypeStep to(final String to);
   }
 
   public interface JobTypeStep {
-    OptionalStep jobType(final String jobType, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep jobType(final String jobType);
   }
 
   public interface OptionalStep {

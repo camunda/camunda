@@ -9,22 +9,16 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedGlobalListenerBaseStrictContract(
     @Nullable String type,
     @Nullable Integer retries,
     @Nullable Boolean afterNonGlobal,
     @Nullable Integer priority) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
 
   public static OptionalStep builder() {
     return new Builder();
@@ -39,52 +33,53 @@ public record GeneratedGlobalListenerBaseStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep type(final String type) {
+    public OptionalStep type(final @Nullable String type) {
       this.type = type;
       return this;
     }
 
     @Override
-    public OptionalStep type(final String type, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep type(
+        final @Nullable String type, final ContractPolicy.FieldPolicy<String> policy) {
       this.type = policy.apply(type, Fields.TYPE, null);
       return this;
     }
 
     @Override
-    public OptionalStep retries(final Integer retries) {
+    public OptionalStep retries(final @Nullable Integer retries) {
       this.retries = retries;
       return this;
     }
 
     @Override
     public OptionalStep retries(
-        final Integer retries, final ContractPolicy.FieldPolicy<Integer> policy) {
+        final @Nullable Integer retries, final ContractPolicy.FieldPolicy<Integer> policy) {
       this.retries = policy.apply(retries, Fields.RETRIES, null);
       return this;
     }
 
     @Override
-    public OptionalStep afterNonGlobal(final Boolean afterNonGlobal) {
+    public OptionalStep afterNonGlobal(final @Nullable Boolean afterNonGlobal) {
       this.afterNonGlobal = afterNonGlobal;
       return this;
     }
 
     @Override
     public OptionalStep afterNonGlobal(
-        final Boolean afterNonGlobal, final ContractPolicy.FieldPolicy<Boolean> policy) {
+        final @Nullable Boolean afterNonGlobal, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.afterNonGlobal = policy.apply(afterNonGlobal, Fields.AFTER_NON_GLOBAL, null);
       return this;
     }
 
     @Override
-    public OptionalStep priority(final Integer priority) {
+    public OptionalStep priority(final @Nullable Integer priority) {
       this.priority = priority;
       return this;
     }
 
     @Override
     public OptionalStep priority(
-        final Integer priority, final ContractPolicy.FieldPolicy<Integer> policy) {
+        final @Nullable Integer priority, final ContractPolicy.FieldPolicy<Integer> policy) {
       this.priority = policy.apply(priority, Fields.PRIORITY, null);
       return this;
     }
@@ -97,22 +92,24 @@ public record GeneratedGlobalListenerBaseStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep type(final String type);
+    OptionalStep type(final @Nullable String type);
 
-    OptionalStep type(final String type, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep type(final @Nullable String type, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep retries(final Integer retries);
+    OptionalStep retries(final @Nullable Integer retries);
 
-    OptionalStep retries(final Integer retries, final ContractPolicy.FieldPolicy<Integer> policy);
+    OptionalStep retries(
+        final @Nullable Integer retries, final ContractPolicy.FieldPolicy<Integer> policy);
 
-    OptionalStep afterNonGlobal(final Boolean afterNonGlobal);
+    OptionalStep afterNonGlobal(final @Nullable Boolean afterNonGlobal);
 
     OptionalStep afterNonGlobal(
-        final Boolean afterNonGlobal, final ContractPolicy.FieldPolicy<Boolean> policy);
+        final @Nullable Boolean afterNonGlobal, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep priority(final Integer priority);
+    OptionalStep priority(final @Nullable Integer priority);
 
-    OptionalStep priority(final Integer priority, final ContractPolicy.FieldPolicy<Integer> policy);
+    OptionalStep priority(
+        final @Nullable Integer priority, final ContractPolicy.FieldPolicy<Integer> policy);
 
     GeneratedGlobalListenerBaseStrictContract build();
   }

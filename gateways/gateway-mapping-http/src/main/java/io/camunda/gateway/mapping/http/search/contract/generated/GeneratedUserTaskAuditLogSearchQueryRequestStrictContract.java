@@ -10,11 +10,13 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedUserTaskAuditLogSearchQueryRequestStrictContract(
-    @Nullable java.util.List<GeneratedAuditLogSearchQuerySortRequestStrictContract> sort,
+    java.util.@Nullable List<GeneratedAuditLogSearchQuerySortRequestStrictContract> sort,
     @Nullable GeneratedUserTaskAuditLogFilterStrictContract filter) {
 
   public static java.util.List<GeneratedAuditLogSearchQuerySortRequestStrictContract> coerceSort(
@@ -58,14 +60,6 @@ public record GeneratedUserTaskAuditLogSearchQueryRequestStrictContract(
             + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static OptionalStep builder() {
     return new Builder();
   }
@@ -78,19 +72,20 @@ public record GeneratedUserTaskAuditLogSearchQueryRequestStrictContract(
 
     @Override
     public OptionalStep sort(
-        final java.util.List<GeneratedAuditLogSearchQuerySortRequestStrictContract> sort) {
+        final java.util.@Nullable List<GeneratedAuditLogSearchQuerySortRequestStrictContract>
+            sort) {
       this.sort = sort;
       return this;
     }
 
     @Override
-    public OptionalStep sort(final Object sort) {
+    public OptionalStep sort(final @Nullable Object sort) {
       this.sort = sort;
       return this;
     }
 
     public Builder sort(
-        final java.util.List<GeneratedAuditLogSearchQuerySortRequestStrictContract> sort,
+        final java.util.@Nullable List<GeneratedAuditLogSearchQuerySortRequestStrictContract> sort,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedAuditLogSearchQuerySortRequestStrictContract>>
             policy) {
@@ -99,25 +94,27 @@ public record GeneratedUserTaskAuditLogSearchQueryRequestStrictContract(
     }
 
     @Override
-    public OptionalStep sort(final Object sort, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep sort(
+        final @Nullable Object sort, final ContractPolicy.FieldPolicy<Object> policy) {
       this.sort = policy.apply(sort, Fields.SORT, null);
       return this;
     }
 
     @Override
-    public OptionalStep filter(final GeneratedUserTaskAuditLogFilterStrictContract filter) {
+    public OptionalStep filter(
+        final @Nullable GeneratedUserTaskAuditLogFilterStrictContract filter) {
       this.filter = filter;
       return this;
     }
 
     @Override
-    public OptionalStep filter(final Object filter) {
+    public OptionalStep filter(final @Nullable Object filter) {
       this.filter = filter;
       return this;
     }
 
     public Builder filter(
-        final GeneratedUserTaskAuditLogFilterStrictContract filter,
+        final @Nullable GeneratedUserTaskAuditLogFilterStrictContract filter,
         final ContractPolicy.FieldPolicy<GeneratedUserTaskAuditLogFilterStrictContract> policy) {
       this.filter = policy.apply(filter, Fields.FILTER, null);
       return this;
@@ -125,7 +122,7 @@ public record GeneratedUserTaskAuditLogSearchQueryRequestStrictContract(
 
     @Override
     public OptionalStep filter(
-        final Object filter, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object filter, final ContractPolicy.FieldPolicy<Object> policy) {
       this.filter = policy.apply(filter, Fields.FILTER, null);
       return this;
     }
@@ -139,27 +136,28 @@ public record GeneratedUserTaskAuditLogSearchQueryRequestStrictContract(
 
   public interface OptionalStep {
     OptionalStep sort(
-        final java.util.List<GeneratedAuditLogSearchQuerySortRequestStrictContract> sort);
+        final java.util.@Nullable List<GeneratedAuditLogSearchQuerySortRequestStrictContract> sort);
 
-    OptionalStep sort(final Object sort);
+    OptionalStep sort(final @Nullable Object sort);
 
     OptionalStep sort(
-        final java.util.List<GeneratedAuditLogSearchQuerySortRequestStrictContract> sort,
+        final java.util.@Nullable List<GeneratedAuditLogSearchQuerySortRequestStrictContract> sort,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedAuditLogSearchQuerySortRequestStrictContract>>
             policy);
 
-    OptionalStep sort(final Object sort, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep sort(final @Nullable Object sort, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep filter(final GeneratedUserTaskAuditLogFilterStrictContract filter);
+    OptionalStep filter(final @Nullable GeneratedUserTaskAuditLogFilterStrictContract filter);
 
-    OptionalStep filter(final Object filter);
+    OptionalStep filter(final @Nullable Object filter);
 
     OptionalStep filter(
-        final GeneratedUserTaskAuditLogFilterStrictContract filter,
+        final @Nullable GeneratedUserTaskAuditLogFilterStrictContract filter,
         final ContractPolicy.FieldPolicy<GeneratedUserTaskAuditLogFilterStrictContract> policy);
 
-    OptionalStep filter(final Object filter, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep filter(
+        final @Nullable Object filter, final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedUserTaskAuditLogSearchQueryRequestStrictContract build();
   }

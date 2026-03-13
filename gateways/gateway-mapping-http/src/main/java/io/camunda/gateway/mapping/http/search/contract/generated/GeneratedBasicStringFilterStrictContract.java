@@ -9,23 +9,17 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedBasicStringFilterStrictContract(
     @Nullable String eq,
     @Nullable String neq,
     @Nullable Boolean exists,
-    @Nullable java.util.List<String> in,
-    @Nullable java.util.List<String> notIn) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
+    java.util.@Nullable List<String> in,
+    java.util.@Nullable List<String> notIn) {
 
   public static OptionalStep builder() {
     return new Builder();
@@ -41,65 +35,67 @@ public record GeneratedBasicStringFilterStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep eq(final String eq) {
+    public OptionalStep eq(final @Nullable String eq) {
       this.eq = eq;
       return this;
     }
 
     @Override
-    public OptionalStep eq(final String eq, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep eq(
+        final @Nullable String eq, final ContractPolicy.FieldPolicy<String> policy) {
       this.eq = policy.apply(eq, Fields.EQ, null);
       return this;
     }
 
     @Override
-    public OptionalStep neq(final String neq) {
+    public OptionalStep neq(final @Nullable String neq) {
       this.neq = neq;
       return this;
     }
 
     @Override
-    public OptionalStep neq(final String neq, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep neq(
+        final @Nullable String neq, final ContractPolicy.FieldPolicy<String> policy) {
       this.neq = policy.apply(neq, Fields.NEQ, null);
       return this;
     }
 
     @Override
-    public OptionalStep exists(final Boolean exists) {
+    public OptionalStep exists(final @Nullable Boolean exists) {
       this.exists = exists;
       return this;
     }
 
     @Override
     public OptionalStep exists(
-        final Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
+        final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.exists = policy.apply(exists, Fields.EXISTS, null);
       return this;
     }
 
     @Override
-    public OptionalStep in(final java.util.List<String> in) {
+    public OptionalStep in(final java.util.@Nullable List<String> in) {
       this.in = in;
       return this;
     }
 
     @Override
     public OptionalStep in(
-        final java.util.List<String> in,
+        final java.util.@Nullable List<String> in,
         final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
       this.in = policy.apply(in, Fields.IN, null);
       return this;
     }
 
     @Override
-    public OptionalStep notIn(final java.util.List<String> notIn) {
+    public OptionalStep notIn(final java.util.@Nullable List<String> notIn) {
       this.notIn = notIn;
       return this;
     }
 
     @Override
     public OptionalStep notIn(
-        final java.util.List<String> notIn,
+        final java.util.@Nullable List<String> notIn,
         final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
       this.notIn = policy.apply(notIn, Fields.NOT_IN, null);
       return this;
@@ -113,28 +109,29 @@ public record GeneratedBasicStringFilterStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep eq(final String eq);
+    OptionalStep eq(final @Nullable String eq);
 
-    OptionalStep eq(final String eq, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep eq(final @Nullable String eq, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep neq(final String neq);
+    OptionalStep neq(final @Nullable String neq);
 
-    OptionalStep neq(final String neq, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep neq(final @Nullable String neq, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep exists(final Boolean exists);
+    OptionalStep exists(final @Nullable Boolean exists);
 
-    OptionalStep exists(final Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy);
+    OptionalStep exists(
+        final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep in(final java.util.List<String> in);
+    OptionalStep in(final java.util.@Nullable List<String> in);
 
     OptionalStep in(
-        final java.util.List<String> in,
+        final java.util.@Nullable List<String> in,
         final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
 
-    OptionalStep notIn(final java.util.List<String> notIn);
+    OptionalStep notIn(final java.util.@Nullable List<String> notIn);
 
     OptionalStep notIn(
-        final java.util.List<String> notIn,
+        final java.util.@Nullable List<String> notIn,
         final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
 
     GeneratedBasicStringFilterStrictContract build();

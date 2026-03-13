@@ -10,8 +10,10 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedLicenseResponseStrictContract(
     Boolean validLicense, String licenseType, Boolean isCommercial, @Nullable String expiresAt) {
@@ -22,14 +24,6 @@ public record GeneratedLicenseResponseStrictContract(
     Objects.requireNonNull(isCommercial, "isCommercial is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ValidLicenseStep builder() {
     return new Builder();
   }
@@ -37,48 +31,39 @@ public record GeneratedLicenseResponseStrictContract(
   public static final class Builder
       implements ValidLicenseStep, LicenseTypeStep, IsCommercialStep, OptionalStep {
     private Boolean validLicense;
-    private ContractPolicy.FieldPolicy<Boolean> validLicensePolicy;
     private String licenseType;
-    private ContractPolicy.FieldPolicy<String> licenseTypePolicy;
     private Boolean isCommercial;
-    private ContractPolicy.FieldPolicy<Boolean> isCommercialPolicy;
     private String expiresAt;
 
     private Builder() {}
 
     @Override
-    public LicenseTypeStep validLicense(
-        final Boolean validLicense, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public LicenseTypeStep validLicense(final Boolean validLicense) {
       this.validLicense = validLicense;
-      this.validLicensePolicy = policy;
       return this;
     }
 
     @Override
-    public IsCommercialStep licenseType(
-        final String licenseType, final ContractPolicy.FieldPolicy<String> policy) {
+    public IsCommercialStep licenseType(final String licenseType) {
       this.licenseType = licenseType;
-      this.licenseTypePolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep isCommercial(
-        final Boolean isCommercial, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public OptionalStep isCommercial(final Boolean isCommercial) {
       this.isCommercial = isCommercial;
-      this.isCommercialPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep expiresAt(final String expiresAt) {
+    public OptionalStep expiresAt(final @Nullable String expiresAt) {
       this.expiresAt = expiresAt;
       return this;
     }
 
     @Override
     public OptionalStep expiresAt(
-        final String expiresAt, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String expiresAt, final ContractPolicy.FieldPolicy<String> policy) {
       this.expiresAt = policy.apply(expiresAt, Fields.EXPIRES_AT, null);
       return this;
     }
@@ -86,32 +71,27 @@ public record GeneratedLicenseResponseStrictContract(
     @Override
     public GeneratedLicenseResponseStrictContract build() {
       return new GeneratedLicenseResponseStrictContract(
-          applyRequiredPolicy(this.validLicense, this.validLicensePolicy, Fields.VALID_LICENSE),
-          applyRequiredPolicy(this.licenseType, this.licenseTypePolicy, Fields.LICENSE_TYPE),
-          applyRequiredPolicy(this.isCommercial, this.isCommercialPolicy, Fields.IS_COMMERCIAL),
-          this.expiresAt);
+          this.validLicense, this.licenseType, this.isCommercial, this.expiresAt);
     }
   }
 
   public interface ValidLicenseStep {
-    LicenseTypeStep validLicense(
-        final Boolean validLicense, final ContractPolicy.FieldPolicy<Boolean> policy);
+    LicenseTypeStep validLicense(final Boolean validLicense);
   }
 
   public interface LicenseTypeStep {
-    IsCommercialStep licenseType(
-        final String licenseType, final ContractPolicy.FieldPolicy<String> policy);
+    IsCommercialStep licenseType(final String licenseType);
   }
 
   public interface IsCommercialStep {
-    OptionalStep isCommercial(
-        final Boolean isCommercial, final ContractPolicy.FieldPolicy<Boolean> policy);
+    OptionalStep isCommercial(final Boolean isCommercial);
   }
 
   public interface OptionalStep {
-    OptionalStep expiresAt(final String expiresAt);
+    OptionalStep expiresAt(final @Nullable String expiresAt);
 
-    OptionalStep expiresAt(final String expiresAt, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep expiresAt(
+        final @Nullable String expiresAt, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedLicenseResponseStrictContract build();
   }

@@ -9,21 +9,14 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedGlobalTaskListenerBaseStrictContract(
-    @Nullable
-        java.util.List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>
-            eventTypes) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
+    java.util.@Nullable List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>
+        eventTypes) {
 
   public static OptionalStep builder() {
     return new Builder();
@@ -37,7 +30,8 @@ public record GeneratedGlobalTaskListenerBaseStrictContract(
 
     @Override
     public OptionalStep eventTypes(
-        final java.util.List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>
+        final java.util.@Nullable List<
+                io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>
             eventTypes) {
       this.eventTypes = eventTypes;
       return this;
@@ -45,7 +39,8 @@ public record GeneratedGlobalTaskListenerBaseStrictContract(
 
     @Override
     public OptionalStep eventTypes(
-        final java.util.List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>
+        final java.util.@Nullable List<
+                io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>
             eventTypes,
         final ContractPolicy.FieldPolicy<
                 java.util.List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>>
@@ -62,11 +57,13 @@ public record GeneratedGlobalTaskListenerBaseStrictContract(
 
   public interface OptionalStep {
     OptionalStep eventTypes(
-        final java.util.List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>
+        final java.util.@Nullable List<
+                io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>
             eventTypes);
 
     OptionalStep eventTypes(
-        final java.util.List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>
+        final java.util.@Nullable List<
+                io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>
             eventTypes,
         final ContractPolicy.FieldPolicy<
                 java.util.List<io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum>>

@@ -11,8 +11,10 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessDefinitionStrictContract(
     @Nullable String name,
@@ -49,14 +51,6 @@ public record GeneratedProcessDefinitionStrictContract(
         "processDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ResourceNameStep builder() {
     return new Builder();
   }
@@ -71,90 +65,73 @@ public record GeneratedProcessDefinitionStrictContract(
           OptionalStep {
     private String name;
     private String resourceName;
-    private ContractPolicy.FieldPolicy<String> resourceNamePolicy;
     private Integer version;
-    private ContractPolicy.FieldPolicy<Integer> versionPolicy;
     private String versionTag;
     private String processDefinitionId;
-    private ContractPolicy.FieldPolicy<String> processDefinitionIdPolicy;
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
     private Object processDefinitionKey;
-    private ContractPolicy.FieldPolicy<Object> processDefinitionKeyPolicy;
     private Boolean hasStartForm;
-    private ContractPolicy.FieldPolicy<Boolean> hasStartFormPolicy;
 
     private Builder() {}
 
     @Override
-    public VersionStep resourceName(
-        final String resourceName, final ContractPolicy.FieldPolicy<String> policy) {
+    public VersionStep resourceName(final String resourceName) {
       this.resourceName = resourceName;
-      this.resourceNamePolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessDefinitionIdStep version(
-        final Integer version, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public ProcessDefinitionIdStep version(final Integer version) {
       this.version = version;
-      this.versionPolicy = policy;
       return this;
     }
 
     @Override
-    public TenantIdStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+    public TenantIdStep processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
-      this.processDefinitionIdPolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessDefinitionKeyStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public ProcessDefinitionKeyStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public HasStartFormStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public HasStartFormStep processDefinitionKey(final Object processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
-      this.processDefinitionKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep hasStartForm(
-        final Boolean hasStartForm, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public OptionalStep hasStartForm(final Boolean hasStartForm) {
       this.hasStartForm = hasStartForm;
-      this.hasStartFormPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep name(final String name) {
+    public OptionalStep name(final @Nullable String name) {
       this.name = name;
       return this;
     }
 
     @Override
-    public OptionalStep name(final String name, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep name(
+        final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy) {
       this.name = policy.apply(name, Fields.NAME, null);
       return this;
     }
 
     @Override
-    public OptionalStep versionTag(final String versionTag) {
+    public OptionalStep versionTag(final @Nullable String versionTag) {
       this.versionTag = versionTag;
       return this;
     }
 
     @Override
     public OptionalStep versionTag(
-        final String versionTag, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String versionTag, final ContractPolicy.FieldPolicy<String> policy) {
       this.versionTag = policy.apply(versionTag, Fields.VERSION_TAG, null);
       return this;
     }
@@ -163,62 +140,49 @@ public record GeneratedProcessDefinitionStrictContract(
     public GeneratedProcessDefinitionStrictContract build() {
       return new GeneratedProcessDefinitionStrictContract(
           this.name,
-          applyRequiredPolicy(this.resourceName, this.resourceNamePolicy, Fields.RESOURCE_NAME),
-          applyRequiredPolicy(this.version, this.versionPolicy, Fields.VERSION),
+          this.resourceName,
+          this.version,
           this.versionTag,
-          applyRequiredPolicy(
-              this.processDefinitionId,
-              this.processDefinitionIdPolicy,
-              Fields.PROCESS_DEFINITION_ID),
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID),
-          coerceProcessDefinitionKey(
-              applyRequiredPolicy(
-                  this.processDefinitionKey,
-                  this.processDefinitionKeyPolicy,
-                  Fields.PROCESS_DEFINITION_KEY)),
-          applyRequiredPolicy(this.hasStartForm, this.hasStartFormPolicy, Fields.HAS_START_FORM));
+          this.processDefinitionId,
+          this.tenantId,
+          coerceProcessDefinitionKey(this.processDefinitionKey),
+          this.hasStartForm);
     }
   }
 
   public interface ResourceNameStep {
-    VersionStep resourceName(
-        final String resourceName, final ContractPolicy.FieldPolicy<String> policy);
+    VersionStep resourceName(final String resourceName);
   }
 
   public interface VersionStep {
-    ProcessDefinitionIdStep version(
-        final Integer version, final ContractPolicy.FieldPolicy<Integer> policy);
+    ProcessDefinitionIdStep version(final Integer version);
   }
 
   public interface ProcessDefinitionIdStep {
-    TenantIdStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+    TenantIdStep processDefinitionId(final String processDefinitionId);
   }
 
   public interface TenantIdStep {
-    ProcessDefinitionKeyStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    ProcessDefinitionKeyStep tenantId(final String tenantId);
   }
 
   public interface ProcessDefinitionKeyStep {
-    HasStartFormStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+    HasStartFormStep processDefinitionKey(final Object processDefinitionKey);
   }
 
   public interface HasStartFormStep {
-    OptionalStep hasStartForm(
-        final Boolean hasStartForm, final ContractPolicy.FieldPolicy<Boolean> policy);
+    OptionalStep hasStartForm(final Boolean hasStartForm);
   }
 
   public interface OptionalStep {
-    OptionalStep name(final String name);
+    OptionalStep name(final @Nullable String name);
 
-    OptionalStep name(final String name, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep name(final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep versionTag(final String versionTag);
+    OptionalStep versionTag(final @Nullable String versionTag);
 
     OptionalStep versionTag(
-        final String versionTag, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String versionTag, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedProcessDefinitionStrictContract build();
   }

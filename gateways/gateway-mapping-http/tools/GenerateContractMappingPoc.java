@@ -488,15 +488,15 @@ public class GenerateContractMappingPoc {
         + "import jakarta.annotation.Generated;\n"
         + (hasListCoercion ? "import java.util.ArrayList;\n" : "")
         + (hasRequiredNonNullable ? "import java.util.Objects;\n" : "")
-        + (hasNullable ? "import org.springframework.lang.Nullable;\n" : "");
+        + "import org.jspecify.annotations.NullMarked;\n"
+        + (hasNullable ? "import org.jspecify.annotations.Nullable;\n" : "");
 
     final String renderedFields =
         fields.stream()
             .map(
                 f ->
                     "    "
-              + (f.nullable() ? "@Nullable " : "")
-              + f.javaType()
+              + (f.nullable() ? annotateNullable(f.javaType()) : f.javaType())
                         + " "
                         + f.identifier())
             .collect(Collectors.joining(",\n"));
@@ -574,6 +574,7 @@ package %s;
 
 %s
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record %s(
 %s
@@ -835,9 +836,7 @@ public record %s(
               + valueType
               + " "
               + current.identifier()
-              + ", final ContractPolicy.FieldPolicy<"
-              + valueType
-              + "> policy);\n"
+              + ");\n"
               + "  }");
     }
 
@@ -875,17 +874,12 @@ public record %s(
               + valueType
               + " "
               + current.identifier()
-              + ", final ContractPolicy.FieldPolicy<"
-              + valueType
-              + "> policy) {\n"
+              + ") {\n"
               + "      this."
               + current.identifier()
               + " = "
               + current.identifier()
               + ";\n"
-              + "      this."
-              + current.identifier()
-              + "Policy = policy;\n"
               + "      return this;\n"
               + "    }");
     }
@@ -898,14 +892,7 @@ public record %s(
               + (f.requiresCoercion() ? "Object" : f.javaType())
               + " "
               + f.identifier()
-              + ";"
-              + (policyAwareRequired && f.required() && !f.nullable()
-                  ? "\n    private ContractPolicy.FieldPolicy<"
-                      + (f.requiresCoercion() ? "Object" : f.javaType())
-                      + "> "
-                      + f.identifier()
-                      + "Policy;"
-                  : ""))
+              + ";")
             .collect(Collectors.joining("\n"));
 
     final var builderSetters =
@@ -924,19 +911,7 @@ public record %s(
                     renderBuildArg(f, policyAwareRequired))
             .collect(Collectors.joining(",\n          "));
 
-    final var policyHelpers =
-        policyAwareRequired
-            ? """
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
-"""
-            : "";
+    final var policyHelpers = "";
 
     final String builderFactoryType =
         requiredFields.isEmpty() ? optionalStepName : stepInterfaceName(requiredFields.get(0));
@@ -981,6 +956,7 @@ public record %s(
 
   private static String renderOptionalBuilderSetterImplementation(
       final ContractField field, final String optionalStepName, final boolean policyAwareRequired) {
+    final var nullableAnnotation = field.nullable() ? "@Nullable " : "";
     if (!field.requiresCoercion()) {
       final var optionalPolicyOverload =
           policyAwareRequired && field.nullable()
@@ -995,7 +971,7 @@ public record %s(
                   .formatted(
                       optionalStepName,
                       field.identifier(),
-                      field.javaType(),
+                      annotateNullable(field.javaType()),
                       field.identifier(),
                       field.javaType(),
                       field.identifier(),
@@ -1013,7 +989,7 @@ public record %s(
           .formatted(
               optionalStepName,
               field.identifier(),
-              field.javaType(),
+              field.nullable() ? annotateNullable(field.javaType()) : field.javaType(),
               field.identifier(),
               field.identifier(),
               field.identifier()))
@@ -1031,7 +1007,7 @@ public record %s(
 """
                 .formatted(
                     field.identifier(),
-                    field.javaType(),
+                    annotateNullable(field.javaType()),
                     field.identifier(),
                     field.javaType(),
                     field.identifier(),
@@ -1044,7 +1020,7 @@ public record %s(
             ? """
 
     @Override
-    public %s %s(final Object %s, final ContractPolicy.FieldPolicy<Object> policy) {
+    public %s %s(final @Nullable Object %s, final ContractPolicy.FieldPolicy<Object> policy) {
       this.%s = policy.apply(%s, Fields.%s, null);
       return this;
     }
@@ -1066,7 +1042,7 @@ public record %s(
     }
 
     @Override
-    public %s %s(final Object %s) {
+    public %s %s(final %s %s) {
       this.%s = %s;
       return this;
     }
@@ -1074,12 +1050,13 @@ public record %s(
         .formatted(
         optionalStepName,
             field.identifier(),
-            field.javaType(),
+            field.nullable() ? annotateNullable(field.javaType()) : field.javaType(),
             field.identifier(),
             field.identifier(),
             field.identifier(),
         optionalStepName,
             field.identifier(),
+            field.nullable() ? "@Nullable Object" : "Object",
             field.identifier(),
             field.identifier(),
             field.identifier()))
@@ -1099,7 +1076,7 @@ public record %s(
             .formatted(
               optionalStepName,
               field.identifier(),
-              field.javaType(),
+              annotateNullable(field.javaType()),
               field.identifier(),
               field.javaType())
           : "";
@@ -1107,7 +1084,7 @@ public record %s(
       return ("""
     %s %s(final %s %s);
   """
-        .formatted(optionalStepName, field.identifier(), field.javaType(), field.identifier()))
+        .formatted(optionalStepName, field.identifier(), field.nullable() ? annotateNullable(field.javaType()) : field.javaType(), field.identifier()))
         + optionalPolicyOverload;
     }
 
@@ -1120,7 +1097,7 @@ public record %s(
           .formatted(
             optionalStepName,
             field.identifier(),
-            field.javaType(),
+            annotateNullable(field.javaType()),
             field.identifier(),
             field.javaType())
         : "";
@@ -1129,7 +1106,7 @@ public record %s(
       policyAwareRequired && field.nullable()
         ? """
 
-    %s %s(final Object %s, final ContractPolicy.FieldPolicy<Object> policy);
+    %s %s(final @Nullable Object %s, final ContractPolicy.FieldPolicy<Object> policy);
   """
           .formatted(optionalStepName, field.identifier(), field.identifier())
         : "";
@@ -1137,15 +1114,16 @@ public record %s(
     return ("""
     %s %s(final %s %s);
 
-    %s %s(final Object %s);
+    %s %s(final %s %s);
   """
       .formatted(
         optionalStepName,
         field.identifier(),
-        field.javaType(),
+        field.nullable() ? annotateNullable(field.javaType()) : field.javaType(),
         field.identifier(),
         optionalStepName,
         field.identifier(),
+        field.nullable() ? "@Nullable Object" : "Object",
         field.identifier()))
       + optionalStringPolicyOverload
       + optionalObjectPolicyOverload;
@@ -1158,26 +1136,9 @@ public record %s(
   private static String renderBuildArg(
       final ContractField field, final boolean policyAwareRequired) {
     final var fieldValue = "this." + field.identifier();
-    final var coerceExpression =
-        field.requiresCoercion()
-            ? "coerce" + capitalizeIdentifier(field.identifier()) + "(" + fieldValue + ")"
-            : fieldValue;
-
-    if (!policyAwareRequired || !field.required() || field.nullable()) {
-      return coerceExpression;
-    }
-
-    final var policyApplied =
-        "applyRequiredPolicy("
-            + fieldValue
-            + ", this."
-            + field.identifier()
-            + "Policy, Fields."
-            + toConstantName(field.identifier())
-            + ")";
     return field.requiresCoercion()
-        ? "coerce" + capitalizeIdentifier(field.identifier()) + "(" + policyApplied + ")"
-        : policyApplied;
+        ? "coerce" + capitalizeIdentifier(field.identifier()) + "(" + fieldValue + ")"
+        : fieldValue;
   }
 
   private static boolean supportsPolicyAwareBuilder(final String schemaName) {
@@ -1201,6 +1162,21 @@ public record %s(
       result.append(Character.toUpperCase(ch));
     }
     return result.toString();
+  }
+
+  /** Positions {@code @Nullable} correctly for TYPE_USE on qualified type names. */
+  private static String annotateNullable(final String type) {
+    final int genericStart = type.indexOf('<');
+    final String baseType = genericStart >= 0 ? type.substring(0, genericStart) : type;
+    final String genericSuffix = genericStart >= 0 ? type.substring(genericStart) : "";
+    final int lastDot = baseType.lastIndexOf('.');
+    if (lastDot < 0) {
+      return "@Nullable " + type;
+    }
+    return baseType.substring(0, lastDot + 1)
+        + "@Nullable "
+        + baseType.substring(lastDot + 1)
+        + genericSuffix;
   }
 
   private static String renderMapper(

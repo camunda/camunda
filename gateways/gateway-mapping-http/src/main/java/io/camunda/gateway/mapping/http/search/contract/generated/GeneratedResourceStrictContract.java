@@ -10,8 +10,10 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedResourceStrictContract(
     String resourceName,
@@ -29,14 +31,6 @@ public record GeneratedResourceStrictContract(
     Objects.requireNonNull(resourceKey, "resourceKey is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ResourceNameStep builder() {
     return new Builder();
   }
@@ -49,68 +43,53 @@ public record GeneratedResourceStrictContract(
           ResourceKeyStep,
           OptionalStep {
     private String resourceName;
-    private ContractPolicy.FieldPolicy<String> resourceNamePolicy;
     private Integer version;
-    private ContractPolicy.FieldPolicy<Integer> versionPolicy;
     private String versionTag;
     private String resourceId;
-    private ContractPolicy.FieldPolicy<String> resourceIdPolicy;
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
     private String resourceKey;
-    private ContractPolicy.FieldPolicy<String> resourceKeyPolicy;
 
     private Builder() {}
 
     @Override
-    public VersionStep resourceName(
-        final String resourceName, final ContractPolicy.FieldPolicy<String> policy) {
+    public VersionStep resourceName(final String resourceName) {
       this.resourceName = resourceName;
-      this.resourceNamePolicy = policy;
       return this;
     }
 
     @Override
-    public ResourceIdStep version(
-        final Integer version, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public ResourceIdStep version(final Integer version) {
       this.version = version;
-      this.versionPolicy = policy;
       return this;
     }
 
     @Override
-    public TenantIdStep resourceId(
-        final String resourceId, final ContractPolicy.FieldPolicy<String> policy) {
+    public TenantIdStep resourceId(final String resourceId) {
       this.resourceId = resourceId;
-      this.resourceIdPolicy = policy;
       return this;
     }
 
     @Override
-    public ResourceKeyStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public ResourceKeyStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep resourceKey(
-        final String resourceKey, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep resourceKey(final String resourceKey) {
       this.resourceKey = resourceKey;
-      this.resourceKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep versionTag(final String versionTag) {
+    public OptionalStep versionTag(final @Nullable String versionTag) {
       this.versionTag = versionTag;
       return this;
     }
 
     @Override
     public OptionalStep versionTag(
-        final String versionTag, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String versionTag, final ContractPolicy.FieldPolicy<String> policy) {
       this.versionTag = policy.apply(versionTag, Fields.VERSION_TAG, null);
       return this;
     }
@@ -118,44 +97,40 @@ public record GeneratedResourceStrictContract(
     @Override
     public GeneratedResourceStrictContract build() {
       return new GeneratedResourceStrictContract(
-          applyRequiredPolicy(this.resourceName, this.resourceNamePolicy, Fields.RESOURCE_NAME),
-          applyRequiredPolicy(this.version, this.versionPolicy, Fields.VERSION),
+          this.resourceName,
+          this.version,
           this.versionTag,
-          applyRequiredPolicy(this.resourceId, this.resourceIdPolicy, Fields.RESOURCE_ID),
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID),
-          applyRequiredPolicy(this.resourceKey, this.resourceKeyPolicy, Fields.RESOURCE_KEY));
+          this.resourceId,
+          this.tenantId,
+          this.resourceKey);
     }
   }
 
   public interface ResourceNameStep {
-    VersionStep resourceName(
-        final String resourceName, final ContractPolicy.FieldPolicy<String> policy);
+    VersionStep resourceName(final String resourceName);
   }
 
   public interface VersionStep {
-    ResourceIdStep version(final Integer version, final ContractPolicy.FieldPolicy<Integer> policy);
+    ResourceIdStep version(final Integer version);
   }
 
   public interface ResourceIdStep {
-    TenantIdStep resourceId(
-        final String resourceId, final ContractPolicy.FieldPolicy<String> policy);
+    TenantIdStep resourceId(final String resourceId);
   }
 
   public interface TenantIdStep {
-    ResourceKeyStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    ResourceKeyStep tenantId(final String tenantId);
   }
 
   public interface ResourceKeyStep {
-    OptionalStep resourceKey(
-        final String resourceKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep resourceKey(final String resourceKey);
   }
 
   public interface OptionalStep {
-    OptionalStep versionTag(final String versionTag);
+    OptionalStep versionTag(final @Nullable String versionTag);
 
     OptionalStep versionTag(
-        final String versionTag, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String versionTag, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedResourceStrictContract build();
   }

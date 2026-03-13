@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedGlobalJobStatisticsQueryStrictContract(
     GeneratedStatusMetricStrictContract created,
@@ -64,14 +66,6 @@ public record GeneratedGlobalJobStatisticsQueryStrictContract(
             + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static CreatedStep builder() {
     return new Builder();
   }
@@ -79,74 +73,60 @@ public record GeneratedGlobalJobStatisticsQueryStrictContract(
   public static final class Builder
       implements CreatedStep, CompletedStep, FailedStep, IsIncompleteStep, OptionalStep {
     private Object created;
-    private ContractPolicy.FieldPolicy<Object> createdPolicy;
     private Object completed;
-    private ContractPolicy.FieldPolicy<Object> completedPolicy;
     private Object failed;
-    private ContractPolicy.FieldPolicy<Object> failedPolicy;
     private Boolean isIncomplete;
-    private ContractPolicy.FieldPolicy<Boolean> isIncompletePolicy;
 
     private Builder() {}
 
     @Override
-    public CompletedStep created(
-        final Object created, final ContractPolicy.FieldPolicy<Object> policy) {
+    public CompletedStep created(final Object created) {
       this.created = created;
-      this.createdPolicy = policy;
       return this;
     }
 
     @Override
-    public FailedStep completed(
-        final Object completed, final ContractPolicy.FieldPolicy<Object> policy) {
+    public FailedStep completed(final Object completed) {
       this.completed = completed;
-      this.completedPolicy = policy;
       return this;
     }
 
     @Override
-    public IsIncompleteStep failed(
-        final Object failed, final ContractPolicy.FieldPolicy<Object> policy) {
+    public IsIncompleteStep failed(final Object failed) {
       this.failed = failed;
-      this.failedPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep isIncomplete(
-        final Boolean isIncomplete, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public OptionalStep isIncomplete(final Boolean isIncomplete) {
       this.isIncomplete = isIncomplete;
-      this.isIncompletePolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedGlobalJobStatisticsQueryStrictContract build() {
       return new GeneratedGlobalJobStatisticsQueryStrictContract(
-          coerceCreated(applyRequiredPolicy(this.created, this.createdPolicy, Fields.CREATED)),
-          coerceCompleted(
-              applyRequiredPolicy(this.completed, this.completedPolicy, Fields.COMPLETED)),
-          coerceFailed(applyRequiredPolicy(this.failed, this.failedPolicy, Fields.FAILED)),
-          applyRequiredPolicy(this.isIncomplete, this.isIncompletePolicy, Fields.IS_INCOMPLETE));
+          coerceCreated(this.created),
+          coerceCompleted(this.completed),
+          coerceFailed(this.failed),
+          this.isIncomplete);
     }
   }
 
   public interface CreatedStep {
-    CompletedStep created(final Object created, final ContractPolicy.FieldPolicy<Object> policy);
+    CompletedStep created(final Object created);
   }
 
   public interface CompletedStep {
-    FailedStep completed(final Object completed, final ContractPolicy.FieldPolicy<Object> policy);
+    FailedStep completed(final Object completed);
   }
 
   public interface FailedStep {
-    IsIncompleteStep failed(final Object failed, final ContractPolicy.FieldPolicy<Object> policy);
+    IsIncompleteStep failed(final Object failed);
   }
 
   public interface IsIncompleteStep {
-    OptionalStep isIncomplete(
-        final Boolean isIncomplete, final ContractPolicy.FieldPolicy<Boolean> policy);
+    OptionalStep isIncomplete(final Boolean isIncomplete);
   }
 
   public interface OptionalStep {

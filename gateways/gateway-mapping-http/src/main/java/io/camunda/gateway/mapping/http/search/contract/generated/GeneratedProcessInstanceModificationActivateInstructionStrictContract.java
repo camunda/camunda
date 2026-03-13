@@ -12,14 +12,15 @@ import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessInstanceModificationActivateInstructionStrictContract(
     String elementId,
-    @Nullable
-        java.util.List<GeneratedModifyProcessInstanceVariableInstructionStrictContract>
-            variableInstructions,
+    java.util.@Nullable List<GeneratedModifyProcessInstanceVariableInstructionStrictContract>
+        variableInstructions,
     @Nullable String ancestorElementInstanceKey) {
 
   public GeneratedProcessInstanceModificationActivateInstructionStrictContract {
@@ -71,50 +72,41 @@ public record GeneratedProcessInstanceModificationActivateInstructionStrictContr
             + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ElementIdStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements ElementIdStep, OptionalStep {
     private String elementId;
-    private ContractPolicy.FieldPolicy<String> elementIdPolicy;
     private Object variableInstructions;
     private Object ancestorElementInstanceKey;
 
     private Builder() {}
 
     @Override
-    public OptionalStep elementId(
-        final String elementId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep elementId(final String elementId) {
       this.elementId = elementId;
-      this.elementIdPolicy = policy;
       return this;
     }
 
     @Override
     public OptionalStep variableInstructions(
-        final java.util.List<GeneratedModifyProcessInstanceVariableInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedModifyProcessInstanceVariableInstructionStrictContract>
             variableInstructions) {
       this.variableInstructions = variableInstructions;
       return this;
     }
 
     @Override
-    public OptionalStep variableInstructions(final Object variableInstructions) {
+    public OptionalStep variableInstructions(final @Nullable Object variableInstructions) {
       this.variableInstructions = variableInstructions;
       return this;
     }
 
     public Builder variableInstructions(
-        final java.util.List<GeneratedModifyProcessInstanceVariableInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedModifyProcessInstanceVariableInstructionStrictContract>
             variableInstructions,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedModifyProcessInstanceVariableInstructionStrictContract>>
@@ -126,26 +118,30 @@ public record GeneratedProcessInstanceModificationActivateInstructionStrictContr
 
     @Override
     public OptionalStep variableInstructions(
-        final Object variableInstructions, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object variableInstructions,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.variableInstructions =
           policy.apply(variableInstructions, Fields.VARIABLE_INSTRUCTIONS, null);
       return this;
     }
 
     @Override
-    public OptionalStep ancestorElementInstanceKey(final String ancestorElementInstanceKey) {
+    public OptionalStep ancestorElementInstanceKey(
+        final @Nullable String ancestorElementInstanceKey) {
       this.ancestorElementInstanceKey = ancestorElementInstanceKey;
       return this;
     }
 
     @Override
-    public OptionalStep ancestorElementInstanceKey(final Object ancestorElementInstanceKey) {
+    public OptionalStep ancestorElementInstanceKey(
+        final @Nullable Object ancestorElementInstanceKey) {
       this.ancestorElementInstanceKey = ancestorElementInstanceKey;
       return this;
     }
 
     public Builder ancestorElementInstanceKey(
-        final String ancestorElementInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String ancestorElementInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.ancestorElementInstanceKey =
           policy.apply(ancestorElementInstanceKey, Fields.ANCESTOR_ELEMENT_INSTANCE_KEY, null);
       return this;
@@ -153,7 +149,8 @@ public record GeneratedProcessInstanceModificationActivateInstructionStrictContr
 
     @Override
     public OptionalStep ancestorElementInstanceKey(
-        final Object ancestorElementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object ancestorElementInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.ancestorElementInstanceKey =
           policy.apply(ancestorElementInstanceKey, Fields.ANCESTOR_ELEMENT_INSTANCE_KEY, null);
       return this;
@@ -162,42 +159,47 @@ public record GeneratedProcessInstanceModificationActivateInstructionStrictContr
     @Override
     public GeneratedProcessInstanceModificationActivateInstructionStrictContract build() {
       return new GeneratedProcessInstanceModificationActivateInstructionStrictContract(
-          applyRequiredPolicy(this.elementId, this.elementIdPolicy, Fields.ELEMENT_ID),
+          this.elementId,
           coerceVariableInstructions(this.variableInstructions),
           coerceAncestorElementInstanceKey(this.ancestorElementInstanceKey));
     }
   }
 
   public interface ElementIdStep {
-    OptionalStep elementId(final String elementId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep elementId(final String elementId);
   }
 
   public interface OptionalStep {
     OptionalStep variableInstructions(
-        final java.util.List<GeneratedModifyProcessInstanceVariableInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedModifyProcessInstanceVariableInstructionStrictContract>
             variableInstructions);
 
-    OptionalStep variableInstructions(final Object variableInstructions);
+    OptionalStep variableInstructions(final @Nullable Object variableInstructions);
 
     OptionalStep variableInstructions(
-        final java.util.List<GeneratedModifyProcessInstanceVariableInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedModifyProcessInstanceVariableInstructionStrictContract>
             variableInstructions,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedModifyProcessInstanceVariableInstructionStrictContract>>
             policy);
 
     OptionalStep variableInstructions(
-        final Object variableInstructions, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object variableInstructions,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep ancestorElementInstanceKey(final String ancestorElementInstanceKey);
+    OptionalStep ancestorElementInstanceKey(final @Nullable String ancestorElementInstanceKey);
 
-    OptionalStep ancestorElementInstanceKey(final Object ancestorElementInstanceKey);
-
-    OptionalStep ancestorElementInstanceKey(
-        final String ancestorElementInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep ancestorElementInstanceKey(final @Nullable Object ancestorElementInstanceKey);
 
     OptionalStep ancestorElementInstanceKey(
-        final Object ancestorElementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable String ancestorElementInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy);
+
+    OptionalStep ancestorElementInstanceKey(
+        final @Nullable Object ancestorElementInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedProcessInstanceModificationActivateInstructionStrictContract build();
   }

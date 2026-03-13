@@ -11,7 +11,9 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessDefinitionMessageSubscriptionStatisticsStrictContract(
     String processDefinitionId,
@@ -47,14 +49,6 @@ public record GeneratedProcessDefinitionMessageSubscriptionStatisticsStrictContr
         "processDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ProcessDefinitionIdStep builder() {
     return new Builder();
   }
@@ -67,107 +61,76 @@ public record GeneratedProcessDefinitionMessageSubscriptionStatisticsStrictContr
           ActiveSubscriptionsStep,
           OptionalStep {
     private String processDefinitionId;
-    private ContractPolicy.FieldPolicy<String> processDefinitionIdPolicy;
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
     private Object processDefinitionKey;
-    private ContractPolicy.FieldPolicy<Object> processDefinitionKeyPolicy;
     private Long processInstancesWithActiveSubscriptions;
-    private ContractPolicy.FieldPolicy<Long> processInstancesWithActiveSubscriptionsPolicy;
     private Long activeSubscriptions;
-    private ContractPolicy.FieldPolicy<Long> activeSubscriptionsPolicy;
 
     private Builder() {}
 
     @Override
-    public TenantIdStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+    public TenantIdStep processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
-      this.processDefinitionIdPolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessDefinitionKeyStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public ProcessDefinitionKeyStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
     public ProcessInstancesWithActiveSubscriptionsStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final Object processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
-      this.processDefinitionKeyPolicy = policy;
       return this;
     }
 
     @Override
     public ActiveSubscriptionsStep processInstancesWithActiveSubscriptions(
-        final Long processInstancesWithActiveSubscriptions,
-        final ContractPolicy.FieldPolicy<Long> policy) {
+        final Long processInstancesWithActiveSubscriptions) {
       this.processInstancesWithActiveSubscriptions = processInstancesWithActiveSubscriptions;
-      this.processInstancesWithActiveSubscriptionsPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep activeSubscriptions(
-        final Long activeSubscriptions, final ContractPolicy.FieldPolicy<Long> policy) {
+    public OptionalStep activeSubscriptions(final Long activeSubscriptions) {
       this.activeSubscriptions = activeSubscriptions;
-      this.activeSubscriptionsPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedProcessDefinitionMessageSubscriptionStatisticsStrictContract build() {
       return new GeneratedProcessDefinitionMessageSubscriptionStatisticsStrictContract(
-          applyRequiredPolicy(
-              this.processDefinitionId,
-              this.processDefinitionIdPolicy,
-              Fields.PROCESS_DEFINITION_ID),
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID),
-          coerceProcessDefinitionKey(
-              applyRequiredPolicy(
-                  this.processDefinitionKey,
-                  this.processDefinitionKeyPolicy,
-                  Fields.PROCESS_DEFINITION_KEY)),
-          applyRequiredPolicy(
-              this.processInstancesWithActiveSubscriptions,
-              this.processInstancesWithActiveSubscriptionsPolicy,
-              Fields.PROCESS_INSTANCES_WITH_ACTIVE_SUBSCRIPTIONS),
-          applyRequiredPolicy(
-              this.activeSubscriptions,
-              this.activeSubscriptionsPolicy,
-              Fields.ACTIVE_SUBSCRIPTIONS));
+          this.processDefinitionId,
+          this.tenantId,
+          coerceProcessDefinitionKey(this.processDefinitionKey),
+          this.processInstancesWithActiveSubscriptions,
+          this.activeSubscriptions);
     }
   }
 
   public interface ProcessDefinitionIdStep {
-    TenantIdStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+    TenantIdStep processDefinitionId(final String processDefinitionId);
   }
 
   public interface TenantIdStep {
-    ProcessDefinitionKeyStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    ProcessDefinitionKeyStep tenantId(final String tenantId);
   }
 
   public interface ProcessDefinitionKeyStep {
     ProcessInstancesWithActiveSubscriptionsStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final Object processDefinitionKey);
   }
 
   public interface ProcessInstancesWithActiveSubscriptionsStep {
     ActiveSubscriptionsStep processInstancesWithActiveSubscriptions(
-        final Long processInstancesWithActiveSubscriptions,
-        final ContractPolicy.FieldPolicy<Long> policy);
+        final Long processInstancesWithActiveSubscriptions);
   }
 
   public interface ActiveSubscriptionsStep {
-    OptionalStep activeSubscriptions(
-        final Long activeSubscriptions, final ContractPolicy.FieldPolicy<Long> policy);
+    OptionalStep activeSubscriptions(final Long activeSubscriptions);
   }
 
   public interface OptionalStep {

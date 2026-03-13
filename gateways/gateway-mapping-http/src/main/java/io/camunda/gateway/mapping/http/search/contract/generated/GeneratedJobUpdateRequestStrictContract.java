@@ -10,8 +10,10 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobUpdateRequestStrictContract(
     GeneratedJobChangesetStrictContract changeset, @Nullable Long operationReference) {
@@ -33,42 +35,31 @@ public record GeneratedJobUpdateRequestStrictContract(
             + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ChangesetStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements ChangesetStep, OptionalStep {
     private Object changeset;
-    private ContractPolicy.FieldPolicy<Object> changesetPolicy;
     private Long operationReference;
 
     private Builder() {}
 
     @Override
-    public OptionalStep changeset(
-        final Object changeset, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep changeset(final Object changeset) {
       this.changeset = changeset;
-      this.changesetPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep operationReference(final Long operationReference) {
+    public OptionalStep operationReference(final @Nullable Long operationReference) {
       this.operationReference = operationReference;
       return this;
     }
 
     @Override
     public OptionalStep operationReference(
-        final Long operationReference, final ContractPolicy.FieldPolicy<Long> policy) {
+        final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy) {
       this.operationReference = policy.apply(operationReference, Fields.OPERATION_REFERENCE, null);
       return this;
     }
@@ -76,21 +67,19 @@ public record GeneratedJobUpdateRequestStrictContract(
     @Override
     public GeneratedJobUpdateRequestStrictContract build() {
       return new GeneratedJobUpdateRequestStrictContract(
-          coerceChangeset(
-              applyRequiredPolicy(this.changeset, this.changesetPolicy, Fields.CHANGESET)),
-          this.operationReference);
+          coerceChangeset(this.changeset), this.operationReference);
     }
   }
 
   public interface ChangesetStep {
-    OptionalStep changeset(final Object changeset, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep changeset(final Object changeset);
   }
 
   public interface OptionalStep {
-    OptionalStep operationReference(final Long operationReference);
+    OptionalStep operationReference(final @Nullable Long operationReference);
 
     OptionalStep operationReference(
-        final Long operationReference, final ContractPolicy.FieldPolicy<Long> policy);
+        final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy);
 
     GeneratedJobUpdateRequestStrictContract build();
   }

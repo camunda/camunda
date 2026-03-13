@@ -9,22 +9,16 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedMappingRuleFilterStrictContract(
     @Nullable String claimName,
     @Nullable String claimValue,
     @Nullable String name,
     @Nullable String mappingRuleId) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
 
   public static OptionalStep builder() {
     return new Builder();
@@ -39,52 +33,53 @@ public record GeneratedMappingRuleFilterStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep claimName(final String claimName) {
+    public OptionalStep claimName(final @Nullable String claimName) {
       this.claimName = claimName;
       return this;
     }
 
     @Override
     public OptionalStep claimName(
-        final String claimName, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String claimName, final ContractPolicy.FieldPolicy<String> policy) {
       this.claimName = policy.apply(claimName, Fields.CLAIM_NAME, null);
       return this;
     }
 
     @Override
-    public OptionalStep claimValue(final String claimValue) {
+    public OptionalStep claimValue(final @Nullable String claimValue) {
       this.claimValue = claimValue;
       return this;
     }
 
     @Override
     public OptionalStep claimValue(
-        final String claimValue, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String claimValue, final ContractPolicy.FieldPolicy<String> policy) {
       this.claimValue = policy.apply(claimValue, Fields.CLAIM_VALUE, null);
       return this;
     }
 
     @Override
-    public OptionalStep name(final String name) {
+    public OptionalStep name(final @Nullable String name) {
       this.name = name;
       return this;
     }
 
     @Override
-    public OptionalStep name(final String name, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep name(
+        final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy) {
       this.name = policy.apply(name, Fields.NAME, null);
       return this;
     }
 
     @Override
-    public OptionalStep mappingRuleId(final String mappingRuleId) {
+    public OptionalStep mappingRuleId(final @Nullable String mappingRuleId) {
       this.mappingRuleId = mappingRuleId;
       return this;
     }
 
     @Override
     public OptionalStep mappingRuleId(
-        final String mappingRuleId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String mappingRuleId, final ContractPolicy.FieldPolicy<String> policy) {
       this.mappingRuleId = policy.apply(mappingRuleId, Fields.MAPPING_RULE_ID, null);
       return this;
     }
@@ -97,23 +92,24 @@ public record GeneratedMappingRuleFilterStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep claimName(final String claimName);
+    OptionalStep claimName(final @Nullable String claimName);
 
-    OptionalStep claimName(final String claimName, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep claimName(
+        final @Nullable String claimName, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep claimValue(final String claimValue);
+    OptionalStep claimValue(final @Nullable String claimValue);
 
     OptionalStep claimValue(
-        final String claimValue, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String claimValue, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep name(final String name);
+    OptionalStep name(final @Nullable String name);
 
-    OptionalStep name(final String name, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep name(final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep mappingRuleId(final String mappingRuleId);
+    OptionalStep mappingRuleId(final @Nullable String mappingRuleId);
 
     OptionalStep mappingRuleId(
-        final String mappingRuleId, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String mappingRuleId, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedMappingRuleFilterStrictContract build();
   }

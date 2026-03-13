@@ -7,6 +7,8 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
+import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionStrictContract.Fields;
+
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedProcessDefinitionStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.search.entities.ProcessDefinitionEntity;
@@ -27,15 +29,19 @@ public final class ProcessDefinitionContractAdapter {
   public static GeneratedProcessDefinitionStrictContract adapt(
       final ProcessDefinitionEntity entity) {
     return GeneratedProcessDefinitionStrictContract.builder()
-        .resourceName(entity.resourceName(), ContractPolicy.requiredNonNull())
-        .version(entity.version(), ContractPolicy.requiredNonNull())
-        .processDefinitionId(entity.processDefinitionId(), ContractPolicy.requiredNonNull())
-        .tenantId(entity.tenantId(), ContractPolicy.requiredNonNull())
+        .resourceName(
+            ContractPolicy.requireNonNull(entity.resourceName(), Fields.RESOURCE_NAME, entity))
+        .version(ContractPolicy.requireNonNull(entity.version(), Fields.VERSION, entity))
+        .processDefinitionId(
+            ContractPolicy.requireNonNull(
+                entity.processDefinitionId(), Fields.PROCESS_DEFINITION_ID, entity))
+        .tenantId(ContractPolicy.requireNonNull(entity.tenantId(), Fields.TENANT_ID, entity))
         .processDefinitionKey(
-            entity.processDefinitionKey(),
-            ContractPolicy
-                .requiredNonNull()) // Long to string coercion automatic for Camunda entity keys
-        .hasStartForm(ContractPolicy.isNotBlank(entity.formId()), ContractPolicy.requiredNonNull())
+            ContractPolicy.requireNonNull(
+                entity.processDefinitionKey(), Fields.PROCESS_DEFINITION_KEY, entity))
+        .hasStartForm(
+            ContractPolicy.requireNonNull(
+                ContractPolicy.isNotBlank(entity.formId()), Fields.HAS_START_FORM, entity))
         .name(entity.name()) // required + nullable in contract
         .versionTag(entity.versionTag()) // required + nullable in contract
         .build();

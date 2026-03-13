@@ -9,22 +9,16 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobFailRequestStrictContract(
     @Nullable Integer retries,
     @Nullable String errorMessage,
     @Nullable Long retryBackOff,
-    @Nullable java.util.Map<String, Object> variables) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
+    java.util.@Nullable Map<String, Object> variables) {
 
   public static OptionalStep builder() {
     return new Builder();
@@ -39,53 +33,53 @@ public record GeneratedJobFailRequestStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep retries(final Integer retries) {
+    public OptionalStep retries(final @Nullable Integer retries) {
       this.retries = retries;
       return this;
     }
 
     @Override
     public OptionalStep retries(
-        final Integer retries, final ContractPolicy.FieldPolicy<Integer> policy) {
+        final @Nullable Integer retries, final ContractPolicy.FieldPolicy<Integer> policy) {
       this.retries = policy.apply(retries, Fields.RETRIES, null);
       return this;
     }
 
     @Override
-    public OptionalStep errorMessage(final String errorMessage) {
+    public OptionalStep errorMessage(final @Nullable String errorMessage) {
       this.errorMessage = errorMessage;
       return this;
     }
 
     @Override
     public OptionalStep errorMessage(
-        final String errorMessage, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String errorMessage, final ContractPolicy.FieldPolicy<String> policy) {
       this.errorMessage = policy.apply(errorMessage, Fields.ERROR_MESSAGE, null);
       return this;
     }
 
     @Override
-    public OptionalStep retryBackOff(final Long retryBackOff) {
+    public OptionalStep retryBackOff(final @Nullable Long retryBackOff) {
       this.retryBackOff = retryBackOff;
       return this;
     }
 
     @Override
     public OptionalStep retryBackOff(
-        final Long retryBackOff, final ContractPolicy.FieldPolicy<Long> policy) {
+        final @Nullable Long retryBackOff, final ContractPolicy.FieldPolicy<Long> policy) {
       this.retryBackOff = policy.apply(retryBackOff, Fields.RETRY_BACK_OFF, null);
       return this;
     }
 
     @Override
-    public OptionalStep variables(final java.util.Map<String, Object> variables) {
+    public OptionalStep variables(final java.util.@Nullable Map<String, Object> variables) {
       this.variables = variables;
       return this;
     }
 
     @Override
     public OptionalStep variables(
-        final java.util.Map<String, Object> variables,
+        final java.util.@Nullable Map<String, Object> variables,
         final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
       this.variables = policy.apply(variables, Fields.VARIABLES, null);
       return this;
@@ -99,24 +93,25 @@ public record GeneratedJobFailRequestStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep retries(final Integer retries);
+    OptionalStep retries(final @Nullable Integer retries);
 
-    OptionalStep retries(final Integer retries, final ContractPolicy.FieldPolicy<Integer> policy);
+    OptionalStep retries(
+        final @Nullable Integer retries, final ContractPolicy.FieldPolicy<Integer> policy);
 
-    OptionalStep errorMessage(final String errorMessage);
+    OptionalStep errorMessage(final @Nullable String errorMessage);
 
     OptionalStep errorMessage(
-        final String errorMessage, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String errorMessage, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep retryBackOff(final Long retryBackOff);
+    OptionalStep retryBackOff(final @Nullable Long retryBackOff);
 
     OptionalStep retryBackOff(
-        final Long retryBackOff, final ContractPolicy.FieldPolicy<Long> policy);
+        final @Nullable Long retryBackOff, final ContractPolicy.FieldPolicy<Long> policy);
 
-    OptionalStep variables(final java.util.Map<String, Object> variables);
+    OptionalStep variables(final java.util.@Nullable Map<String, Object> variables);
 
     OptionalStep variables(
-        final java.util.Map<String, Object> variables,
+        final java.util.@Nullable Map<String, Object> variables,
         final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
 
     GeneratedJobFailRequestStrictContract build();

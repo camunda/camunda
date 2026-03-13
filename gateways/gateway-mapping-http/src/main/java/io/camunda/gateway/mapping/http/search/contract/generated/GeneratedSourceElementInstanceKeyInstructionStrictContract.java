@@ -11,7 +11,9 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedSourceElementInstanceKeyInstructionStrictContract(
     String sourceType, String sourceElementInstanceKey) {
@@ -37,14 +39,6 @@ public record GeneratedSourceElementInstanceKeyInstructionStrictContract(
             + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static SourceTypeStep builder() {
     return new Builder();
   }
@@ -52,48 +46,35 @@ public record GeneratedSourceElementInstanceKeyInstructionStrictContract(
   public static final class Builder
       implements SourceTypeStep, SourceElementInstanceKeyStep, OptionalStep {
     private String sourceType;
-    private ContractPolicy.FieldPolicy<String> sourceTypePolicy;
     private Object sourceElementInstanceKey;
-    private ContractPolicy.FieldPolicy<Object> sourceElementInstanceKeyPolicy;
 
     private Builder() {}
 
     @Override
-    public SourceElementInstanceKeyStep sourceType(
-        final String sourceType, final ContractPolicy.FieldPolicy<String> policy) {
+    public SourceElementInstanceKeyStep sourceType(final String sourceType) {
       this.sourceType = sourceType;
-      this.sourceTypePolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep sourceElementInstanceKey(
-        final Object sourceElementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep sourceElementInstanceKey(final Object sourceElementInstanceKey) {
       this.sourceElementInstanceKey = sourceElementInstanceKey;
-      this.sourceElementInstanceKeyPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedSourceElementInstanceKeyInstructionStrictContract build() {
       return new GeneratedSourceElementInstanceKeyInstructionStrictContract(
-          applyRequiredPolicy(this.sourceType, this.sourceTypePolicy, Fields.SOURCE_TYPE),
-          coerceSourceElementInstanceKey(
-              applyRequiredPolicy(
-                  this.sourceElementInstanceKey,
-                  this.sourceElementInstanceKeyPolicy,
-                  Fields.SOURCE_ELEMENT_INSTANCE_KEY)));
+          this.sourceType, coerceSourceElementInstanceKey(this.sourceElementInstanceKey));
     }
   }
 
   public interface SourceTypeStep {
-    SourceElementInstanceKeyStep sourceType(
-        final String sourceType, final ContractPolicy.FieldPolicy<String> policy);
+    SourceElementInstanceKeyStep sourceType(final String sourceType);
   }
 
   public interface SourceElementInstanceKeyStep {
-    OptionalStep sourceElementInstanceKey(
-        final Object sourceElementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep sourceElementInstanceKey(final Object sourceElementInstanceKey);
   }
 
   public interface OptionalStep {

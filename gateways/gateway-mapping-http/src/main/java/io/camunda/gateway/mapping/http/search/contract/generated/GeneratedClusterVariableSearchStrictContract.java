@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedClusterVariableSearchStrictContract(String value, Boolean isTruncated) {
 
@@ -19,57 +21,40 @@ public record GeneratedClusterVariableSearchStrictContract(String value, Boolean
     Objects.requireNonNull(isTruncated, "isTruncated is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ValueStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements ValueStep, IsTruncatedStep, OptionalStep {
     private String value;
-    private ContractPolicy.FieldPolicy<String> valuePolicy;
     private Boolean isTruncated;
-    private ContractPolicy.FieldPolicy<Boolean> isTruncatedPolicy;
 
     private Builder() {}
 
     @Override
-    public IsTruncatedStep value(
-        final String value, final ContractPolicy.FieldPolicy<String> policy) {
+    public IsTruncatedStep value(final String value) {
       this.value = value;
-      this.valuePolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep isTruncated(
-        final Boolean isTruncated, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public OptionalStep isTruncated(final Boolean isTruncated) {
       this.isTruncated = isTruncated;
-      this.isTruncatedPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedClusterVariableSearchStrictContract build() {
-      return new GeneratedClusterVariableSearchStrictContract(
-          applyRequiredPolicy(this.value, this.valuePolicy, Fields.VALUE),
-          applyRequiredPolicy(this.isTruncated, this.isTruncatedPolicy, Fields.IS_TRUNCATED));
+      return new GeneratedClusterVariableSearchStrictContract(this.value, this.isTruncated);
     }
   }
 
   public interface ValueStep {
-    IsTruncatedStep value(final String value, final ContractPolicy.FieldPolicy<String> policy);
+    IsTruncatedStep value(final String value);
   }
 
   public interface IsTruncatedStep {
-    OptionalStep isTruncated(
-        final Boolean isTruncated, final ContractPolicy.FieldPolicy<Boolean> policy);
+    OptionalStep isTruncated(final Boolean isTruncated);
   }
 
   public interface OptionalStep {

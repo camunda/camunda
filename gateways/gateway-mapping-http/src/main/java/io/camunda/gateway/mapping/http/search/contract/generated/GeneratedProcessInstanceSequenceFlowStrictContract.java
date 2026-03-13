@@ -11,8 +11,10 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessInstanceSequenceFlowStrictContract(
     String sequenceFlowId,
@@ -77,14 +79,6 @@ public record GeneratedProcessInstanceSequenceFlowStrictContract(
         "processDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static SequenceFlowIdStep builder() {
     return new Builder();
   }
@@ -98,83 +92,66 @@ public record GeneratedProcessInstanceSequenceFlowStrictContract(
           TenantIdStep,
           OptionalStep {
     private String sequenceFlowId;
-    private ContractPolicy.FieldPolicy<String> sequenceFlowIdPolicy;
     private Object processInstanceKey;
-    private ContractPolicy.FieldPolicy<Object> processInstanceKeyPolicy;
     private Object rootProcessInstanceKey;
     private Object processDefinitionKey;
-    private ContractPolicy.FieldPolicy<Object> processDefinitionKeyPolicy;
     private String processDefinitionId;
-    private ContractPolicy.FieldPolicy<String> processDefinitionIdPolicy;
     private String elementId;
-    private ContractPolicy.FieldPolicy<String> elementIdPolicy;
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
 
     private Builder() {}
 
     @Override
-    public ProcessInstanceKeyStep sequenceFlowId(
-        final String sequenceFlowId, final ContractPolicy.FieldPolicy<String> policy) {
+    public ProcessInstanceKeyStep sequenceFlowId(final String sequenceFlowId) {
       this.sequenceFlowId = sequenceFlowId;
-      this.sequenceFlowIdPolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessDefinitionKeyStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ProcessDefinitionKeyStep processInstanceKey(final Object processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
-      this.processInstanceKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessDefinitionIdStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ProcessDefinitionIdStep processDefinitionKey(final Object processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
-      this.processDefinitionKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public ElementIdStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+    public ElementIdStep processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
-      this.processDefinitionIdPolicy = policy;
       return this;
     }
 
     @Override
-    public TenantIdStep elementId(
-        final String elementId, final ContractPolicy.FieldPolicy<String> policy) {
+    public TenantIdStep elementId(final String elementId) {
       this.elementId = elementId;
-      this.elementIdPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(final String rootProcessInstanceKey) {
+    public OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey) {
       this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(final Object rootProcessInstanceKey) {
+    public OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey) {
       this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
     public Builder rootProcessInstanceKey(
-        final String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.rootProcessInstanceKey =
           policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
@@ -182,7 +159,8 @@ public record GeneratedProcessInstanceSequenceFlowStrictContract(
 
     @Override
     public OptionalStep rootProcessInstanceKey(
-        final Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.rootProcessInstanceKey =
           policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
@@ -191,66 +169,52 @@ public record GeneratedProcessInstanceSequenceFlowStrictContract(
     @Override
     public GeneratedProcessInstanceSequenceFlowStrictContract build() {
       return new GeneratedProcessInstanceSequenceFlowStrictContract(
-          applyRequiredPolicy(
-              this.sequenceFlowId, this.sequenceFlowIdPolicy, Fields.SEQUENCE_FLOW_ID),
-          coerceProcessInstanceKey(
-              applyRequiredPolicy(
-                  this.processInstanceKey,
-                  this.processInstanceKeyPolicy,
-                  Fields.PROCESS_INSTANCE_KEY)),
+          this.sequenceFlowId,
+          coerceProcessInstanceKey(this.processInstanceKey),
           coerceRootProcessInstanceKey(this.rootProcessInstanceKey),
-          coerceProcessDefinitionKey(
-              applyRequiredPolicy(
-                  this.processDefinitionKey,
-                  this.processDefinitionKeyPolicy,
-                  Fields.PROCESS_DEFINITION_KEY)),
-          applyRequiredPolicy(
-              this.processDefinitionId,
-              this.processDefinitionIdPolicy,
-              Fields.PROCESS_DEFINITION_ID),
-          applyRequiredPolicy(this.elementId, this.elementIdPolicy, Fields.ELEMENT_ID),
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID));
+          coerceProcessDefinitionKey(this.processDefinitionKey),
+          this.processDefinitionId,
+          this.elementId,
+          this.tenantId);
     }
   }
 
   public interface SequenceFlowIdStep {
-    ProcessInstanceKeyStep sequenceFlowId(
-        final String sequenceFlowId, final ContractPolicy.FieldPolicy<String> policy);
+    ProcessInstanceKeyStep sequenceFlowId(final String sequenceFlowId);
   }
 
   public interface ProcessInstanceKeyStep {
-    ProcessDefinitionKeyStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+    ProcessDefinitionKeyStep processInstanceKey(final Object processInstanceKey);
   }
 
   public interface ProcessDefinitionKeyStep {
-    ProcessDefinitionIdStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+    ProcessDefinitionIdStep processDefinitionKey(final Object processDefinitionKey);
   }
 
   public interface ProcessDefinitionIdStep {
-    ElementIdStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+    ElementIdStep processDefinitionId(final String processDefinitionId);
   }
 
   public interface ElementIdStep {
-    TenantIdStep elementId(final String elementId, final ContractPolicy.FieldPolicy<String> policy);
+    TenantIdStep elementId(final String elementId);
   }
 
   public interface TenantIdStep {
-    OptionalStep tenantId(final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep tenantId(final String tenantId);
   }
 
   public interface OptionalStep {
-    OptionalStep rootProcessInstanceKey(final String rootProcessInstanceKey);
+    OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
 
-    OptionalStep rootProcessInstanceKey(final Object rootProcessInstanceKey);
-
-    OptionalStep rootProcessInstanceKey(
-        final String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
 
     OptionalStep rootProcessInstanceKey(
-        final Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy);
+
+    OptionalStep rootProcessInstanceKey(
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedProcessInstanceSequenceFlowStrictContract build();
   }

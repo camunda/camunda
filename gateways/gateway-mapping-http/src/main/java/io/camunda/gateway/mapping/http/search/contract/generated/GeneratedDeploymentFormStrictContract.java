@@ -11,7 +11,9 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedDeploymentFormStrictContract(
     String formId, Integer version, String resourceName, String tenantId, String formKey) {
@@ -38,14 +40,6 @@ public record GeneratedDeploymentFormStrictContract(
         "formKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static FormIdStep builder() {
     return new Builder();
   }
@@ -58,89 +52,68 @@ public record GeneratedDeploymentFormStrictContract(
           FormKeyStep,
           OptionalStep {
     private String formId;
-    private ContractPolicy.FieldPolicy<String> formIdPolicy;
     private Integer version;
-    private ContractPolicy.FieldPolicy<Integer> versionPolicy;
     private String resourceName;
-    private ContractPolicy.FieldPolicy<String> resourceNamePolicy;
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
     private Object formKey;
-    private ContractPolicy.FieldPolicy<Object> formKeyPolicy;
 
     private Builder() {}
 
     @Override
-    public VersionStep formId(
-        final String formId, final ContractPolicy.FieldPolicy<String> policy) {
+    public VersionStep formId(final String formId) {
       this.formId = formId;
-      this.formIdPolicy = policy;
       return this;
     }
 
     @Override
-    public ResourceNameStep version(
-        final Integer version, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public ResourceNameStep version(final Integer version) {
       this.version = version;
-      this.versionPolicy = policy;
       return this;
     }
 
     @Override
-    public TenantIdStep resourceName(
-        final String resourceName, final ContractPolicy.FieldPolicy<String> policy) {
+    public TenantIdStep resourceName(final String resourceName) {
       this.resourceName = resourceName;
-      this.resourceNamePolicy = policy;
       return this;
     }
 
     @Override
-    public FormKeyStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public FormKeyStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep formKey(
-        final Object formKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep formKey(final Object formKey) {
       this.formKey = formKey;
-      this.formKeyPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedDeploymentFormStrictContract build() {
       return new GeneratedDeploymentFormStrictContract(
-          applyRequiredPolicy(this.formId, this.formIdPolicy, Fields.FORM_ID),
-          applyRequiredPolicy(this.version, this.versionPolicy, Fields.VERSION),
-          applyRequiredPolicy(this.resourceName, this.resourceNamePolicy, Fields.RESOURCE_NAME),
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID),
-          coerceFormKey(applyRequiredPolicy(this.formKey, this.formKeyPolicy, Fields.FORM_KEY)));
+          this.formId, this.version, this.resourceName, this.tenantId, coerceFormKey(this.formKey));
     }
   }
 
   public interface FormIdStep {
-    VersionStep formId(final String formId, final ContractPolicy.FieldPolicy<String> policy);
+    VersionStep formId(final String formId);
   }
 
   public interface VersionStep {
-    ResourceNameStep version(
-        final Integer version, final ContractPolicy.FieldPolicy<Integer> policy);
+    ResourceNameStep version(final Integer version);
   }
 
   public interface ResourceNameStep {
-    TenantIdStep resourceName(
-        final String resourceName, final ContractPolicy.FieldPolicy<String> policy);
+    TenantIdStep resourceName(final String resourceName);
   }
 
   public interface TenantIdStep {
-    FormKeyStep tenantId(final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    FormKeyStep tenantId(final String tenantId);
   }
 
   public interface FormKeyStep {
-    OptionalStep formKey(final Object formKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep formKey(final Object formKey);
   }
 
   public interface OptionalStep {

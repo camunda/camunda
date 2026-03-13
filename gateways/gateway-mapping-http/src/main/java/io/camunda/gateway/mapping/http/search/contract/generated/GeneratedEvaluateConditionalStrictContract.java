@@ -12,7 +12,9 @@ import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedEvaluateConditionalStrictContract(
     String conditionalEvaluationKey,
@@ -69,14 +71,6 @@ public record GeneratedEvaluateConditionalStrictContract(
     return java.util.List.copyOf(result);
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ConditionalEvaluationKeyStep builder() {
     return new Builder();
   }
@@ -84,66 +78,48 @@ public record GeneratedEvaluateConditionalStrictContract(
   public static final class Builder
       implements ConditionalEvaluationKeyStep, TenantIdStep, ProcessInstancesStep, OptionalStep {
     private Object conditionalEvaluationKey;
-    private ContractPolicy.FieldPolicy<Object> conditionalEvaluationKeyPolicy;
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
     private Object processInstances;
-    private ContractPolicy.FieldPolicy<Object> processInstancesPolicy;
 
     private Builder() {}
 
     @Override
-    public TenantIdStep conditionalEvaluationKey(
-        final Object conditionalEvaluationKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public TenantIdStep conditionalEvaluationKey(final Object conditionalEvaluationKey) {
       this.conditionalEvaluationKey = conditionalEvaluationKey;
-      this.conditionalEvaluationKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessInstancesStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public ProcessInstancesStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep processInstances(
-        final Object processInstances, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep processInstances(final Object processInstances) {
       this.processInstances = processInstances;
-      this.processInstancesPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedEvaluateConditionalStrictContract build() {
       return new GeneratedEvaluateConditionalStrictContract(
-          coerceConditionalEvaluationKey(
-              applyRequiredPolicy(
-                  this.conditionalEvaluationKey,
-                  this.conditionalEvaluationKeyPolicy,
-                  Fields.CONDITIONAL_EVALUATION_KEY)),
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID),
-          coerceProcessInstances(
-              applyRequiredPolicy(
-                  this.processInstances, this.processInstancesPolicy, Fields.PROCESS_INSTANCES)));
+          coerceConditionalEvaluationKey(this.conditionalEvaluationKey),
+          this.tenantId,
+          coerceProcessInstances(this.processInstances));
     }
   }
 
   public interface ConditionalEvaluationKeyStep {
-    TenantIdStep conditionalEvaluationKey(
-        final Object conditionalEvaluationKey, final ContractPolicy.FieldPolicy<Object> policy);
+    TenantIdStep conditionalEvaluationKey(final Object conditionalEvaluationKey);
   }
 
   public interface TenantIdStep {
-    ProcessInstancesStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    ProcessInstancesStep tenantId(final String tenantId);
   }
 
   public interface ProcessInstancesStep {
-    OptionalStep processInstances(
-        final Object processInstances, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep processInstances(final Object processInstances);
   }
 
   public interface OptionalStep {

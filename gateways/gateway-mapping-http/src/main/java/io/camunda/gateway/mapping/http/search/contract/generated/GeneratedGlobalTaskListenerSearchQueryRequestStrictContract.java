@@ -10,11 +10,13 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedGlobalTaskListenerSearchQueryRequestStrictContract(
-    @Nullable java.util.List<GeneratedGlobalTaskListenerSearchQuerySortRequestStrictContract> sort,
+    java.util.@Nullable List<GeneratedGlobalTaskListenerSearchQuerySortRequestStrictContract> sort,
     @Nullable GeneratedGlobalTaskListenerSearchQueryFilterRequestStrictContract filter) {
 
   public static java.util.List<GeneratedGlobalTaskListenerSearchQuerySortRequestStrictContract>
@@ -62,14 +64,6 @@ public record GeneratedGlobalTaskListenerSearchQueryRequestStrictContract(
             + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static OptionalStep builder() {
     return new Builder();
   }
@@ -82,20 +76,23 @@ public record GeneratedGlobalTaskListenerSearchQueryRequestStrictContract(
 
     @Override
     public OptionalStep sort(
-        final java.util.List<GeneratedGlobalTaskListenerSearchQuerySortRequestStrictContract>
+        final java.util.@Nullable List<
+                GeneratedGlobalTaskListenerSearchQuerySortRequestStrictContract>
             sort) {
       this.sort = sort;
       return this;
     }
 
     @Override
-    public OptionalStep sort(final Object sort) {
+    public OptionalStep sort(final @Nullable Object sort) {
       this.sort = sort;
       return this;
     }
 
     public Builder sort(
-        final java.util.List<GeneratedGlobalTaskListenerSearchQuerySortRequestStrictContract> sort,
+        final java.util.@Nullable List<
+                GeneratedGlobalTaskListenerSearchQuerySortRequestStrictContract>
+            sort,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedGlobalTaskListenerSearchQuerySortRequestStrictContract>>
             policy) {
@@ -104,26 +101,27 @@ public record GeneratedGlobalTaskListenerSearchQueryRequestStrictContract(
     }
 
     @Override
-    public OptionalStep sort(final Object sort, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep sort(
+        final @Nullable Object sort, final ContractPolicy.FieldPolicy<Object> policy) {
       this.sort = policy.apply(sort, Fields.SORT, null);
       return this;
     }
 
     @Override
     public OptionalStep filter(
-        final GeneratedGlobalTaskListenerSearchQueryFilterRequestStrictContract filter) {
+        final @Nullable GeneratedGlobalTaskListenerSearchQueryFilterRequestStrictContract filter) {
       this.filter = filter;
       return this;
     }
 
     @Override
-    public OptionalStep filter(final Object filter) {
+    public OptionalStep filter(final @Nullable Object filter) {
       this.filter = filter;
       return this;
     }
 
     public Builder filter(
-        final GeneratedGlobalTaskListenerSearchQueryFilterRequestStrictContract filter,
+        final @Nullable GeneratedGlobalTaskListenerSearchQueryFilterRequestStrictContract filter,
         final ContractPolicy.FieldPolicy<
                 GeneratedGlobalTaskListenerSearchQueryFilterRequestStrictContract>
             policy) {
@@ -133,7 +131,7 @@ public record GeneratedGlobalTaskListenerSearchQueryRequestStrictContract(
 
     @Override
     public OptionalStep filter(
-        final Object filter, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object filter, final ContractPolicy.FieldPolicy<Object> policy) {
       this.filter = policy.apply(filter, Fields.FILTER, null);
       return this;
     }
@@ -147,30 +145,35 @@ public record GeneratedGlobalTaskListenerSearchQueryRequestStrictContract(
 
   public interface OptionalStep {
     OptionalStep sort(
-        final java.util.List<GeneratedGlobalTaskListenerSearchQuerySortRequestStrictContract> sort);
+        final java.util.@Nullable List<
+                GeneratedGlobalTaskListenerSearchQuerySortRequestStrictContract>
+            sort);
 
-    OptionalStep sort(final Object sort);
+    OptionalStep sort(final @Nullable Object sort);
 
     OptionalStep sort(
-        final java.util.List<GeneratedGlobalTaskListenerSearchQuerySortRequestStrictContract> sort,
+        final java.util.@Nullable List<
+                GeneratedGlobalTaskListenerSearchQuerySortRequestStrictContract>
+            sort,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedGlobalTaskListenerSearchQuerySortRequestStrictContract>>
             policy);
 
-    OptionalStep sort(final Object sort, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep sort(final @Nullable Object sort, final ContractPolicy.FieldPolicy<Object> policy);
 
     OptionalStep filter(
-        final GeneratedGlobalTaskListenerSearchQueryFilterRequestStrictContract filter);
+        final @Nullable GeneratedGlobalTaskListenerSearchQueryFilterRequestStrictContract filter);
 
-    OptionalStep filter(final Object filter);
+    OptionalStep filter(final @Nullable Object filter);
 
     OptionalStep filter(
-        final GeneratedGlobalTaskListenerSearchQueryFilterRequestStrictContract filter,
+        final @Nullable GeneratedGlobalTaskListenerSearchQueryFilterRequestStrictContract filter,
         final ContractPolicy.FieldPolicy<
                 GeneratedGlobalTaskListenerSearchQueryFilterRequestStrictContract>
             policy);
 
-    OptionalStep filter(final Object filter, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep filter(
+        final @Nullable Object filter, final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedGlobalTaskListenerSearchQueryRequestStrictContract build();
   }

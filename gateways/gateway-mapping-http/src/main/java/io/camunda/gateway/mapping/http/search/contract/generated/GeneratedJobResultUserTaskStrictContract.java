@@ -9,8 +9,10 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobResultUserTaskStrictContract(
     @Nullable Boolean denied,
@@ -31,14 +33,6 @@ public record GeneratedJobResultUserTaskStrictContract(
             + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static OptionalStep builder() {
     return new Builder();
   }
@@ -52,45 +46,46 @@ public record GeneratedJobResultUserTaskStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep denied(final Boolean denied) {
+    public OptionalStep denied(final @Nullable Boolean denied) {
       this.denied = denied;
       return this;
     }
 
     @Override
     public OptionalStep denied(
-        final Boolean denied, final ContractPolicy.FieldPolicy<Boolean> policy) {
+        final @Nullable Boolean denied, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.denied = policy.apply(denied, Fields.DENIED, null);
       return this;
     }
 
     @Override
-    public OptionalStep deniedReason(final String deniedReason) {
+    public OptionalStep deniedReason(final @Nullable String deniedReason) {
       this.deniedReason = deniedReason;
       return this;
     }
 
     @Override
     public OptionalStep deniedReason(
-        final String deniedReason, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String deniedReason, final ContractPolicy.FieldPolicy<String> policy) {
       this.deniedReason = policy.apply(deniedReason, Fields.DENIED_REASON, null);
       return this;
     }
 
     @Override
-    public OptionalStep corrections(final GeneratedJobResultCorrectionsStrictContract corrections) {
+    public OptionalStep corrections(
+        final @Nullable GeneratedJobResultCorrectionsStrictContract corrections) {
       this.corrections = corrections;
       return this;
     }
 
     @Override
-    public OptionalStep corrections(final Object corrections) {
+    public OptionalStep corrections(final @Nullable Object corrections) {
       this.corrections = corrections;
       return this;
     }
 
     public Builder corrections(
-        final GeneratedJobResultCorrectionsStrictContract corrections,
+        final @Nullable GeneratedJobResultCorrectionsStrictContract corrections,
         final ContractPolicy.FieldPolicy<GeneratedJobResultCorrectionsStrictContract> policy) {
       this.corrections = policy.apply(corrections, Fields.CORRECTIONS, null);
       return this;
@@ -98,19 +93,20 @@ public record GeneratedJobResultUserTaskStrictContract(
 
     @Override
     public OptionalStep corrections(
-        final Object corrections, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object corrections, final ContractPolicy.FieldPolicy<Object> policy) {
       this.corrections = policy.apply(corrections, Fields.CORRECTIONS, null);
       return this;
     }
 
     @Override
-    public OptionalStep type(final String type) {
+    public OptionalStep type(final @Nullable String type) {
       this.type = type;
       return this;
     }
 
     @Override
-    public OptionalStep type(final String type, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep type(
+        final @Nullable String type, final ContractPolicy.FieldPolicy<String> policy) {
       this.type = policy.apply(type, Fields.TYPE, null);
       return this;
     }
@@ -123,29 +119,31 @@ public record GeneratedJobResultUserTaskStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep denied(final Boolean denied);
+    OptionalStep denied(final @Nullable Boolean denied);
 
-    OptionalStep denied(final Boolean denied, final ContractPolicy.FieldPolicy<Boolean> policy);
+    OptionalStep denied(
+        final @Nullable Boolean denied, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep deniedReason(final String deniedReason);
+    OptionalStep deniedReason(final @Nullable String deniedReason);
 
     OptionalStep deniedReason(
-        final String deniedReason, final ContractPolicy.FieldPolicy<String> policy);
-
-    OptionalStep corrections(final GeneratedJobResultCorrectionsStrictContract corrections);
-
-    OptionalStep corrections(final Object corrections);
+        final @Nullable String deniedReason, final ContractPolicy.FieldPolicy<String> policy);
 
     OptionalStep corrections(
-        final GeneratedJobResultCorrectionsStrictContract corrections,
+        final @Nullable GeneratedJobResultCorrectionsStrictContract corrections);
+
+    OptionalStep corrections(final @Nullable Object corrections);
+
+    OptionalStep corrections(
+        final @Nullable GeneratedJobResultCorrectionsStrictContract corrections,
         final ContractPolicy.FieldPolicy<GeneratedJobResultCorrectionsStrictContract> policy);
 
     OptionalStep corrections(
-        final Object corrections, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object corrections, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep type(final String type);
+    OptionalStep type(final @Nullable String type);
 
-    OptionalStep type(final String type, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep type(final @Nullable String type, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedJobResultUserTaskStrictContract build();
   }

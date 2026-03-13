@@ -9,23 +9,17 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedBatchOperationFilterStrictContract(
     @Nullable Object batchOperationKey,
     @Nullable Object operationType,
     @Nullable Object state,
-    @Nullable io.camunda.gateway.protocol.model.AuditLogActorTypeEnum actorType,
+    io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum actorType,
     @Nullable Object actorId) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
 
   public static OptionalStep builder() {
     return new Builder();
@@ -41,53 +35,54 @@ public record GeneratedBatchOperationFilterStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep batchOperationKey(final Object batchOperationKey) {
+    public OptionalStep batchOperationKey(final @Nullable Object batchOperationKey) {
       this.batchOperationKey = batchOperationKey;
       return this;
     }
 
     @Override
     public OptionalStep batchOperationKey(
-        final Object batchOperationKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object batchOperationKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.batchOperationKey = policy.apply(batchOperationKey, Fields.BATCH_OPERATION_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep operationType(final Object operationType) {
+    public OptionalStep operationType(final @Nullable Object operationType) {
       this.operationType = operationType;
       return this;
     }
 
     @Override
     public OptionalStep operationType(
-        final Object operationType, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object operationType, final ContractPolicy.FieldPolicy<Object> policy) {
       this.operationType = policy.apply(operationType, Fields.OPERATION_TYPE, null);
       return this;
     }
 
     @Override
-    public OptionalStep state(final Object state) {
+    public OptionalStep state(final @Nullable Object state) {
       this.state = state;
       return this;
     }
 
     @Override
-    public OptionalStep state(final Object state, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep state(
+        final @Nullable Object state, final ContractPolicy.FieldPolicy<Object> policy) {
       this.state = policy.apply(state, Fields.STATE, null);
       return this;
     }
 
     @Override
     public OptionalStep actorType(
-        final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum actorType) {
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum actorType) {
       this.actorType = actorType;
       return this;
     }
 
     @Override
     public OptionalStep actorType(
-        final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum actorType,
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum actorType,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum>
             policy) {
       this.actorType = policy.apply(actorType, Fields.ACTOR_TYPE, null);
@@ -95,14 +90,14 @@ public record GeneratedBatchOperationFilterStrictContract(
     }
 
     @Override
-    public OptionalStep actorId(final Object actorId) {
+    public OptionalStep actorId(final @Nullable Object actorId) {
       this.actorId = actorId;
       return this;
     }
 
     @Override
     public OptionalStep actorId(
-        final Object actorId, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object actorId, final ContractPolicy.FieldPolicy<Object> policy) {
       this.actorId = policy.apply(actorId, Fields.ACTOR_ID, null);
       return this;
     }
@@ -115,30 +110,33 @@ public record GeneratedBatchOperationFilterStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep batchOperationKey(final Object batchOperationKey);
+    OptionalStep batchOperationKey(final @Nullable Object batchOperationKey);
 
     OptionalStep batchOperationKey(
-        final Object batchOperationKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object batchOperationKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep operationType(final Object operationType);
+    OptionalStep operationType(final @Nullable Object operationType);
 
     OptionalStep operationType(
-        final Object operationType, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object operationType, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep state(final Object state);
+    OptionalStep state(final @Nullable Object state);
 
-    OptionalStep state(final Object state, final ContractPolicy.FieldPolicy<Object> policy);
-
-    OptionalStep actorType(final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum actorType);
+    OptionalStep state(
+        final @Nullable Object state, final ContractPolicy.FieldPolicy<Object> policy);
 
     OptionalStep actorType(
-        final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum actorType,
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum actorType);
+
+    OptionalStep actorType(
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum actorType,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum>
             policy);
 
-    OptionalStep actorId(final Object actorId);
+    OptionalStep actorId(final @Nullable Object actorId);
 
-    OptionalStep actorId(final Object actorId, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep actorId(
+        final @Nullable Object actorId, final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedBatchOperationFilterStrictContract build();
   }

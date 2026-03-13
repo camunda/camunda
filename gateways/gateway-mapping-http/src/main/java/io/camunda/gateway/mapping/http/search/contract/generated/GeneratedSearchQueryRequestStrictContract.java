@@ -9,18 +9,12 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedSearchQueryRequestStrictContract(@Nullable Object page) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
 
   public static OptionalStep builder() {
     return new Builder();
@@ -32,13 +26,14 @@ public record GeneratedSearchQueryRequestStrictContract(@Nullable Object page) {
     private Builder() {}
 
     @Override
-    public OptionalStep page(final Object page) {
+    public OptionalStep page(final @Nullable Object page) {
       this.page = page;
       return this;
     }
 
     @Override
-    public OptionalStep page(final Object page, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep page(
+        final @Nullable Object page, final ContractPolicy.FieldPolicy<Object> policy) {
       this.page = policy.apply(page, Fields.PAGE, null);
       return this;
     }
@@ -50,9 +45,9 @@ public record GeneratedSearchQueryRequestStrictContract(@Nullable Object page) {
   }
 
   public interface OptionalStep {
-    OptionalStep page(final Object page);
+    OptionalStep page(final @Nullable Object page);
 
-    OptionalStep page(final Object page, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep page(final @Nullable Object page, final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedSearchQueryRequestStrictContract build();
   }

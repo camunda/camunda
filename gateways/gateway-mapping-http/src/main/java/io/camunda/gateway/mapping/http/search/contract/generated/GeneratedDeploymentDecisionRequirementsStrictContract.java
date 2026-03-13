@@ -11,7 +11,9 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedDeploymentDecisionRequirementsStrictContract(
     String decisionRequirementsId,
@@ -48,14 +50,6 @@ public record GeneratedDeploymentDecisionRequirementsStrictContract(
             + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static DecisionRequirementsIdStep builder() {
     return new Builder();
   }
@@ -69,118 +63,85 @@ public record GeneratedDeploymentDecisionRequirementsStrictContract(
           DecisionRequirementsKeyStep,
           OptionalStep {
     private String decisionRequirementsId;
-    private ContractPolicy.FieldPolicy<String> decisionRequirementsIdPolicy;
     private String decisionRequirementsName;
-    private ContractPolicy.FieldPolicy<String> decisionRequirementsNamePolicy;
     private Integer version;
-    private ContractPolicy.FieldPolicy<Integer> versionPolicy;
     private String resourceName;
-    private ContractPolicy.FieldPolicy<String> resourceNamePolicy;
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
     private Object decisionRequirementsKey;
-    private ContractPolicy.FieldPolicy<Object> decisionRequirementsKeyPolicy;
 
     private Builder() {}
 
     @Override
     public DecisionRequirementsNameStep decisionRequirementsId(
-        final String decisionRequirementsId, final ContractPolicy.FieldPolicy<String> policy) {
+        final String decisionRequirementsId) {
       this.decisionRequirementsId = decisionRequirementsId;
-      this.decisionRequirementsIdPolicy = policy;
       return this;
     }
 
     @Override
-    public VersionStep decisionRequirementsName(
-        final String decisionRequirementsName, final ContractPolicy.FieldPolicy<String> policy) {
+    public VersionStep decisionRequirementsName(final String decisionRequirementsName) {
       this.decisionRequirementsName = decisionRequirementsName;
-      this.decisionRequirementsNamePolicy = policy;
       return this;
     }
 
     @Override
-    public ResourceNameStep version(
-        final Integer version, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public ResourceNameStep version(final Integer version) {
       this.version = version;
-      this.versionPolicy = policy;
       return this;
     }
 
     @Override
-    public TenantIdStep resourceName(
-        final String resourceName, final ContractPolicy.FieldPolicy<String> policy) {
+    public TenantIdStep resourceName(final String resourceName) {
       this.resourceName = resourceName;
-      this.resourceNamePolicy = policy;
       return this;
     }
 
     @Override
-    public DecisionRequirementsKeyStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public DecisionRequirementsKeyStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep decisionRequirementsKey(
-        final Object decisionRequirementsKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep decisionRequirementsKey(final Object decisionRequirementsKey) {
       this.decisionRequirementsKey = decisionRequirementsKey;
-      this.decisionRequirementsKeyPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedDeploymentDecisionRequirementsStrictContract build() {
       return new GeneratedDeploymentDecisionRequirementsStrictContract(
-          applyRequiredPolicy(
-              this.decisionRequirementsId,
-              this.decisionRequirementsIdPolicy,
-              Fields.DECISION_REQUIREMENTS_ID),
-          applyRequiredPolicy(
-              this.decisionRequirementsName,
-              this.decisionRequirementsNamePolicy,
-              Fields.DECISION_REQUIREMENTS_NAME),
-          applyRequiredPolicy(this.version, this.versionPolicy, Fields.VERSION),
-          applyRequiredPolicy(this.resourceName, this.resourceNamePolicy, Fields.RESOURCE_NAME),
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID),
-          coerceDecisionRequirementsKey(
-              applyRequiredPolicy(
-                  this.decisionRequirementsKey,
-                  this.decisionRequirementsKeyPolicy,
-                  Fields.DECISION_REQUIREMENTS_KEY)));
+          this.decisionRequirementsId,
+          this.decisionRequirementsName,
+          this.version,
+          this.resourceName,
+          this.tenantId,
+          coerceDecisionRequirementsKey(this.decisionRequirementsKey));
     }
   }
 
   public interface DecisionRequirementsIdStep {
-    DecisionRequirementsNameStep decisionRequirementsId(
-        final String decisionRequirementsId, final ContractPolicy.FieldPolicy<String> policy);
+    DecisionRequirementsNameStep decisionRequirementsId(final String decisionRequirementsId);
   }
 
   public interface DecisionRequirementsNameStep {
-    VersionStep decisionRequirementsName(
-        final String decisionRequirementsName, final ContractPolicy.FieldPolicy<String> policy);
+    VersionStep decisionRequirementsName(final String decisionRequirementsName);
   }
 
   public interface VersionStep {
-    ResourceNameStep version(
-        final Integer version, final ContractPolicy.FieldPolicy<Integer> policy);
+    ResourceNameStep version(final Integer version);
   }
 
   public interface ResourceNameStep {
-    TenantIdStep resourceName(
-        final String resourceName, final ContractPolicy.FieldPolicy<String> policy);
+    TenantIdStep resourceName(final String resourceName);
   }
 
   public interface TenantIdStep {
-    DecisionRequirementsKeyStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    DecisionRequirementsKeyStep tenantId(final String tenantId);
   }
 
   public interface DecisionRequirementsKeyStep {
-    OptionalStep decisionRequirementsKey(
-        final Object decisionRequirementsKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep decisionRequirementsKey(final Object decisionRequirementsKey);
   }
 
   public interface OptionalStep {

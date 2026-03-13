@@ -9,8 +9,10 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessInstanceFilterFieldsStrictContract(
     @Nullable Object processDefinitionId,
@@ -18,14 +20,6 @@ public record GeneratedProcessInstanceFilterFieldsStrictContract(
     @Nullable Object processDefinitionVersion,
     @Nullable Object processDefinitionVersionTag,
     @Nullable Object processDefinitionKey) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
 
   public static OptionalStep builder() {
     return new Builder();
@@ -41,70 +35,76 @@ public record GeneratedProcessInstanceFilterFieldsStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep processDefinitionId(final Object processDefinitionId) {
+    public OptionalStep processDefinitionId(final @Nullable Object processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
       return this;
     }
 
     @Override
     public OptionalStep processDefinitionId(
-        final Object processDefinitionId, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object processDefinitionId,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.processDefinitionId =
           policy.apply(processDefinitionId, Fields.PROCESS_DEFINITION_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionName(final Object processDefinitionName) {
+    public OptionalStep processDefinitionName(final @Nullable Object processDefinitionName) {
       this.processDefinitionName = processDefinitionName;
       return this;
     }
 
     @Override
     public OptionalStep processDefinitionName(
-        final Object processDefinitionName, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object processDefinitionName,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.processDefinitionName =
           policy.apply(processDefinitionName, Fields.PROCESS_DEFINITION_NAME, null);
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionVersion(final Object processDefinitionVersion) {
+    public OptionalStep processDefinitionVersion(final @Nullable Object processDefinitionVersion) {
       this.processDefinitionVersion = processDefinitionVersion;
       return this;
     }
 
     @Override
     public OptionalStep processDefinitionVersion(
-        final Object processDefinitionVersion, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object processDefinitionVersion,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.processDefinitionVersion =
           policy.apply(processDefinitionVersion, Fields.PROCESS_DEFINITION_VERSION, null);
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionVersionTag(final Object processDefinitionVersionTag) {
+    public OptionalStep processDefinitionVersionTag(
+        final @Nullable Object processDefinitionVersionTag) {
       this.processDefinitionVersionTag = processDefinitionVersionTag;
       return this;
     }
 
     @Override
     public OptionalStep processDefinitionVersionTag(
-        final Object processDefinitionVersionTag, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object processDefinitionVersionTag,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.processDefinitionVersionTag =
           policy.apply(processDefinitionVersionTag, Fields.PROCESS_DEFINITION_VERSION_TAG, null);
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionKey(final Object processDefinitionKey) {
+    public OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
       return this;
     }
 
     @Override
     public OptionalStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object processDefinitionKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.processDefinitionKey =
           policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
       return this;
@@ -122,30 +122,35 @@ public record GeneratedProcessInstanceFilterFieldsStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep processDefinitionId(final Object processDefinitionId);
+    OptionalStep processDefinitionId(final @Nullable Object processDefinitionId);
 
     OptionalStep processDefinitionId(
-        final Object processDefinitionId, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object processDefinitionId,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processDefinitionName(final Object processDefinitionName);
+    OptionalStep processDefinitionName(final @Nullable Object processDefinitionName);
 
     OptionalStep processDefinitionName(
-        final Object processDefinitionName, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object processDefinitionName,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processDefinitionVersion(final Object processDefinitionVersion);
+    OptionalStep processDefinitionVersion(final @Nullable Object processDefinitionVersion);
 
     OptionalStep processDefinitionVersion(
-        final Object processDefinitionVersion, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object processDefinitionVersion,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processDefinitionVersionTag(final Object processDefinitionVersionTag);
+    OptionalStep processDefinitionVersionTag(final @Nullable Object processDefinitionVersionTag);
 
     OptionalStep processDefinitionVersionTag(
-        final Object processDefinitionVersionTag, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object processDefinitionVersionTag,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processDefinitionKey(final Object processDefinitionKey);
+    OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey);
 
     OptionalStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object processDefinitionKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedProcessInstanceFilterFieldsStrictContract build();
   }

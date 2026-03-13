@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobErrorStatisticsItemStrictContract(
     String errorCode, String errorMessage, Integer workers) {
@@ -21,14 +23,6 @@ public record GeneratedJobErrorStatisticsItemStrictContract(
     Objects.requireNonNull(workers, "workers is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ErrorCodeStep builder() {
     return new Builder();
   }
@@ -36,59 +30,46 @@ public record GeneratedJobErrorStatisticsItemStrictContract(
   public static final class Builder
       implements ErrorCodeStep, ErrorMessageStep, WorkersStep, OptionalStep {
     private String errorCode;
-    private ContractPolicy.FieldPolicy<String> errorCodePolicy;
     private String errorMessage;
-    private ContractPolicy.FieldPolicy<String> errorMessagePolicy;
     private Integer workers;
-    private ContractPolicy.FieldPolicy<Integer> workersPolicy;
 
     private Builder() {}
 
     @Override
-    public ErrorMessageStep errorCode(
-        final String errorCode, final ContractPolicy.FieldPolicy<String> policy) {
+    public ErrorMessageStep errorCode(final String errorCode) {
       this.errorCode = errorCode;
-      this.errorCodePolicy = policy;
       return this;
     }
 
     @Override
-    public WorkersStep errorMessage(
-        final String errorMessage, final ContractPolicy.FieldPolicy<String> policy) {
+    public WorkersStep errorMessage(final String errorMessage) {
       this.errorMessage = errorMessage;
-      this.errorMessagePolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep workers(
-        final Integer workers, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public OptionalStep workers(final Integer workers) {
       this.workers = workers;
-      this.workersPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedJobErrorStatisticsItemStrictContract build() {
       return new GeneratedJobErrorStatisticsItemStrictContract(
-          applyRequiredPolicy(this.errorCode, this.errorCodePolicy, Fields.ERROR_CODE),
-          applyRequiredPolicy(this.errorMessage, this.errorMessagePolicy, Fields.ERROR_MESSAGE),
-          applyRequiredPolicy(this.workers, this.workersPolicy, Fields.WORKERS));
+          this.errorCode, this.errorMessage, this.workers);
     }
   }
 
   public interface ErrorCodeStep {
-    ErrorMessageStep errorCode(
-        final String errorCode, final ContractPolicy.FieldPolicy<String> policy);
+    ErrorMessageStep errorCode(final String errorCode);
   }
 
   public interface ErrorMessageStep {
-    WorkersStep errorMessage(
-        final String errorMessage, final ContractPolicy.FieldPolicy<String> policy);
+    WorkersStep errorMessage(final String errorMessage);
   }
 
   public interface WorkersStep {
-    OptionalStep workers(final Integer workers, final ContractPolicy.FieldPolicy<Integer> policy);
+    OptionalStep workers(final Integer workers);
   }
 
   public interface OptionalStep {

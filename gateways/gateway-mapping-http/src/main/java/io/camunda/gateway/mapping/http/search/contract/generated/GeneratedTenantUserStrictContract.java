@@ -10,20 +10,14 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedTenantUserStrictContract(String username) {
 
   public GeneratedTenantUserStrictContract {
     Objects.requireNonNull(username, "username is required and must not be null");
-  }
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
   }
 
   public static UsernameStep builder() {
@@ -32,27 +26,23 @@ public record GeneratedTenantUserStrictContract(String username) {
 
   public static final class Builder implements UsernameStep, OptionalStep {
     private String username;
-    private ContractPolicy.FieldPolicy<String> usernamePolicy;
 
     private Builder() {}
 
     @Override
-    public OptionalStep username(
-        final String username, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep username(final String username) {
       this.username = username;
-      this.usernamePolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedTenantUserStrictContract build() {
-      return new GeneratedTenantUserStrictContract(
-          applyRequiredPolicy(this.username, this.usernamePolicy, Fields.USERNAME));
+      return new GeneratedTenantUserStrictContract(this.username);
     }
   }
 
   public interface UsernameStep {
-    OptionalStep username(final String username, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep username(final String username);
   }
 
   public interface OptionalStep {

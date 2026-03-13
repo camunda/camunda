@@ -12,8 +12,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /** Utility policy operations shared by contract adapters. */
+@NullMarked
 public final class ContractPolicy {
 
   private ContractPolicy() {}
@@ -34,8 +37,20 @@ public final class ContractPolicy {
     return (value, field, sourceEntity) -> value == null ? defaultValue : value;
   }
 
+  /**
+   * Requires a value to be non-null. Accepts a {@code @Nullable} value and returns a guaranteed
+   * non-null result, or throws with a descriptive message identifying the contract field.
+   */
+  public static <T> T requireNonNull(
+      final @Nullable T value, final ContractPolicy.FieldRef field, final Object sourceEntity) {
+    return requiredNonNull(value, field, sourceEntity);
+  }
+
   public static <T> T requiredNonNull(
-      final T value, final String contractName, final String fieldName, final Object sourceEntity) {
+      final @Nullable T value,
+      final String contractName,
+      final String fieldName,
+      final Object sourceEntity) {
     return Objects.requireNonNull(
         value,
         () ->
@@ -47,7 +62,7 @@ public final class ContractPolicy {
   }
 
   public static <T> T requiredNonNull(
-      final T value, final FieldRef field, final Object sourceEntity) {
+      final @Nullable T value, final FieldRef field, final Object sourceEntity) {
     return requiredNonNull(value, field.contractName(), field.fieldName(), sourceEntity);
   }
 
@@ -55,19 +70,19 @@ public final class ContractPolicy {
     return StringUtils.isNotBlank(value);
   }
 
-  public static String blankToNull(final String value) {
+  public static @Nullable String blankToNull(final @Nullable String value) {
     return StringUtils.defaultIfBlank(value, null);
   }
 
-  public static <T> List<T> nullToEmptyList(final List<T> values) {
+  public static <T> List<T> nullToEmptyList(final @Nullable List<T> values) {
     return values == null ? List.of() : values;
   }
 
-  public static <K, V> Map<K, V> nullToEmptyMap(final Map<K, V> values) {
+  public static <K, V> Map<K, V> nullToEmptyMap(final @Nullable Map<K, V> values) {
     return values == null ? Map.of() : values;
   }
 
-  public static <T> T defaultIfNull(final T value, final T defaultValue) {
+  public static <T> T defaultIfNull(final @Nullable T value, final T defaultValue) {
     return value == null ? defaultValue : value;
   }
 
@@ -75,8 +90,8 @@ public final class ContractPolicy {
    * Null-safe enum-to-protocol-enum coercion. Returns {@code null} when the source enum is {@code
    * null}; otherwise maps via {@code source.name()} through the given {@code fromValue} function.
    */
-  public static <S extends Enum<S>, T> T mapEnum(
-      final S source, final Function<String, T> fromValue) {
+  public static <S extends Enum<S>, T> @Nullable T mapEnum(
+      final @Nullable S source, final Function<String, T> fromValue) {
     return source != null ? fromValue.apply(source.name()) : null;
   }
 
@@ -97,11 +112,13 @@ public final class ContractPolicy {
       this.contractName = Objects.requireNonNull(contractName, "contractName must not be null");
     }
 
-    public <T> T requiredNonNull(final T value, final String fieldName, final Object sourceEntity) {
+    public <T> T requiredNonNull(
+        final @Nullable T value, final String fieldName, final Object sourceEntity) {
       return ContractPolicy.requiredNonNull(value, contractName, fieldName, sourceEntity);
     }
 
-    public <T> T requiredNonNull(final T value, final FieldRef field, final Object sourceEntity) {
+    public <T> T requiredNonNull(
+        final @Nullable T value, final FieldRef field, final Object sourceEntity) {
       return ContractPolicy.requiredNonNull(value, field, sourceEntity);
     }
   }

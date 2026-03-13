@@ -11,7 +11,9 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedBrokerInfoStrictContract(
     Integer nodeId,
@@ -55,14 +57,6 @@ public record GeneratedBrokerInfoStrictContract(
     return java.util.List.copyOf(result);
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static NodeIdStep builder() {
     return new Builder();
   }
@@ -70,87 +64,68 @@ public record GeneratedBrokerInfoStrictContract(
   public static final class Builder
       implements NodeIdStep, HostStep, PortStep, PartitionsStep, VersionStep, OptionalStep {
     private Integer nodeId;
-    private ContractPolicy.FieldPolicy<Integer> nodeIdPolicy;
     private String host;
-    private ContractPolicy.FieldPolicy<String> hostPolicy;
     private Integer port;
-    private ContractPolicy.FieldPolicy<Integer> portPolicy;
     private Object partitions;
-    private ContractPolicy.FieldPolicy<Object> partitionsPolicy;
     private String version;
-    private ContractPolicy.FieldPolicy<String> versionPolicy;
 
     private Builder() {}
 
     @Override
-    public HostStep nodeId(final Integer nodeId, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public HostStep nodeId(final Integer nodeId) {
       this.nodeId = nodeId;
-      this.nodeIdPolicy = policy;
       return this;
     }
 
     @Override
-    public PortStep host(final String host, final ContractPolicy.FieldPolicy<String> policy) {
+    public PortStep host(final String host) {
       this.host = host;
-      this.hostPolicy = policy;
       return this;
     }
 
     @Override
-    public PartitionsStep port(
-        final Integer port, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public PartitionsStep port(final Integer port) {
       this.port = port;
-      this.portPolicy = policy;
       return this;
     }
 
     @Override
-    public VersionStep partitions(
-        final Object partitions, final ContractPolicy.FieldPolicy<Object> policy) {
+    public VersionStep partitions(final Object partitions) {
       this.partitions = partitions;
-      this.partitionsPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep version(
-        final String version, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep version(final String version) {
       this.version = version;
-      this.versionPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedBrokerInfoStrictContract build() {
       return new GeneratedBrokerInfoStrictContract(
-          applyRequiredPolicy(this.nodeId, this.nodeIdPolicy, Fields.NODE_ID),
-          applyRequiredPolicy(this.host, this.hostPolicy, Fields.HOST),
-          applyRequiredPolicy(this.port, this.portPolicy, Fields.PORT),
-          coercePartitions(
-              applyRequiredPolicy(this.partitions, this.partitionsPolicy, Fields.PARTITIONS)),
-          applyRequiredPolicy(this.version, this.versionPolicy, Fields.VERSION));
+          this.nodeId, this.host, this.port, coercePartitions(this.partitions), this.version);
     }
   }
 
   public interface NodeIdStep {
-    HostStep nodeId(final Integer nodeId, final ContractPolicy.FieldPolicy<Integer> policy);
+    HostStep nodeId(final Integer nodeId);
   }
 
   public interface HostStep {
-    PortStep host(final String host, final ContractPolicy.FieldPolicy<String> policy);
+    PortStep host(final String host);
   }
 
   public interface PortStep {
-    PartitionsStep port(final Integer port, final ContractPolicy.FieldPolicy<Integer> policy);
+    PartitionsStep port(final Integer port);
   }
 
   public interface PartitionsStep {
-    VersionStep partitions(
-        final Object partitions, final ContractPolicy.FieldPolicy<Object> policy);
+    VersionStep partitions(final Object partitions);
   }
 
   public interface VersionStep {
-    OptionalStep version(final String version, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep version(final String version);
   }
 
   public interface OptionalStep {

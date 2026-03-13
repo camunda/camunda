@@ -11,8 +11,10 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract(
     java.util.List<GeneratedAdHocSubProcessActivateActivityReferenceStrictContract> elements,
@@ -52,42 +54,32 @@ public record GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContrac
     return java.util.List.copyOf(result);
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ElementsStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements ElementsStep, OptionalStep {
     private Object elements;
-    private ContractPolicy.FieldPolicy<Object> elementsPolicy;
     private Boolean cancelRemainingInstances;
 
     private Builder() {}
 
     @Override
-    public OptionalStep elements(
-        final Object elements, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep elements(final Object elements) {
       this.elements = elements;
-      this.elementsPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep cancelRemainingInstances(final Boolean cancelRemainingInstances) {
+    public OptionalStep cancelRemainingInstances(final @Nullable Boolean cancelRemainingInstances) {
       this.cancelRemainingInstances = cancelRemainingInstances;
       return this;
     }
 
     @Override
     public OptionalStep cancelRemainingInstances(
-        final Boolean cancelRemainingInstances, final ContractPolicy.FieldPolicy<Boolean> policy) {
+        final @Nullable Boolean cancelRemainingInstances,
+        final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.cancelRemainingInstances =
           policy.apply(cancelRemainingInstances, Fields.CANCEL_REMAINING_INSTANCES, null);
       return this;
@@ -96,20 +88,20 @@ public record GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContrac
     @Override
     public GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract build() {
       return new GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract(
-          coerceElements(applyRequiredPolicy(this.elements, this.elementsPolicy, Fields.ELEMENTS)),
-          this.cancelRemainingInstances);
+          coerceElements(this.elements), this.cancelRemainingInstances);
     }
   }
 
   public interface ElementsStep {
-    OptionalStep elements(final Object elements, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep elements(final Object elements);
   }
 
   public interface OptionalStep {
-    OptionalStep cancelRemainingInstances(final Boolean cancelRemainingInstances);
+    OptionalStep cancelRemainingInstances(final @Nullable Boolean cancelRemainingInstances);
 
     OptionalStep cancelRemainingInstances(
-        final Boolean cancelRemainingInstances, final ContractPolicy.FieldPolicy<Boolean> policy);
+        final @Nullable Boolean cancelRemainingInstances,
+        final ContractPolicy.FieldPolicy<Boolean> policy);
 
     GeneratedAdHocSubProcessActivateActivitiesInstructionStrictContract build();
   }

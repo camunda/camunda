@@ -9,8 +9,10 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedUserTaskAuditLogFilterStrictContract(
     @Nullable Object operationType,
@@ -18,14 +20,6 @@ public record GeneratedUserTaskAuditLogFilterStrictContract(
     @Nullable Object timestamp,
     @Nullable Object actorType,
     @Nullable Object actorId) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
 
   public static OptionalStep builder() {
     return new Builder();
@@ -41,66 +35,66 @@ public record GeneratedUserTaskAuditLogFilterStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep operationType(final Object operationType) {
+    public OptionalStep operationType(final @Nullable Object operationType) {
       this.operationType = operationType;
       return this;
     }
 
     @Override
     public OptionalStep operationType(
-        final Object operationType, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object operationType, final ContractPolicy.FieldPolicy<Object> policy) {
       this.operationType = policy.apply(operationType, Fields.OPERATION_TYPE, null);
       return this;
     }
 
     @Override
-    public OptionalStep result(final Object result) {
+    public OptionalStep result(final @Nullable Object result) {
       this.result = result;
       return this;
     }
 
     @Override
     public OptionalStep result(
-        final Object result, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object result, final ContractPolicy.FieldPolicy<Object> policy) {
       this.result = policy.apply(result, Fields.RESULT, null);
       return this;
     }
 
     @Override
-    public OptionalStep timestamp(final Object timestamp) {
+    public OptionalStep timestamp(final @Nullable Object timestamp) {
       this.timestamp = timestamp;
       return this;
     }
 
     @Override
     public OptionalStep timestamp(
-        final Object timestamp, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object timestamp, final ContractPolicy.FieldPolicy<Object> policy) {
       this.timestamp = policy.apply(timestamp, Fields.TIMESTAMP, null);
       return this;
     }
 
     @Override
-    public OptionalStep actorType(final Object actorType) {
+    public OptionalStep actorType(final @Nullable Object actorType) {
       this.actorType = actorType;
       return this;
     }
 
     @Override
     public OptionalStep actorType(
-        final Object actorType, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object actorType, final ContractPolicy.FieldPolicy<Object> policy) {
       this.actorType = policy.apply(actorType, Fields.ACTOR_TYPE, null);
       return this;
     }
 
     @Override
-    public OptionalStep actorId(final Object actorId) {
+    public OptionalStep actorId(final @Nullable Object actorId) {
       this.actorId = actorId;
       return this;
     }
 
     @Override
     public OptionalStep actorId(
-        final Object actorId, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object actorId, final ContractPolicy.FieldPolicy<Object> policy) {
       this.actorId = policy.apply(actorId, Fields.ACTOR_ID, null);
       return this;
     }
@@ -113,26 +107,30 @@ public record GeneratedUserTaskAuditLogFilterStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep operationType(final Object operationType);
+    OptionalStep operationType(final @Nullable Object operationType);
 
     OptionalStep operationType(
-        final Object operationType, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object operationType, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep result(final Object result);
+    OptionalStep result(final @Nullable Object result);
 
-    OptionalStep result(final Object result, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep result(
+        final @Nullable Object result, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep timestamp(final Object timestamp);
+    OptionalStep timestamp(final @Nullable Object timestamp);
 
-    OptionalStep timestamp(final Object timestamp, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep timestamp(
+        final @Nullable Object timestamp, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep actorType(final Object actorType);
+    OptionalStep actorType(final @Nullable Object actorType);
 
-    OptionalStep actorType(final Object actorType, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep actorType(
+        final @Nullable Object actorType, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep actorId(final Object actorId);
+    OptionalStep actorId(final @Nullable Object actorId);
 
-    OptionalStep actorId(final Object actorId, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep actorId(
+        final @Nullable Object actorId, final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedUserTaskAuditLogFilterStrictContract build();
   }

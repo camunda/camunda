@@ -9,18 +9,12 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedRoleFilterStrictContract(@Nullable String roleId, @Nullable String name) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
 
   public static OptionalStep builder() {
     return new Builder();
@@ -33,26 +27,27 @@ public record GeneratedRoleFilterStrictContract(@Nullable String roleId, @Nullab
     private Builder() {}
 
     @Override
-    public OptionalStep roleId(final String roleId) {
+    public OptionalStep roleId(final @Nullable String roleId) {
       this.roleId = roleId;
       return this;
     }
 
     @Override
     public OptionalStep roleId(
-        final String roleId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String roleId, final ContractPolicy.FieldPolicy<String> policy) {
       this.roleId = policy.apply(roleId, Fields.ROLE_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep name(final String name) {
+    public OptionalStep name(final @Nullable String name) {
       this.name = name;
       return this;
     }
 
     @Override
-    public OptionalStep name(final String name, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep name(
+        final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy) {
       this.name = policy.apply(name, Fields.NAME, null);
       return this;
     }
@@ -64,13 +59,14 @@ public record GeneratedRoleFilterStrictContract(@Nullable String roleId, @Nullab
   }
 
   public interface OptionalStep {
-    OptionalStep roleId(final String roleId);
+    OptionalStep roleId(final @Nullable String roleId);
 
-    OptionalStep roleId(final String roleId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep roleId(
+        final @Nullable String roleId, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep name(final String name);
+    OptionalStep name(final @Nullable String name);
 
-    OptionalStep name(final String name, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep name(final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedRoleFilterStrictContract build();
   }

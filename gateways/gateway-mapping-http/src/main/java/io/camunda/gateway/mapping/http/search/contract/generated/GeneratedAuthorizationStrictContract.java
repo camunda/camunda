@@ -11,8 +11,10 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedAuthorizationStrictContract(
     String ownerId,
@@ -45,14 +47,6 @@ public record GeneratedAuthorizationStrictContract(
         "authorizationKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static OwnerIdStep builder() {
     return new Builder();
   }
@@ -65,92 +59,72 @@ public record GeneratedAuthorizationStrictContract(
           AuthorizationKeyStep,
           OptionalStep {
     private String ownerId;
-    private ContractPolicy.FieldPolicy<String> ownerIdPolicy;
     private io.camunda.gateway.protocol.model.OwnerTypeEnum ownerType;
-    private ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.OwnerTypeEnum>
-        ownerTypePolicy;
     private io.camunda.gateway.protocol.model.ResourceTypeEnum resourceType;
-    private ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ResourceTypeEnum>
-        resourceTypePolicy;
     private String resourceId;
     private String resourcePropertyName;
     private java.util.List<io.camunda.gateway.protocol.model.PermissionTypeEnum> permissionTypes;
-    private ContractPolicy.FieldPolicy<
-            java.util.List<io.camunda.gateway.protocol.model.PermissionTypeEnum>>
-        permissionTypesPolicy;
     private Object authorizationKey;
-    private ContractPolicy.FieldPolicy<Object> authorizationKeyPolicy;
 
     private Builder() {}
 
     @Override
-    public OwnerTypeStep ownerId(
-        final String ownerId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OwnerTypeStep ownerId(final String ownerId) {
       this.ownerId = ownerId;
-      this.ownerIdPolicy = policy;
       return this;
     }
 
     @Override
     public ResourceTypeStep ownerType(
-        final io.camunda.gateway.protocol.model.OwnerTypeEnum ownerType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.OwnerTypeEnum> policy) {
+        final io.camunda.gateway.protocol.model.OwnerTypeEnum ownerType) {
       this.ownerType = ownerType;
-      this.ownerTypePolicy = policy;
       return this;
     }
 
     @Override
     public PermissionTypesStep resourceType(
-        final io.camunda.gateway.protocol.model.ResourceTypeEnum resourceType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ResourceTypeEnum>
-            policy) {
+        final io.camunda.gateway.protocol.model.ResourceTypeEnum resourceType) {
       this.resourceType = resourceType;
-      this.resourceTypePolicy = policy;
       return this;
     }
 
     @Override
     public AuthorizationKeyStep permissionTypes(
-        final java.util.List<io.camunda.gateway.protocol.model.PermissionTypeEnum> permissionTypes,
-        final ContractPolicy.FieldPolicy<
-                java.util.List<io.camunda.gateway.protocol.model.PermissionTypeEnum>>
-            policy) {
+        final java.util.List<io.camunda.gateway.protocol.model.PermissionTypeEnum>
+            permissionTypes) {
       this.permissionTypes = permissionTypes;
-      this.permissionTypesPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep authorizationKey(
-        final Object authorizationKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep authorizationKey(final Object authorizationKey) {
       this.authorizationKey = authorizationKey;
-      this.authorizationKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep resourceId(final String resourceId) {
+    public OptionalStep resourceId(final @Nullable String resourceId) {
       this.resourceId = resourceId;
       return this;
     }
 
     @Override
     public OptionalStep resourceId(
-        final String resourceId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String resourceId, final ContractPolicy.FieldPolicy<String> policy) {
       this.resourceId = policy.apply(resourceId, Fields.RESOURCE_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep resourcePropertyName(final String resourcePropertyName) {
+    public OptionalStep resourcePropertyName(final @Nullable String resourcePropertyName) {
       this.resourcePropertyName = resourcePropertyName;
       return this;
     }
 
     @Override
     public OptionalStep resourcePropertyName(
-        final String resourcePropertyName, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String resourcePropertyName,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.resourcePropertyName =
           policy.apply(resourcePropertyName, Fields.RESOURCE_PROPERTY_NAME, null);
       return this;
@@ -159,59 +133,49 @@ public record GeneratedAuthorizationStrictContract(
     @Override
     public GeneratedAuthorizationStrictContract build() {
       return new GeneratedAuthorizationStrictContract(
-          applyRequiredPolicy(this.ownerId, this.ownerIdPolicy, Fields.OWNER_ID),
-          applyRequiredPolicy(this.ownerType, this.ownerTypePolicy, Fields.OWNER_TYPE),
-          applyRequiredPolicy(this.resourceType, this.resourceTypePolicy, Fields.RESOURCE_TYPE),
+          this.ownerId,
+          this.ownerType,
+          this.resourceType,
           this.resourceId,
           this.resourcePropertyName,
-          applyRequiredPolicy(
-              this.permissionTypes, this.permissionTypesPolicy, Fields.PERMISSION_TYPES),
-          coerceAuthorizationKey(
-              applyRequiredPolicy(
-                  this.authorizationKey, this.authorizationKeyPolicy, Fields.AUTHORIZATION_KEY)));
+          this.permissionTypes,
+          coerceAuthorizationKey(this.authorizationKey));
     }
   }
 
   public interface OwnerIdStep {
-    OwnerTypeStep ownerId(final String ownerId, final ContractPolicy.FieldPolicy<String> policy);
+    OwnerTypeStep ownerId(final String ownerId);
   }
 
   public interface OwnerTypeStep {
-    ResourceTypeStep ownerType(
-        final io.camunda.gateway.protocol.model.OwnerTypeEnum ownerType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.OwnerTypeEnum> policy);
+    ResourceTypeStep ownerType(final io.camunda.gateway.protocol.model.OwnerTypeEnum ownerType);
   }
 
   public interface ResourceTypeStep {
     PermissionTypesStep resourceType(
-        final io.camunda.gateway.protocol.model.ResourceTypeEnum resourceType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ResourceTypeEnum>
-            policy);
+        final io.camunda.gateway.protocol.model.ResourceTypeEnum resourceType);
   }
 
   public interface PermissionTypesStep {
     AuthorizationKeyStep permissionTypes(
-        final java.util.List<io.camunda.gateway.protocol.model.PermissionTypeEnum> permissionTypes,
-        final ContractPolicy.FieldPolicy<
-                java.util.List<io.camunda.gateway.protocol.model.PermissionTypeEnum>>
-            policy);
+        final java.util.List<io.camunda.gateway.protocol.model.PermissionTypeEnum> permissionTypes);
   }
 
   public interface AuthorizationKeyStep {
-    OptionalStep authorizationKey(
-        final Object authorizationKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep authorizationKey(final Object authorizationKey);
   }
 
   public interface OptionalStep {
-    OptionalStep resourceId(final String resourceId);
+    OptionalStep resourceId(final @Nullable String resourceId);
 
     OptionalStep resourceId(
-        final String resourceId, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String resourceId, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep resourcePropertyName(final String resourcePropertyName);
+    OptionalStep resourcePropertyName(final @Nullable String resourcePropertyName);
 
     OptionalStep resourcePropertyName(
-        final String resourcePropertyName, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String resourcePropertyName,
+        final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedAuthorizationStrictContract build();
   }

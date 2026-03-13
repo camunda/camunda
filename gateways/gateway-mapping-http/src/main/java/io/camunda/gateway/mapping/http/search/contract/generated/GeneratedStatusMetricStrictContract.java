@@ -10,21 +10,15 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedStatusMetricStrictContract(Long count, @Nullable String lastUpdatedAt) {
 
   public GeneratedStatusMetricStrictContract {
     Objects.requireNonNull(count, "count is required and must not be null");
-  }
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
   }
 
   public static CountStep builder() {
@@ -33,47 +27,44 @@ public record GeneratedStatusMetricStrictContract(Long count, @Nullable String l
 
   public static final class Builder implements CountStep, OptionalStep {
     private Long count;
-    private ContractPolicy.FieldPolicy<Long> countPolicy;
     private String lastUpdatedAt;
 
     private Builder() {}
 
     @Override
-    public OptionalStep count(final Long count, final ContractPolicy.FieldPolicy<Long> policy) {
+    public OptionalStep count(final Long count) {
       this.count = count;
-      this.countPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep lastUpdatedAt(final String lastUpdatedAt) {
+    public OptionalStep lastUpdatedAt(final @Nullable String lastUpdatedAt) {
       this.lastUpdatedAt = lastUpdatedAt;
       return this;
     }
 
     @Override
     public OptionalStep lastUpdatedAt(
-        final String lastUpdatedAt, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String lastUpdatedAt, final ContractPolicy.FieldPolicy<String> policy) {
       this.lastUpdatedAt = policy.apply(lastUpdatedAt, Fields.LAST_UPDATED_AT, null);
       return this;
     }
 
     @Override
     public GeneratedStatusMetricStrictContract build() {
-      return new GeneratedStatusMetricStrictContract(
-          applyRequiredPolicy(this.count, this.countPolicy, Fields.COUNT), this.lastUpdatedAt);
+      return new GeneratedStatusMetricStrictContract(this.count, this.lastUpdatedAt);
     }
   }
 
   public interface CountStep {
-    OptionalStep count(final Long count, final ContractPolicy.FieldPolicy<Long> policy);
+    OptionalStep count(final Long count);
   }
 
   public interface OptionalStep {
-    OptionalStep lastUpdatedAt(final String lastUpdatedAt);
+    OptionalStep lastUpdatedAt(final @Nullable String lastUpdatedAt);
 
     OptionalStep lastUpdatedAt(
-        final String lastUpdatedAt, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String lastUpdatedAt, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedStatusMetricStrictContract build();
   }

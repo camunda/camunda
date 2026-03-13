@@ -10,8 +10,10 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedCursorForwardPaginationStrictContract(
     String after, @Nullable Integer limit) {
@@ -20,60 +22,50 @@ public record GeneratedCursorForwardPaginationStrictContract(
     Objects.requireNonNull(after, "after is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static AfterStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements AfterStep, OptionalStep {
     private String after;
-    private ContractPolicy.FieldPolicy<String> afterPolicy;
     private Integer limit;
 
     private Builder() {}
 
     @Override
-    public OptionalStep after(final String after, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep after(final String after) {
       this.after = after;
-      this.afterPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep limit(final Integer limit) {
+    public OptionalStep limit(final @Nullable Integer limit) {
       this.limit = limit;
       return this;
     }
 
     @Override
     public OptionalStep limit(
-        final Integer limit, final ContractPolicy.FieldPolicy<Integer> policy) {
+        final @Nullable Integer limit, final ContractPolicy.FieldPolicy<Integer> policy) {
       this.limit = policy.apply(limit, Fields.LIMIT, null);
       return this;
     }
 
     @Override
     public GeneratedCursorForwardPaginationStrictContract build() {
-      return new GeneratedCursorForwardPaginationStrictContract(
-          applyRequiredPolicy(this.after, this.afterPolicy, Fields.AFTER), this.limit);
+      return new GeneratedCursorForwardPaginationStrictContract(this.after, this.limit);
     }
   }
 
   public interface AfterStep {
-    OptionalStep after(final String after, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep after(final String after);
   }
 
   public interface OptionalStep {
-    OptionalStep limit(final Integer limit);
+    OptionalStep limit(final @Nullable Integer limit);
 
-    OptionalStep limit(final Integer limit, final ContractPolicy.FieldPolicy<Integer> policy);
+    OptionalStep limit(
+        final @Nullable Integer limit, final ContractPolicy.FieldPolicy<Integer> policy);
 
     GeneratedCursorForwardPaginationStrictContract build();
   }

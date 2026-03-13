@@ -12,7 +12,9 @@ import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedDeploymentStrictContract(
     String deploymentKey,
@@ -66,14 +68,6 @@ public record GeneratedDeploymentStrictContract(
     return java.util.List.copyOf(result);
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static DeploymentKeyStep builder() {
     return new Builder();
   }
@@ -81,63 +75,48 @@ public record GeneratedDeploymentStrictContract(
   public static final class Builder
       implements DeploymentKeyStep, TenantIdStep, DeploymentsStep, OptionalStep {
     private Object deploymentKey;
-    private ContractPolicy.FieldPolicy<Object> deploymentKeyPolicy;
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
     private Object deployments;
-    private ContractPolicy.FieldPolicy<Object> deploymentsPolicy;
 
     private Builder() {}
 
     @Override
-    public TenantIdStep deploymentKey(
-        final Object deploymentKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public TenantIdStep deploymentKey(final Object deploymentKey) {
       this.deploymentKey = deploymentKey;
-      this.deploymentKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public DeploymentsStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public DeploymentsStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep deployments(
-        final Object deployments, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep deployments(final Object deployments) {
       this.deployments = deployments;
-      this.deploymentsPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedDeploymentStrictContract build() {
       return new GeneratedDeploymentStrictContract(
-          coerceDeploymentKey(
-              applyRequiredPolicy(
-                  this.deploymentKey, this.deploymentKeyPolicy, Fields.DEPLOYMENT_KEY)),
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID),
-          coerceDeployments(
-              applyRequiredPolicy(this.deployments, this.deploymentsPolicy, Fields.DEPLOYMENTS)));
+          coerceDeploymentKey(this.deploymentKey),
+          this.tenantId,
+          coerceDeployments(this.deployments));
     }
   }
 
   public interface DeploymentKeyStep {
-    TenantIdStep deploymentKey(
-        final Object deploymentKey, final ContractPolicy.FieldPolicy<Object> policy);
+    TenantIdStep deploymentKey(final Object deploymentKey);
   }
 
   public interface TenantIdStep {
-    DeploymentsStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    DeploymentsStep tenantId(final String tenantId);
   }
 
   public interface DeploymentsStep {
-    OptionalStep deployments(
-        final Object deployments, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep deployments(final Object deployments);
   }
 
   public interface OptionalStep {

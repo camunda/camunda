@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedPartitionStrictContract(Integer partitionId, String role, String health) {
 
@@ -20,71 +22,51 @@ public record GeneratedPartitionStrictContract(Integer partitionId, String role,
     Objects.requireNonNull(health, "health is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static PartitionIdStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements PartitionIdStep, RoleStep, HealthStep, OptionalStep {
     private Integer partitionId;
-    private ContractPolicy.FieldPolicy<Integer> partitionIdPolicy;
     private String role;
-    private ContractPolicy.FieldPolicy<String> rolePolicy;
     private String health;
-    private ContractPolicy.FieldPolicy<String> healthPolicy;
 
     private Builder() {}
 
     @Override
-    public RoleStep partitionId(
-        final Integer partitionId, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public RoleStep partitionId(final Integer partitionId) {
       this.partitionId = partitionId;
-      this.partitionIdPolicy = policy;
       return this;
     }
 
     @Override
-    public HealthStep role(final String role, final ContractPolicy.FieldPolicy<String> policy) {
+    public HealthStep role(final String role) {
       this.role = role;
-      this.rolePolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep health(
-        final String health, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep health(final String health) {
       this.health = health;
-      this.healthPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedPartitionStrictContract build() {
-      return new GeneratedPartitionStrictContract(
-          applyRequiredPolicy(this.partitionId, this.partitionIdPolicy, Fields.PARTITION_ID),
-          applyRequiredPolicy(this.role, this.rolePolicy, Fields.ROLE),
-          applyRequiredPolicy(this.health, this.healthPolicy, Fields.HEALTH));
+      return new GeneratedPartitionStrictContract(this.partitionId, this.role, this.health);
     }
   }
 
   public interface PartitionIdStep {
-    RoleStep partitionId(
-        final Integer partitionId, final ContractPolicy.FieldPolicy<Integer> policy);
+    RoleStep partitionId(final Integer partitionId);
   }
 
   public interface RoleStep {
-    HealthStep role(final String role, final ContractPolicy.FieldPolicy<String> policy);
+    HealthStep role(final String role);
   }
 
   public interface HealthStep {
-    OptionalStep health(final String health, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep health(final String health);
   }
 
   public interface OptionalStep {

@@ -9,19 +9,13 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedUserTaskAssignmentRequestStrictContract(
     @Nullable String assignee, @Nullable Boolean allowOverride, @Nullable String action) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
 
   public static OptionalStep builder() {
     return new Builder();
@@ -35,40 +29,40 @@ public record GeneratedUserTaskAssignmentRequestStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep assignee(final String assignee) {
+    public OptionalStep assignee(final @Nullable String assignee) {
       this.assignee = assignee;
       return this;
     }
 
     @Override
     public OptionalStep assignee(
-        final String assignee, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String assignee, final ContractPolicy.FieldPolicy<String> policy) {
       this.assignee = policy.apply(assignee, Fields.ASSIGNEE, null);
       return this;
     }
 
     @Override
-    public OptionalStep allowOverride(final Boolean allowOverride) {
+    public OptionalStep allowOverride(final @Nullable Boolean allowOverride) {
       this.allowOverride = allowOverride;
       return this;
     }
 
     @Override
     public OptionalStep allowOverride(
-        final Boolean allowOverride, final ContractPolicy.FieldPolicy<Boolean> policy) {
+        final @Nullable Boolean allowOverride, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.allowOverride = policy.apply(allowOverride, Fields.ALLOW_OVERRIDE, null);
       return this;
     }
 
     @Override
-    public OptionalStep action(final String action) {
+    public OptionalStep action(final @Nullable String action) {
       this.action = action;
       return this;
     }
 
     @Override
     public OptionalStep action(
-        final String action, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String action, final ContractPolicy.FieldPolicy<String> policy) {
       this.action = policy.apply(action, Fields.ACTION, null);
       return this;
     }
@@ -81,18 +75,20 @@ public record GeneratedUserTaskAssignmentRequestStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep assignee(final String assignee);
+    OptionalStep assignee(final @Nullable String assignee);
 
-    OptionalStep assignee(final String assignee, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep assignee(
+        final @Nullable String assignee, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep allowOverride(final Boolean allowOverride);
+    OptionalStep allowOverride(final @Nullable Boolean allowOverride);
 
     OptionalStep allowOverride(
-        final Boolean allowOverride, final ContractPolicy.FieldPolicy<Boolean> policy);
+        final @Nullable Boolean allowOverride, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep action(final String action);
+    OptionalStep action(final @Nullable String action);
 
-    OptionalStep action(final String action, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep action(
+        final @Nullable String action, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedUserTaskAssignmentRequestStrictContract build();
   }

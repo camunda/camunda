@@ -12,8 +12,10 @@ import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedEvaluateDecisionStrictContract(
     String decisionDefinitionId,
@@ -137,14 +139,6 @@ public record GeneratedEvaluateDecisionStrictContract(
     return java.util.List.copyOf(result);
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static DecisionDefinitionIdStep builder() {
     return new Builder();
   }
@@ -163,143 +157,114 @@ public record GeneratedEvaluateDecisionStrictContract(
           TenantIdStep,
           OptionalStep {
     private String decisionDefinitionId;
-    private ContractPolicy.FieldPolicy<String> decisionDefinitionIdPolicy;
     private Object decisionDefinitionKey;
-    private ContractPolicy.FieldPolicy<Object> decisionDefinitionKeyPolicy;
     private String decisionDefinitionName;
-    private ContractPolicy.FieldPolicy<String> decisionDefinitionNamePolicy;
     private Integer decisionDefinitionVersion;
-    private ContractPolicy.FieldPolicy<Integer> decisionDefinitionVersionPolicy;
     private Object decisionEvaluationKey;
-    private ContractPolicy.FieldPolicy<Object> decisionEvaluationKeyPolicy;
     private Object decisionInstanceKey;
-    private ContractPolicy.FieldPolicy<Object> decisionInstanceKeyPolicy;
     private String decisionRequirementsId;
-    private ContractPolicy.FieldPolicy<String> decisionRequirementsIdPolicy;
     private Object decisionRequirementsKey;
-    private ContractPolicy.FieldPolicy<Object> decisionRequirementsKeyPolicy;
     private Object evaluatedDecisions;
-    private ContractPolicy.FieldPolicy<Object> evaluatedDecisionsPolicy;
     private String failedDecisionDefinitionId;
     private String failureMessage;
     private String output;
-    private ContractPolicy.FieldPolicy<String> outputPolicy;
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
 
     private Builder() {}
 
     @Override
-    public DecisionDefinitionKeyStep decisionDefinitionId(
-        final String decisionDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+    public DecisionDefinitionKeyStep decisionDefinitionId(final String decisionDefinitionId) {
       this.decisionDefinitionId = decisionDefinitionId;
-      this.decisionDefinitionIdPolicy = policy;
       return this;
     }
 
     @Override
-    public DecisionDefinitionNameStep decisionDefinitionKey(
-        final Object decisionDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public DecisionDefinitionNameStep decisionDefinitionKey(final Object decisionDefinitionKey) {
       this.decisionDefinitionKey = decisionDefinitionKey;
-      this.decisionDefinitionKeyPolicy = policy;
       return this;
     }
 
     @Override
     public DecisionDefinitionVersionStep decisionDefinitionName(
-        final String decisionDefinitionName, final ContractPolicy.FieldPolicy<String> policy) {
+        final String decisionDefinitionName) {
       this.decisionDefinitionName = decisionDefinitionName;
-      this.decisionDefinitionNamePolicy = policy;
       return this;
     }
 
     @Override
     public DecisionEvaluationKeyStep decisionDefinitionVersion(
-        final Integer decisionDefinitionVersion, final ContractPolicy.FieldPolicy<Integer> policy) {
+        final Integer decisionDefinitionVersion) {
       this.decisionDefinitionVersion = decisionDefinitionVersion;
-      this.decisionDefinitionVersionPolicy = policy;
       return this;
     }
 
     @Override
-    public DecisionInstanceKeyStep decisionEvaluationKey(
-        final Object decisionEvaluationKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public DecisionInstanceKeyStep decisionEvaluationKey(final Object decisionEvaluationKey) {
       this.decisionEvaluationKey = decisionEvaluationKey;
-      this.decisionEvaluationKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public DecisionRequirementsIdStep decisionInstanceKey(
-        final Object decisionInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public DecisionRequirementsIdStep decisionInstanceKey(final Object decisionInstanceKey) {
       this.decisionInstanceKey = decisionInstanceKey;
-      this.decisionInstanceKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public DecisionRequirementsKeyStep decisionRequirementsId(
-        final String decisionRequirementsId, final ContractPolicy.FieldPolicy<String> policy) {
+    public DecisionRequirementsKeyStep decisionRequirementsId(final String decisionRequirementsId) {
       this.decisionRequirementsId = decisionRequirementsId;
-      this.decisionRequirementsIdPolicy = policy;
       return this;
     }
 
     @Override
-    public EvaluatedDecisionsStep decisionRequirementsKey(
-        final Object decisionRequirementsKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public EvaluatedDecisionsStep decisionRequirementsKey(final Object decisionRequirementsKey) {
       this.decisionRequirementsKey = decisionRequirementsKey;
-      this.decisionRequirementsKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public OutputStep evaluatedDecisions(
-        final Object evaluatedDecisions, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OutputStep evaluatedDecisions(final Object evaluatedDecisions) {
       this.evaluatedDecisions = evaluatedDecisions;
-      this.evaluatedDecisionsPolicy = policy;
       return this;
     }
 
     @Override
-    public TenantIdStep output(
-        final String output, final ContractPolicy.FieldPolicy<String> policy) {
+    public TenantIdStep output(final String output) {
       this.output = output;
-      this.outputPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep failedDecisionDefinitionId(final String failedDecisionDefinitionId) {
+    public OptionalStep failedDecisionDefinitionId(
+        final @Nullable String failedDecisionDefinitionId) {
       this.failedDecisionDefinitionId = failedDecisionDefinitionId;
       return this;
     }
 
     @Override
     public OptionalStep failedDecisionDefinitionId(
-        final String failedDecisionDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String failedDecisionDefinitionId,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.failedDecisionDefinitionId =
           policy.apply(failedDecisionDefinitionId, Fields.FAILED_DECISION_DEFINITION_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep failureMessage(final String failureMessage) {
+    public OptionalStep failureMessage(final @Nullable String failureMessage) {
       this.failureMessage = failureMessage;
       return this;
     }
 
     @Override
     public OptionalStep failureMessage(
-        final String failureMessage, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String failureMessage, final ContractPolicy.FieldPolicy<String> policy) {
       this.failureMessage = policy.apply(failureMessage, Fields.FAILURE_MESSAGE, null);
       return this;
     }
@@ -307,117 +272,77 @@ public record GeneratedEvaluateDecisionStrictContract(
     @Override
     public GeneratedEvaluateDecisionStrictContract build() {
       return new GeneratedEvaluateDecisionStrictContract(
-          applyRequiredPolicy(
-              this.decisionDefinitionId,
-              this.decisionDefinitionIdPolicy,
-              Fields.DECISION_DEFINITION_ID),
-          coerceDecisionDefinitionKey(
-              applyRequiredPolicy(
-                  this.decisionDefinitionKey,
-                  this.decisionDefinitionKeyPolicy,
-                  Fields.DECISION_DEFINITION_KEY)),
-          applyRequiredPolicy(
-              this.decisionDefinitionName,
-              this.decisionDefinitionNamePolicy,
-              Fields.DECISION_DEFINITION_NAME),
-          applyRequiredPolicy(
-              this.decisionDefinitionVersion,
-              this.decisionDefinitionVersionPolicy,
-              Fields.DECISION_DEFINITION_VERSION),
-          coerceDecisionEvaluationKey(
-              applyRequiredPolicy(
-                  this.decisionEvaluationKey,
-                  this.decisionEvaluationKeyPolicy,
-                  Fields.DECISION_EVALUATION_KEY)),
-          coerceDecisionInstanceKey(
-              applyRequiredPolicy(
-                  this.decisionInstanceKey,
-                  this.decisionInstanceKeyPolicy,
-                  Fields.DECISION_INSTANCE_KEY)),
-          applyRequiredPolicy(
-              this.decisionRequirementsId,
-              this.decisionRequirementsIdPolicy,
-              Fields.DECISION_REQUIREMENTS_ID),
-          coerceDecisionRequirementsKey(
-              applyRequiredPolicy(
-                  this.decisionRequirementsKey,
-                  this.decisionRequirementsKeyPolicy,
-                  Fields.DECISION_REQUIREMENTS_KEY)),
-          coerceEvaluatedDecisions(
-              applyRequiredPolicy(
-                  this.evaluatedDecisions,
-                  this.evaluatedDecisionsPolicy,
-                  Fields.EVALUATED_DECISIONS)),
+          this.decisionDefinitionId,
+          coerceDecisionDefinitionKey(this.decisionDefinitionKey),
+          this.decisionDefinitionName,
+          this.decisionDefinitionVersion,
+          coerceDecisionEvaluationKey(this.decisionEvaluationKey),
+          coerceDecisionInstanceKey(this.decisionInstanceKey),
+          this.decisionRequirementsId,
+          coerceDecisionRequirementsKey(this.decisionRequirementsKey),
+          coerceEvaluatedDecisions(this.evaluatedDecisions),
           this.failedDecisionDefinitionId,
           this.failureMessage,
-          applyRequiredPolicy(this.output, this.outputPolicy, Fields.OUTPUT),
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID));
+          this.output,
+          this.tenantId);
     }
   }
 
   public interface DecisionDefinitionIdStep {
-    DecisionDefinitionKeyStep decisionDefinitionId(
-        final String decisionDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+    DecisionDefinitionKeyStep decisionDefinitionId(final String decisionDefinitionId);
   }
 
   public interface DecisionDefinitionKeyStep {
-    DecisionDefinitionNameStep decisionDefinitionKey(
-        final Object decisionDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+    DecisionDefinitionNameStep decisionDefinitionKey(final Object decisionDefinitionKey);
   }
 
   public interface DecisionDefinitionNameStep {
-    DecisionDefinitionVersionStep decisionDefinitionName(
-        final String decisionDefinitionName, final ContractPolicy.FieldPolicy<String> policy);
+    DecisionDefinitionVersionStep decisionDefinitionName(final String decisionDefinitionName);
   }
 
   public interface DecisionDefinitionVersionStep {
-    DecisionEvaluationKeyStep decisionDefinitionVersion(
-        final Integer decisionDefinitionVersion, final ContractPolicy.FieldPolicy<Integer> policy);
+    DecisionEvaluationKeyStep decisionDefinitionVersion(final Integer decisionDefinitionVersion);
   }
 
   public interface DecisionEvaluationKeyStep {
-    DecisionInstanceKeyStep decisionEvaluationKey(
-        final Object decisionEvaluationKey, final ContractPolicy.FieldPolicy<Object> policy);
+    DecisionInstanceKeyStep decisionEvaluationKey(final Object decisionEvaluationKey);
   }
 
   public interface DecisionInstanceKeyStep {
-    DecisionRequirementsIdStep decisionInstanceKey(
-        final Object decisionInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+    DecisionRequirementsIdStep decisionInstanceKey(final Object decisionInstanceKey);
   }
 
   public interface DecisionRequirementsIdStep {
-    DecisionRequirementsKeyStep decisionRequirementsId(
-        final String decisionRequirementsId, final ContractPolicy.FieldPolicy<String> policy);
+    DecisionRequirementsKeyStep decisionRequirementsId(final String decisionRequirementsId);
   }
 
   public interface DecisionRequirementsKeyStep {
-    EvaluatedDecisionsStep decisionRequirementsKey(
-        final Object decisionRequirementsKey, final ContractPolicy.FieldPolicy<Object> policy);
+    EvaluatedDecisionsStep decisionRequirementsKey(final Object decisionRequirementsKey);
   }
 
   public interface EvaluatedDecisionsStep {
-    OutputStep evaluatedDecisions(
-        final Object evaluatedDecisions, final ContractPolicy.FieldPolicy<Object> policy);
+    OutputStep evaluatedDecisions(final Object evaluatedDecisions);
   }
 
   public interface OutputStep {
-    TenantIdStep output(final String output, final ContractPolicy.FieldPolicy<String> policy);
+    TenantIdStep output(final String output);
   }
 
   public interface TenantIdStep {
-    OptionalStep tenantId(final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep tenantId(final String tenantId);
   }
 
   public interface OptionalStep {
-    OptionalStep failedDecisionDefinitionId(final String failedDecisionDefinitionId);
+    OptionalStep failedDecisionDefinitionId(final @Nullable String failedDecisionDefinitionId);
 
     OptionalStep failedDecisionDefinitionId(
-        final String failedDecisionDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String failedDecisionDefinitionId,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep failureMessage(final String failureMessage);
+    OptionalStep failureMessage(final @Nullable String failureMessage);
 
     OptionalStep failureMessage(
-        final String failureMessage, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String failureMessage, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedEvaluateDecisionStrictContract build();
   }

@@ -11,7 +11,9 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedSignalBroadcastStrictContract(String tenantId, String signalKey) {
 
@@ -34,57 +36,41 @@ public record GeneratedSignalBroadcastStrictContract(String tenantId, String sig
         "signalKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static TenantIdStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements TenantIdStep, SignalKeyStep, OptionalStep {
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
     private Object signalKey;
-    private ContractPolicy.FieldPolicy<Object> signalKeyPolicy;
 
     private Builder() {}
 
     @Override
-    public SignalKeyStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public SignalKeyStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep signalKey(
-        final Object signalKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep signalKey(final Object signalKey) {
       this.signalKey = signalKey;
-      this.signalKeyPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedSignalBroadcastStrictContract build() {
       return new GeneratedSignalBroadcastStrictContract(
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID),
-          coerceSignalKey(
-              applyRequiredPolicy(this.signalKey, this.signalKeyPolicy, Fields.SIGNAL_KEY)));
+          this.tenantId, coerceSignalKey(this.signalKey));
     }
   }
 
   public interface TenantIdStep {
-    SignalKeyStep tenantId(final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    SignalKeyStep tenantId(final String tenantId);
   }
 
   public interface SignalKeyStep {
-    OptionalStep signalKey(final Object signalKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep signalKey(final Object signalKey);
   }
 
   public interface OptionalStep {

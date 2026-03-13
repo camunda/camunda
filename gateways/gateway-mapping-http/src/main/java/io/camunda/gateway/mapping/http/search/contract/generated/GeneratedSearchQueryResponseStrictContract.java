@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedSearchQueryResponseStrictContract(
     GeneratedSearchQueryPageResponseStrictContract page) {
@@ -32,40 +34,29 @@ public record GeneratedSearchQueryResponseStrictContract(
             + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static PageStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements PageStep, OptionalStep {
     private Object page;
-    private ContractPolicy.FieldPolicy<Object> pagePolicy;
 
     private Builder() {}
 
     @Override
-    public OptionalStep page(final Object page, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep page(final Object page) {
       this.page = page;
-      this.pagePolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedSearchQueryResponseStrictContract build() {
-      return new GeneratedSearchQueryResponseStrictContract(
-          coercePage(applyRequiredPolicy(this.page, this.pagePolicy, Fields.PAGE)));
+      return new GeneratedSearchQueryResponseStrictContract(coercePage(this.page));
     }
   }
 
   public interface PageStep {
-    OptionalStep page(final Object page, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep page(final Object page);
   }
 
   public interface OptionalStep {

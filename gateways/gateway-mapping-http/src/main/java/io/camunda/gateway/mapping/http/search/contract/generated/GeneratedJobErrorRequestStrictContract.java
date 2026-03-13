@@ -10,24 +10,18 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobErrorRequestStrictContract(
     String errorCode,
     @Nullable String errorMessage,
-    @Nullable java.util.Map<String, Object> variables) {
+    java.util.@Nullable Map<String, Object> variables) {
 
   public GeneratedJobErrorRequestStrictContract {
     Objects.requireNonNull(errorCode, "errorCode is required and must not be null");
-  }
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
   }
 
   public static ErrorCodeStep builder() {
@@ -36,42 +30,39 @@ public record GeneratedJobErrorRequestStrictContract(
 
   public static final class Builder implements ErrorCodeStep, OptionalStep {
     private String errorCode;
-    private ContractPolicy.FieldPolicy<String> errorCodePolicy;
     private String errorMessage;
     private java.util.Map<String, Object> variables;
 
     private Builder() {}
 
     @Override
-    public OptionalStep errorCode(
-        final String errorCode, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep errorCode(final String errorCode) {
       this.errorCode = errorCode;
-      this.errorCodePolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep errorMessage(final String errorMessage) {
+    public OptionalStep errorMessage(final @Nullable String errorMessage) {
       this.errorMessage = errorMessage;
       return this;
     }
 
     @Override
     public OptionalStep errorMessage(
-        final String errorMessage, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String errorMessage, final ContractPolicy.FieldPolicy<String> policy) {
       this.errorMessage = policy.apply(errorMessage, Fields.ERROR_MESSAGE, null);
       return this;
     }
 
     @Override
-    public OptionalStep variables(final java.util.Map<String, Object> variables) {
+    public OptionalStep variables(final java.util.@Nullable Map<String, Object> variables) {
       this.variables = variables;
       return this;
     }
 
     @Override
     public OptionalStep variables(
-        final java.util.Map<String, Object> variables,
+        final java.util.@Nullable Map<String, Object> variables,
         final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
       this.variables = policy.apply(variables, Fields.VARIABLES, null);
       return this;
@@ -80,26 +71,24 @@ public record GeneratedJobErrorRequestStrictContract(
     @Override
     public GeneratedJobErrorRequestStrictContract build() {
       return new GeneratedJobErrorRequestStrictContract(
-          applyRequiredPolicy(this.errorCode, this.errorCodePolicy, Fields.ERROR_CODE),
-          this.errorMessage,
-          this.variables);
+          this.errorCode, this.errorMessage, this.variables);
     }
   }
 
   public interface ErrorCodeStep {
-    OptionalStep errorCode(final String errorCode, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep errorCode(final String errorCode);
   }
 
   public interface OptionalStep {
-    OptionalStep errorMessage(final String errorMessage);
+    OptionalStep errorMessage(final @Nullable String errorMessage);
 
     OptionalStep errorMessage(
-        final String errorMessage, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String errorMessage, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep variables(final java.util.Map<String, Object> variables);
+    OptionalStep variables(final java.util.@Nullable Map<String, Object> variables);
 
     OptionalStep variables(
-        final java.util.Map<String, Object> variables,
+        final java.util.@Nullable Map<String, Object> variables,
         final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
 
     GeneratedJobErrorRequestStrictContract build();

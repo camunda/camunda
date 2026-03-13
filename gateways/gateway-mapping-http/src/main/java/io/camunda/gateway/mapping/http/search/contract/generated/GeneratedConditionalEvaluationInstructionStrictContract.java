@@ -11,8 +11,10 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedConditionalEvaluationInstructionStrictContract(
     @Nullable String tenantId,
@@ -37,14 +39,6 @@ public record GeneratedConditionalEvaluationInstructionStrictContract(
         "processDefinitionKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static VariablesStep builder() {
     return new Builder();
   }
@@ -53,46 +47,43 @@ public record GeneratedConditionalEvaluationInstructionStrictContract(
     private String tenantId;
     private Object processDefinitionKey;
     private java.util.Map<String, Object> variables;
-    private ContractPolicy.FieldPolicy<java.util.Map<String, Object>> variablesPolicy;
 
     private Builder() {}
 
     @Override
-    public OptionalStep variables(
-        final java.util.Map<String, Object> variables,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
+    public OptionalStep variables(final java.util.Map<String, Object> variables) {
       this.variables = variables;
-      this.variablesPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep tenantId(final String tenantId) {
+    public OptionalStep tenantId(final @Nullable String tenantId) {
       this.tenantId = tenantId;
       return this;
     }
 
     @Override
     public OptionalStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionKey(final String processDefinitionKey) {
+    public OptionalStep processDefinitionKey(final @Nullable String processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionKey(final Object processDefinitionKey) {
+    public OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
       return this;
     }
 
     public Builder processDefinitionKey(
-        final String processDefinitionKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String processDefinitionKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.processDefinitionKey =
           policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
       return this;
@@ -100,7 +91,8 @@ public record GeneratedConditionalEvaluationInstructionStrictContract(
 
     @Override
     public OptionalStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object processDefinitionKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.processDefinitionKey =
           policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
       return this;
@@ -109,32 +101,31 @@ public record GeneratedConditionalEvaluationInstructionStrictContract(
     @Override
     public GeneratedConditionalEvaluationInstructionStrictContract build() {
       return new GeneratedConditionalEvaluationInstructionStrictContract(
-          this.tenantId,
-          coerceProcessDefinitionKey(this.processDefinitionKey),
-          applyRequiredPolicy(this.variables, this.variablesPolicy, Fields.VARIABLES));
+          this.tenantId, coerceProcessDefinitionKey(this.processDefinitionKey), this.variables);
     }
   }
 
   public interface VariablesStep {
-    OptionalStep variables(
-        final java.util.Map<String, Object> variables,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
+    OptionalStep variables(final java.util.Map<String, Object> variables);
   }
 
   public interface OptionalStep {
-    OptionalStep tenantId(final String tenantId);
+    OptionalStep tenantId(final @Nullable String tenantId);
 
-    OptionalStep tenantId(final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep tenantId(
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep processDefinitionKey(final String processDefinitionKey);
+    OptionalStep processDefinitionKey(final @Nullable String processDefinitionKey);
 
-    OptionalStep processDefinitionKey(final Object processDefinitionKey);
-
-    OptionalStep processDefinitionKey(
-        final String processDefinitionKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey);
 
     OptionalStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable String processDefinitionKey,
+        final ContractPolicy.FieldPolicy<String> policy);
+
+    OptionalStep processDefinitionKey(
+        final @Nullable Object processDefinitionKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedConditionalEvaluationInstructionStrictContract build();
   }

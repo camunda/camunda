@@ -11,8 +11,10 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedUserTaskStrictContract(
     @Nullable String name,
@@ -147,14 +149,6 @@ public record GeneratedUserTaskStrictContract(
         "formKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static StateStep builder() {
     return new Builder();
   }
@@ -178,278 +172,229 @@ public record GeneratedUserTaskStrictContract(
           OptionalStep {
     private String name;
     private io.camunda.gateway.protocol.model.UserTaskStateEnum state;
-    private ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.UserTaskStateEnum>
-        statePolicy;
     private String assignee;
     private String elementId;
-    private ContractPolicy.FieldPolicy<String> elementIdPolicy;
     private java.util.List<String> candidateGroups;
-    private ContractPolicy.FieldPolicy<java.util.List<String>> candidateGroupsPolicy;
     private java.util.List<String> candidateUsers;
-    private ContractPolicy.FieldPolicy<java.util.List<String>> candidateUsersPolicy;
     private String processDefinitionId;
-    private ContractPolicy.FieldPolicy<String> processDefinitionIdPolicy;
     private String creationDate;
-    private ContractPolicy.FieldPolicy<String> creationDatePolicy;
     private String completionDate;
     private String followUpDate;
     private String dueDate;
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
     private String externalFormReference;
     private Integer processDefinitionVersion;
-    private ContractPolicy.FieldPolicy<Integer> processDefinitionVersionPolicy;
     private java.util.Map<String, String> customHeaders;
-    private ContractPolicy.FieldPolicy<java.util.Map<String, String>> customHeadersPolicy;
     private Integer priority;
-    private ContractPolicy.FieldPolicy<Integer> priorityPolicy;
     private Object userTaskKey;
-    private ContractPolicy.FieldPolicy<Object> userTaskKeyPolicy;
     private Object elementInstanceKey;
-    private ContractPolicy.FieldPolicy<Object> elementInstanceKeyPolicy;
     private String processName;
     private Object processDefinitionKey;
-    private ContractPolicy.FieldPolicy<Object> processDefinitionKeyPolicy;
     private Object processInstanceKey;
-    private ContractPolicy.FieldPolicy<Object> processInstanceKeyPolicy;
     private Object rootProcessInstanceKey;
     private Object formKey;
     private java.util.Set<String> tags;
-    private ContractPolicy.FieldPolicy<java.util.Set<String>> tagsPolicy;
 
     private Builder() {}
 
     @Override
-    public ElementIdStep state(
-        final io.camunda.gateway.protocol.model.UserTaskStateEnum state,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.UserTaskStateEnum>
-            policy) {
+    public ElementIdStep state(final io.camunda.gateway.protocol.model.UserTaskStateEnum state) {
       this.state = state;
-      this.statePolicy = policy;
       return this;
     }
 
     @Override
-    public CandidateGroupsStep elementId(
-        final String elementId, final ContractPolicy.FieldPolicy<String> policy) {
+    public CandidateGroupsStep elementId(final String elementId) {
       this.elementId = elementId;
-      this.elementIdPolicy = policy;
       return this;
     }
 
     @Override
-    public CandidateUsersStep candidateGroups(
-        final java.util.List<String> candidateGroups,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
+    public CandidateUsersStep candidateGroups(final java.util.List<String> candidateGroups) {
       this.candidateGroups = candidateGroups;
-      this.candidateGroupsPolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessDefinitionIdStep candidateUsers(
-        final java.util.List<String> candidateUsers,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
+    public ProcessDefinitionIdStep candidateUsers(final java.util.List<String> candidateUsers) {
       this.candidateUsers = candidateUsers;
-      this.candidateUsersPolicy = policy;
       return this;
     }
 
     @Override
-    public CreationDateStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+    public CreationDateStep processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
-      this.processDefinitionIdPolicy = policy;
       return this;
     }
 
     @Override
-    public TenantIdStep creationDate(
-        final String creationDate, final ContractPolicy.FieldPolicy<String> policy) {
+    public TenantIdStep creationDate(final String creationDate) {
       this.creationDate = creationDate;
-      this.creationDatePolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessDefinitionVersionStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public ProcessDefinitionVersionStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public CustomHeadersStep processDefinitionVersion(
-        final Integer processDefinitionVersion, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public CustomHeadersStep processDefinitionVersion(final Integer processDefinitionVersion) {
       this.processDefinitionVersion = processDefinitionVersion;
-      this.processDefinitionVersionPolicy = policy;
       return this;
     }
 
     @Override
-    public PriorityStep customHeaders(
-        final java.util.Map<String, String> customHeaders,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, String>> policy) {
+    public PriorityStep customHeaders(final java.util.Map<String, String> customHeaders) {
       this.customHeaders = customHeaders;
-      this.customHeadersPolicy = policy;
       return this;
     }
 
     @Override
-    public UserTaskKeyStep priority(
-        final Integer priority, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public UserTaskKeyStep priority(final Integer priority) {
       this.priority = priority;
-      this.priorityPolicy = policy;
       return this;
     }
 
     @Override
-    public ElementInstanceKeyStep userTaskKey(
-        final Object userTaskKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ElementInstanceKeyStep userTaskKey(final Object userTaskKey) {
       this.userTaskKey = userTaskKey;
-      this.userTaskKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessDefinitionKeyStep elementInstanceKey(
-        final Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ProcessDefinitionKeyStep elementInstanceKey(final Object elementInstanceKey) {
       this.elementInstanceKey = elementInstanceKey;
-      this.elementInstanceKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessInstanceKeyStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ProcessInstanceKeyStep processDefinitionKey(final Object processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
-      this.processDefinitionKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public TagsStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public TagsStep processInstanceKey(final Object processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
-      this.processInstanceKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep tags(
-        final java.util.Set<String> tags,
-        final ContractPolicy.FieldPolicy<java.util.Set<String>> policy) {
+    public OptionalStep tags(final java.util.Set<String> tags) {
       this.tags = tags;
-      this.tagsPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep name(final String name) {
+    public OptionalStep name(final @Nullable String name) {
       this.name = name;
       return this;
     }
 
     @Override
-    public OptionalStep name(final String name, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep name(
+        final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy) {
       this.name = policy.apply(name, Fields.NAME, null);
       return this;
     }
 
     @Override
-    public OptionalStep assignee(final String assignee) {
+    public OptionalStep assignee(final @Nullable String assignee) {
       this.assignee = assignee;
       return this;
     }
 
     @Override
     public OptionalStep assignee(
-        final String assignee, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String assignee, final ContractPolicy.FieldPolicy<String> policy) {
       this.assignee = policy.apply(assignee, Fields.ASSIGNEE, null);
       return this;
     }
 
     @Override
-    public OptionalStep completionDate(final String completionDate) {
+    public OptionalStep completionDate(final @Nullable String completionDate) {
       this.completionDate = completionDate;
       return this;
     }
 
     @Override
     public OptionalStep completionDate(
-        final String completionDate, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String completionDate, final ContractPolicy.FieldPolicy<String> policy) {
       this.completionDate = policy.apply(completionDate, Fields.COMPLETION_DATE, null);
       return this;
     }
 
     @Override
-    public OptionalStep followUpDate(final String followUpDate) {
+    public OptionalStep followUpDate(final @Nullable String followUpDate) {
       this.followUpDate = followUpDate;
       return this;
     }
 
     @Override
     public OptionalStep followUpDate(
-        final String followUpDate, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String followUpDate, final ContractPolicy.FieldPolicy<String> policy) {
       this.followUpDate = policy.apply(followUpDate, Fields.FOLLOW_UP_DATE, null);
       return this;
     }
 
     @Override
-    public OptionalStep dueDate(final String dueDate) {
+    public OptionalStep dueDate(final @Nullable String dueDate) {
       this.dueDate = dueDate;
       return this;
     }
 
     @Override
     public OptionalStep dueDate(
-        final String dueDate, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String dueDate, final ContractPolicy.FieldPolicy<String> policy) {
       this.dueDate = policy.apply(dueDate, Fields.DUE_DATE, null);
       return this;
     }
 
     @Override
-    public OptionalStep externalFormReference(final String externalFormReference) {
+    public OptionalStep externalFormReference(final @Nullable String externalFormReference) {
       this.externalFormReference = externalFormReference;
       return this;
     }
 
     @Override
     public OptionalStep externalFormReference(
-        final String externalFormReference, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String externalFormReference,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.externalFormReference =
           policy.apply(externalFormReference, Fields.EXTERNAL_FORM_REFERENCE, null);
       return this;
     }
 
     @Override
-    public OptionalStep processName(final String processName) {
+    public OptionalStep processName(final @Nullable String processName) {
       this.processName = processName;
       return this;
     }
 
     @Override
     public OptionalStep processName(
-        final String processName, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String processName, final ContractPolicy.FieldPolicy<String> policy) {
       this.processName = policy.apply(processName, Fields.PROCESS_NAME, null);
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(final String rootProcessInstanceKey) {
+    public OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey) {
       this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(final Object rootProcessInstanceKey) {
+    public OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey) {
       this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
     public Builder rootProcessInstanceKey(
-        final String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.rootProcessInstanceKey =
           policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
@@ -457,32 +402,34 @@ public record GeneratedUserTaskStrictContract(
 
     @Override
     public OptionalStep rootProcessInstanceKey(
-        final Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.rootProcessInstanceKey =
           policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep formKey(final String formKey) {
+    public OptionalStep formKey(final @Nullable String formKey) {
       this.formKey = formKey;
       return this;
     }
 
     @Override
-    public OptionalStep formKey(final Object formKey) {
+    public OptionalStep formKey(final @Nullable Object formKey) {
       this.formKey = formKey;
       return this;
     }
 
-    public Builder formKey(final String formKey, final ContractPolicy.FieldPolicy<String> policy) {
+    public Builder formKey(
+        final @Nullable String formKey, final ContractPolicy.FieldPolicy<String> policy) {
       this.formKey = policy.apply(formKey, Fields.FORM_KEY, null);
       return this;
     }
 
     @Override
     public OptionalStep formKey(
-        final Object formKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object formKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.formKey = policy.apply(formKey, Fields.FORM_KEY, null);
       return this;
     }
@@ -491,184 +438,149 @@ public record GeneratedUserTaskStrictContract(
     public GeneratedUserTaskStrictContract build() {
       return new GeneratedUserTaskStrictContract(
           this.name,
-          applyRequiredPolicy(this.state, this.statePolicy, Fields.STATE),
+          this.state,
           this.assignee,
-          applyRequiredPolicy(this.elementId, this.elementIdPolicy, Fields.ELEMENT_ID),
-          applyRequiredPolicy(
-              this.candidateGroups, this.candidateGroupsPolicy, Fields.CANDIDATE_GROUPS),
-          applyRequiredPolicy(
-              this.candidateUsers, this.candidateUsersPolicy, Fields.CANDIDATE_USERS),
-          applyRequiredPolicy(
-              this.processDefinitionId,
-              this.processDefinitionIdPolicy,
-              Fields.PROCESS_DEFINITION_ID),
-          applyRequiredPolicy(this.creationDate, this.creationDatePolicy, Fields.CREATION_DATE),
+          this.elementId,
+          this.candidateGroups,
+          this.candidateUsers,
+          this.processDefinitionId,
+          this.creationDate,
           this.completionDate,
           this.followUpDate,
           this.dueDate,
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID),
+          this.tenantId,
           this.externalFormReference,
-          applyRequiredPolicy(
-              this.processDefinitionVersion,
-              this.processDefinitionVersionPolicy,
-              Fields.PROCESS_DEFINITION_VERSION),
-          applyRequiredPolicy(this.customHeaders, this.customHeadersPolicy, Fields.CUSTOM_HEADERS),
-          applyRequiredPolicy(this.priority, this.priorityPolicy, Fields.PRIORITY),
-          coerceUserTaskKey(
-              applyRequiredPolicy(this.userTaskKey, this.userTaskKeyPolicy, Fields.USER_TASK_KEY)),
-          coerceElementInstanceKey(
-              applyRequiredPolicy(
-                  this.elementInstanceKey,
-                  this.elementInstanceKeyPolicy,
-                  Fields.ELEMENT_INSTANCE_KEY)),
+          this.processDefinitionVersion,
+          this.customHeaders,
+          this.priority,
+          coerceUserTaskKey(this.userTaskKey),
+          coerceElementInstanceKey(this.elementInstanceKey),
           this.processName,
-          coerceProcessDefinitionKey(
-              applyRequiredPolicy(
-                  this.processDefinitionKey,
-                  this.processDefinitionKeyPolicy,
-                  Fields.PROCESS_DEFINITION_KEY)),
-          coerceProcessInstanceKey(
-              applyRequiredPolicy(
-                  this.processInstanceKey,
-                  this.processInstanceKeyPolicy,
-                  Fields.PROCESS_INSTANCE_KEY)),
+          coerceProcessDefinitionKey(this.processDefinitionKey),
+          coerceProcessInstanceKey(this.processInstanceKey),
           coerceRootProcessInstanceKey(this.rootProcessInstanceKey),
           coerceFormKey(this.formKey),
-          applyRequiredPolicy(this.tags, this.tagsPolicy, Fields.TAGS));
+          this.tags);
     }
   }
 
   public interface StateStep {
-    ElementIdStep state(
-        final io.camunda.gateway.protocol.model.UserTaskStateEnum state,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.UserTaskStateEnum>
-            policy);
+    ElementIdStep state(final io.camunda.gateway.protocol.model.UserTaskStateEnum state);
   }
 
   public interface ElementIdStep {
-    CandidateGroupsStep elementId(
-        final String elementId, final ContractPolicy.FieldPolicy<String> policy);
+    CandidateGroupsStep elementId(final String elementId);
   }
 
   public interface CandidateGroupsStep {
-    CandidateUsersStep candidateGroups(
-        final java.util.List<String> candidateGroups,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
+    CandidateUsersStep candidateGroups(final java.util.List<String> candidateGroups);
   }
 
   public interface CandidateUsersStep {
-    ProcessDefinitionIdStep candidateUsers(
-        final java.util.List<String> candidateUsers,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
+    ProcessDefinitionIdStep candidateUsers(final java.util.List<String> candidateUsers);
   }
 
   public interface ProcessDefinitionIdStep {
-    CreationDateStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+    CreationDateStep processDefinitionId(final String processDefinitionId);
   }
 
   public interface CreationDateStep {
-    TenantIdStep creationDate(
-        final String creationDate, final ContractPolicy.FieldPolicy<String> policy);
+    TenantIdStep creationDate(final String creationDate);
   }
 
   public interface TenantIdStep {
-    ProcessDefinitionVersionStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    ProcessDefinitionVersionStep tenantId(final String tenantId);
   }
 
   public interface ProcessDefinitionVersionStep {
-    CustomHeadersStep processDefinitionVersion(
-        final Integer processDefinitionVersion, final ContractPolicy.FieldPolicy<Integer> policy);
+    CustomHeadersStep processDefinitionVersion(final Integer processDefinitionVersion);
   }
 
   public interface CustomHeadersStep {
-    PriorityStep customHeaders(
-        final java.util.Map<String, String> customHeaders,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, String>> policy);
+    PriorityStep customHeaders(final java.util.Map<String, String> customHeaders);
   }
 
   public interface PriorityStep {
-    UserTaskKeyStep priority(
-        final Integer priority, final ContractPolicy.FieldPolicy<Integer> policy);
+    UserTaskKeyStep priority(final Integer priority);
   }
 
   public interface UserTaskKeyStep {
-    ElementInstanceKeyStep userTaskKey(
-        final Object userTaskKey, final ContractPolicy.FieldPolicy<Object> policy);
+    ElementInstanceKeyStep userTaskKey(final Object userTaskKey);
   }
 
   public interface ElementInstanceKeyStep {
-    ProcessDefinitionKeyStep elementInstanceKey(
-        final Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+    ProcessDefinitionKeyStep elementInstanceKey(final Object elementInstanceKey);
   }
 
   public interface ProcessDefinitionKeyStep {
-    ProcessInstanceKeyStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+    ProcessInstanceKeyStep processDefinitionKey(final Object processDefinitionKey);
   }
 
   public interface ProcessInstanceKeyStep {
-    TagsStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+    TagsStep processInstanceKey(final Object processInstanceKey);
   }
 
   public interface TagsStep {
-    OptionalStep tags(
-        final java.util.Set<String> tags,
-        final ContractPolicy.FieldPolicy<java.util.Set<String>> policy);
+    OptionalStep tags(final java.util.Set<String> tags);
   }
 
   public interface OptionalStep {
-    OptionalStep name(final String name);
+    OptionalStep name(final @Nullable String name);
 
-    OptionalStep name(final String name, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep name(final @Nullable String name, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep assignee(final String assignee);
+    OptionalStep assignee(final @Nullable String assignee);
 
-    OptionalStep assignee(final String assignee, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep assignee(
+        final @Nullable String assignee, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep completionDate(final String completionDate);
+    OptionalStep completionDate(final @Nullable String completionDate);
 
     OptionalStep completionDate(
-        final String completionDate, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String completionDate, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep followUpDate(final String followUpDate);
+    OptionalStep followUpDate(final @Nullable String followUpDate);
 
     OptionalStep followUpDate(
-        final String followUpDate, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String followUpDate, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep dueDate(final String dueDate);
+    OptionalStep dueDate(final @Nullable String dueDate);
 
-    OptionalStep dueDate(final String dueDate, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep dueDate(
+        final @Nullable String dueDate, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep externalFormReference(final String externalFormReference);
+    OptionalStep externalFormReference(final @Nullable String externalFormReference);
 
     OptionalStep externalFormReference(
-        final String externalFormReference, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String externalFormReference,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep processName(final String processName);
+    OptionalStep processName(final @Nullable String processName);
 
     OptionalStep processName(
-        final String processName, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String processName, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep rootProcessInstanceKey(final String rootProcessInstanceKey);
+    OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
 
-    OptionalStep rootProcessInstanceKey(final Object rootProcessInstanceKey);
-
-    OptionalStep rootProcessInstanceKey(
-        final String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
 
     OptionalStep rootProcessInstanceKey(
-        final Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep formKey(final String formKey);
+    OptionalStep rootProcessInstanceKey(
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep formKey(final Object formKey);
+    OptionalStep formKey(final @Nullable String formKey);
 
-    OptionalStep formKey(final String formKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep formKey(final @Nullable Object formKey);
 
-    OptionalStep formKey(final Object formKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep formKey(
+        final @Nullable String formKey, final ContractPolicy.FieldPolicy<String> policy);
+
+    OptionalStep formKey(
+        final @Nullable Object formKey, final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedUserTaskStrictContract build();
   }

@@ -11,8 +11,10 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedAuditLogStrictContract(
     String auditLogKey,
@@ -20,10 +22,10 @@ public record GeneratedAuditLogStrictContract(
     io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum entityType,
     io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum operationType,
     @Nullable String batchOperationKey,
-    @Nullable io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType,
+    io.camunda.gateway.protocol.model.@Nullable BatchOperationTypeEnum batchOperationType,
     String timestamp,
     @Nullable String actorId,
-    @Nullable io.camunda.gateway.protocol.model.AuditLogActorTypeEnum actorType,
+    io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum actorType,
     @Nullable String agentElementId,
     @Nullable String tenantId,
     io.camunda.gateway.protocol.model.AuditLogResultEnum result,
@@ -45,7 +47,7 @@ public record GeneratedAuditLogStrictContract(
     @Nullable String formKey,
     @Nullable String resourceKey,
     @Nullable String relatedEntityKey,
-    @Nullable io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum relatedEntityType,
+    io.camunda.gateway.protocol.model.@Nullable AuditLogEntityTypeEnum relatedEntityType,
     @Nullable String entityDescription) {
 
   public GeneratedAuditLogStrictContract {
@@ -227,14 +229,6 @@ public record GeneratedAuditLogStrictContract(
         "formKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static AuditLogKeyStep builder() {
     return new Builder();
   }
@@ -249,30 +243,19 @@ public record GeneratedAuditLogStrictContract(
           CategoryStep,
           OptionalStep {
     private Object auditLogKey;
-    private ContractPolicy.FieldPolicy<Object> auditLogKeyPolicy;
     private String entityKey;
-    private ContractPolicy.FieldPolicy<String> entityKeyPolicy;
     private io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum entityType;
-    private ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum>
-        entityTypePolicy;
     private io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum operationType;
-    private ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum>
-        operationTypePolicy;
     private String batchOperationKey;
     private io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType;
     private String timestamp;
-    private ContractPolicy.FieldPolicy<String> timestampPolicy;
     private String actorId;
     private io.camunda.gateway.protocol.model.AuditLogActorTypeEnum actorType;
     private String agentElementId;
     private String tenantId;
     private io.camunda.gateway.protocol.model.AuditLogResultEnum result;
-    private ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogResultEnum>
-        resultPolicy;
     private String annotation;
     private io.camunda.gateway.protocol.model.AuditLogCategoryEnum category;
-    private ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogCategoryEnum>
-        categoryPolicy;
     private String processDefinitionId;
     private Object processDefinitionKey;
     private Object processInstanceKey;
@@ -295,93 +278,74 @@ public record GeneratedAuditLogStrictContract(
     private Builder() {}
 
     @Override
-    public EntityKeyStep auditLogKey(
-        final Object auditLogKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public EntityKeyStep auditLogKey(final Object auditLogKey) {
       this.auditLogKey = auditLogKey;
-      this.auditLogKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public EntityTypeStep entityKey(
-        final String entityKey, final ContractPolicy.FieldPolicy<String> policy) {
+    public EntityTypeStep entityKey(final String entityKey) {
       this.entityKey = entityKey;
-      this.entityKeyPolicy = policy;
       return this;
     }
 
     @Override
     public OperationTypeStep entityType(
-        final io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum entityType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum>
-            policy) {
+        final io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum entityType) {
       this.entityType = entityType;
-      this.entityTypePolicy = policy;
       return this;
     }
 
     @Override
     public TimestampStep operationType(
-        final io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum operationType,
-        final ContractPolicy.FieldPolicy<
-                io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum>
-            policy) {
+        final io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum operationType) {
       this.operationType = operationType;
-      this.operationTypePolicy = policy;
       return this;
     }
 
     @Override
-    public ResultStep timestamp(
-        final String timestamp, final ContractPolicy.FieldPolicy<String> policy) {
+    public ResultStep timestamp(final String timestamp) {
       this.timestamp = timestamp;
-      this.timestampPolicy = policy;
       return this;
     }
 
     @Override
-    public CategoryStep result(
-        final io.camunda.gateway.protocol.model.AuditLogResultEnum result,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogResultEnum>
-            policy) {
+    public CategoryStep result(final io.camunda.gateway.protocol.model.AuditLogResultEnum result) {
       this.result = result;
-      this.resultPolicy = policy;
       return this;
     }
 
     @Override
     public OptionalStep category(
-        final io.camunda.gateway.protocol.model.AuditLogCategoryEnum category,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogCategoryEnum>
-            policy) {
+        final io.camunda.gateway.protocol.model.AuditLogCategoryEnum category) {
       this.category = category;
-      this.categoryPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep batchOperationKey(final String batchOperationKey) {
+    public OptionalStep batchOperationKey(final @Nullable String batchOperationKey) {
       this.batchOperationKey = batchOperationKey;
       return this;
     }
 
     @Override
     public OptionalStep batchOperationKey(
-        final String batchOperationKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String batchOperationKey, final ContractPolicy.FieldPolicy<String> policy) {
       this.batchOperationKey = policy.apply(batchOperationKey, Fields.BATCH_OPERATION_KEY, null);
       return this;
     }
 
     @Override
     public OptionalStep batchOperationType(
-        final io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType) {
+        final io.camunda.gateway.protocol.model.@Nullable BatchOperationTypeEnum
+            batchOperationType) {
       this.batchOperationType = batchOperationType;
       return this;
     }
 
     @Override
     public OptionalStep batchOperationType(
-        final io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType,
+        final io.camunda.gateway.protocol.model.@Nullable BatchOperationTypeEnum batchOperationType,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.BatchOperationTypeEnum>
             policy) {
       this.batchOperationType = policy.apply(batchOperationType, Fields.BATCH_OPERATION_TYPE, null);
@@ -389,28 +353,28 @@ public record GeneratedAuditLogStrictContract(
     }
 
     @Override
-    public OptionalStep actorId(final String actorId) {
+    public OptionalStep actorId(final @Nullable String actorId) {
       this.actorId = actorId;
       return this;
     }
 
     @Override
     public OptionalStep actorId(
-        final String actorId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String actorId, final ContractPolicy.FieldPolicy<String> policy) {
       this.actorId = policy.apply(actorId, Fields.ACTOR_ID, null);
       return this;
     }
 
     @Override
     public OptionalStep actorType(
-        final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum actorType) {
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum actorType) {
       this.actorType = actorType;
       return this;
     }
 
     @Override
     public OptionalStep actorType(
-        final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum actorType,
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum actorType,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum>
             policy) {
       this.actorType = policy.apply(actorType, Fields.ACTOR_TYPE, null);
@@ -418,72 +382,74 @@ public record GeneratedAuditLogStrictContract(
     }
 
     @Override
-    public OptionalStep agentElementId(final String agentElementId) {
+    public OptionalStep agentElementId(final @Nullable String agentElementId) {
       this.agentElementId = agentElementId;
       return this;
     }
 
     @Override
     public OptionalStep agentElementId(
-        final String agentElementId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String agentElementId, final ContractPolicy.FieldPolicy<String> policy) {
       this.agentElementId = policy.apply(agentElementId, Fields.AGENT_ELEMENT_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep tenantId(final String tenantId) {
+    public OptionalStep tenantId(final @Nullable String tenantId) {
       this.tenantId = tenantId;
       return this;
     }
 
     @Override
     public OptionalStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep annotation(final String annotation) {
+    public OptionalStep annotation(final @Nullable String annotation) {
       this.annotation = annotation;
       return this;
     }
 
     @Override
     public OptionalStep annotation(
-        final String annotation, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String annotation, final ContractPolicy.FieldPolicy<String> policy) {
       this.annotation = policy.apply(annotation, Fields.ANNOTATION, null);
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionId(final String processDefinitionId) {
+    public OptionalStep processDefinitionId(final @Nullable String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
       return this;
     }
 
     @Override
     public OptionalStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String processDefinitionId,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.processDefinitionId =
           policy.apply(processDefinitionId, Fields.PROCESS_DEFINITION_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionKey(final String processDefinitionKey) {
+    public OptionalStep processDefinitionKey(final @Nullable String processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionKey(final Object processDefinitionKey) {
+    public OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
       return this;
     }
 
     public Builder processDefinitionKey(
-        final String processDefinitionKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String processDefinitionKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.processDefinitionKey =
           policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
       return this;
@@ -491,51 +457,55 @@ public record GeneratedAuditLogStrictContract(
 
     @Override
     public OptionalStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object processDefinitionKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.processDefinitionKey =
           policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep processInstanceKey(final String processInstanceKey) {
+    public OptionalStep processInstanceKey(final @Nullable String processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
       return this;
     }
 
     @Override
-    public OptionalStep processInstanceKey(final Object processInstanceKey) {
+    public OptionalStep processInstanceKey(final @Nullable Object processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
       return this;
     }
 
     public Builder processInstanceKey(
-        final String processInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String processInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
     public OptionalStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object processInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(final String rootProcessInstanceKey) {
+    public OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey) {
       this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(final Object rootProcessInstanceKey) {
+    public OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey) {
       this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
     public Builder rootProcessInstanceKey(
-        final String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.rootProcessInstanceKey =
           policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
@@ -543,114 +513,120 @@ public record GeneratedAuditLogStrictContract(
 
     @Override
     public OptionalStep rootProcessInstanceKey(
-        final Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.rootProcessInstanceKey =
           policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep elementInstanceKey(final String elementInstanceKey) {
+    public OptionalStep elementInstanceKey(final @Nullable String elementInstanceKey) {
       this.elementInstanceKey = elementInstanceKey;
       return this;
     }
 
     @Override
-    public OptionalStep elementInstanceKey(final Object elementInstanceKey) {
+    public OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey) {
       this.elementInstanceKey = elementInstanceKey;
       return this;
     }
 
     public Builder elementInstanceKey(
-        final String elementInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String elementInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.elementInstanceKey = policy.apply(elementInstanceKey, Fields.ELEMENT_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
     public OptionalStep elementInstanceKey(
-        final Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object elementInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.elementInstanceKey = policy.apply(elementInstanceKey, Fields.ELEMENT_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep jobKey(final String jobKey) {
+    public OptionalStep jobKey(final @Nullable String jobKey) {
       this.jobKey = jobKey;
       return this;
     }
 
     @Override
-    public OptionalStep jobKey(final Object jobKey) {
+    public OptionalStep jobKey(final @Nullable Object jobKey) {
       this.jobKey = jobKey;
       return this;
     }
 
-    public Builder jobKey(final String jobKey, final ContractPolicy.FieldPolicy<String> policy) {
+    public Builder jobKey(
+        final @Nullable String jobKey, final ContractPolicy.FieldPolicy<String> policy) {
       this.jobKey = policy.apply(jobKey, Fields.JOB_KEY, null);
       return this;
     }
 
     @Override
     public OptionalStep jobKey(
-        final Object jobKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object jobKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.jobKey = policy.apply(jobKey, Fields.JOB_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep userTaskKey(final String userTaskKey) {
+    public OptionalStep userTaskKey(final @Nullable String userTaskKey) {
       this.userTaskKey = userTaskKey;
       return this;
     }
 
     @Override
-    public OptionalStep userTaskKey(final Object userTaskKey) {
+    public OptionalStep userTaskKey(final @Nullable Object userTaskKey) {
       this.userTaskKey = userTaskKey;
       return this;
     }
 
     public Builder userTaskKey(
-        final String userTaskKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String userTaskKey, final ContractPolicy.FieldPolicy<String> policy) {
       this.userTaskKey = policy.apply(userTaskKey, Fields.USER_TASK_KEY, null);
       return this;
     }
 
     @Override
     public OptionalStep userTaskKey(
-        final Object userTaskKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object userTaskKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.userTaskKey = policy.apply(userTaskKey, Fields.USER_TASK_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep decisionRequirementsId(final String decisionRequirementsId) {
+    public OptionalStep decisionRequirementsId(final @Nullable String decisionRequirementsId) {
       this.decisionRequirementsId = decisionRequirementsId;
       return this;
     }
 
     @Override
     public OptionalStep decisionRequirementsId(
-        final String decisionRequirementsId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String decisionRequirementsId,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.decisionRequirementsId =
           policy.apply(decisionRequirementsId, Fields.DECISION_REQUIREMENTS_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep decisionRequirementsKey(final String decisionRequirementsKey) {
+    public OptionalStep decisionRequirementsKey(final @Nullable String decisionRequirementsKey) {
       this.decisionRequirementsKey = decisionRequirementsKey;
       return this;
     }
 
     @Override
-    public OptionalStep decisionRequirementsKey(final Object decisionRequirementsKey) {
+    public OptionalStep decisionRequirementsKey(final @Nullable Object decisionRequirementsKey) {
       this.decisionRequirementsKey = decisionRequirementsKey;
       return this;
     }
 
     public Builder decisionRequirementsKey(
-        final String decisionRequirementsKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String decisionRequirementsKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.decisionRequirementsKey =
           policy.apply(decisionRequirementsKey, Fields.DECISION_REQUIREMENTS_KEY, null);
       return this;
@@ -658,40 +634,43 @@ public record GeneratedAuditLogStrictContract(
 
     @Override
     public OptionalStep decisionRequirementsKey(
-        final Object decisionRequirementsKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object decisionRequirementsKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.decisionRequirementsKey =
           policy.apply(decisionRequirementsKey, Fields.DECISION_REQUIREMENTS_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep decisionDefinitionId(final String decisionDefinitionId) {
+    public OptionalStep decisionDefinitionId(final @Nullable String decisionDefinitionId) {
       this.decisionDefinitionId = decisionDefinitionId;
       return this;
     }
 
     @Override
     public OptionalStep decisionDefinitionId(
-        final String decisionDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String decisionDefinitionId,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.decisionDefinitionId =
           policy.apply(decisionDefinitionId, Fields.DECISION_DEFINITION_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep decisionDefinitionKey(final String decisionDefinitionKey) {
+    public OptionalStep decisionDefinitionKey(final @Nullable String decisionDefinitionKey) {
       this.decisionDefinitionKey = decisionDefinitionKey;
       return this;
     }
 
     @Override
-    public OptionalStep decisionDefinitionKey(final Object decisionDefinitionKey) {
+    public OptionalStep decisionDefinitionKey(final @Nullable Object decisionDefinitionKey) {
       this.decisionDefinitionKey = decisionDefinitionKey;
       return this;
     }
 
     public Builder decisionDefinitionKey(
-        final String decisionDefinitionKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String decisionDefinitionKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.decisionDefinitionKey =
           policy.apply(decisionDefinitionKey, Fields.DECISION_DEFINITION_KEY, null);
       return this;
@@ -699,26 +678,28 @@ public record GeneratedAuditLogStrictContract(
 
     @Override
     public OptionalStep decisionDefinitionKey(
-        final Object decisionDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object decisionDefinitionKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.decisionDefinitionKey =
           policy.apply(decisionDefinitionKey, Fields.DECISION_DEFINITION_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep decisionEvaluationKey(final String decisionEvaluationKey) {
+    public OptionalStep decisionEvaluationKey(final @Nullable String decisionEvaluationKey) {
       this.decisionEvaluationKey = decisionEvaluationKey;
       return this;
     }
 
     @Override
-    public OptionalStep decisionEvaluationKey(final Object decisionEvaluationKey) {
+    public OptionalStep decisionEvaluationKey(final @Nullable Object decisionEvaluationKey) {
       this.decisionEvaluationKey = decisionEvaluationKey;
       return this;
     }
 
     public Builder decisionEvaluationKey(
-        final String decisionEvaluationKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String decisionEvaluationKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.decisionEvaluationKey =
           policy.apply(decisionEvaluationKey, Fields.DECISION_EVALUATION_KEY, null);
       return this;
@@ -726,97 +707,100 @@ public record GeneratedAuditLogStrictContract(
 
     @Override
     public OptionalStep decisionEvaluationKey(
-        final Object decisionEvaluationKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object decisionEvaluationKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.decisionEvaluationKey =
           policy.apply(decisionEvaluationKey, Fields.DECISION_EVALUATION_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep deploymentKey(final String deploymentKey) {
+    public OptionalStep deploymentKey(final @Nullable String deploymentKey) {
       this.deploymentKey = deploymentKey;
       return this;
     }
 
     @Override
-    public OptionalStep deploymentKey(final Object deploymentKey) {
+    public OptionalStep deploymentKey(final @Nullable Object deploymentKey) {
       this.deploymentKey = deploymentKey;
       return this;
     }
 
     public Builder deploymentKey(
-        final String deploymentKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String deploymentKey, final ContractPolicy.FieldPolicy<String> policy) {
       this.deploymentKey = policy.apply(deploymentKey, Fields.DEPLOYMENT_KEY, null);
       return this;
     }
 
     @Override
     public OptionalStep deploymentKey(
-        final Object deploymentKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object deploymentKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.deploymentKey = policy.apply(deploymentKey, Fields.DEPLOYMENT_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep formKey(final String formKey) {
+    public OptionalStep formKey(final @Nullable String formKey) {
       this.formKey = formKey;
       return this;
     }
 
     @Override
-    public OptionalStep formKey(final Object formKey) {
+    public OptionalStep formKey(final @Nullable Object formKey) {
       this.formKey = formKey;
       return this;
     }
 
-    public Builder formKey(final String formKey, final ContractPolicy.FieldPolicy<String> policy) {
+    public Builder formKey(
+        final @Nullable String formKey, final ContractPolicy.FieldPolicy<String> policy) {
       this.formKey = policy.apply(formKey, Fields.FORM_KEY, null);
       return this;
     }
 
     @Override
     public OptionalStep formKey(
-        final Object formKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object formKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.formKey = policy.apply(formKey, Fields.FORM_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep resourceKey(final String resourceKey) {
+    public OptionalStep resourceKey(final @Nullable String resourceKey) {
       this.resourceKey = resourceKey;
       return this;
     }
 
     @Override
     public OptionalStep resourceKey(
-        final String resourceKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String resourceKey, final ContractPolicy.FieldPolicy<String> policy) {
       this.resourceKey = policy.apply(resourceKey, Fields.RESOURCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep relatedEntityKey(final String relatedEntityKey) {
+    public OptionalStep relatedEntityKey(final @Nullable String relatedEntityKey) {
       this.relatedEntityKey = relatedEntityKey;
       return this;
     }
 
     @Override
     public OptionalStep relatedEntityKey(
-        final String relatedEntityKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String relatedEntityKey, final ContractPolicy.FieldPolicy<String> policy) {
       this.relatedEntityKey = policy.apply(relatedEntityKey, Fields.RELATED_ENTITY_KEY, null);
       return this;
     }
 
     @Override
     public OptionalStep relatedEntityType(
-        final io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum relatedEntityType) {
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogEntityTypeEnum
+            relatedEntityType) {
       this.relatedEntityType = relatedEntityType;
       return this;
     }
 
     @Override
     public OptionalStep relatedEntityType(
-        final io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum relatedEntityType,
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogEntityTypeEnum relatedEntityType,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum>
             policy) {
       this.relatedEntityType = policy.apply(relatedEntityType, Fields.RELATED_ENTITY_TYPE, null);
@@ -824,14 +808,14 @@ public record GeneratedAuditLogStrictContract(
     }
 
     @Override
-    public OptionalStep entityDescription(final String entityDescription) {
+    public OptionalStep entityDescription(final @Nullable String entityDescription) {
       this.entityDescription = entityDescription;
       return this;
     }
 
     @Override
     public OptionalStep entityDescription(
-        final String entityDescription, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String entityDescription, final ContractPolicy.FieldPolicy<String> policy) {
       this.entityDescription = policy.apply(entityDescription, Fields.ENTITY_DESCRIPTION, null);
       return this;
     }
@@ -839,21 +823,20 @@ public record GeneratedAuditLogStrictContract(
     @Override
     public GeneratedAuditLogStrictContract build() {
       return new GeneratedAuditLogStrictContract(
-          coerceAuditLogKey(
-              applyRequiredPolicy(this.auditLogKey, this.auditLogKeyPolicy, Fields.AUDIT_LOG_KEY)),
-          applyRequiredPolicy(this.entityKey, this.entityKeyPolicy, Fields.ENTITY_KEY),
-          applyRequiredPolicy(this.entityType, this.entityTypePolicy, Fields.ENTITY_TYPE),
-          applyRequiredPolicy(this.operationType, this.operationTypePolicy, Fields.OPERATION_TYPE),
+          coerceAuditLogKey(this.auditLogKey),
+          this.entityKey,
+          this.entityType,
+          this.operationType,
           this.batchOperationKey,
           this.batchOperationType,
-          applyRequiredPolicy(this.timestamp, this.timestampPolicy, Fields.TIMESTAMP),
+          this.timestamp,
           this.actorId,
           this.actorType,
           this.agentElementId,
           this.tenantId,
-          applyRequiredPolicy(this.result, this.resultPolicy, Fields.RESULT),
+          this.result,
           this.annotation,
-          applyRequiredPolicy(this.category, this.categoryPolicy, Fields.CATEGORY),
+          this.category,
           this.processDefinitionId,
           coerceProcessDefinitionKey(this.processDefinitionKey),
           coerceProcessInstanceKey(this.processInstanceKey),
@@ -876,230 +859,238 @@ public record GeneratedAuditLogStrictContract(
   }
 
   public interface AuditLogKeyStep {
-    EntityKeyStep auditLogKey(
-        final Object auditLogKey, final ContractPolicy.FieldPolicy<Object> policy);
+    EntityKeyStep auditLogKey(final Object auditLogKey);
   }
 
   public interface EntityKeyStep {
-    EntityTypeStep entityKey(
-        final String entityKey, final ContractPolicy.FieldPolicy<String> policy);
+    EntityTypeStep entityKey(final String entityKey);
   }
 
   public interface EntityTypeStep {
     OperationTypeStep entityType(
-        final io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum entityType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum>
-            policy);
+        final io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum entityType);
   }
 
   public interface OperationTypeStep {
     TimestampStep operationType(
-        final io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum operationType,
-        final ContractPolicy.FieldPolicy<
-                io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum>
-            policy);
+        final io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum operationType);
   }
 
   public interface TimestampStep {
-    ResultStep timestamp(final String timestamp, final ContractPolicy.FieldPolicy<String> policy);
+    ResultStep timestamp(final String timestamp);
   }
 
   public interface ResultStep {
-    CategoryStep result(
-        final io.camunda.gateway.protocol.model.AuditLogResultEnum result,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogResultEnum>
-            policy);
+    CategoryStep result(final io.camunda.gateway.protocol.model.AuditLogResultEnum result);
   }
 
   public interface CategoryStep {
-    OptionalStep category(
-        final io.camunda.gateway.protocol.model.AuditLogCategoryEnum category,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogCategoryEnum>
-            policy);
+    OptionalStep category(final io.camunda.gateway.protocol.model.AuditLogCategoryEnum category);
   }
 
   public interface OptionalStep {
-    OptionalStep batchOperationKey(final String batchOperationKey);
+    OptionalStep batchOperationKey(final @Nullable String batchOperationKey);
 
     OptionalStep batchOperationKey(
-        final String batchOperationKey, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String batchOperationKey, final ContractPolicy.FieldPolicy<String> policy);
 
     OptionalStep batchOperationType(
-        final io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType);
+        final io.camunda.gateway.protocol.model.@Nullable BatchOperationTypeEnum
+            batchOperationType);
 
     OptionalStep batchOperationType(
-        final io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType,
+        final io.camunda.gateway.protocol.model.@Nullable BatchOperationTypeEnum batchOperationType,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.BatchOperationTypeEnum>
             policy);
 
-    OptionalStep actorId(final String actorId);
+    OptionalStep actorId(final @Nullable String actorId);
 
-    OptionalStep actorId(final String actorId, final ContractPolicy.FieldPolicy<String> policy);
-
-    OptionalStep actorType(final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum actorType);
+    OptionalStep actorId(
+        final @Nullable String actorId, final ContractPolicy.FieldPolicy<String> policy);
 
     OptionalStep actorType(
-        final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum actorType,
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum actorType);
+
+    OptionalStep actorType(
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum actorType,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum>
             policy);
 
-    OptionalStep agentElementId(final String agentElementId);
+    OptionalStep agentElementId(final @Nullable String agentElementId);
 
     OptionalStep agentElementId(
-        final String agentElementId, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String agentElementId, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep tenantId(final String tenantId);
+    OptionalStep tenantId(final @Nullable String tenantId);
 
-    OptionalStep tenantId(final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep tenantId(
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep annotation(final String annotation);
+    OptionalStep annotation(final @Nullable String annotation);
 
     OptionalStep annotation(
-        final String annotation, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String annotation, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep processDefinitionId(final String processDefinitionId);
+    OptionalStep processDefinitionId(final @Nullable String processDefinitionId);
 
     OptionalStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String processDefinitionId,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep processDefinitionKey(final String processDefinitionKey);
+    OptionalStep processDefinitionKey(final @Nullable String processDefinitionKey);
 
-    OptionalStep processDefinitionKey(final Object processDefinitionKey);
-
-    OptionalStep processDefinitionKey(
-        final String processDefinitionKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey);
 
     OptionalStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable String processDefinitionKey,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep processInstanceKey(final String processInstanceKey);
+    OptionalStep processDefinitionKey(
+        final @Nullable Object processDefinitionKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processInstanceKey(final Object processInstanceKey);
+    OptionalStep processInstanceKey(final @Nullable String processInstanceKey);
+
+    OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
 
     OptionalStep processInstanceKey(
-        final String processInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String processInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
 
     OptionalStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep rootProcessInstanceKey(final String rootProcessInstanceKey);
+    OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
 
-    OptionalStep rootProcessInstanceKey(final Object rootProcessInstanceKey);
-
-    OptionalStep rootProcessInstanceKey(
-        final String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
 
     OptionalStep rootProcessInstanceKey(
-        final Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep elementInstanceKey(final String elementInstanceKey);
+    OptionalStep rootProcessInstanceKey(
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep elementInstanceKey(final Object elementInstanceKey);
+    OptionalStep elementInstanceKey(final @Nullable String elementInstanceKey);
+
+    OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey);
 
     OptionalStep elementInstanceKey(
-        final String elementInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String elementInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
 
     OptionalStep elementInstanceKey(
-        final Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep jobKey(final String jobKey);
+    OptionalStep jobKey(final @Nullable String jobKey);
 
-    OptionalStep jobKey(final Object jobKey);
+    OptionalStep jobKey(final @Nullable Object jobKey);
 
-    OptionalStep jobKey(final String jobKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep jobKey(
+        final @Nullable String jobKey, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep jobKey(final Object jobKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep jobKey(
+        final @Nullable Object jobKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep userTaskKey(final String userTaskKey);
+    OptionalStep userTaskKey(final @Nullable String userTaskKey);
 
-    OptionalStep userTaskKey(final Object userTaskKey);
+    OptionalStep userTaskKey(final @Nullable Object userTaskKey);
 
     OptionalStep userTaskKey(
-        final String userTaskKey, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String userTaskKey, final ContractPolicy.FieldPolicy<String> policy);
 
     OptionalStep userTaskKey(
-        final Object userTaskKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object userTaskKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep decisionRequirementsId(final String decisionRequirementsId);
+    OptionalStep decisionRequirementsId(final @Nullable String decisionRequirementsId);
 
     OptionalStep decisionRequirementsId(
-        final String decisionRequirementsId, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String decisionRequirementsId,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep decisionRequirementsKey(final String decisionRequirementsKey);
+    OptionalStep decisionRequirementsKey(final @Nullable String decisionRequirementsKey);
 
-    OptionalStep decisionRequirementsKey(final Object decisionRequirementsKey);
-
-    OptionalStep decisionRequirementsKey(
-        final String decisionRequirementsKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep decisionRequirementsKey(final @Nullable Object decisionRequirementsKey);
 
     OptionalStep decisionRequirementsKey(
-        final Object decisionRequirementsKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable String decisionRequirementsKey,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep decisionDefinitionId(final String decisionDefinitionId);
+    OptionalStep decisionRequirementsKey(
+        final @Nullable Object decisionRequirementsKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
+
+    OptionalStep decisionDefinitionId(final @Nullable String decisionDefinitionId);
 
     OptionalStep decisionDefinitionId(
-        final String decisionDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String decisionDefinitionId,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep decisionDefinitionKey(final String decisionDefinitionKey);
+    OptionalStep decisionDefinitionKey(final @Nullable String decisionDefinitionKey);
 
-    OptionalStep decisionDefinitionKey(final Object decisionDefinitionKey);
-
-    OptionalStep decisionDefinitionKey(
-        final String decisionDefinitionKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep decisionDefinitionKey(final @Nullable Object decisionDefinitionKey);
 
     OptionalStep decisionDefinitionKey(
-        final Object decisionDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable String decisionDefinitionKey,
+        final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep decisionEvaluationKey(final String decisionEvaluationKey);
+    OptionalStep decisionDefinitionKey(
+        final @Nullable Object decisionDefinitionKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep decisionEvaluationKey(final Object decisionEvaluationKey);
+    OptionalStep decisionEvaluationKey(final @Nullable String decisionEvaluationKey);
+
+    OptionalStep decisionEvaluationKey(final @Nullable Object decisionEvaluationKey);
 
     OptionalStep decisionEvaluationKey(
-        final String decisionEvaluationKey, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String decisionEvaluationKey,
+        final ContractPolicy.FieldPolicy<String> policy);
 
     OptionalStep decisionEvaluationKey(
-        final Object decisionEvaluationKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object decisionEvaluationKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep deploymentKey(final String deploymentKey);
+    OptionalStep deploymentKey(final @Nullable String deploymentKey);
 
-    OptionalStep deploymentKey(final Object deploymentKey);
-
-    OptionalStep deploymentKey(
-        final String deploymentKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep deploymentKey(final @Nullable Object deploymentKey);
 
     OptionalStep deploymentKey(
-        final Object deploymentKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable String deploymentKey, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep formKey(final String formKey);
+    OptionalStep deploymentKey(
+        final @Nullable Object deploymentKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep formKey(final Object formKey);
+    OptionalStep formKey(final @Nullable String formKey);
 
-    OptionalStep formKey(final String formKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep formKey(final @Nullable Object formKey);
 
-    OptionalStep formKey(final Object formKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep formKey(
+        final @Nullable String formKey, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep resourceKey(final String resourceKey);
+    OptionalStep formKey(
+        final @Nullable Object formKey, final ContractPolicy.FieldPolicy<Object> policy);
+
+    OptionalStep resourceKey(final @Nullable String resourceKey);
 
     OptionalStep resourceKey(
-        final String resourceKey, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String resourceKey, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep relatedEntityKey(final String relatedEntityKey);
+    OptionalStep relatedEntityKey(final @Nullable String relatedEntityKey);
 
     OptionalStep relatedEntityKey(
-        final String relatedEntityKey, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String relatedEntityKey, final ContractPolicy.FieldPolicy<String> policy);
 
     OptionalStep relatedEntityType(
-        final io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum relatedEntityType);
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogEntityTypeEnum relatedEntityType);
 
     OptionalStep relatedEntityType(
-        final io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum relatedEntityType,
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogEntityTypeEnum relatedEntityType,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum>
             policy);
 
-    OptionalStep entityDescription(final String entityDescription);
+    OptionalStep entityDescription(final @Nullable String entityDescription);
 
     OptionalStep entityDescription(
-        final String entityDescription, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String entityDescription, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedAuditLogStrictContract build();
   }

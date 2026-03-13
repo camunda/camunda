@@ -9,18 +9,12 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedIncidentResolutionRequestStrictContract(@Nullable Long operationReference) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
 
   public static OptionalStep builder() {
     return new Builder();
@@ -32,14 +26,14 @@ public record GeneratedIncidentResolutionRequestStrictContract(@Nullable Long op
     private Builder() {}
 
     @Override
-    public OptionalStep operationReference(final Long operationReference) {
+    public OptionalStep operationReference(final @Nullable Long operationReference) {
       this.operationReference = operationReference;
       return this;
     }
 
     @Override
     public OptionalStep operationReference(
-        final Long operationReference, final ContractPolicy.FieldPolicy<Long> policy) {
+        final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy) {
       this.operationReference = policy.apply(operationReference, Fields.OPERATION_REFERENCE, null);
       return this;
     }
@@ -51,10 +45,10 @@ public record GeneratedIncidentResolutionRequestStrictContract(@Nullable Long op
   }
 
   public interface OptionalStep {
-    OptionalStep operationReference(final Long operationReference);
+    OptionalStep operationReference(final @Nullable Long operationReference);
 
     OptionalStep operationReference(
-        final Long operationReference, final ContractPolicy.FieldPolicy<Long> policy);
+        final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy);
 
     GeneratedIncidentResolutionRequestStrictContract build();
   }

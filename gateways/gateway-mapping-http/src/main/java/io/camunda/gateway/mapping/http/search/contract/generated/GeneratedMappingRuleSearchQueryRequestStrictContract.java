@@ -10,11 +10,13 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedMappingRuleSearchQueryRequestStrictContract(
-    @Nullable java.util.List<GeneratedMappingRuleSearchQuerySortRequestStrictContract> sort,
+    java.util.@Nullable List<GeneratedMappingRuleSearchQuerySortRequestStrictContract> sort,
     @Nullable GeneratedMappingRuleFilterStrictContract filter) {
 
   public static java.util.List<GeneratedMappingRuleSearchQuerySortRequestStrictContract> coerceSort(
@@ -59,14 +61,6 @@ public record GeneratedMappingRuleSearchQueryRequestStrictContract(
             + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static OptionalStep builder() {
     return new Builder();
   }
@@ -79,19 +73,21 @@ public record GeneratedMappingRuleSearchQueryRequestStrictContract(
 
     @Override
     public OptionalStep sort(
-        final java.util.List<GeneratedMappingRuleSearchQuerySortRequestStrictContract> sort) {
+        final java.util.@Nullable List<GeneratedMappingRuleSearchQuerySortRequestStrictContract>
+            sort) {
       this.sort = sort;
       return this;
     }
 
     @Override
-    public OptionalStep sort(final Object sort) {
+    public OptionalStep sort(final @Nullable Object sort) {
       this.sort = sort;
       return this;
     }
 
     public Builder sort(
-        final java.util.List<GeneratedMappingRuleSearchQuerySortRequestStrictContract> sort,
+        final java.util.@Nullable List<GeneratedMappingRuleSearchQuerySortRequestStrictContract>
+            sort,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedMappingRuleSearchQuerySortRequestStrictContract>>
             policy) {
@@ -100,25 +96,26 @@ public record GeneratedMappingRuleSearchQueryRequestStrictContract(
     }
 
     @Override
-    public OptionalStep sort(final Object sort, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep sort(
+        final @Nullable Object sort, final ContractPolicy.FieldPolicy<Object> policy) {
       this.sort = policy.apply(sort, Fields.SORT, null);
       return this;
     }
 
     @Override
-    public OptionalStep filter(final GeneratedMappingRuleFilterStrictContract filter) {
+    public OptionalStep filter(final @Nullable GeneratedMappingRuleFilterStrictContract filter) {
       this.filter = filter;
       return this;
     }
 
     @Override
-    public OptionalStep filter(final Object filter) {
+    public OptionalStep filter(final @Nullable Object filter) {
       this.filter = filter;
       return this;
     }
 
     public Builder filter(
-        final GeneratedMappingRuleFilterStrictContract filter,
+        final @Nullable GeneratedMappingRuleFilterStrictContract filter,
         final ContractPolicy.FieldPolicy<GeneratedMappingRuleFilterStrictContract> policy) {
       this.filter = policy.apply(filter, Fields.FILTER, null);
       return this;
@@ -126,7 +123,7 @@ public record GeneratedMappingRuleSearchQueryRequestStrictContract(
 
     @Override
     public OptionalStep filter(
-        final Object filter, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object filter, final ContractPolicy.FieldPolicy<Object> policy) {
       this.filter = policy.apply(filter, Fields.FILTER, null);
       return this;
     }
@@ -140,27 +137,30 @@ public record GeneratedMappingRuleSearchQueryRequestStrictContract(
 
   public interface OptionalStep {
     OptionalStep sort(
-        final java.util.List<GeneratedMappingRuleSearchQuerySortRequestStrictContract> sort);
+        final java.util.@Nullable List<GeneratedMappingRuleSearchQuerySortRequestStrictContract>
+            sort);
 
-    OptionalStep sort(final Object sort);
+    OptionalStep sort(final @Nullable Object sort);
 
     OptionalStep sort(
-        final java.util.List<GeneratedMappingRuleSearchQuerySortRequestStrictContract> sort,
+        final java.util.@Nullable List<GeneratedMappingRuleSearchQuerySortRequestStrictContract>
+            sort,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedMappingRuleSearchQuerySortRequestStrictContract>>
             policy);
 
-    OptionalStep sort(final Object sort, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep sort(final @Nullable Object sort, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep filter(final GeneratedMappingRuleFilterStrictContract filter);
+    OptionalStep filter(final @Nullable GeneratedMappingRuleFilterStrictContract filter);
 
-    OptionalStep filter(final Object filter);
+    OptionalStep filter(final @Nullable Object filter);
 
     OptionalStep filter(
-        final GeneratedMappingRuleFilterStrictContract filter,
+        final @Nullable GeneratedMappingRuleFilterStrictContract filter,
         final ContractPolicy.FieldPolicy<GeneratedMappingRuleFilterStrictContract> policy);
 
-    OptionalStep filter(final Object filter, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep filter(
+        final @Nullable Object filter, final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedMappingRuleSearchQueryRequestStrictContract build();
   }

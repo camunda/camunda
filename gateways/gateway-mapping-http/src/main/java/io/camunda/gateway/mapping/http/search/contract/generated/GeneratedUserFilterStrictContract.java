@@ -9,19 +9,13 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedUserFilterStrictContract(
     @Nullable Object username, @Nullable Object name, @Nullable Object email) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
 
   public static OptionalStep builder() {
     return new Builder();
@@ -35,38 +29,40 @@ public record GeneratedUserFilterStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep username(final Object username) {
+    public OptionalStep username(final @Nullable Object username) {
       this.username = username;
       return this;
     }
 
     @Override
     public OptionalStep username(
-        final Object username, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object username, final ContractPolicy.FieldPolicy<Object> policy) {
       this.username = policy.apply(username, Fields.USERNAME, null);
       return this;
     }
 
     @Override
-    public OptionalStep name(final Object name) {
+    public OptionalStep name(final @Nullable Object name) {
       this.name = name;
       return this;
     }
 
     @Override
-    public OptionalStep name(final Object name, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep name(
+        final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy) {
       this.name = policy.apply(name, Fields.NAME, null);
       return this;
     }
 
     @Override
-    public OptionalStep email(final Object email) {
+    public OptionalStep email(final @Nullable Object email) {
       this.email = email;
       return this;
     }
 
     @Override
-    public OptionalStep email(final Object email, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep email(
+        final @Nullable Object email, final ContractPolicy.FieldPolicy<Object> policy) {
       this.email = policy.apply(email, Fields.EMAIL, null);
       return this;
     }
@@ -78,17 +74,19 @@ public record GeneratedUserFilterStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep username(final Object username);
+    OptionalStep username(final @Nullable Object username);
 
-    OptionalStep username(final Object username, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep username(
+        final @Nullable Object username, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep name(final Object name);
+    OptionalStep name(final @Nullable Object name);
 
-    OptionalStep name(final Object name, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep name(final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep email(final Object email);
+    OptionalStep email(final @Nullable Object email);
 
-    OptionalStep email(final Object email, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep email(
+        final @Nullable Object email, final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedUserFilterStrictContract build();
   }

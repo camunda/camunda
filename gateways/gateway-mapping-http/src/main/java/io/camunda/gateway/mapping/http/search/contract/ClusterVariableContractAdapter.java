@@ -7,6 +7,8 @@
  */
 package io.camunda.gateway.mapping.http.search.contract;
 
+import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableResultBaseStrictContract.Fields;
+
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableResultBaseStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableSearchStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedClusterVariableStrictContract;
@@ -58,11 +60,15 @@ public final class ClusterVariableContractAdapter {
   private static GeneratedClusterVariableResultBaseStrictContract toStrictBase(
       final ClusterVariableEntity clusterVariableEntity) {
     return GeneratedClusterVariableResultBaseStrictContract.builder()
-        .name(clusterVariableEntity.name(), ContractPolicy.requiredNonNull())
+        .name(
+            ContractPolicy.requireNonNull(
+                clusterVariableEntity.name(), Fields.NAME, clusterVariableEntity))
         .scope(
-            ContractPolicy.mapEnum(
-                clusterVariableEntity.scope(), ClusterVariableScopeEnum::fromValue),
-            ContractPolicy.requiredNonNull())
+            ContractPolicy.requireNonNull(
+                ContractPolicy.mapEnum(
+                    clusterVariableEntity.scope(), ClusterVariableScopeEnum::fromValue),
+                Fields.SCOPE,
+                clusterVariableEntity))
         .tenantId(clusterVariableEntity.tenantId())
         .build();
   }
@@ -71,15 +77,20 @@ public final class ClusterVariableContractAdapter {
       final ClusterVariableEntity clusterVariableEntity, final boolean truncateValues) {
     return GeneratedClusterVariableSearchStrictContract.builder()
         .value(
-            !truncateValues
-                ? ContractPolicy.resolvePreviewValue(
-                    clusterVariableEntity.value(),
-                    clusterVariableEntity.fullValue(),
-                    clusterVariableEntity.isPreview())
-                : clusterVariableEntity.value(),
-            ContractPolicy.requiredNonNull())
+            ContractPolicy.requireNonNull(
+                !truncateValues
+                    ? ContractPolicy.resolvePreviewValue(
+                        clusterVariableEntity.value(),
+                        clusterVariableEntity.fullValue(),
+                        clusterVariableEntity.isPreview())
+                    : clusterVariableEntity.value(),
+                GeneratedClusterVariableSearchStrictContract.Fields.VALUE,
+                clusterVariableEntity))
         .isTruncated(
-            truncateValues && clusterVariableEntity.isPreview(), ContractPolicy.requiredNonNull())
+            ContractPolicy.requireNonNull(
+                truncateValues && clusterVariableEntity.isPreview(),
+                GeneratedClusterVariableSearchStrictContract.Fields.IS_TRUNCATED,
+                clusterVariableEntity))
         .build();
   }
 
@@ -87,11 +98,13 @@ public final class ClusterVariableContractAdapter {
       final ClusterVariableEntity clusterVariableEntity) {
     return GeneratedClusterVariableStrictContract.builder()
         .value(
-            ContractPolicy.resolvePreviewValue(
-                clusterVariableEntity.value(),
-                clusterVariableEntity.fullValue(),
-                clusterVariableEntity.isPreview()),
-            ContractPolicy.requiredNonNull())
+            ContractPolicy.requireNonNull(
+                ContractPolicy.resolvePreviewValue(
+                    clusterVariableEntity.value(),
+                    clusterVariableEntity.fullValue(),
+                    clusterVariableEntity.isPreview()),
+                GeneratedClusterVariableStrictContract.Fields.VALUE,
+                clusterVariableEntity))
         .build();
   }
 

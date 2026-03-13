@@ -9,18 +9,12 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedLimitPaginationStrictContract(@Nullable Integer limit) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
 
   public static OptionalStep builder() {
     return new Builder();
@@ -32,14 +26,14 @@ public record GeneratedLimitPaginationStrictContract(@Nullable Integer limit) {
     private Builder() {}
 
     @Override
-    public OptionalStep limit(final Integer limit) {
+    public OptionalStep limit(final @Nullable Integer limit) {
       this.limit = limit;
       return this;
     }
 
     @Override
     public OptionalStep limit(
-        final Integer limit, final ContractPolicy.FieldPolicy<Integer> policy) {
+        final @Nullable Integer limit, final ContractPolicy.FieldPolicy<Integer> policy) {
       this.limit = policy.apply(limit, Fields.LIMIT, null);
       return this;
     }
@@ -51,9 +45,10 @@ public record GeneratedLimitPaginationStrictContract(@Nullable Integer limit) {
   }
 
   public interface OptionalStep {
-    OptionalStep limit(final Integer limit);
+    OptionalStep limit(final @Nullable Integer limit);
 
-    OptionalStep limit(final Integer limit, final ContractPolicy.FieldPolicy<Integer> policy);
+    OptionalStep limit(
+        final @Nullable Integer limit, final ContractPolicy.FieldPolicy<Integer> policy);
 
     GeneratedLimitPaginationStrictContract build();
   }

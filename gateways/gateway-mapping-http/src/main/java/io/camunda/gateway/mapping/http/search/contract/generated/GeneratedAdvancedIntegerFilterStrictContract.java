@@ -9,8 +9,10 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedAdvancedIntegerFilterStrictContract(
     @Nullable Integer eq,
@@ -20,15 +22,7 @@ public record GeneratedAdvancedIntegerFilterStrictContract(
     @Nullable Integer gte,
     @Nullable Integer lt,
     @Nullable Integer lte,
-    @Nullable java.util.List<Integer> in) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
+    java.util.@Nullable List<Integer> in) {
 
   public static OptionalStep builder() {
     return new Builder();
@@ -47,99 +41,105 @@ public record GeneratedAdvancedIntegerFilterStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep eq(final Integer eq) {
+    public OptionalStep eq(final @Nullable Integer eq) {
       this.eq = eq;
       return this;
     }
 
     @Override
-    public OptionalStep eq(final Integer eq, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public OptionalStep eq(
+        final @Nullable Integer eq, final ContractPolicy.FieldPolicy<Integer> policy) {
       this.eq = policy.apply(eq, Fields.EQ, null);
       return this;
     }
 
     @Override
-    public OptionalStep neq(final Integer neq) {
+    public OptionalStep neq(final @Nullable Integer neq) {
       this.neq = neq;
       return this;
     }
 
     @Override
-    public OptionalStep neq(final Integer neq, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public OptionalStep neq(
+        final @Nullable Integer neq, final ContractPolicy.FieldPolicy<Integer> policy) {
       this.neq = policy.apply(neq, Fields.NEQ, null);
       return this;
     }
 
     @Override
-    public OptionalStep exists(final Boolean exists) {
+    public OptionalStep exists(final @Nullable Boolean exists) {
       this.exists = exists;
       return this;
     }
 
     @Override
     public OptionalStep exists(
-        final Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
+        final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.exists = policy.apply(exists, Fields.EXISTS, null);
       return this;
     }
 
     @Override
-    public OptionalStep gt(final Integer gt) {
+    public OptionalStep gt(final @Nullable Integer gt) {
       this.gt = gt;
       return this;
     }
 
     @Override
-    public OptionalStep gt(final Integer gt, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public OptionalStep gt(
+        final @Nullable Integer gt, final ContractPolicy.FieldPolicy<Integer> policy) {
       this.gt = policy.apply(gt, Fields.GT, null);
       return this;
     }
 
     @Override
-    public OptionalStep gte(final Integer gte) {
+    public OptionalStep gte(final @Nullable Integer gte) {
       this.gte = gte;
       return this;
     }
 
     @Override
-    public OptionalStep gte(final Integer gte, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public OptionalStep gte(
+        final @Nullable Integer gte, final ContractPolicy.FieldPolicy<Integer> policy) {
       this.gte = policy.apply(gte, Fields.GTE, null);
       return this;
     }
 
     @Override
-    public OptionalStep lt(final Integer lt) {
+    public OptionalStep lt(final @Nullable Integer lt) {
       this.lt = lt;
       return this;
     }
 
     @Override
-    public OptionalStep lt(final Integer lt, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public OptionalStep lt(
+        final @Nullable Integer lt, final ContractPolicy.FieldPolicy<Integer> policy) {
       this.lt = policy.apply(lt, Fields.LT, null);
       return this;
     }
 
     @Override
-    public OptionalStep lte(final Integer lte) {
+    public OptionalStep lte(final @Nullable Integer lte) {
       this.lte = lte;
       return this;
     }
 
     @Override
-    public OptionalStep lte(final Integer lte, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public OptionalStep lte(
+        final @Nullable Integer lte, final ContractPolicy.FieldPolicy<Integer> policy) {
       this.lte = policy.apply(lte, Fields.LTE, null);
       return this;
     }
 
     @Override
-    public OptionalStep in(final java.util.List<Integer> in) {
+    public OptionalStep in(final java.util.@Nullable List<Integer> in) {
       this.in = in;
       return this;
     }
 
     @Override
     public OptionalStep in(
-        final java.util.List<Integer> in,
+        final java.util.@Nullable List<Integer> in,
         final ContractPolicy.FieldPolicy<java.util.List<Integer>> policy) {
       this.in = policy.apply(in, Fields.IN, null);
       return this;
@@ -153,38 +153,39 @@ public record GeneratedAdvancedIntegerFilterStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep eq(final Integer eq);
+    OptionalStep eq(final @Nullable Integer eq);
 
-    OptionalStep eq(final Integer eq, final ContractPolicy.FieldPolicy<Integer> policy);
+    OptionalStep eq(final @Nullable Integer eq, final ContractPolicy.FieldPolicy<Integer> policy);
 
-    OptionalStep neq(final Integer neq);
+    OptionalStep neq(final @Nullable Integer neq);
 
-    OptionalStep neq(final Integer neq, final ContractPolicy.FieldPolicy<Integer> policy);
+    OptionalStep neq(final @Nullable Integer neq, final ContractPolicy.FieldPolicy<Integer> policy);
 
-    OptionalStep exists(final Boolean exists);
+    OptionalStep exists(final @Nullable Boolean exists);
 
-    OptionalStep exists(final Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy);
+    OptionalStep exists(
+        final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep gt(final Integer gt);
+    OptionalStep gt(final @Nullable Integer gt);
 
-    OptionalStep gt(final Integer gt, final ContractPolicy.FieldPolicy<Integer> policy);
+    OptionalStep gt(final @Nullable Integer gt, final ContractPolicy.FieldPolicy<Integer> policy);
 
-    OptionalStep gte(final Integer gte);
+    OptionalStep gte(final @Nullable Integer gte);
 
-    OptionalStep gte(final Integer gte, final ContractPolicy.FieldPolicy<Integer> policy);
+    OptionalStep gte(final @Nullable Integer gte, final ContractPolicy.FieldPolicy<Integer> policy);
 
-    OptionalStep lt(final Integer lt);
+    OptionalStep lt(final @Nullable Integer lt);
 
-    OptionalStep lt(final Integer lt, final ContractPolicy.FieldPolicy<Integer> policy);
+    OptionalStep lt(final @Nullable Integer lt, final ContractPolicy.FieldPolicy<Integer> policy);
 
-    OptionalStep lte(final Integer lte);
+    OptionalStep lte(final @Nullable Integer lte);
 
-    OptionalStep lte(final Integer lte, final ContractPolicy.FieldPolicy<Integer> policy);
+    OptionalStep lte(final @Nullable Integer lte, final ContractPolicy.FieldPolicy<Integer> policy);
 
-    OptionalStep in(final java.util.List<Integer> in);
+    OptionalStep in(final java.util.@Nullable List<Integer> in);
 
     OptionalStep in(
-        final java.util.List<Integer> in,
+        final java.util.@Nullable List<Integer> in,
         final ContractPolicy.FieldPolicy<java.util.List<Integer>> policy);
 
     GeneratedAdvancedIntegerFilterStrictContract build();

@@ -11,8 +11,10 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedBatchOperationResponseStrictContract(
     String batchOperationKey,
@@ -20,7 +22,7 @@ public record GeneratedBatchOperationResponseStrictContract(
     io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType,
     @Nullable String startDate,
     @Nullable String endDate,
-    @Nullable io.camunda.gateway.protocol.model.AuditLogActorTypeEnum actorType,
+    io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum actorType,
     @Nullable String actorId,
     Integer operationsTotalCount,
     Integer operationsFailedCount,
@@ -68,14 +70,6 @@ public record GeneratedBatchOperationResponseStrictContract(
     return java.util.List.copyOf(result);
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static BatchOperationKeyStep builder() {
     return new Builder();
   }
@@ -90,124 +84,99 @@ public record GeneratedBatchOperationResponseStrictContract(
           ErrorsStep,
           OptionalStep {
     private String batchOperationKey;
-    private ContractPolicy.FieldPolicy<String> batchOperationKeyPolicy;
     private io.camunda.gateway.protocol.model.BatchOperationStateEnum state;
-    private ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.BatchOperationStateEnum>
-        statePolicy;
     private io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType;
-    private ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.BatchOperationTypeEnum>
-        batchOperationTypePolicy;
     private String startDate;
     private String endDate;
     private io.camunda.gateway.protocol.model.AuditLogActorTypeEnum actorType;
     private String actorId;
     private Integer operationsTotalCount;
-    private ContractPolicy.FieldPolicy<Integer> operationsTotalCountPolicy;
     private Integer operationsFailedCount;
-    private ContractPolicy.FieldPolicy<Integer> operationsFailedCountPolicy;
     private Integer operationsCompletedCount;
-    private ContractPolicy.FieldPolicy<Integer> operationsCompletedCountPolicy;
     private Object errors;
-    private ContractPolicy.FieldPolicy<Object> errorsPolicy;
 
     private Builder() {}
 
     @Override
-    public StateStep batchOperationKey(
-        final String batchOperationKey, final ContractPolicy.FieldPolicy<String> policy) {
+    public StateStep batchOperationKey(final String batchOperationKey) {
       this.batchOperationKey = batchOperationKey;
-      this.batchOperationKeyPolicy = policy;
       return this;
     }
 
     @Override
     public BatchOperationTypeStep state(
-        final io.camunda.gateway.protocol.model.BatchOperationStateEnum state,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.BatchOperationStateEnum>
-            policy) {
+        final io.camunda.gateway.protocol.model.BatchOperationStateEnum state) {
       this.state = state;
-      this.statePolicy = policy;
       return this;
     }
 
     @Override
     public OperationsTotalCountStep batchOperationType(
-        final io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.BatchOperationTypeEnum>
-            policy) {
+        final io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType) {
       this.batchOperationType = batchOperationType;
-      this.batchOperationTypePolicy = policy;
       return this;
     }
 
     @Override
-    public OperationsFailedCountStep operationsTotalCount(
-        final Integer operationsTotalCount, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public OperationsFailedCountStep operationsTotalCount(final Integer operationsTotalCount) {
       this.operationsTotalCount = operationsTotalCount;
-      this.operationsTotalCountPolicy = policy;
       return this;
     }
 
     @Override
-    public OperationsCompletedCountStep operationsFailedCount(
-        final Integer operationsFailedCount, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public OperationsCompletedCountStep operationsFailedCount(final Integer operationsFailedCount) {
       this.operationsFailedCount = operationsFailedCount;
-      this.operationsFailedCountPolicy = policy;
       return this;
     }
 
     @Override
-    public ErrorsStep operationsCompletedCount(
-        final Integer operationsCompletedCount, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public ErrorsStep operationsCompletedCount(final Integer operationsCompletedCount) {
       this.operationsCompletedCount = operationsCompletedCount;
-      this.operationsCompletedCountPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep errors(
-        final Object errors, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep errors(final Object errors) {
       this.errors = errors;
-      this.errorsPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep startDate(final String startDate) {
+    public OptionalStep startDate(final @Nullable String startDate) {
       this.startDate = startDate;
       return this;
     }
 
     @Override
     public OptionalStep startDate(
-        final String startDate, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String startDate, final ContractPolicy.FieldPolicy<String> policy) {
       this.startDate = policy.apply(startDate, Fields.START_DATE, null);
       return this;
     }
 
     @Override
-    public OptionalStep endDate(final String endDate) {
+    public OptionalStep endDate(final @Nullable String endDate) {
       this.endDate = endDate;
       return this;
     }
 
     @Override
     public OptionalStep endDate(
-        final String endDate, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String endDate, final ContractPolicy.FieldPolicy<String> policy) {
       this.endDate = policy.apply(endDate, Fields.END_DATE, null);
       return this;
     }
 
     @Override
     public OptionalStep actorType(
-        final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum actorType) {
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum actorType) {
       this.actorType = actorType;
       return this;
     }
 
     @Override
     public OptionalStep actorType(
-        final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum actorType,
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum actorType,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum>
             policy) {
       this.actorType = policy.apply(actorType, Fields.ACTOR_TYPE, null);
@@ -215,14 +184,14 @@ public record GeneratedBatchOperationResponseStrictContract(
     }
 
     @Override
-    public OptionalStep actorId(final String actorId) {
+    public OptionalStep actorId(final @Nullable String actorId) {
       this.actorId = actorId;
       return this;
     }
 
     @Override
     public OptionalStep actorId(
-        final String actorId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String actorId, final ContractPolicy.FieldPolicy<String> policy) {
       this.actorId = policy.apply(actorId, Fields.ACTOR_ID, null);
       return this;
     }
@@ -230,88 +199,73 @@ public record GeneratedBatchOperationResponseStrictContract(
     @Override
     public GeneratedBatchOperationResponseStrictContract build() {
       return new GeneratedBatchOperationResponseStrictContract(
-          applyRequiredPolicy(
-              this.batchOperationKey, this.batchOperationKeyPolicy, Fields.BATCH_OPERATION_KEY),
-          applyRequiredPolicy(this.state, this.statePolicy, Fields.STATE),
-          applyRequiredPolicy(
-              this.batchOperationType, this.batchOperationTypePolicy, Fields.BATCH_OPERATION_TYPE),
+          this.batchOperationKey,
+          this.state,
+          this.batchOperationType,
           this.startDate,
           this.endDate,
           this.actorType,
           this.actorId,
-          applyRequiredPolicy(
-              this.operationsTotalCount,
-              this.operationsTotalCountPolicy,
-              Fields.OPERATIONS_TOTAL_COUNT),
-          applyRequiredPolicy(
-              this.operationsFailedCount,
-              this.operationsFailedCountPolicy,
-              Fields.OPERATIONS_FAILED_COUNT),
-          applyRequiredPolicy(
-              this.operationsCompletedCount,
-              this.operationsCompletedCountPolicy,
-              Fields.OPERATIONS_COMPLETED_COUNT),
-          coerceErrors(applyRequiredPolicy(this.errors, this.errorsPolicy, Fields.ERRORS)));
+          this.operationsTotalCount,
+          this.operationsFailedCount,
+          this.operationsCompletedCount,
+          coerceErrors(this.errors));
     }
   }
 
   public interface BatchOperationKeyStep {
-    StateStep batchOperationKey(
-        final String batchOperationKey, final ContractPolicy.FieldPolicy<String> policy);
+    StateStep batchOperationKey(final String batchOperationKey);
   }
 
   public interface StateStep {
     BatchOperationTypeStep state(
-        final io.camunda.gateway.protocol.model.BatchOperationStateEnum state,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.BatchOperationStateEnum>
-            policy);
+        final io.camunda.gateway.protocol.model.BatchOperationStateEnum state);
   }
 
   public interface BatchOperationTypeStep {
     OperationsTotalCountStep batchOperationType(
-        final io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.BatchOperationTypeEnum>
-            policy);
+        final io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType);
   }
 
   public interface OperationsTotalCountStep {
-    OperationsFailedCountStep operationsTotalCount(
-        final Integer operationsTotalCount, final ContractPolicy.FieldPolicy<Integer> policy);
+    OperationsFailedCountStep operationsTotalCount(final Integer operationsTotalCount);
   }
 
   public interface OperationsFailedCountStep {
-    OperationsCompletedCountStep operationsFailedCount(
-        final Integer operationsFailedCount, final ContractPolicy.FieldPolicy<Integer> policy);
+    OperationsCompletedCountStep operationsFailedCount(final Integer operationsFailedCount);
   }
 
   public interface OperationsCompletedCountStep {
-    ErrorsStep operationsCompletedCount(
-        final Integer operationsCompletedCount, final ContractPolicy.FieldPolicy<Integer> policy);
+    ErrorsStep operationsCompletedCount(final Integer operationsCompletedCount);
   }
 
   public interface ErrorsStep {
-    OptionalStep errors(final Object errors, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep errors(final Object errors);
   }
 
   public interface OptionalStep {
-    OptionalStep startDate(final String startDate);
+    OptionalStep startDate(final @Nullable String startDate);
 
-    OptionalStep startDate(final String startDate, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep startDate(
+        final @Nullable String startDate, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep endDate(final String endDate);
+    OptionalStep endDate(final @Nullable String endDate);
 
-    OptionalStep endDate(final String endDate, final ContractPolicy.FieldPolicy<String> policy);
-
-    OptionalStep actorType(final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum actorType);
+    OptionalStep endDate(
+        final @Nullable String endDate, final ContractPolicy.FieldPolicy<String> policy);
 
     OptionalStep actorType(
-        final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum actorType,
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum actorType);
+
+    OptionalStep actorType(
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum actorType,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum>
             policy);
 
-    OptionalStep actorId(final String actorId);
+    OptionalStep actorId(final @Nullable String actorId);
 
-    OptionalStep actorId(final String actorId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep actorId(
+        final @Nullable String actorId, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedBatchOperationResponseStrictContract build();
   }

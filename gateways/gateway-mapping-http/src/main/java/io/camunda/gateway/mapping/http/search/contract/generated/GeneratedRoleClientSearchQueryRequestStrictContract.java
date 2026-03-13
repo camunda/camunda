@@ -10,11 +10,13 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedRoleClientSearchQueryRequestStrictContract(
-    @Nullable java.util.List<GeneratedRoleClientSearchQuerySortRequestStrictContract> sort) {
+    java.util.@Nullable List<GeneratedRoleClientSearchQuerySortRequestStrictContract> sort) {
 
   public static java.util.List<GeneratedRoleClientSearchQuerySortRequestStrictContract> coerceSort(
       final Object value) {
@@ -45,14 +47,6 @@ public record GeneratedRoleClientSearchQueryRequestStrictContract(
     return java.util.List.copyOf(result);
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static OptionalStep builder() {
     return new Builder();
   }
@@ -64,19 +58,21 @@ public record GeneratedRoleClientSearchQueryRequestStrictContract(
 
     @Override
     public OptionalStep sort(
-        final java.util.List<GeneratedRoleClientSearchQuerySortRequestStrictContract> sort) {
+        final java.util.@Nullable List<GeneratedRoleClientSearchQuerySortRequestStrictContract>
+            sort) {
       this.sort = sort;
       return this;
     }
 
     @Override
-    public OptionalStep sort(final Object sort) {
+    public OptionalStep sort(final @Nullable Object sort) {
       this.sort = sort;
       return this;
     }
 
     public Builder sort(
-        final java.util.List<GeneratedRoleClientSearchQuerySortRequestStrictContract> sort,
+        final java.util.@Nullable List<GeneratedRoleClientSearchQuerySortRequestStrictContract>
+            sort,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedRoleClientSearchQuerySortRequestStrictContract>>
             policy) {
@@ -85,7 +81,8 @@ public record GeneratedRoleClientSearchQueryRequestStrictContract(
     }
 
     @Override
-    public OptionalStep sort(final Object sort, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep sort(
+        final @Nullable Object sort, final ContractPolicy.FieldPolicy<Object> policy) {
       this.sort = policy.apply(sort, Fields.SORT, null);
       return this;
     }
@@ -98,17 +95,19 @@ public record GeneratedRoleClientSearchQueryRequestStrictContract(
 
   public interface OptionalStep {
     OptionalStep sort(
-        final java.util.List<GeneratedRoleClientSearchQuerySortRequestStrictContract> sort);
+        final java.util.@Nullable List<GeneratedRoleClientSearchQuerySortRequestStrictContract>
+            sort);
 
-    OptionalStep sort(final Object sort);
+    OptionalStep sort(final @Nullable Object sort);
 
     OptionalStep sort(
-        final java.util.List<GeneratedRoleClientSearchQuerySortRequestStrictContract> sort,
+        final java.util.@Nullable List<GeneratedRoleClientSearchQuerySortRequestStrictContract>
+            sort,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedRoleClientSearchQuerySortRequestStrictContract>>
             policy);
 
-    OptionalStep sort(final Object sort, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep sort(final @Nullable Object sort, final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedRoleClientSearchQueryRequestStrictContract build();
   }

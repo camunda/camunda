@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedCreateClusterVariableRequestStrictContract(
     String name, java.util.Map<String, Object> value) {
@@ -20,58 +22,40 @@ public record GeneratedCreateClusterVariableRequestStrictContract(
     Objects.requireNonNull(value, "value is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static NameStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements NameStep, ValueStep, OptionalStep {
     private String name;
-    private ContractPolicy.FieldPolicy<String> namePolicy;
     private java.util.Map<String, Object> value;
-    private ContractPolicy.FieldPolicy<java.util.Map<String, Object>> valuePolicy;
 
     private Builder() {}
 
     @Override
-    public ValueStep name(final String name, final ContractPolicy.FieldPolicy<String> policy) {
+    public ValueStep name(final String name) {
       this.name = name;
-      this.namePolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep value(
-        final java.util.Map<String, Object> value,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
+    public OptionalStep value(final java.util.Map<String, Object> value) {
       this.value = value;
-      this.valuePolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedCreateClusterVariableRequestStrictContract build() {
-      return new GeneratedCreateClusterVariableRequestStrictContract(
-          applyRequiredPolicy(this.name, this.namePolicy, Fields.NAME),
-          applyRequiredPolicy(this.value, this.valuePolicy, Fields.VALUE));
+      return new GeneratedCreateClusterVariableRequestStrictContract(this.name, this.value);
     }
   }
 
   public interface NameStep {
-    ValueStep name(final String name, final ContractPolicy.FieldPolicy<String> policy);
+    ValueStep name(final String name);
   }
 
   public interface ValueStep {
-    OptionalStep value(
-        final java.util.Map<String, Object> value,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
+    OptionalStep value(final java.util.Map<String, Object> value);
   }
 
   public interface OptionalStep {

@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedExpressionEvaluationStrictContract(
     String expression, Object result, java.util.List<String> warnings) {
@@ -21,14 +23,6 @@ public record GeneratedExpressionEvaluationStrictContract(
     Objects.requireNonNull(warnings, "warnings is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ExpressionStep builder() {
     return new Builder();
   }
@@ -36,60 +30,46 @@ public record GeneratedExpressionEvaluationStrictContract(
   public static final class Builder
       implements ExpressionStep, ResultStep, WarningsStep, OptionalStep {
     private String expression;
-    private ContractPolicy.FieldPolicy<String> expressionPolicy;
     private Object result;
-    private ContractPolicy.FieldPolicy<Object> resultPolicy;
     private java.util.List<String> warnings;
-    private ContractPolicy.FieldPolicy<java.util.List<String>> warningsPolicy;
 
     private Builder() {}
 
     @Override
-    public ResultStep expression(
-        final String expression, final ContractPolicy.FieldPolicy<String> policy) {
+    public ResultStep expression(final String expression) {
       this.expression = expression;
-      this.expressionPolicy = policy;
       return this;
     }
 
     @Override
-    public WarningsStep result(
-        final Object result, final ContractPolicy.FieldPolicy<Object> policy) {
+    public WarningsStep result(final Object result) {
       this.result = result;
-      this.resultPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep warnings(
-        final java.util.List<String> warnings,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
+    public OptionalStep warnings(final java.util.List<String> warnings) {
       this.warnings = warnings;
-      this.warningsPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedExpressionEvaluationStrictContract build() {
       return new GeneratedExpressionEvaluationStrictContract(
-          applyRequiredPolicy(this.expression, this.expressionPolicy, Fields.EXPRESSION),
-          applyRequiredPolicy(this.result, this.resultPolicy, Fields.RESULT),
-          applyRequiredPolicy(this.warnings, this.warningsPolicy, Fields.WARNINGS));
+          this.expression, this.result, this.warnings);
     }
   }
 
   public interface ExpressionStep {
-    ResultStep expression(final String expression, final ContractPolicy.FieldPolicy<String> policy);
+    ResultStep expression(final String expression);
   }
 
   public interface ResultStep {
-    WarningsStep result(final Object result, final ContractPolicy.FieldPolicy<Object> policy);
+    WarningsStep result(final Object result);
   }
 
   public interface WarningsStep {
-    OptionalStep warnings(
-        final java.util.List<String> warnings,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
+    OptionalStep warnings(final java.util.List<String> warnings);
   }
 
   public interface OptionalStep {

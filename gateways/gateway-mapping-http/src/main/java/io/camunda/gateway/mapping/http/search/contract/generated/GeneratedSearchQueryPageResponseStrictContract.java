@@ -10,8 +10,10 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedSearchQueryPageResponseStrictContract(
     Long totalItems,
@@ -24,66 +26,52 @@ public record GeneratedSearchQueryPageResponseStrictContract(
     Objects.requireNonNull(hasMoreTotalItems, "hasMoreTotalItems is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static TotalItemsStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements TotalItemsStep, HasMoreTotalItemsStep, OptionalStep {
     private Long totalItems;
-    private ContractPolicy.FieldPolicy<Long> totalItemsPolicy;
     private Boolean hasMoreTotalItems;
-    private ContractPolicy.FieldPolicy<Boolean> hasMoreTotalItemsPolicy;
     private String startCursor;
     private String endCursor;
 
     private Builder() {}
 
     @Override
-    public HasMoreTotalItemsStep totalItems(
-        final Long totalItems, final ContractPolicy.FieldPolicy<Long> policy) {
+    public HasMoreTotalItemsStep totalItems(final Long totalItems) {
       this.totalItems = totalItems;
-      this.totalItemsPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep hasMoreTotalItems(
-        final Boolean hasMoreTotalItems, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public OptionalStep hasMoreTotalItems(final Boolean hasMoreTotalItems) {
       this.hasMoreTotalItems = hasMoreTotalItems;
-      this.hasMoreTotalItemsPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep startCursor(final String startCursor) {
+    public OptionalStep startCursor(final @Nullable String startCursor) {
       this.startCursor = startCursor;
       return this;
     }
 
     @Override
     public OptionalStep startCursor(
-        final String startCursor, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String startCursor, final ContractPolicy.FieldPolicy<String> policy) {
       this.startCursor = policy.apply(startCursor, Fields.START_CURSOR, null);
       return this;
     }
 
     @Override
-    public OptionalStep endCursor(final String endCursor) {
+    public OptionalStep endCursor(final @Nullable String endCursor) {
       this.endCursor = endCursor;
       return this;
     }
 
     @Override
     public OptionalStep endCursor(
-        final String endCursor, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String endCursor, final ContractPolicy.FieldPolicy<String> policy) {
       this.endCursor = policy.apply(endCursor, Fields.END_CURSOR, null);
       return this;
     }
@@ -91,33 +79,28 @@ public record GeneratedSearchQueryPageResponseStrictContract(
     @Override
     public GeneratedSearchQueryPageResponseStrictContract build() {
       return new GeneratedSearchQueryPageResponseStrictContract(
-          applyRequiredPolicy(this.totalItems, this.totalItemsPolicy, Fields.TOTAL_ITEMS),
-          applyRequiredPolicy(
-              this.hasMoreTotalItems, this.hasMoreTotalItemsPolicy, Fields.HAS_MORE_TOTAL_ITEMS),
-          this.startCursor,
-          this.endCursor);
+          this.totalItems, this.hasMoreTotalItems, this.startCursor, this.endCursor);
     }
   }
 
   public interface TotalItemsStep {
-    HasMoreTotalItemsStep totalItems(
-        final Long totalItems, final ContractPolicy.FieldPolicy<Long> policy);
+    HasMoreTotalItemsStep totalItems(final Long totalItems);
   }
 
   public interface HasMoreTotalItemsStep {
-    OptionalStep hasMoreTotalItems(
-        final Boolean hasMoreTotalItems, final ContractPolicy.FieldPolicy<Boolean> policy);
+    OptionalStep hasMoreTotalItems(final Boolean hasMoreTotalItems);
   }
 
   public interface OptionalStep {
-    OptionalStep startCursor(final String startCursor);
+    OptionalStep startCursor(final @Nullable String startCursor);
 
     OptionalStep startCursor(
-        final String startCursor, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String startCursor, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep endCursor(final String endCursor);
+    OptionalStep endCursor(final @Nullable String endCursor);
 
-    OptionalStep endCursor(final String endCursor, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep endCursor(
+        final @Nullable String endCursor, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedSearchQueryPageResponseStrictContract build();
   }

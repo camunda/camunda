@@ -10,8 +10,10 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedDocumentReferenceStrictContract(
     String camundaDocumentType,
@@ -41,14 +43,6 @@ public record GeneratedDocumentReferenceStrictContract(
             + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static CamundaDocumentTypeStep builder() {
     return new Builder();
   }
@@ -56,58 +50,46 @@ public record GeneratedDocumentReferenceStrictContract(
   public static final class Builder
       implements CamundaDocumentTypeStep, StoreIdStep, DocumentIdStep, MetadataStep, OptionalStep {
     private String camundaDocumentType;
-    private ContractPolicy.FieldPolicy<String> camundaDocumentTypePolicy;
     private String storeId;
-    private ContractPolicy.FieldPolicy<String> storeIdPolicy;
     private String documentId;
-    private ContractPolicy.FieldPolicy<String> documentIdPolicy;
     private String contentHash;
     private Object metadata;
-    private ContractPolicy.FieldPolicy<Object> metadataPolicy;
 
     private Builder() {}
 
     @Override
-    public StoreIdStep camundaDocumentType(
-        final String camundaDocumentType, final ContractPolicy.FieldPolicy<String> policy) {
+    public StoreIdStep camundaDocumentType(final String camundaDocumentType) {
       this.camundaDocumentType = camundaDocumentType;
-      this.camundaDocumentTypePolicy = policy;
       return this;
     }
 
     @Override
-    public DocumentIdStep storeId(
-        final String storeId, final ContractPolicy.FieldPolicy<String> policy) {
+    public DocumentIdStep storeId(final String storeId) {
       this.storeId = storeId;
-      this.storeIdPolicy = policy;
       return this;
     }
 
     @Override
-    public MetadataStep documentId(
-        final String documentId, final ContractPolicy.FieldPolicy<String> policy) {
+    public MetadataStep documentId(final String documentId) {
       this.documentId = documentId;
-      this.documentIdPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep metadata(
-        final Object metadata, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep metadata(final Object metadata) {
       this.metadata = metadata;
-      this.metadataPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep contentHash(final String contentHash) {
+    public OptionalStep contentHash(final @Nullable String contentHash) {
       this.contentHash = contentHash;
       return this;
     }
 
     @Override
     public OptionalStep contentHash(
-        final String contentHash, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String contentHash, final ContractPolicy.FieldPolicy<String> policy) {
       this.contentHash = policy.apply(contentHash, Fields.CONTENT_HASH, null);
       return this;
     }
@@ -115,40 +97,35 @@ public record GeneratedDocumentReferenceStrictContract(
     @Override
     public GeneratedDocumentReferenceStrictContract build() {
       return new GeneratedDocumentReferenceStrictContract(
-          applyRequiredPolicy(
-              this.camundaDocumentType,
-              this.camundaDocumentTypePolicy,
-              Fields.CAMUNDA_DOCUMENT_TYPE),
-          applyRequiredPolicy(this.storeId, this.storeIdPolicy, Fields.STORE_ID),
-          applyRequiredPolicy(this.documentId, this.documentIdPolicy, Fields.DOCUMENT_ID),
+          this.camundaDocumentType,
+          this.storeId,
+          this.documentId,
           this.contentHash,
-          coerceMetadata(applyRequiredPolicy(this.metadata, this.metadataPolicy, Fields.METADATA)));
+          coerceMetadata(this.metadata));
     }
   }
 
   public interface CamundaDocumentTypeStep {
-    StoreIdStep camundaDocumentType(
-        final String camundaDocumentType, final ContractPolicy.FieldPolicy<String> policy);
+    StoreIdStep camundaDocumentType(final String camundaDocumentType);
   }
 
   public interface StoreIdStep {
-    DocumentIdStep storeId(final String storeId, final ContractPolicy.FieldPolicy<String> policy);
+    DocumentIdStep storeId(final String storeId);
   }
 
   public interface DocumentIdStep {
-    MetadataStep documentId(
-        final String documentId, final ContractPolicy.FieldPolicy<String> policy);
+    MetadataStep documentId(final String documentId);
   }
 
   public interface MetadataStep {
-    OptionalStep metadata(final Object metadata, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep metadata(final Object metadata);
   }
 
   public interface OptionalStep {
-    OptionalStep contentHash(final String contentHash);
+    OptionalStep contentHash(final @Nullable String contentHash);
 
     OptionalStep contentHash(
-        final String contentHash, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String contentHash, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedDocumentReferenceStrictContract build();
   }

@@ -11,8 +11,10 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedCamundaUserStrictContract(
     @Nullable String username,
@@ -62,14 +64,6 @@ public record GeneratedCamundaUserStrictContract(
     return java.util.List.copyOf(result);
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static AuthorizedComponentsStep builder() {
     return new Builder();
   }
@@ -86,120 +80,99 @@ public record GeneratedCamundaUserStrictContract(
     private String displayName;
     private String email;
     private java.util.List<String> authorizedComponents;
-    private ContractPolicy.FieldPolicy<java.util.List<String>> authorizedComponentsPolicy;
     private Object tenants;
-    private ContractPolicy.FieldPolicy<Object> tenantsPolicy;
     private java.util.List<String> groups;
-    private ContractPolicy.FieldPolicy<java.util.List<String>> groupsPolicy;
     private java.util.List<String> roles;
-    private ContractPolicy.FieldPolicy<java.util.List<String>> rolesPolicy;
     private String salesPlanType;
     private java.util.Map<String, String> c8Links;
-    private ContractPolicy.FieldPolicy<java.util.Map<String, String>> c8LinksPolicy;
     private Boolean canLogout;
-    private ContractPolicy.FieldPolicy<Boolean> canLogoutPolicy;
 
     private Builder() {}
 
     @Override
-    public TenantsStep authorizedComponents(
-        final java.util.List<String> authorizedComponents,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
+    public TenantsStep authorizedComponents(final java.util.List<String> authorizedComponents) {
       this.authorizedComponents = authorizedComponents;
-      this.authorizedComponentsPolicy = policy;
       return this;
     }
 
     @Override
-    public GroupsStep tenants(
-        final Object tenants, final ContractPolicy.FieldPolicy<Object> policy) {
+    public GroupsStep tenants(final Object tenants) {
       this.tenants = tenants;
-      this.tenantsPolicy = policy;
       return this;
     }
 
     @Override
-    public RolesStep groups(
-        final java.util.List<String> groups,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
+    public RolesStep groups(final java.util.List<String> groups) {
       this.groups = groups;
-      this.groupsPolicy = policy;
       return this;
     }
 
     @Override
-    public C8LinksStep roles(
-        final java.util.List<String> roles,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
+    public C8LinksStep roles(final java.util.List<String> roles) {
       this.roles = roles;
-      this.rolesPolicy = policy;
       return this;
     }
 
     @Override
-    public CanLogoutStep c8Links(
-        final java.util.Map<String, String> c8Links,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, String>> policy) {
+    public CanLogoutStep c8Links(final java.util.Map<String, String> c8Links) {
       this.c8Links = c8Links;
-      this.c8LinksPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep canLogout(
-        final Boolean canLogout, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public OptionalStep canLogout(final Boolean canLogout) {
       this.canLogout = canLogout;
-      this.canLogoutPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep username(final String username) {
+    public OptionalStep username(final @Nullable String username) {
       this.username = username;
       return this;
     }
 
     @Override
     public OptionalStep username(
-        final String username, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String username, final ContractPolicy.FieldPolicy<String> policy) {
       this.username = policy.apply(username, Fields.USERNAME, null);
       return this;
     }
 
     @Override
-    public OptionalStep displayName(final String displayName) {
+    public OptionalStep displayName(final @Nullable String displayName) {
       this.displayName = displayName;
       return this;
     }
 
     @Override
     public OptionalStep displayName(
-        final String displayName, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String displayName, final ContractPolicy.FieldPolicy<String> policy) {
       this.displayName = policy.apply(displayName, Fields.DISPLAY_NAME, null);
       return this;
     }
 
     @Override
-    public OptionalStep email(final String email) {
+    public OptionalStep email(final @Nullable String email) {
       this.email = email;
       return this;
     }
 
     @Override
-    public OptionalStep email(final String email, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep email(
+        final @Nullable String email, final ContractPolicy.FieldPolicy<String> policy) {
       this.email = policy.apply(email, Fields.EMAIL, null);
       return this;
     }
 
     @Override
-    public OptionalStep salesPlanType(final String salesPlanType) {
+    public OptionalStep salesPlanType(final @Nullable String salesPlanType) {
       this.salesPlanType = salesPlanType;
       return this;
     }
 
     @Override
     public OptionalStep salesPlanType(
-        final String salesPlanType, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String salesPlanType, final ContractPolicy.FieldPolicy<String> policy) {
       this.salesPlanType = policy.apply(salesPlanType, Fields.SALES_PLAN_TYPE, null);
       return this;
     }
@@ -210,70 +183,60 @@ public record GeneratedCamundaUserStrictContract(
           this.username,
           this.displayName,
           this.email,
-          applyRequiredPolicy(
-              this.authorizedComponents,
-              this.authorizedComponentsPolicy,
-              Fields.AUTHORIZED_COMPONENTS),
-          coerceTenants(applyRequiredPolicy(this.tenants, this.tenantsPolicy, Fields.TENANTS)),
-          applyRequiredPolicy(this.groups, this.groupsPolicy, Fields.GROUPS),
-          applyRequiredPolicy(this.roles, this.rolesPolicy, Fields.ROLES),
+          this.authorizedComponents,
+          coerceTenants(this.tenants),
+          this.groups,
+          this.roles,
           this.salesPlanType,
-          applyRequiredPolicy(this.c8Links, this.c8LinksPolicy, Fields.C8_LINKS),
-          applyRequiredPolicy(this.canLogout, this.canLogoutPolicy, Fields.CAN_LOGOUT));
+          this.c8Links,
+          this.canLogout);
     }
   }
 
   public interface AuthorizedComponentsStep {
-    TenantsStep authorizedComponents(
-        final java.util.List<String> authorizedComponents,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
+    TenantsStep authorizedComponents(final java.util.List<String> authorizedComponents);
   }
 
   public interface TenantsStep {
-    GroupsStep tenants(final Object tenants, final ContractPolicy.FieldPolicy<Object> policy);
+    GroupsStep tenants(final Object tenants);
   }
 
   public interface GroupsStep {
-    RolesStep groups(
-        final java.util.List<String> groups,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
+    RolesStep groups(final java.util.List<String> groups);
   }
 
   public interface RolesStep {
-    C8LinksStep roles(
-        final java.util.List<String> roles,
-        final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
+    C8LinksStep roles(final java.util.List<String> roles);
   }
 
   public interface C8LinksStep {
-    CanLogoutStep c8Links(
-        final java.util.Map<String, String> c8Links,
-        final ContractPolicy.FieldPolicy<java.util.Map<String, String>> policy);
+    CanLogoutStep c8Links(final java.util.Map<String, String> c8Links);
   }
 
   public interface CanLogoutStep {
-    OptionalStep canLogout(
-        final Boolean canLogout, final ContractPolicy.FieldPolicy<Boolean> policy);
+    OptionalStep canLogout(final Boolean canLogout);
   }
 
   public interface OptionalStep {
-    OptionalStep username(final String username);
+    OptionalStep username(final @Nullable String username);
 
-    OptionalStep username(final String username, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep username(
+        final @Nullable String username, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep displayName(final String displayName);
+    OptionalStep displayName(final @Nullable String displayName);
 
     OptionalStep displayName(
-        final String displayName, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String displayName, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep email(final String email);
+    OptionalStep email(final @Nullable String email);
 
-    OptionalStep email(final String email, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep email(
+        final @Nullable String email, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep salesPlanType(final String salesPlanType);
+    OptionalStep salesPlanType(final @Nullable String salesPlanType);
 
     OptionalStep salesPlanType(
-        final String salesPlanType, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String salesPlanType, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedCamundaUserStrictContract build();
   }

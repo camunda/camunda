@@ -11,23 +11,24 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessInstanceCreationInstructionByIdStrictContract(
     String processDefinitionId,
     @Nullable Integer processDefinitionVersion,
-    @Nullable java.util.Map<String, Object> variables,
+    java.util.@Nullable Map<String, Object> variables,
     @Nullable String tenantId,
     @Nullable Long operationReference,
-    @Nullable
-        java.util.List<GeneratedProcessInstanceCreationStartInstructionStrictContract>
-            startInstructions,
-    @Nullable java.util.List<Object> runtimeInstructions,
+    java.util.@Nullable List<GeneratedProcessInstanceCreationStartInstructionStrictContract>
+        startInstructions,
+    java.util.@Nullable List<Object> runtimeInstructions,
     @Nullable Boolean awaitCompletion,
-    @Nullable java.util.List<String> fetchVariables,
+    java.util.@Nullable List<String> fetchVariables,
     @Nullable Long requestTimeout,
-    @Nullable java.util.Set<String> tags,
+    java.util.@Nullable Set<String> tags,
     @Nullable String businessId) {
 
   public GeneratedProcessInstanceCreationInstructionByIdStrictContract {
@@ -65,21 +66,12 @@ public record GeneratedProcessInstanceCreationInstructionByIdStrictContract(
     return java.util.List.copyOf(result);
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ProcessDefinitionIdStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements ProcessDefinitionIdStep, OptionalStep {
     private String processDefinitionId;
-    private ContractPolicy.FieldPolicy<String> processDefinitionIdPolicy;
     private Integer processDefinitionVersion;
     private java.util.Map<String, Object> variables;
     private String tenantId;
@@ -95,83 +87,84 @@ public record GeneratedProcessInstanceCreationInstructionByIdStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
-      this.processDefinitionIdPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionVersion(final Integer processDefinitionVersion) {
+    public OptionalStep processDefinitionVersion(final @Nullable Integer processDefinitionVersion) {
       this.processDefinitionVersion = processDefinitionVersion;
       return this;
     }
 
     @Override
     public OptionalStep processDefinitionVersion(
-        final Integer processDefinitionVersion, final ContractPolicy.FieldPolicy<Integer> policy) {
+        final @Nullable Integer processDefinitionVersion,
+        final ContractPolicy.FieldPolicy<Integer> policy) {
       this.processDefinitionVersion =
           policy.apply(processDefinitionVersion, Fields.PROCESS_DEFINITION_VERSION, null);
       return this;
     }
 
     @Override
-    public OptionalStep variables(final java.util.Map<String, Object> variables) {
+    public OptionalStep variables(final java.util.@Nullable Map<String, Object> variables) {
       this.variables = variables;
       return this;
     }
 
     @Override
     public OptionalStep variables(
-        final java.util.Map<String, Object> variables,
+        final java.util.@Nullable Map<String, Object> variables,
         final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
       this.variables = policy.apply(variables, Fields.VARIABLES, null);
       return this;
     }
 
     @Override
-    public OptionalStep tenantId(final String tenantId) {
+    public OptionalStep tenantId(final @Nullable String tenantId) {
       this.tenantId = tenantId;
       return this;
     }
 
     @Override
     public OptionalStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep operationReference(final Long operationReference) {
+    public OptionalStep operationReference(final @Nullable Long operationReference) {
       this.operationReference = operationReference;
       return this;
     }
 
     @Override
     public OptionalStep operationReference(
-        final Long operationReference, final ContractPolicy.FieldPolicy<Long> policy) {
+        final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy) {
       this.operationReference = policy.apply(operationReference, Fields.OPERATION_REFERENCE, null);
       return this;
     }
 
     @Override
     public OptionalStep startInstructions(
-        final java.util.List<GeneratedProcessInstanceCreationStartInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedProcessInstanceCreationStartInstructionStrictContract>
             startInstructions) {
       this.startInstructions = startInstructions;
       return this;
     }
 
     @Override
-    public OptionalStep startInstructions(final Object startInstructions) {
+    public OptionalStep startInstructions(final @Nullable Object startInstructions) {
       this.startInstructions = startInstructions;
       return this;
     }
 
     public Builder startInstructions(
-        final java.util.List<GeneratedProcessInstanceCreationStartInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedProcessInstanceCreationStartInstructionStrictContract>
             startInstructions,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedProcessInstanceCreationStartInstructionStrictContract>>
@@ -182,20 +175,21 @@ public record GeneratedProcessInstanceCreationInstructionByIdStrictContract(
 
     @Override
     public OptionalStep startInstructions(
-        final Object startInstructions, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object startInstructions, final ContractPolicy.FieldPolicy<Object> policy) {
       this.startInstructions = policy.apply(startInstructions, Fields.START_INSTRUCTIONS, null);
       return this;
     }
 
     @Override
-    public OptionalStep runtimeInstructions(final java.util.List<Object> runtimeInstructions) {
+    public OptionalStep runtimeInstructions(
+        final java.util.@Nullable List<Object> runtimeInstructions) {
       this.runtimeInstructions = runtimeInstructions;
       return this;
     }
 
     @Override
     public OptionalStep runtimeInstructions(
-        final java.util.List<Object> runtimeInstructions,
+        final java.util.@Nullable List<Object> runtimeInstructions,
         final ContractPolicy.FieldPolicy<java.util.List<Object>> policy) {
       this.runtimeInstructions =
           policy.apply(runtimeInstructions, Fields.RUNTIME_INSTRUCTIONS, null);
@@ -203,68 +197,68 @@ public record GeneratedProcessInstanceCreationInstructionByIdStrictContract(
     }
 
     @Override
-    public OptionalStep awaitCompletion(final Boolean awaitCompletion) {
+    public OptionalStep awaitCompletion(final @Nullable Boolean awaitCompletion) {
       this.awaitCompletion = awaitCompletion;
       return this;
     }
 
     @Override
     public OptionalStep awaitCompletion(
-        final Boolean awaitCompletion, final ContractPolicy.FieldPolicy<Boolean> policy) {
+        final @Nullable Boolean awaitCompletion, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.awaitCompletion = policy.apply(awaitCompletion, Fields.AWAIT_COMPLETION, null);
       return this;
     }
 
     @Override
-    public OptionalStep fetchVariables(final java.util.List<String> fetchVariables) {
+    public OptionalStep fetchVariables(final java.util.@Nullable List<String> fetchVariables) {
       this.fetchVariables = fetchVariables;
       return this;
     }
 
     @Override
     public OptionalStep fetchVariables(
-        final java.util.List<String> fetchVariables,
+        final java.util.@Nullable List<String> fetchVariables,
         final ContractPolicy.FieldPolicy<java.util.List<String>> policy) {
       this.fetchVariables = policy.apply(fetchVariables, Fields.FETCH_VARIABLES, null);
       return this;
     }
 
     @Override
-    public OptionalStep requestTimeout(final Long requestTimeout) {
+    public OptionalStep requestTimeout(final @Nullable Long requestTimeout) {
       this.requestTimeout = requestTimeout;
       return this;
     }
 
     @Override
     public OptionalStep requestTimeout(
-        final Long requestTimeout, final ContractPolicy.FieldPolicy<Long> policy) {
+        final @Nullable Long requestTimeout, final ContractPolicy.FieldPolicy<Long> policy) {
       this.requestTimeout = policy.apply(requestTimeout, Fields.REQUEST_TIMEOUT, null);
       return this;
     }
 
     @Override
-    public OptionalStep tags(final java.util.Set<String> tags) {
+    public OptionalStep tags(final java.util.@Nullable Set<String> tags) {
       this.tags = tags;
       return this;
     }
 
     @Override
     public OptionalStep tags(
-        final java.util.Set<String> tags,
+        final java.util.@Nullable Set<String> tags,
         final ContractPolicy.FieldPolicy<java.util.Set<String>> policy) {
       this.tags = policy.apply(tags, Fields.TAGS, null);
       return this;
     }
 
     @Override
-    public OptionalStep businessId(final String businessId) {
+    public OptionalStep businessId(final @Nullable String businessId) {
       this.businessId = businessId;
       return this;
     }
 
     @Override
     public OptionalStep businessId(
-        final String businessId, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String businessId, final ContractPolicy.FieldPolicy<String> policy) {
       this.businessId = policy.apply(businessId, Fields.BUSINESS_ID, null);
       return this;
     }
@@ -272,10 +266,7 @@ public record GeneratedProcessInstanceCreationInstructionByIdStrictContract(
     @Override
     public GeneratedProcessInstanceCreationInstructionByIdStrictContract build() {
       return new GeneratedProcessInstanceCreationInstructionByIdStrictContract(
-          applyRequiredPolicy(
-              this.processDefinitionId,
-              this.processDefinitionIdPolicy,
-              Fields.PROCESS_DEFINITION_ID),
+          this.processDefinitionId,
           this.processDefinitionVersion,
           this.variables,
           this.tenantId,
@@ -291,79 +282,82 @@ public record GeneratedProcessInstanceCreationInstructionByIdStrictContract(
   }
 
   public interface ProcessDefinitionIdStep {
-    OptionalStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep processDefinitionId(final String processDefinitionId);
   }
 
   public interface OptionalStep {
-    OptionalStep processDefinitionVersion(final Integer processDefinitionVersion);
+    OptionalStep processDefinitionVersion(final @Nullable Integer processDefinitionVersion);
 
     OptionalStep processDefinitionVersion(
-        final Integer processDefinitionVersion, final ContractPolicy.FieldPolicy<Integer> policy);
+        final @Nullable Integer processDefinitionVersion,
+        final ContractPolicy.FieldPolicy<Integer> policy);
 
-    OptionalStep variables(final java.util.Map<String, Object> variables);
+    OptionalStep variables(final java.util.@Nullable Map<String, Object> variables);
 
     OptionalStep variables(
-        final java.util.Map<String, Object> variables,
+        final java.util.@Nullable Map<String, Object> variables,
         final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
 
-    OptionalStep tenantId(final String tenantId);
+    OptionalStep tenantId(final @Nullable String tenantId);
 
-    OptionalStep tenantId(final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep tenantId(
+        final @Nullable String tenantId, final ContractPolicy.FieldPolicy<String> policy);
 
-    OptionalStep operationReference(final Long operationReference);
+    OptionalStep operationReference(final @Nullable Long operationReference);
 
     OptionalStep operationReference(
-        final Long operationReference, final ContractPolicy.FieldPolicy<Long> policy);
+        final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy);
 
     OptionalStep startInstructions(
-        final java.util.List<GeneratedProcessInstanceCreationStartInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedProcessInstanceCreationStartInstructionStrictContract>
             startInstructions);
 
-    OptionalStep startInstructions(final Object startInstructions);
+    OptionalStep startInstructions(final @Nullable Object startInstructions);
 
     OptionalStep startInstructions(
-        final java.util.List<GeneratedProcessInstanceCreationStartInstructionStrictContract>
+        final java.util.@Nullable List<
+                GeneratedProcessInstanceCreationStartInstructionStrictContract>
             startInstructions,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedProcessInstanceCreationStartInstructionStrictContract>>
             policy);
 
     OptionalStep startInstructions(
-        final Object startInstructions, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object startInstructions, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep runtimeInstructions(final java.util.List<Object> runtimeInstructions);
+    OptionalStep runtimeInstructions(final java.util.@Nullable List<Object> runtimeInstructions);
 
     OptionalStep runtimeInstructions(
-        final java.util.List<Object> runtimeInstructions,
+        final java.util.@Nullable List<Object> runtimeInstructions,
         final ContractPolicy.FieldPolicy<java.util.List<Object>> policy);
 
-    OptionalStep awaitCompletion(final Boolean awaitCompletion);
+    OptionalStep awaitCompletion(final @Nullable Boolean awaitCompletion);
 
     OptionalStep awaitCompletion(
-        final Boolean awaitCompletion, final ContractPolicy.FieldPolicy<Boolean> policy);
+        final @Nullable Boolean awaitCompletion, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep fetchVariables(final java.util.List<String> fetchVariables);
+    OptionalStep fetchVariables(final java.util.@Nullable List<String> fetchVariables);
 
     OptionalStep fetchVariables(
-        final java.util.List<String> fetchVariables,
+        final java.util.@Nullable List<String> fetchVariables,
         final ContractPolicy.FieldPolicy<java.util.List<String>> policy);
 
-    OptionalStep requestTimeout(final Long requestTimeout);
+    OptionalStep requestTimeout(final @Nullable Long requestTimeout);
 
     OptionalStep requestTimeout(
-        final Long requestTimeout, final ContractPolicy.FieldPolicy<Long> policy);
+        final @Nullable Long requestTimeout, final ContractPolicy.FieldPolicy<Long> policy);
 
-    OptionalStep tags(final java.util.Set<String> tags);
+    OptionalStep tags(final java.util.@Nullable Set<String> tags);
 
     OptionalStep tags(
-        final java.util.Set<String> tags,
+        final java.util.@Nullable Set<String> tags,
         final ContractPolicy.FieldPolicy<java.util.Set<String>> policy);
 
-    OptionalStep businessId(final String businessId);
+    OptionalStep businessId(final @Nullable String businessId);
 
     OptionalStep businessId(
-        final String businessId, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String businessId, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedProcessInstanceCreationInstructionByIdStrictContract build();
   }

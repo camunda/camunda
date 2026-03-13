@@ -11,7 +11,9 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedAuthorizationCreateStrictContract(String authorizationKey) {
 
@@ -33,44 +35,30 @@ public record GeneratedAuthorizationCreateStrictContract(String authorizationKey
         "authorizationKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static AuthorizationKeyStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements AuthorizationKeyStep, OptionalStep {
     private Object authorizationKey;
-    private ContractPolicy.FieldPolicy<Object> authorizationKeyPolicy;
 
     private Builder() {}
 
     @Override
-    public OptionalStep authorizationKey(
-        final Object authorizationKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep authorizationKey(final Object authorizationKey) {
       this.authorizationKey = authorizationKey;
-      this.authorizationKeyPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedAuthorizationCreateStrictContract build() {
       return new GeneratedAuthorizationCreateStrictContract(
-          coerceAuthorizationKey(
-              applyRequiredPolicy(
-                  this.authorizationKey, this.authorizationKeyPolicy, Fields.AUTHORIZATION_KEY)));
+          coerceAuthorizationKey(this.authorizationKey));
     }
   }
 
   public interface AuthorizationKeyStep {
-    OptionalStep authorizationKey(
-        final Object authorizationKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep authorizationKey(final Object authorizationKey);
   }
 
   public interface OptionalStep {

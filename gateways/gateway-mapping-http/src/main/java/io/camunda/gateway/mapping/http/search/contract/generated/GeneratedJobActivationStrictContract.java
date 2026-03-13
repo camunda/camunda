@@ -11,7 +11,9 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobActivationStrictContract(
     java.util.List<GeneratedActivatedJobStrictContract> jobs) {
@@ -46,40 +48,29 @@ public record GeneratedJobActivationStrictContract(
     return java.util.List.copyOf(result);
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static JobsStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements JobsStep, OptionalStep {
     private Object jobs;
-    private ContractPolicy.FieldPolicy<Object> jobsPolicy;
 
     private Builder() {}
 
     @Override
-    public OptionalStep jobs(final Object jobs, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep jobs(final Object jobs) {
       this.jobs = jobs;
-      this.jobsPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedJobActivationStrictContract build() {
-      return new GeneratedJobActivationStrictContract(
-          coerceJobs(applyRequiredPolicy(this.jobs, this.jobsPolicy, Fields.JOBS)));
+      return new GeneratedJobActivationStrictContract(coerceJobs(this.jobs));
     }
   }
 
   public interface JobsStep {
-    OptionalStep jobs(final Object jobs, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep jobs(final Object jobs);
   }
 
   public interface OptionalStep {

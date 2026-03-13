@@ -10,11 +10,13 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobResultAdHocSubProcessStrictContract(
-    @Nullable java.util.List<GeneratedJobResultActivateElementStrictContract> activateElements,
+    java.util.@Nullable List<GeneratedJobResultActivateElementStrictContract> activateElements,
     @Nullable Boolean isCompletionConditionFulfilled,
     @Nullable Boolean isCancelRemainingInstances,
     @Nullable String type) {
@@ -47,14 +49,6 @@ public record GeneratedJobResultAdHocSubProcessStrictContract(
     return java.util.List.copyOf(result);
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static OptionalStep builder() {
     return new Builder();
   }
@@ -69,19 +63,21 @@ public record GeneratedJobResultAdHocSubProcessStrictContract(
 
     @Override
     public OptionalStep activateElements(
-        final java.util.List<GeneratedJobResultActivateElementStrictContract> activateElements) {
+        final java.util.@Nullable List<GeneratedJobResultActivateElementStrictContract>
+            activateElements) {
       this.activateElements = activateElements;
       return this;
     }
 
     @Override
-    public OptionalStep activateElements(final Object activateElements) {
+    public OptionalStep activateElements(final @Nullable Object activateElements) {
       this.activateElements = activateElements;
       return this;
     }
 
     public Builder activateElements(
-        final java.util.List<GeneratedJobResultActivateElementStrictContract> activateElements,
+        final java.util.@Nullable List<GeneratedJobResultActivateElementStrictContract>
+            activateElements,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedJobResultActivateElementStrictContract>>
             policy) {
@@ -91,21 +87,21 @@ public record GeneratedJobResultAdHocSubProcessStrictContract(
 
     @Override
     public OptionalStep activateElements(
-        final Object activateElements, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object activateElements, final ContractPolicy.FieldPolicy<Object> policy) {
       this.activateElements = policy.apply(activateElements, Fields.ACTIVATE_ELEMENTS, null);
       return this;
     }
 
     @Override
     public OptionalStep isCompletionConditionFulfilled(
-        final Boolean isCompletionConditionFulfilled) {
+        final @Nullable Boolean isCompletionConditionFulfilled) {
       this.isCompletionConditionFulfilled = isCompletionConditionFulfilled;
       return this;
     }
 
     @Override
     public OptionalStep isCompletionConditionFulfilled(
-        final Boolean isCompletionConditionFulfilled,
+        final @Nullable Boolean isCompletionConditionFulfilled,
         final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.isCompletionConditionFulfilled =
           policy.apply(
@@ -114,14 +110,15 @@ public record GeneratedJobResultAdHocSubProcessStrictContract(
     }
 
     @Override
-    public OptionalStep isCancelRemainingInstances(final Boolean isCancelRemainingInstances) {
+    public OptionalStep isCancelRemainingInstances(
+        final @Nullable Boolean isCancelRemainingInstances) {
       this.isCancelRemainingInstances = isCancelRemainingInstances;
       return this;
     }
 
     @Override
     public OptionalStep isCancelRemainingInstances(
-        final Boolean isCancelRemainingInstances,
+        final @Nullable Boolean isCancelRemainingInstances,
         final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.isCancelRemainingInstances =
           policy.apply(isCancelRemainingInstances, Fields.IS_CANCEL_REMAINING_INSTANCES, null);
@@ -129,13 +126,14 @@ public record GeneratedJobResultAdHocSubProcessStrictContract(
     }
 
     @Override
-    public OptionalStep type(final String type) {
+    public OptionalStep type(final @Nullable String type) {
       this.type = type;
       return this;
     }
 
     @Override
-    public OptionalStep type(final String type, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep type(
+        final @Nullable String type, final ContractPolicy.FieldPolicy<String> policy) {
       this.type = policy.apply(type, Fields.TYPE, null);
       return this;
     }
@@ -152,33 +150,37 @@ public record GeneratedJobResultAdHocSubProcessStrictContract(
 
   public interface OptionalStep {
     OptionalStep activateElements(
-        final java.util.List<GeneratedJobResultActivateElementStrictContract> activateElements);
+        final java.util.@Nullable List<GeneratedJobResultActivateElementStrictContract>
+            activateElements);
 
-    OptionalStep activateElements(final Object activateElements);
+    OptionalStep activateElements(final @Nullable Object activateElements);
 
     OptionalStep activateElements(
-        final java.util.List<GeneratedJobResultActivateElementStrictContract> activateElements,
+        final java.util.@Nullable List<GeneratedJobResultActivateElementStrictContract>
+            activateElements,
         final ContractPolicy.FieldPolicy<
                 java.util.List<GeneratedJobResultActivateElementStrictContract>>
             policy);
 
     OptionalStep activateElements(
-        final Object activateElements, final ContractPolicy.FieldPolicy<Object> policy);
-
-    OptionalStep isCompletionConditionFulfilled(final Boolean isCompletionConditionFulfilled);
+        final @Nullable Object activateElements, final ContractPolicy.FieldPolicy<Object> policy);
 
     OptionalStep isCompletionConditionFulfilled(
-        final Boolean isCompletionConditionFulfilled,
+        final @Nullable Boolean isCompletionConditionFulfilled);
+
+    OptionalStep isCompletionConditionFulfilled(
+        final @Nullable Boolean isCompletionConditionFulfilled,
         final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep isCancelRemainingInstances(final Boolean isCancelRemainingInstances);
+    OptionalStep isCancelRemainingInstances(final @Nullable Boolean isCancelRemainingInstances);
 
     OptionalStep isCancelRemainingInstances(
-        final Boolean isCancelRemainingInstances, final ContractPolicy.FieldPolicy<Boolean> policy);
+        final @Nullable Boolean isCancelRemainingInstances,
+        final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep type(final String type);
+    OptionalStep type(final @Nullable String type);
 
-    OptionalStep type(final String type, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep type(final @Nullable String type, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedJobResultAdHocSubProcessStrictContract build();
   }

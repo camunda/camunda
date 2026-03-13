@@ -9,23 +9,17 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedAdvancedActorTypeFilterStrictContract(
-    @Nullable io.camunda.gateway.protocol.model.AuditLogActorTypeEnum eq,
-    @Nullable io.camunda.gateway.protocol.model.AuditLogActorTypeEnum neq,
+    io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum eq,
+    io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum neq,
     @Nullable Boolean exists,
-    @Nullable java.util.List<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum> in,
+    java.util.@Nullable List<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum> in,
     @Nullable String like) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
 
   public static OptionalStep builder() {
     return new Builder();
@@ -41,14 +35,15 @@ public record GeneratedAdvancedActorTypeFilterStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep eq(final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum eq) {
+    public OptionalStep eq(
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum eq) {
       this.eq = eq;
       return this;
     }
 
     @Override
     public OptionalStep eq(
-        final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum eq,
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum eq,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum>
             policy) {
       this.eq = policy.apply(eq, Fields.EQ, null);
@@ -56,14 +51,15 @@ public record GeneratedAdvancedActorTypeFilterStrictContract(
     }
 
     @Override
-    public OptionalStep neq(final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum neq) {
+    public OptionalStep neq(
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum neq) {
       this.neq = neq;
       return this;
     }
 
     @Override
     public OptionalStep neq(
-        final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum neq,
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum neq,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum>
             policy) {
       this.neq = policy.apply(neq, Fields.NEQ, null);
@@ -71,28 +67,29 @@ public record GeneratedAdvancedActorTypeFilterStrictContract(
     }
 
     @Override
-    public OptionalStep exists(final Boolean exists) {
+    public OptionalStep exists(final @Nullable Boolean exists) {
       this.exists = exists;
       return this;
     }
 
     @Override
     public OptionalStep exists(
-        final Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
+        final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.exists = policy.apply(exists, Fields.EXISTS, null);
       return this;
     }
 
     @Override
     public OptionalStep in(
-        final java.util.List<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum> in) {
+        final java.util.@Nullable List<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum>
+            in) {
       this.in = in;
       return this;
     }
 
     @Override
     public OptionalStep in(
-        final java.util.List<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum> in,
+        final java.util.@Nullable List<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum> in,
         final ContractPolicy.FieldPolicy<
                 java.util.List<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum>>
             policy) {
@@ -101,13 +98,14 @@ public record GeneratedAdvancedActorTypeFilterStrictContract(
     }
 
     @Override
-    public OptionalStep like(final String like) {
+    public OptionalStep like(final @Nullable String like) {
       this.like = like;
       return this;
     }
 
     @Override
-    public OptionalStep like(final String like, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep like(
+        final @Nullable String like, final ContractPolicy.FieldPolicy<String> policy) {
       this.like = policy.apply(like, Fields.LIKE, null);
       return this;
     }
@@ -120,36 +118,37 @@ public record GeneratedAdvancedActorTypeFilterStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep eq(final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum eq);
+    OptionalStep eq(final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum eq);
 
     OptionalStep eq(
-        final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum eq,
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum eq,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum>
             policy);
 
-    OptionalStep neq(final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum neq);
+    OptionalStep neq(final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum neq);
 
     OptionalStep neq(
-        final io.camunda.gateway.protocol.model.AuditLogActorTypeEnum neq,
+        final io.camunda.gateway.protocol.model.@Nullable AuditLogActorTypeEnum neq,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum>
             policy);
 
-    OptionalStep exists(final Boolean exists);
+    OptionalStep exists(final @Nullable Boolean exists);
 
-    OptionalStep exists(final Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy);
-
-    OptionalStep in(
-        final java.util.List<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum> in);
+    OptionalStep exists(
+        final @Nullable Boolean exists, final ContractPolicy.FieldPolicy<Boolean> policy);
 
     OptionalStep in(
-        final java.util.List<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum> in,
+        final java.util.@Nullable List<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum> in);
+
+    OptionalStep in(
+        final java.util.@Nullable List<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum> in,
         final ContractPolicy.FieldPolicy<
                 java.util.List<io.camunda.gateway.protocol.model.AuditLogActorTypeEnum>>
             policy);
 
-    OptionalStep like(final String like);
+    OptionalStep like(final @Nullable String like);
 
-    OptionalStep like(final String like, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep like(final @Nullable String like, final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedAdvancedActorTypeFilterStrictContract build();
   }

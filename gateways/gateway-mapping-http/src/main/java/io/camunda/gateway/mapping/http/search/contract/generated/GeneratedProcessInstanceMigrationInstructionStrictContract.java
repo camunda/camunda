@@ -12,8 +12,10 @@ import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.ArrayList;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessInstanceMigrationInstructionStrictContract(
     String targetProcessDefinitionKey,
@@ -73,14 +75,6 @@ public record GeneratedProcessInstanceMigrationInstructionStrictContract(
     return java.util.List.copyOf(result);
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static TargetProcessDefinitionKeyStep builder() {
     return new Builder();
   }
@@ -88,38 +82,33 @@ public record GeneratedProcessInstanceMigrationInstructionStrictContract(
   public static final class Builder
       implements TargetProcessDefinitionKeyStep, MappingInstructionsStep, OptionalStep {
     private Object targetProcessDefinitionKey;
-    private ContractPolicy.FieldPolicy<Object> targetProcessDefinitionKeyPolicy;
     private Object mappingInstructions;
-    private ContractPolicy.FieldPolicy<Object> mappingInstructionsPolicy;
     private Long operationReference;
 
     private Builder() {}
 
     @Override
     public MappingInstructionsStep targetProcessDefinitionKey(
-        final Object targetProcessDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final Object targetProcessDefinitionKey) {
       this.targetProcessDefinitionKey = targetProcessDefinitionKey;
-      this.targetProcessDefinitionKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep mappingInstructions(
-        final Object mappingInstructions, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep mappingInstructions(final Object mappingInstructions) {
       this.mappingInstructions = mappingInstructions;
-      this.mappingInstructionsPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep operationReference(final Long operationReference) {
+    public OptionalStep operationReference(final @Nullable Long operationReference) {
       this.operationReference = operationReference;
       return this;
     }
 
     @Override
     public OptionalStep operationReference(
-        final Long operationReference, final ContractPolicy.FieldPolicy<Long> policy) {
+        final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy) {
       this.operationReference = policy.apply(operationReference, Fields.OPERATION_REFERENCE, null);
       return this;
     }
@@ -127,35 +116,25 @@ public record GeneratedProcessInstanceMigrationInstructionStrictContract(
     @Override
     public GeneratedProcessInstanceMigrationInstructionStrictContract build() {
       return new GeneratedProcessInstanceMigrationInstructionStrictContract(
-          coerceTargetProcessDefinitionKey(
-              applyRequiredPolicy(
-                  this.targetProcessDefinitionKey,
-                  this.targetProcessDefinitionKeyPolicy,
-                  Fields.TARGET_PROCESS_DEFINITION_KEY)),
-          coerceMappingInstructions(
-              applyRequiredPolicy(
-                  this.mappingInstructions,
-                  this.mappingInstructionsPolicy,
-                  Fields.MAPPING_INSTRUCTIONS)),
+          coerceTargetProcessDefinitionKey(this.targetProcessDefinitionKey),
+          coerceMappingInstructions(this.mappingInstructions),
           this.operationReference);
     }
   }
 
   public interface TargetProcessDefinitionKeyStep {
-    MappingInstructionsStep targetProcessDefinitionKey(
-        final Object targetProcessDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+    MappingInstructionsStep targetProcessDefinitionKey(final Object targetProcessDefinitionKey);
   }
 
   public interface MappingInstructionsStep {
-    OptionalStep mappingInstructions(
-        final Object mappingInstructions, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep mappingInstructions(final Object mappingInstructions);
   }
 
   public interface OptionalStep {
-    OptionalStep operationReference(final Long operationReference);
+    OptionalStep operationReference(final @Nullable Long operationReference);
 
     OptionalStep operationReference(
-        final Long operationReference, final ContractPolicy.FieldPolicy<Long> policy);
+        final @Nullable Long operationReference, final ContractPolicy.FieldPolicy<Long> policy);
 
     GeneratedProcessInstanceMigrationInstructionStrictContract build();
   }

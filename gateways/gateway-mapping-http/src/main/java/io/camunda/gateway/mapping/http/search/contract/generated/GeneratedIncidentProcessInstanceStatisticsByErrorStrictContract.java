@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedIncidentProcessInstanceStatisticsByErrorStrictContract(
     Integer errorHashCode, String errorMessage, Long activeInstancesWithErrorCount) {
@@ -23,14 +25,6 @@ public record GeneratedIncidentProcessInstanceStatisticsByErrorStrictContract(
         "activeInstancesWithErrorCount is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ErrorHashCodeStep builder() {
     return new Builder();
   }
@@ -41,63 +35,46 @@ public record GeneratedIncidentProcessInstanceStatisticsByErrorStrictContract(
           ActiveInstancesWithErrorCountStep,
           OptionalStep {
     private Integer errorHashCode;
-    private ContractPolicy.FieldPolicy<Integer> errorHashCodePolicy;
     private String errorMessage;
-    private ContractPolicy.FieldPolicy<String> errorMessagePolicy;
     private Long activeInstancesWithErrorCount;
-    private ContractPolicy.FieldPolicy<Long> activeInstancesWithErrorCountPolicy;
 
     private Builder() {}
 
     @Override
-    public ErrorMessageStep errorHashCode(
-        final Integer errorHashCode, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public ErrorMessageStep errorHashCode(final Integer errorHashCode) {
       this.errorHashCode = errorHashCode;
-      this.errorHashCodePolicy = policy;
       return this;
     }
 
     @Override
-    public ActiveInstancesWithErrorCountStep errorMessage(
-        final String errorMessage, final ContractPolicy.FieldPolicy<String> policy) {
+    public ActiveInstancesWithErrorCountStep errorMessage(final String errorMessage) {
       this.errorMessage = errorMessage;
-      this.errorMessagePolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep activeInstancesWithErrorCount(
-        final Long activeInstancesWithErrorCount, final ContractPolicy.FieldPolicy<Long> policy) {
+    public OptionalStep activeInstancesWithErrorCount(final Long activeInstancesWithErrorCount) {
       this.activeInstancesWithErrorCount = activeInstancesWithErrorCount;
-      this.activeInstancesWithErrorCountPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedIncidentProcessInstanceStatisticsByErrorStrictContract build() {
       return new GeneratedIncidentProcessInstanceStatisticsByErrorStrictContract(
-          applyRequiredPolicy(this.errorHashCode, this.errorHashCodePolicy, Fields.ERROR_HASH_CODE),
-          applyRequiredPolicy(this.errorMessage, this.errorMessagePolicy, Fields.ERROR_MESSAGE),
-          applyRequiredPolicy(
-              this.activeInstancesWithErrorCount,
-              this.activeInstancesWithErrorCountPolicy,
-              Fields.ACTIVE_INSTANCES_WITH_ERROR_COUNT));
+          this.errorHashCode, this.errorMessage, this.activeInstancesWithErrorCount);
     }
   }
 
   public interface ErrorHashCodeStep {
-    ErrorMessageStep errorHashCode(
-        final Integer errorHashCode, final ContractPolicy.FieldPolicy<Integer> policy);
+    ErrorMessageStep errorHashCode(final Integer errorHashCode);
   }
 
   public interface ErrorMessageStep {
-    ActiveInstancesWithErrorCountStep errorMessage(
-        final String errorMessage, final ContractPolicy.FieldPolicy<String> policy);
+    ActiveInstancesWithErrorCountStep errorMessage(final String errorMessage);
   }
 
   public interface ActiveInstancesWithErrorCountStep {
-    OptionalStep activeInstancesWithErrorCount(
-        final Long activeInstancesWithErrorCount, final ContractPolicy.FieldPolicy<Long> policy);
+    OptionalStep activeInstancesWithErrorCount(final Long activeInstancesWithErrorCount);
   }
 
   public interface OptionalStep {

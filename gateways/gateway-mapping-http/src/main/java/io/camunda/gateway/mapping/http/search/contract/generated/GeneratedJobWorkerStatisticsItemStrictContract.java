@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobWorkerStatisticsItemStrictContract(
     String worker,
@@ -64,14 +66,6 @@ public record GeneratedJobWorkerStatisticsItemStrictContract(
             + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static WorkerStep builder() {
     return new Builder();
   }
@@ -79,73 +73,60 @@ public record GeneratedJobWorkerStatisticsItemStrictContract(
   public static final class Builder
       implements WorkerStep, CreatedStep, CompletedStep, FailedStep, OptionalStep {
     private String worker;
-    private ContractPolicy.FieldPolicy<String> workerPolicy;
     private Object created;
-    private ContractPolicy.FieldPolicy<Object> createdPolicy;
     private Object completed;
-    private ContractPolicy.FieldPolicy<Object> completedPolicy;
     private Object failed;
-    private ContractPolicy.FieldPolicy<Object> failedPolicy;
 
     private Builder() {}
 
     @Override
-    public CreatedStep worker(
-        final String worker, final ContractPolicy.FieldPolicy<String> policy) {
+    public CreatedStep worker(final String worker) {
       this.worker = worker;
-      this.workerPolicy = policy;
       return this;
     }
 
     @Override
-    public CompletedStep created(
-        final Object created, final ContractPolicy.FieldPolicy<Object> policy) {
+    public CompletedStep created(final Object created) {
       this.created = created;
-      this.createdPolicy = policy;
       return this;
     }
 
     @Override
-    public FailedStep completed(
-        final Object completed, final ContractPolicy.FieldPolicy<Object> policy) {
+    public FailedStep completed(final Object completed) {
       this.completed = completed;
-      this.completedPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep failed(
-        final Object failed, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep failed(final Object failed) {
       this.failed = failed;
-      this.failedPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedJobWorkerStatisticsItemStrictContract build() {
       return new GeneratedJobWorkerStatisticsItemStrictContract(
-          applyRequiredPolicy(this.worker, this.workerPolicy, Fields.WORKER),
-          coerceCreated(applyRequiredPolicy(this.created, this.createdPolicy, Fields.CREATED)),
-          coerceCompleted(
-              applyRequiredPolicy(this.completed, this.completedPolicy, Fields.COMPLETED)),
-          coerceFailed(applyRequiredPolicy(this.failed, this.failedPolicy, Fields.FAILED)));
+          this.worker,
+          coerceCreated(this.created),
+          coerceCompleted(this.completed),
+          coerceFailed(this.failed));
     }
   }
 
   public interface WorkerStep {
-    CreatedStep worker(final String worker, final ContractPolicy.FieldPolicy<String> policy);
+    CreatedStep worker(final String worker);
   }
 
   public interface CreatedStep {
-    CompletedStep created(final Object created, final ContractPolicy.FieldPolicy<Object> policy);
+    CompletedStep created(final Object created);
   }
 
   public interface CompletedStep {
-    FailedStep completed(final Object completed, final ContractPolicy.FieldPolicy<Object> policy);
+    FailedStep completed(final Object completed);
   }
 
   public interface FailedStep {
-    OptionalStep failed(final Object failed, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep failed(final Object failed);
   }
 
   public interface OptionalStep {

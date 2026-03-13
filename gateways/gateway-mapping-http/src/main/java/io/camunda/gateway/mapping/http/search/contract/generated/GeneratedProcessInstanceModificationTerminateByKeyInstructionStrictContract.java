@@ -11,7 +11,9 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessInstanceModificationTerminateByKeyInstructionStrictContract(
     String elementInstanceKey) {
@@ -35,46 +37,30 @@ public record GeneratedProcessInstanceModificationTerminateByKeyInstructionStric
         "elementInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ElementInstanceKeyStep builder() {
     return new Builder();
   }
 
   public static final class Builder implements ElementInstanceKeyStep, OptionalStep {
     private Object elementInstanceKey;
-    private ContractPolicy.FieldPolicy<Object> elementInstanceKeyPolicy;
 
     private Builder() {}
 
     @Override
-    public OptionalStep elementInstanceKey(
-        final Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep elementInstanceKey(final Object elementInstanceKey) {
       this.elementInstanceKey = elementInstanceKey;
-      this.elementInstanceKeyPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedProcessInstanceModificationTerminateByKeyInstructionStrictContract build() {
       return new GeneratedProcessInstanceModificationTerminateByKeyInstructionStrictContract(
-          coerceElementInstanceKey(
-              applyRequiredPolicy(
-                  this.elementInstanceKey,
-                  this.elementInstanceKeyPolicy,
-                  Fields.ELEMENT_INSTANCE_KEY)));
+          coerceElementInstanceKey(this.elementInstanceKey));
     }
   }
 
   public interface ElementInstanceKeyStep {
-    OptionalStep elementInstanceKey(
-        final Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep elementInstanceKey(final Object elementInstanceKey);
   }
 
   public interface OptionalStep {

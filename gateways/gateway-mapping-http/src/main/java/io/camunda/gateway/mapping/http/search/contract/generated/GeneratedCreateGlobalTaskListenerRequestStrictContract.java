@@ -10,20 +10,14 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedCreateGlobalTaskListenerRequestStrictContract(String id) {
 
   public GeneratedCreateGlobalTaskListenerRequestStrictContract {
     Objects.requireNonNull(id, "id is required and must not be null");
-  }
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
   }
 
   public static IdStep builder() {
@@ -32,26 +26,23 @@ public record GeneratedCreateGlobalTaskListenerRequestStrictContract(String id) 
 
   public static final class Builder implements IdStep, OptionalStep {
     private String id;
-    private ContractPolicy.FieldPolicy<String> idPolicy;
 
     private Builder() {}
 
     @Override
-    public OptionalStep id(final String id, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep id(final String id) {
       this.id = id;
-      this.idPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedCreateGlobalTaskListenerRequestStrictContract build() {
-      return new GeneratedCreateGlobalTaskListenerRequestStrictContract(
-          applyRequiredPolicy(this.id, this.idPolicy, Fields.ID));
+      return new GeneratedCreateGlobalTaskListenerRequestStrictContract(this.id);
     }
   }
 
   public interface IdStep {
-    OptionalStep id(final String id, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep id(final String id);
   }
 
   public interface OptionalStep {

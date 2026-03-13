@@ -9,19 +9,13 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobCompletionRequestStrictContract(
-    @Nullable java.util.Map<String, Object> variables, @Nullable Object result) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
+    java.util.@Nullable Map<String, Object> variables, @Nullable Object result) {
 
   public static OptionalStep builder() {
     return new Builder();
@@ -34,28 +28,28 @@ public record GeneratedJobCompletionRequestStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep variables(final java.util.Map<String, Object> variables) {
+    public OptionalStep variables(final java.util.@Nullable Map<String, Object> variables) {
       this.variables = variables;
       return this;
     }
 
     @Override
     public OptionalStep variables(
-        final java.util.Map<String, Object> variables,
+        final java.util.@Nullable Map<String, Object> variables,
         final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy) {
       this.variables = policy.apply(variables, Fields.VARIABLES, null);
       return this;
     }
 
     @Override
-    public OptionalStep result(final Object result) {
+    public OptionalStep result(final @Nullable Object result) {
       this.result = result;
       return this;
     }
 
     @Override
     public OptionalStep result(
-        final Object result, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object result, final ContractPolicy.FieldPolicy<Object> policy) {
       this.result = policy.apply(result, Fields.RESULT, null);
       return this;
     }
@@ -67,15 +61,16 @@ public record GeneratedJobCompletionRequestStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep variables(final java.util.Map<String, Object> variables);
+    OptionalStep variables(final java.util.@Nullable Map<String, Object> variables);
 
     OptionalStep variables(
-        final java.util.Map<String, Object> variables,
+        final java.util.@Nullable Map<String, Object> variables,
         final ContractPolicy.FieldPolicy<java.util.Map<String, Object>> policy);
 
-    OptionalStep result(final Object result);
+    OptionalStep result(final @Nullable Object result);
 
-    OptionalStep result(final Object result, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep result(
+        final @Nullable Object result, final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedJobCompletionRequestStrictContract build();
   }

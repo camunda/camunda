@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobMetricsConfigurationResponseStrictContract(
     Boolean enabled,
@@ -30,14 +32,6 @@ public record GeneratedJobMetricsConfigurationResponseStrictContract(
     Objects.requireNonNull(maxUniqueKeys, "maxUniqueKeys is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static EnabledStep builder() {
     return new Builder();
   }
@@ -51,115 +45,84 @@ public record GeneratedJobMetricsConfigurationResponseStrictContract(
           MaxUniqueKeysStep,
           OptionalStep {
     private Boolean enabled;
-    private ContractPolicy.FieldPolicy<Boolean> enabledPolicy;
     private String exportInterval;
-    private ContractPolicy.FieldPolicy<String> exportIntervalPolicy;
     private Integer maxWorkerNameLength;
-    private ContractPolicy.FieldPolicy<Integer> maxWorkerNameLengthPolicy;
     private Integer maxJobTypeLength;
-    private ContractPolicy.FieldPolicy<Integer> maxJobTypeLengthPolicy;
     private Integer maxTenantIdLength;
-    private ContractPolicy.FieldPolicy<Integer> maxTenantIdLengthPolicy;
     private Integer maxUniqueKeys;
-    private ContractPolicy.FieldPolicy<Integer> maxUniqueKeysPolicy;
 
     private Builder() {}
 
     @Override
-    public ExportIntervalStep enabled(
-        final Boolean enabled, final ContractPolicy.FieldPolicy<Boolean> policy) {
+    public ExportIntervalStep enabled(final Boolean enabled) {
       this.enabled = enabled;
-      this.enabledPolicy = policy;
       return this;
     }
 
     @Override
-    public MaxWorkerNameLengthStep exportInterval(
-        final String exportInterval, final ContractPolicy.FieldPolicy<String> policy) {
+    public MaxWorkerNameLengthStep exportInterval(final String exportInterval) {
       this.exportInterval = exportInterval;
-      this.exportIntervalPolicy = policy;
       return this;
     }
 
     @Override
-    public MaxJobTypeLengthStep maxWorkerNameLength(
-        final Integer maxWorkerNameLength, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public MaxJobTypeLengthStep maxWorkerNameLength(final Integer maxWorkerNameLength) {
       this.maxWorkerNameLength = maxWorkerNameLength;
-      this.maxWorkerNameLengthPolicy = policy;
       return this;
     }
 
     @Override
-    public MaxTenantIdLengthStep maxJobTypeLength(
-        final Integer maxJobTypeLength, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public MaxTenantIdLengthStep maxJobTypeLength(final Integer maxJobTypeLength) {
       this.maxJobTypeLength = maxJobTypeLength;
-      this.maxJobTypeLengthPolicy = policy;
       return this;
     }
 
     @Override
-    public MaxUniqueKeysStep maxTenantIdLength(
-        final Integer maxTenantIdLength, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public MaxUniqueKeysStep maxTenantIdLength(final Integer maxTenantIdLength) {
       this.maxTenantIdLength = maxTenantIdLength;
-      this.maxTenantIdLengthPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep maxUniqueKeys(
-        final Integer maxUniqueKeys, final ContractPolicy.FieldPolicy<Integer> policy) {
+    public OptionalStep maxUniqueKeys(final Integer maxUniqueKeys) {
       this.maxUniqueKeys = maxUniqueKeys;
-      this.maxUniqueKeysPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedJobMetricsConfigurationResponseStrictContract build() {
       return new GeneratedJobMetricsConfigurationResponseStrictContract(
-          applyRequiredPolicy(this.enabled, this.enabledPolicy, Fields.ENABLED),
-          applyRequiredPolicy(
-              this.exportInterval, this.exportIntervalPolicy, Fields.EXPORT_INTERVAL),
-          applyRequiredPolicy(
-              this.maxWorkerNameLength,
-              this.maxWorkerNameLengthPolicy,
-              Fields.MAX_WORKER_NAME_LENGTH),
-          applyRequiredPolicy(
-              this.maxJobTypeLength, this.maxJobTypeLengthPolicy, Fields.MAX_JOB_TYPE_LENGTH),
-          applyRequiredPolicy(
-              this.maxTenantIdLength, this.maxTenantIdLengthPolicy, Fields.MAX_TENANT_ID_LENGTH),
-          applyRequiredPolicy(
-              this.maxUniqueKeys, this.maxUniqueKeysPolicy, Fields.MAX_UNIQUE_KEYS));
+          this.enabled,
+          this.exportInterval,
+          this.maxWorkerNameLength,
+          this.maxJobTypeLength,
+          this.maxTenantIdLength,
+          this.maxUniqueKeys);
     }
   }
 
   public interface EnabledStep {
-    ExportIntervalStep enabled(
-        final Boolean enabled, final ContractPolicy.FieldPolicy<Boolean> policy);
+    ExportIntervalStep enabled(final Boolean enabled);
   }
 
   public interface ExportIntervalStep {
-    MaxWorkerNameLengthStep exportInterval(
-        final String exportInterval, final ContractPolicy.FieldPolicy<String> policy);
+    MaxWorkerNameLengthStep exportInterval(final String exportInterval);
   }
 
   public interface MaxWorkerNameLengthStep {
-    MaxJobTypeLengthStep maxWorkerNameLength(
-        final Integer maxWorkerNameLength, final ContractPolicy.FieldPolicy<Integer> policy);
+    MaxJobTypeLengthStep maxWorkerNameLength(final Integer maxWorkerNameLength);
   }
 
   public interface MaxJobTypeLengthStep {
-    MaxTenantIdLengthStep maxJobTypeLength(
-        final Integer maxJobTypeLength, final ContractPolicy.FieldPolicy<Integer> policy);
+    MaxTenantIdLengthStep maxJobTypeLength(final Integer maxJobTypeLength);
   }
 
   public interface MaxTenantIdLengthStep {
-    MaxUniqueKeysStep maxTenantIdLength(
-        final Integer maxTenantIdLength, final ContractPolicy.FieldPolicy<Integer> policy);
+    MaxUniqueKeysStep maxTenantIdLength(final Integer maxTenantIdLength);
   }
 
   public interface MaxUniqueKeysStep {
-    OptionalStep maxUniqueKeys(
-        final Integer maxUniqueKeys, final ContractPolicy.FieldPolicy<Integer> policy);
+    OptionalStep maxUniqueKeys(final Integer maxUniqueKeys);
   }
 
   public interface OptionalStep {

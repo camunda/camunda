@@ -9,8 +9,10 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedJobFilterStrictContract(
     @Nullable Object deadline,
@@ -35,14 +37,6 @@ public record GeneratedJobFilterStrictContract(
     @Nullable Object worker,
     @Nullable Object creationTime,
     @Nullable Object lastUpdateTime) {
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
 
   public static OptionalStep builder() {
     return new Builder();
@@ -75,287 +69,295 @@ public record GeneratedJobFilterStrictContract(
     private Builder() {}
 
     @Override
-    public OptionalStep deadline(final Object deadline) {
+    public OptionalStep deadline(final @Nullable Object deadline) {
       this.deadline = deadline;
       return this;
     }
 
     @Override
     public OptionalStep deadline(
-        final Object deadline, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object deadline, final ContractPolicy.FieldPolicy<Object> policy) {
       this.deadline = policy.apply(deadline, Fields.DEADLINE, null);
       return this;
     }
 
     @Override
-    public OptionalStep deniedReason(final Object deniedReason) {
+    public OptionalStep deniedReason(final @Nullable Object deniedReason) {
       this.deniedReason = deniedReason;
       return this;
     }
 
     @Override
     public OptionalStep deniedReason(
-        final Object deniedReason, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object deniedReason, final ContractPolicy.FieldPolicy<Object> policy) {
       this.deniedReason = policy.apply(deniedReason, Fields.DENIED_REASON, null);
       return this;
     }
 
     @Override
-    public OptionalStep elementId(final Object elementId) {
+    public OptionalStep elementId(final @Nullable Object elementId) {
       this.elementId = elementId;
       return this;
     }
 
     @Override
     public OptionalStep elementId(
-        final Object elementId, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object elementId, final ContractPolicy.FieldPolicy<Object> policy) {
       this.elementId = policy.apply(elementId, Fields.ELEMENT_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep elementInstanceKey(final Object elementInstanceKey) {
+    public OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey) {
       this.elementInstanceKey = elementInstanceKey;
       return this;
     }
 
     @Override
     public OptionalStep elementInstanceKey(
-        final Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object elementInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.elementInstanceKey = policy.apply(elementInstanceKey, Fields.ELEMENT_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep endTime(final Object endTime) {
+    public OptionalStep endTime(final @Nullable Object endTime) {
       this.endTime = endTime;
       return this;
     }
 
     @Override
     public OptionalStep endTime(
-        final Object endTime, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object endTime, final ContractPolicy.FieldPolicy<Object> policy) {
       this.endTime = policy.apply(endTime, Fields.END_TIME, null);
       return this;
     }
 
     @Override
-    public OptionalStep errorCode(final Object errorCode) {
+    public OptionalStep errorCode(final @Nullable Object errorCode) {
       this.errorCode = errorCode;
       return this;
     }
 
     @Override
     public OptionalStep errorCode(
-        final Object errorCode, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object errorCode, final ContractPolicy.FieldPolicy<Object> policy) {
       this.errorCode = policy.apply(errorCode, Fields.ERROR_CODE, null);
       return this;
     }
 
     @Override
-    public OptionalStep errorMessage(final Object errorMessage) {
+    public OptionalStep errorMessage(final @Nullable Object errorMessage) {
       this.errorMessage = errorMessage;
       return this;
     }
 
     @Override
     public OptionalStep errorMessage(
-        final Object errorMessage, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object errorMessage, final ContractPolicy.FieldPolicy<Object> policy) {
       this.errorMessage = policy.apply(errorMessage, Fields.ERROR_MESSAGE, null);
       return this;
     }
 
     @Override
-    public OptionalStep hasFailedWithRetriesLeft(final Boolean hasFailedWithRetriesLeft) {
+    public OptionalStep hasFailedWithRetriesLeft(final @Nullable Boolean hasFailedWithRetriesLeft) {
       this.hasFailedWithRetriesLeft = hasFailedWithRetriesLeft;
       return this;
     }
 
     @Override
     public OptionalStep hasFailedWithRetriesLeft(
-        final Boolean hasFailedWithRetriesLeft, final ContractPolicy.FieldPolicy<Boolean> policy) {
+        final @Nullable Boolean hasFailedWithRetriesLeft,
+        final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.hasFailedWithRetriesLeft =
           policy.apply(hasFailedWithRetriesLeft, Fields.HAS_FAILED_WITH_RETRIES_LEFT, null);
       return this;
     }
 
     @Override
-    public OptionalStep isDenied(final Boolean isDenied) {
+    public OptionalStep isDenied(final @Nullable Boolean isDenied) {
       this.isDenied = isDenied;
       return this;
     }
 
     @Override
     public OptionalStep isDenied(
-        final Boolean isDenied, final ContractPolicy.FieldPolicy<Boolean> policy) {
+        final @Nullable Boolean isDenied, final ContractPolicy.FieldPolicy<Boolean> policy) {
       this.isDenied = policy.apply(isDenied, Fields.IS_DENIED, null);
       return this;
     }
 
     @Override
-    public OptionalStep jobKey(final Object jobKey) {
+    public OptionalStep jobKey(final @Nullable Object jobKey) {
       this.jobKey = jobKey;
       return this;
     }
 
     @Override
     public OptionalStep jobKey(
-        final Object jobKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object jobKey, final ContractPolicy.FieldPolicy<Object> policy) {
       this.jobKey = policy.apply(jobKey, Fields.JOB_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep kind(final Object kind) {
+    public OptionalStep kind(final @Nullable Object kind) {
       this.kind = kind;
       return this;
     }
 
     @Override
-    public OptionalStep kind(final Object kind, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep kind(
+        final @Nullable Object kind, final ContractPolicy.FieldPolicy<Object> policy) {
       this.kind = policy.apply(kind, Fields.KIND, null);
       return this;
     }
 
     @Override
-    public OptionalStep listenerEventType(final Object listenerEventType) {
+    public OptionalStep listenerEventType(final @Nullable Object listenerEventType) {
       this.listenerEventType = listenerEventType;
       return this;
     }
 
     @Override
     public OptionalStep listenerEventType(
-        final Object listenerEventType, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object listenerEventType, final ContractPolicy.FieldPolicy<Object> policy) {
       this.listenerEventType = policy.apply(listenerEventType, Fields.LISTENER_EVENT_TYPE, null);
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionId(final Object processDefinitionId) {
+    public OptionalStep processDefinitionId(final @Nullable Object processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
       return this;
     }
 
     @Override
     public OptionalStep processDefinitionId(
-        final Object processDefinitionId, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object processDefinitionId,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.processDefinitionId =
           policy.apply(processDefinitionId, Fields.PROCESS_DEFINITION_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep processDefinitionKey(final Object processDefinitionKey) {
+    public OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
       return this;
     }
 
     @Override
     public OptionalStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object processDefinitionKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.processDefinitionKey =
           policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep processInstanceKey(final Object processInstanceKey) {
+    public OptionalStep processInstanceKey(final @Nullable Object processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
       return this;
     }
 
     @Override
     public OptionalStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object processInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
       return this;
     }
 
     @Override
-    public OptionalStep retries(final Object retries) {
+    public OptionalStep retries(final @Nullable Object retries) {
       this.retries = retries;
       return this;
     }
 
     @Override
     public OptionalStep retries(
-        final Object retries, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object retries, final ContractPolicy.FieldPolicy<Object> policy) {
       this.retries = policy.apply(retries, Fields.RETRIES, null);
       return this;
     }
 
     @Override
-    public OptionalStep state(final Object state) {
+    public OptionalStep state(final @Nullable Object state) {
       this.state = state;
       return this;
     }
 
     @Override
-    public OptionalStep state(final Object state, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep state(
+        final @Nullable Object state, final ContractPolicy.FieldPolicy<Object> policy) {
       this.state = policy.apply(state, Fields.STATE, null);
       return this;
     }
 
     @Override
-    public OptionalStep tenantId(final Object tenantId) {
+    public OptionalStep tenantId(final @Nullable Object tenantId) {
       this.tenantId = tenantId;
       return this;
     }
 
     @Override
     public OptionalStep tenantId(
-        final Object tenantId, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy) {
       this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
       return this;
     }
 
     @Override
-    public OptionalStep type(final Object type) {
+    public OptionalStep type(final @Nullable Object type) {
       this.type = type;
       return this;
     }
 
     @Override
-    public OptionalStep type(final Object type, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep type(
+        final @Nullable Object type, final ContractPolicy.FieldPolicy<Object> policy) {
       this.type = policy.apply(type, Fields.TYPE, null);
       return this;
     }
 
     @Override
-    public OptionalStep worker(final Object worker) {
+    public OptionalStep worker(final @Nullable Object worker) {
       this.worker = worker;
       return this;
     }
 
     @Override
     public OptionalStep worker(
-        final Object worker, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object worker, final ContractPolicy.FieldPolicy<Object> policy) {
       this.worker = policy.apply(worker, Fields.WORKER, null);
       return this;
     }
 
     @Override
-    public OptionalStep creationTime(final Object creationTime) {
+    public OptionalStep creationTime(final @Nullable Object creationTime) {
       this.creationTime = creationTime;
       return this;
     }
 
     @Override
     public OptionalStep creationTime(
-        final Object creationTime, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object creationTime, final ContractPolicy.FieldPolicy<Object> policy) {
       this.creationTime = policy.apply(creationTime, Fields.CREATION_TIME, null);
       return this;
     }
 
     @Override
-    public OptionalStep lastUpdateTime(final Object lastUpdateTime) {
+    public OptionalStep lastUpdateTime(final @Nullable Object lastUpdateTime) {
       this.lastUpdateTime = lastUpdateTime;
       return this;
     }
 
     @Override
     public OptionalStep lastUpdateTime(
-        final Object lastUpdateTime, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object lastUpdateTime, final ContractPolicy.FieldPolicy<Object> policy) {
       this.lastUpdateTime = policy.apply(lastUpdateTime, Fields.LAST_UPDATE_TIME, null);
       return this;
     }
@@ -389,103 +391,116 @@ public record GeneratedJobFilterStrictContract(
   }
 
   public interface OptionalStep {
-    OptionalStep deadline(final Object deadline);
+    OptionalStep deadline(final @Nullable Object deadline);
 
-    OptionalStep deadline(final Object deadline, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep deadline(
+        final @Nullable Object deadline, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep deniedReason(final Object deniedReason);
+    OptionalStep deniedReason(final @Nullable Object deniedReason);
 
     OptionalStep deniedReason(
-        final Object deniedReason, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object deniedReason, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep elementId(final Object elementId);
+    OptionalStep elementId(final @Nullable Object elementId);
 
-    OptionalStep elementId(final Object elementId, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep elementId(
+        final @Nullable Object elementId, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep elementInstanceKey(final Object elementInstanceKey);
+    OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey);
 
     OptionalStep elementInstanceKey(
-        final Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep endTime(final Object endTime);
+    OptionalStep endTime(final @Nullable Object endTime);
 
-    OptionalStep endTime(final Object endTime, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep endTime(
+        final @Nullable Object endTime, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep errorCode(final Object errorCode);
+    OptionalStep errorCode(final @Nullable Object errorCode);
 
-    OptionalStep errorCode(final Object errorCode, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep errorCode(
+        final @Nullable Object errorCode, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep errorMessage(final Object errorMessage);
+    OptionalStep errorMessage(final @Nullable Object errorMessage);
 
     OptionalStep errorMessage(
-        final Object errorMessage, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object errorMessage, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep hasFailedWithRetriesLeft(final Boolean hasFailedWithRetriesLeft);
+    OptionalStep hasFailedWithRetriesLeft(final @Nullable Boolean hasFailedWithRetriesLeft);
 
     OptionalStep hasFailedWithRetriesLeft(
-        final Boolean hasFailedWithRetriesLeft, final ContractPolicy.FieldPolicy<Boolean> policy);
+        final @Nullable Boolean hasFailedWithRetriesLeft,
+        final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep isDenied(final Boolean isDenied);
+    OptionalStep isDenied(final @Nullable Boolean isDenied);
 
-    OptionalStep isDenied(final Boolean isDenied, final ContractPolicy.FieldPolicy<Boolean> policy);
+    OptionalStep isDenied(
+        final @Nullable Boolean isDenied, final ContractPolicy.FieldPolicy<Boolean> policy);
 
-    OptionalStep jobKey(final Object jobKey);
+    OptionalStep jobKey(final @Nullable Object jobKey);
 
-    OptionalStep jobKey(final Object jobKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep jobKey(
+        final @Nullable Object jobKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep kind(final Object kind);
+    OptionalStep kind(final @Nullable Object kind);
 
-    OptionalStep kind(final Object kind, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep kind(final @Nullable Object kind, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep listenerEventType(final Object listenerEventType);
+    OptionalStep listenerEventType(final @Nullable Object listenerEventType);
 
     OptionalStep listenerEventType(
-        final Object listenerEventType, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object listenerEventType, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processDefinitionId(final Object processDefinitionId);
+    OptionalStep processDefinitionId(final @Nullable Object processDefinitionId);
 
     OptionalStep processDefinitionId(
-        final Object processDefinitionId, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object processDefinitionId,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processDefinitionKey(final Object processDefinitionKey);
+    OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey);
 
     OptionalStep processDefinitionKey(
-        final Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object processDefinitionKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep processInstanceKey(final Object processInstanceKey);
+    OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
 
     OptionalStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep retries(final Object retries);
+    OptionalStep retries(final @Nullable Object retries);
 
-    OptionalStep retries(final Object retries, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep retries(
+        final @Nullable Object retries, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep state(final Object state);
+    OptionalStep state(final @Nullable Object state);
 
-    OptionalStep state(final Object state, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep state(
+        final @Nullable Object state, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep tenantId(final Object tenantId);
+    OptionalStep tenantId(final @Nullable Object tenantId);
 
-    OptionalStep tenantId(final Object tenantId, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep tenantId(
+        final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep type(final Object type);
+    OptionalStep type(final @Nullable Object type);
 
-    OptionalStep type(final Object type, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep type(final @Nullable Object type, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep worker(final Object worker);
+    OptionalStep worker(final @Nullable Object worker);
 
-    OptionalStep worker(final Object worker, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep worker(
+        final @Nullable Object worker, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep creationTime(final Object creationTime);
+    OptionalStep creationTime(final @Nullable Object creationTime);
 
     OptionalStep creationTime(
-        final Object creationTime, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object creationTime, final ContractPolicy.FieldPolicy<Object> policy);
 
-    OptionalStep lastUpdateTime(final Object lastUpdateTime);
+    OptionalStep lastUpdateTime(final @Nullable Object lastUpdateTime);
 
     OptionalStep lastUpdateTime(
-        final Object lastUpdateTime, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable Object lastUpdateTime, final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedJobFilterStrictContract build();
   }

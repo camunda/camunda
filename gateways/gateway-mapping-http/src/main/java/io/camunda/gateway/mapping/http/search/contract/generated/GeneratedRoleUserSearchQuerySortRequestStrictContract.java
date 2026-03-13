@@ -10,22 +10,16 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedRoleUserSearchQuerySortRequestStrictContract(
-    String field, @Nullable io.camunda.gateway.protocol.model.SortOrderEnum order) {
+    String field, io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order) {
 
   public GeneratedRoleUserSearchQuerySortRequestStrictContract {
     Objects.requireNonNull(field, "field is required and must not be null");
-  }
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
   }
 
   public static FieldStep builder() {
@@ -34,27 +28,26 @@ public record GeneratedRoleUserSearchQuerySortRequestStrictContract(
 
   public static final class Builder implements FieldStep, OptionalStep {
     private String field;
-    private ContractPolicy.FieldPolicy<String> fieldPolicy;
     private io.camunda.gateway.protocol.model.SortOrderEnum order;
 
     private Builder() {}
 
     @Override
-    public OptionalStep field(final String field, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep field(final String field) {
       this.field = field;
-      this.fieldPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep order(final io.camunda.gateway.protocol.model.SortOrderEnum order) {
+    public OptionalStep order(
+        final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order) {
       this.order = order;
       return this;
     }
 
     @Override
     public OptionalStep order(
-        final io.camunda.gateway.protocol.model.SortOrderEnum order,
+        final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.SortOrderEnum> policy) {
       this.order = policy.apply(order, Fields.ORDER, null);
       return this;
@@ -62,20 +55,19 @@ public record GeneratedRoleUserSearchQuerySortRequestStrictContract(
 
     @Override
     public GeneratedRoleUserSearchQuerySortRequestStrictContract build() {
-      return new GeneratedRoleUserSearchQuerySortRequestStrictContract(
-          applyRequiredPolicy(this.field, this.fieldPolicy, Fields.FIELD), this.order);
+      return new GeneratedRoleUserSearchQuerySortRequestStrictContract(this.field, this.order);
     }
   }
 
   public interface FieldStep {
-    OptionalStep field(final String field, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep field(final String field);
   }
 
   public interface OptionalStep {
-    OptionalStep order(final io.camunda.gateway.protocol.model.SortOrderEnum order);
+    OptionalStep order(final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order);
 
     OptionalStep order(
-        final io.camunda.gateway.protocol.model.SortOrderEnum order,
+        final io.camunda.gateway.protocol.model.@Nullable SortOrderEnum order,
         final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.SortOrderEnum> policy);
 
     GeneratedRoleUserSearchQuerySortRequestStrictContract build();

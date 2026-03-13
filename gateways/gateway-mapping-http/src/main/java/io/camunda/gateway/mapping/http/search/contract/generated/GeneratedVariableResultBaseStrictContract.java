@@ -11,8 +11,10 @@ import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedVariableResultBaseStrictContract(
     String name,
@@ -87,14 +89,6 @@ public record GeneratedVariableResultBaseStrictContract(
         "rootProcessInstanceKey must be a String or Number, but was " + value.getClass().getName());
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static NameStep builder() {
     return new Builder();
   }
@@ -107,72 +101,59 @@ public record GeneratedVariableResultBaseStrictContract(
           ProcessInstanceKeyStep,
           OptionalStep {
     private String name;
-    private ContractPolicy.FieldPolicy<String> namePolicy;
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
     private Object variableKey;
-    private ContractPolicy.FieldPolicy<Object> variableKeyPolicy;
     private Object scopeKey;
-    private ContractPolicy.FieldPolicy<Object> scopeKeyPolicy;
     private Object processInstanceKey;
-    private ContractPolicy.FieldPolicy<Object> processInstanceKeyPolicy;
     private Object rootProcessInstanceKey;
 
     private Builder() {}
 
     @Override
-    public TenantIdStep name(final String name, final ContractPolicy.FieldPolicy<String> policy) {
+    public TenantIdStep name(final String name) {
       this.name = name;
-      this.namePolicy = policy;
       return this;
     }
 
     @Override
-    public VariableKeyStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public VariableKeyStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
-    public ScopeKeyStep variableKey(
-        final Object variableKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ScopeKeyStep variableKey(final Object variableKey) {
       this.variableKey = variableKey;
-      this.variableKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public ProcessInstanceKeyStep scopeKey(
-        final Object scopeKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public ProcessInstanceKeyStep scopeKey(final Object scopeKey) {
       this.scopeKey = scopeKey;
-      this.scopeKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+    public OptionalStep processInstanceKey(final Object processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
-      this.processInstanceKeyPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(final String rootProcessInstanceKey) {
+    public OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey) {
       this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
     @Override
-    public OptionalStep rootProcessInstanceKey(final Object rootProcessInstanceKey) {
+    public OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey) {
       this.rootProcessInstanceKey = rootProcessInstanceKey;
       return this;
     }
 
     public Builder rootProcessInstanceKey(
-        final String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.rootProcessInstanceKey =
           policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
@@ -180,7 +161,8 @@ public record GeneratedVariableResultBaseStrictContract(
 
     @Override
     public OptionalStep rootProcessInstanceKey(
-        final Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy) {
       this.rootProcessInstanceKey =
           policy.apply(rootProcessInstanceKey, Fields.ROOT_PROCESS_INSTANCE_KEY, null);
       return this;
@@ -189,54 +171,47 @@ public record GeneratedVariableResultBaseStrictContract(
     @Override
     public GeneratedVariableResultBaseStrictContract build() {
       return new GeneratedVariableResultBaseStrictContract(
-          applyRequiredPolicy(this.name, this.namePolicy, Fields.NAME),
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID),
-          coerceVariableKey(
-              applyRequiredPolicy(this.variableKey, this.variableKeyPolicy, Fields.VARIABLE_KEY)),
-          coerceScopeKey(applyRequiredPolicy(this.scopeKey, this.scopeKeyPolicy, Fields.SCOPE_KEY)),
-          coerceProcessInstanceKey(
-              applyRequiredPolicy(
-                  this.processInstanceKey,
-                  this.processInstanceKeyPolicy,
-                  Fields.PROCESS_INSTANCE_KEY)),
+          this.name,
+          this.tenantId,
+          coerceVariableKey(this.variableKey),
+          coerceScopeKey(this.scopeKey),
+          coerceProcessInstanceKey(this.processInstanceKey),
           coerceRootProcessInstanceKey(this.rootProcessInstanceKey));
     }
   }
 
   public interface NameStep {
-    TenantIdStep name(final String name, final ContractPolicy.FieldPolicy<String> policy);
+    TenantIdStep name(final String name);
   }
 
   public interface TenantIdStep {
-    VariableKeyStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    VariableKeyStep tenantId(final String tenantId);
   }
 
   public interface VariableKeyStep {
-    ScopeKeyStep variableKey(
-        final Object variableKey, final ContractPolicy.FieldPolicy<Object> policy);
+    ScopeKeyStep variableKey(final Object variableKey);
   }
 
   public interface ScopeKeyStep {
-    ProcessInstanceKeyStep scopeKey(
-        final Object scopeKey, final ContractPolicy.FieldPolicy<Object> policy);
+    ProcessInstanceKeyStep scopeKey(final Object scopeKey);
   }
 
   public interface ProcessInstanceKeyStep {
-    OptionalStep processInstanceKey(
-        final Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+    OptionalStep processInstanceKey(final Object processInstanceKey);
   }
 
   public interface OptionalStep {
-    OptionalStep rootProcessInstanceKey(final String rootProcessInstanceKey);
+    OptionalStep rootProcessInstanceKey(final @Nullable String rootProcessInstanceKey);
 
-    OptionalStep rootProcessInstanceKey(final Object rootProcessInstanceKey);
-
-    OptionalStep rootProcessInstanceKey(
-        final String rootProcessInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep rootProcessInstanceKey(final @Nullable Object rootProcessInstanceKey);
 
     OptionalStep rootProcessInstanceKey(
-        final Object rootProcessInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+        final @Nullable String rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<String> policy);
+
+    OptionalStep rootProcessInstanceKey(
+        final @Nullable Object rootProcessInstanceKey,
+        final ContractPolicy.FieldPolicy<Object> policy);
 
     GeneratedVariableResultBaseStrictContract build();
   }

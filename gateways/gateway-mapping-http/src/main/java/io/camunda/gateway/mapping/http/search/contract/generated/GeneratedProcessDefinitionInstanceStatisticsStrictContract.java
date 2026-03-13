@@ -10,8 +10,10 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedProcessDefinitionInstanceStatisticsStrictContract(
     String processDefinitionId,
@@ -35,14 +37,6 @@ public record GeneratedProcessDefinitionInstanceStatisticsStrictContract(
         "activeInstancesWithIncidentCount is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static ProcessDefinitionIdStep builder() {
     return new Builder();
   }
@@ -55,70 +49,58 @@ public record GeneratedProcessDefinitionInstanceStatisticsStrictContract(
           ActiveInstancesWithIncidentCountStep,
           OptionalStep {
     private String processDefinitionId;
-    private ContractPolicy.FieldPolicy<String> processDefinitionIdPolicy;
     private String tenantId;
-    private ContractPolicy.FieldPolicy<String> tenantIdPolicy;
     private String latestProcessDefinitionName;
     private Boolean hasMultipleVersions;
-    private ContractPolicy.FieldPolicy<Boolean> hasMultipleVersionsPolicy;
     private Long activeInstancesWithoutIncidentCount;
-    private ContractPolicy.FieldPolicy<Long> activeInstancesWithoutIncidentCountPolicy;
     private Long activeInstancesWithIncidentCount;
-    private ContractPolicy.FieldPolicy<Long> activeInstancesWithIncidentCountPolicy;
 
     private Builder() {}
 
     @Override
-    public TenantIdStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+    public TenantIdStep processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
-      this.processDefinitionIdPolicy = policy;
       return this;
     }
 
     @Override
-    public HasMultipleVersionsStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy) {
+    public HasMultipleVersionsStep tenantId(final String tenantId) {
       this.tenantId = tenantId;
-      this.tenantIdPolicy = policy;
       return this;
     }
 
     @Override
     public ActiveInstancesWithoutIncidentCountStep hasMultipleVersions(
-        final Boolean hasMultipleVersions, final ContractPolicy.FieldPolicy<Boolean> policy) {
+        final Boolean hasMultipleVersions) {
       this.hasMultipleVersions = hasMultipleVersions;
-      this.hasMultipleVersionsPolicy = policy;
       return this;
     }
 
     @Override
     public ActiveInstancesWithIncidentCountStep activeInstancesWithoutIncidentCount(
-        final Long activeInstancesWithoutIncidentCount,
-        final ContractPolicy.FieldPolicy<Long> policy) {
+        final Long activeInstancesWithoutIncidentCount) {
       this.activeInstancesWithoutIncidentCount = activeInstancesWithoutIncidentCount;
-      this.activeInstancesWithoutIncidentCountPolicy = policy;
       return this;
     }
 
     @Override
     public OptionalStep activeInstancesWithIncidentCount(
-        final Long activeInstancesWithIncidentCount,
-        final ContractPolicy.FieldPolicy<Long> policy) {
+        final Long activeInstancesWithIncidentCount) {
       this.activeInstancesWithIncidentCount = activeInstancesWithIncidentCount;
-      this.activeInstancesWithIncidentCountPolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep latestProcessDefinitionName(final String latestProcessDefinitionName) {
+    public OptionalStep latestProcessDefinitionName(
+        final @Nullable String latestProcessDefinitionName) {
       this.latestProcessDefinitionName = latestProcessDefinitionName;
       return this;
     }
 
     @Override
     public OptionalStep latestProcessDefinitionName(
-        final String latestProcessDefinitionName, final ContractPolicy.FieldPolicy<String> policy) {
+        final @Nullable String latestProcessDefinitionName,
+        final ContractPolicy.FieldPolicy<String> policy) {
       this.latestProcessDefinitionName =
           policy.apply(latestProcessDefinitionName, Fields.LATEST_PROCESS_DEFINITION_NAME, null);
       return this;
@@ -127,58 +109,42 @@ public record GeneratedProcessDefinitionInstanceStatisticsStrictContract(
     @Override
     public GeneratedProcessDefinitionInstanceStatisticsStrictContract build() {
       return new GeneratedProcessDefinitionInstanceStatisticsStrictContract(
-          applyRequiredPolicy(
-              this.processDefinitionId,
-              this.processDefinitionIdPolicy,
-              Fields.PROCESS_DEFINITION_ID),
-          applyRequiredPolicy(this.tenantId, this.tenantIdPolicy, Fields.TENANT_ID),
+          this.processDefinitionId,
+          this.tenantId,
           this.latestProcessDefinitionName,
-          applyRequiredPolicy(
-              this.hasMultipleVersions,
-              this.hasMultipleVersionsPolicy,
-              Fields.HAS_MULTIPLE_VERSIONS),
-          applyRequiredPolicy(
-              this.activeInstancesWithoutIncidentCount,
-              this.activeInstancesWithoutIncidentCountPolicy,
-              Fields.ACTIVE_INSTANCES_WITHOUT_INCIDENT_COUNT),
-          applyRequiredPolicy(
-              this.activeInstancesWithIncidentCount,
-              this.activeInstancesWithIncidentCountPolicy,
-              Fields.ACTIVE_INSTANCES_WITH_INCIDENT_COUNT));
+          this.hasMultipleVersions,
+          this.activeInstancesWithoutIncidentCount,
+          this.activeInstancesWithIncidentCount);
     }
   }
 
   public interface ProcessDefinitionIdStep {
-    TenantIdStep processDefinitionId(
-        final String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+    TenantIdStep processDefinitionId(final String processDefinitionId);
   }
 
   public interface TenantIdStep {
-    HasMultipleVersionsStep tenantId(
-        final String tenantId, final ContractPolicy.FieldPolicy<String> policy);
+    HasMultipleVersionsStep tenantId(final String tenantId);
   }
 
   public interface HasMultipleVersionsStep {
-    ActiveInstancesWithoutIncidentCountStep hasMultipleVersions(
-        final Boolean hasMultipleVersions, final ContractPolicy.FieldPolicy<Boolean> policy);
+    ActiveInstancesWithoutIncidentCountStep hasMultipleVersions(final Boolean hasMultipleVersions);
   }
 
   public interface ActiveInstancesWithoutIncidentCountStep {
     ActiveInstancesWithIncidentCountStep activeInstancesWithoutIncidentCount(
-        final Long activeInstancesWithoutIncidentCount,
-        final ContractPolicy.FieldPolicy<Long> policy);
+        final Long activeInstancesWithoutIncidentCount);
   }
 
   public interface ActiveInstancesWithIncidentCountStep {
-    OptionalStep activeInstancesWithIncidentCount(
-        final Long activeInstancesWithIncidentCount, final ContractPolicy.FieldPolicy<Long> policy);
+    OptionalStep activeInstancesWithIncidentCount(final Long activeInstancesWithIncidentCount);
   }
 
   public interface OptionalStep {
-    OptionalStep latestProcessDefinitionName(final String latestProcessDefinitionName);
+    OptionalStep latestProcessDefinitionName(final @Nullable String latestProcessDefinitionName);
 
     OptionalStep latestProcessDefinitionName(
-        final String latestProcessDefinitionName, final ContractPolicy.FieldPolicy<String> policy);
+        final @Nullable String latestProcessDefinitionName,
+        final ContractPolicy.FieldPolicy<String> policy);
 
     GeneratedProcessDefinitionInstanceStatisticsStrictContract build();
   }

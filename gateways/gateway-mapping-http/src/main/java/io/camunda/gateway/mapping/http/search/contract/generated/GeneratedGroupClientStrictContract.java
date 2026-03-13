@@ -10,20 +10,14 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedGroupClientStrictContract(String clientId) {
 
   public GeneratedGroupClientStrictContract {
     Objects.requireNonNull(clientId, "clientId is required and must not be null");
-  }
-
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
   }
 
   public static ClientIdStep builder() {
@@ -32,27 +26,23 @@ public record GeneratedGroupClientStrictContract(String clientId) {
 
   public static final class Builder implements ClientIdStep, OptionalStep {
     private String clientId;
-    private ContractPolicy.FieldPolicy<String> clientIdPolicy;
 
     private Builder() {}
 
     @Override
-    public OptionalStep clientId(
-        final String clientId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep clientId(final String clientId) {
       this.clientId = clientId;
-      this.clientIdPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedGroupClientStrictContract build() {
-      return new GeneratedGroupClientStrictContract(
-          applyRequiredPolicy(this.clientId, this.clientIdPolicy, Fields.CLIENT_ID));
+      return new GeneratedGroupClientStrictContract(this.clientId);
     }
   }
 
   public interface ClientIdStep {
-    OptionalStep clientId(final String clientId, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep clientId(final String clientId);
   }
 
   public interface OptionalStep {

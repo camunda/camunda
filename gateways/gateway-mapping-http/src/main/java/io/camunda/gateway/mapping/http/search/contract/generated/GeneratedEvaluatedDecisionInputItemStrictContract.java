@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedEvaluatedDecisionInputItemStrictContract(
     String inputId, String inputName, String inputValue) {
@@ -21,14 +23,6 @@ public record GeneratedEvaluatedDecisionInputItemStrictContract(
     Objects.requireNonNull(inputValue, "inputValue is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static InputIdStep builder() {
     return new Builder();
   }
@@ -36,59 +30,46 @@ public record GeneratedEvaluatedDecisionInputItemStrictContract(
   public static final class Builder
       implements InputIdStep, InputNameStep, InputValueStep, OptionalStep {
     private String inputId;
-    private ContractPolicy.FieldPolicy<String> inputIdPolicy;
     private String inputName;
-    private ContractPolicy.FieldPolicy<String> inputNamePolicy;
     private String inputValue;
-    private ContractPolicy.FieldPolicy<String> inputValuePolicy;
 
     private Builder() {}
 
     @Override
-    public InputNameStep inputId(
-        final String inputId, final ContractPolicy.FieldPolicy<String> policy) {
+    public InputNameStep inputId(final String inputId) {
       this.inputId = inputId;
-      this.inputIdPolicy = policy;
       return this;
     }
 
     @Override
-    public InputValueStep inputName(
-        final String inputName, final ContractPolicy.FieldPolicy<String> policy) {
+    public InputValueStep inputName(final String inputName) {
       this.inputName = inputName;
-      this.inputNamePolicy = policy;
       return this;
     }
 
     @Override
-    public OptionalStep inputValue(
-        final String inputValue, final ContractPolicy.FieldPolicy<String> policy) {
+    public OptionalStep inputValue(final String inputValue) {
       this.inputValue = inputValue;
-      this.inputValuePolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedEvaluatedDecisionInputItemStrictContract build() {
       return new GeneratedEvaluatedDecisionInputItemStrictContract(
-          applyRequiredPolicy(this.inputId, this.inputIdPolicy, Fields.INPUT_ID),
-          applyRequiredPolicy(this.inputName, this.inputNamePolicy, Fields.INPUT_NAME),
-          applyRequiredPolicy(this.inputValue, this.inputValuePolicy, Fields.INPUT_VALUE));
+          this.inputId, this.inputName, this.inputValue);
     }
   }
 
   public interface InputIdStep {
-    InputNameStep inputId(final String inputId, final ContractPolicy.FieldPolicy<String> policy);
+    InputNameStep inputId(final String inputId);
   }
 
   public interface InputNameStep {
-    InputValueStep inputName(
-        final String inputName, final ContractPolicy.FieldPolicy<String> policy);
+    InputValueStep inputName(final String inputName);
   }
 
   public interface InputValueStep {
-    OptionalStep inputValue(
-        final String inputValue, final ContractPolicy.FieldPolicy<String> policy);
+    OptionalStep inputValue(final String inputValue);
   }
 
   public interface OptionalStep {

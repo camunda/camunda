@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedBatchOperationCreatedStrictContract(
     String batchOperationKey,
@@ -22,14 +24,6 @@ public record GeneratedBatchOperationCreatedStrictContract(
         batchOperationType, "batchOperationType is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static BatchOperationKeyStep builder() {
     return new Builder();
   }
@@ -37,51 +31,37 @@ public record GeneratedBatchOperationCreatedStrictContract(
   public static final class Builder
       implements BatchOperationKeyStep, BatchOperationTypeStep, OptionalStep {
     private String batchOperationKey;
-    private ContractPolicy.FieldPolicy<String> batchOperationKeyPolicy;
     private io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType;
-    private ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.BatchOperationTypeEnum>
-        batchOperationTypePolicy;
 
     private Builder() {}
 
     @Override
-    public BatchOperationTypeStep batchOperationKey(
-        final String batchOperationKey, final ContractPolicy.FieldPolicy<String> policy) {
+    public BatchOperationTypeStep batchOperationKey(final String batchOperationKey) {
       this.batchOperationKey = batchOperationKey;
-      this.batchOperationKeyPolicy = policy;
       return this;
     }
 
     @Override
     public OptionalStep batchOperationType(
-        final io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.BatchOperationTypeEnum>
-            policy) {
+        final io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType) {
       this.batchOperationType = batchOperationType;
-      this.batchOperationTypePolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedBatchOperationCreatedStrictContract build() {
       return new GeneratedBatchOperationCreatedStrictContract(
-          applyRequiredPolicy(
-              this.batchOperationKey, this.batchOperationKeyPolicy, Fields.BATCH_OPERATION_KEY),
-          applyRequiredPolicy(
-              this.batchOperationType, this.batchOperationTypePolicy, Fields.BATCH_OPERATION_TYPE));
+          this.batchOperationKey, this.batchOperationType);
     }
   }
 
   public interface BatchOperationKeyStep {
-    BatchOperationTypeStep batchOperationKey(
-        final String batchOperationKey, final ContractPolicy.FieldPolicy<String> policy);
+    BatchOperationTypeStep batchOperationKey(final String batchOperationKey);
   }
 
   public interface BatchOperationTypeStep {
     OptionalStep batchOperationType(
-        final io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.BatchOperationTypeEnum>
-            policy);
+        final io.camunda.gateway.protocol.model.BatchOperationTypeEnum batchOperationType);
   }
 
   public interface OptionalStep {

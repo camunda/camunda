@@ -10,7 +10,9 @@ package io.camunda.gateway.mapping.http.search.contract.generated;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
 import jakarta.annotation.Generated;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 @Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
 public record GeneratedAuthorizationPropertyBasedRequestStrictContract(
     String ownerId,
@@ -28,14 +30,6 @@ public record GeneratedAuthorizationPropertyBasedRequestStrictContract(
     Objects.requireNonNull(permissionTypes, "permissionTypes is required and must not be null");
   }
 
-  private static <T> T applyRequiredPolicy(
-      final T value,
-      final ContractPolicy.FieldPolicy<T> policy,
-      final ContractPolicy.FieldRef field) {
-    return java.util.Objects.requireNonNull(policy, field.fieldName() + " policy must not be null")
-        .apply(value, field, null);
-  }
-
   public static OwnerIdStep builder() {
     return new Builder();
   }
@@ -48,111 +42,79 @@ public record GeneratedAuthorizationPropertyBasedRequestStrictContract(
           PermissionTypesStep,
           OptionalStep {
     private String ownerId;
-    private ContractPolicy.FieldPolicy<String> ownerIdPolicy;
     private io.camunda.gateway.protocol.model.OwnerTypeEnum ownerType;
-    private ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.OwnerTypeEnum>
-        ownerTypePolicy;
     private String resourcePropertyName;
-    private ContractPolicy.FieldPolicy<String> resourcePropertyNamePolicy;
     private io.camunda.gateway.protocol.model.ResourceTypeEnum resourceType;
-    private ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ResourceTypeEnum>
-        resourceTypePolicy;
     private java.util.List<io.camunda.gateway.protocol.model.PermissionTypeEnum> permissionTypes;
-    private ContractPolicy.FieldPolicy<
-            java.util.List<io.camunda.gateway.protocol.model.PermissionTypeEnum>>
-        permissionTypesPolicy;
 
     private Builder() {}
 
     @Override
-    public OwnerTypeStep ownerId(
-        final String ownerId, final ContractPolicy.FieldPolicy<String> policy) {
+    public OwnerTypeStep ownerId(final String ownerId) {
       this.ownerId = ownerId;
-      this.ownerIdPolicy = policy;
       return this;
     }
 
     @Override
     public ResourcePropertyNameStep ownerType(
-        final io.camunda.gateway.protocol.model.OwnerTypeEnum ownerType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.OwnerTypeEnum> policy) {
+        final io.camunda.gateway.protocol.model.OwnerTypeEnum ownerType) {
       this.ownerType = ownerType;
-      this.ownerTypePolicy = policy;
       return this;
     }
 
     @Override
-    public ResourceTypeStep resourcePropertyName(
-        final String resourcePropertyName, final ContractPolicy.FieldPolicy<String> policy) {
+    public ResourceTypeStep resourcePropertyName(final String resourcePropertyName) {
       this.resourcePropertyName = resourcePropertyName;
-      this.resourcePropertyNamePolicy = policy;
       return this;
     }
 
     @Override
     public PermissionTypesStep resourceType(
-        final io.camunda.gateway.protocol.model.ResourceTypeEnum resourceType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ResourceTypeEnum>
-            policy) {
+        final io.camunda.gateway.protocol.model.ResourceTypeEnum resourceType) {
       this.resourceType = resourceType;
-      this.resourceTypePolicy = policy;
       return this;
     }
 
     @Override
     public OptionalStep permissionTypes(
-        final java.util.List<io.camunda.gateway.protocol.model.PermissionTypeEnum> permissionTypes,
-        final ContractPolicy.FieldPolicy<
-                java.util.List<io.camunda.gateway.protocol.model.PermissionTypeEnum>>
-            policy) {
+        final java.util.List<io.camunda.gateway.protocol.model.PermissionTypeEnum>
+            permissionTypes) {
       this.permissionTypes = permissionTypes;
-      this.permissionTypesPolicy = policy;
       return this;
     }
 
     @Override
     public GeneratedAuthorizationPropertyBasedRequestStrictContract build() {
       return new GeneratedAuthorizationPropertyBasedRequestStrictContract(
-          applyRequiredPolicy(this.ownerId, this.ownerIdPolicy, Fields.OWNER_ID),
-          applyRequiredPolicy(this.ownerType, this.ownerTypePolicy, Fields.OWNER_TYPE),
-          applyRequiredPolicy(
-              this.resourcePropertyName,
-              this.resourcePropertyNamePolicy,
-              Fields.RESOURCE_PROPERTY_NAME),
-          applyRequiredPolicy(this.resourceType, this.resourceTypePolicy, Fields.RESOURCE_TYPE),
-          applyRequiredPolicy(
-              this.permissionTypes, this.permissionTypesPolicy, Fields.PERMISSION_TYPES));
+          this.ownerId,
+          this.ownerType,
+          this.resourcePropertyName,
+          this.resourceType,
+          this.permissionTypes);
     }
   }
 
   public interface OwnerIdStep {
-    OwnerTypeStep ownerId(final String ownerId, final ContractPolicy.FieldPolicy<String> policy);
+    OwnerTypeStep ownerId(final String ownerId);
   }
 
   public interface OwnerTypeStep {
     ResourcePropertyNameStep ownerType(
-        final io.camunda.gateway.protocol.model.OwnerTypeEnum ownerType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.OwnerTypeEnum> policy);
+        final io.camunda.gateway.protocol.model.OwnerTypeEnum ownerType);
   }
 
   public interface ResourcePropertyNameStep {
-    ResourceTypeStep resourcePropertyName(
-        final String resourcePropertyName, final ContractPolicy.FieldPolicy<String> policy);
+    ResourceTypeStep resourcePropertyName(final String resourcePropertyName);
   }
 
   public interface ResourceTypeStep {
     PermissionTypesStep resourceType(
-        final io.camunda.gateway.protocol.model.ResourceTypeEnum resourceType,
-        final ContractPolicy.FieldPolicy<io.camunda.gateway.protocol.model.ResourceTypeEnum>
-            policy);
+        final io.camunda.gateway.protocol.model.ResourceTypeEnum resourceType);
   }
 
   public interface PermissionTypesStep {
     OptionalStep permissionTypes(
-        final java.util.List<io.camunda.gateway.protocol.model.PermissionTypeEnum> permissionTypes,
-        final ContractPolicy.FieldPolicy<
-                java.util.List<io.camunda.gateway.protocol.model.PermissionTypeEnum>>
-            policy);
+        final java.util.List<io.camunda.gateway.protocol.model.PermissionTypeEnum> permissionTypes);
   }
 
   public interface OptionalStep {

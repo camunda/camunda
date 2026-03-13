@@ -8,6 +8,7 @@
 package io.camunda.gateway.mapping.http.search.contract;
 
 import static io.camunda.gateway.mapping.http.ResponseMapper.formatDate;
+import static io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemResponseStrictContract.Fields;
 
 import io.camunda.gateway.mapping.http.search.contract.generated.GeneratedBatchOperationItemResponseStrictContract;
 import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
@@ -29,13 +30,22 @@ public final class BatchOperationItemResponseContractAdapter {
       final BatchOperationItemEntity entity) {
     return GeneratedBatchOperationItemResponseStrictContract.builder()
         .operationType(
-            ContractPolicy.mapEnum(entity.operationType(), BatchOperationTypeEnum::fromValue),
-            ContractPolicy.requiredNonNull())
-        .batchOperationKey(entity.batchOperationKey(), ContractPolicy.requiredNonNull())
-        .itemKey(KeyUtil.keyToString(entity.itemKey()), ContractPolicy.requiredNonNull())
-        .processInstanceKey(entity.processInstanceKey(), ContractPolicy.requiredNonNull())
+            ContractPolicy.requireNonNull(
+                ContractPolicy.mapEnum(entity.operationType(), BatchOperationTypeEnum::fromValue),
+                Fields.OPERATION_TYPE,
+                entity))
+        .batchOperationKey(
+            ContractPolicy.requireNonNull(
+                entity.batchOperationKey(), Fields.BATCH_OPERATION_KEY, entity))
+        .itemKey(
+            ContractPolicy.requireNonNull(
+                KeyUtil.keyToString(entity.itemKey()), Fields.ITEM_KEY, entity))
+        .processInstanceKey(
+            ContractPolicy.requireNonNull(
+                entity.processInstanceKey(), Fields.PROCESS_INSTANCE_KEY, entity))
         .state(
-            entity.state() != null ? entity.state().name() : null, ContractPolicy.requiredNonNull())
+            ContractPolicy.requireNonNull(
+                entity.state() != null ? entity.state().name() : null, Fields.STATE, entity))
         .rootProcessInstanceKey(entity.rootProcessInstanceKey())
         .processedDate(formatDate(entity.processedDate()))
         .errorMessage(entity.errorMessage())
