@@ -49,8 +49,8 @@ import org.slf4j.LoggerFactory;
  * @see PersistedBatchOperation
  */
 public class BatchOperationInitializationBehavior {
-  public static final String ERROR_MSG_FAILED_FIRST_CHUNK_APPEND =
-      "Unable to append first chunk of batch operation items. Number of items: %d";
+  private static final String ERROR_MSG_BUFFER_CAPACITY_EXCEEDED =
+      "Result buffer too small: cannot fit even a single item after reducing page size to minimum";
   private static final Logger LOG =
       LoggerFactory.getLogger(BatchOperationInitializationBehavior.class);
 
@@ -115,8 +115,7 @@ public class BatchOperationInitializationBehavior {
         startExecutionPhase(taskResultBuilder, context);
         yield new Success("finished");
       }
-      case BufferFull(final int itemCount) ->
-          handleFailedChunkAppend(taskResultBuilder, context, itemCount);
+      case BufferFull ignored -> handleFailedChunkAppend(taskResultBuilder, context);
       case FetchFailed(final var cause) -> {
         if (context.hasAppendedChunks()) {
           continueInitialization(taskResultBuilder, context);
@@ -131,9 +130,7 @@ public class BatchOperationInitializationBehavior {
   }
 
   private InitializationOutcome handleFailedChunkAppend(
-      final TaskResultBuilder taskResultBuilder,
-      final InitializationContext context,
-      final int itemCount) {
+      final TaskResultBuilder taskResultBuilder, final InitializationContext context) {
     if (!context.hasAppendedChunks()) {
       if (context.pageSize() > 1) {
         final var reducedContext = context.withHalvedPageSize();
@@ -141,7 +138,7 @@ public class BatchOperationInitializationBehavior {
         return new ReducePageSize(reducedContext.pageSize());
       } else {
         return new Failed(
-            String.format(ERROR_MSG_FAILED_FIRST_CHUNK_APPEND, itemCount),
+            ERROR_MSG_BUFFER_CAPACITY_EXCEEDED,
             BatchOperationErrorType.RESULT_BUFFER_SIZE_EXCEEDED);
       }
     } else {
