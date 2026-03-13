@@ -26,6 +26,12 @@ const TYPE_LABELS: Readonly<Record<BatchOperationType, OperationLabelType>> = {
   CANCEL_PROCESS_INSTANCE: 'Cancel',
   MODIFY_PROCESS_INSTANCE: 'Modify',
   MIGRATE_PROCESS_INSTANCE: 'Migrate',
+  DELETE_PROCESS_INSTANCE: 'Retry',
+  DELETE_DECISION_INSTANCE: 'Retry',
+  DELETE_DECISION_DEFINITION: 'Retry',
+  DELETE_PROCESS_DEFINITION: 'Retry',
+  ADD_VARIABLE: 'Retry',
+  UPDATE_VARIABLE: 'Retry',
 };
 
 type Props = {

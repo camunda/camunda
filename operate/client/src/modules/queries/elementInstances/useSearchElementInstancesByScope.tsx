@@ -21,7 +21,7 @@ const useSearchElementInstancesByScope = (
     queryFn: async ({pageParam}) => {
       const payload: QueryElementInstancesRequestBody = {
         filter: {
-          scopeKey,
+          elementInstanceScopeKey: scopeKey,
         },
         page: {
           limit: MAX_ELEMENT_INSTANCES_PER_REQUEST,
