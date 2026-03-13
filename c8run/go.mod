@@ -2,7 +2,7 @@ module github.com/camunda/camunda/c8run
 
 go 1.24.0
 
-toolchain go1.26.0
+toolchain go1.26.1
 
 require (
 	github.com/gofrs/flock v0.13.0
