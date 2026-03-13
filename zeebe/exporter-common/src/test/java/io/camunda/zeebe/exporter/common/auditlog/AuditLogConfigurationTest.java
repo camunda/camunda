@@ -38,11 +38,12 @@ class AuditLogConfigurationTest {
   }
 
   @Test
-  void shouldHaveDefaultUserAndClientConfigurations() {
+  void shouldHaveDefaultConfigurations() {
     final var config = new AuditLogConfiguration();
 
     assertThat(config.getUser()).isNotNull();
     assertThat(config.getClient()).isNotNull();
+    assertThat(config.getUnknown()).isNotNull();
     assertThat(config.getUser().getCategories())
         .as("User categories should include all categories by default")
         .containsExactlyInAnyOrder(
@@ -52,6 +53,9 @@ class AuditLogConfigurationTest {
     assertThat(config.getClient().getCategories())
         .as("Client categories should be empty by default (opt-in logging)")
         .isEmpty();
+    assertThat(config.getUnknown().getCategories())
+        .as("Unknown categories should be empty by default (opt-in logging)")
+        .isEmpty();
   }
 
   @Test
@@ -59,6 +63,7 @@ class AuditLogConfigurationTest {
     final var config = new AuditLogConfiguration();
     config.getUser().setCategories(Set.of());
     config.getClient().setCategories(Set.of());
+    config.getUnknown().setCategories(Set.of());
 
     assertThat(config.isEnabled()).isFalse();
   }
@@ -82,6 +87,16 @@ class AuditLogConfigurationTest {
   }
 
   @Test
+  void shouldBeEnabledWhenUnknownCategoryConfigured() {
+    final var config = new AuditLogConfiguration();
+    config.getUnknown().setCategories(Set.of(AuditLogOperationCategory.DEPLOYED_RESOURCES));
+    config.getUser().setCategories(Set.of());
+    config.getClient().setCategories(Set.of());
+
+    assertThat(config.isEnabled()).isTrue();
+  }
+
+  @Test
   void shouldBeDisabledForAnonymousActors() {
     final var config = new AuditLogConfiguration();
 
@@ -97,8 +112,27 @@ class AuditLogConfigurationTest {
   }
 
   @Test
-  void shouldBeEnabledForUnknownActors() {
+  void shouldBeDisabledForUnknownActorsByDefault() {
     final var config = new AuditLogConfiguration();
+
+    final var auditLog =
+        new AuditLogInfo(
+            AuditLogOperationCategory.DEPLOYED_RESOURCES,
+            AuditLogEntityType.PROCESS_INSTANCE,
+            AuditLogOperationType.MODIFY,
+            AuditLogActor.unknown(),
+            Optional.empty());
+
+    assertThat(config.isEnabled(auditLog)).isFalse();
+  }
+
+  @Test
+  void shouldBeEnabledForUnknownActorsWhenCategoryConfigured() {
+    final var config = new AuditLogConfiguration();
+    config
+        .getUnknown()
+        .setCategories(Set.of(AuditLogOperationCategory.DEPLOYED_RESOURCES))
+        .setExcludes(Set.of());
 
     final var auditLog =
         new AuditLogInfo(
