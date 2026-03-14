@@ -102,7 +102,7 @@
     "eslint-plugin-react-refresh": "0.5.2",
     "eslint-plugin-testing-library": "7.16.0",
     "globals": "17.4.0",
-    "jsdom": "26.1.0",
+    "jsdom": "28.1.0",
     "knip": "5.85.0",
     "monaco-editor": "0.55.1",
     "msw": "2.12.10",
