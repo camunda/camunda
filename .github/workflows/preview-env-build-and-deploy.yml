@@ -208,6 +208,7 @@ jobs:
           --name ${app_name} \
           --revision ${revision} \
           --helm-set git.branch=${revision} \
+          --helm-values .ci/preview-environments/charts/c8sm/orchestration-config-values.yaml \
           --upsert ${label_args} ${helm_extra}" >> "$GITHUB_ENV"
       env:
         docker_tag: pr-${{ github.event.pull_request.head.sha || github.sha }}
