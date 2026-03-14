@@ -6,7 +6,7 @@
   "dependencies": {
     "@bpmn-io/element-template-icon-renderer": "1.0.0",
     "@bpmn-io/form-js-carbon-styles": "1.19.0",
-    "@bpmn-io/form-js-viewer": "1.19.0",
+    "@bpmn-io/form-js-viewer": "1.21.0",
     "@camunda/camunda-api-zod-schemas": "0.0.49",
     "@camunda/camunda-composite-components": "0.22.1",
     "@carbon/elements": "11.85.0",
