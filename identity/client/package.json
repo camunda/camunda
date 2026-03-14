@@ -61,7 +61,7 @@
     "rollup": "4.59.0",
     "rollup-plugin-license": "^3.5.3",
     "rollup-plugin-sbom": "3.0.5",
-    "sass": "1.97.3",
+    "sass": "1.98.0",
     "typescript": "5.9.3",
     "vite": "7.3.1",
     "vite-plugin-svgr": "^4.3.0"
