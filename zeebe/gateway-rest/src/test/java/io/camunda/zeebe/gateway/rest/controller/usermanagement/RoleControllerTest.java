@@ -35,6 +35,8 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +47,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -1314,6 +1317,179 @@ public class RoleControllerTest {
       @Bean
       @Primary
       public IdentifierValidator byogIdentifierValidator() {
+        return new IdentifierValidator(ID_PATTERN, DEFAULT_EXTERNAL_ID_REGEX);
+      }
+    }
+  }
+
+  /**
+   * Tests for role-group operations where the groupId contains forward slashes (BYOG scenario).
+   * Uses {@link SecurityConfiguration#DEFAULT_EXTERNAL_ID_REGEX} for groupIdPattern to allow
+   * arbitrary characters including '/'.
+   *
+   * <p>NOTE: {@code @WebMvcTest} does NOT go through Tomcat, so {@code %2F} in URIs is decoded by
+   * MockMvc's path matching directly. In a real Tomcat deployment, the {@code
+   * TomcatEncodedSlashConfig} customizer ensures that encoded slashes are not rejected. These tests
+   * verify the controller and validation layer accept decoded slashes in groupId path variables.
+   */
+  @Nested
+  @WebMvcTest(RoleController.class)
+  @Import(RoleControllerTest.RoleWithExternalGroupIdTest.ExternalGroupConfig.class)
+  class RoleWithExternalGroupIdTest extends RestControllerTest {
+
+    @MockitoBean private RoleServices roleServices;
+    @MockitoBean private UserServices userServices;
+    @MockitoBean private MappingRuleServices mappingRuleServices;
+    @MockitoBean private GroupServices groupServices;
+    @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+
+    @BeforeEach
+    void setup() {
+      when(authenticationProvider.getCamundaAuthentication())
+          .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    }
+
+    @Test
+    void shouldAssignGroupWithSlashInIdToRole() {
+      // given
+      final var roleId = "roleId";
+      final var groupId = "/myGroup";
+      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
+      when(roleServices.addMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
+
+      // when
+      webClient
+          .put()
+          .uri("%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, encodedGroupId))
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isNoContent();
+
+      // then — service receives the decoded groupId
+      verify(roleServices, times(1)).addMember(eq(request), any());
+    }
+
+    @Test
+    void shouldUnassignGroupWithSlashInIdFromRole() {
+      // given
+      final var roleId = "roleId";
+      final var groupId = "/myGroup";
+      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
+      when(roleServices.removeMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
+
+      // when
+      webClient
+          .delete()
+          .uri("%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, encodedGroupId))
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isNoContent();
+
+      // then — service receives the decoded groupId
+      verify(roleServices, times(1)).removeMember(eq(request), any());
+    }
+
+    @Test
+    void shouldAssignGroupWithMultipleSlashesInIdToRole() {
+      // given
+      final var roleId = "roleId";
+      final var groupId = "/org/team/group";
+      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
+      when(roleServices.addMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
+
+      // when
+      webClient
+          .put()
+          .uri("%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, encodedGroupId))
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isNoContent();
+
+      // then — service receives the decoded groupId with multiple slashes
+      verify(roleServices, times(1)).addMember(eq(request), any());
+    }
+
+    @Test
+    void shouldUnassignGroupWithMultipleSlashesInIdFromRole() {
+      // given
+      final var roleId = "roleId";
+      final var groupId = "/org/team/group";
+      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
+      when(roleServices.removeMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
+
+      // when
+      webClient
+          .delete()
+          .uri("%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, encodedGroupId))
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isNoContent();
+
+      // then — service receives the decoded groupId with multiple slashes
+      verify(roleServices, times(1)).removeMember(eq(request), any());
+    }
+
+    @Test
+    void shouldAssignAlphanumericGroupToRoleAsRegression() {
+      // given
+      final var roleId = "roleId";
+      final var groupId = "simpleGroupId";
+      final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
+      when(roleServices.addMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
+
+      // when
+      webClient
+          .put()
+          .uri("%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId))
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isNoContent();
+
+      // then
+      verify(roleServices, times(1)).addMember(eq(request), any());
+    }
+
+    @Test
+    void shouldUnassignAlphanumericGroupFromRoleAsRegression() {
+      // given
+      final var roleId = "roleId";
+      final var groupId = "simpleGroupId";
+      final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
+      when(roleServices.removeMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
+
+      // when
+      webClient
+          .delete()
+          .uri("%s/%s/groups/%s".formatted(ROLE_BASE_URL, roleId, groupId))
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isNoContent();
+
+      // then
+      verify(roleServices, times(1)).removeMember(eq(request), any());
+    }
+
+    @TestConfiguration
+    static class ExternalGroupConfig {
+      @Bean
+      @Primary
+      public IdentifierValidator identifierValidator() {
         return new IdentifierValidator(ID_PATTERN, DEFAULT_EXTERNAL_ID_REGEX);
       }
     }

@@ -36,6 +36,8 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -687,6 +689,88 @@ public class TenantControllerTest {
 
       // then
       verify(tenantServices, times(1)).removeMember(eq(request), any());
+    }
+
+    /**
+     * Tests for group IDs containing forward slashes (e.g., Keycloak groups like {@code /myGroup}).
+     * Verifies that URL-encoded slashes ({@code %2F}) are correctly routed and decoded to the
+     * original group ID in the service layer.
+     *
+     * <p>NOTE: {@code @WebMvcTest} does not go through Tomcat, so {@code %2F} is decoded by
+     * MockMvc's path matching directly. In a real Tomcat deployment, {@link
+     * io.camunda.zeebe.gateway.rest.config.TomcatEncodedSlashConfig} ensures encoded slashes pass
+     * through.
+     */
+    @Test
+    void shouldAssignGroupWithSlashInIdToTenant() {
+      // given
+      final var tenantId = "some-tenant-id";
+      final var groupId = "/myGroup";
+      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var request = new TenantMemberRequest(tenantId, groupId, EntityType.GROUP);
+
+      when(tenantServices.addMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
+
+      // when
+      webClient
+          .put()
+          .uri("%s/%s/groups/%s".formatted(TENANT_BASE_URL, tenantId, encodedGroupId))
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isNoContent();
+
+      // then — service receives the decoded groupId
+      verify(tenantServices, times(1)).addMember(eq(request), any());
+    }
+
+    @Test
+    void shouldUnassignGroupWithSlashInIdFromTenant() {
+      // given
+      final var tenantId = "some-tenant-id";
+      final var groupId = "/myGroup";
+      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var request = new TenantMemberRequest(tenantId, groupId, EntityType.GROUP);
+
+      when(tenantServices.removeMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
+
+      // when
+      webClient
+          .delete()
+          .uri("%s/%s/groups/%s".formatted(TENANT_BASE_URL, tenantId, encodedGroupId))
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isNoContent();
+
+      // then — service receives the decoded groupId
+      verify(tenantServices, times(1)).removeMember(eq(request), any());
+    }
+
+    @Test
+    void shouldAssignGroupWithMultipleSlashesInIdToTenant() {
+      // given
+      final var tenantId = "some-tenant-id";
+      final var groupId = "/org/team/group";
+      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var request = new TenantMemberRequest(tenantId, groupId, EntityType.GROUP);
+
+      when(tenantServices.addMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
+
+      // when
+      webClient
+          .put()
+          .uri("%s/%s/groups/%s".formatted(TENANT_BASE_URL, tenantId, encodedGroupId))
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isNoContent();
+
+      // then — service receives the decoded groupId with multiple slashes
+      verify(tenantServices, times(1)).addMember(eq(request), any());
     }
 
     @TestConfiguration

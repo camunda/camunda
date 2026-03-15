@@ -30,7 +30,7 @@ const getGroup: Endpoint<Pick<Group, 'groupId'>> = {
 	getUrl(params) {
 		const {groupId} = params;
 
-		return `/${API_VERSION}/groups/${groupId}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}`;
 	},
 };
 
@@ -51,7 +51,7 @@ const updateGroup: Endpoint<Pick<Group, 'groupId'>> = {
 	getUrl(params) {
 		const {groupId} = params;
 
-		return `/${API_VERSION}/groups/${groupId}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}`;
 	},
 };
 
@@ -60,7 +60,7 @@ const deleteGroup: Endpoint<Pick<Group, 'groupId'>> = {
 	getUrl(params) {
 		const {groupId} = params;
 
-		return `/${API_VERSION}/groups/${groupId}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}`;
 	},
 };
 
@@ -99,7 +99,7 @@ const queryUsersByGroup: Endpoint<Pick<Group, 'groupId'>> = {
 	getUrl(params) {
 		const {groupId} = params;
 
-		return `/${API_VERSION}/groups/${groupId}/users/search`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/users/search`;
 	},
 };
 
@@ -121,7 +121,7 @@ const queryClientsByGroup: Endpoint<Pick<Group, 'groupId'>> = {
 	getUrl(params) {
 		const {groupId} = params;
 
-		return `/${API_VERSION}/groups/${groupId}/clients/search`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/clients/search`;
 	},
 };
 
@@ -144,7 +144,7 @@ const queryRolesByGroup: Endpoint<Pick<Group, 'groupId'>> = {
 	getUrl(params) {
 		const {groupId} = params;
 
-		return `/${API_VERSION}/groups/${groupId}/roles/search`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/roles/search`;
 	},
 };
 
@@ -168,7 +168,7 @@ const queryMappingRulesByGroup: Endpoint<Pick<Group, 'groupId'>> = {
 	getUrl(params) {
 		const {groupId} = params;
 
-		return `/${API_VERSION}/groups/${groupId}/mapping-rules/search`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/mapping-rules/search`;
 	},
 };
 
@@ -177,7 +177,7 @@ const assignUserToGroup: Endpoint<Pick<Group, 'groupId'> & {username: string}> =
 	getUrl(params) {
 		const {groupId, username} = params;
 
-		return `/${API_VERSION}/groups/${groupId}/users/${username}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/users/${encodeURIComponent(username)}`;
 	},
 };
 
@@ -186,7 +186,7 @@ const unassignUserFromGroup: Endpoint<Pick<Group, 'groupId'> & {username: string
 	getUrl(params) {
 		const {groupId, username} = params;
 
-		return `/${API_VERSION}/groups/${groupId}/users/${username}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/users/${encodeURIComponent(username)}`;
 	},
 };
 
@@ -195,7 +195,7 @@ const assignClientToGroup: Endpoint<Pick<Group, 'groupId'> & {clientId: string}>
 	getUrl(params) {
 		const {groupId, clientId} = params;
 
-		return `/${API_VERSION}/groups/${groupId}/clients/${clientId}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/clients/${encodeURIComponent(clientId)}`;
 	},
 };
 
@@ -204,7 +204,7 @@ const unassignClientFromGroup: Endpoint<Pick<Group, 'groupId'> & {clientId: stri
 	getUrl(params) {
 		const {groupId, clientId} = params;
 
-		return `/${API_VERSION}/groups/${groupId}/clients/${clientId}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/clients/${encodeURIComponent(clientId)}`;
 	},
 };
 
@@ -213,7 +213,7 @@ const assignMappingToGroup: Endpoint<Pick<Group, 'groupId'> & Pick<MappingRule, 
 	getUrl(params) {
 		const {groupId, mappingRuleId} = params;
 
-		return `/${API_VERSION}/groups/${groupId}/mapping-rules/${mappingRuleId}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`;
 	},
 };
 
@@ -222,7 +222,7 @@ const unassignMappingFromGroup: Endpoint<Pick<Group, 'groupId'> & Pick<MappingRu
 	getUrl(params) {
 		const {groupId, mappingRuleId} = params;
 
-		return `/${API_VERSION}/groups/${groupId}/mapping-rules/${mappingRuleId}`;
+		return `/${API_VERSION}/groups/${encodeURIComponent(groupId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`;
 	},
 };
 
