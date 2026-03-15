@@ -118,7 +118,7 @@
     "vite-plugin-svgr": "4.5.0",
     "vite-tsconfig-paths": "6.1.1",
     "vitest": "4.0.18",
-    "vitest-browser-react": "2.0.5"
+    "vitest-browser-react": "2.1.0"
   },
   "browserslist": [
     ">0.2%",
