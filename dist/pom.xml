@@ -1037,8 +1037,10 @@
             <!-- Needed for the debug CLI tool -->
             <dependency>io.camunda:debug-cli</dependency>
 
-            <!-- Needed for Spring Actuators, and REST API -->
+            <!-- Needed for Spring Actuators, REST API, and Tomcat encoded slash config -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
+            <dependency>org.springframework.boot:spring-boot-tomcat</dependency>
+            <dependency>org.springframework.boot:spring-boot-web-server</dependency>
             <dependency>org.springframework.boot:spring-boot-jackson2</dependency>
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>

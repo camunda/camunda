@@ -18,7 +18,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.protocol.model.GroupCreateRequest;
 import io.camunda.gateway.protocol.model.GroupUpdateRequest;
-import io.camunda.search.entities.GroupEntity;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
@@ -37,7 +36,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +52,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
-import org.springframework.web.util.UriUtils;
 
 public class GroupControllerTest {
 
@@ -1097,207 +1094,6 @@ public class GroupControllerTest {
                   .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, path),
               JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
-    }
-  }
-
-  /**
-   * Tests for BYOG (Bring Your Own Groups) scenario where group IDs may contain forward slashes.
-   * When groupsClaim is configured, the IdentifierValidator uses DEFAULT_EXTERNAL_ID_REGEX which
-   * allows any character including '/'.
-   *
-   * <p>NOTE: @WebMvcTest does NOT go through Tomcat, so WebTestClient may handle %2F differently
-   * than real Tomcat. If tests fail with 404 due to path matching, that is a known limitation of
-   * the MockMvc environment. The Tomcat integration test (TomcatEncodedSlashConfigTest) validates
-   * the full pipeline.
-   */
-  @Nested
-  @WebMvcTest(GroupController.class)
-  @Import(GroupControllerTest.ExternalGroupIdTest.ExternalGroupIdTestConfig.class)
-  public class ExternalGroupIdTest extends RestControllerTest {
-
-    @MockitoBean private GroupServices groupServices;
-    @MockitoBean private UserServices userServices;
-    @MockitoBean private RoleServices roleServices;
-    @MockitoBean private MappingRuleServices mappingRuleServices;
-    @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-    @MockitoBean private SecurityConfiguration securityConfiguration;
-
-    @BeforeEach
-    void setup() {
-      when(authenticationProvider.getCamundaAuthentication())
-          .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-      when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
-    }
-
-    @Test
-    void shouldGetGroupWithSlashInId() {
-      // given
-      final var groupId = "/myGroup";
-      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
-      final var groupEntity = new GroupEntity(null, groupId, "My Group", "desc");
-      when(groupServices.getGroup(eq(groupId), any())).thenReturn(groupEntity);
-
-      // when / then
-      webClient
-          .get()
-          .uri("%s/%s".formatted(GROUP_BASE_URL, encodedGroupId))
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus()
-          .isOk();
-
-      verify(groupServices, times(1)).getGroup(eq(groupId), any());
-    }
-
-    @Test
-    void shouldUpdateGroupWithSlashInId() {
-      // given
-      final var groupId = "/myGroup";
-      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
-      final var groupName = "updatedName";
-      final var description = "updatedDescription";
-      when(groupServices.updateGroup(eq(groupId), eq(groupName), eq(description), any()))
-          .thenReturn(
-              CompletableFuture.completedFuture(
-                  new GroupRecord()
-                      .setGroupId(groupId)
-                      .setName(groupName)
-                      .setDescription(description)));
-
-      // when
-      webClient
-          .put()
-          .uri("%s/%s".formatted(GROUP_BASE_URL, encodedGroupId))
-          .accept(MediaType.APPLICATION_JSON)
-          .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(new GroupUpdateRequest().name(groupName).description(description))
-          .exchange()
-          .expectStatus()
-          .isOk();
-
-      // then
-      verify(groupServices, times(1))
-          .updateGroup(eq(groupId), eq(groupName), eq(description), any());
-    }
-
-    @Test
-    void shouldDeleteGroupWithSlashInId() {
-      // given
-      final var groupId = "/myGroup";
-      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
-      when(groupServices.deleteGroup(eq(groupId), any()))
-          .thenReturn(CompletableFuture.completedFuture(new GroupRecord().setGroupId(groupId)));
-
-      // when
-      webClient
-          .delete()
-          .uri("%s/%s".formatted(GROUP_BASE_URL, encodedGroupId))
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus()
-          .isNoContent();
-
-      // then
-      verify(groupServices, times(1)).deleteGroup(eq(groupId), any());
-    }
-
-    @Test
-    void shouldAssignUserToGroupWithSlashInId() {
-      // given
-      final var groupId = "/myGroup";
-      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
-      final var username = "user1";
-      final var request = new GroupMemberDTO(groupId, username, EntityType.USER);
-      when(groupServices.assignMember(eq(request), any()))
-          .thenReturn(CompletableFuture.completedFuture(null));
-
-      // when
-      webClient
-          .put()
-          .uri("%s/%s/users/%s".formatted(GROUP_BASE_URL, encodedGroupId, username))
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus()
-          .isNoContent();
-
-      // then
-      verify(groupServices, times(1)).assignMember(eq(request), any());
-    }
-
-    @Test
-    void shouldUnassignUserFromGroupWithSlashInId() {
-      // given
-      final var groupId = "/myGroup";
-      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
-      final var username = "user1";
-      final var request = new GroupMemberDTO(groupId, username, EntityType.USER);
-      when(groupServices.removeMember(eq(request), any()))
-          .thenReturn(CompletableFuture.completedFuture(null));
-
-      // when
-      webClient
-          .delete()
-          .uri("%s/%s/users/%s".formatted(GROUP_BASE_URL, encodedGroupId, username))
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus()
-          .isNoContent();
-
-      // then
-      verify(groupServices, times(1)).removeMember(eq(request), any());
-    }
-
-    @Test
-    void shouldHandleGroupIdWithMultipleSlashes() {
-      // given
-      final var groupId = "/org/team/myGroup";
-      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
-      final var groupEntity = new GroupEntity(null, groupId, "My Group", "desc");
-      when(groupServices.getGroup(eq(groupId), any())).thenReturn(groupEntity);
-
-      // when / then
-      webClient
-          .get()
-          .uri("%s/%s".formatted(GROUP_BASE_URL, encodedGroupId))
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus()
-          .isOk();
-
-      verify(groupServices, times(1)).getGroup(eq(groupId), any());
-    }
-
-    @Test
-    void shouldStillWorkWithAlphanumericGroupId() {
-      // given — regression test: normal IDs must not break
-      final var groupId = "myGroup123";
-      final var groupEntity = new GroupEntity(null, groupId, "My Group", "desc");
-      when(groupServices.getGroup(eq(groupId), any())).thenReturn(groupEntity);
-
-      // when / then
-      webClient
-          .get()
-          .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus()
-          .isOk();
-
-      verify(groupServices, times(1)).getGroup(eq(groupId), any());
-    }
-
-    @TestConfiguration
-    static class ExternalGroupIdTestConfig {
-      @Bean
-      @Primary
-      public IdentifierValidator externalGroupIdValidator() {
-        // Use permissive pattern for both idPattern and groupIdPattern so that group IDs
-        // containing '/' pass validation in GroupValidator (which uses idPattern for group CRUD
-        // and groupIdPattern for GROUP member type validation).
-        return new IdentifierValidator(
-            SecurityConfiguration.DEFAULT_EXTERNAL_ID_REGEX,
-            SecurityConfiguration.DEFAULT_EXTERNAL_ID_REGEX);
-      }
     }
   }
 }
