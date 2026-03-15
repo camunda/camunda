@@ -1122,20 +1122,6 @@ public class GroupControllerTest {
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
     @MockitoBean private SecurityConfiguration securityConfiguration;
 
-    @TestConfiguration
-    static class ExternalGroupIdTestConfig {
-      @Bean
-      @Primary
-      public IdentifierValidator externalGroupIdValidator() {
-        // Use permissive pattern for both idPattern and groupIdPattern so that group IDs
-        // containing '/' pass validation in GroupValidator (which uses idPattern for group CRUD
-        // and groupIdPattern for GROUP member type validation).
-        return new IdentifierValidator(
-            SecurityConfiguration.DEFAULT_EXTERNAL_ID_REGEX,
-            SecurityConfiguration.DEFAULT_EXTERNAL_ID_REGEX);
-      }
-    }
-
     @BeforeEach
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
@@ -1298,6 +1284,20 @@ public class GroupControllerTest {
           .isOk();
 
       verify(groupServices, times(1)).getGroup(eq(groupId), any());
+    }
+
+    @TestConfiguration
+    static class ExternalGroupIdTestConfig {
+      @Bean
+      @Primary
+      public IdentifierValidator externalGroupIdValidator() {
+        // Use permissive pattern for both idPattern and groupIdPattern so that group IDs
+        // containing '/' pass validation in GroupValidator (which uses idPattern for group CRUD
+        // and groupIdPattern for GROUP member type validation).
+        return new IdentifierValidator(
+            SecurityConfiguration.DEFAULT_EXTERNAL_ID_REGEX,
+            SecurityConfiguration.DEFAULT_EXTERNAL_ID_REGEX);
+      }
     }
   }
 }
