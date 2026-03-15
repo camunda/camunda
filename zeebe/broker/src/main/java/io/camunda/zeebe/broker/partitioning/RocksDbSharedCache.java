@@ -133,10 +133,8 @@ public class RocksDbSharedCache {
     if (blockCacheBytes > totalMemorySize) {
       final String configHint =
           switch (rocksdbCfg.getMemoryAllocationStrategy()) {
-            case BROKER ->
+            case BROKER, PARTITION ->
                 "Consider reducing the value of CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYLIMIT.";
-            case PARTITION ->
-                "Consider reducing the value of CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYLIMIT or the number of partitions.";
             case FRACTION ->
                 throw new IllegalStateException(
                     "Unexpected value: FRACTION should be within [0,1]");
