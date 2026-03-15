@@ -74,7 +74,7 @@
     <quartz.version>2.5.2</quartz.version>
 
     <!-- testing config -->
-    <mockito.version>5.22.0</mockito.version>
+    <mockito.version>5.23.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <mockserver.version>5.15.0</mockserver.version>
     <assertj.version>3.27.7</assertj.version>
