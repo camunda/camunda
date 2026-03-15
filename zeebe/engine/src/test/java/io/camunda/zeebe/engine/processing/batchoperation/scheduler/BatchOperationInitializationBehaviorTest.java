@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 
 import static io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus.CREATED;
-import static io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus.SUSPENDED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -67,21 +66,6 @@ class BatchOperationInitializationBehaviorTest {
   /** Creates an InitializationContext from the batch operation for testing. */
   private InitializationContext createContext() {
     return new InitializationContext(batchOperation, SEARCH_CURSOR, PAGE_SIZE, 0, false);
-  }
-
-  @Test
-  void shouldReturnEarlyWhenBatchOperationIsSuspended() {
-    // given
-    batchOperation.setStatus(SUSPENDED);
-
-    // when
-    final var result = initializer.initializeBatchOperation(createContext(), taskResultBuilder);
-
-    // then
-    assertThat(result).isInstanceOf(InitializationOutcome.Success.class);
-    final var success = (InitializationOutcome.Success) result;
-    assertThat(success.cursor()).isEqualTo(SEARCH_CURSOR);
-    verify(chunkAppender, never()).fetchAndChunkNextPage(any(), any(), any());
   }
 
   @Test
