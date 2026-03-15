@@ -20,75 +20,83 @@ import java.util.Objects;
  * fire multiple INITIALIZE commands for the same cursor position, causing duplicate work.
  *
  * <p>The key invariant: after we successfully initialize a page and append an INITIALIZE command,
- * the persisted state's cursor will be updated asynchronously by the command processor. Until that
- * happens, our in-memory cursor differs from the persisted cursor. We use this difference to detect
- * "command in flight" and skip re-initialization.
+ * the persisted state's cursor and/or page size will be updated asynchronously by the command
+ * processor. Until that happens, our in-memory state differs from the persisted state. We use this
+ * difference to detect "command in flight" and skip the current scheduler tick — regardless of
+ * whether a retry is pending. This provides natural back-pressure: if the stream processor is busy,
+ * batch operations (which are lower priority) wait rather than adding more commands to the
+ * pipeline.
  *
- * <p>However, if retries are in flight ({@code numAttempts > 0}), we should NOT skip — retries are
- * intentional re-executions after transient failures.
+ * <p>Because we only proceed when persisted state has caught up, the scheduler can always use
+ * persisted values directly via {@link InitializationContext#fromBatchOperation} — no in-memory
+ * overrides are needed.
  *
- * <p>The state also tracks a reduced page size when buffer-full scenarios require smaller fetches.
- * This avoids writing INITIALIZE commands just to persist the page size change.
- *
- * @param pageSize 0 means use default
+ * @param defaultPageSize stored at creation to resolve persisted page size (which uses {@code -1}
+ *     as sentinel for "unset") in {@link #shouldSkipInitialization} comparisons
+ * @param pageSize the resolved page size; eagerly set from persisted state at creation, then
+ *     updated by {@link #withReducedPageSize} when buffer-full scenarios occur
  */
 record SchedulerExecutionState(
-    long batchOperationKey, String cursor, int pageSize, int numAttempts) {
+    long batchOperationKey, String cursor, int defaultPageSize, int pageSize, int numAttempts) {
 
   /** Creates initial state from a persisted batch operation. */
-  static SchedulerExecutionState from(final PersistedBatchOperation batchOperation) {
+  static SchedulerExecutionState from(
+      final PersistedBatchOperation batchOperation, final int defaultPageSize) {
     return new SchedulerExecutionState(
-        batchOperation.getKey(), batchOperation.getInitializationSearchCursor(), 0, 0);
+        batchOperation.getKey(),
+        emptyToNull(batchOperation.getInitializationSearchCursor()),
+        defaultPageSize,
+        batchOperation.getInitializationSearchQueryPageSize(defaultPageSize),
+        0);
   }
 
   /**
-   * Advances to a new cursor after successful page processing. Resets page size and retry count.
+   * Advances to a new cursor after successful page processing. Resets retry count but preserves
+   * page size.
    */
   SchedulerExecutionState advanceTo(final String newCursor) {
-    return new SchedulerExecutionState(batchOperationKey, newCursor, 0, 0);
+    return new SchedulerExecutionState(batchOperationKey, newCursor, defaultPageSize, pageSize, 0);
   }
 
   /** Prepares for a retry attempt with the given cursor and attempt count. Preserves page size. */
   SchedulerExecutionState retryWith(final String newCursor, final int attempts) {
-    return new SchedulerExecutionState(batchOperationKey, newCursor, pageSize, attempts);
+    return new SchedulerExecutionState(
+        batchOperationKey, newCursor, defaultPageSize, pageSize, attempts);
   }
 
   /** Reduces page size for next attempt due to buffer full. */
   SchedulerExecutionState withReducedPageSize(final int newPageSize) {
-    return new SchedulerExecutionState(batchOperationKey, cursor, newPageSize, numAttempts);
-  }
-
-  /**
-   * Builds an {@link InitializationContext} using in-memory overrides where applicable.
-   *
-   * <p>Uses:
-   *
-   * <ul>
-   *   <li>In-memory cursor when retrying ({@code numAttempts > 0}) to avoid stale cursor race
-   *   <li>In-memory page size when reduced ({@code pageSize > 0}) to avoid stale page size race
-   *   <li>Persisted values otherwise
-   * </ul>
-   */
-  InitializationContext buildContext(
-      final PersistedBatchOperation batchOperation, final int defaultPageSize) {
-    final String effectiveCursor =
-        emptyToNull(numAttempts > 0 ? cursor : batchOperation.getInitializationSearchCursor());
-    final int effectivePageSize =
-        pageSize > 0
-            ? pageSize
-            : batchOperation.getInitializationSearchQueryPageSize(defaultPageSize);
-    return new InitializationContext(batchOperation, effectiveCursor, effectivePageSize, 0, false);
+    return new SchedulerExecutionState(
+        batchOperationKey, cursor, defaultPageSize, newPageSize, numAttempts);
   }
 
   /**
    * Determines whether initialization should be skipped for the given batch operation.
    *
-   * <p>We skip when our in-memory cursor differs from the persisted cursor AND we're not in a
-   * retry. This means we appended an INITIALIZE command that hasn't been processed yet.
+   * <p>We skip when our in-memory state differs from the persisted state, which means we appended
+   * an INITIALIZE command that hasn't been processed yet by the stream processor. In that case, the
+   * engine is still catching up, and since batch operations are lower priority than normal record
+   * processing, we back off and wait for the next scheduler tick.
+   *
+   * <p>We detect in-flight commands by comparing:
+   *
+   * <ul>
+   *   <li><b>Cursor:</b> differs when a page was successfully initialized and a
+   *       continueInitialization command was written
+   *   <li><b>Page size:</b> differs when a buffer-full scenario triggered a page size reduction and
+   *       a continueInitialization command was written with the new size
+   * </ul>
+   *
+   * <p>This applies equally to retries: if a retry wrote a {@code continueInitialization} command,
+   * we wait for it to be processed before scheduling more work.
    */
   boolean shouldSkipInitialization(final PersistedBatchOperation batchOperation) {
-    return batchOperationKey == batchOperation.getKey()
-        && numAttempts == 0
-        && !Objects.equals(cursor, batchOperation.getInitializationSearchCursor());
+    if (batchOperationKey != batchOperation.getKey()) {
+      return false;
+    }
+    if (!Objects.equals(cursor, emptyToNull(batchOperation.getInitializationSearchCursor()))) {
+      return true;
+    }
+    return pageSize != batchOperation.getInitializationSearchQueryPageSize(defaultPageSize);
   }
 }
