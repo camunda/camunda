@@ -25,44 +25,66 @@ class SchedulerExecutionStateTest {
         new PersistedBatchOperation()
             .setKey(BATCH_OPERATION_KEY)
             .setStatus(BatchOperationStatus.CREATED)
-            .setInitializationSearchCursor("cursor1");
+            .setInitializationSearchCursor("cursor1")
+            .setInitializationSearchQueryPageSize(75);
 
     // when
-    final var state = SchedulerExecutionState.from(batchOperation);
+    final var state = SchedulerExecutionState.from(batchOperation, DEFAULT_PAGE_SIZE);
 
     // then
     assertThat(state.batchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
     assertThat(state.cursor()).isEqualTo("cursor1");
-    assertThat(state.pageSize()).isZero();
+    assertThat(state.defaultPageSize()).isEqualTo(DEFAULT_PAGE_SIZE);
+    assertThat(state.pageSize()).isEqualTo(75);
     assertThat(state.numAttempts()).isZero();
+  }
+
+  @Test
+  void shouldCreateFromBatchOperationWithDefaultPageSize() {
+    // given - page size not set (-1), should resolve to default
+    final var batchOperation =
+        new PersistedBatchOperation()
+            .setKey(BATCH_OPERATION_KEY)
+            .setStatus(BatchOperationStatus.CREATED)
+            .setInitializationSearchCursor("cursor1");
+
+    // when
+    final var state = SchedulerExecutionState.from(batchOperation, DEFAULT_PAGE_SIZE);
+
+    // then
+    assertThat(state.pageSize()).isEqualTo(DEFAULT_PAGE_SIZE);
   }
 
   @Test
   void shouldAdvanceToCursor() {
     // given
-    final var state = new SchedulerExecutionState(BATCH_OPERATION_KEY, "cursor1", 50, 2);
+    final var state =
+        new SchedulerExecutionState(BATCH_OPERATION_KEY, "cursor1", DEFAULT_PAGE_SIZE, 50, 2);
 
     // when
     final var advanced = state.advanceTo("cursor2");
 
-    // then - cursor updated, pageSize and numAttempts reset
+    // then - cursor updated, numAttempts reset, pageSize and defaultPageSize preserved
     assertThat(advanced.batchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
     assertThat(advanced.cursor()).isEqualTo("cursor2");
-    assertThat(advanced.pageSize()).isZero();
+    assertThat(advanced.defaultPageSize()).isEqualTo(DEFAULT_PAGE_SIZE);
+    assertThat(advanced.pageSize()).isEqualTo(50);
     assertThat(advanced.numAttempts()).isZero();
   }
 
   @Test
   void shouldRetryWithCursorAndAttempts() {
     // given
-    final var state = new SchedulerExecutionState(BATCH_OPERATION_KEY, "cursor1", 50, 0);
+    final var state =
+        new SchedulerExecutionState(BATCH_OPERATION_KEY, "cursor1", DEFAULT_PAGE_SIZE, 50, 0);
 
     // when
     final var retrying = state.retryWith("cursor2", 3);
 
-    // then - cursor and attempts updated, pageSize preserved
+    // then - cursor and attempts updated, pageSize and defaultPageSize preserved
     assertThat(retrying.batchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
     assertThat(retrying.cursor()).isEqualTo("cursor2");
+    assertThat(retrying.defaultPageSize()).isEqualTo(DEFAULT_PAGE_SIZE);
     assertThat(retrying.pageSize()).isEqualTo(50);
     assertThat(retrying.numAttempts()).isEqualTo(3);
   }
@@ -70,107 +92,34 @@ class SchedulerExecutionStateTest {
   @Test
   void shouldReducePageSize() {
     // given
-    final var state = new SchedulerExecutionState(BATCH_OPERATION_KEY, "cursor1", 100, 1);
+    final var state =
+        new SchedulerExecutionState(BATCH_OPERATION_KEY, "cursor1", DEFAULT_PAGE_SIZE, 100, 1);
 
     // when
     final var reduced = state.withReducedPageSize(50);
 
-    // then - pageSize updated, cursor and numAttempts preserved
+    // then - pageSize updated, cursor, defaultPageSize, and numAttempts preserved
     assertThat(reduced.batchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
     assertThat(reduced.cursor()).isEqualTo("cursor1");
+    assertThat(reduced.defaultPageSize()).isEqualTo(DEFAULT_PAGE_SIZE);
     assertThat(reduced.pageSize()).isEqualTo(50);
     assertThat(reduced.numAttempts()).isEqualTo(1);
   }
 
   @Test
-  void shouldBuildContextWithPersistedValuesWhenNoOverrides() {
-    // given
-    final var batchOperation =
-        new PersistedBatchOperation()
-            .setKey(BATCH_OPERATION_KEY)
-            .setStatus(BatchOperationStatus.CREATED)
-            .setInitializationSearchCursor("persisted-cursor")
-            .setInitializationSearchQueryPageSize(75);
-    final var state = new SchedulerExecutionState(BATCH_OPERATION_KEY, "persisted-cursor", 0, 0);
-
-    // when
-    final var context = state.buildContext(batchOperation, DEFAULT_PAGE_SIZE);
-
-    // then - uses persisted values
-    assertThat(context.currentCursor()).isEqualTo("persisted-cursor");
-    assertThat(context.pageSize()).isEqualTo(75);
-  }
-
-  @Test
-  void shouldBuildContextWithInMemoryCursorWhenRetrying() {
-    // given - numAttempts > 0 indicates retry in progress
-    final var batchOperation =
-        new PersistedBatchOperation()
-            .setKey(BATCH_OPERATION_KEY)
-            .setStatus(BatchOperationStatus.CREATED)
-            .setInitializationSearchCursor("old-persisted-cursor")
-            .setInitializationSearchQueryPageSize(75);
-    final var state = new SchedulerExecutionState(BATCH_OPERATION_KEY, "in-memory-cursor", 0, 1);
-
-    // when
-    final var context = state.buildContext(batchOperation, DEFAULT_PAGE_SIZE);
-
-    // then - uses in-memory cursor (not persisted) to avoid stale cursor
-    assertThat(context.currentCursor()).isEqualTo("in-memory-cursor");
-    assertThat(context.pageSize()).isEqualTo(75);
-  }
-
-  @Test
-  void shouldBuildContextWithInMemoryPageSizeWhenReduced() {
-    // given - pageSize > 0 indicates reduced page size
-    final var batchOperation =
-        new PersistedBatchOperation()
-            .setKey(BATCH_OPERATION_KEY)
-            .setStatus(BatchOperationStatus.CREATED)
-            .setInitializationSearchCursor("cursor")
-            .setInitializationSearchQueryPageSize(100);
-    final var state = new SchedulerExecutionState(BATCH_OPERATION_KEY, "cursor", 50, 0);
-
-    // when
-    final var context = state.buildContext(batchOperation, DEFAULT_PAGE_SIZE);
-
-    // then - uses in-memory page size (not persisted)
-    assertThat(context.currentCursor()).isEqualTo("cursor");
-    assertThat(context.pageSize()).isEqualTo(50);
-  }
-
-  @Test
-  void shouldBuildContextWithDefaultPageSizeWhenNotSet() {
-    // given - batch operation has no page size set
-    final var batchOperation =
-        new PersistedBatchOperation()
-            .setKey(BATCH_OPERATION_KEY)
-            .setStatus(BatchOperationStatus.CREATED)
-            .setInitializationSearchCursor("cursor");
-    final var state = new SchedulerExecutionState(BATCH_OPERATION_KEY, "cursor", 0, 0);
-
-    // when
-    final var context = state.buildContext(batchOperation, DEFAULT_PAGE_SIZE);
-
-    // then - uses default page size
-    assertThat(context.pageSize()).isEqualTo(DEFAULT_PAGE_SIZE);
-  }
-
-  @Test
-  void shouldSkipWhenCursorsDifferAndNoRetryInProgress() {
+  void shouldSkipWhenCursorsDiffer() {
     // given - in-memory cursor differs from persisted (command in-flight)
     final var batchOperation =
         new PersistedBatchOperation()
             .setKey(BATCH_OPERATION_KEY)
             .setStatus(BatchOperationStatus.CREATED)
             .setInitializationSearchCursor("persisted-cursor");
-    final var state = new SchedulerExecutionState(BATCH_OPERATION_KEY, "in-memory-cursor", 0, 0);
+    final var state =
+        new SchedulerExecutionState(
+            BATCH_OPERATION_KEY, "in-memory-cursor", DEFAULT_PAGE_SIZE, 100, 0);
 
-    // when
-    final var shouldSkip = state.shouldSkipInitialization(batchOperation);
-
-    // then - skip because command is in-flight
-    assertThat(shouldSkip).isTrue();
+    // when / then
+    assertThat(state.shouldSkipInitialization(batchOperation)).isTrue();
   }
 
   @Test
@@ -181,30 +130,42 @@ class SchedulerExecutionStateTest {
             .setKey(BATCH_OPERATION_KEY)
             .setStatus(BatchOperationStatus.CREATED)
             .setInitializationSearchCursor("same-cursor");
-    final var state = new SchedulerExecutionState(BATCH_OPERATION_KEY, "same-cursor", 0, 0);
+    final var state =
+        new SchedulerExecutionState(BATCH_OPERATION_KEY, "same-cursor", DEFAULT_PAGE_SIZE, 100, 0);
 
-    // when
-    final var shouldSkip = state.shouldSkipInitialization(batchOperation);
-
-    // then - don't skip, we can continue processing
-    assertThat(shouldSkip).isFalse();
+    // when / then
+    assertThat(state.shouldSkipInitialization(batchOperation)).isFalse();
   }
 
   @Test
-  void shouldNotSkipWhenRetryInProgress() {
-    // given - cursors differ BUT retry in progress (numAttempts > 0)
+  void shouldSkipWhenRetryInProgressAndCommandInFlight() {
+    // given - cursors differ AND retry in progress (numAttempts > 0)
     final var batchOperation =
         new PersistedBatchOperation()
             .setKey(BATCH_OPERATION_KEY)
             .setStatus(BatchOperationStatus.CREATED)
             .setInitializationSearchCursor("persisted-cursor");
-    final var state = new SchedulerExecutionState(BATCH_OPERATION_KEY, "in-memory-cursor", 0, 1);
+    final var state =
+        new SchedulerExecutionState(
+            BATCH_OPERATION_KEY, "in-memory-cursor", DEFAULT_PAGE_SIZE, 100, 1);
 
-    // when
-    final var shouldSkip = state.shouldSkipInitialization(batchOperation);
+    // when / then - skip because command is in-flight, even during retries
+    assertThat(state.shouldSkipInitialization(batchOperation)).isTrue();
+  }
 
-    // then - don't skip, retries are intentional
-    assertThat(shouldSkip).isFalse();
+  @Test
+  void shouldNotSkipRetryWhenCursorsMatch() {
+    // given - retry in progress but cursors match (no command was written)
+    final var batchOperation =
+        new PersistedBatchOperation()
+            .setKey(BATCH_OPERATION_KEY)
+            .setStatus(BatchOperationStatus.CREATED)
+            .setInitializationSearchCursor("same-cursor");
+    final var state =
+        new SchedulerExecutionState(BATCH_OPERATION_KEY, "same-cursor", DEFAULT_PAGE_SIZE, 100, 2);
+
+    // when / then - cursors match means no command in-flight, retry can proceed
+    assertThat(state.shouldSkipInitialization(batchOperation)).isFalse();
   }
 
   @Test
@@ -212,50 +173,98 @@ class SchedulerExecutionStateTest {
     // given - different batch operation
     final var batchOperation =
         new PersistedBatchOperation()
-            .setKey(999L) // Different key
+            .setKey(999L)
             .setStatus(BatchOperationStatus.CREATED)
             .setInitializationSearchCursor("cursor");
-    final var state = new SchedulerExecutionState(BATCH_OPERATION_KEY, "different-cursor", 0, 0);
+    final var state =
+        new SchedulerExecutionState(
+            BATCH_OPERATION_KEY, "different-cursor", DEFAULT_PAGE_SIZE, 100, 0);
 
-    // when
-    final var shouldSkip = state.shouldSkipInitialization(batchOperation);
-
-    // then - don't skip, it's a different batch operation
-    assertThat(shouldSkip).isFalse();
+    // when / then
+    assertThat(state.shouldSkipInitialization(batchOperation)).isFalse();
   }
 
   @Test
-  void shouldHandleNullCursorsInShouldSkipInitialization() {
-    // given - both cursors are null/empty
+  void shouldHandleEmptyCursorsInShouldSkipInitialization() {
+    // given - both cursors are empty; from() normalizes "" to null via emptyToNull
     final var batchOperation =
         new PersistedBatchOperation()
             .setKey(BATCH_OPERATION_KEY)
             .setStatus(BatchOperationStatus.CREATED)
             .setInitializationSearchCursor("");
-    final var state = new SchedulerExecutionState(BATCH_OPERATION_KEY, "", 0, 0);
+    final var state =
+        new SchedulerExecutionState(BATCH_OPERATION_KEY, null, DEFAULT_PAGE_SIZE, 100, 0);
 
-    // when
-    final var shouldSkip = state.shouldSkipInitialization(batchOperation);
-
-    // then - don't skip, cursors match (both empty)
-    assertThat(shouldSkip).isFalse();
+    // when / then - both normalize to null, so they match
+    assertThat(state.shouldSkipInitialization(batchOperation)).isFalse();
   }
 
+  // --- shouldSkipInitialization: page size comparison ---
+
   @Test
-  void shouldConvertEmptyCursorToNullInBuildContext() {
-    // given - empty cursor in persisted state
+  void shouldSkipWhenPageSizeDiffers() {
+    // given - cursor matches but in-memory page size differs from persisted
+    // (continueInitialization command with reduced page size not yet processed)
     final var batchOperation =
         new PersistedBatchOperation()
             .setKey(BATCH_OPERATION_KEY)
             .setStatus(BatchOperationStatus.CREATED)
-            .setInitializationSearchCursor("")
+            .setInitializationSearchCursor("cursor")
+            .setInitializationSearchQueryPageSize(100);
+    final var state =
+        new SchedulerExecutionState(BATCH_OPERATION_KEY, "cursor", DEFAULT_PAGE_SIZE, 50, 0);
+
+    // when / then
+    assertThat(state.shouldSkipInitialization(batchOperation)).isTrue();
+  }
+
+  @Test
+  void shouldSkipWhenPageSizeDiffersAndPersistedIsUnset() {
+    // given - persisted page size is unset (-1), resolves to defaultPageSize (100)
+    // but in-memory was reduced to 50 — command not yet processed
+    final var batchOperation =
+        new PersistedBatchOperation()
+            .setKey(BATCH_OPERATION_KEY)
+            .setStatus(BatchOperationStatus.CREATED)
+            .setInitializationSearchCursor("cursor");
+    // persisted raw is -1 (default), resolves to DEFAULT_PAGE_SIZE=100
+    final var state =
+        new SchedulerExecutionState(BATCH_OPERATION_KEY, "cursor", DEFAULT_PAGE_SIZE, 50, 0);
+
+    // when / then - 50 != 100, skip
+    assertThat(state.shouldSkipInitialization(batchOperation)).isTrue();
+  }
+
+  @Test
+  void shouldNotSkipWhenPageSizeMatchesPersisted() {
+    // given - cursor matches and in-memory page size matches persisted
+    // (continueInitialization command has been processed)
+    final var batchOperation =
+        new PersistedBatchOperation()
+            .setKey(BATCH_OPERATION_KEY)
+            .setStatus(BatchOperationStatus.CREATED)
+            .setInitializationSearchCursor("cursor")
             .setInitializationSearchQueryPageSize(50);
-    final var state = new SchedulerExecutionState(BATCH_OPERATION_KEY, "", 0, 0);
+    final var state =
+        new SchedulerExecutionState(BATCH_OPERATION_KEY, "cursor", DEFAULT_PAGE_SIZE, 50, 0);
 
-    // when
-    final var context = state.buildContext(batchOperation, DEFAULT_PAGE_SIZE);
+    // when / then
+    assertThat(state.shouldSkipInitialization(batchOperation)).isFalse();
+  }
 
-    // then - empty string converted to null
-    assertThat(context.currentCursor()).isNull();
+  @Test
+  void shouldNotSkipWhenPageSizesMatchFromDefault() {
+    // given - both in-memory and persisted resolve to the same page size
+    final var batchOperation =
+        new PersistedBatchOperation()
+            .setKey(BATCH_OPERATION_KEY)
+            .setStatus(BatchOperationStatus.CREATED)
+            .setInitializationSearchCursor("cursor")
+            .setInitializationSearchQueryPageSize(100);
+    final var state =
+        new SchedulerExecutionState(BATCH_OPERATION_KEY, "cursor", DEFAULT_PAGE_SIZE, 100, 0);
+
+    // when / then - no override pending, page sizes agree
+    assertThat(state.shouldSkipInitialization(batchOperation)).isFalse();
   }
 }
