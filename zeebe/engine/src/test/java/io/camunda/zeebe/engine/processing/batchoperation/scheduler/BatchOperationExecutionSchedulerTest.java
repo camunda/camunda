@@ -67,6 +67,21 @@ public class BatchOperationExecutionSchedulerTest {
   }
 
   @Test
+  public void shouldSkipWhenBatchOperationIsSuspended() {
+    // given
+    final var batchOperation = createBatchOperation().setStatus(BatchOperationStatus.SUSPENDED);
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation));
+
+    // when
+    execute();
+
+    // then - initializer should not be called for suspended operations
+    verifyNoInteractions(batchOperationInitializer, retryPolicy);
+    verify(scheduleService, times(2)).runDelayedAsync(eq(SCHEDULER_INTERVAL), any(), any());
+  }
+
+  @Test
   public void shouldDoNothingWhenNoBatchOperation() {
     // given
     when(batchOperationState.getNextPendingBatchOperation()).thenReturn(Optional.empty());

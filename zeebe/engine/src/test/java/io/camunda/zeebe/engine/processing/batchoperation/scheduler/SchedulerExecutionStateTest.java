@@ -199,7 +199,20 @@ class SchedulerExecutionStateTest {
     assertThat(state.shouldSkipInitialization(batchOperation)).isFalse();
   }
 
-  // --- shouldSkipInitialization: page size comparison ---
+  @Test
+  void shouldSkipWhenSuspended() {
+    // given - batch operation is suspended
+    final var batchOperation =
+        new PersistedBatchOperation()
+            .setKey(BATCH_OPERATION_KEY)
+            .setStatus(BatchOperationStatus.SUSPENDED)
+            .setInitializationSearchCursor("cursor");
+    final var state =
+        new SchedulerExecutionState(BATCH_OPERATION_KEY, "cursor", DEFAULT_PAGE_SIZE, 100, 0);
+
+    // when / then - skip because operation is suspended
+    assertThat(state.shouldSkipInitialization(batchOperation)).isTrue();
+  }
 
   @Test
   void shouldSkipWhenPageSizeDiffers() {
