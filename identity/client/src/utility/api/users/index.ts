@@ -48,7 +48,7 @@ export const updateUser: ApiDefinition<
   UpdateUserRequestBody & Pick<User, "username">
 > = (user) => {
   const { name, email, username, password } = user;
-  return apiPut(`${USERS_ENDPOINT}/${username}`, {
+  return apiPut(`${USERS_ENDPOINT}/${encodeURIComponent(username)}`, {
     name,
     email,
     password,
@@ -57,4 +57,4 @@ export const updateUser: ApiDefinition<
 
 export const deleteUser: ApiDefinition<undefined, Pick<User, "username">> = ({
   username,
-}) => apiDelete(`${USERS_ENDPOINT}/${username}`);
+}) => apiDelete(`${USERS_ENDPOINT}/${encodeURIComponent(username)}`);

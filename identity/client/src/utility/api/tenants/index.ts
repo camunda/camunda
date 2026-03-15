@@ -55,12 +55,16 @@ export const updateTenant: ApiDefinition<
   undefined,
   UpdateTenantRequestBody & Pick<Tenant, "tenantId">
 > = ({ tenantId, name, description }) =>
-  apiPatch(`${TENANTS_ENDPOINT}/${tenantId}`, { name, description });
+  apiPatch(`${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}`, {
+    name,
+    description,
+  });
 
 export const deleteTenant: ApiDefinition<
   undefined,
   Pick<Tenant, "tenantId">
-> = ({ tenantId }) => apiDelete(`${TENANTS_ENDPOINT}/${tenantId}`);
+> = ({ tenantId }) =>
+  apiDelete(`${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}`);
 
 // ----------------- Groups within a Tenant -----------------
 
@@ -68,20 +72,27 @@ export const getGroupsByTenantId: ApiDefinition<
   QueryGroupsByTenantResponseBody,
   QueryGroupsByTenantRequestBody & Pick<Tenant, "tenantId">
 > = ({ tenantId, ...body }) =>
-  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/groups/search`, body);
+  apiPost(
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/groups/search`,
+    body,
+  );
 
 export const assignTenantGroup: ApiDefinition<
   undefined,
   Pick<Tenant, "tenantId"> & Pick<Group, "groupId">
 > = ({ tenantId, groupId }) => {
-  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/groups/${groupId}`);
+  return apiPut(
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/groups/${encodeURIComponent(groupId)}`,
+  );
 };
 
 export const unassignTenantGroup: ApiDefinition<
   undefined,
   Pick<Tenant, "tenantId"> & Pick<Group, "groupId">
 > = ({ tenantId, groupId }) =>
-  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/groups/${groupId}`);
+  apiDelete(
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/groups/${encodeURIComponent(groupId)}`,
+  );
 
 // ----------------- Roles within a Tenant -----------------
 
@@ -89,20 +100,27 @@ export const getRolesByTenantId: ApiDefinition<
   QueryRolesByTenantResponseBody,
   QueryRolesByTenantRequestBody & Pick<Tenant, "tenantId">
 > = ({ tenantId, ...body }) =>
-  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/roles/search`, body);
+  apiPost(
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/roles/search`,
+    body,
+  );
 
 export const assignTenantRole: ApiDefinition<
   undefined,
   Pick<Tenant, "tenantId"> & Pick<Role, "roleId">
 > = ({ tenantId, roleId }) => {
-  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/roles/${roleId}`);
+  return apiPut(
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/roles/${encodeURIComponent(roleId)}`,
+  );
 };
 
 export const unassignTenantRole: ApiDefinition<
   undefined,
   Pick<Tenant, "tenantId"> & Pick<Role, "roleId">
 > = ({ tenantId, roleId }) =>
-  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/roles/${roleId}`);
+  apiDelete(
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/roles/${encodeURIComponent(roleId)}`,
+  );
 
 // ----------------- Mapping rules within a Tenant -----------------
 
@@ -111,7 +129,10 @@ export const getMappingRulesByTenantId: ApiDefinition<
   QueryMappingRulesByTenantRequestBody & Pick<Tenant, "tenantId">
 > = (params) => {
   const { tenantId, ...body } = params;
-  return apiPost(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/search`, body);
+  return apiPost(
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/mapping-rules/search`,
+    body,
+  );
 };
 
 export const assignTenantMappingRule: ApiDefinition<
@@ -119,7 +140,7 @@ export const assignTenantMappingRule: ApiDefinition<
   Pick<Tenant, "tenantId"> & Pick<MappingRule, "mappingRuleId">
 > = ({ tenantId, mappingRuleId }) => {
   return apiPut(
-    `${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/${mappingRuleId}`,
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`,
   );
 };
 
@@ -127,23 +148,33 @@ export const unassignTenantMappingRule: ApiDefinition<
   undefined,
   Pick<Tenant, "tenantId"> & Pick<MappingRule, "mappingRuleId">
 > = ({ tenantId, mappingRuleId }) =>
-  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/${mappingRuleId}`);
+  apiDelete(
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`,
+  );
 
 export const getClientsByTenantId: ApiDefinition<
   QueryClientsByTenantResponseBody,
   QueryClientsByTenantRequestBody & Pick<Tenant, "tenantId">
 > = ({ tenantId, ...body }) =>
-  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/clients/search`, body);
+  apiPost(
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/clients/search`,
+    body,
+  );
 
 export const assignTenantClient: ApiDefinition<
   undefined,
   Pick<Tenant, "tenantId"> & { clientId: string }
 > = ({ tenantId, clientId, ...body }) => {
-  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/clients/${clientId}`, body);
+  return apiPut(
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/clients/${encodeURIComponent(clientId)}`,
+    body,
+  );
 };
 
 export const unassignTenantClient: ApiDefinition<
   undefined,
   Pick<Tenant, "tenantId"> & { clientId: string }
 > = ({ tenantId, clientId }) =>
-  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/clients/${clientId}`);
+  apiDelete(
+    `${TENANTS_ENDPOINT}/${encodeURIComponent(tenantId)}/clients/${encodeURIComponent(clientId)}`,
+  );
