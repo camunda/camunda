@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.protocol.model.GroupCreateRequest;
 import io.camunda.gateway.protocol.model.GroupUpdateRequest;
+import io.camunda.search.entities.GroupEntity;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
@@ -27,7 +28,6 @@ import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
-import io.camunda.search.entities.GroupEntity;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -1149,8 +1149,7 @@ public class GroupControllerTest {
       // given
       final var groupId = "/myGroup";
       final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
-      final var groupEntity =
-          new GroupEntity(null, groupId, "My Group", "desc");
+      final var groupEntity = new GroupEntity(null, groupId, "My Group", "desc");
       when(groupServices.getGroup(eq(groupId), any())).thenReturn(groupEntity);
 
       // when / then
@@ -1202,8 +1201,7 @@ public class GroupControllerTest {
       final var groupId = "/myGroup";
       final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
       when(groupServices.deleteGroup(eq(groupId), any()))
-          .thenReturn(
-              CompletableFuture.completedFuture(new GroupRecord().setGroupId(groupId)));
+          .thenReturn(CompletableFuture.completedFuture(new GroupRecord().setGroupId(groupId)));
 
       // when
       webClient
@@ -1269,8 +1267,7 @@ public class GroupControllerTest {
       // given
       final var groupId = "/org/team/myGroup";
       final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
-      final var groupEntity =
-          new GroupEntity(null, groupId, "My Group", "desc");
+      final var groupEntity = new GroupEntity(null, groupId, "My Group", "desc");
       when(groupServices.getGroup(eq(groupId), any())).thenReturn(groupEntity);
 
       // when / then
@@ -1289,8 +1286,7 @@ public class GroupControllerTest {
     void shouldStillWorkWithAlphanumericGroupId() {
       // given — regression test: normal IDs must not break
       final var groupId = "myGroup123";
-      final var groupEntity =
-          new GroupEntity(null, groupId, "My Group", "desc");
+      final var groupEntity = new GroupEntity(null, groupId, "My Group", "desc");
       when(groupServices.getGroup(eq(groupId), any())).thenReturn(groupEntity);
 
       // when / then

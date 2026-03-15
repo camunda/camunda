@@ -107,3 +107,4 @@ without any routing changes.
   requests, not just identity endpoints. This is safe because `%2F` in a path segment is only
   meaningful if the application interprets it — existing endpoints with alphanumeric IDs are
   unaffected.
+
