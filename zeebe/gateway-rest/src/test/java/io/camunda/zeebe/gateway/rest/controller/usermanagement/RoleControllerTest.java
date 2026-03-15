@@ -35,8 +35,8 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import org.springframework.web.util.UriUtils;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
@@ -1355,7 +1355,7 @@ public class RoleControllerTest {
       // given
       final var roleId = "roleId";
       final var groupId = "/myGroup";
-      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
       final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
       when(roleServices.addMember(eq(request), any()))
           .thenReturn(CompletableFuture.completedFuture(null));
@@ -1378,7 +1378,7 @@ public class RoleControllerTest {
       // given
       final var roleId = "roleId";
       final var groupId = "/myGroup";
-      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
       final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
       when(roleServices.removeMember(eq(request), any()))
           .thenReturn(CompletableFuture.completedFuture(null));
@@ -1401,7 +1401,7 @@ public class RoleControllerTest {
       // given
       final var roleId = "roleId";
       final var groupId = "/org/team/group";
-      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
       final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
       when(roleServices.addMember(eq(request), any()))
           .thenReturn(CompletableFuture.completedFuture(null));
@@ -1424,7 +1424,7 @@ public class RoleControllerTest {
       // given
       final var roleId = "roleId";
       final var groupId = "/org/team/group";
-      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
       final var request = new RoleMemberRequest(roleId, groupId, EntityType.GROUP);
       when(roleServices.removeMember(eq(request), any()))
           .thenReturn(CompletableFuture.completedFuture(null));

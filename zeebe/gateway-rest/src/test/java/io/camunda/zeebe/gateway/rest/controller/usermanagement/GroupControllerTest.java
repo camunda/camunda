@@ -37,7 +37,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
-import java.net.URLEncoder;
+import org.springframework.web.util.UriUtils;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
@@ -1113,7 +1113,6 @@ public class GroupControllerTest {
   @Nested
   @WebMvcTest(GroupController.class)
   @Import(GroupControllerTest.ExternalGroupIdTest.ExternalGroupIdTestConfig.class)
-  @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=groups")
   public class ExternalGroupIdTest extends RestControllerTest {
 
     @MockitoBean private GroupServices groupServices;
@@ -1148,7 +1147,7 @@ public class GroupControllerTest {
     void shouldGetGroupWithSlashInId() {
       // given
       final var groupId = "/myGroup";
-      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
       final var groupEntity = new GroupEntity(null, groupId, "My Group", "desc");
       when(groupServices.getGroup(eq(groupId), any())).thenReturn(groupEntity);
 
@@ -1168,7 +1167,7 @@ public class GroupControllerTest {
     void shouldUpdateGroupWithSlashInId() {
       // given
       final var groupId = "/myGroup";
-      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
       final var groupName = "updatedName";
       final var description = "updatedDescription";
       when(groupServices.updateGroup(eq(groupId), eq(groupName), eq(description), any()))
@@ -1199,7 +1198,7 @@ public class GroupControllerTest {
     void shouldDeleteGroupWithSlashInId() {
       // given
       final var groupId = "/myGroup";
-      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
       when(groupServices.deleteGroup(eq(groupId), any()))
           .thenReturn(CompletableFuture.completedFuture(new GroupRecord().setGroupId(groupId)));
 
@@ -1220,7 +1219,7 @@ public class GroupControllerTest {
     void shouldAssignUserToGroupWithSlashInId() {
       // given
       final var groupId = "/myGroup";
-      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
       final var username = "user1";
       final var request = new GroupMemberDTO(groupId, username, EntityType.USER);
       when(groupServices.assignMember(eq(request), any()))
@@ -1243,7 +1242,7 @@ public class GroupControllerTest {
     void shouldUnassignUserFromGroupWithSlashInId() {
       // given
       final var groupId = "/myGroup";
-      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
       final var username = "user1";
       final var request = new GroupMemberDTO(groupId, username, EntityType.USER);
       when(groupServices.removeMember(eq(request), any()))
@@ -1266,7 +1265,7 @@ public class GroupControllerTest {
     void shouldHandleGroupIdWithMultipleSlashes() {
       // given
       final var groupId = "/org/team/myGroup";
-      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
       final var groupEntity = new GroupEntity(null, groupId, "My Group", "desc");
       when(groupServices.getGroup(eq(groupId), any())).thenReturn(groupEntity);
 

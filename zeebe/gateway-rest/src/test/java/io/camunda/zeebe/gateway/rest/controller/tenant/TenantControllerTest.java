@@ -36,8 +36,8 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import org.springframework.web.util.UriUtils;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -706,7 +706,7 @@ public class TenantControllerTest {
       // given
       final var tenantId = "some-tenant-id";
       final var groupId = "/myGroup";
-      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
       final var request = new TenantMemberRequest(tenantId, groupId, EntityType.GROUP);
 
       when(tenantServices.addMember(eq(request), any()))
@@ -730,7 +730,7 @@ public class TenantControllerTest {
       // given
       final var tenantId = "some-tenant-id";
       final var groupId = "/myGroup";
-      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
       final var request = new TenantMemberRequest(tenantId, groupId, EntityType.GROUP);
 
       when(tenantServices.removeMember(eq(request), any()))
@@ -754,7 +754,7 @@ public class TenantControllerTest {
       // given
       final var tenantId = "some-tenant-id";
       final var groupId = "/org/team/group";
-      final var encodedGroupId = URLEncoder.encode(groupId, StandardCharsets.UTF_8);
+      final var encodedGroupId = UriUtils.encodePathSegment(groupId, StandardCharsets.UTF_8);
       final var request = new TenantMemberRequest(tenantId, groupId, EntityType.GROUP);
 
       when(tenantServices.addMember(eq(request), any()))
