@@ -65,20 +65,27 @@ export const searchRolesByGroupId: ApiDefinition<
   QueryRolesByGroupResponseBody,
   QueryRolesByGroupRequestBody & Pick<Group, "groupId">
 > = ({ groupId, ...body }) =>
-  apiPost(`${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/roles/search`, body);
+  apiPost(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/roles/search`,
+    body,
+  );
 
 export const assignGroupRole: ApiDefinition<
   undefined,
   Pick<Group, "groupId"> & Pick<Role, "roleId">
 > = ({ groupId, roleId }) => {
-  return apiPut(`${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}`);
+  return apiPut(
+    `${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}`,
+  );
 };
 
 export const unassignGroupRole: ApiDefinition<
   undefined,
   Pick<Group, "groupId"> & Pick<Role, "roleId">
 > = ({ groupId, roleId }) =>
-  apiDelete(`${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}`);
+  apiDelete(
+    `${ROLES_ENDPOINT}/${encodeURIComponent(roleId)}/groups/${encodeURIComponent(groupId)}`,
+  );
 
 // ----------------- Mapping rules within a Group -----------------
 
@@ -87,39 +94,53 @@ export const getMappingRulesByGroupId: ApiDefinition<
   QueryMappingRulesByGroupRequestBody & Pick<Group, "groupId">
 > = (params) => {
   const { groupId, ...body } = params;
-  return apiPost(`${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/mapping-rules/search`, body);
+  return apiPost(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/mapping-rules/search`,
+    body,
+  );
 };
 
 export const assignGroupMappingRule: ApiDefinition<
   undefined,
   Pick<Group, "groupId"> & Pick<MappingRule, "mappingRuleId">
 > = ({ groupId, mappingRuleId }) => {
-  return apiPut(`${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`);
+  return apiPut(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`,
+  );
 };
 
 export const unassignGroupMappingRule: ApiDefinition<
   undefined,
   Pick<Group, "groupId"> & Pick<MappingRule, "mappingRuleId">
 > = ({ groupId, mappingRuleId }) =>
-  apiDelete(`${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`);
+  apiDelete(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`,
+  );
 
 export const getClientsByGroupId: ApiDefinition<
   QueryClientsByGroupResponseBody,
   QueryClientsByGroupRequestBody & Pick<Group, "groupId">
 > = (args) => {
   const { groupId, ...body } = args;
-  return apiPost(`${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/clients/search`, body);
+  return apiPost(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/clients/search`,
+    body,
+  );
 };
 
 export const assignGroupClient: ApiDefinition<
   undefined,
   Pick<Group, "groupId"> & Pick<TenantClient, "clientId">
 > = ({ groupId, clientId }) => {
-  return apiPut(`${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/clients/${encodeURIComponent(clientId)}`);
+  return apiPut(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/clients/${encodeURIComponent(clientId)}`,
+  );
 };
 
 export const unassignGroupClient: ApiDefinition<
   undefined,
   Pick<Group, "groupId"> & Pick<TenantClient, "clientId">
 > = ({ groupId, clientId }) =>
-  apiDelete(`${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/clients/${encodeURIComponent(clientId)}`);
+  apiDelete(
+    `${GROUPS_ENDPOINT}/${encodeURIComponent(groupId)}/clients/${encodeURIComponent(clientId)}`,
+  );

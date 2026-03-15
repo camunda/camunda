@@ -133,12 +133,14 @@ const queryTenants: Endpoint = {
 
 const assignUserToTenant: Endpoint<Pick<Tenant, 'tenantId'> & {username: string}> = {
 	method: 'PUT',
-	getUrl: ({tenantId, username}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/users/${encodeURIComponent(username)}`,
+	getUrl: ({tenantId, username}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/users/${encodeURIComponent(username)}`,
 };
 
 const unassignUserFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & {username: string}> = {
 	method: 'DELETE',
-	getUrl: ({tenantId, username}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/users/${encodeURIComponent(username)}`,
+	getUrl: ({tenantId, username}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/users/${encodeURIComponent(username)}`,
 };
 
 const queryUsersByTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
@@ -163,22 +165,26 @@ const queryRolesByTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 
 const assignClientToTenant: Endpoint<Pick<Tenant, 'tenantId'> & {clientId: string}> = {
 	method: 'PUT',
-	getUrl: ({tenantId, clientId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/clients/${encodeURIComponent(clientId)}`,
+	getUrl: ({tenantId, clientId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/clients/${encodeURIComponent(clientId)}`,
 };
 
 const unassignClientFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & {clientId: string}> = {
 	method: 'DELETE',
-	getUrl: ({tenantId, clientId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/clients/${encodeURIComponent(clientId)}`,
+	getUrl: ({tenantId, clientId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/clients/${encodeURIComponent(clientId)}`,
 };
 
 const assignMappingRuleToTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'PUT',
-	getUrl: ({tenantId, mappingRuleId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`,
+	getUrl: ({tenantId, mappingRuleId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`,
 };
 
 const unassignMappingRuleFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<MappingRule, 'mappingRuleId'>> = {
 	method: 'DELETE',
-	getUrl: ({tenantId, mappingRuleId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`,
+	getUrl: ({tenantId, mappingRuleId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/mapping-rules/${encodeURIComponent(mappingRuleId)}`,
 };
 
 const queryMappingRulesByTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
@@ -188,22 +194,26 @@ const queryMappingRulesByTenant: Endpoint<Pick<Tenant, 'tenantId'>> = {
 
 const assignGroupToTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<Group, 'groupId'>> = {
 	method: 'PUT',
-	getUrl: ({tenantId, groupId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/groups/${encodeURIComponent(groupId)}`,
+	getUrl: ({tenantId, groupId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/groups/${encodeURIComponent(groupId)}`,
 };
 
 const unassignGroupFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<Group, 'groupId'>> = {
 	method: 'DELETE',
-	getUrl: ({tenantId, groupId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/groups/${encodeURIComponent(groupId)}`,
+	getUrl: ({tenantId, groupId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/groups/${encodeURIComponent(groupId)}`,
 };
 
 const assignRoleToTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<Role, 'roleId'>> = {
 	method: 'PUT',
-	getUrl: ({tenantId, roleId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/roles/${encodeURIComponent(roleId)}`,
+	getUrl: ({tenantId, roleId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/roles/${encodeURIComponent(roleId)}`,
 };
 
 const unassignRoleFromTenant: Endpoint<Pick<Tenant, 'tenantId'> & Pick<Role, 'roleId'>> = {
 	method: 'DELETE',
-	getUrl: ({tenantId, roleId}) => `/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/roles/${encodeURIComponent(roleId)}`,
+	getUrl: ({tenantId, roleId}) =>
+		`/${API_VERSION}/tenants/${encodeURIComponent(tenantId)}/roles/${encodeURIComponent(roleId)}`,
 };
 
 export {
