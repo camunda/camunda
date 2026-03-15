@@ -155,8 +155,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       return initialPollingInterval;
     }
 
-    // Build context with in-memory overrides (cursor for retries, page size for buffer-full)
-    final var context = currentState.buildContext(batchOperation, defaultPageSize);
+    final var context = InitializationContext.fromBatchOperation(batchOperation, defaultPageSize);
     final var outcome =
         batchOperationInitializer.initializeBatchOperation(context, taskResultBuilder);
 
@@ -176,7 +175,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
             batchOperation.getKey(),
             newPageSize);
         executionState.set(currentState.withReducedPageSize(newPageSize));
-        yield Duration.ZERO; // Retry immediately with smaller page size
+        yield initialPollingInterval;
       }
       case NeedsRetry(final var cursor, final var cause) ->
           handleRetry(taskResultBuilder, batchOperation, currentState, cursor, cause);
@@ -222,7 +221,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   private SchedulerExecutionState getOrCreateState(final PersistedBatchOperation batchOperation) {
     var state = executionState.get();
     if (state == null || state.batchOperationKey() != batchOperation.getKey()) {
-      state = SchedulerExecutionState.from(batchOperation);
+      state = SchedulerExecutionState.from(batchOperation, defaultPageSize);
       executionState.set(state);
     }
     return state;
