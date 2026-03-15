@@ -1329,7 +1329,7 @@ public class RoleControllerTest {
    *
    * <p>NOTE: {@code @WebMvcTest} does NOT go through Tomcat, so {@code %2F} in URIs is decoded by
    * MockMvc's path matching directly. In a real Tomcat deployment, the {@code
-   * TomcatEncodedSlashConfig} customizer ensures that encoded slashes are not rejected. These tests
+   * io.camunda.application.commons.rest.TomcatEncodedSlashConfig} customizer ensures that encoded slashes are not rejected. These tests
    * verify the controller and validation layer accept decoded slashes in groupId path variables.
    */
   @Nested

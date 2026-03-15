@@ -698,7 +698,7 @@ public class TenantControllerTest {
      *
      * <p>NOTE: {@code @WebMvcTest} does not go through Tomcat, so {@code %2F} is decoded by
      * MockMvc's path matching directly. In a real Tomcat deployment, {@link
-     * io.camunda.zeebe.gateway.rest.config.TomcatEncodedSlashConfig} ensures encoded slashes pass
+     * io.camunda.application.commons.rest.TomcatEncodedSlashConfig} ensures encoded slashes pass
      * through.
      */
     @Test
