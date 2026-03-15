@@ -73,26 +73,29 @@ record SchedulerExecutionState(
   /**
    * Determines whether initialization should be skipped for the given batch operation.
    *
-   * <p>We skip when our in-memory state differs from the persisted state, which means we appended
-   * an INITIALIZE command that hasn't been processed yet by the stream processor. In that case, the
-   * engine is still catching up, and since batch operations are lower priority than normal record
-   * processing, we back off and wait for the next scheduler tick.
-   *
-   * <p>We detect in-flight commands by comparing:
+   * <p>We skip in three cases:
    *
    * <ul>
-   *   <li><b>Cursor:</b> differs when a page was successfully initialized and a
-   *       continueInitialization command was written
-   *   <li><b>Page size:</b> differs when a buffer-full scenario triggered a page size reduction and
-   *       a continueInitialization command was written with the new size
+   *   <li><b>Suspended:</b> the batch operation has been suspended and should not be processed
+   *       until resumed
+   *   <li><b>Cursor differs:</b> a page was successfully initialized and a continueInitialization
+   *       command was written, but hasn't been processed yet by the stream processor
+   *   <li><b>Page size differs:</b> a buffer-full scenario triggered a page size reduction and a
+   *       continueInitialization command was written with the new size, but hasn't been processed
+   *       yet
    * </ul>
    *
-   * <p>This applies equally to retries: if a retry wrote a {@code continueInitialization} command,
-   * we wait for it to be processed before scheduling more work.
+   * <p>The last two cases provide natural back-pressure: batch operations are lower priority than
+   * normal record processing, so we wait rather than adding more commands to a busy pipeline. This
+   * applies equally to retries — if a retry wrote a {@code continueInitialization} command, we wait
+   * for it to be processed before scheduling more work.
    */
   boolean shouldSkipInitialization(final PersistedBatchOperation batchOperation) {
     if (batchOperationKey != batchOperation.getKey()) {
       return false;
+    }
+    if (batchOperation.isSuspended()) {
+      return true;
     }
     if (!Objects.equals(cursor, emptyToNull(batchOperation.getInitializationSearchCursor()))) {
       return true;

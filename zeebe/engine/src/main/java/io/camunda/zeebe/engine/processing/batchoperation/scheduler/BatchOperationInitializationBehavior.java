@@ -94,10 +94,6 @@ public class BatchOperationInitializationBehavior {
   public InitializationOutcome initializeBatchOperation(
       final InitializationContext initialContext, final TaskResultBuilder taskResultBuilder) {
     final var batchOperation = initialContext.operation();
-    if (batchOperation.isSuspended()) {
-      LOG.trace("Batch operation {} is suspended.", batchOperation.getKey());
-      return new Success(batchOperation.getInitializationSearchCursor());
-    }
 
     final var itemProvider = itemProviderFactory.fromBatchOperation(batchOperation);
     var context = initialContext;
