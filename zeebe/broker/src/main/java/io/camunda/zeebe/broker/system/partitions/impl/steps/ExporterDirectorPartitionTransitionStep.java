@@ -128,10 +128,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .descriptors(exporterDescriptors)
             .exporterMode(exporterMode)
             .positionsToSkipFilter(exporterFilter)
-            .meterRegistry(context.getPartitionTransitionMeterRegistry())
-            .engineName(brokerCfg.getExperimental().getDefaultEngineName())
-            .sendOnLegacySubject(brokerCfg.getExperimental().isSendOnLegacySubject())
-            .receiveOnLegacySubject(brokerCfg.getExperimental().isReceiveOnLegacySubject());
+            .meterRegistry(context.getPartitionTransitionMeterRegistry());
 
     final ExporterDirector director =
         exporterDirectorBuilder.apply(exporterCtx, context.getExporterPhase());
