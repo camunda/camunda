@@ -59,7 +59,6 @@ public class CamundaExporterAuthenticationIT {
   void afterEach() {
     if (exporter != null) {
       exporter.close();
-      exporter = null;
     }
   }
 
