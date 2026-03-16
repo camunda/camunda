@@ -18,7 +18,6 @@ import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/c
 import {mockResolveProcessInstanceIncidents} from 'modules/mocks/api/v2/processInstances/resolveProcessInstanceIncidents';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockDeleteProcessInstance} from 'modules/mocks/api/v2/processInstances/deleteProcessInstance';
-import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -183,27 +182,23 @@ describe('ProcessInstanceOperations', () => {
     });
   });
 
-  it(
-    'should show success notification on cancel success',
-    {skip: !IS_NEW_PROCESS_INSTANCE_PAGE},
-    async () => {
-      mockCancelProcessInstance().withSuccess({});
+  it('should show success notification on cancel success', async () => {
+    mockCancelProcessInstance().withSuccess({});
 
-      const {user} = render(
-        <ProcessInstanceOperations processInstance={mockProcessInstance} />,
-        {wrapper: getWrapper()},
-      );
+    const {user} = render(
+      <ProcessInstanceOperations processInstance={mockProcessInstance} />,
+      {wrapper: getWrapper()},
+    );
 
-      await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
-      await user.click(screen.getByRole('button', {name: 'Apply'}));
+    await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
 
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'info',
-        title: 'Instance is scheduled for cancellation',
-        isDismissable: true,
-      });
-    },
-  );
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'info',
+      title: 'Instance is scheduled for cancellation',
+      isDismissable: true,
+    });
+  });
 
   it('should show error notification on resolve incident error', async () => {
     mockResolveProcessInstanceIncidents().withServerError();
@@ -230,34 +225,30 @@ describe('ProcessInstanceOperations', () => {
     });
   });
 
-  it(
-    'should show success notification on resolve incident success',
-    {skip: !IS_NEW_PROCESS_INSTANCE_PAGE},
-    async () => {
-      mockResolveProcessInstanceIncidents().withSuccess({});
-      const instanceWithIncident = createProcessInstance({
-        state: 'ACTIVE',
-        hasIncident: true,
-        parentProcessInstanceKey: null,
-        parentElementInstanceKey: null,
-        rootProcessInstanceKey: null,
-        tags: [],
-      });
+  it('should show success notification on resolve incident success', async () => {
+    mockResolveProcessInstanceIncidents().withSuccess({});
+    const instanceWithIncident = createProcessInstance({
+      state: 'ACTIVE',
+      hasIncident: true,
+      parentProcessInstanceKey: null,
+      parentElementInstanceKey: null,
+      rootProcessInstanceKey: null,
+      tags: [],
+    });
 
-      const {user} = render(
-        <ProcessInstanceOperations processInstance={instanceWithIncident} />,
-        {wrapper: getWrapper()},
-      );
+    const {user} = render(
+      <ProcessInstanceOperations processInstance={instanceWithIncident} />,
+      {wrapper: getWrapper()},
+    );
 
-      await user.click(screen.getByRole('button', {name: /Retry Instance/}));
+    await user.click(screen.getByRole('button', {name: /Retry Instance/}));
 
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'info',
-        title: 'Incidents are scheduled for retry',
-        isDismissable: true,
-      });
-    },
-  );
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'info',
+      title: 'Incidents are scheduled for retry',
+      isDismissable: true,
+    });
+  });
 
   it('should show error notification on resolve incident permission error', async () => {
     mockResolveProcessInstanceIncidents().withServerError(403);
