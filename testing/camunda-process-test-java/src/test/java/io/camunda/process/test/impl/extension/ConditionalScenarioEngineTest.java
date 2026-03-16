@@ -17,13 +17,15 @@ package io.camunda.process.test.impl.extension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 
+import io.camunda.process.test.api.ScenarioCondition;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,9 +39,23 @@ class ConditionalScenarioEngineTest {
     engine = new ConditionalScenarioEngine();
   }
 
+  /** Simulates the search API catching up by reopening the gate after a short delay. */
+  private static void reopenGateAfterDelay(final AtomicBoolean gate) {
+    new Thread(
+            () -> {
+              try {
+                Thread.sleep(100);
+              } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+              }
+              gate.set(true);
+            })
+        .start();
+  }
+
   @AfterEach
   void tearDown() {
-    engine.reset();
+    engine.stop();
   }
 
   // --- Input validation ---
@@ -51,17 +67,90 @@ class ConditionalScenarioEngineTest {
 
   @Test
   void shouldRejectNullAction() {
-    final Runnable condition = () -> {};
+    final ScenarioCondition condition = () -> {};
     assertThatThrownBy(() -> engine.when(condition).then(null))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   void shouldRejectNullChainedAction() {
-    final Runnable condition = () -> {};
+    final ScenarioCondition condition = () -> {};
     final Runnable action = () -> {};
     assertThatThrownBy(() -> engine.when(condition).then(action).then(null))
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldRejectNullName() {
+    assertThatThrownBy(() -> engine.when(() -> {}).as(null))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldRejectBlankName() {
+    assertThatThrownBy(() -> engine.when(() -> {}).as("  "))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldFireNamedScenario() {
+    final AtomicInteger actionCount = new AtomicInteger(0);
+
+    engine.when(() -> {}).as("my-scenario").then(actionCount::incrementAndGet);
+
+    await().untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(1));
+  }
+
+  // --- Evaluation scope wiring ---
+
+  @Test
+  void shouldUseInjectedEvaluationScope() {
+    final AtomicInteger scopeCallCount = new AtomicInteger(0);
+    final AtomicInteger actionCount = new AtomicInteger(0);
+
+    engine.start(
+        () -> {},
+        evaluation -> {
+          scopeCallCount.incrementAndGet();
+          evaluation.run();
+        });
+
+    engine.when(() -> {}).then(actionCount::incrementAndGet);
+
+    await()
+        .untilAsserted(
+            () -> {
+              assertThat(scopeCallCount.get()).isGreaterThanOrEqualTo(1);
+              assertThat(actionCount.get()).isGreaterThanOrEqualTo(1);
+            });
+  }
+
+  @Test
+  void shouldExecuteActionsWithinEvaluationScope() {
+    final AtomicBoolean scopeActive = new AtomicBoolean(false);
+    final AtomicBoolean actionSawScope = new AtomicBoolean(false);
+
+    engine.start(
+        () -> {},
+        evaluation -> {
+          scopeActive.set(true);
+          try {
+            evaluation.run();
+          } finally {
+            scopeActive.set(false);
+          }
+        });
+
+    engine
+        .when(() -> {})
+        .then(
+            () -> {
+              if (scopeActive.get()) {
+                actionSawScope.set(true);
+              }
+            });
+
+    await().untilAsserted(() -> assertThat(actionSawScope.get()).isTrue());
   }
 
   // --- Core behavior ---
@@ -86,11 +175,11 @@ class ConditionalScenarioEngineTest {
     // now condition passes
     conditionMet.set(true);
 
-    Awaitility.await().untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(1));
+    await().untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(1));
   }
 
   @Test
-  void shouldNotFireActionWhenConditionFails() throws InterruptedException {
+  void shouldNotFireActionWhenConditionFails() {
     final AtomicInteger actionCount = new AtomicInteger(0);
 
     engine
@@ -100,32 +189,65 @@ class ConditionalScenarioEngineTest {
             })
         .then(actionCount::incrementAndGet);
 
-    Thread.sleep(200);
-
-    assertThat(actionCount.get()).isZero();
+    await()
+        .during(200, TimeUnit.MILLISECONDS)
+        .untilAsserted(() -> assertThat(actionCount.get()).isZero());
   }
 
   @Test
   void shouldFireActionRepeatedly() {
     final AtomicInteger actionCount = new AtomicInteger(0);
+    final AtomicBoolean gate = new AtomicBoolean(true);
 
-    // condition always passes
-    engine.when(() -> {}).then(actionCount::incrementAndGet);
+    engine
+        .when(
+            () -> {
+              if (!gate.get()) {
+                throw new AssertionError("gate closed");
+              }
+            })
+        .then(
+            () -> {
+              actionCount.incrementAndGet();
+              gate.set(false);
+              reopenGateAfterDelay(gate);
+            });
 
-    Awaitility.await().untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(3));
+    await().untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(3));
   }
 
   @Test
   void shouldFireChainedActionsInOrder() {
     final List<String> sequence = Collections.synchronizedList(new ArrayList<>());
+    final AtomicBoolean gate = new AtomicBoolean(true);
 
     engine
-        .when(() -> {})
-        .then(() -> sequence.add("first"))
-        .then(() -> sequence.add("second"))
-        .then(() -> sequence.add("third"));
+        .when(
+            () -> {
+              if (!gate.get()) {
+                throw new AssertionError("gate closed");
+              }
+            })
+        .then(
+            () -> {
+              sequence.add("first");
+              gate.set(false);
+              reopenGateAfterDelay(gate);
+            })
+        .then(
+            () -> {
+              sequence.add("second");
+              gate.set(false);
+              reopenGateAfterDelay(gate);
+            })
+        .then(
+            () -> {
+              sequence.add("third");
+              gate.set(false);
+              reopenGateAfterDelay(gate);
+            });
 
-    Awaitility.await()
+    await()
         .untilAsserted(
             () -> {
               assertThat(sequence).hasSizeGreaterThanOrEqualTo(3);
@@ -138,10 +260,29 @@ class ConditionalScenarioEngineTest {
   @Test
   void shouldRepeatLastChainedAction() {
     final List<String> sequence = Collections.synchronizedList(new ArrayList<>());
+    final AtomicBoolean gate = new AtomicBoolean(true);
 
-    engine.when(() -> {}).then(() -> sequence.add("first")).then(() -> sequence.add("last"));
+    engine
+        .when(
+            () -> {
+              if (!gate.get()) {
+                throw new AssertionError("gate closed");
+              }
+            })
+        .then(
+            () -> {
+              sequence.add("first");
+              gate.set(false);
+              reopenGateAfterDelay(gate);
+            })
+        .then(
+            () -> {
+              sequence.add("last");
+              gate.set(false);
+              reopenGateAfterDelay(gate);
+            });
 
-    Awaitility.await()
+    await()
         .untilAsserted(
             () -> {
               assertThat(sequence).hasSizeGreaterThanOrEqualTo(4);
@@ -161,7 +302,7 @@ class ConditionalScenarioEngineTest {
         .when(() -> {})
         .then(secondActionCount::incrementAndGet);
 
-    Awaitility.await()
+    await()
         .untilAsserted(
             () -> {
               assertThat(firstActionCount.get()).isGreaterThanOrEqualTo(1);
@@ -172,31 +313,151 @@ class ConditionalScenarioEngineTest {
   @Test
   void shouldKeepScenarioAliveWhenActionThrows() {
     final AtomicInteger actionCount = new AtomicInteger(0);
+    final AtomicBoolean gate = new AtomicBoolean(true);
 
     engine
-        .when(() -> {})
+        .when(
+            () -> {
+              if (!gate.get()) {
+                throw new AssertionError("gate closed");
+              }
+            })
         .then(
             () -> {
               actionCount.incrementAndGet();
+              gate.set(false);
+              reopenGateAfterDelay(gate);
               throw new RuntimeException("action failed");
             });
 
-    Awaitility.await().untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(3));
+    await().untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(3));
   }
 
   @Test
-  void shouldStopScenariosOnReset() throws InterruptedException {
+  void shouldRetryFailedActionWithoutAdvancingChain() {
+    final AtomicInteger failCount = new AtomicInteger(2);
+    final List<String> sequence = Collections.synchronizedList(new ArrayList<>());
+    final AtomicBoolean gate = new AtomicBoolean(true);
+
+    engine
+        .when(
+            () -> {
+              if (!gate.get()) {
+                throw new AssertionError("gate closed");
+              }
+            })
+        .then(
+            () -> {
+              if (failCount.getAndDecrement() > 0) {
+                sequence.add("fail");
+                gate.set(false);
+                reopenGateAfterDelay(gate);
+                throw new RuntimeException("not ready yet");
+              }
+              sequence.add("first");
+              gate.set(false);
+              reopenGateAfterDelay(gate);
+            })
+        .then(
+            () -> {
+              sequence.add("second");
+              gate.set(false);
+              reopenGateAfterDelay(gate);
+            });
+
+    await()
+        .untilAsserted(
+            () -> {
+              assertThat(sequence).hasSizeGreaterThanOrEqualTo(4);
+              // first action fails twice, then succeeds, then second action fires
+              assertThat(sequence.get(0)).isEqualTo("fail");
+              assertThat(sequence.get(1)).isEqualTo("fail");
+              assertThat(sequence.get(2)).isEqualTo("first");
+              assertThat(sequence.get(3)).isEqualTo("second");
+            });
+  }
+
+  @Test
+  void shouldStopScenariosOnStop() {
     final AtomicInteger actionCount = new AtomicInteger(0);
 
     engine.when(() -> {}).then(actionCount::incrementAndGet);
 
-    Awaitility.await().untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(1));
+    await().untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(1));
 
-    engine.reset();
-    final int countAfterReset = actionCount.get();
+    engine.stop();
+    final int countAfterStop = actionCount.get();
 
-    Thread.sleep(200);
+    await()
+        .during(200, TimeUnit.MILLISECONDS)
+        .untilAsserted(() -> assertThat(actionCount.get()).isEqualTo(countAfterStop));
+  }
 
-    assertThat(actionCount.get()).isEqualTo(countAfterReset);
+  // --- Reset-gating behavior ---
+
+  @Test
+  void shouldNotFireActionTwiceWhenConditionRemainsTrue() {
+    final AtomicInteger actionCount = new AtomicInteger(0);
+
+    // condition always passes (simulates stale search API)
+    engine.when(() -> {}).then(actionCount::incrementAndGet);
+
+    // wait for the first firing
+    await().untilAsserted(() -> assertThat(actionCount.get()).isEqualTo(1));
+
+    // action should not fire again — reset-gating prevents it
+    await()
+        .during(500, TimeUnit.MILLISECONDS)
+        .untilAsserted(() -> assertThat(actionCount.get()).isEqualTo(1));
+  }
+
+  @Test
+  void shouldRearmAfterConditionResets() {
+    final AtomicInteger actionCount = new AtomicInteger(0);
+    final AtomicBoolean gate = new AtomicBoolean(true);
+
+    engine
+        .when(
+            () -> {
+              if (!gate.get()) {
+                throw new AssertionError("gate closed");
+              }
+            })
+        .then(
+            () -> {
+              actionCount.incrementAndGet();
+              gate.set(false);
+              reopenGateAfterDelay(gate);
+            });
+
+    await().untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(2));
+  }
+
+  @Test
+  void shouldRearmAfterResetTimeoutWhenConditionNeverResets() {
+    final AtomicInteger actionCount = new AtomicInteger(0);
+
+    // condition always passes — reset-wait will hit timeout
+    engine.when(() -> {}).then(actionCount::incrementAndGet);
+
+    // wait for at least 2 firings (each separated by ~5s reset timeout)
+    await()
+        .atMost(15, TimeUnit.SECONDS)
+        .untilAsserted(() -> assertThat(actionCount.get()).isGreaterThanOrEqualTo(2));
+  }
+
+  @Test
+  void shouldShutdownPromptlyDuringResetWait() {
+    engine.when(() -> {}).then(() -> {});
+
+    // wait for the scenario to fire and enter reset-wait
+    await().atMost(1, TimeUnit.SECONDS).pollDelay(200, TimeUnit.MILLISECONDS).until(() -> true);
+
+    final long start = System.currentTimeMillis();
+    engine.stop();
+    final long elapsed = System.currentTimeMillis() - start;
+
+    // should stop well within the shutdown timeout, not wait for reset timeout
+    assertThat(elapsed).isLessThan(2_000);
   }
 }

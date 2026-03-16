@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.impl.extensions;
 
+import static io.camunda.process.test.api.CamundaAssert.assertThat;
 import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
-import static io.camunda.process.test.api.CamundaAssert.assertThatUserTask;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
@@ -24,7 +24,6 @@ import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.TestDeployment;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
-import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +53,9 @@ public class ConditionalScenarioBeforeEachIT {
   void setupScenarios() {
     processTestContext
         .when(
-            () -> assertThatUserTask(UserTaskSelectors.byElementId("State_Happiness")).isCreated())
+            () ->
+                assertThat(ProcessInstanceSelectors.byProcessId("user-happiness-check"))
+                    .hasActiveElement("State_Happiness", 1))
         .then(() -> processTestContext.completeUserTask("State_Happiness", UNHAPPY))
         .then(() -> processTestContext.completeUserTask("State_Happiness", HAPPY))
         .when(
@@ -72,8 +73,7 @@ public class ConditionalScenarioBeforeEachIT {
             .newCreateInstanceCommand()
             .bpmnProcessId("user-happiness-check")
             .latestVersion()
-            .send()
-            .join();
+            .execute();
 
     assertThatProcessInstance(processInstanceEvent)
         .isCompleted()
@@ -90,8 +90,7 @@ public class ConditionalScenarioBeforeEachIT {
             .newCreateInstanceCommand()
             .bpmnProcessId("user-happiness-check")
             .latestVersion()
-            .send()
-            .join();
+            .execute();
 
     assertThatProcessInstance(processInstanceEvent)
         .isCompleted()

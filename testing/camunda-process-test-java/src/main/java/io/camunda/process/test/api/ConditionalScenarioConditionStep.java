@@ -19,6 +19,16 @@ package io.camunda.process.test.api;
 public interface ConditionalScenarioConditionStep {
 
   /**
+   * Assigns a descriptive name to this scenario, used in log messages and diagnostics. If not
+   * called, the scenario is identified by its 1-based registration index (e.g. {@code #1}).
+   *
+   * @param name a non-blank descriptive name for the scenario
+   * @return this step for further chaining
+   * @throws IllegalArgumentException if name is null or blank
+   */
+  ConditionalScenarioConditionStep as(String name);
+
+  /**
    * Defines the action to execute when the condition is satisfied.
    *
    * @param action the action to execute

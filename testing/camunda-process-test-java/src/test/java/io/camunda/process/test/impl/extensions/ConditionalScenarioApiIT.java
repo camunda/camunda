@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.impl.extensions;
 
+import static io.camunda.process.test.api.CamundaAssert.assertThat;
 import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
-import static io.camunda.process.test.api.CamundaAssert.assertThatUserTask;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
@@ -24,22 +24,19 @@ import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.TestDeployment;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
-import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import java.util.Collections;
 import java.util.Map;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.junit.jupiter.api.RepeatedTest;
 
 @CamundaProcessTest
-@TestInstance(Lifecycle.PER_CLASS)
 public class ConditionalScenarioApiIT {
 
   // injected by the extension
   private CamundaProcessTestContext processTestContext;
   private CamundaClient client;
 
-  @Test
+  // ensure repeated tests get fresh scenarios
+  @RepeatedTest(value = 2)
   @TestDeployment(
       resources = {
         "conditionalScenarioApi/scenario-api-test.bpmn",
@@ -56,7 +53,9 @@ public class ConditionalScenarioApiIT {
         //   1st time with happy=false (loops back)
         //   2nd time with happy=true (proceeds to Export_Happiness)
         .when(
-            () -> assertThatUserTask(UserTaskSelectors.byElementId("State_Happiness")).isCreated())
+            () ->
+                assertThat(ProcessInstanceSelectors.byProcessId("user-happiness-check"))
+                    .hasActiveElement("State_Happiness", 1))
         .then(() -> processTestContext.completeUserTask("State_Happiness", unhappy))
         .then(() -> processTestContext.completeUserTask("State_Happiness", happy))
         // When Export_Happiness is active, complete the job
@@ -73,8 +72,7 @@ public class ConditionalScenarioApiIT {
             .newCreateInstanceCommand()
             .bpmnProcessId("user-happiness-check")
             .latestVersion()
-            .send()
-            .join();
+            .execute();
 
     // Assert process completed with expected variables
     assertThatProcessInstance(processInstanceEvent)
