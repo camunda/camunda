@@ -29,7 +29,7 @@ jobs:
       contents: read
     strategy:
       fail-fast: false
-      matrix:
+      matrix: &database-matrix
         include:
           # PostgreSQL - Supported versions: 14, 15, 16, 17, 18
           - database-name: "Postgres 14"
@@ -99,4 +99,45 @@ jobs:
       database-image-version: ${{ matrix.database-image-version }}
       database-name: ${{ matrix.database-name }}
       it-database-type: ${{ matrix.it-database-type }}
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
+
+  rdbms-history-tests:
+    name: "RDBMS History Tests / ${{ matrix.database-name }}"
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: *database-matrix
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: ${{ matrix.database-type }}
+      database-image-version: ${{ matrix.database-image-version }}
+      database-name: ${{ matrix.database-name }}
+      it-database-type: "${{ matrix.it-database-type }}"
+      maven-profiles: "history"
+      test-type: "history-tests"
+      test-type-label: "History"
+      runs-on: "gcp-perf-core-8-default"
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
+
+  rdbms-identity-tests:
+    name: "RDBMS Identity Tests / ${{ matrix.database-name }}"
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix: *database-matrix
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: ${{ matrix.database-type }}
+      database-image-version: ${{ matrix.database-image-version }}
+      database-name: ${{ matrix.database-name }}
+      it-database-type: "${{ matrix.it-database-type }}"
+      maven-profiles: "identity-tests"
+      test-type: "identity-tests"
+      test-type-label: "Identity"
       notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
