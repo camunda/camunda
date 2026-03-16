@@ -53,12 +53,6 @@ public final class OidcConfigurationAdapter implements OidcConfigurationProvider
         .ifPresent(
             c -> result.put(DEFAULT_REGISTRATION_ID, toOidcConfig(c, DEFAULT_REGISTRATION_ID)));
 
-    Optional.ofNullable(authConfig.getProviders())
-        .map(p -> p.getOidc())
-        .ifPresent(
-            providers ->
-                providers.forEach((id, config) -> result.put(id, toOidcConfig(config, id))));
-
     return result;
   }
 

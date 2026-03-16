@@ -8,10 +8,6 @@
 package io.camunda.security.configuration;
 
 import io.camunda.gatekeeper.auth.OidcGroupsLoader;
-import io.camunda.security.configuration.AssertionConfiguration.KidDigestAlgorithm;
-import io.camunda.security.configuration.AssertionConfiguration.KidEncoding;
-import io.camunda.security.configuration.AssertionConfiguration.KidSource;
-import jakarta.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -43,8 +39,6 @@ public class OidcAuthenticationConfiguration {
   private String authorizationUri;
   private String endSessionEndpointUri;
   private String tokenUri;
-  private AuthorizeRequestConfiguration authorizeRequestConfiguration =
-      new AuthorizeRequestConfiguration();
   private Set<String> audiences;
   private String usernameClaim = "sub";
   private String clientIdClaim;
@@ -53,15 +47,9 @@ public class OidcAuthenticationConfiguration {
   private String organizationId;
   private List<String> resource;
   private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
-  private AssertionConfiguration assertionConfiguration = new AssertionConfiguration();
   private Duration clockSkew = DEFAULT_CLOCK_SKEW;
   private boolean idpLogoutEnabled = true;
   private boolean userInfoEnabled = true;
-
-  @PostConstruct
-  public void validate() {
-    assertionConfiguration.validate();
-  }
 
   public List<String> getResource() {
     return resource;
@@ -175,15 +163,6 @@ public class OidcAuthenticationConfiguration {
     this.tokenUri = tokenUri;
   }
 
-  public AuthorizeRequestConfiguration getAuthorizeRequest() {
-    return authorizeRequestConfiguration;
-  }
-
-  public void setAuthorizeRequest(
-      final AuthorizeRequestConfiguration authorizeRequestConfiguration) {
-    this.authorizeRequestConfiguration = authorizeRequestConfiguration;
-  }
-
   public Set<String> getAudiences() {
     return audiences;
   }
@@ -245,14 +224,6 @@ public class OidcAuthenticationConfiguration {
     this.clientAuthenticationMethod = clientAuthenticationMethod;
   }
 
-  public AssertionConfiguration getAssertion() {
-    return assertionConfiguration;
-  }
-
-  public void setAssertion(final AssertionConfiguration assertionConfiguration) {
-    this.assertionConfiguration = assertionConfiguration;
-  }
-
   public Duration getClockSkew() {
     return clockSkew;
   }
@@ -291,8 +262,6 @@ public class OidcAuthenticationConfiguration {
         || authorizationUri != null
         || endSessionEndpointUri != null
         || tokenUri != null
-        || authorizeRequestConfiguration == null
-        || authorizeRequestConfiguration.isSet()
         || !"sub".equals(usernameClaim)
         || audiences != null
         || clientIdClaim != null
@@ -300,14 +269,6 @@ public class OidcAuthenticationConfiguration {
         || preferUsernameClaim
         || organizationId != null
         || !CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC.equals(clientAuthenticationMethod)
-        || assertionConfiguration.getKeystore().getPath() != null
-        || assertionConfiguration.getKeystore().getPassword() != null
-        || assertionConfiguration.getKeystore().getKeyAlias() != null
-        || assertionConfiguration.getKeystore().getKeyPassword() != null
-        || assertionConfiguration.getKidSource() != KidSource.PUBLIC_KEY
-        || assertionConfiguration.getKidDigestAlgorithm() != KidDigestAlgorithm.SHA256
-        || assertionConfiguration.getKidEncoding() != KidEncoding.BASE64URL
-        || assertionConfiguration.getKidCase() != null
         || !DEFAULT_CLOCK_SKEW.equals(clockSkew);
   }
 
@@ -329,8 +290,6 @@ public class OidcAuthenticationConfiguration {
     private String authorizationUri;
     private String endSessionEndpointUri;
     private String tokenUri;
-    private AuthorizeRequestConfiguration authorizeRequestConfiguration =
-        new AuthorizeRequestConfiguration();
     private Set<String> audiences;
     private String usernameClaim = "sub";
     private String clientIdClaim;
@@ -338,7 +297,6 @@ public class OidcAuthenticationConfiguration {
     private boolean preferUsernameClaim;
     private String organizationId;
     private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
-    private AssertionConfiguration assertionConfiguration = new AssertionConfiguration();
     private Duration clockSkew = DEFAULT_CLOCK_SKEW;
     private boolean idpLogoutEnabled = true;
     private boolean userInfoEnabled = true;
@@ -408,12 +366,6 @@ public class OidcAuthenticationConfiguration {
       return this;
     }
 
-    public Builder authorizeRequestConfiguration(
-        final AuthorizeRequestConfiguration authorizeRequestConfiguration) {
-      this.authorizeRequestConfiguration = authorizeRequestConfiguration;
-      return this;
-    }
-
     public Builder audiences(final Set<String> audiences) {
       this.audiences = audiences;
       return this;
@@ -450,11 +402,6 @@ public class OidcAuthenticationConfiguration {
       return this;
     }
 
-    public Builder assertionConfiguration(final AssertionConfiguration assertionConfiguration) {
-      this.assertionConfiguration = assertionConfiguration;
-      return this;
-    }
-
     public Builder clockSkew(final Duration clockSkew) {
       this.clockSkew = clockSkew;
       return this;
@@ -485,7 +432,6 @@ public class OidcAuthenticationConfiguration {
       config.setAdditionalJwkSetUris(additionalJwkSetUris);
       config.setAuthorizationUri(authorizationUri);
       config.setTokenUri(tokenUri);
-      config.setAuthorizeRequest(authorizeRequestConfiguration);
       config.setAudiences(audiences);
       config.setUsernameClaim(usernameClaim);
       config.setClientIdClaim(clientIdClaim);
@@ -493,7 +439,6 @@ public class OidcAuthenticationConfiguration {
       config.setPreferUsernameClaim(preferUsernameClaim);
       config.setOrganizationId(organizationId);
       config.setClientAuthenticationMethod(clientAuthenticationMethod);
-      config.setAssertion(assertionConfiguration);
       config.setClockSkew(clockSkew);
       config.setIdpLogoutEnabled(idpLogoutEnabled);
       config.setUserInfoEnabled(userInfoEnabled);
