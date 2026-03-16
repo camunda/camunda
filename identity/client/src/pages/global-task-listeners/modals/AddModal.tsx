@@ -22,7 +22,7 @@ import {
   getEventTypeLabel,
   getEventTypeLabels,
   LISTENER_TYPE_PATTERN,
-} from "src/pages/global-task-listeners";
+} from "src/pages/global-task-listeners/utility";
 import type {
   CreateGlobalTaskListenerRequestBody,
   GlobalTaskListenerEventType,

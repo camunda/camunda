@@ -19,7 +19,7 @@ import AddModal from "src/pages/global-task-listeners/modals/AddModal";
 import EditModal from "src/pages/global-task-listeners/modals/EditModal";
 import DeleteModal from "src/pages/global-task-listeners/modals/DeleteModal";
 import PageEmptyState from "src/components/layout/PageEmptyState";
-import { getEventTypeLabels } from "src/pages/global-task-listeners/index.tsx";
+import { getEventTypeLabels } from "src/pages/global-task-listeners/utility";
 
 const List: FC = () => {
   const { t } = useTranslate("globalTaskListeners");
