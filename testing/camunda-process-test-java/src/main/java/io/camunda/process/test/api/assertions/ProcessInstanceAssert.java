@@ -739,7 +739,7 @@ public interface ProcessInstanceAssert extends WithAssertionConfiguration<Proces
    *
    * <pre>
    *   assertThat(pi)
-   *       .withSimilarityConfig(c -> c.withThreshold(0.9))
+   *       .withSemanticSimilarityConfig(c -> c.withThreshold(0.9))
    *       .hasVariableSimilarTo("result", "expected text");
    * </pre>
    *

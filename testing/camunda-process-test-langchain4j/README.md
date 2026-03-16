@@ -92,7 +92,7 @@ To use a custom `ChatModelAdapter` bean instead of the SPI, register it with the
 features (e.g. semantic similarity):
 
 ```java
-@Bean("judge.openaoi")
+@Bean("judge.openai")
 ChatModelAdapter myChatModelAdapter() {
   // custom OpenAI chat model adapter ...
 }
