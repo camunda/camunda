@@ -45,6 +45,7 @@ import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Properties;
 import javax.sql.DataSource;
@@ -79,7 +80,9 @@ public class MyBatisConfiguration {
   public RdbmsSchemaManager rdbmsExporterLiquibase(
       final DataSource dataSource,
       final VendorDatabaseProperties vendorDatabaseProperties,
-      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix) {
+      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix,
+      @Value("${camunda.data.secondary-storage.rdbms.ddl-lock-wait-timeout:PT15M}")
+          final Duration lockWaitTimeout) {
     final String trimmedPrefix = StringUtils.trimToEmpty(prefix);
     LOGGER.info(
         "Initializing Liquibase for RDBMS with global table trimmedPrefix '{}'.", trimmedPrefix);
@@ -100,6 +103,7 @@ public class MyBatisConfiguration {
             Integer.toString(vendorDatabaseProperties.treePathSize())));
     // changelog file located in src/main/resources directly in the module
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
+    moduleConfig.setDdlLockWaitTimeout(lockWaitTimeout);
 
     return moduleConfig;
   }
