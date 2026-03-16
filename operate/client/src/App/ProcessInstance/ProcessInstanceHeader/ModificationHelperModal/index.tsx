@@ -66,8 +66,8 @@ const ModificationHelperModal: React.FC<Props> = observer(
               <ModificationType>
                 Move <MoveIcon />
               </ModificationType>
-              all the running instances to a different target element in the
-              diagram
+              all the running element instances to a different target element in
+              the diagram
             </Modification>
           </Modifications>
           <p>
@@ -76,8 +76,8 @@ const ModificationHelperModal: React.FC<Props> = observer(
           </p>
           <p>
             A summary of all planned modifications will be shown after clicking
-            on “Apply Modifications”. The modification will be applied after the
-            confirmation of the summary.
+            on “Review Modifications”. The modification will be applied after
+            the confirmation of the summary.
           </p>
           {currentTheme.theme === 'light' ? <DiagramLight /> : <DiagramDark />}
         </Container>
