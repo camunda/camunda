@@ -15,7 +15,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.env.DefaultPropertiesPropertySource;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -46,9 +45,6 @@ public class HealthConfigurationInitializer
   private static final String HEALTH_GROUP_LIVENESS_PROPERTY =
       "management.endpoint.health.group.liveness.include";
 
-  @Value("camunda.mode")
-  private String camundaMode;
-
   @Override
   public void initialize(final ConfigurableApplicationContext context) {
     final var environment = context.getEnvironment();
@@ -56,20 +52,24 @@ public class HealthConfigurationInitializer
     final var activeProfiles =
         Stream.of(environment.getActiveProfiles()).map(String::toLowerCase).toList();
 
-    final var healthIndicators = collectHealthIndicators(activeProfiles, environment);
-    final var enableReadinessState = shouldReadinessState(activeProfiles);
-    final var enableProbes = shouldEnableProbes(activeProfiles);
-
     final var propertyMap = new HashMap<String, Object>();
 
-    // Enables readinessState
-    propertyMap.put(SPRING_READINESS_PROPERTY, enableReadinessState);
+    // Enables Kubernetes health group endpoints (/actuator/health/{liveness,readiness,startup}).
+    // Always enabled so that liveness and readiness endpoints are available for all profiles
+    propertyMap.put("management.endpoint.health.probes.enabled", true);
 
-    // Enables Kubernetes health groups
-    propertyMap.put(SPRING_PROBES_PROPERTY, enableProbes);
+    final var readinessGroupHealthIndicators =
+        collectReadinessGroupHealthIndicators(activeProfiles, environment);
+    if (!readinessGroupHealthIndicators.isEmpty()) {
+      propertyMap.put(
+          "management.endpoint.health.group.readiness.include", readinessGroupHealthIndicators);
+    }
 
-    if (!healthIndicators.isEmpty()) {
-      propertyMap.put(SPRING_READINESS_GROUP_PROPERTY, healthIndicators);
+    final var livenessGroupHealthIndicators = collectLivenessGroupHealthIndicators(activeProfiles);
+    if (!livenessGroupHealthIndicators.isEmpty()) {
+      propertyMap.put(
+          "management.endpoint.health.group.liveness.include", livenessGroupHealthIndicators);
+      propertyMap.put("management.endpoint.health.group.liveness.show-details", "always");
     }
 
     final Set<String> startupGroup = new HashSet<>();
@@ -80,14 +80,6 @@ public class HealthConfigurationInitializer
       propertyMap.put("management.health.defaults.enabled", true);
       startupGroup.add(INDICATOR_GATEWAY_STARTED);
       propertyMap.put("management.endpoint.health.group.startup.show-details", "never");
-
-      final Set<String> livenessGroup = new HashSet<>();
-      livenessGroup.add("livenessGatewayClusterAwareness");
-      livenessGroup.add("livenessGatewayPartitionLeaderAwareness");
-      livenessGroup.add("livenessMemory");
-      propertyMap.put(HEALTH_GROUP_LIVENESS_PROPERTY, livenessGroup);
-      propertyMap.put("management.endpoint.health.group.liveness.show-details", "always");
-
       propertyMap.put(
           "management.endpoint.health.status.order", "down,out-of-service,unknown,degraded,up");
 
@@ -124,31 +116,37 @@ public class HealthConfigurationInitializer
     DefaultPropertiesPropertySource.addOrMerge(propertyMap, propertySources);
   }
 
-  protected boolean shouldEnableProbes(final List<String> activeProfiles) {
-    return activeProfiles.stream()
-        .anyMatch(
-            Set.of(
-                    Profile.OPERATE.getId(),
-                    Profile.TASKLIST.getId(),
-                    Profile.IDENTITY.getId(),
-                    Profile.ADMIN.getId())
-                ::contains);
-  }
+  /**
+   * Returns health indicators for the liveness group. Liveness must never depend on external
+   * systems (like Elasticsearch/OpenSearch) to avoid cascading pod restarts when the search engine
+   * is temporarily unavailable.
+   *
+   * <p>For the broker profile, {@code brokerReady} and {@code nodeIdProviderReady} are included so
+   * that a broker stuck in an unready state (e.g., partitions never forming) is eventually
+   * restarted by Kubernetes.
+   *
+   * <p>For the gateway profile, delayed liveness indicators with built-in grace periods are used to
+   * avoid restarting on transient issues.
+   */
+  List<String> collectLivenessGroupHealthIndicators(final List<String> activeProfiles) {
+    final var healthIndicators = new ArrayList<String>();
 
-  protected boolean shouldReadinessState(final List<String> activeProfiles) {
-    return activeProfiles.stream()
-        .anyMatch(
-            Set.of(
-                    Profile.OPERATE.getId(),
-                    Profile.TASKLIST.getId(),
-                    Profile.BROKER,
-                    Profile.IDENTITY.getId(),
-                    Profile.ADMIN.getId())
-                ::contains);
+    if (activeProfiles.contains(Profile.BROKER.getId())) {
+      healthIndicators.add("brokerReady");
+      healthIndicators.add("nodeIdProviderReady");
+    }
+
+    if (activeProfiles.contains(Profile.GATEWAY.getId())) {
+      healthIndicators.add("livenessGatewayClusterAwareness");
+      healthIndicators.add("livenessGatewayPartitionLeaderAwareness");
+      healthIndicators.add("livenessMemory");
+    }
+
+    return healthIndicators;
   }
 
   /** Returns a list of health indicators which will be member of the readiness group */
-  protected List<String> collectHealthIndicators(
+  protected List<String> collectReadinessGroupHealthIndicators(
       final List<String> activeProfiles, final Environment env) {
     final var healthIndicators = new ArrayList<String>();
     final boolean secondaryStorageEnabled = DatabaseTypeUtils.isSecondaryStorageEnabled(env);
@@ -162,23 +160,20 @@ public class HealthConfigurationInitializer
       healthIndicators.add(INDICATOR_GATEWAY_STARTED);
     }
 
-    if (secondaryStorageEnabled && activeProfiles.contains(Profile.OPERATE.getId())) {
-      healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
-      if (DatabaseTypeUtils.isRdbmsDisabled(env)) {
-        healthIndicators.add(INDICATOR_OPERATE_INDICES_CHECK);
+    if (secondaryStorageEnabled) {
+      if (Profile.getWebappProfiles().stream()
+          .map(Profile::getId)
+          .anyMatch(activeProfiles::contains)) {
+        healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
       }
-    }
-
-    if (secondaryStorageEnabled
-        && activeProfiles.contains(Profile.TASKLIST.getId())
-        && DatabaseTypeUtils.isRdbmsDisabled(env)) {
-      healthIndicators.add(INDICATOR_TASKLIST_SEARCH_ENGINE_CHECK);
-    }
-
-    if (secondaryStorageEnabled
-        && (activeProfiles.contains(Profile.IDENTITY.getId())
-            || activeProfiles.contains(Profile.ADMIN.getId()))) {
-      healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
+      if (DatabaseTypeUtils.isRdbmsDisabled(env)) {
+        if (activeProfiles.contains(Profile.OPERATE.getId())) {
+          healthIndicators.add("indicesCheck");
+        }
+        if (activeProfiles.contains(Profile.TASKLIST.getId())) {
+          healthIndicators.add("searchEngineCheck");
+        }
+      }
     }
 
     return healthIndicators;
