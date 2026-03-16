@@ -18,6 +18,7 @@ import {waitForProcessInstances} from 'utils/incidentsHelper';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {waitForAssertion} from '../../utils/waitForAssertion';
+import {defaultAssertionOptions} from '../../utils/constants';
 
 let instanceIds: string[] = [];
 
@@ -118,19 +119,21 @@ test.describe('Dashboard', () => {
     });
 
     await test.step('Navigate to incident instances and verify count', async () => {
-      await operateDashboardPage.gotoDashboardPage();
+      await expect(async () => {
+        await operateDashboardPage.gotoDashboardPage();
 
-      const instancesWithIncidentCount =
-        await operateDashboardPage.incidentInstancesBadge.innerText();
+        const instancesWithIncidentCount =
+          await operateDashboardPage.incidentInstancesBadge.innerText();
 
-      await operateDashboardPage.clickIncidentInstancesLink();
+        await operateDashboardPage.clickIncidentInstancesLink();
 
-      await expect(
-        operateDashboardPage.processInstancesHeading(
-          instancesWithIncidentCount,
-          Number(instancesWithIncidentCount) > 1,
-        ),
-      ).toBeVisible();
+        await expect(
+          operateDashboardPage.processInstancesHeading(
+            instancesWithIncidentCount,
+            Number(instancesWithIncidentCount) > 1,
+          ),
+        ).toBeVisible();
+      }).toPass(defaultAssertionOptions);
     });
   });
 
