@@ -236,18 +236,9 @@ public class ProcessEngineMetricsTest {
     final long processInstanceKey3 = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // Wait for all process instances to reach the user task
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey1)
-        .withElementType(BpmnElementType.USER_TASK)
-        .await();
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey2)
-        .withElementType(BpmnElementType.USER_TASK)
-        .await();
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey3)
-        .withElementType(BpmnElementType.USER_TASK)
-        .await();
+    awaitUserTaskActivated(processInstanceKey1);
+    awaitUserTaskActivated(processInstanceKey2);
+    awaitUserTaskActivated(processInstanceKey3);
 
     // Verify gauge shows 3 active instances before restart
     assertThat(activeRootProcessInstanceGauge()).isNotNull().isEqualTo(3);
@@ -260,12 +251,17 @@ public class ProcessEngineMetricsTest {
 
     // we create a new pi to register the metric
     final long processInstanceKey4 = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    awaitUserTaskActivated(processInstanceKey4);
+
+    // then
+    assertThat(activeRootProcessInstanceGauge()).isNotNull().isEqualTo(4);
+  }
+
+  private void awaitUserTaskActivated(final long processInstanceKey) {
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey4)
+        .withProcessInstanceKey(processInstanceKey)
         .withElementType(BpmnElementType.USER_TASK)
         .await();
-
-    assertThat(activeRootProcessInstanceGauge()).isNotNull().isEqualTo(4);
   }
 
   private Double activatedProcessInstanceMetric() {

@@ -639,7 +639,9 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   @Override
   public long getActiveProcessInstanceCount() {
-    return activeProcessInstanceCounterColumnFamily.get(activeProcessInstanceCounterKey).getValue();
+    final var counter =
+        activeProcessInstanceCounterColumnFamily.get(activeProcessInstanceCounterKey);
+    return counter != null ? counter.getValue() : 0L;
   }
 
   private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {
