@@ -1003,6 +1003,8 @@ class OperateProcessInstancePage {
 
   getIncidentErrorMessageByText(errorText: string): Locator {
     return this.metadataPopover.getByText(errorText);
+  }
+
   getOperationsLogTableRowCount(): Promise<number> {
     return this.operationsLogTableRow.count();
   }
