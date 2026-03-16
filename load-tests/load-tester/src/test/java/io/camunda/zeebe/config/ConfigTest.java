@@ -31,7 +31,7 @@ public class ConfigTest {
     assertThat(appCfg.getMonitorDataAvailabilityInterval()).hasMillis(250);
     assertThat(appCfg.isPerformReadBenchmarks()).isFalse();
     assertThat(appCfg.getDisabledQueriesList()).isEmpty();
-    assertThat(appCfg.isClientSideLoadBalancing()).isFalse();
+    assertThat(appCfg.isClientSideLoadBalancing()).isTrue();
 
     // authentication
     final var authCfg = appCfg.getAuth();
@@ -91,7 +91,7 @@ public class ConfigTest {
     assertThat(appCfg.isPerformReadBenchmarks()).isTrue();
     assertThat(appCfg.getDisabledQueriesList())
         .containsExactlyInAnyOrder("process_instances_active", "audit_log_by_category");
-    assertThat(appCfg.isClientSideLoadBalancing()).isTrue();
+    assertThat(appCfg.isClientSideLoadBalancing()).isFalse();
 
     // authentication
     final var authCfg = appCfg.getAuth();
