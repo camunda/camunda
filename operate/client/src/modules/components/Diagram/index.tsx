@@ -19,7 +19,7 @@ import {
   type OnElementDoubleClick,
   type OverlayData,
 } from 'modules/bpmn-js/BpmnJS';
-import {DiagramControls} from './DiagramControlsNext';
+import {DiagramControls} from './DiagramControls';
 import {Diagram as StyledDiagram, DiagramCanvas} from './styled';
 import {observer} from 'mobx-react';
 
