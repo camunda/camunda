@@ -14,6 +14,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.EvaluateExpressionResponse;
+import io.camunda.client.api.response.EvaluationWarning;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -298,6 +299,7 @@ public class ExpressionEvaluationIT {
     // then
     assertThat(response).isNotNull();
     assertThat(response.getWarnings())
+        .extracting(EvaluationWarning::getMessage)
         .contains("No function found with name 'invalid_function' and 0 parameters");
   }
 
@@ -851,9 +853,10 @@ public class ExpressionEvaluationIT {
     assertThat(response).isNotNull();
     assertThat(response.getResult()).isNull();
     assertThat(response.getWarnings())
+        .extracting(io.camunda.client.api.response.EvaluationWarning::getMessage)
         .anySatisfy(
-            warning ->
-                assertThat(warning)
+            message ->
+                assertThat(message)
                     .contains("The context is empty")
                     .contains("No context entry found with key"));
   }

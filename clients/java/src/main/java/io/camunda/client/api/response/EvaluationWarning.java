@@ -15,29 +15,13 @@
  */
 package io.camunda.client.api.response;
 
-import java.util.List;
-
-/** Response for the expression evaluation command. */
-public interface EvaluateExpressionResponse {
+/** A warning generated during expression evaluation. */
+public interface EvaluationWarning {
 
   /**
-   * Returns the evaluated expression.
+   * Returns the warning message.
    *
-   * @return the expression that was evaluated
+   * @return the warning message
    */
-  String getExpression();
-
-  /**
-   * Returns the result of the expression evaluation.
-   *
-   * @return the result value. Type depends on the result type (String, Boolean, Number, or Object)
-   */
-  Object getResult();
-
-  /**
-   * Returns the list of warnings generated during expression evaluation.
-   *
-   * @return the list of warnings, or an empty list if none
-   */
-  List<EvaluationWarning> getWarnings();
+  String getMessage();
 }

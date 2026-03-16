@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import io.camunda.client.api.response.EvaluateExpressionResponse;
+import io.camunda.client.api.response.EvaluationWarning;
 import io.camunda.client.protocol.rest.ExpressionEvaluationRequest;
 import io.camunda.client.protocol.rest.ExpressionEvaluationResult;
 import io.camunda.client.protocol.rest.ExpressionEvaluationWarningItem;
@@ -235,6 +236,8 @@ public final class EvaluateExpressionTest extends ClientRestTest {
     // then
     assertThat(response.getExpression()).isEqualTo(expression);
     assertThat(response.getResult()).isEqualTo(resultValue);
-    assertThat(response.getWarnings()).containsExactly("Warning 1", "Warning 2");
+    assertThat(response.getWarnings())
+        .extracting(EvaluationWarning::getMessage)
+        .containsExactly("Warning 1", "Warning 2");
   }
 }
