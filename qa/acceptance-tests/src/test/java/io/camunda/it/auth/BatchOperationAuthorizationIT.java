@@ -23,8 +23,7 @@ import static io.camunda.it.util.TestHelper.getScopedVariables;
 import static io.camunda.it.util.TestHelper.startScopedProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForJobs;
 import static io.camunda.it.util.TestHelper.waitForScopedProcessInstancesToStart;
-import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreActive;
-import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreResolved;
+import static io.camunda.it.util.TestHelper.waitUntilIncidentsConditionsAreMet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
@@ -44,6 +43,7 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -407,13 +407,33 @@ class BatchOperationAuthorizationIT {
 
     waitForJobs(camundaClient, List.of(processInstanceKey));
 
-    final var job =
-        camundaClient.newActivateJobsCommand().jobType("taskA").maxJobsToActivate(1).send().join();
-    assertThat(job.getJobs()).isNotEmpty();
-    camundaClient.newFailCommand(job.getJobs().getFirst().getKey()).retries(0).send().join();
+    // activate the job specifically for our process instance to avoid picking up jobs from
+    // concurrent tests that share the same job type
+    final var activatedJob =
+        Awaitility.await("should activate job for process instance")
+            .atMost(Duration.ofSeconds(30))
+            .until(
+                () ->
+                    camundaClient
+                        .newActivateJobsCommand()
+                        .jobType("taskA")
+                        .maxJobsToActivate(100)
+                        .send()
+                        .join()
+                        .getJobs()
+                        .stream()
+                        .filter(j -> j.getProcessInstanceKey() == processInstanceKey)
+                        .findFirst()
+                        .orElse(null),
+                Objects::nonNull);
+    camundaClient.newFailCommand(activatedJob.getKey()).retries(0).send().join();
 
-    // wait for incident to be created
-    waitUntilIncidentsAreActive(camundaClient, 1);
+    // wait for incident to be created for our specific process instance
+    waitUntilIncidentsConditionsAreMet(
+        camundaClient,
+        f -> f.state(IncidentState.ACTIVE).processInstanceKey(processInstanceKey),
+        1,
+        "should wait until incident is active for process instance " + processInstanceKey);
 
     // when - create batch operation to resolve the incident
     final var batchOperationCreatedResponse =
@@ -424,8 +444,12 @@ class BatchOperationAuthorizationIT {
             .send()
             .join();
 
-    // wait for incident to be resolved
-    waitUntilIncidentsAreResolved(camundaClient, 1);
+    // wait for incident to be resolved for our specific process instance
+    waitUntilIncidentsConditionsAreMet(
+        camundaClient,
+        f -> f.state(IncidentState.RESOLVED).processInstanceKey(processInstanceKey),
+        1,
+        "should wait until incident is resolved for process instance " + processInstanceKey);
 
     // then - batch operation should complete
     assertThat(batchOperationCreatedResponse).isNotNull();
