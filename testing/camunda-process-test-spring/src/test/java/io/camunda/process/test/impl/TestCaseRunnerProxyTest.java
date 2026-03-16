@@ -36,7 +36,7 @@ public class TestCaseRunnerProxyTest {
   void shouldThrowAssertionError() {
     // given
     final TestCaseRunnerProxy proxy = new TestCaseRunnerProxy();
-    proxy.setRunner(testCaseRunner);
+    proxy.setDelegate(testCaseRunner);
 
     final AssertionError assertionError = new AssertionError("expected");
     doThrow(assertionError).when(testCaseRunner).run(testCase);
