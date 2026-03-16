@@ -99,6 +99,7 @@ jobs:
         with:
           directory: ./tasklist/client
           package-manager: npm
+<<<<<<< HEAD
       - name: Build identity frontend
         uses: ./.github/actions/build-frontend
         with:
@@ -106,6 +107,14 @@ jobs:
           package-manager: npm
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+=======
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -PskipFrontendBuild
+      - uses: ./.github/actions/build-platform-docker
+        id: build-zeebe-docker
+>>>>>>> 1545164a (ci: build frontends in dedicated steps before the testbench maven build)
         with:
           maven-extra-args: -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
