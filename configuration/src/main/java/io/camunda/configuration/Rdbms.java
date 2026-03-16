@@ -41,7 +41,7 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   /**
    * The maximum duration a Liquibase lock can be held before it is considered stale and forcibly
    * released. This allows recovery from container crashes that left the schema locked. Set to null
-   * to disable stale lock detection. Default is 10 minutes.
+   * to disable stale lock detection. Default is 15 minutes.
    */
   private Duration ddlLockWaitTimeout = Duration.ofMinutes(15);
 

@@ -60,7 +60,7 @@ class LiquibaseSchemaManagerStaleLockH2Test {
   }
 
   @Test
-  void shouldNotReleaseRecentLockAndFailGracefully() throws Exception {
+  void shouldNotReleaseRecentLockWhenTimeoutNotExceeded() throws Exception {
     // given - insert a recent lock (just acquired)
     insertLock(Instant.now(), "another-running-pod");
 
