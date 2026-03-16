@@ -117,11 +117,9 @@ final class CamundaExporterIT {
   private void closeExporters() {
     if (exporter != null) {
       exporter.close();
-      exporter = null;
     }
     if (secondExporter != null) {
       secondExporter.close();
-      secondExporter = null;
     }
   }
 
