@@ -37,6 +37,7 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
 import io.camunda.exporter.utils.EntitySizeEstimator;
+import io.camunda.exporter.utils.ExporterThreadLeakExtension;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -80,6 +81,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -91,6 +93,7 @@ import org.testcontainers.containers.GenericContainer;
  * export records using the configured handlers.
  */
 @TestInstance(Lifecycle.PER_CLASS)
+@ExtendWith(ExporterThreadLeakExtension.class)
 final class CamundaExporterIT {
 
   @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
@@ -101,8 +104,18 @@ final class CamundaExporterIT {
 
   private final ProtocolFactory factory = new ProtocolFactory();
 
+  /** Primary exporter under test — closed automatically after each test. */
+  private CamundaExporter exporter;
+
+  /**
+   * Secondary exporter used only when a test needs multiple exporters (e.g. different partitions) —
+   * closed automatically after each test.
+   */
+  private CamundaExporter secondExporter;
+
   @AfterEach
   public void afterEach() throws IOException {
+    closeExporters();
     final var openSearchAwsInstanceUrl =
         Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL)).orElse("");
     if (openSearchAwsInstanceUrl.isEmpty()) {
@@ -111,25 +124,36 @@ final class CamundaExporterIT {
     searchDB.osClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
   }
 
+  private void closeExporters() {
+    if (exporter != null) {
+      exporter.close();
+      exporter = null;
+    }
+    if (secondExporter != null) {
+      secondExporter.close();
+      secondExporter = null;
+    }
+  }
+
   @TestTemplate
   void shouldOpenDifferentPartitions(
       final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
     createSchemas(config);
-    final var p1Exporter = new CamundaExporter();
+    exporter = new CamundaExporter();
     final var p1Context = getContextFromConfig(config, 1);
-    p1Exporter.configure(p1Context);
+    exporter.configure(p1Context);
 
-    final var p2Exporter = new CamundaExporter();
+    secondExporter = new CamundaExporter();
     final var p2Context = getContextFromConfig(config, 2);
-    p2Exporter.configure(p2Context);
+    secondExporter.configure(p2Context);
 
     // when
     final var future =
         CompletableFuture.runAsync(
             () -> {
               final var p1ExporterController = new ExporterTestController();
-              p1Exporter.open(p1ExporterController);
+              exporter.open(p1ExporterController);
             });
 
     // then
@@ -137,7 +161,7 @@ final class CamundaExporterIT {
         .isThrownBy(
             () -> {
               final var p2ExporterController = new ExporterTestController();
-              p2Exporter.open(p2ExporterController);
+              secondExporter.open(p2ExporterController);
             });
     await("Partition one has been opened successfully")
         .atMost(Duration.ofSeconds(30))
@@ -153,7 +177,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
     createSchemas(config);
-    final var exporter = new CamundaExporter();
+    exporter = new CamundaExporter();
 
     final var context = getContextFromConfig(config);
     exporter.configure(context);
@@ -180,7 +204,7 @@ final class CamundaExporterIT {
     // given
     createSchemas(config);
     config.getBulk().setSize(2);
-    final var exporter = new CamundaExporter();
+    exporter = new CamundaExporter();
 
     final var context = getContextFromConfig(config);
     exporter.configure(context);
@@ -218,7 +242,7 @@ final class CamundaExporterIT {
     // given
     final var config = getConnectConfigForContainer(container);
     createSchemas(config);
-    final var exporter = new CamundaExporter();
+    exporter = new CamundaExporter();
 
     final var context = getContextFromConfig(config);
     final ExporterTestController controller = spy(new ExporterTestController());
@@ -264,7 +288,7 @@ final class CamundaExporterIT {
     final var duration = 2;
     config.getBulk().setDelay(duration);
 
-    final var exporter = new CamundaExporter();
+    exporter = new CamundaExporter();
     exporter.configure(getContextFromConfig(config));
 
     // when
@@ -300,17 +324,17 @@ final class CamundaExporterIT {
             .filter(exportHandler -> exportHandler.handlesRecord(record))
             .toList();
 
-    final CamundaExporter camundaExporter = new CamundaExporter();
+    exporter = new CamundaExporter();
     final ExporterTestContext exporterTestContext =
         new ExporterTestContext()
             .setConfiguration(new ExporterTestConfiguration<>("camundaExporter", config));
 
-    camundaExporter.configure(exporterTestContext);
-    camundaExporter.open(new ExporterTestController());
+    exporter.configure(exporterTestContext);
+    exporter.open(new ExporterTestController());
 
     // when
-    camundaExporter.export(record);
-    camundaExporter.close();
+    exporter.export(record);
+    exporter.close();
 
     // then
     assertThat(expectedHandlers).isNotEmpty();
@@ -361,16 +385,16 @@ final class CamundaExporterIT {
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
 
-    final CamundaExporter camundaExporter = new CamundaExporter();
+    exporter = new CamundaExporter();
     final ExporterTestContext exporterTestContext =
         new ExporterTestContext()
             .setConfiguration(new ExporterTestConfiguration<>("camundaExporter", config));
 
-    camundaExporter.configure(exporterTestContext);
-    camundaExporter.open(new ExporterTestController());
+    exporter.configure(exporterTestContext);
+    exporter.open(new ExporterTestController());
 
     // act
-    assertThatCode(() -> camundaExporter.export(record)).doesNotThrowAnyException();
+    assertThatCode(() -> exporter.export(record)).doesNotThrowAnyException();
   }
 
   @TestTemplate
@@ -396,17 +420,17 @@ final class CamundaExporterIT {
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
 
-    final CamundaExporter camundaExporter = new CamundaExporter();
+    exporter = new CamundaExporter();
     final ExporterTestContext exporterTestContext =
         new ExporterTestContext()
             .setConfiguration(new ExporterTestConfiguration<>("camundaExporter", config));
 
-    camundaExporter.configure(exporterTestContext);
+    exporter.configure(exporterTestContext);
     final var controller = new ExporterTestController();
-    camundaExporter.open(controller);
+    exporter.open(controller);
 
     // act
-    camundaExporter.export(record);
+    exporter.export(record);
     assertThatThrownBy(() -> controller.runScheduledTasks(Duration.ofSeconds(1)))
         .isInstanceOf(ExporterException.class)
         .rootCause()
@@ -461,7 +485,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // Do not create schema yet
-    final var exporter = spy(new CamundaExporter());
+    exporter = spy(new CamundaExporter());
     final var context = getContextFromConfig(config);
     exporter.configure(context);
 
@@ -580,7 +604,7 @@ final class CamundaExporterIT {
       throws IOException {
     // given
     createSchemas(config);
-    final var exporter = new CamundaExporter();
+    exporter = new CamundaExporter();
 
     final var memoryLimit = 3;
     config.getBulk().setMemoryLimit(memoryLimit);
@@ -660,16 +684,16 @@ final class CamundaExporterIT {
                     .withIntent(BatchOperationChunkIntent.CREATED)
                     .withTimestamp(System.currentTimeMillis()));
 
-    final CamundaExporter camundaExporter = new CamundaExporter();
+    exporter = new CamundaExporter();
     final ExporterTestContext exporterTestContext =
         new ExporterTestContext()
             .setConfiguration(new ExporterTestConfiguration<>("camundaExporter", config));
 
-    camundaExporter.configure(exporterTestContext);
-    camundaExporter.open(new ExporterTestController());
+    exporter.configure(exporterTestContext);
+    exporter.open(new ExporterTestController());
 
     // act
-    assertThatCode(() -> camundaExporter.export(record)).doesNotThrowAnyException();
+    assertThatCode(() -> exporter.export(record)).doesNotThrowAnyException();
   }
 
   @Nested
