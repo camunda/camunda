@@ -20,8 +20,10 @@ import static org.mockito.Mockito.doThrow;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
+import io.camunda.process.test.impl.proxy.AbstractInvocationHandler;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.TestCaseRunnerProxy;
+import java.lang.reflect.Proxy;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -32,6 +34,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class ProxyInvocationTest {
 
+  private static <I extends AbstractInvocationHandler<D>, D> D createProxy(
+      final I invocationHandler, final Class<D> delegateClass) {
+    return (D)
+        Proxy.newProxyInstance(
+            invocationHandler.getClass().getClassLoader(),
+            new Class<?>[] {delegateClass},
+            invocationHandler);
+  }
+
   @Nested
   class TestCaseRunnerTests {
 
@@ -41,20 +52,16 @@ public class ProxyInvocationTest {
     @Test
     void shouldThrowAssertionError() {
       // given
-      final TestCaseRunnerProxy proxy = new TestCaseRunnerProxy();
-      proxy.setDelegate(testCaseRunner);
+      final TestCaseRunnerProxy invocationHandler = new TestCaseRunnerProxy();
+      invocationHandler.setDelegate(testCaseRunner);
 
       final AssertionError assertionError = new AssertionError("expected");
       doThrow(assertionError).when(testCaseRunner).run(testCase);
 
+      final TestCaseRunner proxy = createProxy(invocationHandler, TestCaseRunner.class);
+
       // when/then
-      Assertions.assertThatThrownBy(
-              () ->
-                  proxy.invoke(
-                      proxy,
-                      TestCaseRunner.class.getMethod("run", TestCase.class),
-                      new Object[] {testCase}))
-          .isEqualTo(assertionError);
+      Assertions.assertThatThrownBy(() -> proxy.run(testCase)).isEqualTo(assertionError);
     }
   }
 
@@ -66,19 +73,17 @@ public class ProxyInvocationTest {
     @Test
     void shouldThrowAssertionError() {
       // given
-      final CamundaProcessTestContextProxy proxy = new CamundaProcessTestContextProxy();
-      proxy.setDelegate(camundaProcessTestContext);
+      final CamundaProcessTestContextProxy invocationHandler = new CamundaProcessTestContextProxy();
+      invocationHandler.setDelegate(camundaProcessTestContext);
 
       final AssertionError assertionError = new AssertionError("expected");
       doThrow(assertionError).when(camundaProcessTestContext).completeUserTask("elementId");
 
+      final CamundaProcessTestContext proxy =
+          createProxy(invocationHandler, CamundaProcessTestContext.class);
+
       // when/then
-      Assertions.assertThatThrownBy(
-              () ->
-                  proxy.invoke(
-                      proxy,
-                      CamundaProcessTestContext.class.getMethod("completeUserTask", String.class),
-                      new Object[] {"elementId"}))
+      Assertions.assertThatThrownBy(() -> proxy.completeUserTask("elementId"))
           .isEqualTo(assertionError);
     }
   }
