@@ -6,6 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_NEW_PROCESS_INSTANCE_PAGE = false;
-
-export {IS_NEW_PROCESS_INSTANCE_PAGE};
+export {};
