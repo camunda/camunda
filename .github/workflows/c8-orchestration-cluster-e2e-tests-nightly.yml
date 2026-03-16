@@ -5,13 +5,9 @@
 ---
 name: C8 Orchestration Cluster E2E Tests Nightly
 
-#on:
-#  schedule:
-#    - cron: "0 0 * * *" # Run all tests at midnight UTC
-
 on:
-  pull_request:
-    types: [opened, edited, synchronize]  # Triggers on PR open, new comits on PR and when the PR description is edited
+  schedule:
+    - cron: "0 0 * * *" # Run all tests at midnight UTC
 
 permissions:
   contents: read
@@ -22,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [test-update-api-workflow]
+        branch: [stable/8.6, stable/8.7, stable/8.8, stable/8.9, main]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -225,7 +221,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [test-update-api-workflow]
+        branch: [stable/8.9, main]
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions: {}
@@ -361,6 +357,7 @@ jobs:
           DATABASE: "RDBMS"
           INCLUDE_SLACK_REPORTER: true
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          API_TESTS_ONLY: true
         run: npm run test -- --project=api-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
@@ -424,7 +421,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [test-update-api-workflow]
+        branch: [stable/8.6, stable/8.7, stable/8.8, stable/8.9, main]
         tasklist_mode: [v1, v2]
         exclude:
           # V2 mode only supported on main branch - exclude V2 for older branches

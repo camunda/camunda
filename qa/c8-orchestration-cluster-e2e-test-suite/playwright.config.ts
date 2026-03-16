@@ -44,7 +44,7 @@ const useReportersWithSlack: any[] = [
     './node_modules/playwright-slack-report/dist/src/SlackReporter.js',
     {
       slackOAuthToken: process.env.SLACK_BOT_USER_OAUTH_TOKEN!,
-      channels: ['prj-qa-sandbox'],
+      channels: ['c8-orchestration-cluster-e2e-test-results'],
       sendResults: 'always',
       showInThread: true,
       meta: [
