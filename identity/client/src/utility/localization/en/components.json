@@ -67,6 +67,8 @@
   "typeGroup": "Type a group",
   "groupId": "Group ID",
   "enterGroupId": "Enter your Group ID",
+  "selectAll": "All",
+  "selectLabel": "Choose option",
   "setupCreateAdminUser": "Create admin user",
   "setupUsernameLabel": "Username *",
   "setupUsernamePlaceholder": "Enter username",
