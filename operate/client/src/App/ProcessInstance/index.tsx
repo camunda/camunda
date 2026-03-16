@@ -19,7 +19,7 @@ import {elementTimeStampStore} from 'modules/stores/elementTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {TopPanel} from './TopPanel';
 import {
-  BottomPanelNew,
+  BottomPanel,
   BottomPanelStacked,
   ModificationFooter,
   Buttons,
@@ -87,7 +87,7 @@ const BottomPanelContent: React.FC = () => {
       (containerRef.current?.clientWidth ?? 0) / 4 || undefined;
 
     return (
-      <BottomPanelNew ref={containerRef}>
+      <BottomPanel ref={containerRef}>
         <ResizablePanel
           panelId="process-instance-bottom-panel"
           direction={SplitDirection.Horizontal}
@@ -100,7 +100,7 @@ const BottomPanelContent: React.FC = () => {
           <ElementInstanceLog />
           <BottomPanelTabs />
         </ResizablePanel>
-      </BottomPanelNew>
+      </BottomPanel>
     );
   }
 
