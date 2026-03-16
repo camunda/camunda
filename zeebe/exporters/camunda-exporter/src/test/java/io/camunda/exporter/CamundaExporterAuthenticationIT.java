@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.utils.ExporterThreadLeakExtension;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -19,13 +20,16 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
+@ExtendWith(ExporterThreadLeakExtension.class)
 public class CamundaExporterAuthenticationIT {
 
   private static final String ELASTIC_PASSWORD = "PASSWORD";
@@ -40,6 +44,9 @@ public class CamundaExporterAuthenticationIT {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final ExporterTestController controller = new ExporterTestController();
 
+  /** Exporter under test — closed automatically after each test. */
+  private CamundaExporter exporter;
+
   @BeforeEach
   void beforeEach() throws IOException {
     CONFIG.getConnect().setUsername("elastic");
@@ -48,10 +55,17 @@ public class CamundaExporterAuthenticationIT {
     createSchemas(CONFIG);
   }
 
+  @AfterEach
+  void afterEach() {
+    if (exporter != null) {
+      exporter.close();
+    }
+  }
+
   @Test
   void shouldConnectToElasticsearchWithUsernameAndPassword() {
     // given
-    final var exporter = new CamundaExporter();
+    exporter = new CamundaExporter();
 
     final var context =
         new ExporterTestContext()
@@ -67,7 +81,7 @@ public class CamundaExporterAuthenticationIT {
   @Test
   void shouldFailToAuthenticateForWrongCredentials() {
     // given
-    final var exporter = new CamundaExporter();
+    exporter = new CamundaExporter();
     CONFIG.getConnect().setPassword("123");
 
     final var context =
