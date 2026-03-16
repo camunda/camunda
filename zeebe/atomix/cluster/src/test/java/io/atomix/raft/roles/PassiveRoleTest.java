@@ -44,7 +44,6 @@ import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -265,9 +264,7 @@ public class PassiveRoleTest {
   public void shouldNotAbortPendingSnapshotOnEmptyAppend() throws Exception {
     // given - a pending snapshot is in progress
     final ReceivedSnapshot receivedSnapshot = mock(ReceivedSnapshot.class);
-    final var pendingSnapshotField = PassiveRole.class.getDeclaredField("pendingSnapshot");
-    pendingSnapshotField.setAccessible(true);
-    pendingSnapshotField.set(role, receivedSnapshot);
+    setPendingSnapshot(receivedSnapshot);
 
     // an empty append request (heartbeat)
     final VersionedAppendRequest request =
@@ -276,7 +273,7 @@ public class PassiveRoleTest {
             .withLeader(MemberId.anonymous())
             .withPrevLogTerm(0)
             .withPrevLogIndex(0)
-            .withEntries(Collections.emptyList())
+            .withEntries(List.of())
             .withCommitIndex(0)
             .build();
 
@@ -285,18 +282,14 @@ public class PassiveRoleTest {
 
     // then - the pending snapshot should not be aborted
     verify(receivedSnapshot, never()).abort();
-    assertThat(pendingSnapshotField.get(role))
-        .as("pending snapshot should still be present")
-        .isNotNull();
+    assertThat(getPendingSnapshot()).as("pending snapshot should still be present").isNotNull();
   }
 
   @Test
   public void shouldAbortPendingSnapshotOnNonEmptyAppend() throws Exception {
     // given - a pending snapshot is in progress
     final ReceivedSnapshot receivedSnapshot = mock(ReceivedSnapshot.class);
-    final var pendingSnapshotField = PassiveRole.class.getDeclaredField("pendingSnapshot");
-    pendingSnapshotField.setAccessible(true);
-    pendingSnapshotField.set(role, receivedSnapshot);
+    setPendingSnapshot(receivedSnapshot);
 
     // an append request with entries
     final var entries = List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1]));
@@ -318,6 +311,18 @@ public class PassiveRoleTest {
 
     // then - the pending snapshot should be aborted
     verify(receivedSnapshot).abort();
-    assertThat(pendingSnapshotField.get(role)).as("pending snapshot should be cleared").isNull();
+    assertThat(getPendingSnapshot()).as("pending snapshot should be cleared").isNull();
+  }
+
+  private void setPendingSnapshot(final ReceivedSnapshot snapshot) throws Exception {
+    final var field = PassiveRole.class.getDeclaredField("pendingSnapshot");
+    field.setAccessible(true);
+    field.set(role, snapshot);
+  }
+
+  private Object getPendingSnapshot() throws Exception {
+    final var field = PassiveRole.class.getDeclaredField("pendingSnapshot");
+    field.setAccessible(true);
+    return field.get(role);
   }
 }
