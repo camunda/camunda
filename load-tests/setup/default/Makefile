@@ -30,6 +30,9 @@ endif
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
 platform_values += --set optimize.enabled=false
+ifeq ($(secondary_storage),postgresql)
+platform_values += --set elasticsearch.enabled=false
+endif
 endif
 
 # Platform values with stable configuration
