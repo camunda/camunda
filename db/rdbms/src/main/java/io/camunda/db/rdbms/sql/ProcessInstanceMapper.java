@@ -17,6 +17,7 @@ import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 public interface ProcessInstanceMapper {
@@ -29,7 +30,7 @@ public interface ProcessInstanceMapper {
 
   void decrementIncidentCount(Long processInstanceKey);
 
-  void insertTags(ProcessInstanceDbModel processInstance);
+  void insertTags(ProcessInstanceTagsDto dto);
 
   ProcessInstanceEntity findOne(Long processInstanceKey);
 
@@ -100,6 +101,8 @@ public interface ProcessInstanceMapper {
       long processInstanceKey,
       ProcessInstanceEntity.ProcessInstanceState state,
       OffsetDateTime endDate) {}
+
+  record ProcessInstanceTagsDto(Long processInstanceKey, Set<String> tags) {}
 
   record SelectExpiredRootProcessInstancesDto(
       int partitionId, OffsetDateTime cleanupDate, DbQueryPage page) {}
