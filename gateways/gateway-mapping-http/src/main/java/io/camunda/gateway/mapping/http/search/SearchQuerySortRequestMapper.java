@@ -672,7 +672,6 @@ public class SearchQuerySortRequestMapper {
         case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
         case ERROR_TYPE -> builder.errorType();
-        case ERROR_MESSAGE -> builder.errorMessage();
         case ELEMENT_ID -> builder.flowNodeId();
         case ELEMENT_INSTANCE_KEY -> builder.flowNodeInstanceKey();
         case CREATION_TIME -> builder.creationTime();
