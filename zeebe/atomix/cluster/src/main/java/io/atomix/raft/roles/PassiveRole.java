@@ -584,9 +584,13 @@ public class PassiveRole extends InactiveRole {
     // Append the entries to the log.
     appendEntries(request, future);
 
-    // If a snapshot replication was ongoing, reset it. Otherwise SnapshotReplicationListeners will
-    // wait for ever for the snapshot to be received.
-    abortPendingSnapshots();
+    // If the request contains entries, abort any in-progress snapshot replication. The follower
+    // is now receiving log entries and must not continue waiting for snapshot chunks. We skip this
+    // for empty appends (heartbeats) because the leader may send heartbeats concurrently with
+    // snapshot chunks when there have been prior communication failures.
+    if (!request.entries().isEmpty()) {
+      abortPendingSnapshots();
+    }
     return future;
   }
 
