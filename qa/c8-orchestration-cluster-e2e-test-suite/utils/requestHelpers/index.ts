@@ -20,6 +20,8 @@ export {createTenantAndStoreResponseFields} from './tenant-requestHelpers';
 export {assignGroupsToTenant} from './tenant-requestHelpers';
 export {assignRolesToTenant} from './tenant-requestHelpers';
 export {assertRolesInResponse} from './tenant-requestHelpers';
+export {assignMappingRulesToTenant} from './tenant-requestHelpers';
+export {assertMappingRulesInResponse} from './tenant-requestHelpers';
 export {createTenant} from './tenant-requestHelpers';
 export {assignClientsToTenant} from './tenant-requestHelpers';
 export {assignUsersToTenant} from './tenant-requestHelpers';
