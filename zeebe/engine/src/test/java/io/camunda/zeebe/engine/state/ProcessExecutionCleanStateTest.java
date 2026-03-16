@@ -871,6 +871,36 @@ public final class ProcessExecutionCleanStateTest {
     assertThatStateIsEmpty();
   }
 
+  @Test
+  public void testProcessWithRuntimeTerminateInstruction() {
+    // given
+    engineRule
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .manualTask("task")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        engineRule
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withRuntimeTerminateInstruction("task")
+            .create();
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    // then
+    assertThatStateIsEmpty();
+  }
+
   private void assertThatStateIsEmpty() {
     // sometimes the state takes few moments until is empty
     Awaitility.await()
