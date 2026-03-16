@@ -46,7 +46,7 @@ export class IdentityHeader {
     await expect(this.page.getByText('logged out...')).not.toBeVisible({
       timeout: 15000,
     });
-    await sleep(5000);
+    await sleep(2000);
   }
 
   async navigateToRoles() {
