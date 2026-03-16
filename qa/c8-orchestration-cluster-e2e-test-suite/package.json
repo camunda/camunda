@@ -40,6 +40,6 @@
     "@camunda8/sdk": "^8.7.29",
     "axios": "^1.8.1",
     "dotenv": "^17.0.0",
-    "mailslurp-client": "^16.0.0"
+    "mailslurp-client": "^17.0.0"
   }
 }
