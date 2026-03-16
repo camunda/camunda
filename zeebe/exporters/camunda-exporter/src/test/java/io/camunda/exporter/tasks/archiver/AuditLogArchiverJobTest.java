@@ -150,6 +150,29 @@ public class AuditLogArchiverJobTest {
     assertThat(auditLogArchiverRepository.deletedBatch).isEqualTo(auditLogArchiverRepository.batch);
   }
 
+  @Test
+  void shouldArchiveAuditLogsButSkipCleanupDeletionWhenCleanupIdsAreEmpty() {
+    // given - simulates the case when audit log batch limit was reached (cleanup IDs withheld)
+    auditLogArchiverRepository.batch =
+        new AuditLogCleanupBatch("2026-01-01", List.of(), List.of("audit-1", "audit-2"));
+
+    // when
+    final int count = job.execute().toCompletableFuture().join();
+
+    // then - should count only audit log IDs (no cleanup IDs)
+    assertThat(count).isEqualTo(2);
+
+    // then - should move audit log documents
+    assertThat(archiverRepository.moves).hasSize(1);
+    final var move = archiverRepository.moves.getFirst();
+    assertThat(move.keysByField())
+        .containsEntry(AuditLogTemplate.ID, List.of("audit-1", "audit-2"));
+
+    // then - deleteAuditLogCleanupMetadata should still be called but with empty cleanup IDs
+    assertThat(auditLogArchiverRepository.deletedBatch).isNotNull();
+    assertThat(auditLogArchiverRepository.deletedBatch.auditLogCleanupIds()).isEmpty();
+  }
+
   static class NoopAuditLogArchiverRepository implements AuditLogArchiverRepository {
 
     AuditLogCleanupBatch batch;
