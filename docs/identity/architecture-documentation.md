@@ -713,6 +713,14 @@ sequenceDiagram
 
 Scenario: a client starts a process instance via the REST API; the Zeebe Engine enforces RBAC via Engine Identity before applying the command.
 
+1. Client sends a `POST /v2/process-instances` request with a valid credential (session cookie, Basic auth header, or JWT bearer token).
+2. Spring Security authenticates the request and resolves a `CamundaAuthentication` principal.
+3. The REST API delegates to Camunda Services, which issues a `CreateProcessInstance` command to the Zeebe Engine.
+4. Before applying the command, the Engine calls `AuthorizationCheckBehavior` with an `AuthorizationRequest` for the `PROCESS_DEFINITION:CREATE_PROCESS_INSTANCE` permission.
+5. `AuthorizationCheckBehavior` reads the principal's authorizations and role memberships from the Primary Database (RocksDB) via the State classes (`ProcessingState`, `AuthorizationState`, `MembershipState`, `MappingRuleState`).
+6. If the check passes, the Engine writes the new process instance state to the Primary Database and returns the result.
+7. Camunda Services returns a `CreateProcessInstanceResponse` and the REST API responds with `200 OK` containing the process instance key.
+
 ```mermaid
 sequenceDiagram
   box Customer System
@@ -750,7 +758,17 @@ sequenceDiagram
 
 ## 6.5 Reading resources via REST
 
-Scenario: a client queries process instances via the REST API; the Camunda Search Client uses Security to filter results to authorized resources only.
+Scenario: a client queries process instances via the REST API; the Camunda Search Client uses Security (`DefaultResourceAccessProvider`) to filter results to authorized resources only.
+
+1. Client sends a `GET /v2/process-instances` request with a valid credential.
+2. Spring Security authenticates the request and resolves a `CamundaAuthentication` principal.
+3. The REST API delegates to Camunda Services, which builds a `SecurityContext` (via `SecurityContextProvider`) combining the principal with the required authorization context.
+4. Camunda Services invokes the Camunda Search Client with the `SecurityContext`.
+5. Before executing the search query, the Camunda Search Client calls `DefaultResourceAccessProvider` to determine the caller's effective permissions.
+6. `DefaultResourceAccessProvider` reads the principal's authorizations and roles from the Secondary Database via the Camunda Search Client itself (no direct DB access).
+7. The resolved permissions are translated into a resource filter (e.g. restricting results to specific process definition keys or tenants) and applied to the search query.
+8. The Camunda Search Client executes the filtered query against the Secondary Database and returns the results.
+9. Camunda Services returns a `SearchProcessInstancesResponse` and the REST API responds with `200 OK` containing the filtered process instances.
 
 ```mermaid
 sequenceDiagram
