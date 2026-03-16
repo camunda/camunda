@@ -9,6 +9,8 @@
 import { FC } from "react";
 import Lazy from "src/components/router/Lazy";
 import PageRoutes from "src/components/router/PageRoutes";
+import type { GlobalTaskListener } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { TFunction } from "i18next";
 
 const GlobalTaskListeners: FC = () => (
   <PageRoutes indexElement={<Lazy load={() => import("./List")} />} />
@@ -17,3 +19,27 @@ const GlobalTaskListeners: FC = () => (
 export default GlobalTaskListeners;
 
 export const LISTENER_TYPE_PATTERN = /^[a-zA-Z0-9._-]+$/;
+
+export const getEventTypeLabel = (
+  eventType: GlobalTaskListener["eventTypes"][number],
+  t: TFunction<string, string>,
+): string => {
+  const labels: Record<GlobalTaskListener["eventTypes"][number], string> = {
+    all: t("eventTypeAll"),
+    creating: t("eventTypeCreating"),
+    updating: t("eventTypeUpdating"),
+    assigning: t("eventTypeAssigning"),
+    completing: t("eventTypeCompleting"),
+    canceling: t("eventTypeCanceling"),
+  };
+  return labels[eventType];
+};
+
+export const getEventTypeLabels = (
+  eventTypes: GlobalTaskListener["eventTypes"],
+  t: TFunction<string, string>,
+): string => {
+  return eventTypes.includes("all")
+    ? t("eventTypeAll")
+    : eventTypes.map((et) => getEventTypeLabel(et, t)).join(", ");
+};
