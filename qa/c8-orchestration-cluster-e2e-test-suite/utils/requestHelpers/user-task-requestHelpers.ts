@@ -65,5 +65,6 @@ export async function completeUserTask(
   return await request.post(buildUrl(`/user-tasks/${userTaskKey}/completion`), {
     headers: jsonHeaders(),
     data: payload,
+    timeout: 60_000,
   });
 }
