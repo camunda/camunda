@@ -30,6 +30,7 @@ import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
+import io.camunda.process.test.impl.judge.JudgeConfigResolver;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.TestCaseRunnerProxy;
@@ -150,6 +151,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // initialize json mapper
     initializeJsonMapper(jsonMapper, zeebeJsonMapper);
+
+    // initialize judge config
+    initializeJudgeConfig(testContext, runtimeConfiguration);
   }
 
   @Override
@@ -245,6 +249,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
 
     runtime.close();
+
+    CamundaAssert.setJudgeConfig(null);
   }
 
   private void initializeJsonMapper(
@@ -255,6 +261,14 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     } else if (zeebeJsonMapper != null) {
       CamundaAssert.setJsonMapper(zeebeJsonMapper);
     }
+  }
+
+  private void initializeJudgeConfig(
+      final TestContext testContext,
+      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+    JudgeConfigResolver.resolve(
+            testContext.getApplicationContext(), runtimeConfiguration.getJudge())
+        .ifPresent(CamundaAssert::setJudgeConfig);
   }
 
   private CamundaManagementClient createManagementClient(

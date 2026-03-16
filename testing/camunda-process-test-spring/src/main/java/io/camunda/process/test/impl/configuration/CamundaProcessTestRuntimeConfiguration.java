@@ -60,6 +60,8 @@ public class CamundaProcessTestRuntimeConfiguration {
   @NestedConfigurationProperty
   private CoverageReportConfiguration coverage = new CoverageReportConfiguration();
 
+  @NestedConfigurationProperty private JudgeConfiguration judge = new JudgeConfiguration();
+
   @Bean
   @Primary
   public CamundaProcessTestRuntimeConfiguration runtimeConfiguration(
@@ -232,5 +234,13 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   public void setCoverage(final CoverageReportConfiguration coverage) {
     this.coverage = coverage;
+  }
+
+  public JudgeConfiguration getJudge() {
+    return judge;
+  }
+
+  public void setJudge(final JudgeConfiguration judge) {
+    this.judge = judge;
   }
 }

@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.runtime.util;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -27,10 +28,13 @@ import java.util.stream.Collectors;
  * and lists.
  */
 public class PropertiesUtil {
+
   private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{.*}");
+  private static final String CAMUNDA_PROCESS_TEST_PREFIX = "CAMUNDA_PROCESSTEST_";
 
   /**
-   * Reads a property and returns null if it doesn't exist or the value is a placeholder.
+   * Reads a property and returns null if it doesn't exist or the value is a placeholder. Falls back
+   * to the corresponding environment variable if the property is not set.
    *
    * @param properties the properties object containing the property
    * @param propertyName the property key
@@ -42,7 +46,10 @@ public class PropertiesUtil {
   }
 
   /**
-   * Reads a property and returns a default if it doesn't exist or the value is a placeholder.
+   * Reads a property and returns a default if it doesn't exist or the value is a placeholder. Falls
+   * back to the corresponding environment variable by prepending {@code CAMUNDA_PROCESSTEST_},
+   * replacing dots with underscores, removing hyphens, and uppercasing (e.g. {@code
+   * judge.chatModel.apiKey} maps to {@code CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_APIKEY}).
    *
    * @param properties the properties object containing the property
    * @param propertyName the property key
@@ -54,6 +61,10 @@ public class PropertiesUtil {
 
     final String propertyValue = properties.getProperty(propertyName);
     if (propertyValue == null || isPlaceholder(propertyValue)) {
+      final String envValue = System.getenv(toEnvVarName(propertyName));
+      if (envValue != null && !envValue.isEmpty()) {
+        return envValue;
+      }
       return defaultValue;
 
     } else {
@@ -95,6 +106,10 @@ public class PropertiesUtil {
 
     final String propertyValue = properties.getProperty(propertyName);
     if (propertyValue == null || isPlaceholder(propertyValue)) {
+      final String envValue = System.getenv(toEnvVarName(propertyName));
+      if (envValue != null && !envValue.isEmpty()) {
+        return converter.apply(envValue);
+      }
       return defaultValue;
     } else {
       return converter.apply(propertyValue);
@@ -106,6 +121,20 @@ public class PropertiesUtil {
   }
 
   /**
+   * Converts a property name to an environment variable name by prepending the {@code
+   * CAMUNDA_PROCESSTEST_} prefix, replacing dots with underscores, removing hyphens, and
+   * uppercasing everything. This matches the Spring Boot relaxed binding convention for the {@code
+   * camunda.process-test} configuration prefix.
+   *
+   * <p>Example: {@code judge.chatModel.apiKey} becomes {@code
+   * CAMUNDA_PROCESSTEST_JUDGE_CHATMODEL_APIKEY}.
+   */
+  static String toEnvVarName(final String propertyName) {
+    return CAMUNDA_PROCESS_TEST_PREFIX
+        + propertyName.toUpperCase().replace('.', '_').replace("-", "");
+  }
+
+  /**
    * Reads a map of properties based on a common prefix in the format
    *
    * <pre>
@@ -114,6 +143,11 @@ public class PropertiesUtil {
    * key.c=valueC
    * ...
    * </pre>
+   *
+   * <p>Falls back to environment variables following Spring relaxed binding conventions.
+   * Placeholder values ({@code ${...}}) are resolved to the env var derived from the full property
+   * name. Additionally, env vars matching the prefix are discovered as new entries (e.g. {@code
+   * JUDGE_CHATMODEL_CUSTOMPROPERTIES_ENDPOINT} maps to key {@code endpoint}).
    *
    * @param properties the properties object to parse.
    * @param propertyNamePrefix the property key prefix, e.g. "key", not "key." nor "key.a"
@@ -135,6 +169,8 @@ public class PropertiesUtil {
    * ...
    * </pre>
    *
+   * <p>Falls back to environment variables following Spring relaxed binding conventions.
+   *
    * @param properties the properties object to parse.
    * @param propertyNamePrefix the property key prefix, e.g. "key", not "key." nor "key.a"
    * @param converter function that converts the value to the expected type T.
@@ -145,17 +181,66 @@ public class PropertiesUtil {
       final String propertyNamePrefix,
       final Function<String, T> converter) {
 
-    final String validatedPropertyNamePrefix =
+    return getPropertyMapOrEmpty(properties, propertyNamePrefix, converter, System.getenv());
+  }
+
+  /**
+   * Package-private overload that accepts an explicit env var source for testability.
+   *
+   * <p>Resolution order per entry:
+   *
+   * <ol>
+   *   <li>Property value from the properties file (if not a placeholder)
+   *   <li>Env var derived from the full property name (if property is a placeholder or missing)
+   *   <li>Env var discovery: scan env vars matching the prefix for entirely new entries
+   * </ol>
+   *
+   * Properties-based entries take precedence over env-var-discovered entries.
+   */
+  static <T> Map<String, T> getPropertyMapOrEmpty(
+      final Properties properties,
+      final String propertyNamePrefix,
+      final Function<String, T> converter,
+      final Map<String, String> envVars) {
+
+    final String validatedPrefix =
         propertyNamePrefix.trim().endsWith(".")
             ? propertyNamePrefix.trim()
             : propertyNamePrefix.trim() + ".";
 
-    return properties.stringPropertyNames().stream()
-        .filter(key -> key.startsWith(validatedPropertyNamePrefix))
-        .collect(
-            Collectors.toMap(
-                key -> key.substring(validatedPropertyNamePrefix.length()),
-                key -> readProperty(properties, key, converter)));
+    final Map<String, T> result = new HashMap<>();
+
+    // 1. Collect from properties file, with placeholder → env var fallback
+    for (final String key : properties.stringPropertyNames()) {
+      if (key.startsWith(validatedPrefix)) {
+        final String mapKey = key.substring(validatedPrefix.length());
+        final String rawValue = properties.getProperty(key).trim();
+        if (isPlaceholder(rawValue)) {
+          final String envValue = envVars.get(toEnvVarName(key));
+          if (envValue != null && !envValue.isEmpty()) {
+            result.put(mapKey, converter.apply(envValue));
+          }
+        } else {
+          result.put(mapKey, converter.apply(rawValue));
+        }
+      }
+    }
+
+    // 2. Discover additional entries from environment variables
+    final String envPrefix = toEnvVarName(validatedPrefix);
+    for (final Map.Entry<String, String> entry : envVars.entrySet()) {
+      if (entry.getKey().startsWith(envPrefix)) {
+        final String suffix = entry.getKey().substring(envPrefix.length());
+        if (!suffix.isEmpty() && entry.getValue() != null && !entry.getValue().isEmpty()) {
+          final String mapKey = suffix.toLowerCase();
+          if (!result.containsKey(mapKey)) {
+            result.put(mapKey, converter.apply(entry.getValue()));
+          }
+        }
+      }
+    }
+
+    return result;
   }
 
   /**
