@@ -80,6 +80,7 @@ test.describe.serial('Get usage metrics API Tests', () => {
       );
 
       const body = await res.json();
+      console.log(body);
       expect(body.activeTenants).toBeGreaterThanOrEqual(0);
       expect(body.processInstances).toBeGreaterThan(0);
       expect(body.decisionInstances).toBeGreaterThanOrEqual(0);
@@ -223,6 +224,13 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
   test('Get Usage Metrics - User with no granted authorization', async ({
     request,
   }) => {
+    // eslint-disable-next-line playwright/no-conditional-in-test
+    if (process.env.DATABASE == 'RDBMS') {
+      test.skip(
+        true,
+        '//Skipped due to bug 43428: https://github.com/camunda/camunda/issues/43428',
+      );
+    }
     const startOfTodayLocal = new Date();
     startOfTodayLocal.setHours(0, 0, 0, 0);
     const isoLocalMidnight = startOfTodayLocal.toISOString();
