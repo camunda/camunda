@@ -13,6 +13,7 @@ import io.camunda.search.clients.reader.ProcessInstanceStatisticsReader;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,11 @@ public class ProcessInstanceStatisticsDbReader
   public List<ProcessFlowNodeStatisticsEntity> aggregate(
       final ProcessInstanceFlowNodeStatisticsQuery query,
       final ResourceAccessChecks resourceAccessChecks) {
+
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+      return Collections.emptyList();
+    }
+
     LOG.trace(
         "[RDBMS DB] Query process instance flow node statistics with {}",
         query.filter().processInstanceKey());
