@@ -8,58 +8,106 @@
 package io.camunda.zeebe;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.worker.JobHandler;
+import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerMetrics;
 import io.camunda.zeebe.config.AppCfg;
+import io.camunda.zeebe.config.StarterCfg;
 import io.camunda.zeebe.config.WorkerCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.Tags;
 import java.time.Duration;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.time.Instant;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Worker extends App {
 
-  public static final Logger LOGGER = LoggerFactory.getLogger(Worker.class);
-  private static final Logger THROTTLED_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(5));
+  private static final Logger LOG = LoggerFactory.getLogger(Worker.class);
+  private static final Logger THROTTLED_LOGGER = new ThrottledLogger(LOG, Duration.ofSeconds(5));
+
+  /** Element ID of the source task in the BPMN. */
+  private static final String SOURCE_ELEMENT_ID = "taskA";
+
+  /** Element ID of the target task in the BPMN. */
+  private static final String TARGET_ELEMENT_ID = "taskB";
+
+  /** How long to wait between batch-operation status polls. */
+  private static final Duration POLL_INTERVAL = Duration.ofSeconds(5);
+
+  /** Upper bound for waiting on the batch operation to finish. */
+  private static final Duration BATCH_OPERATION_TIMEOUT = Duration.ofMinutes(30);
+
   private final WorkerCfg workerCfg;
+  private final int totalInstances;
+  private final String processId;
 
   Worker(final AppCfg config) {
     super(config);
     workerCfg = config.getWorker();
+
+    final StarterCfg starterCfg = config.getStarter();
+    // Derive the expected number of instances from the starter's rate and duration limit.
+    // The Starter runs at `rate` instances/s for `durationLimit` seconds.
+    totalInstances = starterCfg.getRate() * starterCfg.getDurationLimit();
+    processId = starterCfg.getProcessId();
   }
 
   @Override
   public void run() {
-    final String jobType = workerCfg.getJobType();
-    final long completionDelay = workerCfg.getCompletionDelay().toMillis();
-    final boolean isStreamEnabled = workerCfg.isStreamEnabled();
-    final var variables = readVariables(workerCfg.getPayloadPath());
-    final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(10_000);
     final CamundaClient client = createCamundaClient();
+    printTopology(client);
+
+    LOG.info(
+        "BatchModifyWorker started. Waiting for {} job activations on job type '{}' before"
+            + " triggering batch modification ({} → {}).",
+        totalInstances,
+        workerCfg.getJobType(),
+        SOURCE_ELEMENT_ID,
+        TARGET_ELEMENT_ID);
+
+    // Latch that is released once we have seen `totalInstances` distinct job activations.
+    final CountDownLatch readyLatch = new CountDownLatch(1);
+    final AtomicLong activatedJobs = new AtomicLong(0);
+    final ConcurrentHashMap<Long, Long> seenJobs =
+        new ConcurrentHashMap<>(50000); // Pre-size to avoid resizing overhead.
+
     final JobWorkerMetrics metrics =
         JobWorkerMetrics.micrometer()
             .withMeterRegistry(registry)
-            .withTags(Tags.of("workerName", workerCfg.getWorkerName(), "jobType", jobType))
+            .withTags(
+                Tags.of("workerName", workerCfg.getWorkerName(), "jobType", workerCfg.getJobType()))
             .build();
-    printTopology(client);
 
+    // Open the worker. The handler counts activations but never completes jobs, so every
+    // instance stays parked at taskA until the batch modification moves it.
     final JobWorker worker =
         client
             .newWorker()
-            .jobType(jobType)
-            .handler(handleJob(client, variables, completionDelay, requestFutures))
-            .streamEnabled(isStreamEnabled)
+            .jobType(workerCfg.getJobType())
+            .handler(
+                (jobClient, job) -> {
+                  seenJobs.put(job.getKey(), 1L);
+                  final long count = seenJobs.size();
+                  THROTTLED_LOGGER.info(
+                      "Activated job {}/{} (process instance key: {})",
+                      count,
+                      totalInstances,
+                      job.getProcessInstanceKey());
+
+                  if (count >= totalInstances) {
+                    // Signal the main thread that enough instances have been seen.
+                    readyLatch.countDown();
+                  }
+                  // Intentionally do NOT complete the job. The job will time out and be
+                  // retried by the engine, keeping the instance at taskA.
+                })
+            .streamEnabled(workerCfg.isStreamEnabled())
             .metrics(metrics)
             .open();
-
-    final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
-    responseChecker.start();
 
     Runtime.getRuntime()
         .addShutdownHook(
@@ -67,96 +115,91 @@ public class Worker extends App {
                 () -> {
                   worker.close();
                   client.close();
-                  responseChecker.close();
                 }));
-  }
 
-  private JobHandler handleJob(
-      final CamundaClient client,
-      final String variables,
-      final long completionDelay,
-      final BlockingQueue<Future<?>> requestFutures) {
-    return (jobClient, job) -> {
-      // we record the start handling time to better calculate the completion delay
-      // as when we send a message we already have a delay due to waiting on the response
-      final long startHandlingTime = System.currentTimeMillis();
+    // ── Wait until all instances are parked at taskA ───────────────────────────
+    try {
+      readyLatch.await();
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      LOG.error("Interrupted while waiting for job activations.", e);
+      return;
+    }
 
-      if (workerCfg.isSendMessage()) {
+    LOG.info(
+        "All {} process instances are active at '{}'. Triggering batch modification.",
+        totalInstances,
+        SOURCE_ELEMENT_ID);
 
-        final var correlationKey =
-            job.getVariable(workerCfg.getCorrelationKeyVariableName()).toString();
+    // ── Trigger batch modifyProcessInstance ───────────────────────────────────
+    final String batchOperationKey;
+    try {
+      batchOperationKey =
+          client
+              .newCreateBatchOperationCommand()
+              .modifyProcessInstance()
+              .addMoveInstruction(SOURCE_ELEMENT_ID, TARGET_ELEMENT_ID)
+              .filter(f -> f.processDefinitionId(processId).tags(Starter.BATCH_MODIFY_TAG))
+              .send()
+              .join()
+              .getBatchOperationKey();
+    } catch (final Exception e) {
+      LOG.error("Failed to create batch operation.", e);
+      return;
+    }
 
-        final boolean messagePublishedSuccessfully = publishMessage(client, correlationKey);
-        if (!messagePublishedSuccessfully) {
-          // Instead of failing the job, we simply let the job time out, so someone else has to
-          // pick up the job later. This might delay the individual process instance, but overall it
-          // has a lesser impact, as we can work on a different job in the meantime, keeping up the
-          // throughput.
-          //
-          // It might be that one partition has currently some struggle due to restarts or role
-          // changes, chances are low that this affects all partitions.
-          //
-          // This might cause issues for the current job to publish a message, but we are sending
-          // messages via correlation key,   based on the process instance payload.
-          //
-          // On the next job/message published the chances are (partition count - 1 / partition
-          // count) that we hit another partition where it works without issues.
+    LOG.info("Batch operation created (key={}). Polling for completion…", batchOperationKey);
 
+    // ── Poll until COMPLETED ───────────────────────────────────────────────────
+    final Instant batchStart = Instant.now();
+    final Instant deadline = batchStart.plus(BATCH_OPERATION_TIMEOUT);
+
+    while (Instant.now().isBefore(deadline)) {
+      try {
+        final var batchOp = client.newBatchOperationGetRequest(batchOperationKey).send().join();
+        final BatchOperationState state = batchOp.getStatus();
+
+        THROTTLED_LOGGER.info(
+            "Batch operation {}: state={}, completed={}, failed={}",
+            batchOperationKey,
+            state,
+            batchOp.getOperationsCompletedCount(),
+            batchOp.getOperationsFailedCount());
+
+        if (BatchOperationState.COMPLETED.equals(state)) {
+          final Duration elapsed = Duration.between(batchStart, Instant.now());
+          LOG.info(
+              "Batch operation {} COMPLETED in {} ms ({} s) for {} instances.",
+              batchOperationKey,
+              elapsed.toMillis(),
+              elapsed.toSeconds(),
+              totalInstances);
           return;
         }
+
+        if (BatchOperationState.FAILED.equals(state)) {
+          LOG.error("Batch operation {} entered FAILED state.", batchOperationKey);
+          return;
+        }
+      } catch (final Exception e) {
+        THROTTLED_LOGGER.warn("Error polling batch operation {}, retrying…", batchOperationKey, e);
       }
 
-      final var command = jobClient.newCompleteCommand(job.getKey()).variables(variables);
-      addDelayToCompletion(completionDelay, startHandlingTime);
-      requestFutures.add(command.send());
-    };
-  }
-
-  private boolean publishMessage(final CamundaClient client, final String correlationKey) {
-    final var messageName = workerCfg.getMessageName();
-
-    LOGGER.debug("Publish message '{}' with correlation key '{}'", messageName, correlationKey);
-    final var messageSendFuture =
-        client
-            .newPublishMessageCommand()
-            .messageName(messageName)
-            .correlationKey(correlationKey)
-            .send();
-
-    try {
-      messageSendFuture.get(10, TimeUnit.SECONDS);
-      return true;
-    } catch (final Exception ex) {
-      THROTTLED_LOGGER.error(
-          "Exception on publishing a message with name {} and correlationKey {}",
-          messageName,
-          correlationKey,
-          ex);
-      return false;
-    }
-  }
-
-  private static void addDelayToCompletion(
-      final long completionDelay, final long startHandlingTime) {
-    try {
-      final var elapsedTime = System.currentTimeMillis() - startHandlingTime;
-      if (elapsedTime < completionDelay) {
-        final long sleepTime = completionDelay - elapsedTime;
-        LOGGER.debug("Sleep for {} ms", sleepTime);
-        Thread.sleep(sleepTime);
-      } else {
-        LOGGER.debug(
-            "Skip sleep. Elapsed time {} is larger then {} completion delay.",
-            elapsedTime,
-            completionDelay);
+      try {
+        Thread.sleep(POLL_INTERVAL.toMillis());
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return;
       }
-    } catch (final Exception e) {
-      THROTTLED_LOGGER.error("Exception on sleep with completion delay {}", completionDelay, e);
     }
+
+    LOG.error(
+        "Timed out waiting for batch operation {} to complete after {}.",
+        batchOperationKey,
+        BATCH_OPERATION_TIMEOUT);
   }
 
   private CamundaClient createCamundaClient() {
-    final WorkerCfg workerCfg = config.getWorker();
     final var timeout =
         config.getWorker().getTimeout() != Duration.ZERO
             ? config.getWorker().getTimeout()

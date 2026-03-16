@@ -50,6 +50,9 @@ import org.slf4j.LoggerFactory;
 
 public class Starter extends App {
 
+  /** Tag applied to the first {@value #TAGGED_INSTANCE_LIMIT} process instances. */
+  static final String BATCH_MODIFY_TAG = "batch-modify-load-test";
+
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(Starter.class);
@@ -57,6 +60,10 @@ public class Starter extends App {
   private static final TypeReference<HashMap<String, Object>> VARIABLES_TYPE_REF =
       new TypeReference<>() {};
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+  /** Number of process instances to tag before stopping tagging. */
+  private static final long TAGGED_INSTANCE_LIMIT = 50_000;
+
   private final StarterCfg starterCfg;
   private Timer responseLatencyTimer;
   private ScheduledExecutorService executorService;
@@ -244,11 +251,19 @@ public class Starter extends App {
       final long startTime,
       final String processId,
       final HashMap<String, Object> variables) {
-    return client
-        .newCreateInstanceCommand()
-        .bpmnProcessId(processId)
-        .latestVersion()
-        .variables(variables)
+    final var instanceNumber = (long) variables.get(starterCfg.getBusinessKey());
+    final var createCommand =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .variables(variables);
+
+    if (instanceNumber <= TAGGED_INSTANCE_LIMIT) {
+      createCommand.tags(BATCH_MODIFY_TAG);
+    }
+
+    return createCommand
         .send()
         .thenApply(
             (response) -> {
