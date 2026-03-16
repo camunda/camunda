@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.util;
 import io.camunda.gateway.mapping.http.converters.CustomConverter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
+import io.camunda.service.exception.ServiceException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.OffsetDateTime;
@@ -53,19 +54,23 @@ public class AdvancedSearchFilterUtil {
       try {
         return (T) OffsetDateTime.parse((String) value);
       } catch (final DateTimeParseException e) {
-        throw new IllegalArgumentException("Failed to parse date-time: [%s]".formatted(value), e);
+        throw new ServiceException(
+            "Failed to parse date-time: [%s]".formatted(value),
+            ServiceException.Status.INVALID_ARGUMENT);
       }
     } else if (tClass == Long.class && value instanceof String) {
       try {
         return (T) Long.valueOf((String) value);
       } catch (final NumberFormatException e) {
-        throw new IllegalArgumentException(
-            "Invalid value: [%s] is not a valid number".formatted(value), e);
+        throw new ServiceException(
+            "Invalid value: [%s] is not a valid number".formatted(value),
+            ServiceException.Status.INVALID_ARGUMENT);
       }
     }
 
-    throw new IllegalArgumentException(
-        "Could not convert request value [%s] to [%s]".formatted(value, tClass.getName()));
+    throw new ServiceException(
+        "Could not convert request value [%s] to [%s]".formatted(value, tClass.getName()),
+        ServiceException.Status.INVALID_ARGUMENT);
   }
 
   protected static <T> List<Operation<T>> mapToOperations(

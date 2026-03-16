@@ -43,8 +43,6 @@ public class GatewayErrorMapper {
     final var exception = unwrapError(error);
     if (exception instanceof final ServiceException se) {
       return createProblemDetail(mapStatus(se.getStatus()), se.getMessage(), se.getStatus().name());
-    } else if (exception instanceof final IllegalArgumentException iae) {
-      return createProblemDetail(HttpStatus.BAD_REQUEST, iae.getMessage(), "INVALID_ARGUMENT");
     } else {
       LOG.error("Expected to handle REST request, but an unexpected error occurred", error);
       return createProblemDetail(

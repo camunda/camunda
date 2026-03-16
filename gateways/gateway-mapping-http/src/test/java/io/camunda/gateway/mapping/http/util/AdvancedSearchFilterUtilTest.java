@@ -15,6 +15,7 @@ import io.camunda.gateway.protocol.model.AdvancedStringFilter;
 import io.camunda.gateway.protocol.model.BasicStringFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
+import io.camunda.service.exception.ServiceException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -189,7 +190,7 @@ class AdvancedSearchFilterUtilTest {
 
     // when/then
     assertThatThrownBy(() -> AdvancedSearchFilterUtil.mapToOperations(filter, Boolean.class))
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(ServiceException.class)
         .hasMessage("Could not convert request value [10] to [java.lang.Boolean]");
   }
 
@@ -201,7 +202,7 @@ class AdvancedSearchFilterUtilTest {
 
     // when/then
     assertThatThrownBy(() -> AdvancedSearchFilterUtil.mapToOperations(filter, OffsetDateTime.class))
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(ServiceException.class)
         .hasMessage("Failed to parse date-time: [2023-11-11T10:10:10.1010+0100]");
   }
 
@@ -213,7 +214,7 @@ class AdvancedSearchFilterUtilTest {
 
     // when/then
     assertThatThrownBy(() -> AdvancedSearchFilterUtil.mapToOperations(filter, Long.class))
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(ServiceException.class)
         .hasMessage("Invalid value: [abc] is not a valid number");
   }
 
@@ -225,7 +226,7 @@ class AdvancedSearchFilterUtilTest {
 
     // when/then
     assertThatThrownBy(() -> AdvancedSearchFilterUtil.mapToOperations(filter, Long.class))
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(ServiceException.class)
         .hasMessage("Invalid value: [] is not a valid number");
   }
 }
