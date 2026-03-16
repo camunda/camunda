@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 
 import com.google.common.collect.Lists;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -31,8 +32,8 @@ import org.slf4j.LoggerFactory;
  * the task result builder. It handles the logic for chunking items and ensuring that the task
  * result can accommodate the new records.
  */
-public class BatchOperationPageProcessor {
-  private static final Logger LOG = LoggerFactory.getLogger(BatchOperationPageProcessor.class);
+public class BatchOperationChunkAppender {
+  private static final Logger LOG = LoggerFactory.getLogger(BatchOperationChunkAppender.class);
   // These empty records are used only for size checking in canAppendChunks,
   // to ensure that the size check accounts for the largest possible record types
   // that may be appended. They are not used for actual data processing.
@@ -46,7 +47,7 @@ public class BatchOperationPageProcessor {
 
   private final int chunkSize;
 
-  public BatchOperationPageProcessor(final int chunkSize) {
+  public BatchOperationChunkAppender(final int chunkSize) {
     this.chunkSize = chunkSize;
   }
 
@@ -64,13 +65,42 @@ public class BatchOperationPageProcessor {
    * @return a result indicating whether chunks were appended, the end cursor, number of items
    *     processed, and if it was the last page
    */
-  public PageProcessingResult processPage(
+  private ChunkingOutcome chunkAndAppend(
       final long batchOperationKey,
       final ItemPage page,
       final TaskResultBuilder taskResultBuilder) {
     final boolean appendedChunks = appendChunks(taskResultBuilder, batchOperationKey, page.items());
-    return new PageProcessingResult(
-        appendedChunks, page.endCursor(), page.items().size(), page.isLastPage());
+
+    if (!appendedChunks) {
+      return new ChunkingOutcome.BufferFull();
+    }
+    if (page.isLastPage()) {
+      return new ChunkingOutcome.Finished(page.endCursor(), page.items().size());
+    }
+    return new ChunkingOutcome.Continue(page.endCursor(), page.items().size());
+  }
+
+  /**
+   * Fetches the next page of items and chunks them into the result buffer. If the fetch fails, a
+   * {@link ChunkingOutcome.FetchFailed} is returned instead of throwing an exception.
+   *
+   * @param itemProvider the item provider to fetch the page from
+   * @param context the current initialization context (cursor, page size)
+   * @param taskResultBuilder the builder to append command records to
+   * @return the result of processing the page, or a {@link ChunkingOutcome.FetchFailed} if the
+   *     fetch fails
+   */
+  public ChunkingOutcome fetchAndChunkNextPage(
+      final ItemProvider itemProvider,
+      final InitializationContext context,
+      final TaskResultBuilder taskResultBuilder) {
+    final ItemPage page;
+    try {
+      page = itemProvider.fetchItemPage(context.currentCursor(), context.pageSize());
+    } catch (final Exception e) {
+      return new ChunkingOutcome.FetchFailed(e);
+    }
+    return chunkAndAppend(context.operation().getKey(), page, taskResultBuilder);
   }
 
   private boolean appendChunks(
@@ -119,7 +149,7 @@ public class BatchOperationPageProcessor {
     final var command = new BatchOperationChunkRecord();
     command.setBatchOperationKey(batchOperationKey);
     command.setItems(
-        chunkItems.stream().map(BatchOperationPageProcessor::mapItem).collect(Collectors.toSet()));
+        chunkItems.stream().map(BatchOperationChunkAppender::mapItem).collect(Collectors.toSet()));
     return command;
   }
 
@@ -130,6 +160,27 @@ public class BatchOperationPageProcessor {
         .setRootProcessInstanceKey(Optional.ofNullable(item.rootProcessInstanceKey()).orElse(-1L));
   }
 
-  public record PageProcessingResult(
-      boolean chunksAppended, String endCursor, int itemsProcessed, boolean isLastPage) {}
+  /**
+   * Represents the outcome of fetching and chunking a page of batch operation items.
+   *
+   * <ul>
+   *   <li>{@link Continue} — chunks were appended, more pages remain
+   *   <li>{@link Finished} — chunks were appended and this was the last page
+   *   <li>{@link BufferFull} — chunks could not fit in the result buffer
+   *   <li>{@link FetchFailed} — fetching the page failed with an exception
+   * </ul>
+   */
+  public sealed interface ChunkingOutcome {
+    /** Chunks were appended and more pages remain. */
+    record Continue(String endCursor, int itemsProcessed) implements ChunkingOutcome {}
+
+    /** Chunks were appended and this was the last page. */
+    record Finished(String endCursor, int itemsProcessed) implements ChunkingOutcome {}
+
+    /** Chunks could not fit in the result buffer. */
+    record BufferFull() implements ChunkingOutcome {}
+
+    /** Fetching the page from the item provider failed. */
+    record FetchFailed(Exception cause) implements ChunkingOutcome {}
+  }
 }
