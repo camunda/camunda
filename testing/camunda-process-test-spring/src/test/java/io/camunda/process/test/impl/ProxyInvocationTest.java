@@ -17,10 +17,13 @@ package io.camunda.process.test.impl;
 
 import static org.mockito.Mockito.doThrow;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientException;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.proxy.AbstractInvocationHandler;
+import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.TestCaseRunnerProxy;
 import java.lang.reflect.Proxy;
@@ -85,6 +88,27 @@ public class ProxyInvocationTest {
       // when/then
       Assertions.assertThatThrownBy(() -> proxy.completeUserTask("elementId"))
           .isEqualTo(assertionError);
+    }
+  }
+
+  @Nested
+  class CamundaClientTests {
+
+    @Mock private CamundaClient camundaClient;
+
+    @Test
+    void shouldThrowClientException() {
+      // given
+      final CamundaClientProxy invocationHandler = new CamundaClientProxy();
+      invocationHandler.setDelegate(camundaClient);
+
+      final ClientException clientException = new ClientException("expected");
+      doThrow(clientException).when(camundaClient).close();
+
+      final CamundaClient proxy = createProxy(invocationHandler, CamundaClient.class);
+
+      // when/then
+      Assertions.assertThatThrownBy(proxy::close).isEqualTo(clientException);
     }
   }
 }
