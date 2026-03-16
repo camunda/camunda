@@ -62,6 +62,7 @@ final class CamundaExporterTest {
           .setConfiguration(new ExporterTestConfiguration<>("test", configuration));
   private final ExporterTestController testController = new ExporterTestController();
   private ClientAdapter stubbedClientAdapterInUse;
+  private final ProtocolFactory factory = new ProtocolFactory();
 
   @SuppressWarnings("FieldCanBeLocal")
   @AutoClose
@@ -80,6 +81,12 @@ final class CamundaExporterTest {
   @AfterEach
   void tearDown() {
     mockedClientAdapterFactory.close();
+  }
+
+  private Record<?> stubRecord() {
+    final var record = spy(factory.generateRecord(ValueType.VARIABLE));
+    when(record.getBrokerVersion()).thenReturn("8.8.0");
+    return record;
   }
 
   private static final class NoopExporterEntityCacheProvider
@@ -255,12 +262,6 @@ final class CamundaExporterTest {
       configuration.getIndex().setShouldWaitForImporters(false);
     }
 
-    private Record<?> stubRecord() {
-      final var record = spy(new ProtocolFactory().generateRecord(ValueType.VARIABLE));
-      when(record.getBrokerVersion()).thenReturn("8.8.0");
-      return record;
-    }
-
     @Test
     void shouldScheduleInitialFlushAtConfiguredDelay() {
       // given
@@ -342,12 +343,6 @@ final class CamundaExporterTest {
 
   @Nested
   final class AsyncFlushTest {
-
-    private final ProtocolFactory factory = new ProtocolFactory();
-
-    private Record<?> stubRecord() {
-      return factory.generateRecord(ValueType.VARIABLE);
-    }
 
     @Test
     void shouldUpdatePositionAfterAsyncFlushOnNextExport() {
