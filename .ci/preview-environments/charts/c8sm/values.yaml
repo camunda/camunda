@@ -259,6 +259,12 @@ camunda-platform:
     fullURL: https://{{ include "ingress.domain" . }}{{ .Values.identity.contextPath }}
     # image:
     #     repository: camunda/identity
+    firstUser:
+      enabled: true
+      username: demo
+      secret:
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-firstuser-password
     resources:
       limits:
         cpu: "1"
