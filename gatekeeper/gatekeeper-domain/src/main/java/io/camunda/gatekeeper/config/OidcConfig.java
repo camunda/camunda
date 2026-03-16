@@ -31,7 +31,8 @@ public record OidcConfig(
     boolean idpLogoutEnabled,
     String grantType,
     String clientAuthenticationMethod,
-    String registrationId) {
+    String registrationId,
+    AssertionConfig assertion) {
 
   public OidcConfig {
     additionalJwkSetUris =

@@ -29,7 +29,8 @@
       "Bash(ls mvnw* pom.xml 2>/dev/null; which mvn 2>/dev/null)",
       "Bash(mvn spotless:apply -pl gatekeeper-spring-boot-starter -q 2>&1 && mvn test -pl gatekeeper-spring-boot-starter -q 2>&1)",
       "Bash(./mvnw license:format -q 2>&1 | tail -5)",
-      "Bash(grep -B 1 -A 1 \"^  @Bean$\" /Users/ben.sheppard/code/camunda/gatekeeper/gatekeeper-spring-boot-starter/src/main/java/io/camunda/gatekeeper/spring/autoconfigure/GatekeeperSecurityFilterChainAutoConfiguration.java | head -60)"
+      "Bash(grep -B 1 -A 1 \"^  @Bean$\" /Users/ben.sheppard/code/camunda/gatekeeper/gatekeeper-spring-boot-starter/src/main/java/io/camunda/gatekeeper/spring/autoconfigure/GatekeeperSecurityFilterChainAutoConfiguration.java | head -60)",
+      "Bash(../mvnw spotless:apply -q 2>&1 | tail -20)"
     ]
   }
 }
