@@ -61,6 +61,7 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.generic.Response;
+import org.opensearch.client.opensearch.indices.IndexState;
 import org.slf4j.Logger;
 
 public final class OpenSearchArchiverRepository extends OpensearchRepository
