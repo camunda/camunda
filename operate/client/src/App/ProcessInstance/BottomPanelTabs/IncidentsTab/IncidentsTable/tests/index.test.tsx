@@ -31,7 +31,7 @@ describe('IncidentsTable', () => {
     );
   });
 
-  it('should render incident details', async () => {
+  it('should render incident details in row', async () => {
     render(
       <IncidentsTable
         state="content"
@@ -46,29 +46,68 @@ describe('IncidentsTable', () => {
 
     expect(withinRow.getByText(firstIncidentErrorName)).toBeInTheDocument();
     expect(withinRow.getByText(firstIncident.elementName)).toBeInTheDocument();
-    expect(withinRow.getByText(firstIncident.jobKey!)).toBeInTheDocument();
     expect(
       withinRow.getByText(formatDate(firstIncident.creationTime) || '--'),
     ).toBeInTheDocument();
-    expect(withinRow.getByText(firstIncident.errorMessage)).toBeInTheDocument();
     expect(
       withinRow.getByRole('button', {name: 'Retry Incident'}),
     ).toBeInTheDocument();
+
     withinRow = within(
       screen.getByRole('row', {name: new RegExp(secondIncidentErrorName)}),
     );
     expect(withinRow.getByText(secondIncidentErrorName)).toBeInTheDocument();
     expect(withinRow.getByText(secondIncident.elementName)).toBeInTheDocument();
-    expect(withinRow.getByText(secondIncident.jobKey!)).toBeInTheDocument();
     expect(
       withinRow.getByText(formatDate(secondIncident.creationTime) || '--'),
     ).toBeInTheDocument();
     expect(
-      withinRow.getByText(secondIncident.errorMessage),
-    ).toBeInTheDocument();
-    expect(
       withinRow.getByRole('button', {name: 'Retry Incident'}),
     ).toBeInTheDocument();
+  });
+
+  it('should show Job ID and error message in expanded row', async () => {
+    const {user} = render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={[firstIncident]}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /expand current row/i,
+      }),
+    );
+
+    expect(screen.getByText('Job ID')).toBeInTheDocument();
+    expect(screen.getByText(firstIncident.jobKey!)).toBeInTheDocument();
+    expect(screen.getByText('Error message')).toBeInTheDocument();
+    expect(screen.getByText(firstIncident.errorMessage)).toBeInTheDocument();
+  });
+
+  it('should show dash for empty jobKey in expanded row', async () => {
+    const incidentMock = {...firstIncident, jobKey: ''};
+    const incidents = [incidentMock];
+
+    const {user} = render(
+      <IncidentsTable
+        state="content"
+        processInstanceKey="1"
+        incidents={incidents}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /expand current row/i,
+      }),
+    );
+
+    expect(screen.getByText('—')).toBeInTheDocument();
   });
 
   it('should render the right column headers', async () => {
@@ -83,9 +122,7 @@ describe('IncidentsTable', () => {
 
     expect(screen.getByText('Type')).toBeInTheDocument();
     expect(screen.getByText('Failing Element')).toBeInTheDocument();
-    expect(screen.getByText('Job Id')).toBeInTheDocument();
-    expect(screen.getByText('Creation Date')).toBeInTheDocument();
-    expect(screen.getByText('Error Message')).toBeInTheDocument();
+    expect(screen.getByText('Created')).toBeInTheDocument();
     expect(screen.getByText('Operations')).toBeInTheDocument();
   });
 
@@ -103,30 +140,8 @@ describe('IncidentsTable', () => {
 
     expect(screen.getByText('Type')).toBeInTheDocument();
     expect(screen.getByText('Failing Element')).toBeInTheDocument();
-    expect(screen.getByText('Job Id')).toBeInTheDocument();
-    expect(screen.getByText('Creation Date')).toBeInTheDocument();
-    expect(screen.getByText('Error Message')).toBeInTheDocument();
+    expect(screen.getByText('Created')).toBeInTheDocument();
     expect(screen.getByText('Operations')).toBeInTheDocument();
-  });
-
-  it('should display -- for jobKey', () => {
-    const incidentMock = {...firstIncident, jobKey: ''};
-    const incidents = [incidentMock];
-
-    render(
-      <IncidentsTable
-        state="content"
-        processInstanceKey="1"
-        incidents={incidents}
-      />,
-      {wrapper: Wrapper},
-    );
-
-    let withinFirstRow = within(
-      screen.getByRole('row', {name: new RegExp(firstIncidentErrorName)}),
-    );
-
-    expect(withinFirstRow.getByText('--')).toBeInTheDocument();
   });
 
   it('should provide a link for incidents in child process instances', () => {
@@ -175,57 +190,5 @@ describe('IncidentsTable', () => {
     expect(
       secondIncidentRow.queryByRole('button', {name: 'Retry Incident'}),
     ).not.toBeInTheDocument();
-  });
-
-  it('should show a more button for long error messages', () => {
-    render(
-      <IncidentsTable
-        state="content"
-        processInstanceKey="1"
-        incidents={incidentsMock}
-      />,
-      {wrapper: Wrapper},
-    );
-    let withinFirstRow = within(
-      screen.getByRole('row', {name: new RegExp(firstIncidentErrorName)}),
-    );
-
-    expect(withinFirstRow.queryByText('More')).not.toBeInTheDocument();
-
-    let withinSecondRow = within(
-      screen.getByRole('row', {name: new RegExp(secondIncidentErrorName)}),
-    );
-
-    expect(withinSecondRow.getByText('More')).toBeInTheDocument();
-  });
-
-  it('should open a modal when clicking on the more button', async () => {
-    const {user} = render(
-      <IncidentsTable
-        state="content"
-        processInstanceKey="1"
-        incidents={incidentsMock}
-      />,
-      {wrapper: Wrapper},
-    );
-
-    let withinSecondRow = within(
-      screen.getByRole('row', {name: new RegExp(secondIncidentErrorName)}),
-    );
-
-    expect(withinSecondRow.getByText('More')).toBeInTheDocument();
-
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-
-    await user.click(withinSecondRow.getByText('More'));
-
-    const modal = screen.getByRole('dialog');
-
-    expect(
-      await within(modal).findByTestId('monaco-editor'),
-    ).toBeInTheDocument();
-    expect(
-      within(modal).getByText(`Element "${secondIncident.elementName}" Error`),
-    ).toBeInTheDocument();
   });
 });
