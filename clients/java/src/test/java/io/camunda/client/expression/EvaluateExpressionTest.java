@@ -21,8 +21,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import io.camunda.client.api.response.EvaluateExpressionResponse;
+import io.camunda.client.api.response.EvaluationWarning;
 import io.camunda.client.protocol.rest.ExpressionEvaluationRequest;
 import io.camunda.client.protocol.rest.ExpressionEvaluationResult;
+import io.camunda.client.protocol.rest.ExpressionEvaluationWarningItem;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import io.camunda.client.util.RestGatewayService;
@@ -217,7 +219,10 @@ public final class EvaluateExpressionTest extends ClientRestTest {
     // given
     final String expression = "=x + y";
     final Object resultValue = 30;
-    final List<String> warnings = Arrays.asList("Warning 1", "Warning 2");
+    final List<ExpressionEvaluationWarningItem> warnings =
+        Arrays.asList(
+            new ExpressionEvaluationWarningItem().message("Warning 1"),
+            new ExpressionEvaluationWarningItem().message("Warning 2"));
     gatewayService.onExpressionEvaluationRequest(
         new ExpressionEvaluationResult()
             .expression(expression)
@@ -231,6 +236,8 @@ public final class EvaluateExpressionTest extends ClientRestTest {
     // then
     assertThat(response.getExpression()).isEqualTo(expression);
     assertThat(response.getResult()).isEqualTo(resultValue);
-    assertThat(response.getWarnings()).containsExactly("Warning 1", "Warning 2");
+    assertThat(response.getWarnings())
+        .extracting(EvaluationWarning::getMessage)
+        .containsExactly("Warning 1", "Warning 2");
   }
 }

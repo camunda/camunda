@@ -45,6 +45,7 @@ import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionResult;
 import io.camunda.gateway.protocol.model.ExpressionEvaluationResult;
+import io.camunda.gateway.protocol.model.ExpressionEvaluationWarningItem;
 import io.camunda.gateway.protocol.model.GroupCreateResult;
 import io.camunda.gateway.protocol.model.GroupUpdateResult;
 import io.camunda.gateway.protocol.model.JobKindEnum;
@@ -765,7 +766,10 @@ public final class ResponseMapper {
     return new ExpressionEvaluationResult()
         .expression(expressionRecord.getExpression())
         .result(expressionRecord.getResultValue())
-        .warnings(expressionRecord.getWarnings());
+        .warnings(
+            expressionRecord.getWarnings().stream()
+                .map(warning -> new ExpressionEvaluationWarningItem().message(warning))
+                .toList());
   }
 
   public static TopologyResponse toTopologyResponse(final Topology topology) {
