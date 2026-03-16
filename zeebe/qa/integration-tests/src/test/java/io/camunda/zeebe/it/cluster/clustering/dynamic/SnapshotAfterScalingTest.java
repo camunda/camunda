@@ -26,8 +26,8 @@ import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
@@ -45,7 +45,7 @@ final class SnapshotAfterScalingTest {
               broker -> {
                 broker
                     .brokerConfig()
-                    .setExporting(new ExportingCfg(Set.of(), Duration.ofMillis(100)));
+                    .setExporting(new ExportingCfg(Map.of(), Duration.ofMillis(100)));
 
                 final ConfigManagerCfg configManagerCfg =
                     new ConfigManagerCfg(
