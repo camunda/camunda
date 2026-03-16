@@ -43,7 +43,7 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
    * released. This allows recovery from container crashes that left the schema locked. Set to null
    * to disable stale lock detection. Default is 10 minutes.
    */
-  private Duration ddlLockWaitTimeout = Duration.ofMinutes(10);
+  private Duration ddlLockWaitTimeout = Duration.ofMinutes(15);
 
   /** Process definition cache configuration. Defines the size of the process definition cache. */
   private RdbmsCache processCache = new RdbmsCache();
