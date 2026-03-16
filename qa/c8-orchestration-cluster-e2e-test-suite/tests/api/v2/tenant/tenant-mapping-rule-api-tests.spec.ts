@@ -39,7 +39,7 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
     await assignMappingRulesToTenant(request, 3, 'tenantId3', state);
   });
 
-  test('Assign Mapping Rule To Tenant', async ({request}) => {
+  test('Assign Mapping Rule To Tenant - Success', async ({request}) => {
     const ruleBody = await createMappingRule(request);
     const p = {
       mappingRuleId: ruleBody.mappingRuleId as string,
@@ -57,7 +57,7 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Assign Mapping Rule To Tenant Non Existent Mapping Rule Not Found', async ({
+  test('Assign Mapping Rule To Tenant Non Existent Mapping Rule - Not Found', async ({
     request,
   }) => {
     const stateParams: Record<string, string> = {
@@ -77,7 +77,7 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
     );
   });
 
-  test('Assign Mapping Rule To Tenant Non Existent Tenant Not Found', async ({
+  test('Assign Mapping Rule To Tenant Non Existent Tenant - Not Found', async ({
     request,
   }) => {
     const stateParams: Record<string, string> = {
@@ -97,7 +97,7 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
     );
   });
 
-  test('Assign Mapping Rule To Tenant Unauthorized', async ({request}) => {
+  test('Assign Mapping Rule To Tenant - Unauthorized', async ({request}) => {
     const stateParams: Record<string, string> = {
       mappingRuleId: mappingRuleIdFromState('tenantId1', state) as string,
       tenantId: state['tenantId1'] as string,
@@ -117,7 +117,7 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Assign Already Added Mapping Rule To Tenant Conflict', async ({
+  test('Assign Already Added Mapping Rule To Tenant - Conflict', async ({
     request,
   }) => {
     const stateParams: Record<string, string> = {
@@ -140,7 +140,7 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Unassign Mapping Rule From Tenant', async ({request}) => {
+  test('Unassign Mapping Rule From Tenant - Success', async ({request}) => {
     const p = {
       mappingRuleId: mappingRuleIdFromState('tenantId2', state) as string,
       tenantId: state['tenantId2'] as string,
@@ -185,7 +185,7 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
     );
   });
 
-  test('Unassign Mapping Rule From Tenant Unauthorized', async ({request}) => {
+  test('Unassign Mapping Rule From Tenant - Unauthorized', async ({request}) => {
     const p = {
       mappingRuleId: mappingRuleIdFromState('tenantId2', state) as string,
       tenantId: state['tenantId2'] as string,
@@ -199,7 +199,7 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  test('Unassign Mapping Rule From Tenant Non Existent Mapping Rule Not Found', async ({
+  test('Unassign Mapping Rule From Tenant Non Existent Mapping Rule - Not Found', async ({
     request,
   }) => {
     const p = {
@@ -218,7 +218,7 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
     );
   });
 
-  test('Unassign Mapping Rule From Tenant Non Existent Tenant Not Found', async ({
+  test('Unassign Mapping Rule From Tenant Non Existent Tenant - Not Found', async ({
     request,
   }) => {
     const p = {
@@ -237,7 +237,7 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
     );
   });
 
-  test('Search Tenant Mapping Rules', async ({request}) => {
+  test('Search Tenant Mapping Rules - Success', async ({request}) => {
     const p = {tenantId: state['tenantId3'] as string};
     const rule1 = mappingRuleIdFromState('tenantId3', state, 1);
     const rule2 = mappingRuleIdFromState('tenantId3', state, 2);
@@ -280,7 +280,7 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search Tenant Mapping Rules Tenant With No Assignments Returns Empty', async ({
+  test('Search Tenant Mapping Rules Tenant With No Assignments Returns Empty - Success', async ({
     request,
   }) => {
     const tenant = await createTenant(request);
@@ -307,7 +307,7 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search Tenant Mapping Rules Unauthorized', async ({request}) => {
+  test('Search Tenant Mapping Rules - Unauthorized', async ({request}) => {
     const p = {tenantId: state['tenantId3'] as string};
     const res = await request.post(
       buildUrl('/tenants/{tenantId}/mapping-rules/search', p),
@@ -316,7 +316,7 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  test('Search Tenant Mapping Rules Tenant Not Found', async ({request}) => {
+  test('Search Tenant Mapping Rules Tenant Not Found - Not Found', async ({request}) => {
     const p = {tenantId: 'invalid-tenant-id'};
     const res = await request.post(
       buildUrl('/tenants/{tenantId}/mapping-rules/search', p),
