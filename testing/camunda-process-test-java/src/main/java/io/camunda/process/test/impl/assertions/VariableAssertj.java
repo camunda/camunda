@@ -544,6 +544,11 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
   private void evaluateSimilarity(
       final String variableName, final String expectedValue, final String variableValue) {
+    if (variableValue == null || variableValue.trim().isEmpty()) {
+      fail(
+          "%s variable '%s' is present but has no value to compare for semantic similarity.",
+          actual, variableName);
+    }
     final String processedExpected = applyPreprocessors(expectedValue);
     final String processedActual = applyPreprocessors(variableValue);
     final float[] expectedEmbedding =

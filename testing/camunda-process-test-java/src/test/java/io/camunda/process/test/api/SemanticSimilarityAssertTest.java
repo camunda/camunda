@@ -201,6 +201,29 @@ public class SemanticSimilarityAssertTest {
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("expectation must not be null or empty");
     }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"   "})
+    @CamundaAssertExpectFailure
+    void shouldFailWhenActualVariableValueIsNullOrBlank(final String variableValue) {
+      // given
+      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(embeddingModel));
+
+      final Variable variable = newVariable("result", variableValue);
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariableSimilarTo("result", "some expectation"))
+          .isInstanceOf(AssertionError.class)
+          .hasMessageContaining("result")
+          .hasMessageContaining("no value to compare");
+    }
   }
 
   @Nested
@@ -319,6 +342,40 @@ public class SemanticSimilarityAssertTest {
                           ElementSelectors.byId("task1"), "localVar", "some expectation"))
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("SemanticSimilarityConfig is not set");
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"   "})
+    @CamundaAssertExpectFailure
+    void shouldFailWhenActualLocalVariableValueIsNullOrBlank(final String variableValue) {
+      // given
+      CamundaAssert.setSemanticSimilarityConfig(SemanticSimilarityConfig.of(embeddingModel));
+
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  ElementInstanceBuilder.newActiveElementInstance("task1", PROCESS_INSTANCE_KEY)
+                      .setElementInstanceKey(ELEMENT_INSTANCE_KEY)
+                      .build()));
+
+      final Variable variable =
+          VariableBuilder.newVariable("localVar", variableValue)
+              .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+              .setScopeKey(ELEMENT_INSTANCE_KEY)
+              .build();
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // when / then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasLocalVariableSimilarTo(
+                          ElementSelectors.byId("task1"), "localVar", "some expectation"))
+          .isInstanceOf(AssertionError.class)
+          .hasMessageContaining("localVar")
+          .hasMessageContaining("no value to compare");
     }
   }
 
