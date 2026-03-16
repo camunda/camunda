@@ -637,6 +637,12 @@ export function ROLES_EXPECTED_BODY(roleId: string) {
   };
 }
 
+export function MAPPING_RULES_EXPECTED_BODY(mappingRuleId: string) {
+  return {
+    mappingRuleId: mappingRuleId,
+  };
+}
+
 export function CREATE_COMPONENT_AUTHORIZATION(
   ownerType: 'ROLE' | 'USER' | 'GROUP',
   ownerId: string,
