@@ -15,13 +15,12 @@
  */
 package io.camunda.process.test.api;
 
+import static io.camunda.process.test.api.CamundaAssert.assertThat;
 import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
-import static io.camunda.process.test.api.CamundaAssert.assertThatUserTask;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
-import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,8 +36,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 @CamundaSpringProcessTest
 public class SpringConditionalScenarioBeforeEachIT {
 
-  private static final Map<String, Object> UNHAPPY = Collections.singletonMap("happy", false);
-  private static final Map<String, Object> HAPPY = Collections.singletonMap("happy", true);
   private static final Map<String, Object> EXPORT_VARS =
       Collections.singletonMap("exportSuccess", true);
 
@@ -51,14 +48,15 @@ public class SpringConditionalScenarioBeforeEachIT {
         .newDeployResourceCommand()
         .addResourceFromClasspath("conditionalScenarioApi/scenario-api-test.bpmn")
         .addResourceFromClasspath("conditionalScenarioApi/satisfaction.form")
-        .send()
-        .join();
+        .execute();
 
     processTestContext
         .when(
-            () -> assertThatUserTask(UserTaskSelectors.byElementId("State_Happiness")).isCreated())
-        .then(() -> processTestContext.completeUserTask("State_Happiness", UNHAPPY))
-        .then(() -> processTestContext.completeUserTask("State_Happiness", HAPPY))
+            () ->
+                assertThat(ProcessInstanceSelectors.byProcessId("user-happiness-check"))
+                    .hasActiveElement("State_Happiness", 1))
+        .then(() -> processTestContext.completeUserTask("State_Happiness", Map.of("happy", false)))
+        .then(() -> processTestContext.completeUserTask("State_Happiness", Map.of("happy", true)))
         .when(
             () ->
                 assertThatProcessInstance(
@@ -74,8 +72,7 @@ public class SpringConditionalScenarioBeforeEachIT {
             .newCreateInstanceCommand()
             .bpmnProcessId("user-happiness-check")
             .latestVersion()
-            .send()
-            .join();
+            .execute();
 
     assertThatProcessInstance(processInstanceEvent)
         .isCompleted()
@@ -90,8 +87,7 @@ public class SpringConditionalScenarioBeforeEachIT {
             .newCreateInstanceCommand()
             .bpmnProcessId("user-happiness-check")
             .latestVersion()
-            .send()
-            .join();
+            .execute();
 
     assertThatProcessInstance(processInstanceEvent)
         .isCompleted()

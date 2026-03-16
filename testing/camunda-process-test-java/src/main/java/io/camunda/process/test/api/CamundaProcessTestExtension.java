@@ -22,12 +22,14 @@ import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
+import io.camunda.process.test.impl.extension.ConditionalScenarioEngine;
 import io.camunda.process.test.impl.judge.ChatModelAdapterResolver;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
@@ -102,6 +104,7 @@ public class CamundaProcessTestExtension
   public static final String STORE_KEY_CONTEXT = "camunda-process-test-context";
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaProcessTestExtension.class);
+  private static final CamundaAssertAwaitBehavior INSTANT_PROBE = new InstantProbeAwaitBehavior();
 
   private final List<AutoCloseable> createdClients = new ArrayList<>();
   private final TestDeploymentService testDeploymentService = new TestDeploymentService();
@@ -120,7 +123,10 @@ public class CamundaProcessTestExtension
   private io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
 
   private CamundaManagementClient camundaManagementClient;
+
   private CamundaProcessTestContext camundaProcessTestContext;
+  private final ConditionalScenarioEngine conditionalScenarioEngine =
+      new ConditionalScenarioEngine();
 
   CamundaProcessTestExtension(
       final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder,
@@ -171,7 +177,8 @@ public class CamundaProcessTestExtension
             camundaManagementClient,
             CamundaAssert.getAwaitBehavior(),
             jsonMapper,
-            zeebeJsonMapper);
+            zeebeJsonMapper,
+            conditionalScenarioEngine);
 
     // create process coverage
     processCoverage =
@@ -299,6 +306,11 @@ public class CamundaProcessTestExtension
         context.getRequiredTestMethod(),
         context.getRequiredTestClass(),
         camundaProcessTestContext.createClient());
+
+    // set up conditional scenario engine for this test
+    conditionalScenarioEngine.start(
+        () -> CamundaAssert.initialize(dataSource),
+        evaluation -> CamundaAssert.withAwaitBehaviorOverride(INSTANT_PROBE, evaluation));
   }
 
   private <T> void injectField(
@@ -338,6 +350,9 @@ public class CamundaProcessTestExtension
       // Skip if the runtime is not created.
       return;
     }
+
+    // stop conditional scenario engine before cleanup
+    conditionalScenarioEngine.stop();
 
     try {
       processCoverage.collectTestRunCoverage(getCoverageTestName(context));

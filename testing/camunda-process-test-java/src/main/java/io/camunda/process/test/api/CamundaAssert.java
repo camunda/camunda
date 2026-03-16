@@ -38,6 +38,7 @@ import io.camunda.process.test.impl.assertions.util.AwaitilityBehavior;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import java.time.Duration;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * The entry point for all assertions.
@@ -85,6 +86,8 @@ public class CamundaAssert {
   public static final JsonMapper DEFAULT_JSON_MAPPER = new CamundaObjectMapper();
 
   private static final ThreadLocal<CamundaDataSource> DATA_SOURCE = new ThreadLocal<>();
+  private static final ThreadLocal<CamundaAssertAwaitBehavior> AWAIT_BEHAVIOR_OVERRIDE =
+      new ThreadLocal<>();
 
   private static Function<String, ElementSelector> elementSelector = DEFAULT_ELEMENT_SELECTOR;
 
@@ -133,7 +136,46 @@ public class CamundaAssert {
   }
 
   static CamundaAssertAwaitBehavior getAwaitBehavior() {
-    return awaitBehavior;
+    final CamundaAssertAwaitBehavior override = AWAIT_BEHAVIOR_OVERRIDE.get();
+    return override != null ? override : awaitBehavior;
+  }
+
+  /**
+   * Executes the given invocation with a thread-local override for the await behavior. Assertions
+   * created on this thread during the invocation will use the override instead of the global await
+   * behavior. The override is automatically cleared when the invocation completes.
+   *
+   * @param override the behavior to use on this thread
+   * @param invocation the invocation to execute with the overridden behavior
+   * @param <T> the return type of the invocation
+   * @return the result of the invocation
+   */
+  static <T> T withAwaitBehaviorOverride(
+      final CamundaAssertAwaitBehavior override, final Supplier<T> invocation) {
+    AWAIT_BEHAVIOR_OVERRIDE.set(override);
+    try {
+      return invocation.get();
+    } finally {
+      AWAIT_BEHAVIOR_OVERRIDE.remove();
+    }
+  }
+
+  /**
+   * Executes the given runnable with a thread-local override for the await behavior. Assertions
+   * evaluated on this thread during the invocation will use the override instead of the global
+   * await behavior. The override is automatically cleared when the invocation completes.
+   *
+   * @param override the behavior to use on this thread
+   * @param invocation the runnable to execute with the overridden behavior
+   */
+  static void withAwaitBehaviorOverride(
+      final CamundaAssertAwaitBehavior override, final Runnable invocation) {
+    AWAIT_BEHAVIOR_OVERRIDE.set(override);
+    try {
+      invocation.run();
+    } finally {
+      AWAIT_BEHAVIOR_OVERRIDE.remove();
+    }
   }
 
   /**
@@ -274,7 +316,7 @@ public class CamundaAssert {
       final ProcessInstanceSelector processInstanceSelector) {
     return new ProcessInstanceAssertj(
         getDataSource(),
-        awaitBehavior,
+        getAwaitBehavior(),
         jsonMapper,
         processInstanceSelector,
         elementSelector,
@@ -297,7 +339,7 @@ public class CamundaAssert {
       final long processInstanceKey) {
     return new ProcessInstanceAssertj(
         getDataSource(),
-        awaitBehavior,
+        getAwaitBehavior(),
         jsonMapper,
         processInstanceKey,
         elementSelector,
@@ -312,7 +354,7 @@ public class CamundaAssert {
    * @see io.camunda.process.test.api.assertions.UserTaskSelectors
    */
   public static UserTaskAssert assertThatUserTask(final UserTaskSelector userTaskSelector) {
-    return new UserTaskAssertj(getDataSource(), awaitBehavior, userTaskSelector);
+    return new UserTaskAssertj(getDataSource(), getAwaitBehavior(), userTaskSelector);
   }
 
   /**
@@ -335,7 +377,7 @@ public class CamundaAssert {
    */
   public static DecisionInstanceAssert assertThatDecision(final DecisionSelector decisionSelector) {
     return new DecisionInstanceAssertj(
-        getDataSource(), awaitBehavior, jsonMapper, decisionSelector);
+        getDataSource(), getAwaitBehavior(), jsonMapper, decisionSelector);
   }
 
   /**
@@ -358,7 +400,7 @@ public class CamundaAssert {
   public static DecisionInstanceAssertj assertThatDecision(
       final EvaluateDecisionResponse response) {
     return new DecisionInstanceAssertj(
-        getDataSource(), awaitBehavior, jsonMapper, DecisionSelectors.byResponse(response));
+        getDataSource(), getAwaitBehavior(), jsonMapper, DecisionSelectors.byResponse(response));
   }
 
   /**

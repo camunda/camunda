@@ -41,6 +41,7 @@ import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.ConditionalScenarioConditionStep;
+import io.camunda.process.test.api.ScenarioCondition;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.assertions.JobSelector;
@@ -116,8 +117,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final JsonMapper jsonMapper;
   private final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
   private final CamundaAssertAwaitBehavior awaitBehavior;
-  private final ConditionalScenarioEngine conditionalScenarioEngine =
-      new ConditionalScenarioEngine();
+  private final ConditionalScenarioEngine conditionalScenarioEngine;
 
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
@@ -125,7 +125,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final CamundaManagementClient camundaManagementClient,
       final CamundaAssertAwaitBehavior awaitBehavior,
       final JsonMapper jsonMapper,
-      final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper) {
+      final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper,
+      final ConditionalScenarioEngine conditionalScenarioEngine) {
 
     camundaClientBuilderFactory = camundaRuntime.getCamundaClientBuilderFactory();
     camundaRestApiAddress = camundaRuntime.getCamundaRestApiAddress();
@@ -136,6 +137,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     this.awaitBehavior = awaitBehavior;
     this.jsonMapper = jsonMapper;
     this.zeebeJsonMapper = zeebeJsonMapper;
+    this.conditionalScenarioEngine = conditionalScenarioEngine;
   }
 
   @Override
@@ -665,11 +667,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
-  public ConditionalScenarioConditionStep when(final Runnable condition) {
-    return conditionalScenarioEngine.when(condition);
-  }
-
-  @Override
   public void completeJobOfUserTaskListener(
       final JobSelector jobSelector, final Consumer<CompleteUserTaskJobResultStep1> jobResult) {
     final CamundaClient client = createClient();
@@ -695,6 +692,11 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               .send()
               .join();
         });
+  }
+
+  @Override
+  public ConditionalScenarioConditionStep when(final ScenarioCondition condition) {
+    return conditionalScenarioEngine.when(condition);
   }
 
   private void awaitUserTask(

@@ -37,5 +37,5 @@ public interface ConditionalScenarioActionStep {
    * @param condition the condition to evaluate
    * @return the condition step for defining the action
    */
-  ConditionalScenarioConditionStep when(Runnable condition);
+  ConditionalScenarioConditionStep when(ScenarioCondition condition);
 }
