@@ -25,6 +25,8 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.*;
 import org.springframework.http.client.support.BasicAuthenticationInterceptor;
+import org.springframework.http.converter.HttpMessageConverters;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RequestCallback;
@@ -50,7 +52,19 @@ public class StatefulRestTemplate extends RestTemplate {
   private final String contextPath;
 
   public StatefulRestTemplate(final String host, final Integer port, final String contextPath) {
-    super();
+    super(
+        HttpMessageConverters.forClient()
+            .registerDefaults()
+            .withJsonConverter(
+                new JacksonJsonHttpMessageConverter(
+                    tools.jackson.databind.json.JsonMapper.builder()
+                        .disable(
+                            tools.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+                        .disable(
+                            tools.jackson.databind.DeserializationFeature
+                                .FAIL_ON_UNKNOWN_PROPERTIES)
+                        .build()))
+            .build());
     this.host = host;
     this.port = port;
     this.contextPath = contextPath;
