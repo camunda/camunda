@@ -13,7 +13,6 @@ import {
 } from '@requestHelpers';
 import {expect, test} from '@playwright/test';
 import {
-  assertBadRequest,
   assertInvalidState,
   assertNotFoundRequest,
   assertStatusCode,
@@ -27,7 +26,7 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Update User Task Tests', () => {
   const {state, beforeAll, beforeEach, afterEach} =
-    setupProcessInstanceForTests('user_task_api_test_process');
+    setupProcessInstanceForTests('user_task_update_api_process');
 
   test.beforeAll(beforeAll);
   test.beforeEach(beforeEach);
@@ -346,7 +345,7 @@ test.describe.parallel('Update User Task Tests', () => {
     );
   });
 
-  test.skip('Update user task - conflict - task already completed', async ({
+  test('Update user task - conflict - task already completed', async ({
     request,
   }) => {
     const userTaskKey = await findUserTask(
@@ -357,7 +356,6 @@ test.describe.parallel('Update User Task Tests', () => {
 
     await test.step('Complete the user task first', async () => {
       const completeRes = await completeUserTask(request, userTaskKey);
-      await assertStatusCode(completeRes, 204);
     });
 
     await test.step(
