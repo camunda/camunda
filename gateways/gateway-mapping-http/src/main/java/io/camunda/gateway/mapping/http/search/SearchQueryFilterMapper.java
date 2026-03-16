@@ -11,6 +11,7 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToKeyOperations;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOffsetDateTimeOperations;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToStringOperations;
+import static io.camunda.gateway.mapping.http.util.KeyUtil.mapKeyToLong;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_NAME;
@@ -28,7 +29,6 @@ import io.camunda.gateway.mapping.http.converters.AuditLogResultConverter;
 import io.camunda.gateway.mapping.http.converters.BatchOperationTypeConverter;
 import io.camunda.gateway.mapping.http.converters.DecisionInstanceStateConverter;
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
-import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
 import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest;
@@ -265,7 +265,7 @@ public class SearchQueryFilterMapper {
 
     if (filter != null) {
       ofNullable(filter.getDecisionEvaluationKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("decisionEvaluationKey", validationErrors))
           .ifPresent(builder::decisionInstanceKeys);
       ofNullable(filter.getDecisionEvaluationInstanceKey())
           .map(mapToStringOperations())
@@ -280,10 +280,10 @@ public class SearchQueryFilterMapper {
           .map(mapToOffsetDateTimeOperations("evaluationDate", validationErrors))
           .ifPresent(builder::evaluationDateOperations);
       ofNullable(filter.getProcessDefinitionKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeys);
       ofNullable(filter.getProcessInstanceKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeys);
       ofNullable(filter.getElementInstanceKey())
           .map(mapToKeyOperations("elementInstanceKey", validationErrors))
@@ -559,29 +559,28 @@ public class SearchQueryFilterMapper {
         : Either.left(validationErrors);
   }
 
-  static ProcessDefinitionFilter toProcessDefinitionFilter(
+  static Either<List<String>, ProcessDefinitionFilter> toProcessDefinitionFilter(
       final io.camunda.gateway.protocol.model.ProcessDefinitionFilter filter) {
     final var builder = FilterBuilders.processDefinition();
-    Optional.ofNullable(filter)
-        .ifPresent(
-            f -> {
-              Optional.ofNullable(f.getIsLatestVersion()).ifPresent(builder::isLatestVersion);
-              Optional.ofNullable(f.getProcessDefinitionKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::processDefinitionKeys);
-              Optional.ofNullable(f.getName())
-                  .map(mapToStringOperations())
-                  .ifPresent(builder::nameOperations);
-              Optional.ofNullable(f.getResourceName()).ifPresent(builder::resourceNames);
-              Optional.ofNullable(f.getVersion()).ifPresent(builder::versions);
-              Optional.ofNullable(f.getVersionTag()).ifPresent(builder::versionTags);
-              Optional.ofNullable(f.getProcessDefinitionId())
-                  .map(mapToStringOperations())
-                  .ifPresent(builder::processDefinitionIdOperations);
-              Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
-              Optional.ofNullable(f.getHasStartForm()).ifPresent(builder::hasStartForm);
-            });
-    return builder.build();
+    final List<String> validationErrors = new ArrayList<>();
+    if (filter != null) {
+      ofNullable(filter.getIsLatestVersion()).ifPresent(builder::isLatestVersion);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(mapKeyToLong("processDefinitionKey", validationErrors))
+          .ifPresent(builder::processDefinitionKeys);
+      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
+      ofNullable(filter.getResourceName()).ifPresent(builder::resourceNames);
+      ofNullable(filter.getVersion()).ifPresent(builder::versions);
+      ofNullable(filter.getVersionTag()).ifPresent(builder::versionTags);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(mapToStringOperations())
+          .ifPresent(builder::processDefinitionIdOperations);
+      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+      ofNullable(filter.getHasStartForm()).ifPresent(builder::hasStartForm);
+    }
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   static OffsetDateTime toOffsetDateTime(final String text) {
@@ -776,13 +775,14 @@ public class SearchQueryFilterMapper {
     return builder.build();
   }
 
-  static DecisionDefinitionFilter toDecisionDefinitionFilter(
+  static Either<List<String>, DecisionDefinitionFilter> toDecisionDefinitionFilter(
       final io.camunda.gateway.protocol.model.DecisionDefinitionFilter filter) {
     final var builder = FilterBuilders.decisionDefinition();
+    final List<String> validationErrors = new ArrayList<>();
 
     if (filter != null) {
       ofNullable(filter.getDecisionDefinitionKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("decisionDefinitionKey", validationErrors))
           .ifPresent(builder::decisionDefinitionKeys);
       ofNullable(filter.getDecisionDefinitionId()).ifPresent(builder::decisionDefinitionIds);
       ofNullable(filter.getName()).ifPresent(builder::names);
@@ -790,7 +790,7 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getVersion()).ifPresent(builder::versions);
       ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::decisionRequirementsIds);
       ofNullable(filter.getDecisionRequirementsKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("decisionRequirementsKey", validationErrors))
           .ifPresent(builder::decisionRequirementsKeys);
       ofNullable(filter.getDecisionRequirementsName())
           .ifPresent(builder::decisionRequirementsNames);
@@ -799,28 +799,30 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
 
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
-  static DecisionRequirementsFilter toDecisionRequirementsFilter(
+  static Either<List<String>, DecisionRequirementsFilter> toDecisionRequirementsFilter(
       final io.camunda.gateway.protocol.model.DecisionRequirementsFilter filter) {
     final var builder = FilterBuilders.decisionRequirements();
+    final List<String> validationErrors = new ArrayList<>();
 
-    Optional.ofNullable(filter)
-        .ifPresent(
-            f -> {
-              Optional.ofNullable(f.getDecisionRequirementsKey())
-                  .map(KeyUtil::keyToLong)
-                  .ifPresent(builder::decisionRequirementsKeys);
-              Optional.ofNullable(f.getDecisionRequirementsName()).ifPresent(builder::names);
-              Optional.ofNullable(f.getVersion()).ifPresent(builder::versions);
-              Optional.ofNullable(f.getDecisionRequirementsId())
-                  .ifPresent(builder::decisionRequirementsIds);
-              Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
-              Optional.ofNullable(f.getResourceName()).ifPresent(builder::resourceNames);
-            });
+    if (filter != null) {
+      ofNullable(filter.getDecisionRequirementsKey())
+          .map(mapKeyToLong("decisionRequirementsKey", validationErrors))
+          .ifPresent(builder::decisionRequirementsKeys);
+      ofNullable(filter.getDecisionRequirementsName()).ifPresent(builder::names);
+      ofNullable(filter.getVersion()).ifPresent(builder::versions);
+      ofNullable(filter.getDecisionRequirementsId()).ifPresent(builder::decisionRequirementsIds);
+      ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
+      ofNullable(filter.getResourceName()).ifPresent(builder::resourceNames);
+    }
 
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   static Either<List<String>, FlowNodeInstanceFilter> toElementInstanceFilter(
@@ -829,13 +831,13 @@ public class SearchQueryFilterMapper {
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
       Optional.ofNullable(filter.getElementInstanceKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("elementInstanceKey", validationErrors))
           .ifPresent(builder::flowNodeInstanceKeys);
       Optional.ofNullable(filter.getProcessInstanceKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeys);
       Optional.ofNullable(filter.getProcessDefinitionKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeys);
       Optional.ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::processDefinitionIds);
       Optional.ofNullable(filter.getState())
@@ -847,7 +849,7 @@ public class SearchQueryFilterMapper {
       Optional.ofNullable(filter.getElementName()).ifPresent(builder::flowNodeNames);
       Optional.ofNullable(filter.getHasIncident()).ifPresent(builder::hasIncident);
       Optional.ofNullable(filter.getIncidentKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("incidentKey", validationErrors))
           .ifPresent(builder::incidentKeys);
       Optional.ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
       Optional.ofNullable(filter.getStartDate())
@@ -857,7 +859,7 @@ public class SearchQueryFilterMapper {
           .map(mapToOffsetDateTimeOperations("endDate", validationErrors))
           .ifPresent(builder::endDateOperations);
       Optional.ofNullable(filter.getElementInstanceScopeKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("elementInstanceScopeKey", validationErrors))
           .ifPresent(builder::elementInstanceScopeKeys);
     }
     return validationErrors.isEmpty()
@@ -871,7 +873,7 @@ public class SearchQueryFilterMapper {
     final List<String> validationErrors = new ArrayList<>();
     if (filter != null) {
       Optional.ofNullable(filter.getUserTaskKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("userTaskKey", validationErrors))
           .ifPresent(builder::userTaskKeys);
       Optional.ofNullable(filter.getState())
           .map(mapToStringOperations())
@@ -894,16 +896,16 @@ public class SearchQueryFilterMapper {
           .map(mapToStringOperations())
           .ifPresent(builder::candidateUserOperations);
       Optional.ofNullable(filter.getProcessDefinitionKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("processDefinitionKey", validationErrors))
           .ifPresent(builder::processDefinitionKeys);
       Optional.ofNullable(filter.getProcessInstanceKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("processInstanceKey", validationErrors))
           .ifPresent(builder::processInstanceKeys);
       Optional.ofNullable(filter.getTenantId())
           .map(mapToStringOperations())
           .ifPresent(builder::tenantIdOperations);
       Optional.ofNullable(filter.getElementInstanceKey())
-          .map(KeyUtil::keyToLong)
+          .map(mapKeyToLong("elementInstanceKey", validationErrors))
           .ifPresent(builder::elementInstanceKeys);
       if (!CollectionUtils.isEmpty(filter.getProcessInstanceVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =

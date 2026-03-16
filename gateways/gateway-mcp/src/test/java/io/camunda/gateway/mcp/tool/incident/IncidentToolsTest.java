@@ -375,7 +375,8 @@ class IncidentToolsTest extends ToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
       assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
-      assertThat(problemDetail.getDetail()).contains("processInstanceKey").contains("abc");
+      assertThat(problemDetail.getDetail())
+          .startsWith("The provided processInstanceKey 'abc' is not a valid key.");
 
       assertTextContentFallback(result);
     }
@@ -398,7 +399,8 @@ class IncidentToolsTest extends ToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
       assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
-      assertThat(problemDetail.getDetail()).contains("creationTime").contains("not-a-date");
+      assertThat(problemDetail.getDetail())
+          .startsWith("The provided creationTime 'not-a-date' cannot be parsed as a date");
 
       assertTextContentFallback(result);
     }
