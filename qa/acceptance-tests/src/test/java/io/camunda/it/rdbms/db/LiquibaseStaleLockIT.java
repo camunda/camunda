@@ -52,11 +52,11 @@ class LiquibaseStaleLockIT {
   @Test
   void shouldStartApplicationWhenStaleLockIsPresent() throws Exception {
     // given - pre-seed the H2 in-memory database with a stale lock acquired 1 hour ago
-    // (exceeds the default 10-minute ddl-lock-wait-timeout threshold)
+    // (exceeds the default 15-minute ddl-lock-wait-timeout threshold)
     insertStaleLock(Instant.now().minus(Duration.ofHours(1)), SIMULATED_CRASHED_POD);
 
     // when - start the whole application; LiquibaseSchemaManager should detect and release the
-    // stale lock (older than the configured ddl-lock-wait-timeout of 10 min) before running
+    // stale lock (older than the configured ddl-lock-wait-timeout of 15 min) before running
     // migrations
     app =
         new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
