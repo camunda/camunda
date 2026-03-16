@@ -119,7 +119,12 @@ const OperationsActions: React.FC<Props> = ({
         </Button>
       )}
       {allowedActions.includes('CANCEL') && (
-        <OverflowMenu size="md" aria-label="overflow-menu" flipped>
+        <OverflowMenu
+          size="md"
+          aria-label="overflow-menu"
+          flipped
+          align="bottom-end"
+        >
           <OverflowMenuItem
             itemText="Cancel"
             isDelete
