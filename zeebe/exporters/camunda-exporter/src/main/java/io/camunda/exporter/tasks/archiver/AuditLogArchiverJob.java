@@ -58,8 +58,12 @@ public class AuditLogArchiverJob extends ArchiverJob<AuditLogCleanupBatch> {
   @Override
   protected CompletableFuture<Integer> archive(
       final IndexTemplateDescriptor templateDescriptor, final AuditLogCleanupBatch batch) {
+    if (batch.auditLogIds().isEmpty()) {
+      // No audit logs to archive; directly remove the cleanup entities
+      return deleteAuditLogCleanupMetadata(batch);
+    }
     return super.archive(templateDescriptor, batch)
-        .thenComposeAsync(r -> deleteAuditLogCleanupMetadata(batch));
+        .thenComposeAsync(r -> deleteAuditLogCleanupMetadata(batch), getExecutor());
   }
 
   @Override
