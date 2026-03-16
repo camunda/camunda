@@ -150,8 +150,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     zeebeClient = createZeebeClient(camundaProcessTestContext);
 
     // fill proxies
-    testContext.getApplicationContext().getBean(CamundaClientProxy.class).setClient(client);
-    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).setClient(zeebeClient);
+    testContext.getApplicationContext().getBean(CamundaClientProxy.class).setDelegate(client);
+    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).setDelegate(zeebeClient);
     testContext
         .getApplicationContext()
         .getBean(CamundaProcessTestContextProxy.class)
@@ -200,8 +200,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     closeCreatedClients();
 
     // clean up proxies
-    testContext.getApplicationContext().getBean(CamundaClientProxy.class).removeClient();
-    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).removeClient();
+    testContext.getApplicationContext().getBean(CamundaClientProxy.class).removeDelegate();
+    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).removeDelegate();
     testContext
         .getApplicationContext()
         .getBean(CamundaProcessTestContextProxy.class)
