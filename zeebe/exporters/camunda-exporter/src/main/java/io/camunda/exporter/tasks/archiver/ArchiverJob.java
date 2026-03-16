@@ -28,8 +28,8 @@ import org.slf4j.Logger;
 public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundTask {
 
   protected final CamundaExporterMetrics exporterMetrics;
+  protected final Logger logger;
   private final ArchiverRepository archiverRepository;
-  private final Logger logger;
   private final Executor executor;
 
   private final Consumer<Integer> recordArchivingMetric;

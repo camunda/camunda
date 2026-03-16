@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 
 /**
@@ -28,7 +29,8 @@ import org.slf4j.Logger;
  * node instances, variable updates, etc).
  */
 public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchiveBatch> {
-
+  private final PIDController pid = new PIDController(0.5, 0.01, 0.1);
+  private final AtomicInteger currentBatchSize;
   private final HistoryConfiguration config;
   private final ListViewTemplate processInstanceTemplate;
   private final List<ProcessInstanceDependant> processInstanceDependants;
@@ -70,12 +72,15 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
         metrics::recordProcessInstancesArchiving,
         metrics::recordProcessInstancesArchived);
     this.config = config;
+    currentBatchSize = new AtomicInteger(config.getRolloverBatchSize());
     this.processInstanceTemplate = processInstanceTemplate;
     this.processInstanceDependants =
         processInstanceDependants.stream()
             .sorted(Comparator.comparing(ProcessInstanceDependant::getFullQualifiedName))
             .toList(); // sort to ensure the execution order is stable
     this.recentlyArchivedProcessInstances = recentlyArchivedProcessInstances;
+    pid.setTarget(1.0);
+    // TODO batch size metrics
   }
 
   @Override
@@ -90,7 +95,7 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
             config.getRolloverBatchSizeOverRequest(),
             recentlyArchivedProcessInstances.getRecentlyArchiveCount());
     return getArchiverRepository()
-        .getProcessInstancesNextBatch(config.getRolloverBatchSize() + overRequest)
+        .getProcessInstancesNextBatch(currentBatchSize.get() + overRequest)
         .thenApply(this::deduplicateAndLimitBatch);
   }
 
@@ -102,10 +107,13 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
   @Override
   protected CompletableFuture<Integer> archive(
       final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
+    final long start = System.currentTimeMillis();
     return archiveProcessDependants(batch)
         .thenComposeAsync(v -> super.archive(templateDescriptor, batch), getExecutor())
         .thenApply(
             archived -> {
+              final long end = System.currentTimeMillis();
+              updateBatchSize(archived, end - start);
               recentlyArchivedProcessInstances.markRecentlyArchived(batch);
               return archived;
             });
@@ -141,6 +149,31 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
           batch.rootProcessInstanceKeys().stream().map(String::valueOf).toList());
     }
     return idsMap;
+  }
+
+  private void updateBatchSize(final int numArchived, final long archiveDurationMillis) {
+    if (numArchived == 0) {
+      // if we didn't archive anything, it means the batch was empty and the duration is not
+      // representative, so we skip the adjustment
+      logger.info("Resetting process instance PID since the batch was empty");
+      pid.setTarget(1.0);
+      return;
+    }
+    final var targetMs = 200.0;
+    final var normalised = archiveDurationMillis / targetMs;
+    final var signal = pid.update(normalised);
+    final int currentSize = currentBatchSize.get();
+    final int batchAdjustment = (int) Math.round(currentSize * signal);
+    final int newBatchSize =
+        Math.max(1, Math.min(currentSize + batchAdjustment, config.getRolloverBatchSize() + 1000));
+    if (currentSize != newBatchSize) {
+      logger.debug(
+          "Adjusting process instance archiving batch size from {} to {} based on archive duration of {} ms",
+          currentSize,
+          newBatchSize,
+          archiveDurationMillis);
+      currentBatchSize.set(newBatchSize);
+    }
   }
 
   private ProcessInstanceArchiveBatch deduplicateAndLimitBatch(

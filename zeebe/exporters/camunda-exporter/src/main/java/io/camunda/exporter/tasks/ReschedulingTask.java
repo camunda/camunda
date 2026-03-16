@@ -117,7 +117,7 @@ public final class ReschedulingTask implements RunnableTask {
 
   private void reschedule(final long delay) {
     if (!closed) {
-      logger.trace("Rescheduling task {} in {}ms", task, delay);
+      logger.info("Rescheduling task {} in {}ms", task, delay);
       executor.schedule(this, delay, TimeUnit.MILLISECONDS);
     } else {
       logger.info("Task {} was closed, not rescheduling.", task.getClass().getSimpleName());
