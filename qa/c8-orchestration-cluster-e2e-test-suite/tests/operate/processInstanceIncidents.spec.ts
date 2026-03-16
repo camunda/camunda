@@ -8,7 +8,7 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createSingleInstance} from 'utils/zeebeClient';
+import {deploy, createInstances, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {DATE_REGEX} from 'utils/constants';
@@ -338,6 +338,129 @@ test.describe('Process Instance', () => {
       await operateProcessInstancePage.verifyExecutionCountBadgesNotVisible(
         elementIds,
       );
+    });
+  });
+});
+
+test.beforeAll(async () => {
+  await deploy([
+    './resources/decision_to_test-incident.dmn',
+    './resources/process_to_test_incidents.bpmn',
+    './resources/callProcess_with Incident.bpmn',
+  ]);
+  await createInstances('root-cause-test', 1, 1);
+  await createInstances('call-level-1-process', 1, 1, {shouldFail: true});
+
+  await sleep(5000);
+});
+
+test.describe('Process Instance Incident', () => {
+  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
+    await navigateToApp(page, 'operate');
+    await loginPage.login('demo', 'demo');
+    await expect(operateHomePage.operateBanner).toBeVisible();
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
+  test('Verify Incident root cause instance', async ({
+    operateProcessInstancePage,
+    operateHomePage,
+    operateProcessesPage,
+  }) => {
+    test.slow();
+
+    await test.step('Navigate to Processes tab and open the process instance', async () => {
+      await operateHomePage.clickProcessesTab();
+      await operateProcessesPage.filterByProcessName('Process-Incident');
+      await operateProcessesPage.clickProcessInstanceLink();
+    });
+
+    await test.step('Verify error indicators on all affected elements', async () => {
+      await expect(operateProcessInstancePage.diagram).toBeVisible();
+      await expect(operateProcessInstancePage.diagramSpinner).toBeHidden({
+        timeout: 30000,
+      });
+
+      await expect(operateProcessInstancePage.incidentsBanner).toBeVisible();
+      await operateProcessInstancePage.clickIncidentsBanner();
+
+      await expect(
+        operateProcessInstancePage.incidentsViewHeader,
+      ).toBeVisible();
+
+      const incidentCount = await operateProcessInstancePage.getIncidentCount();
+      expect(incidentCount).toBeGreaterThan(0);
+
+      await operateProcessInstancePage.verifyIncidentCount(4);
+
+      await expect(operateProcessInstancePage.incidentsBanner).toBeVisible();
+      await operateProcessInstancePage.closeIncidentsPanel();
+    });
+
+    await test.step('Click IO mapping Error and verify Error Type', async () => {
+      await operateProcessInstancePage.clickOnElementInDiagram(
+        'Task_IOMapping',
+      );
+
+      await expect(operateProcessInstancePage.metadataPopover).toBeVisible();
+
+      await expect(operateProcessInstancePage.incidentSection).toBeVisible();
+      await expect(
+        operateProcessInstancePage.getIncidentErrorMessageByText(
+          'IO mapping error.',
+        ),
+      ).toBeVisible();
+      await operateProcessInstancePage.clickOnElementInDiagram(
+        'Task_IOMapping',
+      );
+      await expect(operateProcessInstancePage.metadataPopover).toBeHidden();
+    });
+
+    await test.step('Click ExclusiveGatewayError and verify Error Type', async () => {
+      await operateProcessInstancePage.clickOnElementInDiagram(
+        'Gateway_Expression',
+      );
+
+      await expect(operateProcessInstancePage.metadataPopover).toBeVisible();
+
+      await expect(operateProcessInstancePage.incidentSection).toBeVisible();
+      await expect(
+        operateProcessInstancePage.getIncidentErrorMessageByText(
+          'Extract value error.',
+        ),
+      ).toBeVisible();
+    });
+
+    await operateProcessInstancePage.clickOnElementInDiagram(
+      'Gateway_Expression',
+    );
+
+    await expect(operateProcessInstancePage.metadataPopover).toBeHidden();
+
+    await test.step('Click Call Activity and verify the error type', async () => {
+      await operateProcessInstancePage.clickOnElementInDiagram(
+        'Task_CallActivity',
+      );
+
+      await expect(operateProcessInstancePage.metadataPopover).toBeVisible();
+
+      await expect(operateProcessInstancePage.incidentSection).toBeVisible();
+
+      await expect(
+        operateProcessInstancePage.getIncidentErrorMessageByText(
+          'Called element error.',
+        ),
+      ).toBeVisible();
+
+      await operateProcessInstancePage.clickCalledProcessLink(
+        'call-level-1-process',
+      );
+      await operateProcessInstancePage.viewParentInstanceLink.click();
+      await expect(operateProcessInstancePage.metadataPopover).toBeHidden();
     });
   });
 });
