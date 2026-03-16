@@ -106,9 +106,20 @@ public final class RdbmsExporter {
           controller.scheduleCancellableTask(flushInterval, this::flushAndReschedule);
     }
 
-    initializeRdbmsPosition();
+    final boolean positionFoundInRdbms = initializeRdbmsPosition();
     lastPosition = controller.getLastExportedRecordPosition();
-    if (exporterRdbmsPosition.lastExportedPosition() > -1) {
+    if (!positionFoundInRdbms && lastPosition > -1) {
+      // No exporter position was found in the RDBMS database. This happens when the database was
+      // wiped (e.g. H2 in-memory on pod restart) while the broker still has a persisted position
+      // from its Raft snapshot. Reset the broker position to -1 to force full re-export so that
+      // the RDBMS database is re-populated with all previously-exported records.
+      LOG.warn(
+          "[RDBMS Exporter P{}] No exporter position found in RDBMS, resetting broker position from {} to -1 to trigger full re-export",
+          partitionId,
+          lastPosition);
+      lastPosition = -1;
+      updatePositionInBroker();
+    } else if (exporterRdbmsPosition.lastExportedPosition() > -1) {
       if (lastPosition < exporterRdbmsPosition.lastExportedPosition()) {
         // This is needed since the brokers last exported position is from its last snapshot and can
         // be different from ours.
@@ -319,7 +330,7 @@ public final class RdbmsExporter {
     }
   }
 
-  private void initializeRdbmsPosition() {
+  private boolean initializeRdbmsPosition() {
     try {
       exporterRdbmsPosition = rdbmsWriters.getExporterPositionService().findOne(partitionId);
     } catch (final Exception e) {
@@ -340,11 +351,13 @@ public final class RdbmsExporter {
               LocalDateTime.now());
       rdbmsWriters.getExporterPositionService().createWithoutQueue(exporterRdbmsPosition);
       LOG.debug("[RDBMS Exporter P{}] Initialize position in rdbms", partitionId);
+      return false;
     } else {
       LOG.debug(
           "[RDBMS Exporter P{}] Found position in rdbms for this exporter: {}",
           partitionId,
           exporterRdbmsPosition);
+      return true;
     }
   }
 

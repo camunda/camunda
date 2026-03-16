@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -421,6 +422,35 @@ class RdbmsExporterTest {
 
     // verify schema manager was checked
     verify(schemaManager).isInitialized();
+  }
+
+  @Test
+  void shouldResetBrokerPositionToMinusOneWhenNoRdbmsPositionFound() {
+    // given - no position found in RDBMS (e.g. H2 in-memory was wiped on pod restart),
+    // but broker has a persisted position from its Raft snapshot
+    createExporter(b -> b, true, false);
+    when(positionService.findOne(anyInt())).thenReturn(null);
+    when(controller.getLastExportedRecordPosition()).thenReturn(138L);
+
+    // when
+    exporter.open(controller);
+
+    // then - broker position must be reset to -1 to force full re-export
+    verify(controller).updateLastExportedRecordPosition(-1L);
+  }
+
+  @Test
+  void shouldNotResetBrokerPositionWhenBrokerPositionIsMinusOneAndNoRdbmsPositionFound() {
+    // given - no position found in RDBMS and broker has no position either (normal first startup)
+    createExporter(b -> b, true, false);
+    when(positionService.findOne(anyInt())).thenReturn(null);
+    when(controller.getLastExportedRecordPosition()).thenReturn(-1L);
+
+    // when
+    exporter.open(controller);
+
+    // then - no reset needed; broker position is already at the beginning
+    verify(controller, never()).updateLastExportedRecordPosition(anyLong());
   }
 
   @Test
