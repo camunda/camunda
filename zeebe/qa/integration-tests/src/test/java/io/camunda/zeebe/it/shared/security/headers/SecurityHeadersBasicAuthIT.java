@@ -25,8 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
-import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
-import io.camunda.security.configuration.headers.PermissionsPolicyConfig;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -97,10 +95,7 @@ public class SecurityHeadersBasicAuthIT extends SecurityHeadersBaseIT {
     assertThat(headers).containsEntry(PRAGMA, List.of(PRAGMA_VALUE));
     assertThat(headers).containsEntry(EXPIRES, List.of(EXPIRES_VALUE));
     assertThat(headers).containsEntry(X_FRAME_OPTIONS, List.of(X_FRAME_OPTIONS_VALUE));
-    assertThat(headers)
-        .containsEntry(
-            CONTENT_SECURITY_POLICY,
-            List.of(ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY));
+    assertThat(headers).containsEntry(CONTENT_SECURITY_POLICY, List.of(DEFAULT_SM_SECURITY_POLICY));
     assertThat(headers).doesNotContainKey(CONTENT_SECURITY_POLICY_REPORT_ONLY);
     assertThat(headers).containsEntry(REFERRER_POLICY, List.of(REFERRER_POLICY_VALUE));
     assertThat(headers)
@@ -110,8 +105,7 @@ public class SecurityHeadersBasicAuthIT extends SecurityHeadersBaseIT {
     assertThat(headers)
         .containsEntry(CROSS_ORIGIN_RESOURCE_POLICY, List.of(CROSS_ORIGIN_RESOURCE_POLICY_VALUE));
     assertThat(headers)
-        .containsEntry(
-            PERMISSIONS_POLICY, List.of(PermissionsPolicyConfig.DEFAULT_PERMISSIONS_POLICY_VALUE));
+        .containsEntry(PERMISSIONS_POLICY, List.of(DEFAULT_PERMISSIONS_POLICY_VALUE));
   }
 
   private static String basicAuthentication() {
