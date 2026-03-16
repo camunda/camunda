@@ -179,7 +179,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             transactionContext,
             activeProcessInstanceCounterKey,
             activeProcessInstanceCounterValue);
-    // only relevant after a migration
     initializeActiveProcessInstanceCounterIfNeeded();
   }
 
@@ -423,22 +422,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
         activeProcessInstanceCounterKey, activeProcessInstanceCounterValue);
   }
 
-  /**
-   * Initializes the root process instance counter if it hasn't been initialized yet. This handles
-   * the migration scenario where the counter column family is new and doesn't have a value yet. In
-   * this case, we count the existing process instances and initialize the counter with that value.
-   */
+  /** Initializes the root process instance counter if it hasn't been initialized yet. */
   private void initializeActiveProcessInstanceCounterIfNeeded() {
     final var currentValue =
         activeProcessInstanceCounterColumnFamily.get(activeProcessInstanceCounterKey);
 
     if (currentValue == null) {
-      // We won't have a value if the cluster is new or after a migration. If it is a migration we
-      // need to count the existing process instances and initialize the counter with that
-      // value. If it is a new cluster, the count will be 0.
-      final long count = parentChildColumnFamily.count();
-
-      activeProcessInstanceCounterValue.wrapLong(count);
+      activeProcessInstanceCounterValue.wrapLong(0);
       activeProcessInstanceCounterColumnFamily.insert(
           activeProcessInstanceCounterKey, activeProcessInstanceCounterValue);
     }
