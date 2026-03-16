@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.EndProcessInstanceDto;
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.ProcessInstanceTagsDto;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.UpdateHistoryCleanupDateDto;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
@@ -49,7 +50,8 @@ public class ProcessInstanceWriter implements RdbmsWriter {
               WriteStatementType.INSERT,
               processInstance.processInstanceKey(),
               "io.camunda.db.rdbms.sql.ProcessInstanceMapper.insertTags",
-              processInstance));
+              new ProcessInstanceTagsDto(
+                  processInstance.processInstanceKey(), processInstance.tags())));
     }
   }
 
