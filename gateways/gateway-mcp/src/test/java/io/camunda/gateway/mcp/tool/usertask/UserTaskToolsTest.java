@@ -585,7 +585,7 @@ class UserTaskToolsTest extends ToolsTest {
 
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
-      assertThat(problemDetail.getDetail()).matches("(?s).*abc.*");
+      assertThat(problemDetail.getDetail()).isEqualTo("For input string: \"abc\"");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
       assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
 
@@ -608,7 +608,7 @@ class UserTaskToolsTest extends ToolsTest {
 
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
-      assertThat(problemDetail.getDetail()).contains("Failed to parse date-time: [not-a-date]");
+      assertThat(problemDetail.getDetail()).isEqualTo("Failed to parse date-time: [not-a-date]");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
       assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
 
