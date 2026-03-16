@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.rdbms;
 
+import io.camunda.configuration.Camunda;
 import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.NoopSchemaManager;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
@@ -79,8 +80,9 @@ public class MyBatisConfiguration {
   public RdbmsSchemaManager rdbmsExporterLiquibase(
       final DataSource dataSource,
       final VendorDatabaseProperties vendorDatabaseProperties,
-      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix) {
-    final String trimmedPrefix = StringUtils.trimToEmpty(prefix);
+      final Camunda configuration) {
+    final var rdbmsConfig = configuration.getData().getSecondaryStorage().getRdbms();
+    final String trimmedPrefix = StringUtils.trimToEmpty(rdbmsConfig.getPrefix());
     LOGGER.info(
         "Initializing Liquibase for RDBMS with global table trimmedPrefix '{}'.", trimmedPrefix);
 
@@ -100,6 +102,7 @@ public class MyBatisConfiguration {
             Integer.toString(vendorDatabaseProperties.treePathSize())));
     // changelog file located in src/main/resources directly in the module
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
+    moduleConfig.setDdlLockWaitTimeout(rdbmsConfig.getDdlLockWaitTimeout());
 
     return moduleConfig;
   }
