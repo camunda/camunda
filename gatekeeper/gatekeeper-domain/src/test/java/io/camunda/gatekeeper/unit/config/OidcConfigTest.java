@@ -39,7 +39,7 @@ final class OidcConfigTest {
     final var config =
         new OidcConfig(
             null, null, null, null, null, null, null, null, null, null, null, false, null, null,
-            null, null, false, null, null, null);
+            null, null, false, null, null, null, null);
 
     assertThat(config.additionalJwkSetUris()).isEmpty();
     assertThat(config.audiences()).isEmpty();
@@ -66,6 +66,7 @@ final class OidcConfigTest {
         true,
         "authorization_code",
         "client_secret_basic",
-        "camunda");
+        "camunda",
+        null);
   }
 }

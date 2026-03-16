@@ -17,6 +17,7 @@ import io.camunda.gatekeeper.spi.CamundaAuthenticationConverter;
 import io.camunda.gatekeeper.spi.MembershipResolver;
 import io.camunda.gatekeeper.spi.OidcConfigurationProvider;
 import io.camunda.gatekeeper.spring.condition.ConditionalOnAuthenticationMethod;
+import io.camunda.gatekeeper.spring.config.GatekeeperProperties;
 import io.camunda.gatekeeper.spring.converter.OidcTokenAuthenticationConverter;
 import io.camunda.gatekeeper.spring.converter.OidcUserAuthenticationConverter;
 import io.camunda.gatekeeper.spring.converter.TokenClaimsConverter;
@@ -39,9 +40,12 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -56,6 +60,49 @@ import org.springframework.security.oauth2.jwt.SupplierJwtDecoder;
 public final class GatekeeperOidcAutoConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(GatekeeperOidcAutoConfiguration.class);
+
+  @Bean
+  @ConditionalOnMissingBean
+  public OidcConfigurationProvider propertiesOidcConfigurationProvider(
+      final GatekeeperProperties properties) {
+    final var providersMap = properties.getAuthentication().getProviders().getOidc();
+    if (providersMap == null || providersMap.isEmpty()) {
+      return new OidcConfigurationProvider() {
+        @Override
+        public List<OidcConfig> getConfigurations() {
+          return List.of();
+        }
+
+        @Override
+        public java.util.Optional<OidcConfig> getConfiguration(final String registrationId) {
+          return java.util.Optional.empty();
+        }
+      };
+    }
+    final List<OidcConfig> configs =
+        providersMap.entrySet().stream()
+            .map(
+                entry -> {
+                  final var oidcProps = entry.getValue();
+                  final var registrationId =
+                      oidcProps.getRegistrationId() != null
+                          ? oidcProps.getRegistrationId()
+                          : entry.getKey();
+                  return oidcProps.toOidcConfig(registrationId);
+                })
+            .toList();
+    return new OidcConfigurationProvider() {
+      @Override
+      public List<OidcConfig> getConfigurations() {
+        return configs;
+      }
+
+      @Override
+      public java.util.Optional<OidcConfig> getConfiguration(final String registrationId) {
+        return configs.stream().filter(c -> registrationId.equals(c.registrationId())).findFirst();
+      }
+    };
+  }
 
   @Bean
   @ConditionalOnMissingBean
@@ -183,6 +230,24 @@ public final class GatekeeperOidcAutoConfiguration {
   public AssertionJwkProvider assertionJwkProvider(
       final OidcAuthenticationConfigurationRepository oidcConfigRepository) {
     return new AssertionJwkProvider(oidcConfigRepository);
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public OAuth2AuthorizedClientManager authorizedClientManager(
+      final ClientRegistrationRepository clientRegistrationRepository,
+      final OAuth2AuthorizedClientRepository authorizedClientRepository) {
+    final var manager =
+        new DefaultOAuth2AuthorizedClientManager(
+            clientRegistrationRepository, authorizedClientRepository);
+    final var provider =
+        OAuth2AuthorizedClientProviderBuilder.builder()
+            .authorizationCode()
+            .refreshToken()
+            .clientCredentials()
+            .build();
+    manager.setAuthorizedClientProvider(provider);
+    return manager;
   }
 
   @Bean

@@ -71,6 +71,7 @@ final class ClientRegistrationFactoryTest {
             true,
             "authorization_code",
             "client_secret_basic",
+            null,
             null);
 
     // when
@@ -119,6 +120,7 @@ final class ClientRegistrationFactoryTest {
             true,
             "authorization_code",
             "unsupported_method",
+            null,
             null);
 
     // when / then
@@ -149,6 +151,7 @@ final class ClientRegistrationFactoryTest {
         true,
         "authorization_code",
         "client_secret_basic",
+        null,
         null);
   }
 }

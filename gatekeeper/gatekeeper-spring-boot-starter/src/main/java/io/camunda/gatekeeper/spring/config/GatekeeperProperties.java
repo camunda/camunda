@@ -7,12 +7,15 @@
  */
 package io.camunda.gatekeeper.spring.config;
 
+import io.camunda.gatekeeper.config.AssertionConfig;
 import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.gatekeeper.config.OidcConfig;
 import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /** Maps Spring Boot configuration properties to gatekeeper domain config records. */
@@ -20,6 +23,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class GatekeeperProperties {
 
   private AuthenticationProperties authentication = new AuthenticationProperties();
+  private CsrfProperties csrf = new CsrfProperties();
+  private HttpHeadersProperties httpHeaders = new HttpHeadersProperties();
 
   public AuthenticationProperties getAuthentication() {
     return authentication;
@@ -27,6 +32,22 @@ public class GatekeeperProperties {
 
   public void setAuthentication(final AuthenticationProperties authentication) {
     this.authentication = authentication;
+  }
+
+  public CsrfProperties getCsrf() {
+    return csrf;
+  }
+
+  public void setCsrf(final CsrfProperties csrf) {
+    this.csrf = csrf;
+  }
+
+  public HttpHeadersProperties getHttpHeaders() {
+    return httpHeaders;
+  }
+
+  public void setHttpHeaders(final HttpHeadersProperties httpHeaders) {
+    this.httpHeaders = httpHeaders;
   }
 
   /** Converts the mutable authentication properties to an immutable domain config record. */
@@ -45,6 +66,7 @@ public class GatekeeperProperties {
     private String authenticationRefreshInterval = "PT30S";
     private boolean unprotectedApi = false;
     private OidcProperties oidc = new OidcProperties();
+    private ProvidersProperties providers = new ProvidersProperties();
 
     public String getMethod() {
       return method;
@@ -77,6 +99,123 @@ public class GatekeeperProperties {
     public void setOidc(final OidcProperties oidc) {
       this.oidc = oidc;
     }
+
+    public ProvidersProperties getProviders() {
+      return providers;
+    }
+
+    public void setProviders(final ProvidersProperties providers) {
+      this.providers = providers;
+    }
+  }
+
+  /**
+   * Named OIDC provider configurations matching {@code
+   * camunda.security.authentication.providers.oidc.<name>.*}. Each entry uses the same properties
+   * as the primary OIDC config, keyed by a registration ID.
+   */
+  public static class ProvidersProperties {
+
+    private Map<String, OidcProperties> oidc = new LinkedHashMap<>();
+
+    public Map<String, OidcProperties> getOidc() {
+      return oidc;
+    }
+
+    public void setOidc(final Map<String, OidcProperties> oidc) {
+      this.oidc = oidc;
+    }
+  }
+
+  /** Assertion properties for private_key_jwt matching {@code ...oidc.assertion.*}. */
+  public static class AssertionProperties {
+
+    private String keystorePath;
+    private String keystorePassword;
+    private String keyAlias;
+    private String keyPassword;
+    private String kidSource = "PUBLIC_KEY";
+    private String kidDigestAlgorithm = "SHA256";
+    private String kidEncoding = "BASE64URL";
+    private String kidCase;
+
+    public AssertionConfig toAssertionConfig() {
+      return new AssertionConfig(
+          keystorePath,
+          keystorePassword,
+          keyAlias,
+          keyPassword,
+          kidSource != null ? AssertionConfig.KidSource.valueOf(kidSource) : null,
+          kidDigestAlgorithm != null
+              ? AssertionConfig.KidDigestAlgorithm.valueOf(kidDigestAlgorithm)
+              : null,
+          kidEncoding != null ? AssertionConfig.KidEncoding.valueOf(kidEncoding) : null,
+          kidCase != null ? AssertionConfig.KidCase.valueOf(kidCase) : null);
+    }
+
+    public String getKeystorePath() {
+      return keystorePath;
+    }
+
+    public void setKeystorePath(final String keystorePath) {
+      this.keystorePath = keystorePath;
+    }
+
+    public String getKeystorePassword() {
+      return keystorePassword;
+    }
+
+    public void setKeystorePassword(final String keystorePassword) {
+      this.keystorePassword = keystorePassword;
+    }
+
+    public String getKeyAlias() {
+      return keyAlias;
+    }
+
+    public void setKeyAlias(final String keyAlias) {
+      this.keyAlias = keyAlias;
+    }
+
+    public String getKeyPassword() {
+      return keyPassword;
+    }
+
+    public void setKeyPassword(final String keyPassword) {
+      this.keyPassword = keyPassword;
+    }
+
+    public String getKidSource() {
+      return kidSource;
+    }
+
+    public void setKidSource(final String kidSource) {
+      this.kidSource = kidSource;
+    }
+
+    public String getKidDigestAlgorithm() {
+      return kidDigestAlgorithm;
+    }
+
+    public void setKidDigestAlgorithm(final String kidDigestAlgorithm) {
+      this.kidDigestAlgorithm = kidDigestAlgorithm;
+    }
+
+    public String getKidEncoding() {
+      return kidEncoding;
+    }
+
+    public void setKidEncoding(final String kidEncoding) {
+      this.kidEncoding = kidEncoding;
+    }
+
+    public String getKidCase() {
+      return kidCase;
+    }
+
+    public void setKidCase(final String kidCase) {
+      this.kidCase = kidCase;
+    }
   }
 
   /** OIDC properties matching {@code camunda.security.authentication.oidc.*}. */
@@ -102,9 +241,20 @@ public class GatekeeperProperties {
     private String grantType = "authorization_code";
     private String clientAuthenticationMethod = "client_secret_basic";
     private String registrationId;
+    private AssertionProperties assertion = new AssertionProperties();
 
     /** Converts the mutable OIDC properties to an immutable domain config record. */
     public OidcConfig toOidcConfig() {
+      return toOidcConfig(registrationId);
+    }
+
+    /**
+     * Converts the mutable OIDC properties to an immutable domain config record with the given
+     * registration ID. Used for named provider entries where the map key becomes the registration
+     * ID.
+     */
+    public OidcConfig toOidcConfig(final String overrideRegistrationId) {
+      final var assertionConfig = assertion.toAssertionConfig();
       return new OidcConfig(
           issuerUri,
           clientId,
@@ -125,7 +275,8 @@ public class GatekeeperProperties {
           idpLogoutEnabled,
           grantType,
           clientAuthenticationMethod,
-          registrationId);
+          overrideRegistrationId,
+          assertionConfig.isConfigured() ? assertionConfig : null);
     }
 
     public String getIssuerUri() {
@@ -286,6 +437,28 @@ public class GatekeeperProperties {
 
     public void setRegistrationId(final String registrationId) {
       this.registrationId = registrationId;
+    }
+
+    public AssertionProperties getAssertion() {
+      return assertion;
+    }
+
+    public void setAssertion(final AssertionProperties assertion) {
+      this.assertion = assertion;
+    }
+  }
+
+  /** CSRF properties matching {@code camunda.security.csrf.*}. */
+  public static class CsrfProperties {
+
+    private boolean enabled = false;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
     }
   }
 }

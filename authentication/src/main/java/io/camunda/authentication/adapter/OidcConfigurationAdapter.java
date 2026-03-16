@@ -88,6 +88,7 @@ public final class OidcConfigurationAdapter implements OidcConfigurationProvider
         config.isIdpLogoutEnabled(),
         config.getGrantType(),
         config.getClientAuthenticationMethod(),
-        registrationId);
+        registrationId,
+        null);
   }
 }
