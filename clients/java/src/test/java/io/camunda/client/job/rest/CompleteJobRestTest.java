@@ -29,6 +29,9 @@ import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.client.util.StringUtil;
 import java.io.ByteArrayInputStream;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -368,8 +371,8 @@ class CompleteJobRestTest extends ClientRestTest {
             r ->
                 r.forUserTask()
                     .correctAssignee(null)
-                    .correctDueDate(null)
-                    .correctFollowUpDate(null)
+                    .correctDueDate((String) null)
+                    .correctFollowUpDate((String) null)
                     .correctCandidateGroups(null)
                     .correctCandidateUsers(null)
                     .correctPriority(null))
@@ -410,7 +413,7 @@ class CompleteJobRestTest extends ClientRestTest {
                 r.forUserTask()
                     .deny(false)
                     .correctAssignee("Test")
-                    .correctDueDate(null)
+                    .correctDueDate((String) null)
                     .correctFollowUpDate("")
                     .correctCandidateUsers(Arrays.asList("User A", "User B"))
                     .correctPriority(80))
@@ -452,7 +455,7 @@ class CompleteJobRestTest extends ClientRestTest {
                     .correct(
                         c ->
                             c.assignee("Test")
-                                .dueDate(null)
+                                .dueDate((String) null)
                                 .followUpDate("")
                                 .candidateUsers(Arrays.asList("User A", "User B"))
                                 .priority(80)))
@@ -665,5 +668,107 @@ class CompleteJobRestTest extends ClientRestTest {
                     .isCancelRemainingInstances(true));
 
     assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  void shouldCompleteWithResultCorrectionDueDateOffsetDateTime() {
+    // given
+    final long jobKey = 12;
+    final OffsetDateTime dueDate = OffsetDateTime.of(2024, 6, 15, 10, 30, 0, 0, ZoneOffset.UTC);
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(r -> r.forUserTask().correctDueDate(dueDate))
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getResult()).isNotNull();
+    assertThat(request.getResult().getCorrections().getDueDate())
+        .isEqualTo(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(dueDate));
+  }
+
+  @Test
+  void shouldCompleteWithResultCorrectionFollowUpDateOffsetDateTime() {
+    // given
+    final long jobKey = 12;
+    final OffsetDateTime followUpDate =
+        OffsetDateTime.of(2024, 6, 15, 10, 30, 0, 0, ZoneOffset.UTC);
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(r -> r.forUserTask().correctFollowUpDate(followUpDate))
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getResult()).isNotNull();
+    assertThat(request.getResult().getCorrections().getFollowUpDate())
+        .isEqualTo(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(followUpDate));
+  }
+
+  @Test
+  void shouldCompleteWithResultClearDueDate() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(r -> r.forUserTask().correctDueDate("due date").clearDueDate())
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getResult()).isNotNull();
+    assertThat(request.getResult().getCorrections().getDueDate()).isEmpty();
+  }
+
+  @Test
+  void shouldCompleteWithResultClearFollowUpDate() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(r -> r.forUserTask().correctFollowUpDate("follow up").clearFollowUpDate())
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getResult()).isNotNull();
+    assertThat(request.getResult().getCorrections().getFollowUpDate()).isEmpty();
+  }
+
+  @Test
+  void shouldCompleteWithResultCorrectionsObjectOffsetDateTime() {
+    // given
+    final long jobKey = 12;
+    final OffsetDateTime dueDate = OffsetDateTime.of(2024, 6, 15, 10, 30, 0, 0, ZoneOffset.UTC);
+    final OffsetDateTime followUpDate =
+        OffsetDateTime.of(2024, 7, 15, 10, 30, 0, 0, ZoneOffset.UTC);
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(
+            r -> r.forUserTask().correct(c -> c.dueDate(dueDate).followUpDate(followUpDate)))
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getResult()).isNotNull();
+    assertThat(request.getResult().getCorrections().getDueDate())
+        .isEqualTo(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(dueDate));
+    assertThat(request.getResult().getCorrections().getFollowUpDate())
+        .isEqualTo(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(followUpDate));
   }
 }
