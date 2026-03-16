@@ -399,7 +399,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
       assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
-      assertThat(problemDetail.getDetail()).contains("processInstanceKey").contains("abc");
+      assertThat(problemDetail.getDetail())
+          .startsWith("The provided processInstanceKey 'abc' is not a valid key.");
 
       assertTextContentFallback(result);
     }
@@ -422,7 +423,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
       assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
-      assertThat(problemDetail.getDetail()).contains("startDate").contains("not-a-date");
+      assertThat(problemDetail.getDetail())
+          .startsWith("The provided startDate 'not-a-date' cannot be parsed as a date");
 
       assertTextContentFallback(result);
     }
@@ -452,7 +454,9 @@ class ProcessInstanceToolsTest extends ToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
       assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
-      assertThat(problemDetail.getDetail()).contains("processInstanceKey").contains("startDate");
+      assertThat(problemDetail.getDetail())
+          .contains("The provided processInstanceKey 'abc' is not a valid key.")
+          .contains("The provided startDate 'not-a-date' cannot be parsed as a date");
 
       assertTextContentFallback(result);
     }

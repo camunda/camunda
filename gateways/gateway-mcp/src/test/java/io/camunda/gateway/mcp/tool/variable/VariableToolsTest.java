@@ -382,7 +382,8 @@ class VariableToolsTest extends ToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
       assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
-      assertThat(problemDetail.getDetail()).contains("processInstanceKey").contains("abc");
+      assertThat(problemDetail.getDetail())
+          .startsWith("The provided processInstanceKey 'abc' is not a valid key.");
 
       assertTextContentFallback(result);
     }
@@ -404,7 +405,8 @@ class VariableToolsTest extends ToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
       assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
-      assertThat(problemDetail.getDetail()).contains("variableKey").contains("abc");
+      assertThat(problemDetail.getDetail())
+          .startsWith("The provided variableKey 'abc' is not a valid key.");
 
       assertTextContentFallback(result);
     }
