@@ -47,4 +47,11 @@ public class DecisionEvaluationAuditLogTransformer
       log.setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.FAIL);
     }
   }
+
+  @Override
+  public boolean supports(final Record<DecisionEvaluationRecordValue> record) {
+    final var decisionEvaluation = record.getValue();
+    final var isStandaloneDecision = decisionEvaluation.getProcessDefinitionKey() == -1L;
+    return isStandaloneDecision && AuditLogTransformer.super.supports(record);
+  }
 }
