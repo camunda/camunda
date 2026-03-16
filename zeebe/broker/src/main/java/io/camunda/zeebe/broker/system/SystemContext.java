@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system;
 import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -133,6 +134,7 @@ public final class SystemContext {
   private final BrokerClient brokerClient;
   private final MeterRegistry meterRegistry;
   private final SecurityConfiguration securityConfiguration;
+  private final AuthenticationConfig authenticationConfig;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
@@ -150,6 +152,7 @@ public final class SystemContext {
       final BrokerClient brokerClient,
       final MeterRegistry meterRegistry,
       final SecurityConfiguration securityConfiguration,
+      final AuthenticationConfig authenticationConfig,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
@@ -164,6 +167,7 @@ public final class SystemContext {
     this.brokerClient = brokerClient;
     this.meterRegistry = meterRegistry;
     this.securityConfiguration = securityConfiguration;
+    this.authenticationConfig = authenticationConfig;
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
@@ -181,6 +185,7 @@ public final class SystemContext {
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final SecurityConfiguration securityConfiguration,
+      final AuthenticationConfig authenticationConfig,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
@@ -196,6 +201,7 @@ public final class SystemContext {
         brokerClient,
         new SimpleMeterRegistry(),
         securityConfiguration,
+        authenticationConfig,
         userServices,
         passwordEncoder,
         jwtDecoder,
@@ -522,7 +528,10 @@ public final class SystemContext {
     final IdentifierValidator identifierValidator =
         new IdentifierValidator(
             securityConfiguration.getCompiledIdValidationPattern(),
-            securityConfiguration.getCompiledGroupIdValidationPattern());
+            securityConfiguration.getCompiledGroupIdValidationPattern(
+                authenticationConfig.oidc() != null
+                    ? authenticationConfig.oidc().groupsClaim()
+                    : null));
     final AuthorizationConfigurer authorizationConfigurer =
         new AuthorizationConfigurer(new AuthorizationValidator(identifierValidator));
     final TenantConfigurer tenantConfigurer =
@@ -740,6 +749,10 @@ public final class SystemContext {
 
   public SecurityConfiguration getSecurityConfiguration() {
     return securityConfiguration;
+  }
+
+  public AuthenticationConfig getAuthenticationConfig() {
+    return authenticationConfig;
   }
 
   public UserServices getUserServices() {

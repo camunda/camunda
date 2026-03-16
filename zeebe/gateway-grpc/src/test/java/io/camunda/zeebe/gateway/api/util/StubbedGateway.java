@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.api.util;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -78,6 +79,7 @@ public final class StubbedGateway {
   private final ActorScheduler actorScheduler;
   private final GatewayCfg config;
   private final SecurityConfiguration securityConfiguration;
+  private final AuthenticationConfig authenticationConfig;
   private Server server;
 
   public StubbedGateway(
@@ -85,12 +87,14 @@ public final class StubbedGateway {
       final StubbedBrokerClient brokerClient,
       final StubbedJobStreamer jobStreamer,
       final GatewayCfg config,
-      final SecurityConfiguration securityConfiguration) {
+      final SecurityConfiguration securityConfiguration,
+      final AuthenticationConfig authenticationConfig) {
     this.actorScheduler = actorScheduler;
     this.brokerClient = brokerClient;
     this.jobStreamer = jobStreamer;
     this.config = config;
     this.securityConfiguration = securityConfiguration;
+    this.authenticationConfig = authenticationConfig;
   }
 
   public void start() throws IOException {
@@ -110,8 +114,7 @@ public final class StubbedGateway {
                     gatewayGrpcService,
                     new AuthenticationInterceptor(
                         new AuthenticationHandler.Oidc(
-                            new FakeJwtDecoder(),
-                            securityConfiguration.getAuthentication().getOidc()),
+                            new FakeJwtDecoder(), authenticationConfig.oidc()),
                         new AuthenticationMetrics(
                             new SimpleMeterRegistry(), AuthenticationMethod.OIDC))));
     server = serverBuilder.build();

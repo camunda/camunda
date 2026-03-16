@@ -98,10 +98,12 @@ final class InterceptorIT {
 
     jobStreamClient =
         new JobStreamClientImpl(scheduler, cluster.getCommunicationService(), meterRegistry);
+    final var securityConfig = SecurityConfigurations.unauthenticatedAndUnauthorized();
     gateway =
         new Gateway(
             config,
-            SecurityConfigurations.unauthenticatedAndUnauthorized(),
+            securityConfig,
+            SecurityConfigurations.toAuthenticationConfig(securityConfig),
             brokerClient,
             scheduler,
             jobStreamClient.streamer(),

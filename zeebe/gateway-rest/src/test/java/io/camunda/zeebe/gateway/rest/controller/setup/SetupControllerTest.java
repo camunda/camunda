@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
@@ -35,7 +36,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Answers;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -52,17 +52,15 @@ class SetupControllerTest extends RestControllerTest {
   @MockitoBean private UserServices userServices;
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-
-  @MockitoBean(answers = Answers.RETURNS_DEEP_STUBS)
-  private SecurityConfiguration securityConfiguration;
+  @MockitoBean private AuthenticationConfig authenticationConfig;
+  @MockitoBean private SecurityConfiguration securityConfiguration;
 
   @BeforeEach
   void setup() {
     final var anonymousAuthentication = CamundaAuthentication.anonymous();
     when(authenticationProvider.getAnonymousCamundaAuthentication())
         .thenReturn(anonymousAuthentication);
-    when(securityConfiguration.getAuthentication().getMethod())
-        .thenReturn(AuthenticationMethod.BASIC);
+    when(authenticationConfig.method()).thenReturn(AuthenticationMethod.BASIC);
     when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
@@ -119,8 +117,7 @@ class SetupControllerTest extends RestControllerTest {
   @Test
   void createAdminUserShouldReturnForbiddenWhenAuthenticationIsNotBasicAuth() {
     final var dto = validCreateUserRequest(UUID.randomUUID().toString());
-    when(securityConfiguration.getAuthentication().getMethod())
-        .thenReturn(AuthenticationMethod.OIDC);
+    when(authenticationConfig.method()).thenReturn(AuthenticationMethod.OIDC);
 
     // when then
     final var expectedBody =

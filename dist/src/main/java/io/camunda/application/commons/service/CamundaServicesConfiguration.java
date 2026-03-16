@@ -10,6 +10,7 @@ package io.camunda.application.commons.service;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.clients.AuditLogSearchClient;
 import io.camunda.search.clients.AuthorizationSearchClient;
@@ -88,8 +89,8 @@ public class CamundaServicesConfiguration {
 
   @Bean
   public BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter(
-      final SecurityConfiguration securityConfiguration) {
-    return new BrokerRequestAuthorizationConverter(securityConfiguration);
+      final AuthenticationConfig authenticationConfig) {
+    return new BrokerRequestAuthorizationConverter(authenticationConfig);
   }
 
   @Bean

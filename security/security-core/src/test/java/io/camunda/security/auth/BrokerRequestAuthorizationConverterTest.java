@@ -15,14 +15,39 @@ import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.gatekeeper.config.AuthenticationConfig;
+import io.camunda.gatekeeper.config.OidcConfig;
+import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class BrokerRequestAuthorizationConverterTest {
+
+  private static final OidcConfig DEFAULT_OIDC =
+      new OidcConfig(
+          null,
+          null,
+          null,
+          null,
+          List.of(),
+          null,
+          null,
+          null,
+          "sub",
+          null,
+          null,
+          false,
+          null,
+          List.of(),
+          null,
+          null,
+          true,
+          "authorization_code",
+          "client_secret_basic",
+          null,
+          null);
 
   @Test
   void shouldOnlyContainAuthenticationClaimsWhenAuthorizationAndMultiTenancyDisabled() {
@@ -47,7 +72,9 @@ public class BrokerRequestAuthorizationConverterTest {
   void shouldContainAnonymousClaim() {
     // given
     final var authentication = CamundaAuthentication.anonymous();
-    final var converter = new BrokerRequestAuthorizationConverter(new SecurityConfiguration());
+    final var converter =
+        new BrokerRequestAuthorizationConverter(
+            new AuthenticationConfig(AuthenticationMethod.BASIC, null, false, DEFAULT_OIDC));
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -61,7 +88,9 @@ public class BrokerRequestAuthorizationConverterTest {
   void shouldContainUsername() {
     // given
     final var authentication = CamundaAuthentication.of(b -> b.user("foo"));
-    final var converter = new BrokerRequestAuthorizationConverter(new SecurityConfiguration());
+    final var converter =
+        new BrokerRequestAuthorizationConverter(
+            new AuthenticationConfig(AuthenticationMethod.BASIC, null, false, DEFAULT_OIDC));
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -75,9 +104,9 @@ public class BrokerRequestAuthorizationConverterTest {
   void shouldContainClientID() {
     // given
     final var authentication = CamundaAuthentication.of(b -> b.clientId("foo"));
-    final var securityConfiguration = new SecurityConfiguration();
-    securityConfiguration.getAuthentication().setMethod(OIDC);
-    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+    final var converter =
+        new BrokerRequestAuthorizationConverter(
+            new AuthenticationConfig(OIDC, null, false, DEFAULT_OIDC));
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -92,9 +121,9 @@ public class BrokerRequestAuthorizationConverterTest {
     // given
     final Map<String, Object> claims = Map.of("sub", "foo");
     final var authentication = CamundaAuthentication.of(b -> b.claims(claims));
-    final var securityConfiguration = new SecurityConfiguration();
-    securityConfiguration.getAuthentication().setMethod(OIDC);
-    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+    final var converter =
+        new BrokerRequestAuthorizationConverter(
+            new AuthenticationConfig(OIDC, null, false, DEFAULT_OIDC));
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -110,13 +139,33 @@ public class BrokerRequestAuthorizationConverterTest {
     final var groups = List.of("group1", "group2");
     final var authentication = CamundaAuthentication.of(b -> b.groupIds(groups));
 
-    final var oidcConfiguration = new OidcAuthenticationConfiguration();
-    oidcConfiguration.setGroupsClaim("groups");
-    final var securityConfiguration = new SecurityConfiguration();
-    securityConfiguration.getAuthentication().setOidc(oidcConfiguration);
-    securityConfiguration.getAuthentication().setMethod(OIDC);
+    final var oidcWithGroups =
+        new OidcConfig(
+            null,
+            null,
+            null,
+            null,
+            List.of(),
+            null,
+            null,
+            null,
+            "sub",
+            null,
+            "groups",
+            false,
+            null,
+            List.of(),
+            null,
+            null,
+            true,
+            "authorization_code",
+            "client_secret_basic",
+            null,
+            null);
 
-    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+    final var converter =
+        new BrokerRequestAuthorizationConverter(
+            new AuthenticationConfig(OIDC, null, false, oidcWithGroups));
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -132,12 +181,33 @@ public class BrokerRequestAuthorizationConverterTest {
     final var groups = List.of("group1", "group2");
     final var authentication = CamundaAuthentication.of(b -> b.groupIds(groups));
 
-    final var oidcConfiguration = new OidcAuthenticationConfiguration();
-    oidcConfiguration.setGroupsClaim("groups");
-    final var securityConfiguration = new SecurityConfiguration();
-    securityConfiguration.getAuthentication().setOidc(oidcConfiguration);
+    final var oidcWithGroups =
+        new OidcConfig(
+            null,
+            null,
+            null,
+            null,
+            List.of(),
+            null,
+            null,
+            null,
+            "sub",
+            null,
+            "groups",
+            false,
+            null,
+            List.of(),
+            null,
+            null,
+            true,
+            "authorization_code",
+            "client_secret_basic",
+            null,
+            null);
 
-    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+    final var converter =
+        new BrokerRequestAuthorizationConverter(
+            new AuthenticationConfig(AuthenticationMethod.BASIC, null, false, oidcWithGroups));
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);
@@ -152,9 +222,9 @@ public class BrokerRequestAuthorizationConverterTest {
     final var groups = List.of("group1", "group2");
     final var authentication = CamundaAuthentication.of(b -> b.groupIds(groups));
 
-    final var securityConfiguration = new SecurityConfiguration();
-    securityConfiguration.getAuthentication().setMethod(OIDC);
-    final var converter = new BrokerRequestAuthorizationConverter(securityConfiguration);
+    final var converter =
+        new BrokerRequestAuthorizationConverter(
+            new AuthenticationConfig(OIDC, null, false, DEFAULT_OIDC));
 
     // when
     final var brokerRequestAuth = converter.convert(authentication);

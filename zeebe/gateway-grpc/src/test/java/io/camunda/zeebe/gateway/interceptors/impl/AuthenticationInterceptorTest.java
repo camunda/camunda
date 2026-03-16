@@ -18,10 +18,10 @@ import static org.mockito.Mockito.when;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import io.camunda.gatekeeper.config.OidcConfig;
 import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.BasicAuth;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc;
@@ -186,11 +186,7 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-
-    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
+    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcConfig("username", "application_id")))
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -216,11 +212,7 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("sub");
-    oidcAuthenticationConfiguration.setClientIdClaim("client_id");
-
-    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
+    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcConfig("sub", "client_id")))
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -252,11 +244,7 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-
-    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
+    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcConfig("username", "application_id")))
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -291,11 +279,7 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("client_id");
-
-    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
+    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcConfig("username", "client_id")))
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -338,12 +322,8 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-
     // when
-    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
+    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcConfig("username", "application_id")))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -372,12 +352,8 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-
     // when
-    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
+    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcConfig("username", "application_id")))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -405,12 +381,8 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-
     // when
-    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
+    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcConfig("username", "application_id")))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -440,13 +412,9 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-    oidcAuthenticationConfiguration.setPreferUsernameClaim(true);
-
     // when
-    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
+    new AuthenticationInterceptor(
+            new Oidc(jwtDecoder, oidcConfig("username", "application_id", null, true)))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -476,12 +444,8 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("missing_claim");
-
     // when
-    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
+    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcConfig("username", "missing_claim")))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -512,12 +476,8 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-
     // when
-    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
+    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcConfig("username", "application_id")))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -548,13 +508,9 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-    oidcAuthenticationConfiguration.setGroupsClaim("$.groups[*]");
-
     // when
-    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
+    new AuthenticationInterceptor(
+            new Oidc(jwtDecoder, oidcConfig("username", "application_id", "$.groups[*]", false)))
         .interceptCall(
             closeStatusCapturingServerCall,
             metadata,
@@ -581,12 +537,8 @@ public class AuthenticationInterceptorTest {
     final var jwtDecoder = mock(JwtDecoder.class);
     when(jwtDecoder.decode(anyString())).thenReturn(jwt);
 
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("client_id");
-    oidcAuthenticationConfiguration.setGroupsClaim("$.groups[*]");
-
-    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
+    new AuthenticationInterceptor(
+            new Oidc(jwtDecoder, oidcConfig("username", "client_id", "$.groups[*]", false)))
         .interceptCall(
             closeStatusCapturingServerCall,
             createAuthHeader(),
@@ -774,6 +726,39 @@ public class AuthenticationInterceptorTest {
 
   private UserEntity createUserEntity() {
     return new UserEntity(1L, "demo", "name", "email", "demo");
+  }
+
+  private static OidcConfig oidcConfig(final String usernameClaim, final String clientIdClaim) {
+    return oidcConfig(usernameClaim, clientIdClaim, null, false);
+  }
+
+  private static OidcConfig oidcConfig(
+      final String usernameClaim,
+      final String clientIdClaim,
+      final String groupsClaim,
+      final boolean preferUsernameClaim) {
+    return new OidcConfig(
+        null,
+        null,
+        null,
+        null,
+        List.of(),
+        null,
+        null,
+        null,
+        usernameClaim,
+        clientIdClaim,
+        groupsClaim,
+        preferUsernameClaim,
+        null,
+        List.of(),
+        null,
+        null,
+        true,
+        "authorization_code",
+        "client_secret_basic",
+        null,
+        null);
   }
 
   private static final class CloseStatusCapturingServerCall extends NoopServerCall<Object, Object> {

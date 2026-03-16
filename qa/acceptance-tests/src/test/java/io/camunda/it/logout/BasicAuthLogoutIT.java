@@ -15,7 +15,6 @@ import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestWebappClient.TestLoggedInWebappClient;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.security.configuration.CsrfConfiguration;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -50,12 +49,7 @@ public class BasicAuthLogoutIT {
   private static final TestCamundaApplication CAMUNDA_APPLICATION =
       new TestCamundaApplication()
           .withAuthenticatedAccess()
-          .withSecurityConfig(
-              sc -> {
-                final var csrfConfig = new CsrfConfiguration();
-                csrfConfig.setEnabled(false);
-                sc.setCsrf(csrfConfig);
-              })
+          .withProperty("camunda.security.csrf.enabled", "false")
           .withAdditionalProfile("consolidated-auth");
 
   @Test

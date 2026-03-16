@@ -103,10 +103,12 @@ class UnavailableBrokersTest {
     brokerClient.start().forEach(ActorFuture::join);
     brokerClient.getTopologyManager().addTopologyListener(jobStreamClient);
 
+    final var securityConfig = SecurityConfigurations.unauthenticatedAndUnauthorized();
     gateway =
         new Gateway(
             config,
-            SecurityConfigurations.unauthenticatedAndUnauthorized(),
+            securityConfig,
+            SecurityConfigurations.toAuthenticationConfig(securityConfig),
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),

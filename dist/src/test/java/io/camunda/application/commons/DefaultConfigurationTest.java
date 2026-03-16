@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,12 +25,12 @@ import org.springframework.context.annotation.Import;
 class DefaultConfigurationTest {
 
   @Autowired private CamundaSecurityProperties camundaSecurityProperties;
+  @Autowired private AuthenticationConfig authenticationConfig;
 
   @Test
   void verifySecurityConfigurations() {
-    final var authenticationConfig = camundaSecurityProperties.getAuthentication();
-    assertThat(authenticationConfig.getMethod()).isEqualTo(AuthenticationMethod.BASIC);
-    assertThat(authenticationConfig.getUnprotectedApi()).isFalse();
+    assertThat(authenticationConfig.method()).isEqualTo(AuthenticationMethod.BASIC);
+    assertThat(authenticationConfig.unprotectedApi()).isFalse();
 
     final var authorizationsConfig = camundaSecurityProperties.getAuthorizations();
     assertThat(authorizationsConfig.isEnabled()).isTrue();

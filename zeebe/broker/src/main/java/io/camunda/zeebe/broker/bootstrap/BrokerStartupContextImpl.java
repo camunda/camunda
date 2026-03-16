@@ -11,6 +11,7 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -64,6 +65,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final Duration shutdownTimeout;
   private final MeterRegistry meterRegistry;
   private final SecurityConfiguration securityConfiguration;
+  private final AuthenticationConfig authenticationConfig;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
@@ -100,6 +102,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final Duration shutdownTimeout,
       final MeterRegistry meterRegistry,
       final SecurityConfiguration securityConfiguration,
+      final AuthenticationConfig authenticationConfig,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
@@ -119,6 +122,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.shutdownTimeout = shutdownTimeout;
     this.meterRegistry = requireNonNull(meterRegistry);
     this.securityConfiguration = requireNonNull(securityConfiguration);
+    this.authenticationConfig = requireNonNull(authenticationConfig);
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
@@ -346,6 +350,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public SecurityConfiguration getSecurityConfiguration() {
     return securityConfiguration;
+  }
+
+  @Override
+  public AuthenticationConfig getAuthenticationConfig() {
+    return authenticationConfig;
   }
 
   @Override

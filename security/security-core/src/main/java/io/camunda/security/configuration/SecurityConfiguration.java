@@ -17,11 +17,9 @@ public class SecurityConfiguration {
 
   public static final Pattern DEFAULT_EXTERNAL_ID_REGEX = Pattern.compile(".*", Pattern.DOTALL);
 
-  private AuthenticationConfiguration authentication = new AuthenticationConfiguration();
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
   private InitializationConfiguration initialization = new InitializationConfiguration();
   private MultiTenancyConfiguration multiTenancy = new MultiTenancyConfiguration();
-  private CsrfConfiguration csrf = new CsrfConfiguration();
   private SaasConfiguration saas = new SaasConfiguration();
 
   /**
@@ -35,14 +33,6 @@ public class SecurityConfiguration {
   private String idValidationPattern = DEFAULT_ID_REGEX;
 
   private Pattern compiledIdValidationPattern;
-
-  public AuthenticationConfiguration getAuthentication() {
-    return authentication;
-  }
-
-  public void setAuthentication(final AuthenticationConfiguration authentication) {
-    this.authentication = authentication;
-  }
 
   public AuthorizationsConfiguration getAuthorizations() {
     return authorizations;
@@ -68,24 +58,12 @@ public class SecurityConfiguration {
     this.multiTenancy = multiTenancy;
   }
 
-  public boolean isApiProtected() {
-    return !authentication.getUnprotectedApi();
-  }
-
   public SaasConfiguration getSaas() {
     return saas;
   }
 
   public void setSaas(final SaasConfiguration saas) {
     this.saas = saas;
-  }
-
-  public CsrfConfiguration getCsrf() {
-    return csrf;
-  }
-
-  public void setCsrf(final CsrfConfiguration csrf) {
-    this.csrf = csrf;
   }
 
   public String getIdValidationPattern() {
@@ -103,8 +81,14 @@ public class SecurityConfiguration {
     return compiledIdValidationPattern;
   }
 
-  public Pattern getCompiledGroupIdValidationPattern() {
-    final var groupsClaim = getAuthentication().getOidc().getGroupsClaim();
+  /**
+   * Returns the compiled group ID validation pattern. If groups are sourced from an external IdP
+   * (indicated by a non-empty groupsClaim), a permissive pattern is returned since the IdP controls
+   * group naming. Otherwise, the standard ID validation pattern is used.
+   *
+   * @param groupsClaim the OIDC groups claim name, or null/empty if groups are not from an IdP
+   */
+  public Pattern getCompiledGroupIdValidationPattern(final String groupsClaim) {
     if (groupsClaim != null && !groupsClaim.isEmpty()) {
       return DEFAULT_EXTERNAL_ID_REGEX;
     }

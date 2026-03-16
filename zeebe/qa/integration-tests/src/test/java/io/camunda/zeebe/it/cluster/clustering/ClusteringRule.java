@@ -518,10 +518,12 @@ public class ClusteringRule extends ExternalResource {
     // topology to be set up, otherwise the callback may be lost
     topologyManager.addTopologyListener(jobStreamClient);
 
+    final var securityConfig = SecurityConfigurations.unauthenticatedAndUnauthorized();
     final var gateway =
         new Gateway(
             gatewayCfg,
-            SecurityConfigurations.unauthenticatedAndUnauthorized(),
+            securityConfig,
+            SecurityConfigurations.toAuthenticationConfig(securityConfig),
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),

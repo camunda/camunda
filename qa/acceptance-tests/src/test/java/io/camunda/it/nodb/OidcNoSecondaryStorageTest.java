@@ -67,15 +67,14 @@ public class OidcNoSecondaryStorageTest {
           .withAuthenticatedAccess()
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withProperty("camunda.security.authentication.method", "oidc")
+          .withProperty(
+              "camunda.security.authentication.oidc.issuer-uri",
+              KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM)
+          .withProperty("camunda.security.authentication.oidc.client-id", "example")
+          .withProperty("camunda.security.authentication.oidc.redirect-uri", "example.com")
           .withSecurityConfig(
               c -> {
                 c.getAuthorizations().setEnabled(true);
-
-                final var oidcConfig = c.getAuthentication().getOidc();
-                oidcConfig.setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
-                // Required for OIDC configuration even if not used in this test
-                oidcConfig.setClientId("example");
-                oidcConfig.setRedirectUri("example.com");
 
                 c.getInitialization()
                     .setMappingRules(

@@ -14,8 +14,8 @@ import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
-import io.camunda.security.configuration.SecurityConfiguration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,19 +33,39 @@ import java.util.Map;
  */
 public class BrokerRequestAuthorizationConverter {
 
+  private final AuthenticationConfig authenticationConfig;
   private final boolean camundaGroupsEnabled;
   private final boolean shouldIncludeAuthorizationClaims;
 
-  public BrokerRequestAuthorizationConverter(final SecurityConfiguration securityConfiguration) {
-    camundaGroupsEnabled = securityConfiguration.getAuthentication().isCamundaGroupsEnabled();
+  public BrokerRequestAuthorizationConverter(
+      final AuthenticationConfig authenticationConfig,
+      final SecurityConfiguration securityConfiguration) {
+    this.authenticationConfig = authenticationConfig;
+    camundaGroupsEnabled = isCamundaGroupsEnabled(authenticationConfig);
     shouldIncludeAuthorizationClaims =
         securityConfiguration.getAuthorizations().isEnabled()
             || securityConfiguration.getMultiTenancy().isChecksEnabled();
   }
 
-  /** Returns whether authorization claims (token claims, groups) are needed in broker requests. */
+  /** Returns the authentication configuration. */
+  public AuthenticationConfig getAuthenticationConfig() {
+    return authenticationConfig;
+  }
+
+  /** Returns the OIDC groups claim name, or null if not configured. */
+  public String getGroupsClaim() {
+    return authenticationConfig.oidc() != null ? authenticationConfig.oidc().groupsClaim() : null;
+  }
+
+  /** Returns whether authorization claims are needed in broker requests. */
   public boolean shouldIncludeAuthorizationClaims() {
     return shouldIncludeAuthorizationClaims;
+  }
+
+  protected boolean isCamundaGroupsEnabled(final AuthenticationConfig authenticationConfig) {
+    return !(authenticationConfig.method() == OIDC
+        && authenticationConfig.oidc() != null
+        && authenticationConfig.oidc().isGroupsClaimConfigured());
   }
 
   public Map<String, Object> convert(final CamundaAuthentication authentication) {

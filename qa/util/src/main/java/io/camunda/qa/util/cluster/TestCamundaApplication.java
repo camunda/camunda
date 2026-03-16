@@ -135,7 +135,6 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
 
     securityConfig = new CamundaSecurityProperties();
     securityConfig.getAuthorizations().setEnabled(false);
-    securityConfig.getAuthentication().setUnprotectedApi(true);
     securityConfig
         .getInitialization()
         .getUsers()
@@ -167,9 +166,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     //noinspection resource
     withBean("camunda", unifiedConfig, Camunda.class)
         .withBean("security-config", securityConfig, CamundaSecurityProperties.class)
-        .withProperty(
-            "camunda.security.authentication.unprotected-api",
-            securityConfig.getAuthentication().getUnprotectedApi())
+        .withProperty("camunda.security.authentication.unprotected-api", true)
         .withProperty(
             "camunda.security.authorizations.enabled",
             securityConfig.getAuthorizations().isEnabled())

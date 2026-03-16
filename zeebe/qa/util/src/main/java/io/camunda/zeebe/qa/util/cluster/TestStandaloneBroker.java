@@ -104,7 +104,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
     securityConfig = new CamundaSecurityProperties();
     securityConfig.getAuthorizations().setEnabled(false);
-    securityConfig.getAuthentication().setUnprotectedApi(true);
     securityConfig
         .getInitialization()
         .getUsers()
@@ -134,9 +133,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
                 List.of(DEFAULT_MAPPING_RULE_ID)));
 
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
-    withProperty(
-        "camunda.security.authentication.unprotected-api",
-        securityConfig.getAuthentication().getUnprotectedApi());
+    withProperty("camunda.security.authentication.unprotected-api", true);
     withProperty(
         "camunda.security.authorizations.enabled", securityConfig.getAuthorizations().isEnabled());
     // by default, we don't want to create the schema as ES/OS containers may not be used in the

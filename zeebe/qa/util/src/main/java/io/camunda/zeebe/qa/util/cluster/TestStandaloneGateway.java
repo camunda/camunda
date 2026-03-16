@@ -72,10 +72,10 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
     withBean("camunda", unifiedConfig, Camunda.class).withAdditionalProfile(Profile.GATEWAY);
 
     securityConfig = new CamundaSecurityProperties();
-    securityConfig.getAuthentication().setUnprotectedApi(true);
     securityConfig.getAuthorizations().setEnabled(false);
     //noinspection resource
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
+    withProperty("camunda.security.authentication.unprotected-api", true);
 
     // by default, we don't want to create the schema as ES/OS containers may not be used in the
     // current test

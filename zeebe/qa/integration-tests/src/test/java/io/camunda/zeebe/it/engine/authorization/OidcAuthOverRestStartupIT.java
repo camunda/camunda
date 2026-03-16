@@ -38,16 +38,14 @@ public class OidcAuthOverRestStartupIT {
           .withAuthenticatedAccess()
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
+          .withProperty(
+              "camunda.security.authentication.oidc.issuer-uri",
+              "http://localhost:1000" + "/realms/" + KEYCLOAK_REALM)
+          .withProperty("camunda.security.authentication.oidc.client-id", "example")
+          .withProperty("camunda.security.authentication.oidc.redirect-uri", "example.com")
           .withSecurityConfig(
               c -> {
                 c.getAuthorizations().setEnabled(true);
-                final var oidcConfig = c.getAuthentication().getOidc();
-                final String issuerUri = "http://localhost:1000" + "/realms/" + KEYCLOAK_REALM;
-                oidcConfig.setIssuerUri(issuerUri);
-                // The following two properties are only needed for the webapp login flow which we
-                // don't test here.
-                oidcConfig.setClientId("example");
-                oidcConfig.setRedirectUri("example.com");
                 c.getInitialization()
                     .getDefaultRoles()
                     .put("admin", Map.of("users", List.of(DEFAULT_USER_ID)));

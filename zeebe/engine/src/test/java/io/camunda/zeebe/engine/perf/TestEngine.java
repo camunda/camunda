@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.perf;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -89,7 +90,9 @@ public final class TestEngine {
                             featureFlags,
                             JobStreamer.noop(),
                             SearchClientsProxy.noop(),
-                            new BrokerRequestAuthorizationConverter(new SecurityConfiguration()))
+                            new BrokerRequestAuthorizationConverter(
+                                SecurityConfigurations.toAuthenticationConfig(
+                                    new SecurityConfiguration())))
                         .withListener(
                             new ProcessingExporterTransistor(
                                 testStreams.getLogStream(

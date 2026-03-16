@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -55,6 +56,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
 
   private final GatewayBasedConfiguration configuration;
   private final SecurityConfiguration securityConfiguration;
+  private final AuthenticationConfig authenticationConfig;
   private final SpringGatewayBridge springGatewayBridge;
   private final ActorScheduler actorScheduler;
   private final AtomixCluster atomixCluster;
@@ -72,6 +74,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   public GatewayModuleConfiguration(
       final GatewayBasedConfiguration configuration,
       final SecurityConfiguration securityConfiguration,
+      final AuthenticationConfig authenticationConfig,
       final SpringGatewayBridge springGatewayBridge,
       final ActorScheduler actorScheduler,
       final AtomixCluster atomixCluster,
@@ -84,6 +87,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       final GatewayRestConfiguration gatewayRestConfiguration) {
     this.configuration = configuration;
     this.securityConfiguration = securityConfiguration;
+    this.authenticationConfig = authenticationConfig;
     this.springGatewayBridge = springGatewayBridge;
     this.actorScheduler = actorScheduler;
     this.atomixCluster = atomixCluster;
@@ -115,6 +119,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
             configuration.shutdownTimeout(),
             configuration.config(),
             securityConfiguration,
+            authenticationConfig,
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),

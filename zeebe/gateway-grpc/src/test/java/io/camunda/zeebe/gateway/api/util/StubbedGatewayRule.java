@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.api.util;
 
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.gateway.RequestMapper;
+import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.gateway.api.util.StubbedGateway.StubbedJobStreamer;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
@@ -42,7 +43,12 @@ public final class StubbedGatewayRule extends ExternalResource {
   protected void before() throws Throwable {
     gateway =
         new StubbedGateway(
-            actorSchedulerRule.get(), brokerClient, jobStreamer, config, securityConfiguration);
+            actorSchedulerRule.get(),
+            brokerClient,
+            jobStreamer,
+            config,
+            securityConfiguration,
+            SecurityConfigurations.toAuthenticationConfig(securityConfiguration));
     gateway.start();
     client = gateway.buildClient();
     asyncClient = gateway.buildAsyncClient();

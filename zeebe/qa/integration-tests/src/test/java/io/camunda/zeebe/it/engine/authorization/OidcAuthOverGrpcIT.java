@@ -75,16 +75,14 @@ public class OidcAuthOverGrpcIT {
           .withProperty(
               "camunda.data.secondary-storage.elasticsearch.url",
               "http://" + CONTAINER.getHttpHostAddress())
+          .withProperty(
+              "camunda.security.authentication.oidc.issuer-uri",
+              KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM)
+          .withProperty("camunda.security.authentication.oidc.client-id", "example")
+          .withProperty("camunda.security.authentication.oidc.redirect-uri", "example.com")
           .withSecurityConfig(
               c -> {
                 c.getAuthorizations().setEnabled(true);
-
-                final var oidcConfig = c.getAuthentication().getOidc();
-                oidcConfig.setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
-                // The following two properties are only needed for the webapp login flow which we
-                // don't test here.
-                oidcConfig.setClientId("example");
-                oidcConfig.setRedirectUri("example.com");
 
                 c.getInitialization()
                     .setMappingRules(

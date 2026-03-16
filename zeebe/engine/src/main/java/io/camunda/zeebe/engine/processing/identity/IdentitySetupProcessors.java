@@ -31,11 +31,12 @@ public final class IdentitySetupProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final SecurityConfiguration securityConfig,
+      final String groupsClaim,
       final EngineConfiguration config) {
     final IdentifierValidator identifierValidator =
         new IdentifierValidator(
             securityConfig.getCompiledIdValidationPattern(),
-            securityConfig.getCompiledGroupIdValidationPattern());
+            securityConfig.getCompiledGroupIdValidationPattern(groupsClaim));
     typedRecordProcessors
         .onCommand(
             ValueType.IDENTITY_SETUP,

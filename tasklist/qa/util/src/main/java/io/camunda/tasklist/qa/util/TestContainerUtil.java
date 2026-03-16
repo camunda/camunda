@@ -463,9 +463,9 @@ public class TestContainerUtil {
       broker =
           new TestStandaloneBroker()
               .withGatewayEnabled(true)
+              .withProperty("camunda.security.authentication.unprotected-api", true)
               .withSecurityConfig(
                   cfg -> {
-                    cfg.getAuthentication().setUnprotectedApi(true);
                     cfg.getAuthorizations().setEnabled(false);
                     final var user = new ConfiguredUser("demo", "demo", "Demo", "demo@example.com");
                     cfg.getInitialization().setUsers(List.of(user));

@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest.config;
 
 import static io.camunda.security.configuration.MultiTenancyConfiguration.API_ENABLED_PROPERTY;
-import static io.camunda.security.configuration.OidcAuthenticationConfiguration.GROUPS_CLAIM_PROPERTY;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
@@ -26,7 +25,7 @@ public class ApiFiltersConfiguration {
   @VisibleForTesting
   public static final String GROUPS_API_DISABLED_ERROR_MESSAGE =
       "Groups API is disabled because the application is configured in group claim mode. To use the Groups API, reconfigure the application to manage group mode removing the '%s' property."
-          .formatted(GROUPS_CLAIM_PROPERTY);
+          .formatted("camunda.security.authentication.oidc.groupsClaim");
 
   @VisibleForTesting
   public static final String USERS_API_DISABLED_ERROR_MESSAGE =
