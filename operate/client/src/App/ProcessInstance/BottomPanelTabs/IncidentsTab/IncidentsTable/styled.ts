@@ -7,17 +7,27 @@
  */
 
 import styled from 'styled-components';
+import {styles} from '@carbon/elements';
 
-const ErrorMessageCell = styled.div`
-  max-width: 404px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
-const FlexContainer = styled.div`
+const ExpandedContent = styled.div`
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: var(--cds-spacing-05);
 `;
 
-export {ErrorMessageCell, FlexContainer};
+const ExpandedField = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-spacing-02);
+`;
+
+const FieldLabel = styled.span`
+  color: var(--cds-text-secondary);
+  ${styles.bodyCompact01};
+`;
+
+const FieldValue = styled.span`
+  ${styles.bodyCompact01};
+`;
+
+export {ExpandedContent, ExpandedField, FieldLabel, FieldValue};
