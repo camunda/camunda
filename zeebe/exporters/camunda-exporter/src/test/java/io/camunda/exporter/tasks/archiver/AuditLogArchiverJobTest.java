@@ -144,9 +144,9 @@ public class AuditLogArchiverJobTest {
     // when
     final int count = job.execute().toCompletableFuture().join();
 
-    // then
+    // then - no audit log move, cleanup entities are deleted directly
     assertThat(count).isEqualTo(2);
-    assertThat(archiverRepository.moves).hasSize(1);
+    assertThat(archiverRepository.moves).isEmpty();
     assertThat(auditLogArchiverRepository.deletedBatch).isEqualTo(auditLogArchiverRepository.batch);
   }
 
