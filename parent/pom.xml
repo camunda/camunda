@@ -126,7 +126,7 @@
     <version.byte-buddy>1.18.7-jdk5</version.byte-buddy>
     <version.revapi>0.28.4</version.revapi>
     <version.resilience4j>2.3.0</version.resilience4j>
-    <version.kotlin-stdlib>2.3.10</version.kotlin-stdlib>
+    <version.kotlin-stdlib>2.3.20</version.kotlin-stdlib>
     <version.immutables>2.12.1</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
     <version.classgraph>4.8.184</version.classgraph>
