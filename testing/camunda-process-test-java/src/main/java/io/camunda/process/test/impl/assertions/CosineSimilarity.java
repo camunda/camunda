@@ -31,6 +31,14 @@ final class CosineSimilarity {
    * @return the cosine similarity in the range {@code [0.0, 1.0]}
    */
   static double compute(final float[] a, final float[] b) {
+    if (a.length != b.length) {
+      throw new IllegalArgumentException(
+          "Embedding vectors must have the same length, but got a.length="
+              + a.length
+              + " and b.length="
+              + b.length
+              + ". Ensure both texts are embedded with the same model and dimensions.");
+    }
     double dot = 0.0;
     double normA = 0.0;
     double normB = 0.0;

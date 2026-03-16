@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.assertions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 import org.junit.jupiter.api.Test;
@@ -70,6 +71,16 @@ class CosineSimilarityTest {
     final float[] a = {1.0f, 1e-7f};
     final float[] b = {1.0f, 1e-7f};
     assertThat(CosineSimilarity.compute(a, b)).isLessThanOrEqualTo(1.0);
+  }
+
+  @Test
+  void shouldThrowForMismatchedVectorLengths() {
+    final float[] a = {1.0f, 2.0f, 3.0f};
+    final float[] b = {4.0f, 5.0f};
+    assertThatThrownBy(() -> CosineSimilarity.compute(a, b))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("a.length=3")
+        .hasMessageContaining("b.length=2");
   }
 
   @Test

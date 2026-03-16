@@ -99,6 +99,7 @@ ChatModelAdapter myChatModelAdapter() {
 ```
 
 Then configure:
+
 ```properties
 judge.chatModel.provider=openai
 ```
@@ -200,6 +201,7 @@ EmbeddingModelAdapter myEmbeddingModelAdapter() {
 ```
 
 Then configure:
+
 ```properties
 similarity.embeddingModel.provider=openai
 ```
@@ -237,7 +239,8 @@ void shouldProcessOrder() {
 
   // With a custom threshold
   assertThat(processInstance)
-    .hasVariableSimilarTo("orderSummary", "The order was processed successfully", 0.9);
+    .withSemanticSimilarityConfig(c -> c.withThreshold(0.9))
+    .hasVariableSimilarTo("orderSummary", "The order was processed successfully");
 
   // Assert a local variable on a specific element
   assertThat(processInstance)
