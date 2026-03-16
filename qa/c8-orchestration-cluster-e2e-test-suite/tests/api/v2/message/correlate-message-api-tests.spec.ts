@@ -20,7 +20,7 @@ import {
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
-  CORRELATE_MESSAGE,
+  CORRELATE_MESSAGE4,
   correlateMessageRequiredFields,
 } from '../../../../utils/beans/requestBeans';
 import {createInstances, deploy} from '../../../../utils/zeebeClient';
@@ -30,16 +30,16 @@ test.describe('Correlate Message API Tests', () => {
   const state: Record<string, unknown> = {};
 
   test.beforeAll(async () => {
-    await deploy(['./resources/messageCatchEvent3.bpmn']);
-    const processes = await createInstances('messageCatchEvent3', 1, 1);
-    expect(processes.length).toBe(1);
+    await deploy(['./resources/messageCatchEvent4.bpmn']);
+    const processes = await createInstances('messageCatchEvent4', 1, 1);
+    expect(processes).toHaveLength(1);
     state['processInstanceKey'] = processes[0].processInstanceKey;
   });
 
   test('Correlate Message Unauthorized', async ({request}) => {
     const res = await request.post(buildUrl('/messages/correlation'), {
       headers: {},
-      data: CORRELATE_MESSAGE,
+      data: CORRELATE_MESSAGE4,
     });
     await assertUnauthorizedRequest(res);
   });
@@ -61,26 +61,33 @@ test.describe('Correlate Message API Tests', () => {
         variables: {foo: 'bar'},
       },
     });
-    await assertNotFoundRequest(res, 'Command \'CORRELATE\' rejected with code \'NOT_FOUND\': Expected to find subscription for message with name \'invalidMessageName\' and correlation key \'invalidKey\', but none was found.');
+    await assertNotFoundRequest(
+      res,
+      "Command 'CORRELATE' rejected with code 'NOT_FOUND': Expected to find subscription for message with name 'invalidMessageName' and correlation key 'invalidKey', but none was found.",
+    );
   });
 
   test('Correlate Message Invalid Tenant', async ({request}) => {
     const updatedBody = {
-      ...CORRELATE_MESSAGE,
+      ...CORRELATE_MESSAGE4,
       tenantId: 'invaliTenant',
     };
     const res = await request.post(buildUrl('/messages/correlation'), {
       headers: jsonHeaders(),
       data: updatedBody,
     });
-    await assertInvalidArgument(res, 400, 'Expected to handle request Correlate Message with tenant identifier');
+    await assertInvalidArgument(
+      res,
+      400,
+      'Expected to handle request Correlate Message with tenant identifier',
+    );
   });
 
   test('Correlate Message Flow', async ({request}) => {
     await test.step('Correlate Message', async () => {
       const res = await request.post(buildUrl('/messages/correlation'), {
         headers: jsonHeaders(),
-        data: CORRELATE_MESSAGE,
+        data: CORRELATE_MESSAGE4,
       });
       await assertStatusCode(res, 200);
       await validateResponse(
@@ -127,7 +134,8 @@ test.describe('Correlate Message API Tests', () => {
         );
         const json = await res.json();
         assertRequiredFields(json, paginatedResponseFields);
-        expect(json.page.totalItems).toBe(0);
+        expect(json.page.totalItems).toBe(1);
+        expect(json.items[0].messageSubscriptionState).toBe('CORRELATED');
       }).toPass(defaultAssertionOptions);
     });
   });
