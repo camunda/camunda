@@ -745,5 +745,6 @@ public class CamundaProcessTestExtension
         LOG.debug("Failed to close client, continue.", e);
       }
     }
+    createdClients.clear();
   }
 }
