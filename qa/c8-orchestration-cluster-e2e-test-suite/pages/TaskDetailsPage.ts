@@ -283,6 +283,7 @@ class TaskDetailsPage {
   }
 
   async fillDynamicList(label: string, value: string) {
+    await sleep(500);
     const locator = this.page.getByLabel(label);
     const elements = await locator.all();
     if (elements.length === 0) {
