@@ -21,7 +21,6 @@ import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatist
 import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsQuery;
 import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuery;
-import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -55,14 +54,13 @@ public class ProcessDefinitionController {
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<ProcessDefinitionSearchQueryResult> searchProcessDefinitions(
+  public ResponseEntity<Object> searchProcessDefinitions(
       @RequestBody(required = false) final ProcessDefinitionSearchQuery query) {
     return SearchQueryRequestMapper.toProcessDefinitionQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private ResponseEntity<ProcessDefinitionSearchQueryResult> search(
-      final ProcessDefinitionQuery query) {
+  private ResponseEntity<Object> search(final ProcessDefinitionQuery query) {
     try {
       final var result =
           processDefinitionServices.search(

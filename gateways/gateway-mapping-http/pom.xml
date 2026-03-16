@@ -149,6 +149,11 @@
       <artifactId>jakarta.validation-api</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+
     <!-- tests -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -174,5 +179,30 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-contract-mapping-poc</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <executable>java</executable>
+              <workingDirectory>${project.basedir}</workingDirectory>
+              <arguments>
+                <argument>tools/GenerateContractMappingPoc.java</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
