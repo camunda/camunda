@@ -28,12 +28,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public final class StubbedBrokerClient implements BrokerClient {
 
   final BrokerTopologyManager topologyManager = new StubbedTopologyManager();
-  private Consumer<String> jobsAvailableHandler;
+  private BiConsumer<String, Integer> jobsAvailableByPartitionHandler;
 
   private final Map<Class<?>, RequestHandler<?, ?>> requestHandlers = new HashMap<>();
 
@@ -123,7 +124,13 @@ public final class StubbedBrokerClient implements BrokerClient {
   @Override
   public void subscribeJobAvailableNotification(
       final String topic, final Consumer<String> handler) {
-    jobsAvailableHandler = handler;
+    // no-op: legacy topic no longer subscribed by the gateway
+  }
+
+  @Override
+  public void subscribeJobAvailableByPartitionNotification(
+      final BiConsumer<String, Integer> handler) {
+    jobsAvailableByPartitionHandler = handler;
   }
 
   public <RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>>
@@ -133,7 +140,7 @@ public final class StubbedBrokerClient implements BrokerClient {
   }
 
   public void notifyJobsAvailable(final String type) {
-    jobsAvailableHandler.accept(type);
+    jobsAvailableByPartitionHandler.accept(type, -1);
   }
 
   public <T extends BrokerRequest<?>> T getSingleBrokerRequest() {

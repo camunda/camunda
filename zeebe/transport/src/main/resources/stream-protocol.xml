@@ -8,7 +8,7 @@
   -->
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude" package="io.camunda.zeebe.transport.stream.impl.messages"
-  id="2" version="2" semanticVersion="${project.version}"
+  id="2" version="3" semanticVersion="${project.version}"
   description="Zeebe Protocol" byteOrder="littleEndian">
 
   <xi:include href="../../../protocol/src/main/resources/common-types.xml"/>
@@ -66,5 +66,11 @@
       <data name="message" id="4" type="varDataEncoding" description="Detail error message" />
     </group>
     <data name="message" id="5" type="varDataEncoding" description="The error message"/>
+  </sbe:message>
+
+  <!-- Job notification messages 500-599 -->
+  <sbe:message name="JobAvailableNotification" id="500" description="Notifies gateways that jobs are available on a partition">
+    <field name="partitionId" id="1" type="uint16" description="The partition on which jobs are available" />
+    <data name="jobType" id="2" type="varDataEncoding" description="The type of job that is available" />
   </sbe:message>
 </sbe:messageSchema>

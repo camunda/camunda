@@ -55,6 +55,7 @@ public class BpmnJobActivationBehavior {
   private final InstantSource clock;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
   private final JobAuthorizationLogger jobAuthorizationLogger;
+  private final int partitionId;
 
   public BpmnJobActivationBehavior(
       final JobStreamer jobStreamer,
@@ -63,7 +64,8 @@ public class BpmnJobActivationBehavior {
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final int partitionId) {
     this.jobStreamer = jobStreamer;
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
@@ -73,6 +75,7 @@ public class BpmnJobActivationBehavior {
     this.clock = clock;
     authorizationCheckBehavior = authCheckBehavior;
     this.jobAuthorizationLogger = JobAuthorizationLogger.createDefault();
+    this.partitionId = partitionId;
   }
 
   public void publishWork(final long jobKey, final JobRecord jobRecord) {
@@ -122,7 +125,7 @@ public class BpmnJobActivationBehavior {
   private void notifyJobAvailable(final String jobType, final JobKind jobKind) {
     sideEffectWriter.appendSideEffect(
         () -> {
-          jobStreamer.notifyWorkAvailable(jobType);
+          jobStreamer.notifyWorkAvailable(jobType, partitionId);
           jobMetrics.countJobEvent(JobAction.WORKERS_NOTIFIED, jobKind, jobType);
           return true;
         });

@@ -35,7 +35,18 @@ public interface JobStreamer {
    *
    * @param jobType the type of the stream which has items available
    */
-  default void notifyWorkAvailable(final String jobType) {}
+  default void notifyWorkAvailable(final String jobType) {
+    notifyWorkAvailable(jobType, -1);
+  }
+
+  /**
+   * Can be used to notify listeners that there are jobs available for activation on a specific
+   * partition.
+   *
+   * @param jobType the type of the stream which has items available
+   * @param partitionId the partition on which the jobs are available, or -1 if unknown
+   */
+  default void notifyWorkAvailable(final String jobType, final int partitionId) {}
 
   /**
    * Returns a job stream for the job type, or {@link Optional#empty()} if there is none.

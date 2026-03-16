@@ -13,6 +13,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public interface BrokerClient extends AutoCloseable {
@@ -93,4 +94,10 @@ public interface BrokerClient extends AutoCloseable {
   BrokerTopologyManager getTopologyManager();
 
   void subscribeJobAvailableNotification(String topic, Consumer<String> handler);
+
+  /**
+   * Subscribes to the per-partition job available notification topic. The handler receives the job
+   * type and the partition ID on which jobs are available.
+   */
+  void subscribeJobAvailableByPartitionNotification(BiConsumer<String, Integer> handler);
 }

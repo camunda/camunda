@@ -186,6 +186,10 @@ final class RequestRetryHandlerTest {
     @Override
     public void subscribeJobAvailableNotification(
         final String topic, final Consumer<String> handler) {}
+
+    @Override
+    public void subscribeJobAvailableByPartitionNotification(
+        final java.util.function.BiConsumer<String, Integer> handler) {}
   }
 
   private static class TestBrokerRequest extends BrokerExecuteCommand<String> {

@@ -106,6 +106,23 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
     activateJobs(request, requestState, delegate);
   }
 
+  public void activateJobs(
+      final int partitionsCount,
+      final int preferredStartPartitionId,
+      final InflightActivateJobsRequest<T> request,
+      final Consumer<Throwable> onError,
+      final BiConsumer<Integer, Boolean> onCompleted) {
+    final var maxJobsToActivate = request.getMaxJobsToActivate();
+    final var partitionIterator =
+        new PartitionIdIterator(preferredStartPartitionId, partitionsCount, topologyManager);
+
+    final var requestState =
+        new InflightActivateJobsRequestState(partitionIterator, maxJobsToActivate);
+    final var delegate = new ResponseObserverDelegate(onError, onCompleted);
+
+    activateJobs(request, requestState, delegate);
+  }
+
   private void activateJobs(
       final InflightActivateJobsRequest<T> request,
       final InflightActivateJobsRequestState requestState,

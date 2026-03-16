@@ -79,7 +79,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ExpressionLanguageMetrics expressionMetrics,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final int partitionId) {
 
     final var tenantClusterScope =
         new TenantScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
@@ -214,7 +215,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             jobMetrics,
             clock,
-            authCheckBehavior);
+            authCheckBehavior,
+            partitionId);
 
     multiInstanceInputCollectionBehavior =
         new MultiInstanceInputCollectionBehavior(

@@ -205,6 +205,6 @@ public final class ActivatableJobsNotificationTests {
 
   private void verifyLongPollingNotification(final int numberOfInvocations, final String taskType) {
     Mockito.verify(JOB_STREAMER, Mockito.timeout(VERIFICATION_TIMEOUT).times(numberOfInvocations))
-        .notifyWorkAvailable(taskType);
+        .notifyWorkAvailable(Mockito.eq(taskType), Mockito.anyInt());
   }
 }

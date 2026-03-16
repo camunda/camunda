@@ -20,22 +20,29 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
+import io.camunda.zeebe.transport.stream.impl.messages.JobAvailableNotificationDecoder;
+import io.camunda.zeebe.transport.stream.impl.messages.MessageHeaderDecoder;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class BrokerClientImpl implements BrokerClient {
   public static final Logger LOG = LoggerFactory.getLogger(BrokerClientImpl.class);
+  static final String JOBS_AVAILABLE_BY_PARTITION_TOPIC = "jobsAvailableByPartition";
 
   private final BrokerTopologyManager topologyManager;
   private final BrokerRequestManager requestManager;
 
   private boolean isClosed;
-  private Subscription jobAvailableSubscription;
+  private final List<Subscription> jobAvailableSubscriptions = new ArrayList<>();
   private final ClusterEventService eventService;
   private final ActorSchedulingService schedulingService;
   private final AtomixClientTransportAdapter atomixTransportAdapter;
@@ -85,8 +92,8 @@ public final class BrokerClientImpl implements BrokerClient {
     doAndLogException(atomixTransportAdapter::close);
     LOG.debug("transport client closed");
 
-    if (jobAvailableSubscription != null) {
-      jobAvailableSubscription.close();
+    if (!jobAvailableSubscriptions.isEmpty()) {
+      jobAvailableSubscriptions.forEach(Subscription::close);
     }
 
     LOG.debug("Gateway broker client closed.");
@@ -140,7 +147,7 @@ public final class BrokerClientImpl implements BrokerClient {
   @Override
   public void subscribeJobAvailableNotification(
       final String topic, final Consumer<String> handler) {
-    jobAvailableSubscription =
+    final var subscription =
         eventService
             .subscribe(
                 topic,
@@ -149,6 +156,30 @@ public final class BrokerClientImpl implements BrokerClient {
                   return CompletableFuture.completedFuture(null);
                 })
             .join();
+    jobAvailableSubscriptions.add(subscription);
+  }
+
+  @Override
+  public void subscribeJobAvailableByPartitionNotification(
+      final BiConsumer<String, Integer> handler) {
+    final var subscription =
+        eventService
+            .subscribe(
+                JOBS_AVAILABLE_BY_PARTITION_TOPIC,
+                Function.identity(),
+                (final byte[] bytes) -> {
+                  final var headerDecoder = new MessageHeaderDecoder();
+                  final var notificationDecoder = new JobAvailableNotificationDecoder();
+                  final var buffer = new UnsafeBuffer(bytes);
+                  notificationDecoder.wrapAndApplyHeader(buffer, 0, headerDecoder);
+                  final int partitionId = notificationDecoder.partitionId();
+                  final String jobType = notificationDecoder.jobType();
+                  handler.accept(jobType, partitionId);
+                  return CompletableFuture.completedFuture(null);
+                },
+                ignored -> new byte[0])
+            .join();
+    jobAvailableSubscriptions.add(subscription);
   }
 
   private void doAndLogException(final Runnable r) {

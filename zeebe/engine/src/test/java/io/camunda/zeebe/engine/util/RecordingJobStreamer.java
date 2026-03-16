@@ -26,7 +26,7 @@ public class RecordingJobStreamer implements JobStreamer {
       new ConcurrentHashMap<>();
 
   @Override
-  public void notifyWorkAvailable(final String jobType) {
+  public void notifyWorkAvailable(final String jobType, final int partitionId) {
     final AtomicInteger counter =
         jobNotifications.computeIfAbsent(jobType, key -> new AtomicInteger(0));
     counter.getAndIncrement();

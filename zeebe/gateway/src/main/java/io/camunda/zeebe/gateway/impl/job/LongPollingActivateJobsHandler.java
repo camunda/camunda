@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -85,8 +86,15 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
   void onActorStarted() {
     actor.run(
         () -> {
+          // Subscribe to the legacy topic for backward compatibility with old brokers
+          // that don't send per-partition notifications.
           brokerClient.subscribeJobAvailableNotification(
-              JOBS_AVAILABLE_TOPIC, this::onJobAvailableNotification);
+              JOBS_AVAILABLE_TOPIC, jobType -> onJobAvailableNotification(jobType, -1));
+
+          // Subscribe to the per-partition topic for targeted notifications from new brokers.
+          brokerClient.subscribeJobAvailableByPartitionNotification(
+              this::onJobAvailableNotification);
+
           actor.runAtFixedRate(Duration.ofMillis(probeTimeoutMillis), this::probe);
         });
   }
@@ -180,21 +188,27 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
   private void tryToActivateJobsOnAllPartitions(
       final InFlightLongPollingActivateJobsRequestsState<T> state,
       final InflightActivateJobsRequest<T> request) {
+    tryToActivateJobsOnAllPartitions(state, request, -1);
+  }
+
+  private void tryToActivateJobsOnAllPartitions(
+      final InFlightLongPollingActivateJobsRequestsState<T> state,
+      final InflightActivateJobsRequest<T> request,
+      final int preferredPartitionId) {
 
     final BrokerClusterState topology = brokerClient.getTopologyManager().getTopology();
     if (topology != null) {
       state.addActiveRequest(request);
 
       final int partitionsCount = topology.getPartitionsCount();
-      activateJobsHandler.activateJobs(
-          partitionsCount,
-          request,
+      final Consumer<Throwable> onError =
           error ->
               actor.submit(
                   () -> {
                     request.onError(error);
                     state.removeActiveRequest(request);
-                  }),
+                  });
+      final BiConsumer<Integer, Boolean> onCompleted =
           (remainingAmount, containedResourceExhaustedResponse) -> {
             final boolean noJobsActivated = remainingAmount == request.getMaxJobsToActivate();
             if (noJobsActivated) {
@@ -206,10 +220,17 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
                     request.complete();
                     state.removeActiveRequest(request);
                     state.resetFailedAttempts();
-                    handlePendingRequests(state, request.getType());
+                    handlePendingRequests(state, request.getType(), -1);
                   });
             }
-          });
+          };
+
+      if (preferredPartitionId > 0) {
+        activateJobsHandler.activateJobs(
+            partitionsCount, preferredPartitionId, request, onError, onCompleted);
+      } else {
+        activateJobsHandler.activateJobs(partitionsCount, request, onError, onCompleted);
+      }
     }
   }
 
@@ -271,6 +292,11 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
   }
 
   void internalActivateJobsRetry(final InflightActivateJobsRequest<T> request) {
+    internalActivateJobsRetry(request, -1);
+  }
+
+  void internalActivateJobsRetry(
+      final InflightActivateJobsRequest<T> request, final int preferredPartitionId) {
     actor.run(
         () -> {
           final String jobType = request.getType();
@@ -280,15 +306,16 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
                   type -> new InFlightLongPollingActivateJobsRequestsState<>(type, metrics));
 
           if (state.shouldAttempt(failedAttemptThreshold)) {
-            tryToActivateJobsOnAllPartitions(state, request);
+            tryToActivateJobsOnAllPartitions(state, request, preferredPartitionId);
           } else {
             completeOrResubmitRequest(request, false);
           }
         });
   }
 
-  private void onJobAvailableNotification(final String jobType) {
-    LOG.trace("Received jobs available notification for type {}.", jobType);
+  private void onJobAvailableNotification(final String jobType, final int partitionId) {
+    LOG.trace(
+        "Received jobs available notification for type {} on partition {}.", jobType, partitionId);
 
     // instead of calling #getJobTypeState(), do only a
     // get to avoid the creation of a state instance.
@@ -299,7 +326,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
       actor.run(
           () -> {
             state.resetFailedAttempts();
-            handlePendingRequests(state, jobType);
+            handlePendingRequests(state, jobType, partitionId);
             state.completeNotification();
           });
     } else {
@@ -308,14 +335,16 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
   }
 
   private void handlePendingRequests(
-      final InFlightLongPollingActivateJobsRequestsState<T> state, final String jobType) {
+      final InFlightLongPollingActivateJobsRequestsState<T> state,
+      final String jobType,
+      final int partitionId) {
     final Queue<InflightActivateJobsRequest<T>> pendingRequests = state.getPendingRequests();
 
     if (!pendingRequests.isEmpty()) {
       pendingRequests.forEach(
           nextPendingRequest -> {
             LOG.trace("Unblocking ActivateJobsRequest {}", nextPendingRequest.getRequest());
-            internalActivateJobsRetry(nextPendingRequest);
+            internalActivateJobsRetry(nextPendingRequest, partitionId);
           });
     } else {
       if (!state.hasActiveRequests()) {
