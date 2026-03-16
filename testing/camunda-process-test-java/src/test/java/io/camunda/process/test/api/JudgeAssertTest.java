@@ -93,8 +93,7 @@ public class JudgeAssertTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       final Variable variable = newVariable("result", "\"Hello, World!\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -112,8 +111,7 @@ public class JudgeAssertTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       final Variable variable = newVariable("result", "\"random text\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -136,8 +134,7 @@ public class JudgeAssertTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       final Variable variable = newVariable("result", "\"some text\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -154,8 +151,7 @@ public class JudgeAssertTest {
       final ChatModelAdapter mockModel = prompt -> "{\"score\": 1.0, \"reasoning\": \"ok\"}";
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.emptyList());
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.emptyList());
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -191,8 +187,7 @@ public class JudgeAssertTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       final Variable variable = newVariable("result", "\"borderline value\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -209,8 +204,7 @@ public class JudgeAssertTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       final Variable variable = newVariable("result", "\"some value\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -236,8 +230,7 @@ public class JudgeAssertTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       final Variable variable = newVariable("result", "\"some value\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -277,8 +270,7 @@ public class JudgeAssertTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel).withThreshold(0.0));
 
       final Variable variable = newVariable("result", null);
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -300,8 +292,7 @@ public class JudgeAssertTest {
                       .build()));
 
       final Variable variable = newVariable("result", "\"Hello\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -320,8 +311,7 @@ public class JudgeAssertTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel).withThreshold(0.8));
 
       final Variable variable = newVariable("result", "\"some value\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -538,8 +528,7 @@ public class JudgeAssertTest {
           JudgeConfig.of(mockModel).withCustomPrompt("You are a domain-specific evaluator."));
 
       final Variable variable = newVariable("result", "\"Hello\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -569,8 +558,7 @@ public class JudgeAssertTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       final Variable variable = newVariable("result", "\"Hello\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -600,8 +588,7 @@ public class JudgeAssertTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(globalModel));
 
       final Variable variable = newVariable("result", "\"Hello\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -630,8 +617,7 @@ public class JudgeAssertTest {
 
       final Variable varA = newVariable("varA", "\"value A\"");
       final Variable varB = newVariable("varB", "\"value B\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(varA, varB));
+      when(camundaDataSource.findVariables(any())).thenReturn(Arrays.asList(varA, varB));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -673,8 +659,7 @@ public class JudgeAssertTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       final Variable variable = newVariable("result", "\"Hello\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -695,8 +680,7 @@ public class JudgeAssertTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       final Variable variable = newVariable("result", "\"some text\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -718,8 +702,7 @@ public class JudgeAssertTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel));
 
       final Variable variable = newVariable("result", "\"Hello\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -740,8 +723,7 @@ public class JudgeAssertTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(mockModel).withThreshold(0.5));
 
       final Variable variable = newVariable("result", "\"Hello\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -760,8 +742,7 @@ public class JudgeAssertTest {
       final ChatModelAdapter mockModel = prompt -> "{\"score\": 0.9, \"reasoning\": \"match\"}";
 
       final Variable variable = newVariable("result", "\"Hello\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -801,8 +782,7 @@ public class JudgeAssertTest {
       CamundaAssert.setJudgeConfig(JudgeConfig.of(globalModel));
 
       final Variable variable = newVariable("result", "\"Hello\"");
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variable));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variable));
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 

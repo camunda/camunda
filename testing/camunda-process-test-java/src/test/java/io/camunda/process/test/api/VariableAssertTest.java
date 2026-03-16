@@ -22,9 +22,11 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.assertions.ElementSelectors;
+import io.camunda.process.test.api.assertions.VariableSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.utils.CamundaAssertExpectFailure;
 import io.camunda.process.test.utils.CamundaAssertExtension;
@@ -36,6 +38,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -47,6 +50,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -225,8 +231,7 @@ public class VariableAssertTest {
       // given
       final Variable variableA = newVariable("a", variableValue);
 
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variableA));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variableA));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -241,7 +246,7 @@ public class VariableAssertTest {
       final Variable variableA = newVariable("a", "1");
       final Variable variableB = newVariable("b", "2");
 
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariables(any()))
           .thenReturn(Collections.singletonList(variableB))
           .thenReturn(Arrays.asList(variableA, variableB));
 
@@ -251,8 +256,7 @@ public class VariableAssertTest {
       // then
       CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasVariable("a", 1);
 
-      verify(camundaDataSource, times(2))
-          .findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findVariables(any());
     }
 
     @Test
@@ -260,7 +264,7 @@ public class VariableAssertTest {
       // given
       final Variable variableWithNull = newVariable("a", null);
 
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariables(any()))
           .thenReturn(Collections.singletonList(variableWithNull));
 
       // when
@@ -276,7 +280,7 @@ public class VariableAssertTest {
       final Variable variableValue1 = newVariable("a", "1");
       final Variable variableValue2 = newVariable("a", "2");
 
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariables(any()))
           .thenReturn(Collections.singletonList(variableValue1))
           .thenReturn(Collections.singletonList(variableValue2));
 
@@ -286,19 +290,14 @@ public class VariableAssertTest {
       // then
       CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasVariable("a", 2);
 
-      verify(camundaDataSource, times(2))
-          .findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findVariables(any());
     }
 
     @Test
     @CamundaAssertExpectFailure
     void shouldFailIfVariableNotExist() {
       // given
-      final Variable variableA = newVariable("a", "1");
-      final Variable variableB = newVariable("b", "2");
-
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(variableA, variableB));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.emptyList());
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -319,8 +318,7 @@ public class VariableAssertTest {
       final Variable variableA = newVariable("a", "1");
       final Variable variableB = newVariable("b", "2");
 
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Arrays.asList(variableA, variableB));
+      when(camundaDataSource.findVariables(any())).thenReturn(Arrays.asList(variableA, variableB));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -341,8 +339,7 @@ public class VariableAssertTest {
       // given
       final Variable variableA = newVariable("a", variableValue);
 
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.singletonList(variableA));
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.singletonList(variableA));
 
       // when
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -625,7 +622,7 @@ public class VariableAssertTest {
     @SuppressWarnings("unchecked")
     void shouldSatisfyConditions() {
       // given
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariables(any()))
           .thenReturn(Collections.singletonList(complexVariable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -688,7 +685,7 @@ public class VariableAssertTest {
     @Test
     void shouldSatisfyConditionsWithJsonDeserialization() {
       // given
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariables(any()))
           .thenReturn(Collections.singletonList(complexVariable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -704,7 +701,7 @@ public class VariableAssertTest {
       final Variable variableA = newVariable("a", "1");
       final Variable variableB = newVariable("b", "2");
 
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariables(any()))
           .thenReturn(Collections.singletonList(variableB))
           .thenReturn(Arrays.asList(variableA, variableB));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
@@ -714,15 +711,14 @@ public class VariableAssertTest {
           .hasVariableSatisfies(
               "a", String.class, value -> Assertions.assertThat(value).isEqualTo("1"));
 
-      verify(camundaDataSource, times(2))
-          .findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(camundaDataSource, times(2)).findVariables(any());
     }
 
     @Test
     @CamundaAssertExpectFailure
     void shouldHaveSensibleErrorMessageWhenAssertionFails() {
       // given
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariables(any()))
           .thenReturn(Collections.singletonList(complexVariable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -759,7 +755,7 @@ public class VariableAssertTest {
     @CamundaAssertExpectFailure
     void shouldHaveSensibleErrorMessageWhenJsonMappingFails() {
       // given
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariables(any()))
           .thenReturn(Collections.singletonList(complexVariable));
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
@@ -781,8 +777,7 @@ public class VariableAssertTest {
     @CamundaAssertExpectFailure
     void shouldHaveSensibleErrorMessageWhenNoVariablesFound() {
       // given
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
-          .thenReturn(Collections.emptyList());
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.emptyList());
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
       // then
@@ -801,7 +796,7 @@ public class VariableAssertTest {
     @CamundaAssertExpectFailure
     void shouldConvertCheckedExceptions() {
       // given
-      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findVariables(any()))
           .thenReturn(Collections.singletonList(complexVariable));
 
       // when
@@ -818,6 +813,266 @@ public class VariableAssertTest {
                             throw new Exception("Error");
                           }))
           .hasMessage("java.lang.Exception: Error");
+    }
+  }
+
+  @Nested
+  class VariableSource {
+
+    @Mock private VariableFilter variableFilter;
+
+    @Captor private ArgumentCaptor<Consumer<VariableFilter>> variableFilterCaptor;
+
+    @BeforeEach
+    void configureMocks() {
+      final Variable variableA = newVariable("a", "1");
+      final Variable variableB = newVariable("b", "2");
+
+      when(camundaDataSource.findVariables(any())).thenReturn(Arrays.asList(variableA, variableB));
+    }
+
+    @Test
+    void shouldUseByNameSelector() {
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasVariable(VariableSelectors.byName("a"), 1);
+
+      verify(camundaDataSource).findVariables(variableFilterCaptor.capture());
+
+      variableFilterCaptor.getValue().accept(variableFilter);
+      verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(variableFilter).name("a");
+    }
+
+    @Test
+    void shouldUseByScopeKeySelector() {
+      // given
+      final long scopeKey = 42L;
+      final Variable variableWithScope =
+          VariableBuilder.newVariable("x", "\"hello\"").setScopeKey(scopeKey).build();
+
+      when(camundaDataSource.findVariables(any()))
+          .thenReturn(Collections.singletonList(variableWithScope));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasVariable(VariableSelectors.byScopeKey(scopeKey), "hello");
+
+      verify(camundaDataSource).findVariables(variableFilterCaptor.capture());
+
+      variableFilterCaptor.getValue().accept(variableFilter);
+      verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(variableFilter).scopeKey(scopeKey);
+    }
+
+    @Test
+    void shouldUseByValueContainsSelector() {
+      // given
+      final Variable variableWithValue =
+          VariableBuilder.newVariable("order", "\"order-123\"").build();
+
+      when(camundaDataSource.findVariables(any()))
+          .thenReturn(Collections.singletonList(variableWithValue));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasVariable(VariableSelectors.byValueContains("order-123"), "order-123");
+
+      verify(camundaDataSource).findVariables(variableFilterCaptor.capture());
+
+      variableFilterCaptor.getValue().accept(variableFilter);
+      verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(variableFilter).value(ArgumentMatchers.<Consumer>any());
+    }
+
+    @Test
+    void shouldUseCombinedSelector() {
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasVariable(
+              VariableSelectors.byName("a").and(VariableSelectors.byValueContains("1")), 1);
+
+      verify(camundaDataSource).findVariables(variableFilterCaptor.capture());
+
+      variableFilterCaptor.getValue().accept(variableFilter);
+      verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(variableFilter).name("a");
+      verify(variableFilter).value(ArgumentMatchers.<Consumer>any());
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldFailIfNoVariableMatchesSelector() {
+      // given
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariable(VariableSelectors.byName("missing"), "value"))
+          .hasMessage(
+              "Process instance [key: %d] should have a variable 'missing' with value '\"value\"' but the variable doesn't exist.",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldFailWithScopeKeySelectorDescriptionInMessage() {
+      // given
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariable(VariableSelectors.byScopeKey(99L), "value"))
+          .hasMessage(
+              "Process instance [key: %d] should have a variable 'scopeKey: 99' with value '\"value\"' but the variable doesn't exist.",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldFailWithValueContainsSelectorDescriptionInMessage() {
+      // given
+      when(camundaDataSource.findVariables(any())).thenReturn(Collections.emptyList());
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasVariable(VariableSelectors.byValueContains("foo"), "bar"))
+          .hasMessage(
+              "Process instance [key: %d] should have a variable 'value contains: foo' with value '\"bar\"' but the variable doesn't exist.",
+              PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldHasVariableSatisfiesWithByNameSelector() {
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasVariableSatisfies(
+              VariableSelectors.byName("a"),
+              String.class,
+              value -> Assertions.assertThat(value).isEqualTo("1"));
+
+      verify(camundaDataSource).findVariables(variableFilterCaptor.capture());
+
+      variableFilterCaptor.getValue().accept(variableFilter);
+      verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(variableFilter).name("a");
+    }
+
+    @Test
+    void shouldHasLocalVariableWithVariableSelector() {
+      // given
+      final String elementId = "element-id";
+      final ElementInstance elementInstance =
+          ElementInstanceBuilder.newActiveElementInstance(elementId, PROCESS_INSTANCE_KEY)
+              .setElementInstanceKey(10L)
+              .build();
+
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Collections.singletonList(elementInstance));
+      when(camundaDataSource.findVariables(any()))
+          .thenReturn(Collections.singletonList(newVariable("a", "1")));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasLocalVariable(ElementSelectors.byId(elementId), VariableSelectors.byName("a"), 1);
+
+      verify(camundaDataSource).findVariables(variableFilterCaptor.capture());
+
+      variableFilterCaptor.getValue().accept(variableFilter);
+      verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(variableFilter).scopeKey(10L);
+      verify(variableFilter).name("a");
+    }
+
+    @Test
+    void shouldHasLocalVariableSatisfiesWithVariableSelector() {
+      // given
+      final String elementId = "element-id";
+      final ElementInstance elementInstance =
+          ElementInstanceBuilder.newActiveElementInstance(elementId, PROCESS_INSTANCE_KEY)
+              .setElementInstanceKey(10L)
+              .build();
+
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Collections.singletonList(elementInstance));
+      when(camundaDataSource.findVariables(any()))
+          .thenReturn(Collections.singletonList(newVariable("a", "\"hello\"")));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasLocalVariableSatisfies(
+              ElementSelectors.byId(elementId),
+              VariableSelectors.byName("a"),
+              String.class,
+              value -> Assertions.assertThat(value).isEqualTo("hello"));
+
+      verify(camundaDataSource).findVariables(variableFilterCaptor.capture());
+
+      variableFilterCaptor.getValue().accept(variableFilter);
+      verify(variableFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(variableFilter).scopeKey(10L);
+      verify(variableFilter).name("a");
+    }
+
+    @Test
+    void shouldDescribeCombinedSelector() {
+      // given
+      final long scopeKey = PROCESS_INSTANCE_KEY;
+      final Variable variableWithScope =
+          VariableBuilder.newVariable("a", "1")
+              .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+              .setScopeKey(scopeKey)
+              .build();
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      when(camundaDataSource.findVariables(any()))
+          .thenReturn(Collections.emptyList())
+          .thenReturn(Collections.singletonList(variableWithScope));
+
+      // then: combined selector describe = "a, scopeKey: 1" - waits until variable matches
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasVariable(
+              VariableSelectors.byName("a").and(VariableSelectors.byScopeKey(scopeKey)), 1);
+
+      verify(camundaDataSource, times(2)).findVariables(any());
     }
   }
 }
