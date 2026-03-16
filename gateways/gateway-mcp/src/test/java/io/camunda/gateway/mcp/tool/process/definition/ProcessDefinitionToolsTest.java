@@ -288,6 +288,29 @@ class ProcessDefinitionToolsTest extends ToolsTest {
       final ProcessDefinitionQuery capturedQuery = queryCaptor.getValue();
       assertThat(capturedQuery.filter().tenantIds()).isEmpty();
     }
+
+    @Test
+    void shouldFailSearchProcessDefinitionsOnInvalidKeyFilter() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchProcessDefinitions")
+                  .arguments(Map.of("filter", Map.of("processDefinitionKey", "abc")))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNotNull();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getDetail()).matches("(?s).*abc.*");
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+
+      assertTextContentFallback(result);
+    }
   }
 
   @Nested

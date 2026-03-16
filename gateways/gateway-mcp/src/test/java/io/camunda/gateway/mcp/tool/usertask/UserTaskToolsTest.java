@@ -568,6 +568,52 @@ class UserTaskToolsTest extends ToolsTest {
 
       assertTextContentFallback(result);
     }
+
+    @Test
+    void shouldFailSearchUserTasksOnInvalidKeyFilter() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchUserTasks")
+                  .arguments(Map.of("filter", Map.of("userTaskKey", "abc")))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNotNull();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getDetail()).matches("(?s).*abc.*");
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+
+      assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldFailSearchUserTasksOnInvalidDateFilter() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchUserTasks")
+                  .arguments(Map.of("filter", Map.of("creationDate", Map.of("from", "not-a-date"))))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNotNull();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getDetail()).contains("Failed to parse date-time: [not-a-date]");
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+
+      assertTextContentFallback(result);
+    }
   }
 
   @Nested
