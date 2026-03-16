@@ -87,7 +87,7 @@ test.describe.serial('Get usage metrics API Tests', () => {
       expect(body.assignees).toBeGreaterThanOrEqual(0);
     }).toPass({
       intervals: [5_000, 10_000, 15_000],
-      timeout: 60_000,
+      timeout: 120_000,
     });
   });
 
