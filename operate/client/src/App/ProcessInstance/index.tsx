@@ -16,7 +16,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {reaction, when} from 'mobx';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {elementTimeStampStore} from 'modules/stores/elementTimeStamp';
-import {ProcessInstanceHeader} from './ProcessInstanceHeaderNext';
+import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {TopPanel} from './TopPanel';
 import {
   BottomPanelNew,

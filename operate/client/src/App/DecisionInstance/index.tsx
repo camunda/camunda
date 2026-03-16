@@ -15,7 +15,7 @@ import {Locations} from 'modules/Routes';
 import {notificationsStore} from 'modules/stores/notifications';
 import {InstanceDetail} from '../Layout/InstanceDetail';
 import {DecisionPanel} from './DecisionPanel';
-import {Header} from './HeaderNext';
+import {Header} from './Header';
 import {VariablesPanel} from './VariablesPanel';
 import {Forbidden} from 'modules/components/Forbidden';
 import {DrdPanel} from './DrdPanel';
