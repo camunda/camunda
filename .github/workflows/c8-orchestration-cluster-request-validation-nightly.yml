@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [stable/8.8, main]
+        branch: [stable/8.8, stable/8.9, main]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -46,7 +46,7 @@ jobs:
             tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
             operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
             identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
-            
+
             if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" && "$identity_status" != "Failed" ]]; then
               echo "Services are ready!"
               ready=true
@@ -152,6 +152,8 @@ jobs:
           CORE_APPLICATION_URL: "http://localhost:8080"
           ZEEBE_REST_ADDRESS: "http://localhost:8080"
           V2_STATELESS_TESTS: "true"
+          INCLUDE_SLACK_REPORTER: true
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
         run: |
           echo "Running V2 Stateless tests for branch: ${{ matrix.branch }}"
           # Use custom project configuration for request validation tests only
