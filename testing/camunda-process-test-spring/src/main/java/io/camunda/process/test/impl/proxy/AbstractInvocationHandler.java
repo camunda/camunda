@@ -90,12 +90,14 @@ public abstract class AbstractInvocationHandler<T> implements InvocationHandler 
       return method.invoke(delegate, args);
 
     } catch (final InvocationTargetException e) {
-      if (e.getCause() instanceof final AssertionError assertionError) {
-        // unwrap assertion errors to make them visible to the test framework
-        throw assertionError;
-      } else {
+      final Throwable cause = e.getCause();
+      if (cause == null) {
+        // Defensive fallback: propagate the original InvocationTargetException
         throw e;
       }
+
+      // Propagate checked exceptions as-is, for example, assertion errors
+      throw cause;
     }
   }
 
