@@ -158,16 +158,16 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     zeebeClient = createZeebeClient(camundaProcessTestContext);
 
     // fill proxies
-    testContext.getApplicationContext().getBean(CamundaClientProxy.class).setClient(client);
-    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).setClient(zeebeClient);
+    testContext.getApplicationContext().getBean(CamundaClientProxy.class).setDelegate(client);
+    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).setDelegate(zeebeClient);
     testContext
         .getApplicationContext()
         .getBean(CamundaProcessTestContextProxy.class)
-        .setContext(camundaProcessTestContext);
+        .setDelegate(camundaProcessTestContext);
     testContext
         .getApplicationContext()
         .getBean(TestCaseRunnerProxy.class)
-        .setRunner(new CamundaTestCaseRunner(camundaProcessTestContext));
+        .setDelegate(new CamundaTestCaseRunner(camundaProcessTestContext));
 
     // publish Zeebe client
     testContext
@@ -216,13 +216,13 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     closeCreatedClients();
 
     // clean up proxies
-    testContext.getApplicationContext().getBean(CamundaClientProxy.class).removeClient();
-    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).removeClient();
+    testContext.getApplicationContext().getBean(CamundaClientProxy.class).removeDelegate();
+    testContext.getApplicationContext().getBean(ZeebeClientProxy.class).removeDelegate();
     testContext
         .getApplicationContext()
         .getBean(CamundaProcessTestContextProxy.class)
-        .removeContext();
-    testContext.getApplicationContext().getBean(TestCaseRunnerProxy.class).removeRunner();
+        .removeDelegate();
+    testContext.getApplicationContext().getBean(TestCaseRunnerProxy.class).removeDelegate();
 
     // final steps: reset the time and delete data
     // It's important that the runtime clock is reset before the purge is started, as doing it

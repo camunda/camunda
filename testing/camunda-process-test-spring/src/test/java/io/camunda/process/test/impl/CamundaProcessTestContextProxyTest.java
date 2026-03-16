@@ -34,7 +34,7 @@ public class CamundaProcessTestContextProxyTest {
   void shouldThrowAssertionError() {
     // given
     final CamundaProcessTestContextProxy proxy = new CamundaProcessTestContextProxy();
-    proxy.setContext(camundaProcessTestContext);
+    proxy.setDelegate(camundaProcessTestContext);
 
     final AssertionError assertionError = new AssertionError("expected");
     doThrow(assertionError).when(camundaProcessTestContext).completeUserTask("elementId");
