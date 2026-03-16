@@ -7,7 +7,6 @@
  */
 package io.camunda.security.configuration;
 
-import io.camunda.security.configuration.headers.HeaderConfiguration;
 import java.util.regex.Pattern;
 
 /** Will be populated with the configuration properties of 'camunda.security' */
@@ -23,7 +22,6 @@ public class SecurityConfiguration {
   private InitializationConfiguration initialization = new InitializationConfiguration();
   private MultiTenancyConfiguration multiTenancy = new MultiTenancyConfiguration();
   private CsrfConfiguration csrf = new CsrfConfiguration();
-  private HeaderConfiguration httpHeaders = new HeaderConfiguration();
   private SaasConfiguration saas = new SaasConfiguration();
 
   /**
@@ -80,14 +78,6 @@ public class SecurityConfiguration {
 
   public void setSaas(final SaasConfiguration saas) {
     this.saas = saas;
-  }
-
-  public HeaderConfiguration getHttpHeaders() {
-    return httpHeaders;
-  }
-
-  public void setHttpHeaders(final HeaderConfiguration httpHeaders) {
-    this.httpHeaders = httpHeaders;
   }
 
   public CsrfConfiguration getCsrf() {
