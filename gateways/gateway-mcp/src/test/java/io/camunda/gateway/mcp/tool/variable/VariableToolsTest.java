@@ -364,5 +364,49 @@ class VariableToolsTest extends ToolsTest {
 
       assertTextContentFallback(result);
     }
+
+    @Test
+    void shouldRejectNonNumericProcessInstanceKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchVariables")
+                  .arguments(Map.of("filter", Map.of("processInstanceKey", "abc")))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getDetail()).contains("processInstanceKey").contains("abc");
+
+      assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldRejectNonNumericVariableKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchVariables")
+                  .arguments(Map.of("filter", Map.of("variableKey", "abc")))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getDetail()).contains("variableKey").contains("abc");
+
+      assertTextContentFallback(result);
+    }
   }
 }
