@@ -195,6 +195,7 @@ test.describe('Identity User Flows', () => {
       await page.goto(`${process.env.CORE_APPLICATION_URL}/tasklist`);
       await expect(page).toHaveURL(new RegExp(`tasklist`));
       await verifyAccess(page, true, 'tasklist');
+      await identityHeader.logout();
     });
 
     await test.step(`Logout, login with demo and delete the created authorization`, async () => {
