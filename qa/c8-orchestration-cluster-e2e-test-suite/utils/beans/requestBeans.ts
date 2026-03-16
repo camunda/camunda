@@ -283,6 +283,14 @@ export const expectedMessageSubscription3 = {
   processDefinitionId: 'messageCatchEvent1',
 };
 
+export const expectedMessageSubscription4 = {
+  messageName: 'Message_0b83s47',
+  correlationKey: '5938383',
+  tenantId: '<default>',
+  elementId: 'Event_0abmtxi',
+  processDefinitionId: 'messageCatchEvent4',
+};
+
 export const expectedMessageSubscription1DoubleProcess = {
   messageName: 'Message_256spvh',
   correlationKey: '9324715',
@@ -408,6 +416,12 @@ export const CORRELATE_MESSAGE2 = {
   name: expectedMessageSubscription2.messageName,
   correlationKey: expectedMessageSubscription2.correlationKey,
   variables: {foo: 'bar'},
+};
+
+export const CORRELATE_MESSAGE4 = {
+  name: expectedMessageSubscription4.messageName,
+  correlationKey: expectedMessageSubscription4.correlationKey,
+  tenantId: '<default>',
 };
 
 export const CORRELATE_MESSAGE_DOUBLE_1 = {
