@@ -44,11 +44,6 @@
       <artifactId>spring-beans</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
       <optional>true</optional>
@@ -156,6 +151,7 @@
                     <exclude>io/camunda/zeebe/spring/client/configuration/ZeebeActuatorConfiguration.class</exclude>
                     <exclude>io/camunda/zeebe/spring/client/configuration/ZeebeClientProdAutoConfiguration.class</exclude>
                     <exclude>io/camunda/zeebe/spring/client/configuration/CamundaAutoConfiguration.class</exclude>
+                    <exclude>io/camunda/zeebe/spring/client/configuration/ExecutorServiceConfiguration.class</exclude>
                     <!-- Exclude META-INF services that we override -->
                     <exclude>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</exclude>
                   </excludes>

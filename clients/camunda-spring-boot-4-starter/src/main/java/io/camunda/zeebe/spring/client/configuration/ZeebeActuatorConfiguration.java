@@ -21,13 +21,11 @@ import io.camunda.zeebe.spring.client.actuator.ZeebeClientHealthIndicator;
 import io.camunda.zeebe.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
 import io.micrometer.core.instrument.MeterRegistry;
-import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 
@@ -37,14 +35,15 @@ import org.springframework.context.annotation.Lazy;
  */
 @AutoConfigureBefore(MetricsDefaultConfiguration.class)
 @ConditionalOnCamundaClientEnabled
-@ConditionalOnClass({
-  EndpointAutoConfiguration.class,
-  MeterRegistry.class
-}) // only if actuator is on classpath
+@ConditionalOnClass(
+    name = {
+      "org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration",
+      "io.micrometer.core.instrument.MeterRegistry"
+    }) // only if actuator and micrometer (MeterRegistry) are on the classpath
 public class ZeebeActuatorConfiguration {
   @Bean
   @ConditionalOnMissingBean
-  @ConditionalOnBean(MeterRegistry.class)
+  @ConditionalOnBean(type = "io.micrometer.core.instrument.MeterRegistry")
   public MetricsRecorder micrometerMetricsRecorder(@Lazy final MeterRegistry meterRegistry) {
     return new MicrometerMetricsRecorder(meterRegistry);
   }
@@ -54,7 +53,7 @@ public class ZeebeActuatorConfiguration {
       prefix = "management.health.zeebe",
       name = "enabled",
       matchIfMissing = true)
-  @ConditionalOnClass(HealthIndicator.class)
+  @ConditionalOnClass(name = "org.springframework.boot.health.contributor.HealthIndicator")
   @ConditionalOnMissingBean(name = "zeebeClientHealthIndicator")
   public ZeebeClientHealthIndicator zeebeClientHealthIndicator(final ZeebeClient client) {
     return new ZeebeClientHealthIndicator(client);
