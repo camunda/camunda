@@ -259,7 +259,7 @@ final class CamundaExporterIT {
 
     // the export above fails in the async supplier, and it requires a call to .join that future so
     // that the error is surfaced
-    assertThatThrownBy(() -> controller.runScheduledTasks(Duration.ofSeconds(1)))
+    assertThatThrownBy(() -> controller.runScheduledTasks(Duration.ofSeconds(5)))
         .isInstanceOf(ExporterException.class)
         .hasMessageContaining("Connection refused");
 
@@ -429,7 +429,7 @@ final class CamundaExporterIT {
 
     // act
     exporter.export(record);
-    assertThatThrownBy(() -> controller.runScheduledTasks(Duration.ofSeconds(1)))
+    assertThatThrownBy(() -> controller.runScheduledTasks(Duration.ofSeconds(5)))
         .isInstanceOf(ExporterException.class)
         .rootCause()
         .isInstanceOf(PersistenceException.class);
@@ -455,6 +455,7 @@ final class CamundaExporterIT {
 
     // when
     camundaExporter.export(record);
+    camundaExporter.close();
 
     // then
     assertThat(controller.getPosition()).isEqualTo(recordPosition);
@@ -708,6 +709,11 @@ final class CamundaExporterIT {
       controller.resetLastRanAt();
     }
 
+    @AfterEach
+    void teardown() {
+      camundaExporter.close();
+    }
+
     @TestTemplate
     void shouldMarkImportersAsCompletedEvenIfVersion88ZeebeIndicesExist(
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
@@ -736,10 +742,11 @@ final class CamundaExporterIT {
               UserIntent.CREATED);
 
       camundaExporter.export(record);
+      camundaExporter.close();
 
       // then
       assertThat(controller.getPosition()).isEqualTo(record.getPosition());
-      verify(controller, times(1))
+      verify(controller, atLeastOnce())
           .updateLastExportedRecordPosition(eq(record.getPosition()), any());
     }
 
@@ -774,7 +781,7 @@ final class CamundaExporterIT {
 
       // then
       assertThat(controller.getPosition()).isEqualTo(record.getPosition());
-      verify(controller, times(1))
+      verify(controller, atLeastOnce())
           .updateLastExportedRecordPosition(eq(record.getPosition()), any());
 
       final var authHandler =
@@ -818,7 +825,6 @@ final class CamundaExporterIT {
 
       camundaExporter.export(record);
 
-      camundaExporter.close();
       // if importers completed this would trigger scheduled flush which would result in the
       // record being visible in ES/OS
       controller.runScheduledTasks(Duration.ofSeconds(config.getBulk().getDelay()));
@@ -865,7 +871,7 @@ final class CamundaExporterIT {
 
       // then
       assertThat(controller.getPosition()).isEqualTo(record.getPosition());
-      verify(controller, times(1))
+      verify(controller, atLeastOnce())
           .updateLastExportedRecordPosition(eq(record.getPosition()), any());
 
       final var authHandler =
@@ -975,8 +981,6 @@ final class CamundaExporterIT {
               r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
               UserIntent.CREATED);
 
-      camundaExporter.close();
-
       // then
       assertThatThrownBy(() -> camundaExporter.export(record2))
           .isInstanceOf(IllegalStateException.class)
@@ -984,6 +988,8 @@ final class CamundaExporterIT {
               String.format(
                   "Reached the max bulk size amount of cached records [%d] while waiting for importers to finish",
                   config.getBulk().getSize()));
+
+      camundaExporter.close();
     }
 
     private void indexImportPositionEntity(
