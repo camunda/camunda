@@ -85,6 +85,27 @@ ChatModel model = OpenAiChatModel.builder()
 CamundaAssert.setJudgeConfig(JudgeConfig.of(model::chat));
 ```
 
+### Spring bean registration
+
+To use a custom `ChatModelAdapter` bean instead of the SPI, register it with the bean name
+`"judge.<provider>"`. The `judge.` prefix avoids name collisions with beans registered for other
+features (e.g. semantic similarity):
+
+```java
+@Bean("judge.openaoi")
+ChatModelAdapter myChatModelAdapter() {
+  // custom OpenAI chat model adapter ...
+}
+```
+
+Then configure:
+```properties
+judge.chatModel.provider=openai
+```
+
+If only one `ChatModelAdapter` bean is present and no provider is configured, it is
+selected automatically (no naming convention required).
+
 ### Usage in tests
 
 ```java
@@ -163,11 +184,13 @@ camunda:
         model: text-embedding-3-small
 ```
 
-Alternatively, register an `EmbeddingModelAdapter` bean and it will be picked up automatically:
+Alternatively, register an `EmbeddingModelAdapter` bean with the name `"similarity.<provider>"`.
+When the provider is configured, the resolver looks for a bean named
+`"similarity.<provider>"`:
 
 ```java
-@Bean
-EmbeddingModelAdapter embeddingModelAdapter() {
+@Bean("similarity.openai")
+EmbeddingModelAdapter myEmbeddingModelAdapter() {
   EmbeddingModel model = OpenAiEmbeddingModel.builder()
     .apiKey(System.getenv("OPENAI_API_KEY"))
     .modelName("text-embedding-3-small")
@@ -175,6 +198,14 @@ EmbeddingModelAdapter embeddingModelAdapter() {
   return text -> model.embed(text).content().vector();
 }
 ```
+
+Then configure:
+```properties
+similarity.embeddingModel.provider=openai
+```
+
+If only one `EmbeddingModelAdapter` bean is present and no provider is configured, it is
+selected automatically (no naming convention required).
 
 ### Programmatic usage
 
