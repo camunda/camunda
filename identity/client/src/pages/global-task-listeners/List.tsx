@@ -19,6 +19,7 @@ import AddModal from "src/pages/global-task-listeners/modals/AddModal";
 import EditModal from "src/pages/global-task-listeners/modals/EditModal";
 import DeleteModal from "src/pages/global-task-listeners/modals/DeleteModal";
 import PageEmptyState from "src/components/layout/PageEmptyState";
+import { getEventTypeLabels } from "src/pages/global-task-listeners/index.tsx";
 
 const List: FC = () => {
   const { t } = useTranslate("globalTaskListeners");
@@ -78,9 +79,7 @@ const List: FC = () => {
       : t("executionOrderBefore"),
     // Display event types with user-friendly translations, and handle the "all" case
     // Note that we could use a different key here since sorting by event types is not supported by the API
-    eventTypes: listener.eventTypes.includes("all")
-      ? t("eventTypeAll")
-      : listener.eventTypes.join(", "),
+    eventTypes: getEventTypeLabels(listener.eventTypes, t),
     // Keep a reference to the original listener object for use in edit and delete actions
     originalListener: listener,
   }));
