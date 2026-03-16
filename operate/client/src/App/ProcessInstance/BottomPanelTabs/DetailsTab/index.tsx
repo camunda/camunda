@@ -240,7 +240,6 @@ const DetailsTab: React.FC = () => {
     elementInstanceKey,
     job,
     businessObject,
-    resolvedElementType,
     calledProcessInstance,
     calledProcessInstancesCount,
     processInstance,
