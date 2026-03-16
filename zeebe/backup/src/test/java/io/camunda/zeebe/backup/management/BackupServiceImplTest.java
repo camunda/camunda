@@ -326,6 +326,58 @@ class BackupServiceImplTest {
   }
 
   @Test
+  void shouldOnlyMarkBackupsAsFailedWithCheckpointIdLessThanOrEqualToLastCheckpointId() {
+    // given
+    final long lastCheckpointId = 10;
+    final var backupWithLowerCheckpointId = new BackupIdentifierImpl(1, 1, 5);
+    final var backupWithEqualCheckpointId = new BackupIdentifierImpl(2, 1, 10);
+    final var backupWithHigherCheckpointId = new BackupIdentifierImpl(3, 1, 15);
+
+    final var lowerCheckpointStatus =
+        new BackupStatusImpl(
+            backupWithLowerCheckpointId,
+            Optional.empty(),
+            BackupStatusCode.IN_PROGRESS,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var equalCheckpointStatus =
+        new BackupStatusImpl(
+            backupWithEqualCheckpointId,
+            Optional.empty(),
+            BackupStatusCode.IN_PROGRESS,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var higherCheckpointStatus =
+        new BackupStatusImpl(
+            backupWithHigherCheckpointId,
+            Optional.empty(),
+            BackupStatusCode.IN_PROGRESS,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+
+    when(backupStore.list(any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                List.of(lowerCheckpointStatus, equalCheckpointStatus, higherCheckpointStatus)));
+    when(backupStore.markFailed(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(BackupStatusCode.FAILED));
+
+    // when
+    backupService.failInProgressBackups(1, lastCheckpointId, concurrencyControl);
+
+    // then
+    final var expectedFailureReason = "Backup is cancelled due to leader change.";
+    verify(backupStore, timeout(1000))
+        .markFailed(backupWithLowerCheckpointId, expectedFailureReason);
+    verify(backupStore, timeout(1000))
+        .markFailed(backupWithEqualCheckpointId, expectedFailureReason);
+    verify(backupStore, never()).markFailed(backupWithHigherCheckpointId, expectedFailureReason);
+  }
+
+  @Test
   void shouldNotTakeNewBackupIfBackupAlreadyCompleted() {
     // given
     final ControllableInProgressBackup inProgressBackup = new ControllableInProgressBackup();
@@ -823,6 +875,43 @@ class BackupServiceImplTest {
     when(meta.getCheckpointType()).thenReturn(type);
     when(meta.getFirstLogPosition()).thenReturn(firstLogPosition);
     return meta;
+  }
+
+  @Test
+  void shouldWriteClearStateCommandToLog() {
+    // when
+    backupService.writeClearStateCommand(concurrencyControl).join();
+
+    // then
+    verify(logStreamWriter)
+        .tryWrite(
+            eq(WriteContext.internal()),
+            assertArg(
+                (final LogAppendEntry entry) -> {
+                  assertThat(entry.recordMetadata().getRecordType()).isEqualTo(RecordType.COMMAND);
+                  assertThat(entry.recordMetadata().getIntent())
+                      .isEqualTo(CheckpointIntent.CLEAR_STATE);
+                  assertThat(entry.recordValue()).isInstanceOf(CheckpointRecord.class);
+                }));
+    // state reset only writes to the log — backup store is not touched directly
+    verify(backupStore, never()).delete(any());
+  }
+
+  @Test
+  void shouldFailClearStateWhenLogWriteFails() {
+    // given
+    when(logStreamWriter.tryWrite(any(), any(LogAppendEntry.class)))
+        .thenReturn(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
+
+    // when
+    final var result = backupService.writeClearStateCommand(concurrencyControl);
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Failed to write CLEAR_STATE command");
+    verify(backupStore, never()).delete(any());
   }
 
   class ControllableInProgressBackup implements InProgressBackup {

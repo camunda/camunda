@@ -34,7 +34,7 @@ const useProcessInstance = <T = ProcessInstance>(
         }
       : skipToken,
     select,
-
+    staleTime: 500,
     refetchInterval: (query) => {
       const processInstance = query.state.data;
       if (processInstance !== undefined && isInstanceRunning(processInstance)) {

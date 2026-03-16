@@ -208,10 +208,16 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/Username'
         name:
           description: The name of the user.
+          nullable: true
           type: string
         email:
           description: The email of the user.
+          nullable: true
           type: string
+      required:
+        - username
+        - name
+        - email
 
     UserUpdateRequest:
       type: object
@@ -233,10 +239,16 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/Username'
         name:
           description: The name of the user.
+          nullable: true
           type: string
         email:
           description: The email of the user.
+          nullable: true
           type: string
+      required:
+        - username
+        - name
+        - email
 
     UserResult:
       type: object
@@ -245,10 +257,16 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/Username'
         name:
           description: The name of the user.
+          nullable: true
           type: string
         email:
           description: The email of the user.
+          nullable: true
           type: string
+      required:
+        - username
+        - name
+        - email
 
     UserSearchQuerySortRequest:
       type: object

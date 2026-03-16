@@ -294,8 +294,10 @@ public class SwimMembershipProtocol
         // Although this would not happen, we handle the case where the higher node version has a
         // lower incarnation number.
         || member.nodeVersion() > swimMember.nodeVersion()) {
-      // If the member's version has changed, remove the old member and add the new member.
-      if (!Objects.equals(member.version(), swimMember.version())) {
+      // If the member's software version or nodeVersion has changed, remove the old member and add
+      // the new member.
+      if (!Objects.equals(member.version(), swimMember.version())
+          || member.nodeVersion() > swimMember.nodeVersion()) {
         members.remove(member.id());
         randomMembers.remove(swimMember);
         post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_REMOVED, swimMember.copy()));
@@ -595,21 +597,25 @@ public class SwimMembershipProtocol
     PROBE_LOGGER.trace(
         "{} - Received probe {} from {}", this.localMember.id(), localMember, remoteMember);
 
-    if (localMember.nodeVersion() < this.localMember.nodeVersion()) {
-      LOGGER.debug(
-          "Detected lower version for member {} (local: {}, remote: {}). Ignoring the probe.",
-          this.localMember.id(),
-          this.localMember.nodeVersion(),
-          localMember.nodeVersion());
-      return this.localMember.copy();
-    } else if (localMember.nodeVersion() > this.localMember.nodeVersion()) {
-      LOGGER.debug(
-          "Detected higher version for member {} (local: {}, remote: {}). Leaving the cluster.",
-          this.localMember.id(),
-          this.localMember.nodeVersion(),
-          localMember.nodeVersion());
-      leave(this.localMember);
-      return this.localMember.copy();
+    if (Objects.equals(this.localMember.id(), localMember.id())) {
+      // id can be just the host address if the probe uses the configured initial contact points. In
+      // that case do not compare nodeVersion as it will be always 0.
+      if (localMember.nodeVersion() < this.localMember.nodeVersion()) {
+        LOGGER.debug(
+            "Detected lower version for member {} (local: {}, remote: {}). Ignoring the probe.",
+            this.localMember.id(),
+            this.localMember.nodeVersion(),
+            localMember.nodeVersion());
+        return this.localMember.copy();
+      } else if (localMember.nodeVersion() > this.localMember.nodeVersion()) {
+        LOGGER.debug(
+            "Detected higher version for member {} (local: {}, remote: {}). Leaving the cluster.",
+            this.localMember.id(),
+            this.localMember.nodeVersion(),
+            localMember.nodeVersion());
+        leave(this.localMember);
+        return this.localMember.copy();
+      }
     }
 
     // If the probe indicates a term greater than the local term, update the local term, increment

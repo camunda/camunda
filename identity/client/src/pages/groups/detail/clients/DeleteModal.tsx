@@ -14,11 +14,11 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { Client, Group } from "src/utility/api/groups";
 import { unassignGroupClient } from "src/utility/api/groups";
+import type { Group, TenantClient } from "@camunda/camunda-api-zod-schemas/8.9";
 
 type RemoveGroupClientModalProps = UseEntityModalCustomProps<
-  Client,
+  TenantClient,
   {
     groupId: Group["groupId"];
   }

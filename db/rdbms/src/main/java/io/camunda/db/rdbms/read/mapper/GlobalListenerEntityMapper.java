@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.mapper;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.write.domain.GlobalListenerDbModel;
 import io.camunda.search.entities.GlobalListenerEntity;
 
@@ -17,8 +19,8 @@ public class GlobalListenerEntityMapper {
     }
     return new GlobalListenerEntity(
         dbModel.id(),
-        dbModel.listenerId(),
-        dbModel.type(),
+        nullToEmpty(dbModel.listenerId()),
+        nullToEmpty(dbModel.type()),
         dbModel.eventTypes(),
         dbModel.retries(),
         dbModel.afterNonGlobal(),

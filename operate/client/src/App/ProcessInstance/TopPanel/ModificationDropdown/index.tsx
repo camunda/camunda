@@ -65,7 +65,7 @@ const ModificationDropdown: React.FC<Props> = observer(
       useTotalRunningInstancesForElement(selectedElementId ?? undefined);
     const {data: totalRunningInstancesVisible} =
       useTotalRunningInstancesVisibleForElement(selectedElementId ?? undefined);
-    const {data: totalRunningInstancesByFlowNode} =
+    const {data: totalRunningInstancesByElement} =
       useTotalRunningInstancesByElement();
 
     // true if an element instance is selected from the element history tree
@@ -177,7 +177,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                             if (
                               hasMultipleScopes(
                                 parentElement,
-                                totalRunningInstancesByFlowNode,
+                                totalRunningInstancesByElement,
                               )
                             ) {
                               modificationsStore.startAddingToken(

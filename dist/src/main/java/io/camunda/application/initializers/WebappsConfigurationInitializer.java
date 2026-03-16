@@ -30,14 +30,8 @@ public class WebappsConfigurationInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
   public static final String CAMUNDA_WEBAPPS_ENABLED_PROPERTY = "camunda.webapps.enabled";
-  private static final String CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY = "camunda.webapps.default-app";
-  private static final String CAMUNDA_WEBAPPS_LOGIN_DELEGATED_PROPERTY =
-      "camunda.webapps.login-delegated";
-  private static final String SERVER_SERVLET_SESSION_COOKIE_NAME_PROPERTY =
-      "server.servlet.session.cookie.name";
   private static final Set<String> WEBAPPS_PROFILES =
       Set.of(OPERATE.getId(), TASKLIST.getId(), IDENTITY.getId(), ADMIN.getId());
-  private static final String RESOURCES_LOCATION_PROPERTY = "spring.web.resources.static-locations";
   private static final String DEFAULT_RESOURCES_LOCATION = "classpath:/META-INF/resources/";
   private static final String AUTHORIZATIONS_ENABLED_PROPERTY =
       "camunda.security.authorizations.enabled";
@@ -58,9 +52,8 @@ public class WebappsConfigurationInitializer
       propertyMap.put("spring.thymeleaf.check-template-location", true);
       propertyMap.put("spring.thymeleaf.prefix", DEFAULT_RESOURCES_LOCATION);
 
-      propertyMap.put(CAMUNDA_WEBAPPS_LOGIN_DELEGATED_PROPERTY, isLoginDelegated(context));
-      propertyMap.put(
-          SERVER_SERVLET_SESSION_COOKIE_NAME_PROPERTY, WebSecurityConfig.SESSION_COOKIE);
+      propertyMap.put("camunda.webapps.login-delegated", isLoginDelegated(context));
+      propertyMap.put("server.servlet.session.cookie.name", WebSecurityConfig.SESSION_COOKIE);
     }
 
     // locations and home page
@@ -120,9 +113,9 @@ public class WebappsConfigurationInitializer
 
     // Store locations, default homepage and merge everything
 
-    propertyMap.put(RESOURCES_LOCATION_PROPERTY, locations);
+    propertyMap.put("spring.web.resources.static-locations", locations);
     if (defaultWebapp != null) {
-      propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, defaultWebapp);
+      propertyMap.put("camunda.webapps.default-app", defaultWebapp);
     }
     DefaultPropertiesPropertySource.addOrMerge(propertyMap, propertySources);
   }

@@ -37,7 +37,9 @@ import {IdentityMappingRulesPage} from '@pages/IdentityMappingRulesPage';
 import {IdentityRolesPage} from '@pages/IdentityRolesPage';
 import {IdentityTenantsPage} from '@pages/IdentityTenantsPage';
 import {IdentityRolesDetailsPage} from '@pages/IdentityRolesDetailsPage';
+import {IdentityAuditLogPage} from '@pages/IdentityAuditLogPage';
 import {OperateOperationsDetailsPage} from '@pages/OperateOperationsDetailsPage';
+import {OperateOperationsLogPage} from '@pages/OperateOperationsLogPage';
 
 import {sleep} from 'utils/sleep';
 
@@ -61,6 +63,7 @@ type PlaywrightFixtures = {
   operateProcessModificationModePage: OperateProcessModificationModePage;
   operateProcessInstanceViewModificationModePage: OperateProcessInstanceViewModificationModePage;
   operateOperationsDetailsPage: OperateOperationsDetailsPage;
+  operateOperationsLogPage: OperateOperationsLogPage;
   taskDetailsPage: TaskDetailsPage;
   tasklistHeader: TasklistHeader;
   tasklistProcessesPage: TasklistProcessesPage;
@@ -74,6 +77,7 @@ type PlaywrightFixtures = {
   identityRolesPage: IdentityRolesPage;
   identityTenantsPage: IdentityTenantsPage;
   identityRolesDetailsPage: IdentityRolesDetailsPage;
+  identityAuditLogPage: IdentityAuditLogPage;
 };
 
 const test = base.extend<PlaywrightFixtures>({
@@ -130,6 +134,9 @@ const test = base.extend<PlaywrightFixtures>({
   },
   operateOperationsDetailsPage: async ({page}, use) => {
     await use(new OperateOperationsDetailsPage(page));
+  },
+  operateOperationsLogPage: async ({page}, use) => {
+    await use(new OperateOperationsLogPage(page));
   },
   taskDetailsPage: async ({page}, use) => {
     await use(new TaskDetailsPage(page));
@@ -198,6 +205,9 @@ const test = base.extend<PlaywrightFixtures>({
 
   identityRolesDetailsPage: async ({page}, use) => {
     await use(new IdentityRolesDetailsPage(page));
+  },
+  identityAuditLogPage: async ({page}, use) => {
+    await use(new IdentityAuditLogPage(page));
   },
   taskPanelPageV1: async ({page}, use) => {
     await use(new TaskPanelPageV1(page));

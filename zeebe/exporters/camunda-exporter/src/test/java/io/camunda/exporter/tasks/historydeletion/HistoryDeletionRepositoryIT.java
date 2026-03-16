@@ -19,6 +19,7 @@ import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.io.IOException;
@@ -42,6 +43,7 @@ abstract class HistoryDeletionRepositoryIT {
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
   protected final HistoryDeletionIndex historyDeletionIndex;
   protected final AuditLogCleanupIndex auditLogCleanupIndex;
+  protected final OperationTemplate operationTemplate;
   @AutoClose protected final ClientAdapter clientAdapter;
   protected final SearchEngineClient engineClient;
   protected final ExporterConfiguration config;
@@ -61,12 +63,14 @@ abstract class HistoryDeletionRepositoryIT {
 
     historyDeletionIndex = new HistoryDeletionIndex(indexPrefix, isElastic);
     auditLogCleanupIndex = new AuditLogCleanupIndex(indexPrefix, isElastic);
+    operationTemplate = new OperationTemplate(indexPrefix, isElastic);
   }
 
   @BeforeEach
   void beforeEach() {
     engineClient.createIndex(historyDeletionIndex, new IndexConfiguration());
     engineClient.createIndex(auditLogCleanupIndex, new IndexConfiguration());
+    engineClient.createIndex(operationTemplate, new IndexConfiguration());
     repository = createRepository(indexPrefix, PARTITION_ID);
   }
 
@@ -76,6 +80,8 @@ abstract class HistoryDeletionRepositoryIT {
     engineClient.createIndex(historyDeletionIndex, new IndexConfiguration());
     engineClient.deleteIndex(auditLogCleanupIndex.getFullQualifiedName());
     engineClient.createIndex(auditLogCleanupIndex, new IndexConfiguration());
+    engineClient.deleteIndex(operationTemplate.getFullQualifiedName());
+    engineClient.createIndex(operationTemplate, new IndexConfiguration());
   }
 
   protected abstract HistoryDeletionRepository createRepository(
@@ -212,5 +218,18 @@ abstract class HistoryDeletionRepositoryIT {
               final long auditLogCount = countAuditLogCleanupEntries();
               assertThat(auditLogCount).isEqualTo(2);
             });
+  }
+
+  @Test
+  void shouldIgnoreDocumentMissingExceptionWhenCompletingNonExistentOperations() {
+    // given - non-existent operation IDs that will trigger document_missing_exception
+    final var nonExistentIds = List.of(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+
+    // when
+    final var result = repository.completeOperations(nonExistentIds);
+
+    // then - should complete successfully
+    assertThat(result).succeedsWithin(REQUEST_TIMEOUT);
+    assertThat(result.join()).containsExactlyElementsOf(nonExistentIds);
   }
 }

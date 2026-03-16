@@ -76,11 +76,9 @@ public class DocumentController {
   private CompletableFuture<ResponseEntity<Object>> createDocument(
       final DocumentServices.DocumentCreateRequest request) {
 
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () ->
-            documentServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .createDocument(request),
+        () -> documentServices.createDocument(request, authentication),
         ResponseMapper::toDocumentReference,
         HttpStatus.CREATED);
   }
@@ -88,11 +86,9 @@ public class DocumentController {
   private CompletableFuture<ResponseEntity<Object>> createDocumentBatch(
       final List<DocumentServices.DocumentCreateRequest> requests) {
 
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () ->
-            documentServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .createDocumentBatch(requests),
+        () -> documentServices.createDocumentBatch(requests, authentication),
         ResponseMapper::toDocumentReferenceBatch,
         response ->
             response.getFailedDocuments().isEmpty() ? HttpStatus.CREATED : HttpStatus.MULTI_STATUS);
@@ -106,11 +102,11 @@ public class DocumentController {
       @RequestParam(required = false) final String storeId,
       @RequestParam(required = false) final String contentHash) {
 
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     // handle the future explicitly here because a StreamingResponseBody is needed as result instead
     // of a future wrapping the stream response
     return documentServices
-        .withAuthentication(authenticationProvider.getCamundaAuthentication())
-        .getDocumentContent(documentId, storeId, contentHash)
+        .getDocumentContent(documentId, storeId, contentHash, authentication)
         // Any service exception that can occur is handled by the GlobalControllerExceptionHandler
         .thenApply(DocumentController::toDocumentContentResponse)
         .join();
@@ -133,11 +129,9 @@ public class DocumentController {
   public CompletableFuture<ResponseEntity<Object>> deleteDocument(
       @PathVariable final String documentId, @RequestParam(required = false) final String storeId) {
 
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () ->
-            documentServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .deleteDocument(documentId, storeId));
+        () -> documentServices.deleteDocument(documentId, storeId, authentication));
   }
 
   @CamundaPostMapping(path = "/{documentId}/links")
@@ -159,11 +153,9 @@ public class DocumentController {
       final String contentHash,
       final DocumentLinkParams params) {
 
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () ->
-            documentServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .createLink(documentId, storeId, contentHash, params),
+        () -> documentServices.createLink(documentId, storeId, contentHash, params, authentication),
         ResponseMapper::toDocumentLinkResponse,
         HttpStatus.OK);
   }

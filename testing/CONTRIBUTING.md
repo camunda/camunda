@@ -84,8 +84,8 @@ to verify assertion messages without waiting for the timeout.
 
 ### JSON test cases
 
-The JSON format is defined in the JSON
-schema [cpt-test-cases.schema.json](camunda-process-test-json-test-cases/src/main/resources/schema/cpt-test-cases.schema.json).
+The JSON format is defined in
+the [JSON schema](camunda-process-test-json-test-cases/src/main/resources/schema/cpt-test-cases/schema.json).
 We use [Immutables](https://immutables.github.io/)
 and [Jackson](https://github.com/FasterXML/jackson) to deserialize a JSON file into a Java object of
 the
@@ -99,6 +99,11 @@ verifies the compatibility between both.
 A process test can use
 the [TestCaseRunner](camunda-process-test-java/src/main/java/io/camunda/process/test/api/testCases/TestCaseRunner.java)
 to execute a JSON test case.
+
+We publish the JSON schema on the Camunda website under its minor
+version: https://camunda.com/json-schema/cpt-test-cases/8.9/schema.json. Contact the Camunda Web
+Marketing team to publish a new schema version when we release a new minor version (via Slack:
+`#ask-web-marketing`).
 
 ### Tests
 
@@ -163,8 +168,8 @@ Example: Add a new assertion method `assertProcessInstance(..).isAwesome(true)`.
 
 Example: Add a new instruction `HAVE_FUN` to the JSON test case.
 
-- Add the new instruction `HAVE_FUN` to the JSON schema of the
-  DSL [cpt-test-cases.schema.json](camunda-process-test-json-test-cases/src/main/resources/schema/cpt-test-cases.schema.json)
+- Add the new instruction `HAVE_FUN` to the
+  [JSON schema](camunda-process-test-json-test-cases/src/main/resources/schema/cpt-test-cases/schema.json)
   under the `TestCaseInstruction`
   definition. Define its
   required and optional properties. Add descriptions for the instruction and its properties.
@@ -216,3 +221,8 @@ generates the code during the `generate-sources` phase, unless you disabled it v
 `skipFrontendBuild` or the property `skip.fe.build`.
 
 Make sure to run the Maven build without the profile or property.
+
+```shell
+mvn clean compile -Dskip.fe.build=false -pl camunda-process-test-java
+```
+

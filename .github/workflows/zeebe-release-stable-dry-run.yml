@@ -11,14 +11,49 @@ on:
     - cron: '0 2 * * 1-5'
 
 jobs:
+  # Create short-lived branches from each stable branch so that dry-run pushes
+  # don't conflict with concurrent merges landing on the shared stable/* branches.
+  create-dry-run-branches:
+    name: Create temporary dry-run branches
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions: {}  # Uses GitHub App token instead of GITHUB_TOKEN as it needs to push branches with workflow files that trigger other workflows, which GITHUB_TOKEN cannot do
+    steps:
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ steps.github-token.outputs.token }}
+      - name: Create branches
+        run: |
+          for version in 8.6 8.7 8.8 8.9; do
+            branch_name="tmp-dryrun-${version}-${{ github.run_id }}"
+            git checkout "origin/stable/${version}"
+            git checkout -b "${branch_name}"
+            git push origin "${branch_name}"
+            echo "Created ${branch_name} from stable/${version}"
+          done
+
   dry-run-release-89:
     name: "Release from stable/8.9"
+    needs: create-dry-run-branches
     uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@stable/8.9
     secrets: inherit
     strategy:
       fail-fast: false
     with:
-      releaseBranch: stable/8.9
+      releaseBranch: tmp-dryrun-8.9-${{ github.run_id }}
       # Uses fake tag for dry run testing without affecting real releases
       releaseVersion: 0.0.0-dryrun-89
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
@@ -26,12 +61,13 @@ jobs:
       dryRun: true
   dry-run-release-88:
     name: "Release from stable/8.8"
+    needs: create-dry-run-branches
     uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@stable/8.8
     secrets: inherit
     strategy:
       fail-fast: false
     with:
-      releaseBranch: stable/8.8
+      releaseBranch: tmp-dryrun-8.8-${{ github.run_id }}
       # Uses fake tag for dry run testing without affecting real releases
       releaseVersion: 0.0.0-dryrun-88
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
@@ -39,12 +75,13 @@ jobs:
       dryRun: true
   dry-run-release-87:
     name: "Release from stable/8.7"
+    needs: create-dry-run-branches
     uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@stable/8.7
     secrets: inherit
     strategy:
       fail-fast: false
     with:
-      releaseBranch: stable/8.7
+      releaseBranch: tmp-dryrun-8.7-${{ github.run_id }}
       # Uses fake tag for dry run testing without affecting real releases
       releaseVersion: 0.0.0-dryrun-87
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
@@ -52,22 +89,54 @@ jobs:
       dryRun: true
   dry-run-release-86:
     name: "Release from stable/8.6"
+    needs: create-dry-run-branches
     uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@stable/8.6
     secrets: inherit
     strategy:
       fail-fast: false
     with:
-      releaseBranch: stable/8.6
+      releaseBranch: tmp-dryrun-8.6-${{ github.run_id }}
       # Uses fake tag for dry run testing without affecting real releases
       releaseVersion: 0.0.0-dryrun-86
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
 
+  # Always clean up the temporary branches, regardless of success or failure
+  cleanup-dry-run-branches:
+    name: Delete temporary dry-run branches
+    runs-on: ubuntu-slim
+    needs: [dry-run-release-86, dry-run-release-87, dry-run-release-88, dry-run-release-89]
+    if: always()
+    timeout-minutes: 5
+    permissions: {}  # Uses GitHub App token instead of GITHUB_TOKEN
+    steps:
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ steps.github-token.outputs.token }}
+      - name: Delete branches
+        run: |
+          for version in 8.6 8.7 8.8 8.9; do
+            branch_name="tmp-dryrun-${version}-${{ github.run_id }}"
+            git push origin --delete "${branch_name}" || echo "::warning::Failed to delete ${branch_name}, it may have already been deleted"
+          done
+
   notify-camunda:
     name: Send Slack notification for 8.6+
     runs-on: ubuntu-latest
-    needs: [dry-run-release-86, dry-run-release-87, dry-run-release-88, dry-run-release-89]
+    needs: [dry-run-release-86, dry-run-release-87, dry-run-release-88, dry-run-release-89, cleanup-dry-run-branches]
     if: always()
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job

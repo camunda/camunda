@@ -8,15 +8,24 @@
 package io.camunda.zeebe.dmn.impl;
 
 import io.camunda.zeebe.dmn.ParsedDecision;
+import io.camunda.zeebe.dmn.ParsedDecisionTable;
 
 public final class ParsedDmnScalaDecision implements ParsedDecision {
 
   private final String decisionId;
   private final String decisionName;
+  private final ParsedDecisionTable decisionTable;
 
-  public ParsedDmnScalaDecision(final String decisionId, final String decisionName) {
+  public ParsedDmnScalaDecision(
+      final String decisionId, final String decisionName, final ParsedDecisionTable decisionTable) {
     this.decisionId = decisionId;
     this.decisionName = decisionName;
+    this.decisionTable = decisionTable;
+  }
+
+  @Override
+  public String getId() {
+    return decisionId;
   }
 
   @Override
@@ -25,7 +34,7 @@ public final class ParsedDmnScalaDecision implements ParsedDecision {
   }
 
   @Override
-  public String getId() {
-    return decisionId;
+  public ParsedDecisionTable getDecisionTable() {
+    return decisionTable;
   }
 }

@@ -21,8 +21,8 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.searchR
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.search.filter.JobTypeStatisticsFilter;
 import io.camunda.client.api.search.request.SearchRequestPage;
+import io.camunda.client.api.statistics.filter.JobTypeStatisticsFilter;
 import io.camunda.client.api.statistics.request.JobTypeStatisticsRequest;
 import io.camunda.client.api.statistics.response.JobTypeStatistics;
 import io.camunda.client.impl.http.HttpCamundaFuture;

@@ -12,6 +12,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_NAME;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_VALUE;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDuration;
 import static java.util.Optional.ofNullable;
@@ -53,6 +54,7 @@ import io.camunda.search.filter.GlobalJobStatisticsFilter;
 import io.camunda.search.filter.GlobalListenerFilter;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.filter.IncidentFilter;
+import io.camunda.search.filter.JobErrorStatisticsFilter;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.JobTimeSeriesStatisticsFilter;
 import io.camunda.search.filter.JobTypeStatisticsFilter;
@@ -141,9 +143,19 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
-      ofNullable(filter.getBatchOperationId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::batchOperationIdOperations);
+      if (filter.getBatchOperationId() != null && filter.getBatchOperationKey() != null) {
+        validationErrors.add(
+            ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
+                List.of("batchOperationId", "batchOperationKey")));
+      } else {
+        final var batchOperationFilter =
+            filter.getBatchOperationKey() != null
+                ? filter.getBatchOperationKey()
+                : filter.getBatchOperationId();
+        ofNullable(batchOperationFilter)
+            .map(mapToOperations(String.class))
+            .ifPresent(builder::batchOperationIdOperations);
+      }
       ofNullable(filter.getErrorMessage())
           .map(mapToOperations(String.class))
           .ifPresent(builder::errorMessageOperations);
@@ -507,6 +519,40 @@ public class SearchQueryFilterMapper {
         : Either.left(validationErrors);
   }
 
+  public static Either<List<String>, JobErrorStatisticsFilter> toJobErrorStatisticsFilter(
+      final io.camunda.gateway.protocol.model.JobErrorStatisticsFilter filter) {
+    final var builder = FilterBuilders.jobErrorStatistics();
+    final List<String> validationErrors = new ArrayList<>();
+
+    if (filter == null) {
+      validationErrors.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter"));
+      return Either.<List<String>, JobErrorStatisticsFilter>left(validationErrors);
+    }
+
+    final var from = validateDate(filter.getFrom(), "from", validationErrors);
+    Optional.ofNullable(from).ifPresent(builder::from);
+
+    final var to = validateDate(filter.getTo(), "to", validationErrors);
+    Optional.ofNullable(to).ifPresent(builder::to);
+
+    if (filter.getJobType() == null || filter.getJobType().isBlank()) {
+      validationErrors.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobType"));
+    } else {
+      builder.jobType(filter.getJobType());
+    }
+
+    Optional.ofNullable(filter.getErrorCode())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::errorCodeOperations);
+    Optional.ofNullable(filter.getErrorMessage())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::errorMessageOperations);
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
   static ProcessDefinitionFilter toProcessDefinitionFilter(
       final io.camunda.gateway.protocol.model.ProcessDefinitionFilter filter) {
     final var builder = FilterBuilders.processDefinition();
@@ -627,9 +673,19 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
-      ofNullable(filter.getBatchOperationId())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::batchOperationIdOperations);
+      if (filter.getBatchOperationId() != null && filter.getBatchOperationKey() != null) {
+        validationErrors.add(
+            ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
+                List.of("batchOperationId", "batchOperationKey")));
+      } else {
+        final var batchOperationFilter =
+            filter.getBatchOperationKey() != null
+                ? filter.getBatchOperationKey()
+                : filter.getBatchOperationId();
+        ofNullable(batchOperationFilter)
+            .map(mapToOperations(String.class))
+            .ifPresent(builder::batchOperationIdOperations);
+      }
       ofNullable(filter.getErrorMessage())
           .map(mapToOperations(String.class))
           .ifPresent(builder::errorMessageOperations);
@@ -654,6 +710,10 @@ public class SearchQueryFilterMapper {
           validationErrors.addAll(tagErrors);
         }
       }
+
+      ofNullable(filter.getBusinessId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::businessIdOperations);
 
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =

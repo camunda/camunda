@@ -153,7 +153,7 @@ public class BasicAuthWebSecurityConfigTest extends AbstractWebSecurityConfigTes
 
     final Cookie csrfCookie = testResult.getResponse().getCookie(EXPECTED_CSRF_TOKEN_COOKIE_NAME);
 
-    assertThat(csrfCookie.isHttpOnly()).isTrue();
+    assertThat(csrfCookie.isHttpOnly()).isFalse();
     assertThat(csrfCookie.getSecure()).isTrue();
   }
 
@@ -177,8 +177,24 @@ public class BasicAuthWebSecurityConfigTest extends AbstractWebSecurityConfigTes
 
     final Cookie csrfCookie = testResult.getResponse().getCookie(EXPECTED_CSRF_TOKEN_COOKIE_NAME);
 
-    assertThat(csrfCookie.isHttpOnly()).isTrue();
+    assertThat(csrfCookie.isHttpOnly()).isFalse();
     assertThat(csrfCookie.getSecure()).isFalse();
+  }
+
+  @Test
+  public void shouldNotReturnProtectedResourceMetadataLinkInUnauthorizedResponse() {
+    // when an unauthenticated client accesses a protected API endpoint
+    final MvcTestResult result =
+        mockMvcTester
+            .get()
+            .uri("https://localhost" + TestApiController.DUMMY_V2_API_ENDPOINT)
+            .accept(MediaType.APPLICATION_JSON)
+            .exchange();
+
+    // then the 401 response does not include a resource_metadata link in WWW-Authenticate
+    assertThat(result).hasStatus(HttpStatus.UNAUTHORIZED);
+    final var wwwAuthenticate = result.getResponse().getHeader("WWW-Authenticate");
+    assertThat(wwwAuthenticate).isNull();
   }
 
   protected static HttpHeaders basicAuthDemo() {

@@ -10,12 +10,12 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import static org.junit.jupiter.params.provider.Arguments.of;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.ClockPinRequest;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ClockServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -47,8 +47,6 @@ public class ClockControllerTest extends RestControllerTest {
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(clockServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(clockServices);
   }
 
   @Test
@@ -58,7 +56,7 @@ public class ClockControllerTest extends RestControllerTest {
     final var request = new ClockPinRequest().timestamp(timestamp);
     final var clockRecord = new ClockRecord().pinAt(timestamp);
 
-    when(clockServices.pinClock(timestamp))
+    when(clockServices.pinClock(eq(timestamp), any()))
         .thenReturn(CompletableFuture.completedFuture(clockRecord));
 
     // when - then
@@ -72,7 +70,7 @@ public class ClockControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    verify(clockServices).pinClock(timestamp);
+    verify(clockServices).pinClock(eq(timestamp), any());
   }
 
   static Stream<Arguments> invalidClockPinRequests() {
@@ -110,7 +108,7 @@ public class ClockControllerTest extends RestControllerTest {
   @Test
   void restClockShouldReturnNoContent() {
     // given
-    when(clockServices.resetClock())
+    when(clockServices.resetClock(any()))
         .thenReturn(CompletableFuture.completedFuture(new ClockRecord()));
 
     // when - then
@@ -122,6 +120,6 @@ public class ClockControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    verify(clockServices).resetClock();
+    verify(clockServices).resetClock(any());
   }
 }

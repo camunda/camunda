@@ -8,11 +8,19 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createInstances} from 'utils/zeebeClient';
+import {
+  deploy,
+  createInstances,
+  cancelProcessInstance,
+} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
+import {
+  CreateProcessInstanceResponse,
+  DeployResourceResponse,
+} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 
 const PROCESS_INSTANCE_COUNT = 10;
 const AUTO_MIGRATION_INSTANCE_COUNT = 6;
@@ -30,6 +38,7 @@ type TestProcesses = {
 };
 
 let testProcesses: TestProcesses;
+let processes: CreateProcessInstanceResponse[][] = [];
 
 test.beforeAll(async () => {
   await deploy(['./resources/orderProcessMigration_v_1.bpmn']);
@@ -38,7 +47,7 @@ test.beforeAll(async () => {
     version: 1,
   };
 
-  await Promise.all(
+  processes = await Promise.all(
     [...new Array(PROCESS_INSTANCE_COUNT)].map((_, index) =>
       createInstances(processV1.bpmnProcessId, processV1.version, 1, {
         key1: 'myFirstCorrelationKey',
@@ -48,16 +57,21 @@ test.beforeAll(async () => {
     ),
   );
 
-  await deploy(['./resources/orderProcessMigration_v_2.bpmn']);
+  const newProcessMigrationV2: DeployResourceResponse = await deploy([
+    './resources/orderProcessMigration_v_2.bpmn',
+  ]);
   const processV2: ProcessDeployment = {
     bpmnProcessId: 'orderProcessMigration',
-    version: 2,
+    version: newProcessMigrationV2.processes[0].processDefinitionVersion,
   };
+  const newProcessMigrationV3: DeployResourceResponse = await deploy([
+    './resources/orderProcessMigration_v_3.bpmn',
+  ]);
+  expect(processV2.version).toBeGreaterThan(processV1.version);
 
-  await deploy(['./resources/orderProcessMigration_v_3.bpmn']);
   const processV3: ProcessDeployment = {
     bpmnProcessId: 'newOrderProcessMigration',
-    version: 1,
+    version: newProcessMigrationV3.processes[0].processDefinitionVersion,
   };
 
   testProcesses = {
@@ -68,9 +82,15 @@ test.beforeAll(async () => {
   await sleep(2000);
 });
 
-test.describe.serial('Process Instance Migration', () => {
-  test.describe.configure({retries: 0});
+test.afterAll(async () => {
+  for (const process of processes) {
+    for (const instance of process) {
+      await cancelProcessInstance(instance.processInstanceKey as string);
+    }
+  }
+});
 
+test.describe.serial('Process Instance Migration', () => {
   test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
     await loginPage.login('demo', 'demo');
@@ -122,6 +142,10 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify target process is preselected with auto-mapping and Complete Migration', async () => {
+      await operateProcessMigrationModePage.targetProcessCombobox.click();
+      await operateProcessMigrationModePage
+        .getOptionByName(targetBpmnProcessId)
+        .click();
       await expect(
         operateProcessMigrationModePage.targetProcessCombobox,
       ).toHaveValue(targetBpmnProcessId);

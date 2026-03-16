@@ -16,17 +16,24 @@
 package io.camunda.process.test.impl.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
+import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
+import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.testcontainers.containers.GenericContainer;
 
 @ExtendWith(MockitoExtension.class)
 public class CamundaProcessTestRuntimeBuilderTest {
@@ -35,6 +42,12 @@ public class CamundaProcessTestRuntimeBuilderTest {
 
   @Spy private CamundaClientBuilder clientBuilder = CamundaClient.newClientBuilder();
 
+  @Mock private CamundaProcessTestContainerProvider containerProvider;
+
+  @SuppressWarnings("rawtypes")
+  @Mock(answer = Answers.RETURNS_SELF)
+  private GenericContainer customContainer;
+
   @BeforeEach
   public void setup() {
     runtimeBuilder =
@@ -42,7 +55,7 @@ public class CamundaProcessTestRuntimeBuilderTest {
   }
 
   @Test
-  public void shouldOverrideCamundaClientBuilderConfiguration() {
+  void shouldOverrideCamundaClientBuilderConfiguration() {
     // given
     final String tenantId = "customTenant";
     final Duration requestTimeout = Duration.ofHours(1);
@@ -62,5 +75,70 @@ public class CamundaProcessTestRuntimeBuilderTest {
 
     assertThat(client.getDefaultRequestTimeout()).isEqualTo(requestTimeout);
     assertThat(client.getDefaultTenantId()).isEqualTo(tenantId);
+  }
+
+  @Test
+  void shouldLoadContainerProvidersViaServiceLoaderByDefault() {
+    // given: the DummyContainerProvider is registered in the service loader file
+    runtimeBuilder.withRuntimeMode(CamundaProcessTestRuntimeMode.MANAGED);
+
+    // when
+    runtimeBuilder.build();
+
+    // then
+    assertThat(runtimeBuilder.isContainerProvidersServiceLoaderEnabled()).isTrue();
+
+    assertThat(runtimeBuilder.getContainerProviders())
+        .hasSize(1)
+        .first()
+        .isInstanceOf(DummyContainerProvider.class);
+  }
+
+  @Test
+  void shouldDisableLoadContainerProvider() {
+    // given
+    runtimeBuilder.withContainerProvidersServiceLoaderEnabled(false);
+
+    // when
+    runtimeBuilder.build();
+
+    // then
+    assertThat(runtimeBuilder.isContainerProvidersServiceLoaderEnabled()).isFalse();
+    assertThat(runtimeBuilder.getContainerProviders()).isEmpty();
+  }
+
+  @Test
+  void shouldAddCustomContainersFromProviders() {
+    // given
+    //noinspection unchecked
+    when(containerProvider.createContainer(any())).thenReturn(customContainer);
+
+    runtimeBuilder.withContainerProvider(containerProvider);
+
+    // when
+    runtimeBuilder.build();
+
+    // then
+    assertThat(runtimeBuilder.getContainerProviders())
+        .hasSize(2)
+        .contains(containerProvider)
+        .hasAtLeastOneElementOfType(DummyContainerProvider.class);
+  }
+
+  @Test
+  void shouldLoadContainerProvidersViaServiceLoaderForSharedRuntime() {
+    // given: the DummyContainerProvider is registered in the service loader file
+    runtimeBuilder.withRuntimeMode(CamundaProcessTestRuntimeMode.SHARED);
+
+    // when
+    runtimeBuilder.build();
+
+    // then
+    assertThat(runtimeBuilder.isContainerProvidersServiceLoaderEnabled()).isTrue();
+
+    assertThat(runtimeBuilder.getContainerProviders())
+        .hasSize(1)
+        .first()
+        .isInstanceOf(DummyContainerProvider.class);
   }
 }

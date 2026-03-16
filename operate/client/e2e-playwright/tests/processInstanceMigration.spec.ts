@@ -445,9 +445,9 @@ test.describe.skip('Process Instance Migration', () => {
     await migrationView.selectTargetProcess(targetBpmnProcessId);
     await migrationView.selectTargetVersion(targetVersion);
 
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Check payment',
-      targetFlowNodeName: 'Ship Articles 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Check payment',
+      targetElementName: 'Ship Articles 2',
     });
 
     /**
@@ -455,150 +455,150 @@ test.describe.skip('Process Instance Migration', () => {
      * A -> C2
      * C -> A2
      */
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Task A',
-      targetFlowNodeName: 'Task C2',
+    await migrationView.mapElement({
+      sourceElementName: 'Task A',
+      targetElementName: 'Task C2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Task B',
-      targetFlowNodeName: 'Task B2',
+    await migrationView.mapElement({
+      sourceElementName: 'Task B',
+      targetElementName: 'Task B2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Task C',
-      targetFlowNodeName: 'Task A2',
+    await migrationView.mapElement({
+      sourceElementName: 'Task C',
+      targetElementName: 'Task A2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Task D',
-      targetFlowNodeName: 'Task D2',
+    await migrationView.mapElement({
+      sourceElementName: 'Task D',
+      targetElementName: 'Task D2',
     });
 
     /**
      * Map boundary events. Note that there is a cross mapping:
      * interrupting <-> non-interrupting
      */
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Message interrupting',
-      targetFlowNodeName: 'Message non-interrupting 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Message interrupting',
+      targetElementName: 'Message non-interrupting 2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Timer interrupting',
-      targetFlowNodeName: 'Timer interrupting 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Timer interrupting',
+      targetElementName: 'Timer interrupting 2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Message non-interrupting',
-      targetFlowNodeName: 'Message interrupting 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Message non-interrupting',
+      targetElementName: 'Message interrupting 2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Timer non-interrupting',
-      targetFlowNodeName: 'Timer non-interrupting 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Timer non-interrupting',
+      targetElementName: 'Timer non-interrupting 2',
     });
 
     /**
      * Map intermediate catch events
      */
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Message intermediate catch',
-      targetFlowNodeName: 'Message intermediate catch 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Message intermediate catch',
+      targetElementName: 'Message intermediate catch 2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Timer intermediate catch',
-      targetFlowNodeName: 'Timer intermediate catch 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Timer intermediate catch',
+      targetElementName: 'Timer intermediate catch 2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Message intermediate catch B',
-      targetFlowNodeName: 'Message intermediate catch B2',
+    await migrationView.mapElement({
+      sourceElementName: 'Message intermediate catch B',
+      targetElementName: 'Message intermediate catch B2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Timer intermediate catch B',
-      targetFlowNodeName: 'Timer intermediate catch B2',
+    await migrationView.mapElement({
+      sourceElementName: 'Timer intermediate catch B',
+      targetElementName: 'Timer intermediate catch B2',
     });
 
     /**
      * Map event sub processes with containing tasks
      */
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Message event sub process',
-      targetFlowNodeName: 'Message event sub process 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Message event sub process',
+      targetElementName: 'Message event sub process 2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Timer event sub process',
-      targetFlowNodeName: 'Timer event sub process 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Timer event sub process',
+      targetElementName: 'Timer event sub process 2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Task E',
-      targetFlowNodeName: 'Task E2',
+    await migrationView.mapElement({
+      sourceElementName: 'Task E',
+      targetElementName: 'Task E2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Task F',
-      targetFlowNodeName: 'Task F2',
+    await migrationView.mapElement({
+      sourceElementName: 'Task F',
+      targetElementName: 'Task F2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Timer start event',
-      targetFlowNodeName: 'Timer start event 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Timer start event',
+      targetElementName: 'Timer start event 2',
     });
 
     /**
      * Map signal elements
      */
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Signal intermediate catch',
-      targetFlowNodeName: 'Signal intermediate catch 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Signal intermediate catch',
+      targetElementName: 'Signal intermediate catch 2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Signal start event',
-      targetFlowNodeName: 'Signal start event',
+    await migrationView.mapElement({
+      sourceElementName: 'Signal start event',
+      targetElementName: 'Signal start event',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Signal boundary event',
-      targetFlowNodeName: 'Signal boundary event 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Signal boundary event',
+      targetElementName: 'Signal boundary event 2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Signal event sub process',
-      targetFlowNodeName: 'Signal event sub process 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Signal event sub process',
+      targetElementName: 'Signal event sub process 2',
     });
 
     /**
      * Map other tasks
      */
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Message receive task',
-      targetFlowNodeName: 'Message receive task 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Message receive task',
+      targetElementName: 'Message receive task 2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Business rule task',
-      targetFlowNodeName: 'Business rule task 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Business rule task',
+      targetElementName: 'Business rule task 2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Script task',
-      targetFlowNodeName: 'Script task 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Script task',
+      targetElementName: 'Script task 2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Send Task',
-      targetFlowNodeName: 'Send Task 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Send Task',
+      targetElementName: 'Send Task 2',
     });
 
     /**
      * Map gateways
      */
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Event based gateway',
-      targetFlowNodeName: 'Event based gateway 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Event based gateway',
+      targetElementName: 'Event based gateway 2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Exclusive gateway',
-      targetFlowNodeName: 'Exclusive gateway 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Exclusive gateway',
+      targetElementName: 'Exclusive gateway 2',
     });
 
     /**
      * Map multi instance elements
      */
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Multi instance sub process',
-      targetFlowNodeName: 'Multi instance sub process 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Multi instance sub process',
+      targetElementName: 'Multi instance sub process 2',
     });
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'Multi instance task',
-      targetFlowNodeName: 'Multi instance task 2',
+    await migrationView.mapElement({
+      sourceElementName: 'Multi instance task',
+      targetElementName: 'Multi instance task 2',
     });
 
     await migrationView.nextButton.click();
@@ -711,7 +711,7 @@ test.describe.skip('Process Instance Migration', () => {
     /**
      * Script task
      */
-    await processInstancePage.diagram.clickFlowNode('Script task 2');
+    await processInstancePage.diagram.clickElement('Script task 2');
     await processInstancePage.diagram.showMetaData();
     await page.waitForSelector('.monaco-aria-container'); // wait until monaco is fully loaded
 
@@ -727,12 +727,12 @@ test.describe.skip('Process Instance Migration', () => {
     await processInstancePage.metadataModal
       .getByRole('button', {name: /close/i})
       .click();
-    await processInstancePage.diagram.clickFlowNode('Script task 2'); // deselect Script task 2
+    await processInstancePage.diagram.clickElement('Script task 2'); // deselect Script task 2
 
     /**
      * Send task
      */
-    await processInstancePage.diagram.clickFlowNode('Send task 2');
+    await processInstancePage.diagram.clickElement('Send task 2');
     await processInstancePage.diagram.showMetaData();
 
     /**
@@ -747,12 +747,12 @@ test.describe.skip('Process Instance Migration', () => {
     await processInstancePage.metadataModal
       .getByRole('button', {name: /close/i})
       .click();
-    await processInstancePage.diagram.clickFlowNode('Send task 2'); // deselect Script task 2
+    await processInstancePage.diagram.clickElement('Send task 2'); // deselect Script task 2
 
     /**
      * Task G
      */
-    await processInstancePage.diagram.clickFlowNode('Task G');
+    await processInstancePage.diagram.clickElement('Task G');
     await processInstancePage.diagram.showMetaData();
 
     /**
@@ -769,12 +769,12 @@ test.describe.skip('Process Instance Migration', () => {
     await processInstancePage.metadataModal
       .getByRole('button', {name: /close/i})
       .click();
-    await processInstancePage.diagram.clickFlowNode('Task G'); // deselect
+    await processInstancePage.diagram.clickElement('Task G'); // deselect
 
     /**
      * Business rule task
      */
-    await processInstancePage.diagram.clickFlowNode('Business rule task 2');
+    await processInstancePage.diagram.clickElement('Business rule task 2');
     await processInstancePage.diagram.showMetaData();
 
     /**
@@ -791,7 +791,7 @@ test.describe.skip('Process Instance Migration', () => {
     await processInstancePage.metadataModal
       .getByRole('button', {name: /close/i})
       .click();
-    await processInstancePage.diagram.clickFlowNode('Business rule task 2'); // deselect
+    await processInstancePage.diagram.clickElement('Business rule task 2'); // deselect
 
     /**
      * Escalation task
@@ -824,7 +824,7 @@ test.describe.skip('Process Instance Migration', () => {
     /**
      * Escalation event task
      */
-    await processInstancePage.diagram.clickFlowNode('Escalation event task');
+    await processInstancePage.diagram.clickElement('Escalation event task');
     await processInstancePage.diagram.showMetaData();
 
     /**
@@ -840,7 +840,7 @@ test.describe.skip('Process Instance Migration', () => {
     await processInstancePage.metadataModal
       .getByRole('button', {name: /close/i})
       .click();
-    await processInstancePage.diagram.clickFlowNode('Escalation event task'); // deselect
+    await processInstancePage.diagram.clickElement('Escalation event task'); // deselect
 
     /**
      * Compensation task
@@ -875,9 +875,9 @@ test.describe.skip('Process Instance Migration', () => {
       ),
     ).toHaveClass(/op-selectable/);
     await expect(
-      processInstancePage.diagram.getFlowNode('Compensation task'),
+      processInstancePage.diagram.getElement('Compensation task'),
     ).toHaveClass(/op-selectable/);
-    await expect(processInstancePage.diagram.getFlowNode('Undo')).toHaveClass(
+    await expect(processInstancePage.diagram.getElement('Undo')).toHaveClass(
       /op-selectable/,
     );
   });
@@ -903,7 +903,7 @@ test.describe.skip('Process Instance Migration', () => {
     /**
      * Expect that the correlation key and message have been migrated from Task C to Task A2
      */
-    await processInstancePage.diagram.clickFlowNode('Task A2');
+    await processInstancePage.diagram.clickElement('Task A2');
     await processInstancePage.diagram.showMetaData();
     await page.waitForSelector('.monaco-aria-container'); // wait until monaco is fully loaded
     await expect(
@@ -921,12 +921,12 @@ test.describe.skip('Process Instance Migration', () => {
       .getByRole('button', {name: /close/i})
       .click();
 
-    await processInstancePage.diagram.clickFlowNode('Task A2'); // deselect Task A2
+    await processInstancePage.diagram.clickElement('Task A2'); // deselect Task A2
 
     /**
      * Expect that the correlation key and message have been migrated from Task A to Task C2
      */
-    await processInstancePage.diagram.clickFlowNode('Task C2');
+    await processInstancePage.diagram.clickElement('Task C2');
     await processInstancePage.diagram.showMetaData();
     await expect(
       processInstancePage.metadataModal.getByText(
@@ -943,12 +943,12 @@ test.describe.skip('Process Instance Migration', () => {
       .getByRole('button', {name: /close/i})
       .click();
 
-    await processInstancePage.diagram.clickFlowNode('Task C2'); // deselect Task C2
+    await processInstancePage.diagram.clickElement('Task C2'); // deselect Task C2
 
     /**
      * Expect that the correlation key and message have been migrated from Message receive task to Message receive task 2
      */
-    await processInstancePage.diagram.clickFlowNode('Message receive task 2');
+    await processInstancePage.diagram.clickElement('Message receive task 2');
     await processInstancePage.diagram.showMetaData();
     await page.waitForTimeout(500); // wait until metadata modal is fully rendered
     await expect(
@@ -966,7 +966,7 @@ test.describe.skip('Process Instance Migration', () => {
       .getByRole('button', {name: /close/i})
       .click();
 
-    await processInstancePage.diagram.clickFlowNode('Message receive task 2'); // deselect task
+    await processInstancePage.diagram.clickElement('Message receive task 2'); // deselect task
 
     /**
      * Expect that the correlation key has been updated if source and target message event have the same message id
@@ -1174,7 +1174,7 @@ test.describe.skip('Process Instance Migration', () => {
       'Multi instance sub process 2',
     ); // deselect sub process
 
-    await processInstancePage.diagram.clickFlowNode('Multi instance task 2');
+    await processInstancePage.diagram.clickElement('Multi instance task 2');
 
     /**
     /* Expect that 2 instances of the multi instance task have been migrated

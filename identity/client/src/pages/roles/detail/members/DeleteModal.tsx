@@ -14,8 +14,8 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { User } from "src/utility/api/users";
 import { unassignRoleMember } from "src/utility/api/membership";
+import type { User } from "@camunda/camunda-api-zod-schemas/8.9";
 
 type RemoveRoleMemberModalProps = UseEntityModalCustomProps<
   User,

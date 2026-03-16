@@ -54,16 +54,16 @@ export class MigrationView {
     await this.page.getByRole('option', {name: option, exact: true}).click();
   }
 
-  mapFlowNode({
-    sourceFlowNodeName,
-    targetFlowNodeName,
+  mapElement({
+    sourceElementName,
+    targetElementName,
   }: {
-    sourceFlowNodeName: string;
-    targetFlowNodeName: string;
+    sourceElementName: string;
+    targetElementName: string;
   }) {
     return this.page
-      .getByLabel(`Target element for ${sourceFlowNodeName}`, {exact: true})
-      .selectOption(targetFlowNodeName);
+      .getByLabel(`Target element for ${sourceElementName}`, {exact: true})
+      .selectOption(targetElementName);
   }
 
   confirmMigration() {
@@ -73,9 +73,9 @@ export class MigrationView {
       .click();
   }
 
-  selectTargetSourceFlowNode(flowNodeName: string) {
+  selectTargetSourceElement(elementName: string) {
     return this.page
-      .getByRole('cell', {name: flowNodeName, exact: true})
+      .getByRole('cell', {name: elementName, exact: true})
       .click();
   }
 }

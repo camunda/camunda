@@ -18,6 +18,8 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.process.test.api.judge.JudgeConfig;
+import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
@@ -26,9 +28,11 @@ import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
+import io.camunda.process.test.impl.judge.ChatModelAdapterResolver;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import io.camunda.process.test.impl.testCases.CamundaTestCaseRunner;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
@@ -110,6 +114,8 @@ public class CamundaProcessTestExtension
   private CamundaProcessTestRuntime runtime;
   private CamundaProcessTestResultCollector processTestResultCollector;
 
+  private JudgeConfig judgeConfig;
+
   private JsonMapper jsonMapper;
   private io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
 
@@ -183,6 +189,9 @@ public class CamundaProcessTestExtension
 
     // initialize json mapper
     initializeJsonMapper(jsonMapper, zeebeJsonMapper);
+
+    // initialize judge config
+    initializeJudgeConfig();
   }
 
   private CamundaManagementClient createManagementClient(
@@ -206,6 +215,31 @@ public class CamundaProcessTestExtension
     } else if (zeebeJsonMapper != null) {
       CamundaAssert.setJsonMapper(zeebeJsonMapper);
     }
+  }
+
+  private void initializeJudgeConfig() {
+    if (judgeConfig != null) {
+      CamundaAssert.setJudgeConfig(judgeConfig);
+      return;
+    }
+
+    if (CamundaAssert.getJudgeConfig() != null) {
+      return;
+    }
+
+    if (!CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.hasProviderConfigured()) {
+      return;
+    }
+
+    ChatModelAdapterResolver.resolve(
+            CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.toProviderConfig())
+        .map(
+            adapter ->
+                JudgeConfig.of(
+                    adapter,
+                    CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getThreshold(),
+                    CamundaProcessTestRuntimeDefaults.JUDGE_PROPERTIES.getCustomPrompt()))
+        .ifPresent(CamundaAssert::setJudgeConfig);
   }
 
   private boolean hasProcessTestExtension(final ExtensionContext context) {
@@ -390,6 +424,9 @@ public class CamundaProcessTestExtension
     } catch (final Throwable t) {
       LOG.warn("Failed to report process coverage, skipping.", t);
     }
+
+    CamundaAssert.setJudgeConfig(null);
+
     runtime.close();
   }
 
@@ -639,6 +676,17 @@ public class CamundaProcessTestExtension
   }
 
   /**
+   * Configure the judge for LLM-as-a-judge assertions.
+   *
+   * @param judgeConfig the judge configuration
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withJudgeConfig(final JudgeConfig judgeConfig) {
+    this.judgeConfig = judgeConfig;
+    return this;
+  }
+
+  /**
    * Configure the JSON mapper for the client and the assertions.
    *
    * @param jsonMapper the JSON mapper to use
@@ -663,6 +711,32 @@ public class CamundaProcessTestExtension
     return this;
   }
 
+  /**
+   * Add a custom container via the given provider to the runtime. The container will be started
+   * together with the runtime and stopped when the runtime is closed.
+   *
+   * @param containerProvider the provider of the custom container
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withContainerProvider(
+      final CamundaProcessTestContainerProvider containerProvider) {
+    runtimeBuilder.withContainerProvider(containerProvider);
+    return this;
+  }
+
+  /**
+   * Enable or disable the loading of custom container providers via the Java ServiceLoader. By
+   * default, the ServiceLoader is enabled.
+   *
+   * @param enabled whether to load container providers via the Java ServiceLoader or not
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withContainerProvidersServiceLoaderEnabled(
+      final boolean enabled) {
+    runtimeBuilder.withContainerProvidersServiceLoaderEnabled(enabled);
+    return this;
+  }
+
   private void closeCreatedClients() {
     for (final AutoCloseable client : createdClients) {
       try {
@@ -671,5 +745,6 @@ public class CamundaProcessTestExtension
         LOG.debug("Failed to close client, continue.", e);
       }
     }
+    createdClients.clear();
   }
 }

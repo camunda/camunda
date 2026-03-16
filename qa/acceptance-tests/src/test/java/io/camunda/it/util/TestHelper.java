@@ -34,7 +34,6 @@ import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.JobFilter;
-import io.camunda.client.api.search.filter.JobTypeStatisticsFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
@@ -47,7 +46,11 @@ import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Tenant;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.api.statistics.filter.JobErrorStatisticsFilter;
+import io.camunda.client.api.statistics.filter.JobTypeStatisticsFilter;
 import io.camunda.client.api.statistics.response.GlobalJobStatistics;
+import io.camunda.client.api.statistics.response.JobErrorStatistics;
+import io.camunda.client.api.statistics.response.JobTimeSeriesStatistics;
 import io.camunda.client.api.statistics.response.JobTypeStatistics;
 import io.camunda.client.api.statistics.response.JobWorkerStatistics;
 import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
@@ -278,6 +281,16 @@ public final class TestHelper {
         .bpmnProcessId(bpmnProcessId)
         .latestVersion()
         .tags(tags)
+        .execute();
+  }
+
+  public static ProcessInstanceEvent startProcessInstanceWithBusinessId(
+      final CamundaClient camundaClient, final String bpmnProcessId, final String businessId) {
+    return camundaClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .latestVersion()
+        .businessId(businessId)
         .execute();
   }
 
@@ -1020,6 +1033,155 @@ public final class TestHelper {
                       .newJobWorkerStatisticsRequest(startTime, endTime, jobType)
                       .page(pageFn);
 
+              assertThat(request.send().join()).satisfies(fnRequirements);
+            });
+  }
+
+  /**
+   * Waits for job time-series statistics to be exported and match the given requirements.
+   *
+   * @param camundaClient the Camunda client
+   * @param startTime the start time for the statistics query
+   * @param endTime the end time for the statistics query
+   * @param jobType the job type to query time-series statistics for
+   * @param fnRequirements the assertions to apply to the statistics
+   */
+  public static void waitForJobTimeSeriesStatistics(
+      final CamundaClient camundaClient,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
+      final String jobType,
+      final Consumer<JobTimeSeriesStatistics> fnRequirements) {
+    waitForJobTimeSeriesStatistics(
+        camundaClient, startTime, endTime, jobType, p -> {}, fnRequirements);
+  }
+
+  /**
+   * Waits for job time-series statistics to be exported and match the given requirements, with
+   * pagination and optional resolution.
+   *
+   * @param camundaClient the Camunda client
+   * @param startTime the start time for the statistics query
+   * @param endTime the end time for the statistics query
+   * @param jobType the job type to query time-series statistics for
+   * @param pageFn the page consumer to apply
+   * @param fnRequirements the assertions to apply to the statistics
+   */
+  public static void waitForJobTimeSeriesStatistics(
+      final CamundaClient camundaClient,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
+      final String jobType,
+      final Consumer<SearchRequestPage> pageFn,
+      final Consumer<JobTimeSeriesStatistics> fnRequirements) {
+    waitForJobTimeSeriesStatistics(
+        camundaClient, startTime, endTime, jobType, null, pageFn, fnRequirements);
+  }
+
+  /**
+   * Waits for job time-series statistics to be exported and match the given requirements, with an
+   * explicit bucket resolution.
+   *
+   * @param camundaClient the Camunda client
+   * @param startTime the start time for the statistics query
+   * @param endTime the end time for the statistics query
+   * @param jobType the job type to query time-series statistics for
+   * @param resolution the explicit bucket resolution (may be null to let the server auto-compute)
+   * @param fnRequirements the assertions to apply to the statistics
+   */
+  public static void waitForJobTimeSeriesStatistics(
+      final CamundaClient camundaClient,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
+      final String jobType,
+      final Duration resolution,
+      final Consumer<JobTimeSeriesStatistics> fnRequirements) {
+    waitForJobTimeSeriesStatistics(
+        camundaClient, startTime, endTime, jobType, resolution, p -> {}, fnRequirements);
+  }
+
+  /**
+   * Waits for job time-series statistics to be exported and match the given requirements, with an
+   * explicit bucket resolution and pagination.
+   *
+   * @param camundaClient the Camunda client
+   * @param startTime the start time for the statistics query
+   * @param endTime the end time for the statistics query
+   * @param jobType the job type to query time-series statistics for
+   * @param resolution the explicit bucket resolution (may be null to let the server auto-compute)
+   * @param pageFn the page consumer to apply
+   * @param fnRequirements the assertions to apply to the statistics
+   */
+  public static void waitForJobTimeSeriesStatistics(
+      final CamundaClient camundaClient,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
+      final String jobType,
+      final Duration resolution,
+      final Consumer<SearchRequestPage> pageFn,
+      final Consumer<JobTimeSeriesStatistics> fnRequirements) {
+    Awaitility.await("should export job time-series metrics to secondary storage")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              var request =
+                  camundaClient
+                      .newJobTimeSeriesStatisticsRequest(startTime, endTime, jobType)
+                      .page(pageFn);
+              if (resolution != null) {
+                request = request.resolution(resolution);
+              }
+
+              assertThat(request.send().join()).satisfies(fnRequirements);
+            });
+  }
+
+  public static void waitForJobErrorStatistics(
+      final CamundaClient camundaClient,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
+      final String jobType,
+      final Consumer<JobErrorStatistics> fnRequirements) {
+    waitForJobErrorStatistics(camundaClient, startTime, endTime, jobType, p -> {}, fnRequirements);
+  }
+
+  public static void waitForJobErrorStatisticsWithFilter(
+      final CamundaClient camundaClient,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
+      final String jobType,
+      final Consumer<JobErrorStatisticsFilter> filterFn,
+      final Consumer<JobErrorStatistics> fnRequirements) {
+    Awaitility.await("should export job error statistics to secondary storage")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var request =
+                  camundaClient
+                      .newJobErrorStatisticsRequest(startTime, endTime, jobType)
+                      .filter(filterFn);
+              assertThat(request.send().join()).satisfies(fnRequirements);
+            });
+  }
+
+  public static void waitForJobErrorStatistics(
+      final CamundaClient camundaClient,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
+      final String jobType,
+      final Consumer<SearchRequestPage> pageFn,
+      final Consumer<JobErrorStatistics> fnRequirements) {
+    Awaitility.await("should export job error statistics to secondary storage")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var request =
+                  camundaClient
+                      .newJobErrorStatisticsRequest(startTime, endTime, jobType)
+                      .page(pageFn);
               assertThat(request.send().join()).satisfies(fnRequirements);
             });
   }

@@ -20,7 +20,41 @@ on:
     - cron: '0 1 * * 1-5'
 
 jobs:
+  setup:
+    name: Resolve release branch
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      branch: ${{ steps.resolve-branch.outputs.branch }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.branch || 'main' }}
+      - name: Resolve release branch
+        id: resolve-branch
+        run: |
+          # Create a temporary unprotected branch for dry-run push testing.
+          # Any input branch (or main) may be protected, so we always branch off it.
+          SOURCE_BRANCH="${{ inputs.branch || 'main' }}"
+          BRANCH="tmp/dryrun-${SOURCE_BRANCH}-${GITHUB_RUN_ID}"
+          git checkout -b "$BRANCH"
+          git push origin "$BRANCH"
+          echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "Created temporary branch: ${BRANCH} from ${{ inputs.branch || 'main' }}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   dry-run-release:
+    needs: setup
     name: "${{ matrix.version }} from ${{ inputs.branch || 'main' }}"
     uses: ./.github/workflows/camunda-platform-release.yml
     secrets: inherit
@@ -35,16 +69,38 @@ jobs:
           - version: 0.0.0-dryrun-alpha
             latest: false
     with:
-      releaseBranch: ${{ inputs.branch || 'main' }}
+      releaseBranch: ${{ needs.setup.outputs.branch }}
       releaseVersion: ${{ matrix.version }}
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: ${{ matrix.latest }}
       dryRun: true
       includeOptimize: ${{ github.event_name == 'schedule' || inputs.includeOptimize || false }}
 
+  cleanup:
+    name: Delete temporary release branch
+    needs: [setup, dry-run-release]
+    if: always()
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Delete temporary release branch
+        run: git push origin --delete "${{ needs.setup.outputs.branch }}" 2>/dev/null || true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   notify:
     name: Send Slack notification
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs: [dry-run-release]
     if: always()
     timeout-minutes: 5

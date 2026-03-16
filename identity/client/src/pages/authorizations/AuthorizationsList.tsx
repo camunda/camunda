@@ -9,12 +9,6 @@
 import { FC } from "react";
 import { Add, TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
-import {
-  Authorization,
-  GeneralAuthorization,
-  ResourceType,
-  TaskAuthorization,
-} from "src/utility/api/authorizations";
 import { SearchResponse, usePagination } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import EntityList from "src/components/entityList";
@@ -22,6 +16,10 @@ import { useEntityModal } from "src/components/modal/useModal";
 import { AddModal } from "./modals/add-modal";
 import DeleteModal from "./modals/DeleteModal";
 import { DataTableHeader } from "src/components/entityList/EntityList";
+import type {
+  Authorization,
+  ResourceType,
+} from "@camunda/camunda-api-zod-schemas/8.9";
 
 type AuthorizationListProps = {
   tab: ResourceType;
@@ -51,13 +49,13 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
     reload,
   );
 
-  const propertyNameHeader: DataTableHeader<TaskAuthorization> = {
+  const propertyNameHeader: DataTableHeader<Authorization> = {
     header: t("resourcePropertyName"),
     key: "resourcePropertyName",
     isSortable: true,
   };
 
-  const resourceIdHeader: DataTableHeader<GeneralAuthorization> = {
+  const resourceIdHeader: DataTableHeader<Authorization> = {
     header: t("resourceId"),
     key: "resourceId",
     isSortable: true,
@@ -66,7 +64,7 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
   const headers: DataTableHeader<Authorization>[] = [
     { header: t("ownerType"), key: "ownerType", isSortable: true },
     { header: t("ownerId"), key: "ownerId", isSortable: true },
-    tab === ResourceType.USER_TASK ? propertyNameHeader : resourceIdHeader,
+    tab === "USER_TASK" ? propertyNameHeader : resourceIdHeader,
     { header: t("permissionTypes"), key: "permissionTypes" },
   ];
 

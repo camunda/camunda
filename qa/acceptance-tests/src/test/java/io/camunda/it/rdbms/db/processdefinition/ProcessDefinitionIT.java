@@ -18,14 +18,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionInstanceVersionStatisticsDbReader;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ProcessDefinitionFilter;
@@ -109,13 +110,12 @@ public class ProcessDefinitionIT {
   public void shouldStoreLongProcessDefinitionId(
       final CamundaRdbmsTestApplication testApplication) {
     final var rdbmsService = testApplication.getRdbmsService();
-    final var vendorDatabaseProperties = testApplication.bean(VendorDatabaseProperties.class);
     final var rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final var processDefinitionReader = rdbmsService.getProcessDefinitionReader();
 
     final var processDefinitionId =
         RandomStringUtils.insecure()
-            .nextAlphanumeric(vendorDatabaseProperties.userCharColumnSize());
+            .nextAlphanumeric(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH);
 
     final var processDefinition =
         ProcessDefinitionFixtures.createRandomized(b -> b.processDefinitionId(processDefinitionId));
@@ -135,6 +135,54 @@ public class ProcessDefinitionIT {
     assertThat(searchResult.items()).hasSize(1);
     assertThat(searchResult.items().getFirst().processDefinitionKey())
         .isEqualTo(processDefinition.processDefinitionKey());
+  }
+
+  @TestTemplate
+  public void shouldStoreAndFindUTF8ProcessDefinitionName(
+      final CamundaRdbmsTestApplication testApplication) {
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final var processDefinitionReader = rdbmsService.getProcessDefinitionReader();
+
+    final var name = "カマンダ";
+
+    final var processDefinition = ProcessDefinitionFixtures.createRandomized(b -> b.name(name));
+    createAndSaveProcessDefinition(rdbmsWriter, processDefinition);
+
+    final var searchResult =
+        processDefinitionReader.search(
+            new ProcessDefinitionQuery(
+                new ProcessDefinitionFilter.Builder().names(name).build(),
+                ProcessDefinitionSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().stream().map(ProcessDefinitionEntity::name))
+        .containsExactly(name);
+  }
+
+  @TestTemplate
+  public void shouldStoreLongUTF8ProcessDefinitionName(
+      final CamundaRdbmsTestApplication testApplication) {
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final var processDefinitionReader = rdbmsService.getProcessDefinitionReader();
+
+    final var name = "ü".repeat(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH);
+
+    final var processDefinition = ProcessDefinitionFixtures.createRandomized(b -> b.name(name));
+    createAndSaveProcessDefinition(rdbmsWriter, processDefinition);
+
+    final var searchResult =
+        processDefinitionReader.search(
+            new ProcessDefinitionQuery(
+                new ProcessDefinitionFilter.Builder().names(name).build(),
+                ProcessDefinitionSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().stream().map(ProcessDefinitionEntity::name))
+        .containsExactly(name);
   }
 
   @TestTemplate

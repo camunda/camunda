@@ -12,6 +12,7 @@ import co.elastic.clients.elasticsearch._types.Conflicts;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -43,6 +44,7 @@ import org.slf4j.Logger;
 public class ElasticsearchHistoryDeletionRepository extends ElasticsearchRepository
     implements HistoryDeletionRepository {
 
+  private static final String DOCUMENT_MISSING_ERROR_TYPE = "document_missing_exception";
   private final IndexDescriptor indexDescriptor;
   private final IndexDescriptor auditLogCleanupIndex;
   private final int partitionId;
@@ -168,6 +170,11 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
                 return CompletableFuture.failedFuture(new RuntimeException(errorMessage));
               }
               final var deleted = response.items().size();
+              logger.debug(
+                  "Deleted {} documents from index '{}' by id with values: {}",
+                  deleted,
+                  sourceIndexName,
+                  ids);
               return CompletableFuture.completedFuture(deleted);
             },
             executor);
@@ -235,18 +242,46 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
 
     return client
         .bulk(bulkRequestBuilder.build())
-        .thenComposeAsync(
-            response -> {
-              if (response.errors()) {
-                final var errorMessage =
-                    "Bulk updating operations by ids '%s' failed with errors: %s"
-                        .formatted(ids, response.items());
-                logger.error(errorMessage);
-                return CompletableFuture.failedFuture(new RuntimeException(errorMessage));
-              }
-              return CompletableFuture.completedFuture(ids);
-            },
-            executor);
+        .thenComposeAsync(response -> handleBulkResponseErrors(response, ids), executor);
+  }
+
+  /**
+   * Handles errors from bulk update operations, filtering out document_missing_exception errors
+   * that occur when operations are already archived. We cannot update these as we don't know what
+   * index they are in.
+   *
+   * @param response the bulk response from Elasticsearch
+   * @param ids the list of operation IDs that were updated
+   * @return a CompletableFuture containing the list of IDs if successful, or a failed future if
+   *     there are actual errors
+   */
+  private CompletableFuture<List<String>> handleBulkResponseErrors(
+      final BulkResponse response, final List<String> ids) {
+    if (response.errors()) {
+      // Filter out errors from archived operations (document_missing_exception)
+      // These operations are already archived and will be cleaned up by retention
+      final var actualErrors =
+          response.items().stream()
+              .filter(item -> item.error() != null)
+              .filter(
+                  item ->
+                      item.error().type() != null
+                          && !item.error().type().equals(DOCUMENT_MISSING_ERROR_TYPE))
+              .toList();
+
+      if (!actualErrors.isEmpty()) {
+        final var errorMessage =
+            "Bulk updating operations by ids '%s' failed with errors: %s"
+                .formatted(ids, actualErrors);
+        logger.error(errorMessage);
+        return CompletableFuture.failedFuture(new RuntimeException(errorMessage));
+      }
+      // All errors were document_missing_exception, log as debug and continue
+      logger.debug(
+          "Bulk updating operations completed with {} document_missing_exception errors (archived operations)",
+          response.items().stream().filter(item -> item.error() != null).count());
+    }
+    return CompletableFuture.completedFuture(ids);
   }
 
   private SearchRequest createSearchRequest() {

@@ -12,7 +12,7 @@ Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
   secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql, none. Default: elasticsearch.
-  ttl_days           Optional. Positive integer for namespace TTL in days. Default: 7.
+  ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: false.
 
 Options:
@@ -57,7 +57,7 @@ if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "opensear
 fi
 
 # Validate TTL value
-ttl_days="${3:-7}"
+ttl_days="${3:-1}"
 numberRegex='^[0-9]+$'
 if ! [[ $ttl_days =~ $numberRegex ]] ; then
    echo "Error: TTL '$ttl_days' is not a number"
@@ -103,7 +103,7 @@ raw_git_author=$(git config user.name || echo "unknown")
 git_author=$(sanitize_k8s_label "$raw_git_author")
 kubectl label namespace "$namespace" created-by="$git_author" --overwrite
 
-# Label namespace with TTL deadline (default: 7 days from now)
+# Label namespace with TTL deadline (default: 1 day from now)
 # Try GNU date format first (Linux), then BSD/macOS format
 if deadline_date=$(date -d "+${ttl_days} days" +%Y-%m-%d 2>/dev/null); then
   : # GNU date succeeded

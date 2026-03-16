@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.TopologyServices.ClusterStatus;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
@@ -30,8 +29,7 @@ public class StatusController {
   @CamundaGetMapping(path = "/status")
   public CompletableFuture<ResponseEntity<Object>> getStatus() {
     return RequestExecutor.executeServiceMethod(
-        () -> topologyServices.withAuthentication(CamundaAuthentication.none()).getStatus(),
-        StatusController::getStatusResponse);
+        topologyServices::getStatus, StatusController::getStatusResponse);
   }
 
   private static ResponseEntity<Object> getStatusResponse(final ClusterStatus clusterStatus) {

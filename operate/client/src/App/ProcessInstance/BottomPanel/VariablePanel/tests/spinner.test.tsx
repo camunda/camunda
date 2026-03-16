@@ -43,12 +43,12 @@ const TestSelectionControls: React.FC = () => {
         type="button"
         onClick={() =>
           selectElementInstance({
-            elementId: 'TEST_FLOW_NODE',
+            elementId: 'TEST_ELEMENT',
             elementInstanceKey: '2',
           })
         }
       >
-        select flow node instance
+        select element instance
       </button>
       <button
         type="button"
@@ -83,8 +83,8 @@ const getWrapper = (...args: Parameters<typeof getBaseWrapper>) => {
 
 const selectedElementInstance: ElementInstance = {
   elementInstanceKey: '2',
-  elementId: 'TEST_FLOW_NODE',
-  elementName: 'Test Flow Node',
+  elementId: 'TEST_ELEMENT',
+  elementName: 'Test Element',
   type: 'SERVICE_TASK',
   state: 'ACTIVE',
   startDate: '2018-06-21',
@@ -104,7 +104,7 @@ describe('VariablePanel spinner', () => {
 
     const statistics = [
       {
-        elementId: 'TEST_FLOW_NODE',
+        elementId: 'TEST_ELEMENT',
         active: 0,
         canceled: 0,
         incidents: 0,
@@ -178,7 +178,7 @@ describe('VariablePanel spinner', () => {
     });
 
     await user.click(
-      screen.getByRole('button', {name: /select flow node instance/i}),
+      screen.getByRole('button', {name: /select element instance/i}),
     );
 
     expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
@@ -234,7 +234,7 @@ describe('VariablePanel spinner', () => {
 
     mockFetchElementInstance('2').withSuccess(selectedElementInstance);
     await user.click(
-      screen.getByRole('button', {name: /select flow node instance/i}),
+      screen.getByRole('button', {name: /select element instance/i}),
     );
 
     expect(screen.getByTestId('variables-spinner')).toBeInTheDocument();

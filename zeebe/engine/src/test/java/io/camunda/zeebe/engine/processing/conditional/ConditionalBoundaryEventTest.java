@@ -48,11 +48,7 @@ public final class ConditionalBoundaryEventTest {
                     .serviceTask(serviceTaskId)
                     .zeebeJobType(serviceTaskId)
                     .boundaryEvent(catchEventId)
-                    .condition(
-                        c ->
-                            c.condition("=x > y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                     .endEvent()
                     .moveToActivity(serviceTaskId)
                     .endEvent()
@@ -185,7 +181,7 @@ public final class ConditionalBoundaryEventTest {
                 .withBpmnProcessId(processId)
                 .withCatchEventId(catchEventId)
                 .withCondition("=x + y > 10")
-                .withVariableNames(List.of())
+                .withVariableNames(List.of("x", "y"))
                 .withVariableEvents(List.of())
                 .isInterrupting(true)
                 .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
@@ -265,7 +261,7 @@ public final class ConditionalBoundaryEventTest {
                 .withBpmnProcessId(processId)
                 .withCatchEventId(catchEventId)
                 .withCondition("=x > y")
-                .withVariableNames(List.of())
+                .withVariableNames(List.of("x", "y"))
                 .withVariableEvents(List.of())
                 .isInterrupting(true)
                 .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
@@ -294,11 +290,7 @@ public final class ConditionalBoundaryEventTest {
                     .zeebeJobType(serviceTaskId)
                     .boundaryEvent(catchEventId)
                     .cancelActivity(false)
-                    .condition(
-                        c ->
-                            c.condition("=x > y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                     .endEvent(catchEventEndId)
                     .moveToActivity(serviceTaskId)
                     .endEvent()
@@ -392,11 +384,7 @@ public final class ConditionalBoundaryEventTest {
                     .serviceTask(serviceTaskId)
                     .zeebeJobType(serviceTaskId)
                     .boundaryEvent(catchEventId)
-                    .condition(
-                        c ->
-                            c.condition("=x > y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                     .endEvent()
                     .moveToActivity(serviceTaskId)
                     .endEvent()
@@ -482,20 +470,12 @@ public final class ConditionalBoundaryEventTest {
                     .zeebeJobType(serviceTaskId)
                     .boundaryEvent(catchEventId1)
                     .cancelActivity(false)
-                    .condition(
-                        c ->
-                            c.condition("=x > y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                     .endEvent(catchEventEndId1)
                     .moveToActivity(serviceTaskId)
                     .boundaryEvent(catchEventId2)
                     .cancelActivity(false)
-                    .condition(
-                        c ->
-                            c.condition("=x != y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x != y").zeebeVariableEvents("create, update"))
                     .endEvent(catchEventEndId2)
                     .moveToActivity(serviceTaskId)
                     .endEvent()
@@ -593,19 +573,11 @@ public final class ConditionalBoundaryEventTest {
                     .serviceTask(serviceTaskId)
                     .zeebeJobType(serviceTaskId)
                     .boundaryEvent(catchEventId1)
-                    .condition(
-                        c ->
-                            c.condition("=x > y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                     .endEvent(catchEventEndId1)
                     .moveToActivity(serviceTaskId)
                     .boundaryEvent(catchEventId2)
-                    .condition(
-                        c ->
-                            c.condition("=x != y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x != y").zeebeVariableEvents("create, update"))
                     .endEvent(catchEventEndId2)
                     .moveToActivity(serviceTaskId)
                     .endEvent()
@@ -719,11 +691,7 @@ public final class ConditionalBoundaryEventTest {
                 .serviceTask(serviceTaskId)
                 .zeebeJobType(serviceTaskId)
                 .boundaryEvent(catchEventId)
-                .condition(
-                    c ->
-                        c.condition("=x > y")
-                            .zeebeVariableNames("x, y")
-                            .zeebeVariableEvents("create, update"))
+                .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                 .endEvent()
                 .moveToActivity(serviceTaskId)
                 .endEvent()
@@ -786,11 +754,7 @@ public final class ConditionalBoundaryEventTest {
                 .serviceTask(serviceTaskId)
                 .zeebeJobType(serviceTaskId)
                 .boundaryEvent(catchEventId)
-                .condition(
-                    c ->
-                        c.condition("=x > y")
-                            .zeebeVariableNames("x, y")
-                            .zeebeVariableEvents("create, update"))
+                .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                 .endEvent()
                 .moveToActivity(serviceTaskId)
                 .endEvent()
@@ -851,11 +815,7 @@ public final class ConditionalBoundaryEventTest {
                 .serviceTask("task")
                 .zeebeJobType("task")
                 .boundaryEvent("boundary")
-                .condition(
-                    c ->
-                        c.condition("=x > y")
-                            .zeebeVariableNames("x, y")
-                            .zeebeVariableEvents("create, update"))
+                .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                 .endEvent()
                 .moveToActivity("task")
                 .endEvent()
@@ -893,11 +853,7 @@ public final class ConditionalBoundaryEventTest {
                 .serviceTask("task")
                 .zeebeJobType("task")
                 .boundaryEvent("boundary")
-                .condition(
-                    c ->
-                        c.condition("=x > y")
-                            .zeebeVariableNames("x, y")
-                            .zeebeVariableEvents("create, update"))
+                .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                 .endEvent()
                 .moveToActivity("task")
                 .endEvent()
@@ -931,11 +887,7 @@ public final class ConditionalBoundaryEventTest {
                 .serviceTask("task")
                 .zeebeJobType("task")
                 .boundaryEvent("boundary")
-                .condition(
-                    c ->
-                        c.condition("=x")
-                            .zeebeVariableNames("x")
-                            .zeebeVariableEvents("create, update"))
+                .condition(c -> c.condition("=x").zeebeVariableEvents("create, update"))
                 .endEvent()
                 .moveToActivity("task")
                 .endEvent()
@@ -1006,11 +958,7 @@ public final class ConditionalBoundaryEventTest {
                     .serviceTask(serviceTaskId)
                     .zeebeJobType(serviceTaskId)
                     .boundaryEvent(catchEventId)
-                    .condition(
-                        c ->
-                            c.condition("=x > y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                     .endEvent()
                     .moveToActivity(serviceTaskId)
                     .endEvent()
@@ -1103,11 +1051,7 @@ public final class ConditionalBoundaryEventTest {
                     .zeebeJobType(serviceTaskId)
                     .boundaryEvent(catchEventId)
                     .cancelActivity(false)
-                    .condition(
-                        c ->
-                            c.condition("=x > y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                     .endEvent()
                     .moveToActivity(serviceTaskId)
                     .endEvent()

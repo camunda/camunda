@@ -198,12 +198,21 @@ public class FlowNodeInstanceFromProcessInstanceHandler
   private static void setTreePath(
       final Record<ProcessInstanceRecordValue> record, final FlowNodeInstanceEntity entity) {
     final var recordValue = record.getValue();
-    if (recordValue.getElementInstancePath() != null
-        && !recordValue.getElementInstancePath().isEmpty()) {
-
-      final List<String> treePathEntries =
-          recordValue.getElementInstancePath().getLast().stream().map(String::valueOf).toList();
-      final String treePath = String.join("/", treePathEntries);
+    final var elementInstancePath = recordValue.getElementInstancePath();
+    if (elementInstancePath != null && !elementInstancePath.isEmpty()) {
+      final var pathWithinProcessInstance = elementInstancePath.getLast();
+      // Keys are usually 16 characters + 1 for the '/' character
+      final var treePathEntries = pathWithinProcessInstance.size();
+      final var expectedPathLength = (16 + 1) * treePathEntries;
+      final var treePathBuilder = new StringBuilder(expectedPathLength);
+      for (int i = 0; i < treePathEntries; i++) {
+        final var pathEntry = pathWithinProcessInstance.get(i);
+        treePathBuilder.append((long) pathEntry);
+        if (i != treePathEntries - 1) {
+          treePathBuilder.append("/");
+        }
+      }
+      final String treePath = treePathBuilder.toString();
 
       // Apply truncation for extremely deep nesting scenarios
       if (treePath.length() > MAX_TREE_PATH_LENGTH) {
@@ -211,7 +220,7 @@ public class FlowNodeInstanceFromProcessInstanceHandler
       } else {
         entity.setTreePath(treePath);
       }
-      entity.setLevel(treePathEntries.size() - 1);
+      entity.setLevel(treePathEntries - 1);
     } else {
       LOGGER.warn(
           "No elementInstancePath is provided for flow node instance id: {}. TreePath will be set to default value.",

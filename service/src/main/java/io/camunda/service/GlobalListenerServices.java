@@ -7,7 +7,9 @@
  */
 package io.camunda.service;
 
+import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.GLOBAL_TASK_LISTENER_READ_AUTHORIZATION;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD_CHAR;
 
 import io.camunda.search.clients.GlobalListenerSearchClient;
 import io.camunda.search.entities.GlobalListenerEntity;
@@ -34,57 +36,47 @@ public final class GlobalListenerServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final GlobalListenerSearchClient globalListenerSearchClient,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.globalListenerSearchClient = globalListenerSearchClient;
   }
 
-  @Override
-  public GlobalListenerServices withAuthentication(final CamundaAuthentication authentication) {
-    return new GlobalListenerServices(
-        brokerClient,
-        securityContextProvider,
-        globalListenerSearchClient,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
   public CompletableFuture<GlobalListenerRecord> createGlobalListener(
-      final GlobalListenerRecord request) {
-    return sendBrokerRequest(new BrokerCreateGlobalListenerRequest(request));
+      final GlobalListenerRecord request, final CamundaAuthentication authentication) {
+    return sendBrokerRequest(new BrokerCreateGlobalListenerRequest(request), authentication);
   }
 
-  public GlobalListenerEntity getGlobalTaskListener(final GlobalListenerRecord request) {
+  public GlobalListenerEntity getGlobalTaskListener(
+      final GlobalListenerRecord request, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             globalListenerSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, GLOBAL_TASK_LISTENER_READ_AUTHORIZATION))
+                        authentication,
+                        withAuthorization(GLOBAL_TASK_LISTENER_READ_AUTHORIZATION, WILDCARD_CHAR)))
                 .getGlobalListener(
                     request.getId(), GlobalListenerType.valueOf(request.getListenerType().name())));
   }
 
   public CompletableFuture<GlobalListenerRecord> updateGlobalListener(
-      final GlobalListenerRecord request) {
-    return sendBrokerRequest(new BrokerUpdateGlobalListenerRequest(request));
+      final GlobalListenerRecord request, final CamundaAuthentication authentication) {
+    return sendBrokerRequest(new BrokerUpdateGlobalListenerRequest(request), authentication);
   }
 
   public CompletableFuture<GlobalListenerRecord> deleteGlobalListener(
-      final GlobalListenerRecord request) {
-    return sendBrokerRequest(new BrokerDeleteGlobalListenerRequest(request));
+      final GlobalListenerRecord request, final CamundaAuthentication authentication) {
+    return sendBrokerRequest(new BrokerDeleteGlobalListenerRequest(request), authentication);
   }
 
   @Override
-  public SearchQueryResult<GlobalListenerEntity> search(final GlobalListenerQuery query) {
+  public SearchQueryResult<GlobalListenerEntity> search(
+      final GlobalListenerQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             globalListenerSearchClient

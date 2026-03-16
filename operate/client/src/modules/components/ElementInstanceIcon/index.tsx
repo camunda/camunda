@@ -16,87 +16,87 @@ import {isAdHocSubProcessInnerInstance} from 'modules/bpmn-js/utils/isAdHocSubPr
 import {isAdHocSubProcess} from 'modules/bpmn-js/utils/isAdHocSubProcess';
 import {isEventSubProcess} from 'modules/bpmn-js/utils/isEventSubProcess';
 
-import FlowNodeProcess from 'modules/components/Icon/flow-node-process-root.svg?react';
+import ElementProcess from 'modules/components/Icon/element-process-root.svg?react';
 
 /**
  * Gateway Imports
  */
-import FlowNodeGatewayInclusive from 'modules/components/Icon/flow-node-gateway-inclusive-or.svg?react';
-import FlowNodeGatewayExclusive from 'modules/components/Icon/flow-node-gateway-exclusive.svg?react';
-import FlowNodeGatewayParallel from 'modules/components/Icon/flow-node-gateway-parallel.svg?react';
-import FlowNodeGatewayEventBased from 'modules/components/Icon/flow-node-gateway-event-based.svg?react';
+import ElementGatewayInclusive from 'modules/components/Icon/element-gateway-inclusive-or.svg?react';
+import ElementGatewayExclusive from 'modules/components/Icon/element-gateway-exclusive.svg?react';
+import ElementGatewayParallel from 'modules/components/Icon/element-gateway-parallel.svg?react';
+import ElementGatewayEventBased from 'modules/components/Icon/element-gateway-event-based.svg?react';
 
 /**
  * Task Imports
  */
 
-import FlowNodeTask from 'modules/components/Icon/flow-node-task-undefined.svg?react';
-import FlowNodeTaskService from 'modules/components/Icon/flow-node-task-service.svg?react';
-import FlowNodeTaskReceive from 'modules/components/Icon/flow-node-task-receive.svg?react';
-import FlowNodeTaskSend from 'modules/components/Icon/flow-node-task-send.svg?react';
-import FlowNodeTaskSubProcess from 'modules/components/Icon/flow-node-subprocess-embedded.svg?react';
-import FlowNodeTaskSubProcessAdhoc from 'modules/components/Icon/flow-node-subprocess-adhoc.svg?react';
-import FlowNodeTaskSubProcessAdhocInnerInstance from 'modules/components/Icon/flow-node-subprocess-adhoc-inner-instance.svg?react';
-import FlowNodeTaskMulti from 'modules/components/Icon/flow-node-multi-instance-parallel.svg?react';
-import FlowNodeTaskParallel from 'modules/components/Icon/flow-node-multi-instance-sequential.svg?react';
-import FlowNodeCallActivity from 'modules/components/Icon/flow-node-call-activity.svg?react';
-import FlowNodeTaskUser from 'modules/components/Icon/flow-node-task-user.svg?react';
-import FlowNodeTaskBusinessRule from 'modules/components/Icon/flow-node-task-business-rule.svg?react';
-import FlowNodeTaskScript from 'modules/components/Icon/flow-node-task-script.svg?react';
-import FlowNodeTaskManual from 'modules/components/Icon/flow-node-task-manual.svg?react';
+import ElementTask from 'modules/components/Icon/element-task-undefined.svg?react';
+import ElementTaskService from 'modules/components/Icon/element-task-service.svg?react';
+import ElementTaskReceive from 'modules/components/Icon/element-task-receive.svg?react';
+import ElementTaskSend from 'modules/components/Icon/element-task-send.svg?react';
+import ElementTaskSubProcess from 'modules/components/Icon/element-subprocess-embedded.svg?react';
+import ElementTaskSubProcessAdhoc from 'modules/components/Icon/element-subprocess-adhoc.svg?react';
+import ElementTaskSubProcessAdhocInnerInstance from 'modules/components/Icon/element-subprocess-adhoc-inner-instance.svg?react';
+import ElementTaskMultiParallel from 'modules/components/Icon/element-multi-instance-parallel.svg?react';
+import ElementTaskSequential from 'modules/components/Icon/element-multi-instance-sequential.svg?react';
+import ElementCallActivity from 'modules/components/Icon/element-call-activity.svg?react';
+import ElementTaskUser from 'modules/components/Icon/element-task-user.svg?react';
+import ElementTaskBusinessRule from 'modules/components/Icon/element-task-business-rule.svg?react';
+import ElementTaskScript from 'modules/components/Icon/element-task-script.svg?react';
+import ElementTaskManual from 'modules/components/Icon/element-task-manual.svg?react';
 
 /**
  * Event Imports
  */
 
-import FlowNodeEventStart from 'modules/components/Icon/flow-node-event-start.svg?react';
-import FlowNodeEventEnd from 'modules/components/Icon/flow-node-event-end.svg?react';
-import FlowNodeEventIntermediateThrow from 'modules/components/Icon/flow-node-event-intermediate-none.svg?react';
+import ElementEventStart from 'modules/components/Icon/element-event-start.svg?react';
+import ElementEventEnd from 'modules/components/Icon/element-event-end.svg?react';
+import ElementEventIntermediateThrow from 'modules/components/Icon/element-event-intermediate-none.svg?react';
 
-import FlowNodeEventMessageStart from 'modules/components/Icon/flow-node-event-message-start.svg?react';
+import ElementEventMessageStart from 'modules/components/Icon/element-event-message-start.svg?react';
 
-import FlowNodeEventMessageIntermediateThrow from 'modules/components/Icon/flow-node-event-message-throw.svg?react';
-import FlowNodeEventMessageBoundaryNonInterrupting from 'modules/components/Icon/flow-node-event-message-non-interrupting.svg?react';
-import FlowNodeEventMessageBoundaryInterrupting from 'modules/components/Icon/flow-node-event-message-interrupting.svg?react';
-import FlowNodeEventMessageEnd from 'modules/components/Icon/flow-node-event-message-end.svg?react';
+import ElementEventMessageIntermediateThrow from 'modules/components/Icon/element-event-message-throw.svg?react';
+import ElementEventMessageBoundaryNonInterrupting from 'modules/components/Icon/element-event-message-non-interrupting.svg?react';
+import ElementEventMessageBoundaryInterrupting from 'modules/components/Icon/element-event-message-interrupting.svg?react';
+import ElementEventMessageEnd from 'modules/components/Icon/element-event-message-end.svg?react';
 
-import FlowNodeEventTimerStart from 'modules/components/Icon/flow-node-event-timer-start.svg?react';
-import FlowNodeEventTimerBoundaryInterrupting from 'modules/components/Icon/flow-node-event-timer-interrupting.svg?react';
-import FlowNodeEventTimerBoundaryNonInterrupting from 'modules/components/Icon/flow-node-event-timer-non-interrupting.svg?react';
+import ElementEventTimerStart from 'modules/components/Icon/element-event-timer-start.svg?react';
+import ElementEventTimerBoundaryInterrupting from 'modules/components/Icon/element-event-timer-interrupting.svg?react';
+import ElementEventTimerBoundaryNonInterrupting from 'modules/components/Icon/element-event-timer-non-interrupting.svg?react';
 
-import FlowNodeEventErrorStart from 'modules/components/Icon/flow-node-event-error-start.svg?react';
-import FlowNodeEventErrorBoundary from 'modules/components/Icon/flow-node-event-error-boundary.svg?react';
-import FlowNodeEventErrorEnd from 'modules/components/Icon/flow-node-event-error-end.svg?react';
+import ElementEventErrorStart from 'modules/components/Icon/element-event-error-start.svg?react';
+import ElementEventErrorBoundary from 'modules/components/Icon/element-event-error-boundary.svg?react';
+import ElementEventErrorEnd from 'modules/components/Icon/element-event-error-end.svg?react';
 
-import FlowNodeEventSubprocess from 'modules/components/Icon/flow-node-subprocess-event.svg?react';
+import ElementEventSubprocess from 'modules/components/Icon/element-subprocess-event.svg?react';
 
-import FlowNodeEventTerminateEnd from 'modules/components/Icon/flow-node-event-terminate-end.svg?react';
-import FlowNodeEscalationEndEvent from 'modules/components/Icon/flow-node-escalation-end-event.svg?react';
-import FlowNodeEscalationBoundaryEvent from 'modules/components/Icon/flow-node-escalation-boundary-event.svg?react';
-import FlowNodeEscalationBoundaryNonInterruptingEvent from 'modules/components/Icon/flow-node-escalation-boundary-non-interrupting-event.svg?react';
-import FlowNodeEscalationIntermediateThrowEvent from 'modules/components/Icon/flow-node-escalation-intermediate-throw-event.svg?react';
-import FlowNodeEscalationNonInterruptingStartEvent from 'modules/components/Icon/flow-node-escalation-non-interrupting-start-event.svg?react';
-import FlowNodeEscalationStartEvent from 'modules/components/Icon/flow-node-escalation-start-event.svg?react';
+import ElementEventTerminateEnd from 'modules/components/Icon/element-event-terminate-end.svg?react';
+import ElementEscalationEndEvent from 'modules/components/Icon/element-escalation-end-event.svg?react';
+import ElementEscalationBoundaryEvent from 'modules/components/Icon/element-escalation-boundary-event.svg?react';
+import ElementEscalationBoundaryNonInterruptingEvent from 'modules/components/Icon/element-escalation-boundary-non-interrupting-event.svg?react';
+import ElementEscalationIntermediateThrowEvent from 'modules/components/Icon/element-escalation-intermediate-throw-event.svg?react';
+import ElementEscalationNonInterruptingStartEvent from 'modules/components/Icon/element-escalation-non-interrupting-start-event.svg?react';
+import ElementEscalationStartEvent from 'modules/components/Icon/element-escalation-start-event.svg?react';
 
-import FlowNodeLinkEventIntermediateCatch from 'modules/components/Icon/flow-node-link-event-intermediate-catch.svg?react';
-import FlowNodeLinkEventIntermediateThrow from 'modules/components/Icon/flow-node-link-event-intermediate-throw.svg?react';
-import FlowNodeEventSignalStart from 'modules/components/Icon/flow-node-event-signal-start.svg?react';
-import FlowNodeEventSignalEnd from 'modules/components/Icon/flow-node-event-signal-end.svg?react';
-import FlowNodeEventSignalIntermediateThrow from 'modules/components/Icon/flow-node-event-signal-intermediate-throw.svg?react';
-import FlowNodeEventSignalIntermediateCatch from 'modules/components/Icon/flow-node-event-signal-intermediate-catch.svg?react';
-import FlowNodeEventSignalInterruptingBoundary from 'modules/components/Icon/flow-node-event-signal-interrupting-boundary.svg?react';
-import FlowNodeEventSignalNonInterruptingBoundary from 'modules/components/Icon/flow-node-event-signal-non-interrupting-boundary.svg?react';
-import FlowNodeEventSignalNonInterruptingStart from 'modules/components/Icon/flow-node-event-signal-non-interrupting-start.svg?react';
+import ElementLinkEventIntermediateCatch from 'modules/components/Icon/element-link-event-intermediate-catch.svg?react';
+import ElementLinkEventIntermediateThrow from 'modules/components/Icon/element-link-event-intermediate-throw.svg?react';
+import ElementEventSignalStart from 'modules/components/Icon/element-event-signal-start.svg?react';
+import ElementEventSignalEnd from 'modules/components/Icon/element-event-signal-end.svg?react';
+import ElementEventSignalIntermediateThrow from 'modules/components/Icon/element-event-signal-intermediate-throw.svg?react';
+import ElementEventSignalIntermediateCatch from 'modules/components/Icon/element-event-signal-intermediate-catch.svg?react';
+import ElementEventSignalInterruptingBoundary from 'modules/components/Icon/element-event-signal-interrupting-boundary.svg?react';
+import ElementEventSignalNonInterruptingBoundary from 'modules/components/Icon/element-event-signal-non-interrupting-boundary.svg?react';
+import ElementEventSignalNonInterruptingStart from 'modules/components/Icon/element-event-signal-non-interrupting-start.svg?react';
 
-import FlowNodeEventCompensationStart from 'modules/components/Icon/flow-node-compensation-start-event.svg?react';
-import FlowNodeEventCompensationEnd from 'modules/components/Icon/flow-node-compensation-end-event.svg?react';
-import FlowNodeEventCompensationIntermediateThrow from 'modules/components/Icon/flow-node-compensation-intermediate-event-throw.svg?react';
-import FlowNodeEventCompensationBoundary from 'modules/components/Icon/flow-node-compensation-boundary-event.svg?react';
+import ElementEventCompensationStart from 'modules/components/Icon/element-compensation-start-event.svg?react';
+import ElementEventCompensationEnd from 'modules/components/Icon/element-compensation-end-event.svg?react';
+import ElementEventCompensationIntermediateThrow from 'modules/components/Icon/element-compensation-intermediate-event-throw.svg?react';
+import ElementEventCompensationBoundary from 'modules/components/Icon/element-compensation-boundary-event.svg?react';
 
-import FlowNodeEventConditionalStart from 'modules/components/Icon/flow-node-conditional-start-event.svg?react';
-import FlowNodeEventConditionalIntermediateCatch from 'modules/components/Icon/flow-node-conditional-intermediate-catch-event.svg?react';
-import FlowNodeEventConditionalNonInterrupting from 'modules/components/Icon/flow-node-conditional-intermediate-catch-non-interrupting-event.svg?react';
-import FlowNodeEventConditionalNonInterruptingStart from 'modules/components/Icon/flow-node-conditional-intermediate-catch-non-interrupting-start-event.svg?react';
+import ElementEventConditionalStart from 'modules/components/Icon/element-conditional-start-event.svg?react';
+import ElementEventConditionalIntermediateCatch from 'modules/components/Icon/element-conditional-intermediate-catch-event.svg?react';
+import ElementEventConditionalNonInterrupting from 'modules/components/Icon/element-conditional-intermediate-catch-non-interrupting-event.svg?react';
+import ElementEventConditionalNonInterruptingStart from 'modules/components/Icon/element-conditional-intermediate-catch-non-interrupting-start-event.svg?react';
 
 type Props = {
   diagramBusinessObject: BusinessObject | undefined;
@@ -112,7 +112,7 @@ const ElementInstanceIcon: React.FC<Props> = ({
 }) => {
   if (isRootProcess) {
     return (
-      <FlowNodeProcess
+      <ElementProcess
         className={className}
         data-testid="element-instance-icon"
         {...rest}
@@ -122,7 +122,7 @@ const ElementInstanceIcon: React.FC<Props> = ({
 
   if (diagramBusinessObject === undefined) {
     return (
-      <FlowNodeTask
+      <ElementTask
         className={className}
         data-testid="element-instance-icon"
         {...rest}
@@ -151,61 +151,57 @@ const ElementInstanceIcon: React.FC<Props> = ({
   };
 
   if (isAdHocSubProcessInnerInstance(diagramBusinessObject)) {
-    return <FlowNodeTaskSubProcessAdhocInnerInstance {...svgProps} />;
+    return <ElementTaskSubProcessAdhocInnerInstance {...svgProps} />;
   }
 
   if (isAdHocSubProcess(diagramBusinessObject)) {
-    return <FlowNodeTaskSubProcessAdhoc {...svgProps} />;
+    return <ElementTaskSubProcessAdhoc {...svgProps} />;
   }
 
   if (isEventSubProcess({businessObject: diagramBusinessObject})) {
-    return <FlowNodeEventSubprocess {...svgProps} />;
+    return <ElementEventSubprocess {...svgProps} />;
   }
 
   switch (businessObjectTypeName) {
     case 'bpmn:ExclusiveGateway':
-      return <FlowNodeGatewayExclusive {...svgProps} />;
+      return <ElementGatewayExclusive {...svgProps} />;
     case 'bpmn:InclusiveGateway':
-      return <FlowNodeGatewayInclusive {...svgProps} />;
+      return <ElementGatewayInclusive {...svgProps} />;
     case 'bpmn:ParallelGateway':
-      return <FlowNodeGatewayParallel {...svgProps} />;
+      return <ElementGatewayParallel {...svgProps} />;
     case 'bpmn:EventBasedGateway':
-      return <FlowNodeGatewayEventBased {...svgProps} />;
+      return <ElementGatewayEventBased {...svgProps} />;
     case 'bpmn:ServiceTask':
-      return <FlowNodeTaskService {...svgProps} />;
+      return <ElementTaskService {...svgProps} />;
     case 'bpmn:UserTask':
-      return <FlowNodeTaskUser {...svgProps} />;
+      return <ElementTaskUser {...svgProps} />;
     case 'bpmn:BusinessRuleTask':
-      return <FlowNodeTaskBusinessRule {...svgProps} />;
+      return <ElementTaskBusinessRule {...svgProps} />;
     case 'bpmn:ScriptTask':
-      return <FlowNodeTaskScript {...svgProps} />;
+      return <ElementTaskScript {...svgProps} />;
     case 'bpmn:ReceiveTask':
-      return <FlowNodeTaskReceive {...svgProps} />;
+      return <ElementTaskReceive {...svgProps} />;
     case 'bpmn:SendTask':
-      return <FlowNodeTaskSend {...svgProps} />;
+      return <ElementTaskSend {...svgProps} />;
     case 'bpmn:ManualTask':
-      return <FlowNodeTaskManual {...svgProps} />;
+      return <ElementTaskManual {...svgProps} />;
     case 'bpmn:CallActivity':
-      return <FlowNodeCallActivity {...svgProps} />;
+      return <ElementCallActivity {...svgProps} />;
     case 'bpmn:Process':
-      return <FlowNodeProcess {...svgProps} />;
+      return <ElementProcess {...svgProps} />;
     case 'bpmn:SubProcess':
-      return <FlowNodeTaskSubProcess {...svgProps} />;
-  }
-
-  if (diagramBusinessObject === undefined) {
-    return <FlowNodeTask {...svgProps} />;
+      return <ElementTaskSubProcess {...svgProps} />;
   }
 
   if (isMultiInstance(diagramBusinessObject)) {
     const multiInstanceType = getMultiInstanceType(diagramBusinessObject);
 
     if (multiInstanceType === 'parallel') {
-      return <FlowNodeTaskParallel {...svgProps} />;
+      return <ElementTaskSequential {...svgProps} />;
     }
 
     if (multiInstanceType === 'sequential') {
-      return <FlowNodeTaskMulti {...svgProps} />;
+      return <ElementTaskMultiParallel {...svgProps} />;
     }
   }
 
@@ -214,33 +210,33 @@ const ElementInstanceIcon: React.FC<Props> = ({
       switch (diagramBusinessObject.$type) {
         default:
         case 'bpmn:StartEvent':
-          return <FlowNodeEventErrorStart {...svgProps} />;
+          return <ElementEventErrorStart {...svgProps} />;
         case 'bpmn:EndEvent':
-          return <FlowNodeEventErrorEnd {...svgProps} />;
+          return <ElementEventErrorEnd {...svgProps} />;
         case 'bpmn:BoundaryEvent':
-          return <FlowNodeEventErrorBoundary {...svgProps} />;
+          return <ElementEventErrorBoundary {...svgProps} />;
       }
     case 'bpmn:MessageEventDefinition':
       switch (diagramBusinessObject.$type) {
         default:
         case 'bpmn:StartEvent':
-          return <FlowNodeEventMessageStart {...svgProps} />;
+          return <ElementEventMessageStart {...svgProps} />;
         case 'bpmn:EndEvent':
-          return <FlowNodeEventMessageEnd {...svgProps} />;
+          return <ElementEventMessageEnd {...svgProps} />;
         case 'bpmn:IntermediateCatchEvent':
           // uses the same style as boundary interrupting
-          return <FlowNodeEventMessageBoundaryInterrupting {...svgProps} />;
+          return <ElementEventMessageBoundaryInterrupting {...svgProps} />;
         case 'bpmn:IntermediateThrowEvent':
-          return <FlowNodeEventMessageIntermediateThrow {...svgProps} />;
+          return <ElementEventMessageIntermediateThrow {...svgProps} />;
         case 'bpmn:BoundaryEvent':
           switch (getBoundaryEventType(diagramBusinessObject)) {
             default:
             case 'interrupting':
-              return <FlowNodeEventMessageBoundaryInterrupting {...svgProps} />;
+              return <ElementEventMessageBoundaryInterrupting {...svgProps} />;
 
             case 'non-interrupting':
               return (
-                <FlowNodeEventMessageBoundaryNonInterrupting {...svgProps} />
+                <ElementEventMessageBoundaryNonInterrupting {...svgProps} />
               );
           }
       }
@@ -248,57 +244,55 @@ const ElementInstanceIcon: React.FC<Props> = ({
       switch (diagramBusinessObject.$type) {
         default:
         case 'bpmn:StartEvent':
-          return <FlowNodeEventTimerStart {...svgProps} />;
+          return <ElementEventTimerStart {...svgProps} />;
         case 'bpmn:IntermediateCatchEvent':
-          return <FlowNodeEventTimerBoundaryInterrupting {...svgProps} />;
+          return <ElementEventTimerBoundaryInterrupting {...svgProps} />;
         case 'bpmn:BoundaryEvent':
           switch (getBoundaryEventType(diagramBusinessObject)) {
             default:
             case 'interrupting':
-              return <FlowNodeEventTimerBoundaryInterrupting {...svgProps} />;
+              return <ElementEventTimerBoundaryInterrupting {...svgProps} />;
             case 'non-interrupting':
-              return (
-                <FlowNodeEventTimerBoundaryNonInterrupting {...svgProps} />
-              );
+              return <ElementEventTimerBoundaryNonInterrupting {...svgProps} />;
           }
       }
     case 'bpmn:TerminateEventDefinition':
-      return <FlowNodeEventTerminateEnd {...svgProps} />;
+      return <ElementEventTerminateEnd {...svgProps} />;
 
     case 'bpmn:LinkEventDefinition':
       switch (diagramBusinessObject.$type) {
         default:
         case 'bpmn:IntermediateCatchEvent':
-          return <FlowNodeLinkEventIntermediateCatch {...svgProps} />;
+          return <ElementLinkEventIntermediateCatch {...svgProps} />;
         case 'bpmn:IntermediateThrowEvent':
-          return <FlowNodeLinkEventIntermediateThrow {...svgProps} />;
+          return <ElementLinkEventIntermediateThrow {...svgProps} />;
       }
 
     case 'bpmn:EscalationEventDefinition':
       switch (diagramBusinessObject.$type) {
         default:
         case 'bpmn:EndEvent':
-          return <FlowNodeEscalationEndEvent {...svgProps} />;
+          return <ElementEscalationEndEvent {...svgProps} />;
         case 'bpmn:StartEvent':
           switch (isInterruptingEvent(diagramBusinessObject)) {
             default:
             case true:
-              return <FlowNodeEscalationStartEvent {...svgProps} />;
+              return <ElementEscalationStartEvent {...svgProps} />;
             case false:
               return (
-                <FlowNodeEscalationNonInterruptingStartEvent {...svgProps} />
+                <ElementEscalationNonInterruptingStartEvent {...svgProps} />
               );
           }
         case 'bpmn:IntermediateThrowEvent':
-          return <FlowNodeEscalationIntermediateThrowEvent {...svgProps} />;
+          return <ElementEscalationIntermediateThrowEvent {...svgProps} />;
         case 'bpmn:BoundaryEvent':
           switch (getBoundaryEventType(diagramBusinessObject)) {
             default:
             case 'interrupting':
-              return <FlowNodeEscalationBoundaryEvent {...svgProps} />;
+              return <ElementEscalationBoundaryEvent {...svgProps} />;
             case 'non-interrupting':
               return (
-                <FlowNodeEscalationBoundaryNonInterruptingEvent {...svgProps} />
+                <ElementEscalationBoundaryNonInterruptingEvent {...svgProps} />
               );
           }
       }
@@ -310,39 +304,39 @@ const ElementInstanceIcon: React.FC<Props> = ({
           switch (isInterruptingEvent(diagramBusinessObject)) {
             default:
             case true:
-              return <FlowNodeEventSignalStart {...svgProps} />;
+              return <ElementEventSignalStart {...svgProps} />;
             case false:
-              return <FlowNodeEventSignalNonInterruptingStart {...svgProps} />;
+              return <ElementEventSignalNonInterruptingStart {...svgProps} />;
           }
         case 'bpmn:BoundaryEvent':
           switch (getBoundaryEventType(diagramBusinessObject)) {
             default:
             case 'interrupting':
-              return <FlowNodeEventSignalInterruptingBoundary {...svgProps} />;
+              return <ElementEventSignalInterruptingBoundary {...svgProps} />;
             case 'non-interrupting':
               return (
-                <FlowNodeEventSignalNonInterruptingBoundary {...svgProps} />
+                <ElementEventSignalNonInterruptingBoundary {...svgProps} />
               );
           }
         case 'bpmn:IntermediateThrowEvent':
-          return <FlowNodeEventSignalIntermediateThrow {...svgProps} />;
+          return <ElementEventSignalIntermediateThrow {...svgProps} />;
         case 'bpmn:IntermediateCatchEvent':
-          return <FlowNodeEventSignalIntermediateCatch {...svgProps} />;
+          return <ElementEventSignalIntermediateCatch {...svgProps} />;
         case 'bpmn:EndEvent':
-          return <FlowNodeEventSignalEnd {...svgProps} />;
+          return <ElementEventSignalEnd {...svgProps} />;
       }
 
     case 'bpmn:CompensateEventDefinition':
       switch (diagramBusinessObject.$type) {
         default:
         case 'bpmn:StartEvent':
-          return <FlowNodeEventCompensationStart {...svgProps} />;
+          return <ElementEventCompensationStart {...svgProps} />;
         case 'bpmn:BoundaryEvent':
-          return <FlowNodeEventCompensationBoundary {...svgProps} />;
+          return <ElementEventCompensationBoundary {...svgProps} />;
         case 'bpmn:IntermediateThrowEvent':
-          return <FlowNodeEventCompensationIntermediateThrow {...svgProps} />;
+          return <ElementEventCompensationIntermediateThrow {...svgProps} />;
         case 'bpmn:EndEvent':
-          return <FlowNodeEventCompensationEnd {...svgProps} />;
+          return <ElementEventCompensationEnd {...svgProps} />;
       }
 
     case 'bpmn:ConditionalEventDefinition':
@@ -352,37 +346,35 @@ const ElementInstanceIcon: React.FC<Props> = ({
           switch (isInterruptingEvent(diagramBusinessObject)) {
             default:
             case true:
-              return <FlowNodeEventConditionalStart {...svgProps} />;
+              return <ElementEventConditionalStart {...svgProps} />;
             case false:
               return (
-                <FlowNodeEventConditionalNonInterruptingStart {...svgProps} />
+                <ElementEventConditionalNonInterruptingStart {...svgProps} />
               );
           }
         case 'bpmn:IntermediateCatchEvent':
-          return <FlowNodeEventConditionalIntermediateCatch {...svgProps} />;
+          return <ElementEventConditionalIntermediateCatch {...svgProps} />;
         case 'bpmn:BoundaryEvent':
           switch (getBoundaryEventType(diagramBusinessObject)) {
             default:
             case 'interrupting':
-              return (
-                <FlowNodeEventConditionalIntermediateCatch {...svgProps} />
-              );
+              return <ElementEventConditionalIntermediateCatch {...svgProps} />;
             case 'non-interrupting':
-              return <FlowNodeEventConditionalNonInterrupting {...svgProps} />;
+              return <ElementEventConditionalNonInterrupting {...svgProps} />;
           }
       }
   }
 
   switch (businessObjectTypeName) {
     case 'bpmn:StartEvent':
-      return <FlowNodeEventStart {...svgProps} />;
+      return <ElementEventStart {...svgProps} />;
     case 'bpmn:EndEvent':
-      return <FlowNodeEventEnd {...svgProps} />;
+      return <ElementEventEnd {...svgProps} />;
     case 'bpmn:IntermediateThrowEvent':
-      return <FlowNodeEventIntermediateThrow {...svgProps} />;
+      return <ElementEventIntermediateThrow {...svgProps} />;
   }
 
-  return <FlowNodeTask {...svgProps} />;
+  return <ElementTask {...svgProps} />;
 };
 
 export {ElementInstanceIcon};

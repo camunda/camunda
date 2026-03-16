@@ -6,71 +6,48 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {
+  GlobalTaskListener,
+  GlobalTaskListenerEventType,
+  QueryGlobalTaskListenersRequestBody,
+  QueryGlobalTaskListenersResponseBody,
+  CreateGlobalTaskListenerRequestBody,
+} from "@camunda/camunda-api-zod-schemas/8.9";
+import { globalTaskListenerEventTypeSchema } from "@camunda/camunda-api-zod-schemas/8.9";
 import {
   ApiDefinition,
   apiDelete,
   apiPost,
   apiPut,
 } from "src/utility/api/request";
-import { SearchResponse, PageSearchParams } from "src/utility/api";
 
 export const GLOBAL_TASK_LISTENERS_ENDPOINT = "/global-task-listeners";
 
-export enum ListenerSource {
-  CONFIGURATION = "CONFIGURATION",
-  API = "API",
-}
-
-export enum ListenerEventType {
-  ALL = "all",
-  CREATING = "creating",
-  UPDATING = "updating",
-  ASSIGNING = "assigning",
-  COMPLETING = "completing",
-  CANCELING = "canceling",
-}
-
-export const LISTENER_EVENT_TYPES = Object.values(ListenerEventType);
-
-export type GlobalTaskListener = {
-  id: string;
-  type: string;
-  eventTypes: ListenerEventType[];
-  retries?: number;
-  afterNonGlobal?: boolean;
-  priority?: number;
-  source?: ListenerSource;
-};
+export const LISTENER_EVENT_TYPES: GlobalTaskListenerEventType[] = [
+  ...globalTaskListenerEventTypeSchema.options,
+];
 
 export const searchGlobalTaskListeners: ApiDefinition<
-  SearchResponse<GlobalTaskListener>,
-  PageSearchParams | Record<string, unknown> | undefined
+  QueryGlobalTaskListenersResponseBody,
+  QueryGlobalTaskListenersRequestBody | undefined
 > = (params = {}) => {
   return apiPost(`${GLOBAL_TASK_LISTENERS_ENDPOINT}/search`, params);
 };
 
-export type CreateGlobalTaskListenerParams = Omit<GlobalTaskListener, "source">;
-
 export const createGlobalTaskListener: ApiDefinition<
   undefined,
-  CreateGlobalTaskListenerParams
+  CreateGlobalTaskListenerRequestBody
 > = (params) => apiPost(GLOBAL_TASK_LISTENERS_ENDPOINT, params);
-
-export type UpdateGlobalTaskListenerParams = Omit<GlobalTaskListener, "source">;
 
 export const updateGlobalTaskListener: ApiDefinition<
   undefined,
-  UpdateGlobalTaskListenerParams
+  CreateGlobalTaskListenerRequestBody
 > = (params) => {
   const { id, ...listener } = params;
   return apiPut(`${GLOBAL_TASK_LISTENERS_ENDPOINT}/${id}`, listener);
 };
 
-export type DeleteGlobalTaskListenerParams = {
-  id: string;
-};
-
 export const deleteGlobalTaskListener: ApiDefinition<
   undefined,
-  DeleteGlobalTaskListenerParams
+  Pick<GlobalTaskListener, "id">
 > = ({ id }) => apiDelete(`${GLOBAL_TASK_LISTENERS_ENDPOINT}/${id}`);

@@ -130,12 +130,15 @@
     <constructor>
       <idArg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="NAME" javaType="java.lang.String"/>
-      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="BPMN_XML" javaType="java.lang.String"/>
-      <arg column="RESOURCE_NAME" javaType="java.lang.String"/>
+      <arg column="RESOURCE_NAME" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="VERSION" javaType="java.lang.Integer"/>
       <arg column="VERSION_TAG" javaType="java.lang.String"/>
-      <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="FORM_ID" javaType="java.lang.String"/>
     </constructor>
   </resultMap>
@@ -363,12 +366,10 @@
     SELECT pi.PROCESS_DEFINITION_ID,
     pi.TENANT_ID,
     (SELECT pd.NAME
-      FROM ${prefix}PROCESS_INSTANCE pi2
-      JOIN ${prefix}PROCESS_DEFINITION pd ON pd.PROCESS_DEFINITION_KEY = pi2.PROCESS_DEFINITION_KEY
-      <where>
-        pi2.PROCESS_DEFINITION_ID = pi.PROCESS_DEFINITION_ID AND pi2.TENANT_ID = pi.TENANT_ID
-      </where>
-      ORDER BY pi2.VERSION DESC
+        FROM ${prefix}PROCESS_DEFINITION pd
+        WHERE pd.PROCESS_DEFINITION_ID = pi.PROCESS_DEFINITION_ID
+            AND pd.TENANT_ID = pi.TENANT_ID
+        ORDER BY pd.VERSION DESC
       <choose>
         <when test="_databaseId == 'mssql'">
           <!-- MSSQL needs an OFFSET when sorting in subselects -->

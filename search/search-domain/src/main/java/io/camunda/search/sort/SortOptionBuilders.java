@@ -290,6 +290,17 @@ public final class SortOptionBuilders {
     return fn.apply(jobWorkerStatistics()).build();
   }
 
+  public static JobTimeSeriesStatisticsSort.Builder jobTimeSeriesStatistics() {
+    return new JobTimeSeriesStatisticsSort.Builder();
+  }
+
+  public static JobTimeSeriesStatisticsSort jobTimeSeriesStatistics(
+      final Function<
+              JobTimeSeriesStatisticsSort.Builder, ObjectBuilder<JobTimeSeriesStatisticsSort>>
+          fn) {
+    return fn.apply(jobTimeSeriesStatistics()).build();
+  }
+
   public static CorrelatedMessageSubscriptionSort.Builder correlatedMessageSubscription() {
     return new CorrelatedMessageSubscriptionSort.Builder();
   }
@@ -350,5 +361,14 @@ public final class SortOptionBuilders {
   public static GlobalListenerSort globalListener(
       final Function<GlobalListenerSort.Builder, ObjectBuilder<GlobalListenerSort>> fn) {
     return fn.apply(globalListener()).build();
+  }
+
+  public static JobErrorStatisticsSort.Builder jobErrorStatistics() {
+    return new JobErrorStatisticsSort.Builder();
+  }
+
+  public static JobErrorStatisticsSort jobErrorStatistics(
+      final Function<JobErrorStatisticsSort.Builder, ObjectBuilder<JobErrorStatisticsSort>> fn) {
+    return fn.apply(jobErrorStatistics()).build();
   }
 }

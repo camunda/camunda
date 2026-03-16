@@ -164,8 +164,8 @@ test.describe('Processes', () => {
     const shipArticlesTaskId = 'shipArticles';
     await expect(page.getByTestId('diagram')).toBeInViewport();
 
-    await processesPage.diagram.clickFlowNode('Ship Articles');
-    await expect(filtersPanel.flowNodeFilter).toHaveValue('Ship Articles');
+    await processesPage.diagram.clickElement('Ship Articles');
+    await expect(filtersPanel.elementFilter).toHaveValue('Ship Articles');
 
     await expect(
       page.getByText('There are no Instances matching this filter set'),
@@ -184,14 +184,14 @@ test.describe('Processes', () => {
 
     // Ensure Check Payment flow node is not selected
     await expect(
-      processesPage.diagram.getFlowNode('Check Payment'),
+      processesPage.diagram.getElement('Check Payment'),
     ).not.toHaveClass(/selected/);
 
     // Select "Check Payment" flow node
     const checkPaymentTaskId = 'checkPayment';
 
-    await processesPage.diagram.clickFlowNode('Check payment');
-    await expect(filtersPanel.flowNodeFilter).toHaveValue('Check payment');
+    await processesPage.diagram.clickElement('Check payment');
+    await expect(filtersPanel.elementFilter).toHaveValue('Check payment');
 
     await expect(page.getByRole('table').getByRole('row')).toHaveCount(2);
 
@@ -206,15 +206,15 @@ test.describe('Processes', () => {
       })}`,
     );
 
-    await expect(
-      processesPage.diagram.getFlowNode('Check Payment'),
-    ).toHaveClass(/selected/);
+    await expect(processesPage.diagram.getElement('Check Payment')).toHaveClass(
+      /selected/,
+    );
 
     // Ensure that flow node is still selected after page reload
     await page.reload();
-    await expect(
-      processesPage.diagram.getFlowNode('Check Payment'),
-    ).toHaveClass(/selected/);
+    await expect(processesPage.diagram.getElement('Check Payment')).toHaveClass(
+      /selected/,
+    );
   });
 
   test('Wait for process creation', async ({

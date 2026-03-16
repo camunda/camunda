@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.gateway.impl.broker.PublishMessageDispatchStrategy;
+import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
@@ -22,14 +23,22 @@ public final class BrokerCorrelateMessageRequest
 
   private final MessageCorrelationRecord requestDto = new MessageCorrelationRecord();
   private final PublishMessageDispatchStrategy dispatchStrategy;
+  private final int maxVariableNameLength;
 
   public BrokerCorrelateMessageRequest(final String messageName, final String correlationKey) {
+    this(messageName, correlationKey, VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
+  }
+
+  public BrokerCorrelateMessageRequest(
+      final String messageName, final String correlationKey, final int maxVariableNameLength) {
     super(ValueType.MESSAGE_CORRELATION, MessageCorrelationIntent.CORRELATE);
     requestDto.setName(messageName).setCorrelationKey(correlationKey);
     dispatchStrategy = new PublishMessageDispatchStrategy(correlationKey);
+    this.maxVariableNameLength = maxVariableNameLength;
   }
 
   public BrokerCorrelateMessageRequest setVariables(final DirectBuffer variables) {
+    VariableNameLengthValidator.validateVariableNameLength(variables, maxVariableNameLength);
     requestDto.setVariables(variables);
     return this;
   }

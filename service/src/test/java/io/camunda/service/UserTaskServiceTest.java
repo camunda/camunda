@@ -30,6 +30,7 @@ import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.cache.ProcessCacheItem;
@@ -55,6 +56,7 @@ public class UserTaskServiceTest {
   private VariableServices variableServices;
   private AuditLogServices auditLogServices;
   private ProcessCache processCache;
+  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
@@ -64,6 +66,7 @@ public class UserTaskServiceTest {
     variableServices = mock(VariableServices.class, RETURNS_SELF);
     auditLogServices = mock(AuditLogServices.class, RETURNS_SELF);
     processCache = mock(ProcessCache.class);
+    authentication = mock(CamundaAuthentication.class);
     services =
         new UserTaskServices(
             mock(BrokerClient.class),
@@ -74,7 +77,6 @@ public class UserTaskServiceTest {
             variableServices,
             auditLogServices,
             processCache,
-            null,
             mock(ApiServicesExecutorProvider.class),
             null);
 
@@ -94,7 +96,7 @@ public class UserTaskServiceTest {
 
       // when
       final ThrowingCallable executable =
-          () -> services.searchUserTaskVariables(1L, variableSearchQuery().build());
+          () -> services.searchUserTaskVariables(1L, variableSearchQuery().build(), authentication);
 
       // then
       final var exception =
@@ -102,8 +104,8 @@ public class UserTaskServiceTest {
               assertThatThrownBy(executable).isInstanceOf(ServiceException.class).actual();
       assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
       verify(client).getUserTask(any(Long.class));
-      verify(elementInstanceServices, never()).search(any());
-      verify(variableServices, never()).search(any());
+      verify(elementInstanceServices, never()).search(any(), any());
+      verify(variableServices, never()).search(any(), any());
     }
 
     @Test
@@ -118,15 +120,17 @@ public class UserTaskServiceTest {
       final var variable = Instancio.create(VariableEntity.class);
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
-      when(elementInstanceServices.getByKey(eq(flowNodeInstanceEntity.flowNodeInstanceKey())))
+      when(elementInstanceServices.getByKey(
+              eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
       when(variableServices.search(
-              variableSearchQuery(q -> q.filter(f -> f.scopeKeys(1L, 2L, 3L)))))
+              eq(variableSearchQuery(q -> q.filter(f -> f.scopeKeys(1L, 2L, 3L)))), any()))
           .thenReturn(SearchQueryResult.of(variable));
 
       // when
       final SearchQueryResult<VariableEntity> searchQueryResult =
-          services.searchUserTaskVariables(entity.userTaskKey(), variableSearchQuery().build());
+          services.searchUserTaskVariables(
+              entity.userTaskKey(), variableSearchQuery().build(), authentication);
 
       // then
       assertThat(searchQueryResult.items()).containsOnly(variable);
@@ -146,7 +150,7 @@ public class UserTaskServiceTest {
 
       // when
       final ThrowingCallable executable =
-          () -> services.searchUserTaskAuditLogs(1L, auditLogSearchQuery().build());
+          () -> services.searchUserTaskAuditLogs(1L, auditLogSearchQuery().build(), authentication);
 
       // then
       final var exception =
@@ -154,8 +158,8 @@ public class UserTaskServiceTest {
               assertThatThrownBy(executable).isInstanceOf(ServiceException.class).actual();
       assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
       verify(client).getUserTask(any(Long.class));
-      verify(elementInstanceServices, never()).search(any());
-      verify(auditLogServices, never()).search(any());
+      verify(elementInstanceServices, never()).search(any(), any());
+      verify(auditLogServices, never()).search(any(), any());
     }
 
     @Test
@@ -165,12 +169,14 @@ public class UserTaskServiceTest {
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       final var outputEntity = Instancio.create(AuditLogEntity.class);
       when(auditLogServices.search(
-              auditLogSearchQuery(q -> q.filter(f -> f.userTaskKeys(entity.userTaskKey())))))
+              eq(auditLogSearchQuery(q -> q.filter(f -> f.userTaskKeys(entity.userTaskKey())))),
+              any()))
           .thenReturn(SearchQueryResult.of(outputEntity));
 
       // when
       final SearchQueryResult<AuditLogEntity> searchQueryResult =
-          services.searchUserTaskAuditLogs(entity.userTaskKey(), auditLogSearchQuery().build());
+          services.searchUserTaskAuditLogs(
+              entity.userTaskKey(), auditLogSearchQuery().build(), authentication);
 
       // then
       assertThat(searchQueryResult.items()).containsOnly(outputEntity);
@@ -187,10 +193,10 @@ public class UserTaskServiceTest {
           Instancio.of(FormEntity.class).set(field(FormEntity::formKey), entity.formKey()).create();
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
-      when(formServices.getByKey(eq(entity.formKey()))).thenReturn(form);
+      when(formServices.getByKey(eq(entity.formKey()), any())).thenReturn(form);
 
       // when
-      final var result = services.getUserTaskForm(entity.userTaskKey());
+      final var result = services.getUserTaskForm(entity.userTaskKey(), authentication);
 
       // then
       assertThat(result).isPresent();
@@ -206,7 +212,7 @@ public class UserTaskServiceTest {
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
 
       // when
-      final var result = services.getUserTaskForm(1L);
+      final var result = services.getUserTaskForm(1L, authentication);
 
       // then
       assertThat(result).isEmpty();
@@ -222,7 +228,7 @@ public class UserTaskServiceTest {
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
 
-      final var searchQueryResult = services.getByKey(entity.userTaskKey());
+      final var searchQueryResult = services.getByKey(entity.userTaskKey(), authentication);
 
       assertThat(searchQueryResult).isEqualTo(entity);
     }
@@ -240,7 +246,7 @@ public class UserTaskServiceTest {
           .thenReturn(
               new ProcessCacheItem("ProcessName", Map.of(entity.elementId(), "cached name")));
 
-      final var foundEntity = services.getByKey(entity.userTaskKey());
+      final var foundEntity = services.getByKey(entity.userTaskKey(), authentication);
 
       assertThat(foundEntity.name()).isEqualTo("cached name");
     }
@@ -255,7 +261,7 @@ public class UserTaskServiceTest {
           .thenReturn(
               new ProcessCacheItem("ProcessName", Map.of(entity.elementId(), "cached name")));
 
-      final var foundEntity = services.getByKey(entity.userTaskKey());
+      final var foundEntity = services.getByKey(entity.userTaskKey(), authentication);
 
       assertThat(foundEntity.processName()).isEqualTo("ProcessName");
     }
@@ -269,7 +275,7 @@ public class UserTaskServiceTest {
       when(processCache.getCacheItem(entity.processDefinitionKey()))
           .thenReturn(new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name")));
 
-      final var foundEntity = services.getByKey(entity.userTaskKey());
+      final var foundEntity = services.getByKey(entity.userTaskKey(), authentication);
 
       assertThat(foundEntity.name()).isEqualTo(entity.elementId());
       assertThat(foundEntity.processName()).isEqualTo(entity.processName());
@@ -284,7 +290,8 @@ public class UserTaskServiceTest {
               new ResourceAccessDeniedException(
                   Authorizations.PROCESS_DEFINITION_READ_USER_TASK_AUTHORIZATION));
 
-      final ThrowingCallable executable = () -> services.getByKey(entity.userTaskKey());
+      final ThrowingCallable executable =
+          () -> services.getByKey(entity.userTaskKey(), authentication);
 
       final var exception =
           (ServiceException)
@@ -302,7 +309,7 @@ public class UserTaskServiceTest {
       final var entity = Instancio.create(UserTaskEntity.class);
       when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
 
-      final var searchQueryResult = services.search(UserTaskQuery.of(q -> q));
+      final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);
 
       assertThat(searchQueryResult.items()).contains(entity);
     }
@@ -317,7 +324,7 @@ public class UserTaskServiceTest {
               ProcessCacheResult.of(
                   entity.processDefinitionKey(), "ProcessName", entity.elementId(), "cached name"));
 
-      final var searchQueryResult = services.search(UserTaskQuery.of(q -> q));
+      final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);
 
       assertThat(searchQueryResult.items()).contains(entity.withName("cached name"));
     }
@@ -332,7 +339,7 @@ public class UserTaskServiceTest {
               ProcessCacheResult.of(
                   entity.processDefinitionKey(), "ProcessName", entity.elementId(), "cached name"));
 
-      final var searchQueryResult = services.search(UserTaskQuery.of(q -> q));
+      final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);
 
       assertThat(searchQueryResult.items()).contains(entity.withProcessName("ProcessName"));
     }
@@ -343,7 +350,7 @@ public class UserTaskServiceTest {
           Instancio.of(UserTaskEntity.class).set(field(UserTaskEntity::name), null).create();
       when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
 
-      final var searchQueryResult = services.search(UserTaskQuery.of(q -> q));
+      final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);
 
       assertThat(searchQueryResult.items()).contains(entity.withName(entity.elementId()));
     }

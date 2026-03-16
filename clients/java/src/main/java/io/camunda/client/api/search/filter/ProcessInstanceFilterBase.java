@@ -114,11 +114,27 @@ public interface ProcessInstanceFilterBase extends SearchRequestFilter {
   /** Filter by variables map */
   ProcessInstanceFilterBase variables(final Map<String, Object> variableValueFilters);
 
-  /** Filter by batchOperationId */
+  /**
+   * Filter by batchOperationId.
+   *
+   * @deprecated Use {@link #batchOperationKey(String)} instead.
+   */
+  @Deprecated
   ProcessInstanceFilterBase batchOperationId(final String batchOperationId);
 
-  /** Filter by batchOperationId using {@link StringProperty} */
+  /**
+   * Filter by batchOperationId using {@link StringProperty}.
+   *
+   * @deprecated Use {@link #batchOperationKey(Consumer)} instead.
+   */
+  @Deprecated
   ProcessInstanceFilterBase batchOperationId(final Consumer<StringProperty> fn);
+
+  /** Filter by batchOperationKey */
+  ProcessInstanceFilterBase batchOperationKey(final String batchOperationKey);
+
+  /** Filter by batchOperationKey using {@link StringProperty} */
+  ProcessInstanceFilterBase batchOperationKey(final Consumer<StringProperty> fn);
 
   /** Filter by error message */
   ProcessInstanceFilterBase errorMessage(final String errorMessage);
@@ -155,4 +171,10 @@ public interface ProcessInstanceFilterBase extends SearchRequestFilter {
 
   /** Filter by tags */
   ProcessInstanceFilterBase tags(final String... tags);
+
+  /** Filter by businessId */
+  ProcessInstanceFilterBase businessId(final String businessId);
+
+  /** Filter by businessId using {@link StringProperty} consumer */
+  ProcessInstanceFilterBase businessId(final Consumer<StringProperty> fn);
 }

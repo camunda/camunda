@@ -73,6 +73,8 @@ public final class StartupProcess<CONTEXT> {
   private ActorFuture<CONTEXT> shutdownFuture;
   private ActorFuture<CONTEXT> startupFuture;
   private Map<String, String> loggingContext = Map.of();
+  private StartupStep<CONTEXT> ongoingStartupStep;
+  private ActorFuture<CONTEXT> ongoingStartupStepFuture;
 
   /**
    * Constructs the startup process
@@ -189,6 +191,8 @@ public final class StartupProcess<CONTEXT> {
 
       final var before = System.nanoTime();
       final var stepStartupFuture = stepToStart.startup(context);
+      ongoingStartupStep = stepToStart;
+      ongoingStartupStepFuture = stepStartupFuture;
 
       concurrencyControl.runOnCompletion(
           stepStartupFuture,
@@ -199,6 +203,8 @@ public final class StartupProcess<CONTEXT> {
                 stepToStart.getName(),
                 error != null,
                 (completedAt - before) / 1e6);
+            ongoingStartupStep = null;
+            ongoingStartupStepFuture = null;
             if (error != null) {
               completeStartupFutureExceptionallySynchronized(startupFuture, stepToStart, error);
             } else {
@@ -232,6 +238,28 @@ public final class StartupProcess<CONTEXT> {
     clearCustomMDC();
     if (shutdownFuture == null) {
       shutdownFuture = resultFuture;
+
+      if (ongoingStartupStep != null
+          && ongoingStartupStep.isInterruptible()
+          && ongoingStartupStepFuture != null) {
+        setCustomMDC();
+        logger.info(
+            "Interrupting ongoing startup step {} due to shutdown request",
+            ongoingStartupStep.getName());
+        clearCustomMDC();
+        try {
+          ongoingStartupStepFuture.completeExceptionally(
+              new InterruptedException(
+                  "Interrupting ongoing startup step "
+                      + ongoingStartupStep.getName()
+                      + " due to shutdown request"));
+        } catch (final Exception e) {
+          logger.warn(
+              "Failed to interrupt ongoing startup step {} due to shutdown request",
+              ongoingStartupStep.getName(),
+              e);
+        }
+      }
 
       if (startupFuture != null) {
         concurrencyControl.runOnCompletion(

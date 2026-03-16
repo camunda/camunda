@@ -25,6 +25,7 @@ import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -222,6 +223,8 @@ final class StandaloneGatewaySecurityTest {
     brokerClient = brokerClientConfiguration.brokerClient();
     jobStreamClient =
         new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster, meterRegistry);
+    final var gatewayRestConfiguration = new GatewayRestConfiguration();
+    gatewayRestConfiguration.setMaxNameFieldLength(32 * 1024);
 
     return new GatewayModuleConfiguration(
         gatewayConfig,
@@ -234,6 +237,7 @@ final class StandaloneGatewaySecurityTest {
         null,
         null,
         null,
-        new SimpleMeterRegistry());
+        new SimpleMeterRegistry(),
+        gatewayRestConfiguration);
   }
 }

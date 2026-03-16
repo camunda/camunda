@@ -36,7 +36,7 @@ public record RdbmsWriterConfig(
   public static final int DEFAULT_QUEUE_SIZE = 1000;
   // Default memory limit: 20MB - aligned with CamundaExporter's default
   public static final int DEFAULT_QUEUE_MEMORY_LIMIT = 20;
-  public static final int DEFAULT_MAX_VARCHAR_FIELD_LENGTH = 400;
+  public static final int DEFAULT_MAX_VARCHAR_FIELD_LENGTH = 256;
   public static final int DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE = 10000;
   public static final boolean DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION = true;
 

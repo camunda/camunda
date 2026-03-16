@@ -33,6 +33,9 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultCorrections;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -465,8 +468,8 @@ public final class CompleteJobTest extends ClientTest {
             r ->
                 r.forUserTask()
                     .correctAssignee(null)
-                    .correctDueDate(null)
-                    .correctFollowUpDate(null)
+                    .correctDueDate((String) null)
+                    .correctFollowUpDate((String) null)
                     .correctCandidateGroups(null)
                     .correctCandidateUsers(null)
                     .correctPriority(null))
@@ -515,7 +518,7 @@ public final class CompleteJobTest extends ClientTest {
                 r.forUserTask()
                     .deny(false)
                     .correctAssignee("Test")
-                    .correctDueDate(null)
+                    .correctDueDate((String) null)
                     .correctFollowUpDate("")
                     .correctCandidateUsers(Arrays.asList("User A", "User B"))
                     .correctPriority(80))
@@ -569,7 +572,7 @@ public final class CompleteJobTest extends ClientTest {
                     .correct(
                         c ->
                             c.assignee("Test")
-                                .dueDate(null)
+                                .dueDate((String) null)
                                 .followUpDate("")
                                 .candidateUsers(Arrays.asList("User A", "User B"))
                                 .priority(80)))
@@ -819,6 +822,108 @@ public final class CompleteJobTest extends ClientTest {
             .build();
 
     assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  public void shouldCompleteJobWithResultCorrectionDueDateOffsetDateTime() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    final OffsetDateTime dueDate = OffsetDateTime.of(2024, 6, 15, 10, 30, 0, 0, ZoneOffset.UTC);
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .withResult(r -> r.forUserTask().correctDueDate(dueDate))
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getResult().getCorrections().getDueDate())
+        .isEqualTo(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(dueDate));
+  }
+
+  @Test
+  public void shouldCompleteJobWithResultCorrectionFollowUpDateOffsetDateTime() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    final OffsetDateTime followUpDate =
+        OffsetDateTime.of(2024, 6, 15, 10, 30, 0, 0, ZoneOffset.UTC);
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .withResult(r -> r.forUserTask().correctFollowUpDate(followUpDate))
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getResult().getCorrections().getFollowUpDate())
+        .isEqualTo(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(followUpDate));
+  }
+
+  @Test
+  public void shouldCompleteJobWithResultClearDueDate() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .withResult(r -> r.forUserTask().correctDueDate("due date").clearDueDate())
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getResult().getCorrections().getDueDate()).isEmpty();
+  }
+
+  @Test
+  public void shouldCompleteJobWithResultClearFollowUpDate() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .withResult(r -> r.forUserTask().correctFollowUpDate("follow up").clearFollowUpDate())
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getResult().getCorrections().getFollowUpDate()).isEmpty();
+  }
+
+  @Test
+  public void shouldCompleteJobWithResultCorrectionsObjectOffsetDateTime() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    final OffsetDateTime dueDate = OffsetDateTime.of(2024, 6, 15, 10, 30, 0, 0, ZoneOffset.UTC);
+    final OffsetDateTime followUpDate =
+        OffsetDateTime.of(2024, 7, 15, 10, 30, 0, 0, ZoneOffset.UTC);
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .withResult(
+            r -> r.forUserTask().correct(c -> c.dueDate(dueDate).followUpDate(followUpDate)))
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getResult().getCorrections().getDueDate())
+        .isEqualTo(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(dueDate));
+    assertThat(request.getResult().getCorrections().getFollowUpDate())
+        .isEqualTo(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(followUpDate));
   }
 
   public static class POJO {

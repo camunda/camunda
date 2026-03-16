@@ -15,7 +15,6 @@ import org.springframework.boot.actuate.endpoint.annotation.Selector.Match;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -49,13 +48,12 @@ public final class BackupEndpointStandalone {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> query(
-      @Selector(match = Match.ALL_REMAINING) final String[] arguments) {
-    return backupEndpoint.query(arguments);
+  public WebEndpointResponse<?> query(@Selector final String prefixOrId) {
+    return backupEndpoint.query(prefixOrId);
   }
 
   @DeleteOperation
-  public WebEndpointResponse<?> delete(@Selector @NonNull final long id) {
+  public WebEndpointResponse<?> delete(@Selector final String id) {
     return backupEndpoint.delete(id);
   }
 }

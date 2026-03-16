@@ -6,34 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type { CurrentUser } from "@camunda/camunda-api-zod-schemas/8.9";
 import { ApiDefinition, apiGet } from "src/utility/api/request.ts";
 
-export interface TenantInfo {
-  tenantId: string;
-  name: string;
-}
-
-export interface C8Link {
-  name: string;
-  link: string;
-}
-
-export interface CamundaUser {
-  userId: string;
-  userKey: number;
-  displayName: string;
-  email: string;
-  authorizedComponents: readonly string[];
-  tenants: readonly TenantInfo[];
-  groups: readonly string[];
-  roles: readonly string[];
-  salesPlanType: string;
-  c8Links: readonly C8Link[];
-  canLogout: boolean;
-  apiUser: boolean;
-}
-
-export const getAuthentication: ApiDefinition<CamundaUser> = () =>
+export const getAuthentication: ApiDefinition<CurrentUser> = () =>
   apiGet("/authentication/me");
 
 export const getSaasUserToken: ApiDefinition<string> = () =>

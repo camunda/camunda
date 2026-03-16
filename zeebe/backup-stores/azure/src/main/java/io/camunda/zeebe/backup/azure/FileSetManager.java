@@ -7,13 +7,16 @@
  */
 package io.camunda.zeebe.backup.azure;
 
-import com.azure.core.util.BinaryData;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.models.BlobErrorCode;
+import com.azure.storage.blob.models.BlobHttpHeaders;
+import com.azure.storage.blob.models.BlobRequestConditions;
 import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.models.ListBlobsOptions;
+import com.azure.storage.blob.models.ParallelTransferOptions;
 import com.azure.storage.blob.specialized.BlockBlobClient;
+import com.azure.storage.common.implementation.Constants;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException.BlobAlreadyExists;
@@ -21,13 +24,24 @@ import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.nio.file.Path;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 final class FileSetManager {
+  private static final long MB = 1024 * 1024;
+  private static final ParallelTransferOptions CHUNKED_FILE_OPTS =
+      new ParallelTransferOptions()
+          .setBlockSizeLong(4 * MB)
+          .setMaxSingleUploadSizeLong(8 * MB)
+          .setMaxConcurrency(2);
+  private static final BlobRequestConditions NO_OVERWRITE_CONDITION =
+      new BlobRequestConditions().setIfNoneMatch(Constants.HeaderConstants.ETAG_WILDCARD);
+
   // The path format is constructed by contents/partitionId/checkpointId/nodeId/nameOfFile
   private static final String PATH_FORMAT = "contents/%s/%s/%s/%s/";
   private final BlobContainerClient containerClient;
-  private boolean containerCreated = false;
+  private final ReentrantLock containerCreationLock = new ReentrantLock();
+  private volatile boolean containerCreated = false;
 
   FileSetManager(final BlobContainerClient containerClient, final boolean createContainer) {
     this.containerClient = containerClient;
@@ -44,8 +58,7 @@ final class FileSetManager {
       final BlobClient blobClient = containerClient.getBlobClient(fileSetPath + fileName);
 
       try {
-        final BinaryData binaryData = BinaryData.fromFile(filePath);
-        blobClient.upload(binaryData, false);
+        upload(blobClient, filePath);
       } catch (final BlobStorageException e) {
         if (e.getErrorCode() == BlobErrorCode.BLOB_ALREADY_EXISTS) {
           throw new BlobAlreadyExists("File already exists.", e.getCause());
@@ -91,9 +104,27 @@ final class FileSetManager {
 
   void assureContainerCreated() {
     if (!containerCreated) {
-      containerClient.createIfNotExists();
-      containerCreated = true;
+      containerCreationLock.lock();
+      try {
+        if (!containerCreated) {
+          containerClient.createIfNotExists();
+          containerCreated = true;
+        }
+      } finally {
+        containerCreationLock.unlock();
+      }
     }
+  }
+
+  private void upload(final BlobClient blobClient, final Path filePath) {
+    blobClient.uploadFromFile(
+        filePath.toString(),
+        CHUNKED_FILE_OPTS,
+        new BlobHttpHeaders(),
+        null,
+        null,
+        NO_OVERWRITE_CONDITION,
+        null);
   }
 
   private String fileSetPath(final BackupIdentifier id, final String fileSetName) {

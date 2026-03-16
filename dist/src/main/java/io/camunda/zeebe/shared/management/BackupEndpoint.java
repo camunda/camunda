@@ -50,7 +50,6 @@ import org.springframework.boot.actuate.endpoint.annotation.Selector.Match;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -132,14 +131,8 @@ public final class BackupEndpoint {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> query(
-      @Selector(match = Match.ALL_REMAINING) final String[] arguments) {
-    if (arguments.length > 1) {
-      return new WebEndpointResponse<>(
-          new Error().message("Invalid arguments provided."),
-          WebEndpointResponse.STATUS_BAD_REQUEST);
-    }
-    final String argument = arguments[0];
+  public WebEndpointResponse<?> query(@Selector final String prefixOrId) {
+    final String argument = prefixOrId;
     if (BackupApi.STATE.equals(argument)) {
       return state();
     }
@@ -161,9 +154,33 @@ public final class BackupEndpoint {
   }
 
   @DeleteOperation
-  public WebEndpointResponse<?> delete(@Selector @NonNull final long id) {
+  public WebEndpointResponse<?> delete(@Selector final String id) {
+    if (BackupApi.STATE.equals(id)) {
+      return deleteState();
+    }
+    final long backupId;
+    try {
+      backupId = Long.parseLong(id);
+    } catch (final NumberFormatException e) {
+      return new WebEndpointResponse<>(
+          new Error().message("Expected a backup ID or 'state', but got '%s'.".formatted(id)),
+          WebEndpointResponse.STATUS_BAD_REQUEST);
+    }
+    return deleteBackup(backupId);
+  }
+
+  private WebEndpointResponse<?> deleteBackup(final long id) {
     try {
       api.deleteBackup(id).toCompletableFuture().join();
+      return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
+    } catch (final Exception e) {
+      return mapErrorResponse(e);
+    }
+  }
+
+  private WebEndpointResponse<?> deleteState() {
+    try {
+      api.deleteRuntimeState().toCompletableFuture().join();
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
     } catch (final Exception e) {
       return mapErrorResponse(e);

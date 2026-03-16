@@ -177,6 +177,128 @@
     AND WORKER IS NOT NULL
   </sql>
 
+  <resultMap id="JobTimeSeriesStatisticsResultMap"
+    type="io.camunda.db.rdbms.read.domain.JobTimeSeriesStatisticsDbResult">
+    <constructor>
+      <arg column="BUCKET_TIME" javaType="java.time.OffsetDateTime"/>
+      <arg column="CREATED_COUNT" javaType="java.lang.Long"/>
+      <arg column="LAST_CREATED_AT" javaType="java.time.OffsetDateTime"/>
+      <arg column="COMPLETED_COUNT" javaType="java.lang.Long"/>
+      <arg column="LAST_COMPLETED_AT" javaType="java.time.OffsetDateTime"/>
+      <arg column="FAILED_COUNT" javaType="java.lang.Long"/>
+      <arg column="LAST_FAILED_AT" javaType="java.time.OffsetDateTime"/>
+    </constructor>
+  </resultMap>
+
+  <select id="jobTimeSeriesStatistics"
+    parameterType="io.camunda.db.rdbms.read.domain.JobTimeSeriesStatisticsDbQuery"
+    resultMap="JobTimeSeriesStatisticsResultMap"
+    statementType="PREPARED">
+    SELECT
+      BUCKET_TIME,
+      SUM(CREATED_COUNT)     AS CREATED_COUNT,
+      MAX(LAST_CREATED_AT)   AS LAST_CREATED_AT,
+      SUM(COMPLETED_COUNT)   AS COMPLETED_COUNT,
+      MAX(LAST_COMPLETED_AT) AS LAST_COMPLETED_AT,
+      SUM(FAILED_COUNT)      AS FAILED_COUNT,
+      MAX(LAST_FAILED_AT)    AS LAST_FAILED_AT
+    FROM (
+      SELECT
+        <include refid="io.camunda.db.rdbms.sql.Commons.timeBucket"/> AS BUCKET_TIME,
+        CREATED_COUNT, LAST_CREATED_AT,
+        COMPLETED_COUNT, LAST_COMPLETED_AT,
+        FAILED_COUNT, LAST_FAILED_AT
+      FROM ${prefix}JOB_METRICS_BATCH
+      <include refid="io.camunda.db.rdbms.sql.JobMetricsBatchMapper.jobTimeSeriesFilter"/>
+    ) BUCKETED
+    <trim prefix="WHERE" prefixOverrides="AND">
+      <trim prefix="AND" prefixOverrides="WHERE">
+        <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+      </trim>
+    </trim>
+    GROUP BY BUCKET_TIME
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="jobTimeSeriesFilter">
+    <where>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+      <if test="filter.from != null">
+        AND START_TIME &gt;= #{filter.from}
+      </if>
+      <if test="filter.to != null">
+        AND END_TIME &lt;= #{filter.to}
+      </if>
+      <if test="filter.jobType != null">
+        AND JOB_TYPE = #{filter.jobType}
+      </if>
+    </where>
+  </sql>
+
+  <resultMap id="JobErrorStatisticsResultMap"
+    type="io.camunda.db.rdbms.read.domain.JobErrorStatisticsDbResult">
+    <constructor>
+      <arg column="ERROR_CODE"    javaType="java.lang.String"/>
+      <arg column="ERROR_MESSAGE" javaType="java.lang.String"/>
+      <arg column="WORKERS"       javaType="java.lang.Integer"/>
+    </constructor>
+  </resultMap>
+
+  <select id="jobErrorStatistics"
+    parameterType="io.camunda.db.rdbms.read.domain.JobErrorStatisticsDbQuery"
+    resultMap="JobErrorStatisticsResultMap"
+    statementType="PREPARED">
+    SELECT
+      ERROR_CODE,
+      ERROR_MESSAGE,
+      COUNT(DISTINCT WORKER) AS WORKERS
+    FROM ${prefix}JOB
+    <include refid="io.camunda.db.rdbms.sql.JobMetricsBatchMapper.jobErrorStatisticsFilter"/>
+    <trim prefix="AND" prefixOverrides="WHERE">
+      <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    </trim>
+    GROUP BY ERROR_CODE, ERROR_MESSAGE
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="jobErrorStatisticsFilter">
+    WHERE STATE IN ('ERROR_THROWN', 'FAILED', 'CANCELED', 'TIMED_OUT')
+    <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+      AND TENANT_ID IN
+      <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+        #{tenantId}
+      </foreach>
+    </if>
+    <if test="filter.from != null">
+      AND CREATION_TIME &gt;= #{filter.from}
+    </if>
+    <if test="filter.to != null">
+      AND CREATION_TIME &lt;= #{filter.to}
+    </if>
+    <if test="filter.jobType != null">
+      AND TYPE = #{filter.jobType}
+    </if>
+    <if test="filter.errorCodeOperations != null and !filter.errorCodeOperations.isEmpty()">
+      <foreach collection="filter.errorCodeOperations" item="operation">
+        AND ERROR_CODE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.errorMessageOperations != null and !filter.errorMessageOperations.isEmpty()">
+      <foreach collection="filter.errorMessageOperations" item="operation">
+        AND ERROR_MESSAGE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+  </sql>
+
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.JobMetricsBatchDbModel">
     INSERT INTO ${prefix}JOB_METRICS_BATCH (JOB_METRICS_BATCH_KEY,
                                             PARTITION_ID,

@@ -434,6 +434,8 @@ public final class ElementInstanceStateTest {
     final var nonEmptyColumns =
         Arrays.stream(ZbColumnFamilies.values())
             .filter(not(ZbColumnFamilies.KEY::equals))
+            // ACTIVE_PROCESS_INSTANCE_COUNT tracks the count of active process instances
+            .filter(not(ZbColumnFamilies.ACTIVE_PROCESS_INSTANCE_COUNT::equals))
             .filter(not(processingState::isEmpty))
             .collect(Collectors.toList());
 
@@ -510,6 +512,91 @@ public final class ElementInstanceStateTest {
     // then
     assertThat(metadata.getRequestId()).isEqualTo(requestId);
     assertThat(metadata.getRequestStreamId()).isEqualTo(streamId);
+  }
+
+  @Test
+  public void shouldReturnZeroWhenNoProcessInstances() {
+    // when
+    long count = elementInstanceState.getActiveProcessInstanceCount();
+    // then
+    assertThat(count).isEqualTo(0);
+
+    // when we create a PI
+    final ProcessInstanceRecord processInstanceRecord =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    elementInstanceState.newInstance(
+        200, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // then we should return one
+    count = elementInstanceState.getActiveProcessInstanceCount();
+    assertThat(count).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldCountMultipleProcessInstances() {
+    // given
+    final ProcessInstanceRecord processInstanceRecord1 =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    final ProcessInstanceRecord processInstanceRecord2 =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+
+    elementInstanceState.newInstance(
+        201, processInstanceRecord1, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        202, processInstanceRecord2, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    // when
+    final long count = elementInstanceState.getActiveProcessInstanceCount();
+    // then
+    assertThat(count).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldDecreaseCountWhenRootProcessInstanceRemoved() {
+    // given
+    final ProcessInstanceRecord processInstanceRecord1 =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    final ProcessInstanceRecord processInstanceRecord2 =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    elementInstanceState.newInstance(
+        203, processInstanceRecord1, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        204, processInstanceRecord2, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    // when
+    elementInstanceState.removeInstance(203);
+    final long count = elementInstanceState.getActiveProcessInstanceCount();
+    // then the count should be one
+    assertThat(count).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldCountChildInstancesProcessInstances() {
+    // given
+    final ProcessInstanceRecord rootRecord =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    final long rootKey1 = 300L;
+    final long rootKey2 = 301L;
+    final ElementInstance rootInstance1 =
+        elementInstanceState.newInstance(
+            rootKey1, rootRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    final ElementInstance rootInstance2 =
+        elementInstanceState.newInstance(
+            rootKey2, rootRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // add child process instances started via call activities
+    final ProcessInstanceRecord childProcessRecord =
+        createProcessInstanceRecord()
+            .setElementId("childProcess")
+            .setBpmnElementType(BpmnElementType.PROCESS);
+    elementInstanceState.newInstance(
+        rootInstance1, 500L, childProcessRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    elementInstanceState.newInstance(
+        rootInstance2, 501L, childProcessRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+
+    // when
+    final long count = elementInstanceState.getActiveProcessInstanceCount();
+
+    // then we should have 2 root process instances + 2 child process instances
+    assertThat(count).isEqualTo(4);
   }
 
   private void assertElementInstance(final ElementInstance elementInstance, final int childCount) {

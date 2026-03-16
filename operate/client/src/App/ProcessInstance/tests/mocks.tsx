@@ -6,8 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {testData} from './index.setup';
 import {createUser, createVariable, searchResult} from 'modules/testUtils';
 import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
@@ -70,15 +68,6 @@ const mockSequenceFlowsV2: SequenceFlow[] = [
 
 const mockRequests = () => {
   mockMe().withSuccess(createUser());
-  mockFetchProcessInstanceDeprecated().withSuccess(
-    testData.fetch.onPageLoad.processInstanceWithIncident,
-  );
-  mockFetchProcessInstanceDeprecated().withSuccess(
-    testData.fetch.onPageLoad.processInstanceWithIncident,
-  );
-  mockFetchProcessInstanceDeprecated().withSuccess(
-    testData.fetch.onPageLoad.processInstanceWithIncident,
-  );
   mockFetchProcessInstance().withSuccess(mockProcessInstance);
   mockFetchProcessInstance().withSuccess(mockProcessInstance);
   mockFetchCallHierarchy().withSuccess([]);

@@ -47,7 +47,7 @@ jobs:
           # Extract major.minor version
           major_minor=$(echo "$release_version" | cut -d. -f1-2)
 
-          git fetch origin stable/8.6 stable/8.7 stable/8.8 main
+          git fetch origin stable/8.6 stable/8.7 stable/8.8 stable/8.9 main
 
           # Determine base branch based on version
           if [[ "$major_minor" == "8.6" ]]; then
@@ -56,6 +56,8 @@ jobs:
             base="stable/8.7"
           elif [[ "$major_minor" == "8.8" ]]; then
             base="stable/8.8"
+          elif [[ "$major_minor" == "8.9" ]]; then
+            base="stable/8.9"
           else
             base="main"
           fi
@@ -615,7 +617,7 @@ jobs:
                 # stable/8.8: run all tests excluding @v1-only tagged tests
                 TEST_ARGS+=(tests/ --grep-invert '@v1-only')
               else
-                # main: run all tests excluding v1/ directories
+                # main, stable 8.9: run all tests excluding v1/ directories
                 TEST_ARGS+=(tests/ --grep-invert 'v1/')
               fi
             else
@@ -624,7 +626,7 @@ jobs:
                 # stable/8.8: no v1/ directories, run regular directories for V1 mode
                 TEST_ARGS+=(tests/tasklist/ tests/common-flows/)
               else
-                # main: has v1/ directories for V1 mode
+                # main, stable 8.9: has v1/ directories for V1 mode
                 TEST_ARGS+=(tests/tasklist/v1/ tests/common-flows/v1/)
               fi
             fi

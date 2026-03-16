@@ -62,6 +62,7 @@ import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/usePro
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {isInstanceRunning} from 'modules/utils/instance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useDrillDownNavigation} from 'modules/hooks/useDrilldownNavigation';
 import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram';
 import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
 
@@ -98,8 +99,8 @@ const TopPanel: React.FC = observer(() => {
   const [isInTransition, setIsInTransition] = useState(false);
   const {data: statistics} = useElementStatistics();
   const {data: selectableElements} = useSelectableElements();
-  const {data: executedFlowNodes} = useExecutedElements();
-  const {data: totalRunningInstancesByFlowNode} =
+  const {data: executedElements} = useExecutedElements();
+  const {data: totalRunningInstancesByElement} =
     useTotalRunningInstancesByElement();
   const {data: businessObjects} = useBusinessObjects();
   const {data: totalMoveOperationRunningInstances} =
@@ -190,7 +191,7 @@ const TopPanel: React.FC = observer(() => {
       .filter(isCompensationAssociation)
       .filter(({targetRef}) => {
         // check if the target element for the association was executed
-        return executedFlowNodes?.find(({elementId, completed}) => {
+        return executedElements?.find(({elementId, completed}) => {
           return targetRef?.id === elementId && completed > 0;
         });
       })
@@ -200,17 +201,13 @@ const TopPanel: React.FC = observer(() => {
       ...(processedSequenceFlowsFromHook || []),
       ...compensationAssociationIds,
     ];
-  }, [
-    processedSequenceFlowsFromHook,
-    processDefinitionData,
-    executedFlowNodes,
-  ]);
+  }, [processedSequenceFlowsFromHook, processDefinitionData, executedElements]);
 
   const highlightedSequenceFlowIds = useMemo(() => {
-    return executedFlowNodes?.map(({elementId}) => elementId);
-  }, [executedFlowNodes]);
+    return executedElements?.map(({elementId}) => elementId);
+  }, [executedElements]);
 
-  const modificationBadgesPerFlowNode = computed(() =>
+  const modificationBadgesPerElement = computed(() =>
     Object.entries(modificationsByElement).reduce<
       {
         elementId: string;
@@ -252,6 +249,45 @@ const TopPanel: React.FC = observer(() => {
   const isIncidentBarOpen = incidentsPanelStore.state.isPanelVisible;
 
   const {isModificationModeEnabled} = modificationsStore;
+
+  const {handleDrillDown, pendingDrillDownElementId} =
+    useDrillDownNavigation(processInstanceId);
+
+  const customElementClasses = useMemo<
+    [elementId: string, className: string][]
+  >(() => {
+    if (
+      !IS_NEW_PROCESS_INSTANCE_PAGE ||
+      isModificationModeEnabled ||
+      !businessObjects ||
+      !totalRunningInstancesByElement
+    ) {
+      return [];
+    }
+
+    const DRILLDOWN_TYPES = ['bpmn:CallActivity', 'bpmn:BusinessRuleTask'];
+    const drilldownClasses: [string, string][] = Object.entries(businessObjects)
+      .filter(
+        ([elementId, bo]) =>
+          DRILLDOWN_TYPES.includes(bo.$type) &&
+          (totalRunningInstancesByElement[elementId] ?? 0) > 0,
+      )
+      .map(([elementId]) => [elementId, 'op-drilldown'] as const);
+
+    if (pendingDrillDownElementId !== null) {
+      drilldownClasses.push([
+        pendingDrillDownElementId,
+        'op-drilldown-loading',
+      ]);
+    }
+
+    return drilldownClasses;
+  }, [
+    businessObjects,
+    totalRunningInstancesByElement,
+    isModificationModeEnabled,
+    pendingDrillDownElementId,
+  ]);
 
   useEffect(() => {
     if (!isModificationModeEnabled) {
@@ -345,7 +381,7 @@ const TopPanel: React.FC = observer(() => {
                       businessObjects,
                       sourceElementIdForMoveOperation ?? '',
                       elementId ?? '',
-                      totalRunningInstancesByFlowNode,
+                      totalRunningInstancesByElement,
                     );
 
                     clearSelection();
@@ -374,7 +410,7 @@ const TopPanel: React.FC = observer(() => {
                   isModificationModeEnabled
                     ? [
                         ...(elementStateOverlays ?? []),
-                        ...modificationBadgesPerFlowNode.get(),
+                        ...modificationBadgesPerElement.get(),
                       ]
                     : elementStateOverlays
                 }
@@ -397,6 +433,13 @@ const TopPanel: React.FC = observer(() => {
                   !isModificationModeEnabled ||
                   hasSelectedElementMultipleRunningInstances
                 }
+                customElementClasses={customElementClasses}
+                onElementDoubleClick={(elementId) => {
+                  const elementType = businessObjects?.[elementId]?.$type;
+                  if (elementType) {
+                    handleDrillDown(elementId, elementType);
+                  }
+                }}
               >
                 {stateOverlays.map((overlay) => {
                   const payload = overlay.payload as {

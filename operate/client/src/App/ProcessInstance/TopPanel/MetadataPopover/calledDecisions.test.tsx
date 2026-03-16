@@ -10,11 +10,11 @@ import {screen, waitFor} from 'modules/testing-library';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {labels, renderPopover} from './mocks';
 import {
-  CALL_ACTIVITY_FLOW_NODE_ID,
+  CALL_ACTIVITY_ELEMENT_ID,
   PROCESS_INSTANCE_ID,
-  FLOW_NODE_ID,
-  USER_TASK_FLOW_NODE_ID,
-  BUSINESS_RULE_FLOW_NODE_ID,
+  ELEMENT_ID,
+  USER_TASK_ELEMENT_ID,
+  BUSINESS_RULE_ELEMENT_ID,
   calledDecisionInstanceMetadata,
 } from 'modules/mocks/metadata';
 import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
@@ -41,7 +41,7 @@ import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscr
 
 const mockElementInstance = {
   elementInstanceKey: '2251799813699889',
-  elementId: BUSINESS_RULE_FLOW_NODE_ID,
+  elementId: BUSINESS_RULE_ELEMENT_ID,
   elementName: 'Business Rule Task',
   type: 'BUSINESS_RULE_TASK',
   state: 'COMPLETED',
@@ -84,7 +84,7 @@ const mockIncident = {
   processDefinitionId: 'someKey',
   processDefinitionKey: '2',
   processInstanceKey: PROCESS_INSTANCE_ID,
-  elementId: BUSINESS_RULE_FLOW_NODE_ID,
+  elementId: BUSINESS_RULE_ELEMENT_ID,
   elementInstanceKey: '2251799813699889',
   jobKey: '',
   tenantId: '<default>',
@@ -106,21 +106,21 @@ describe('MetadataPopover', () => {
     mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
-          elementId: FLOW_NODE_ID,
+          elementId: ELEMENT_ID,
           active: 1,
           completed: 0,
           canceled: 0,
           incidents: 0,
         },
         {
-          elementId: CALL_ACTIVITY_FLOW_NODE_ID,
+          elementId: CALL_ACTIVITY_ELEMENT_ID,
           active: 1,
           completed: 0,
           canceled: 0,
           incidents: 0,
         },
         {
-          elementId: USER_TASK_FLOW_NODE_ID,
+          elementId: USER_TASK_ELEMENT_ID,
           active: 1,
           completed: 0,
           canceled: 0,
@@ -149,7 +149,7 @@ describe('MetadataPopover', () => {
     vi.useRealTimers();
   });
 
-  it('should render meta data for completed flow node', async () => {
+  it('should render meta data for completed element', async () => {
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
     mockFetchProcessInstanceV2().withSuccess(
       createProcessInstance({
@@ -159,7 +159,7 @@ describe('MetadataPopover', () => {
 
     const mockCallActivityElementInstance: ElementInstance = {
       ...mockElementInstance,
-      elementId: CALL_ACTIVITY_FLOW_NODE_ID,
+      elementId: CALL_ACTIVITY_ELEMENT_ID,
       elementName: 'Call Activity',
       type: 'CALL_ACTIVITY',
     };
@@ -181,7 +181,7 @@ describe('MetadataPopover', () => {
     );
 
     renderPopover({
-      elementId: CALL_ACTIVITY_FLOW_NODE_ID,
+      elementId: CALL_ACTIVITY_ELEMENT_ID,
     });
 
     expect(
@@ -207,7 +207,7 @@ describe('MetadataPopover', () => {
   it('should render completed decision', async () => {
     const mockBusinessRuleElementInstance: ElementInstance = {
       ...mockElementInstance,
-      elementId: BUSINESS_RULE_FLOW_NODE_ID,
+      elementId: BUSINESS_RULE_ELEMENT_ID,
       type: 'BUSINESS_RULE_TASK',
     };
 
@@ -230,7 +230,7 @@ describe('MetadataPopover', () => {
     );
 
     const {user} = renderPopover({
-      elementId: BUSINESS_RULE_FLOW_NODE_ID,
+      elementId: BUSINESS_RULE_ELEMENT_ID,
       elementInstanceKey: '2251799813699889',
     });
     expect(
@@ -261,7 +261,7 @@ describe('MetadataPopover', () => {
   it('should render failed decision', async () => {
     const mockBusinessRuleElementInstance: ElementInstance = {
       ...mockElementInstance,
-      elementId: BUSINESS_RULE_FLOW_NODE_ID,
+      elementId: BUSINESS_RULE_ELEMENT_ID,
       type: 'BUSINESS_RULE_TASK',
       hasIncident: true,
     };
@@ -296,7 +296,7 @@ describe('MetadataPopover', () => {
     );
 
     const {user} = renderPopover({
-      elementId: BUSINESS_RULE_FLOW_NODE_ID,
+      elementId: BUSINESS_RULE_ELEMENT_ID,
       elementInstanceKey: '2251799813699889',
     });
 

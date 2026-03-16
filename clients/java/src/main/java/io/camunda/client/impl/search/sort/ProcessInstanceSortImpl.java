@@ -87,6 +87,11 @@ public class ProcessInstanceSortImpl extends SearchRequestSortBase<ProcessInstan
   }
 
   @Override
+  public ProcessInstanceSort businessId() {
+    return field("businessId");
+  }
+
+  @Override
   protected ProcessInstanceSort self() {
     return this;
   }

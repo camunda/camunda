@@ -270,6 +270,14 @@ components:
       x-semantic-provider:
         - decisionDefinitionKey
         - decisionRequirementsKey
+      required:
+        - decisionDefinitionId
+        - decisionDefinitionKey
+        - decisionRequirementsId
+        - decisionRequirementsKey
+        - name
+        - tenantId
+        - version
       properties:
         decisionDefinitionId:
           allOf:
@@ -308,6 +316,13 @@ components:
       type: object
       x-semantic-provider:
         - decisionRequirementsKey
+      required:
+        - decisionRequirementsId
+        - decisionRequirementsKey
+        - decisionRequirementsName
+        - resourceName
+        - tenantId
+        - version
       properties:
         decisionRequirementsId:
           description: The id of the deployed decision requirements.
@@ -337,6 +352,12 @@ components:
       type: object
       x-semantic-provider:
         - formKey
+      required:
+        - formId
+        - formKey
+        - resourceName
+        - tenantId
+        - version
       properties:
         formId:
           allOf:
@@ -363,6 +384,12 @@ components:
       x-semantic-provider:
         - resourceKey
       type: object
+      required:
+        - resourceId
+        - resourceKey
+        - resourceName
+        - tenantId
+        - version
       properties:
         resourceId:
           description: The resource id of the deployed resource.
@@ -404,6 +431,7 @@ components:
       type: object
       required:
         - resourceKey
+        - batchOperation
       properties:
         resourceKey:
           allOf:
@@ -422,6 +450,13 @@ components:
 
     ResourceResult:
       type: object
+      required:
+        - resourceName
+        - version
+        - versionTag
+        - resourceId
+        - tenantId
+        - resourceKey
       properties:
         resourceName:
           description: The resource name from which this resource was parsed.
@@ -431,6 +466,7 @@ components:
           type: integer
           format: int32
         versionTag:
+          nullable: true
           description: The version tag of this resource.
           type: string
         resourceId:
@@ -469,7 +505,6 @@ components:
 
     DeploymentKeyFilterProperty:
       description: DeploymentKey property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -507,7 +542,6 @@ components:
 
     ResourceKeyFilterProperty:
       description: ResourceKey property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match

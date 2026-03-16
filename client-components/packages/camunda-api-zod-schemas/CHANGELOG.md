@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.0.51
+
+### 🩹 Fixes
+
+- make resourceId optional ([#47656](https://github.com/camunda/camunda/issues/47656))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+## v0.0.50
+
+### 🩹 Fixes
+
+- fix authorization types ([#47546](https://github.com/camunda/camunda/issues/47546))
+- fix group/role types ([#47546](https://github.com/camunda/camunda/issues/47546))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
 ## v0.0.49
 
 ### 🩹 Fixes

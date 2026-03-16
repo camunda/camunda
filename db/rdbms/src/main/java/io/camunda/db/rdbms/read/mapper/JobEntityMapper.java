@@ -7,20 +7,21 @@
  */
 package io.camunda.db.rdbms.read.mapper;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.write.domain.JobDbModel;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.JobEntity.JobKind;
 import io.camunda.search.entities.JobEntity.JobState;
 import io.camunda.search.entities.JobEntity.ListenerEventType;
-import java.util.Objects;
 
 public class JobEntityMapper {
 
   public static JobEntity toEntity(final JobDbModel jobDbModel) {
     return new JobEntity.Builder()
         .jobKey(jobDbModel.jobKey())
-        .type(jobDbModel.type())
-        .worker(Objects.requireNonNullElse(jobDbModel.worker(), ""))
+        .type(nullToEmpty(jobDbModel.type()))
+        .worker(nullToEmpty(jobDbModel.worker()))
         .state(JobState.valueOf(jobDbModel.state().name()))
         .kind(JobKind.valueOf(jobDbModel.kind().name()))
         .listenerEventType(ListenerEventType.valueOf(jobDbModel.listenerEventType().name()))
@@ -33,13 +34,13 @@ public class JobEntityMapper {
         .customHeaders(jobDbModel.customHeaders())
         .deadline(jobDbModel.deadline())
         .endTime(jobDbModel.endTime())
-        .processDefinitionId(jobDbModel.processDefinitionId())
+        .processDefinitionId(nullToEmpty(jobDbModel.processDefinitionId()))
         .processDefinitionKey(jobDbModel.processDefinitionKey())
         .processInstanceKey(jobDbModel.processInstanceKey())
         .rootProcessInstanceKey(jobDbModel.rootProcessInstanceKey())
         .elementId(jobDbModel.elementId())
         .elementInstanceKey(jobDbModel.elementInstanceKey())
-        .tenantId(jobDbModel.tenantId())
+        .tenantId(nullToEmpty(jobDbModel.tenantId()))
         .creationTime(jobDbModel.creationTime())
         .lastUpdateTime(jobDbModel.lastUpdateTime())
         .build();

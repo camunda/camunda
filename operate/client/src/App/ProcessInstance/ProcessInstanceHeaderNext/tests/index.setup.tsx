@@ -9,7 +9,8 @@
 /* eslint-disable react-refresh/only-export-components */
 
 import {authenticationStore} from 'modules/stores/authentication';
-import {operationsStore} from 'modules/stores/operations';
+import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
+import {modificationsStore} from 'modules/stores/modifications';
 import {createProcessInstance} from 'modules/testUtils';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
@@ -28,8 +29,9 @@ const mockInstanceWithParentInstance = createProcessInstance({
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {
-      operationsStore.reset();
       authenticationStore.reset();
+      processInstanceMigrationStore.reset();
+      modificationsStore.reset();
     };
   }, []);
 

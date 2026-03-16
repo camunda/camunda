@@ -34,9 +34,8 @@ public class ProcessDefinitionProvider {
   public ProcessCacheData extractProcessData(final Long processDefinitionKey) {
     try {
       final var processDefinition =
-          processDefinitionServices
-              .withAuthentication(CamundaAuthentication.anonymous())
-              .getByKey(processDefinitionKey);
+          processDefinitionServices.getByKey(
+              processDefinitionKey, CamundaAuthentication.anonymous());
       return buildCacheData(processDefinition);
     } catch (final Exception e) {
       LOG.warn(
@@ -58,13 +57,12 @@ public class ProcessDefinitionProvider {
 
     try {
       final var searchResult =
-          processDefinitionServices
-              .withAuthentication(CamundaAuthentication.anonymous())
-              .search(
-                  ProcessDefinitionQuery.of(
-                      q ->
-                          q.filter(f -> f.processDefinitionKeys(keysList))
-                              .page(p -> p.size(keysList.size()))));
+          processDefinitionServices.search(
+              ProcessDefinitionQuery.of(
+                  q ->
+                      q.filter(f -> f.processDefinitionKeys(keysList))
+                          .page(p -> p.size(keysList.size()))),
+              CamundaAuthentication.anonymous());
 
       if (searchResult.total() < processDefinitionKeys.size()) {
         LOG.warn(

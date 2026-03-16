@@ -16,6 +16,7 @@ import io.camunda.search.clients.JobSearchClient;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,18 +26,19 @@ public class JobServiceTest {
 
   private JobServices<SearchQueryResult<JobEntity>> services;
   private JobSearchClient client;
+  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     client = mock(JobSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    authentication = mock(CamundaAuthentication.class);
     services =
         new JobServices<>(
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             null,
             client,
-            null,
             mock(ApiServicesExecutorProvider.class),
             null);
   }
@@ -50,7 +52,7 @@ public class JobServiceTest {
     final var searchQuery = SearchQueryBuilders.jobSearchQuery().build();
 
     // when
-    final var searchQueryResult = services.search(searchQuery);
+    final var searchQueryResult = services.search(searchQuery, authentication);
 
     // then
     assertThat(searchQueryResult).isEqualTo(result);

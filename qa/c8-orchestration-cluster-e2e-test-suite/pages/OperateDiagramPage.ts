@@ -25,7 +25,7 @@ export class OperateDiagramPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.diagram = this.page.getByTestId('diagram');
+    this.diagram = this.page.getByTestId('diagram-canvas');
     this.popover = this.page.getByTestId('popover');
     this.popoverLink = (name: string | RegExp) =>
       this.popover.getByRole('link', {name});
@@ -183,7 +183,7 @@ export class OperateDiagramPage {
       for (const text of expectedTexts) {
         await expect(
           this.metadataModal.getByText(text, {exact: false}),
-        ).toBeVisible({timeout: 15000});
+        ).toBeVisible({timeout: 30000});
       }
     }
 

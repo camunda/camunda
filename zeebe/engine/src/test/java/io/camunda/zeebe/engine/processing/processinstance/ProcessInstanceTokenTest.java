@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
@@ -374,6 +375,119 @@ public final class ProcessInstanceTokenTest {
         .withDocument(Maps.of(entry("key", "123")))
         .update();
 
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+    ENGINE.message().withName("msg").withCorrelationKey("123").publish();
+
+    // then
+    assertThatProcessInstanceCompletedAfter(processInstanceKey, "end-2");
+  }
+
+  @Test
+  public void shouldCreateAndResolveIncidentIfMessageNameEvaluatesToTooLongValue() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent(
+                    "catch",
+                    e ->
+                        e.message(m -> m.name("=messageName").zeebeCorrelationKeyExpression("key")))
+                .endEvent("end-2")
+                .done())
+        .deploy();
+
+    final var tooLongValue = "a".repeat(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1);
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(Maps.of(entry("messageName", tooLongValue), entry("key", "123")))
+            .create();
+
+    // when
+    final Record<ProcessInstanceRecordValue> catchEventActivatingRecord =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("catch")
+            .getFirst();
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(incident.getValue().getErrorMessage())
+        .isEqualTo(
+            "Expected message name to be at most %d characters long (configured max-name-length), but was %d characters."
+                .formatted(
+                    EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH, tooLongValue.length()));
+    assertThat(incident.getValue().getElementId()).isEqualTo("catch");
+    assertThat(incident.getValue().getElementInstanceKey())
+        .isEqualTo(catchEventActivatingRecord.getKey());
+    assertThat(incident.getValue().getVariableScopeKey())
+        .isEqualTo(catchEventActivatingRecord.getKey());
+    ENGINE
+        .variables()
+        .ofScope(incident.getValue().getElementInstanceKey())
+        .withDocument(Maps.of(entry("messageName", "msg")))
+        .update();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+    ENGINE.message().withName("msg").withCorrelationKey("123").publish();
+
+    // then
+    assertThatProcessInstanceCompletedAfter(processInstanceKey, "end-2");
+  }
+
+  @Test
+  public void shouldCreateAndResolveIncidentIfCorrelationKeyEvaluatesToTooLongValue() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent(
+                    "catch",
+                    e ->
+                        e.message(
+                            m -> m.name("msg").zeebeCorrelationKeyExpression("correlationKey")))
+                .endEvent("end-2")
+                .done())
+        .deploy();
+
+    final var tooLongValue = "a".repeat(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1);
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(Maps.of(entry("correlationKey", tooLongValue)))
+            .create();
+
+    // when
+    final Record<ProcessInstanceRecordValue> catchEventActivatingRecord =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("catch")
+            .getFirst();
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(incident.getValue().getErrorMessage())
+        .isEqualTo(
+            "Expected correlation key to be at most %d characters long (configured max-name-length), but was %d characters."
+                .formatted(
+                    EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH, tooLongValue.length()));
+    assertThat(incident.getValue().getElementId()).isEqualTo("catch");
+    assertThat(incident.getValue().getElementInstanceKey())
+        .isEqualTo(catchEventActivatingRecord.getKey());
+    assertThat(incident.getValue().getVariableScopeKey())
+        .isEqualTo(catchEventActivatingRecord.getKey());
+    ENGINE
+        .variables()
+        .ofScope(incident.getValue().getElementInstanceKey())
+        .withDocument(Maps.of(entry("correlationKey", "123")))
+        .update();
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
     ENGINE.message().withName("msg").withCorrelationKey("123").publish();
 

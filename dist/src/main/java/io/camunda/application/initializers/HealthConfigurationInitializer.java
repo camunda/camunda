@@ -28,23 +28,8 @@ import org.springframework.core.env.Environment;
 public class HealthConfigurationInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
-  private static final String INDICATOR_BROKER_READY = "brokerReady";
-  private static final String INDICATOR_NODE_ID_PROVIDER_READY = "nodeIdProviderReady";
   private static final String INDICATOR_GATEWAY_STARTED = "gatewayStarted";
-  private static final String INDICATOR_BROKER_STARTUP = "brokerStartup";
-  private static final String INDICATOR_OPERATE_INDICES_CHECK = "indicesCheck";
   private static final String INDICATOR_SPRING_READINESS_STATE = "readinessState";
-  private static final String INDICATOR_TASKLIST_SEARCH_ENGINE_CHECK = "searchEngineCheck";
-
-  private static final String SPRING_READINESS_PROPERTY =
-      "management.health.readinessstate.enabled";
-  private static final String SPRING_PROBES_PROPERTY = "management.endpoint.health.probes.enabled";
-  private static final String SPRING_READINESS_GROUP_PROPERTY =
-      "management.endpoint.health.group.readiness.include";
-  private static final String HEALTH_GROUP_STATUS_PROPERTY =
-      "management.endpoint.health.group.status.include";
-  private static final String HEALTH_GROUP_LIVENESS_PROPERTY =
-      "management.endpoint.health.group.liveness.include";
 
   @Value("camunda.mode")
   private String camundaMode;
@@ -63,13 +48,13 @@ public class HealthConfigurationInitializer
     final var propertyMap = new HashMap<String, Object>();
 
     // Enables readinessState
-    propertyMap.put(SPRING_READINESS_PROPERTY, enableReadinessState);
+    propertyMap.put("management.health.readinessstate.enabled", enableReadinessState);
 
     // Enables Kubernetes health groups
-    propertyMap.put(SPRING_PROBES_PROPERTY, enableProbes);
+    propertyMap.put("management.endpoint.health.probes.enabled", enableProbes);
 
     if (!healthIndicators.isEmpty()) {
-      propertyMap.put(SPRING_READINESS_GROUP_PROPERTY, healthIndicators);
+      propertyMap.put("management.endpoint.health.group.readiness.include", healthIndicators);
     }
 
     final Set<String> startupGroup = new HashSet<>();
@@ -85,7 +70,7 @@ public class HealthConfigurationInitializer
       livenessGroup.add("livenessGatewayClusterAwareness");
       livenessGroup.add("livenessGatewayPartitionLeaderAwareness");
       livenessGroup.add("livenessMemory");
-      propertyMap.put(HEALTH_GROUP_LIVENESS_PROPERTY, livenessGroup);
+      propertyMap.put("management.endpoint.health.group.liveness.include", livenessGroup);
       propertyMap.put("management.endpoint.health.group.liveness.show-details", "always");
 
       propertyMap.put(
@@ -105,12 +90,12 @@ public class HealthConfigurationInitializer
       propertyMap.put("management.endpoint.health.logging.slow-indicator-threshold", "10s");
 
       /* Configure broker status indicator */
-      propertyMap.put(HEALTH_GROUP_STATUS_PROPERTY, "brokerStatus");
+      propertyMap.put("management.endpoint.health.group.status.include", "brokerStatus");
       propertyMap.put("management.endpoint.health.group.status.show-components", "never");
       propertyMap.put("management.endpoint.health.group.status.show-details", "never");
 
       /* Configure startup health check */
-      startupGroup.add(INDICATOR_BROKER_STARTUP);
+      startupGroup.add("brokerStartup");
       propertyMap.put("management.endpoint.health.group.startup.show-components", "never");
       propertyMap.put("management.endpoint.health.group.startup.show-details", "never");
     }
@@ -154,8 +139,8 @@ public class HealthConfigurationInitializer
     final boolean secondaryStorageEnabled = DatabaseTypeUtils.isSecondaryStorageEnabled(env);
 
     if (activeProfiles.contains(Profile.BROKER.getId())) {
-      healthIndicators.add(INDICATOR_BROKER_READY);
-      healthIndicators.add(INDICATOR_NODE_ID_PROVIDER_READY);
+      healthIndicators.add("brokerReady");
+      healthIndicators.add("nodeIdProviderReady");
     }
 
     if (activeProfiles.contains(Profile.GATEWAY.getId())) {
@@ -165,14 +150,14 @@ public class HealthConfigurationInitializer
     if (secondaryStorageEnabled && activeProfiles.contains(Profile.OPERATE.getId())) {
       healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
       if (DatabaseTypeUtils.isRdbmsDisabled(env)) {
-        healthIndicators.add(INDICATOR_OPERATE_INDICES_CHECK);
+        healthIndicators.add("indicesCheck");
       }
     }
 
     if (secondaryStorageEnabled
         && activeProfiles.contains(Profile.TASKLIST.getId())
         && DatabaseTypeUtils.isRdbmsDisabled(env)) {
-      healthIndicators.add(INDICATOR_TASKLIST_SEARCH_ENGINE_CHECK);
+      healthIndicators.add("searchEngineCheck");
     }
 
     if (secondaryStorageEnabled

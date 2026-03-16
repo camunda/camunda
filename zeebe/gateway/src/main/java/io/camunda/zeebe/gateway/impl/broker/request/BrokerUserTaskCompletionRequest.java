@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
+import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -19,7 +20,16 @@ public class BrokerUserTaskCompletionRequest extends BrokerExecuteCommand<UserTa
 
   public BrokerUserTaskCompletionRequest(
       final long key, final DirectBuffer variables, final String action) {
+    this(key, variables, action, VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
+  }
+
+  public BrokerUserTaskCompletionRequest(
+      final long key,
+      final DirectBuffer variables,
+      final String action,
+      final int maxVariableNameLength) {
     super(ValueType.USER_TASK, UserTaskIntent.COMPLETE);
+    VariableNameLengthValidator.validateVariableNameLength(variables, maxVariableNameLength);
     requestDto.setUserTaskKey(key).setVariables(variables).setAction(action);
     request.setKey(key);
   }

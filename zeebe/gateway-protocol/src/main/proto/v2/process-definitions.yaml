@@ -342,6 +342,7 @@ components:
             Whether to only return the latest version of each process definition.
             When using this filter, pagination functionality is limited, you can only paginate forward using `after` and `limit`.
             The response contains no `startCursor` in the `page`, and requests ignore the `from` and `before` in the `page`.
+            When using this filter, sorting is limited to `processDefinitionId` and `tenantId` fields only.
           type: boolean
         resourceName:
           description: Resource name of this process definition.
@@ -384,6 +385,15 @@ components:
 
     ProcessDefinitionResult:
       type: object
+      required:
+        - processDefinitionKey
+        - name
+        - resourceName
+        - version
+        - versionTag
+        - processDefinitionId
+        - tenantId
+        - hasStartForm
       properties:
         name:
           description: Name of this process definition.
@@ -441,6 +451,12 @@ components:
     ProcessElementStatisticsResult:
       description: Process element statistics response.
       type: object
+      required:
+        - active
+        - canceled
+        - completed
+        - elementId
+        - incidents
       properties:
         elementId:
           allOf:
@@ -490,6 +506,12 @@ components:
 
     ProcessDefinitionMessageSubscriptionStatisticsResult:
       type: object
+      required:
+        - activeSubscriptions
+        - processDefinitionId
+        - processDefinitionKey
+        - processInstancesWithActiveSubscriptions
+        - tenantId
       properties:
         processDefinitionId:
           description: The process definition ID associated with this message subscription.
@@ -541,6 +563,13 @@ components:
     ProcessDefinitionInstanceStatisticsResult:
       description: Process definition instance statistics response.
       type: object
+      required:
+        - activeInstancesWithIncidentCount
+        - activeInstancesWithoutIncidentCount
+        - hasMultipleVersions
+        - latestProcessDefinitionName
+        - processDefinitionId
+        - tenantId
       properties:
         processDefinitionId:
           $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'

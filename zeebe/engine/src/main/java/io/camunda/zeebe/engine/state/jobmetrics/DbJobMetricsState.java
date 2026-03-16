@@ -194,11 +194,10 @@ public class DbJobMetricsState implements MutableJobMetricsState {
   @Override
   public void cleanUp() {
     // Delete all keys in metrics column family
-    metricsColumnFamily.forEach((mk, mv) -> metricsColumnFamily.deleteExisting(mk));
+    metricsColumnFamily.forEachKey(metricsColumnFamily::deleteExisting);
 
     // Delete all keys in string encoding column family
-    stringEncodingColumnFamily.forEach(
-        (dbString, dbInt) -> stringEncodingColumnFamily.deleteExisting(dbString));
+    stringEncodingColumnFamily.forEachKey(stringEncodingColumnFamily::deleteExisting);
 
     // Clear the caches
     stringEncodingCache.clear();

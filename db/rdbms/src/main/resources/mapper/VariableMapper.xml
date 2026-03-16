@@ -129,15 +129,19 @@
   <resultMap id="searchResultMap" type="io.camunda.search.entities.VariableEntity">
     <constructor>
       <idArg column="VAR_KEY" javaType="java.lang.Long"/>
-      <arg column="VAR_NAME" javaType="java.lang.String"/>
-      <arg column="VAR_VALUE" javaType="java.lang.String"/>
+      <arg column="VAR_NAME" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="VAR_VALUE" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="VAR_FULL_VALUE" javaType="java.lang.String"/>
       <arg column="IS_PREVIEW" javaType="java.lang.Boolean"/>
       <arg column="SCOPE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
-      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
-      <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
     </constructor>
   </resultMap>
 
@@ -150,6 +154,18 @@
       (#{variable.variableKey}, #{variable.processInstanceKey}, #{variable.rootProcessInstanceKey}, #{variable.processDefinitionId}, #{variable.scopeKey}, #{variable.type}, #{variable.name}, #{variable.doubleValue, jdbcType=DOUBLE},
        #{variable.longValue, jdbcType=NUMERIC}, #{variable.value}, #{variable.fullValue}, #{variable.tenantId}, #{variable.isPreview}, #{variable.partitionId}, #{variable.elementInstanceKey})
     </foreach>
+  </insert>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.queue.BatchInsertDto" databaseId="oracle">
+    INSERT ALL
+    <foreach collection="dbModels" item="variable">
+      INTO ${prefix}VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
+                              LONG_VALUE, VAR_VALUE, VAR_FULL_VALUE, TENANT_ID, IS_PREVIEW,
+                              PARTITION_ID, ELEMENT_INSTANCE_KEY)
+      VALUES (#{variable.variableKey}, #{variable.processInstanceKey}, #{variable.rootProcessInstanceKey}, #{variable.processDefinitionId}, #{variable.scopeKey}, #{variable.type}, #{variable.name}, #{variable.doubleValue, jdbcType=DOUBLE},
+              #{variable.longValue, jdbcType=NUMERIC}, #{variable.value}, #{variable.fullValue}, #{variable.tenantId}, #{variable.isPreview}, #{variable.partitionId}, #{variable.elementInstanceKey})
+    </foreach>
+    SELECT * FROM dual
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel">

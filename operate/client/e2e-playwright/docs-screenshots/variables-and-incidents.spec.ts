@@ -112,21 +112,18 @@ test.describe('variables and incidents', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: orderProcessInstance.incidentState.detail,
-        processInstanceDetailV2: orderProcessInstance.incidentState.detailV2,
         callHierarchy: orderProcessInstance.incidentState.callHierarchy,
         elementInstances: orderProcessInstance.incidentState.elementInstances,
         statistics: orderProcessInstance.incidentState.statistics,
         sequenceFlows: orderProcessInstance.incidentState.sequenceFlows,
-        sequenceFlowsV2: orderProcessInstance.incidentState.sequenceFlowsV2,
         variables: orderProcessInstance.incidentState.variables,
         incidents: orderProcessInstance.incidentState.incidents,
-        incidentsV2: orderProcessInstance.incidentState.incidentsV2,
         xml: orderProcessInstance.incidentState.xml,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: '2251799813725328',
+      key: '2251799813725328',
     });
 
     await expect(
@@ -189,21 +186,18 @@ test.describe('variables and incidents', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: orderProcessInstance.incidentState.detail,
-        processInstanceDetailV2: orderProcessInstance.incidentState.detailV2,
         callHierarchy: orderProcessInstance.incidentState.callHierarchy,
         elementInstances: orderProcessInstance.incidentState.elementInstances,
         statistics: orderProcessInstance.incidentState.statistics,
         sequenceFlows: orderProcessInstance.incidentState.sequenceFlows,
-        sequenceFlowsV2: orderProcessInstance.incidentState.sequenceFlowsV2,
         variables: orderProcessInstance.incidentResolvedState.variables,
         incidents: orderProcessInstance.incidentState.incidents,
-        incidentsV2: orderProcessInstance.incidentState.incidentsV2,
         xml: orderProcessInstance.incidentState.xml,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: '2251799813725328',
+      key: '2251799813725328',
     });
 
     await expect(
@@ -247,22 +241,18 @@ test.describe('variables and incidents', () => {
       mockProcessDetailResponses({
         processInstanceDetail:
           orderProcessInstance.incidentResolvedState.detail,
-        processInstanceDetailV2:
-          orderProcessInstance.incidentResolvedState.detailV2,
         callHierarchy: orderProcessInstance.incidentResolvedState.callHierarchy,
         elementInstances:
           orderProcessInstance.incidentResolvedState.elementInstances,
         statistics: orderProcessInstance.incidentResolvedState.statistics,
         sequenceFlows: orderProcessInstance.incidentResolvedState.sequenceFlows,
-        sequenceFlowsV2:
-          orderProcessInstance.incidentResolvedState.sequenceFlowsV2,
         variables: orderProcessInstance.incidentResolvedState.variables,
         xml: orderProcessInstance.incidentResolvedState.xml,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: '2251799813725328',
+      key: '2251799813725328',
     });
 
     await page.screenshot({
@@ -275,19 +265,17 @@ test.describe('variables and incidents', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: orderProcessInstance.completedState.detail,
-        processInstanceDetailV2: orderProcessInstance.completedState.detailV2,
         callHierarchy: orderProcessInstance.completedState.callHierarchy,
         elementInstances: orderProcessInstance.completedState.elementInstances,
         statistics: orderProcessInstance.completedState.statistics,
         sequenceFlows: orderProcessInstance.completedState.sequenceFlows,
-        sequenceFlowsV2: orderProcessInstance.completedState.sequenceFlowsV2,
         variables: orderProcessInstance.completedState.variables,
         xml: orderProcessInstance.completedState.xml,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: '2251799813725328',
+      key: '2251799813725328',
     });
 
     await page.screenshot({

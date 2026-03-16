@@ -273,7 +273,10 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
 
   // backup range tracking
   CHECKPOINTS(140, PARTITION_LOCAL),
-  BACKUP_RANGES(141, PARTITION_LOCAL);
+  BACKUP_RANGES(141, PARTITION_LOCAL),
+
+  // root process instance counter
+  ACTIVE_PROCESS_INSTANCE_COUNT(142, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

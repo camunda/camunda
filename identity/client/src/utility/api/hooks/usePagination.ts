@@ -7,14 +7,10 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
+import type { QueryPage } from "@camunda/camunda-api-zod-schemas/8.9";
 
 export type PageSearchParams = {
-  page: {
-    from?: number;
-    limit?: number;
-    after?: string;
-    before?: string;
-  };
+  page: QueryPage;
 };
 
 export type PageResult = {

@@ -8,8 +8,10 @@
 package io.camunda.authentication.converter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,9 +20,11 @@ import static org.mockito.Mockito.when;
 import io.camunda.authentication.config.OidcAccessTokenDecoderFactory;
 import io.camunda.security.auth.CamundaAuthentication;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -47,7 +51,8 @@ public class OidcUserAuthenticationConverterTest {
   @BeforeEach
   void setup() throws Exception {
     MockitoAnnotations.openMocks(this).close();
-    when(oidcAccessTokenDecoderFactory.createAccessTokenDecoder(any())).thenReturn(jwtDecoder);
+    when(oidcAccessTokenDecoderFactory.createAccessTokenDecoder(any(), any()))
+        .thenReturn(jwtDecoder);
   }
 
   @Test
@@ -89,8 +94,11 @@ public class OidcUserAuthenticationConverterTest {
     final var accessToken = mock(OAuth2AccessToken.class);
     when(accessToken.getTokenValue()).thenReturn(accessTokenValue);
 
+    final var providerDetails = mock(ClientRegistration.ProviderDetails.class);
+    when(providerDetails.getIssuerUri()).thenReturn("https://issuer.example.com");
     final var clientRegistration = mock(ClientRegistration.class);
     when(clientRegistration.getRegistrationId()).thenReturn("bar");
+    when(clientRegistration.getProviderDetails()).thenReturn(providerDetails);
 
     final var authorizedClient = mock(OAuth2AuthorizedClient.class);
     when(authorizedClient.getAccessToken()).thenReturn(accessToken);
@@ -154,8 +162,11 @@ public class OidcUserAuthenticationConverterTest {
     final var accessToken = mock(OAuth2AccessToken.class);
     when(accessToken.getTokenValue()).thenReturn(accessTokenValue);
 
+    final var providerDetails = mock(ClientRegistration.ProviderDetails.class);
+    when(providerDetails.getIssuerUri()).thenReturn("https://issuer.example.com");
     final var clientRegistration = mock(ClientRegistration.class);
     when(clientRegistration.getRegistrationId()).thenReturn("bar");
+    when(clientRegistration.getProviderDetails()).thenReturn(providerDetails);
 
     final var authorizedClient = mock(OAuth2AuthorizedClient.class);
     when(authorizedClient.getAccessToken()).thenReturn(accessToken);
@@ -174,5 +185,255 @@ public class OidcUserAuthenticationConverterTest {
     assertThat(userToken).isEqualTo(expectedAuthentication);
     verify(oidcUser).getAttributes();
     verify(tokenClaimsConverter).convert(eq(idTokenClaims));
+  }
+
+  @Test
+  public void shouldPassAdditionalJwkSetUrisToDecoderFactory() {
+    // given
+    final var issuer = "https://issuer.example.com";
+    final var additionalUris = List.of("https://issuer.example.com/extra/jwks");
+    final var converter =
+        new OidcUserAuthenticationConverter(
+            authorizedClientRepository,
+            oidcAccessTokenDecoderFactory,
+            tokenClaimsConverter,
+            request,
+            Map.of(issuer, additionalUris));
+
+    final var oidcUser = mock(OidcUser.class);
+    when(oidcUser.getAttributes()).thenReturn(Map.of("sub", "test-user"));
+
+    final var authentication = mock(OAuth2AuthenticationToken.class);
+    when(authentication.getPrincipal()).thenReturn(oidcUser);
+
+    final var accessToken = mock(OAuth2AccessToken.class);
+    when(accessToken.getTokenValue()).thenReturn("test-access-token");
+
+    final var providerDetails = mock(ClientRegistration.ProviderDetails.class);
+    when(providerDetails.getIssuerUri()).thenReturn(issuer);
+    final var clientRegistration = mock(ClientRegistration.class);
+    when(clientRegistration.getRegistrationId()).thenReturn("test-reg");
+    when(clientRegistration.getProviderDetails()).thenReturn(providerDetails);
+
+    final var authorizedClient = mock(OAuth2AuthorizedClient.class);
+    when(authorizedClient.getAccessToken()).thenReturn(accessToken);
+    when(authorizedClient.getClientRegistration()).thenReturn(clientRegistration);
+    when(authorizedClientRepository.loadAuthorizedClient(any(), any(), any()))
+        .thenReturn(authorizedClient);
+
+    final var jwt = mock(Jwt.class);
+    final Map<String, Object> claims = Map.of("sub", "test-user");
+    when(jwt.getClaims()).thenReturn(claims);
+    when(oidcAccessTokenDecoderFactory.createAccessTokenDecoder(any(), any()))
+        .thenReturn(jwtDecoder);
+    when(jwtDecoder.decode(any())).thenReturn(jwt);
+    when(tokenClaimsConverter.convert(any()))
+        .thenReturn(CamundaAuthentication.of(b -> b.user("foo")));
+
+    // when
+    converter.convert(authentication);
+
+    // then
+    @SuppressWarnings("unchecked")
+    final ArgumentCaptor<List<String>> urisCaptor = ArgumentCaptor.forClass(List.class);
+    verify(oidcAccessTokenDecoderFactory)
+        .createAccessTokenDecoder(eq(clientRegistration), urisCaptor.capture());
+    assertThat(urisCaptor.getValue()).isEqualTo(additionalUris);
+  }
+
+  @Test
+  public void shouldPassNullWhenIssuerNotInAdditionalUrisMap() {
+    // given — converter configured with additional URIs for a different issuer
+    final var converter =
+        new OidcUserAuthenticationConverter(
+            authorizedClientRepository,
+            oidcAccessTokenDecoderFactory,
+            tokenClaimsConverter,
+            request,
+            Map.of("https://other-issuer.example.com", List.of("https://other/jwks")));
+
+    final var oidcUser = mock(OidcUser.class);
+    when(oidcUser.getAttributes()).thenReturn(Map.of("sub", "test-user"));
+
+    final var authentication = mock(OAuth2AuthenticationToken.class);
+    when(authentication.getPrincipal()).thenReturn(oidcUser);
+
+    final var accessToken = mock(OAuth2AccessToken.class);
+    when(accessToken.getTokenValue()).thenReturn("test-access-token");
+
+    final var providerDetails = mock(ClientRegistration.ProviderDetails.class);
+    when(providerDetails.getIssuerUri()).thenReturn("https://my-issuer.example.com");
+    final var clientRegistration = mock(ClientRegistration.class);
+    when(clientRegistration.getRegistrationId()).thenReturn("my-reg");
+    when(clientRegistration.getProviderDetails()).thenReturn(providerDetails);
+
+    final var authorizedClient = mock(OAuth2AuthorizedClient.class);
+    when(authorizedClient.getAccessToken()).thenReturn(accessToken);
+    when(authorizedClient.getClientRegistration()).thenReturn(clientRegistration);
+    when(authorizedClientRepository.loadAuthorizedClient(any(), any(), any()))
+        .thenReturn(authorizedClient);
+
+    final var jwt = mock(Jwt.class);
+    when(jwt.getClaims()).thenReturn(Map.of("sub", "test-user"));
+    when(oidcAccessTokenDecoderFactory.createAccessTokenDecoder(any(), any()))
+        .thenReturn(jwtDecoder);
+    when(jwtDecoder.decode(any())).thenReturn(jwt);
+    when(tokenClaimsConverter.convert(any()))
+        .thenReturn(CamundaAuthentication.of(b -> b.user("foo")));
+
+    // when
+    converter.convert(authentication);
+
+    // then — null is passed because issuer is not in the map
+    verify(oidcAccessTokenDecoderFactory)
+        .createAccessTokenDecoder(eq(clientRegistration), isNull());
+  }
+
+  @Test
+  public void shouldCacheDecoderForSameClientRegistration() {
+    // given — converter with additional URIs
+    final var issuer = "https://issuer.example.com";
+    final var converter =
+        new OidcUserAuthenticationConverter(
+            authorizedClientRepository,
+            oidcAccessTokenDecoderFactory,
+            tokenClaimsConverter,
+            request,
+            Map.of(issuer, List.of("https://issuer.example.com/extra/jwks")));
+
+    final var providerDetails = mock(ClientRegistration.ProviderDetails.class);
+    when(providerDetails.getIssuerUri()).thenReturn(issuer);
+    final var clientRegistration = mock(ClientRegistration.class);
+    when(clientRegistration.getRegistrationId()).thenReturn("cached-reg");
+    when(clientRegistration.getProviderDetails()).thenReturn(providerDetails);
+
+    final var accessToken = mock(OAuth2AccessToken.class);
+    when(accessToken.getTokenValue()).thenReturn("token-1", "token-2");
+
+    final var authorizedClient = mock(OAuth2AuthorizedClient.class);
+    when(authorizedClient.getAccessToken()).thenReturn(accessToken);
+    when(authorizedClient.getClientRegistration()).thenReturn(clientRegistration);
+    when(authorizedClientRepository.loadAuthorizedClient(any(), any(), any()))
+        .thenReturn(authorizedClient);
+
+    final var oidcUser = mock(OidcUser.class);
+    when(oidcUser.getAttributes()).thenReturn(Map.of("sub", "test-user"));
+    final var authentication = mock(OAuth2AuthenticationToken.class);
+    when(authentication.getPrincipal()).thenReturn(oidcUser);
+
+    final var jwt = mock(Jwt.class);
+    when(jwt.getClaims()).thenReturn(Map.of("sub", "test-user"));
+    when(oidcAccessTokenDecoderFactory.createAccessTokenDecoder(any(), any()))
+        .thenReturn(jwtDecoder);
+    when(jwtDecoder.decode(any())).thenReturn(jwt);
+    when(tokenClaimsConverter.convert(any()))
+        .thenReturn(CamundaAuthentication.of(b -> b.user("foo")));
+
+    // when — convert twice with the same client registration
+    converter.convert(authentication);
+    converter.convert(authentication);
+
+    // then — decoder factory called only once (cached)
+    verify(oidcAccessTokenDecoderFactory, times(1)).createAccessTokenDecoder(any(), any());
+  }
+
+  @Test
+  public void shouldNotThrowWhenIssuerUriIsNull() {
+    // given — OIDC provider configured without issuer-uri (only
+    // jwkSetUri/authorizationUri/tokenUri)
+    // This is the regression test for the NPE introduced by PR #47219:
+    // additionalJwkSetUrisByIssuer is an immutable Map.copyOf() and does not permit null key
+    // lookups.
+    final var converter =
+        new OidcUserAuthenticationConverter(
+            authorizedClientRepository,
+            oidcAccessTokenDecoderFactory,
+            tokenClaimsConverter,
+            request,
+            Map.of("https://other-issuer.example.com", List.of("https://other/jwks")));
+
+    final var oidcUser = mock(OidcUser.class);
+    when(oidcUser.getAttributes()).thenReturn(Map.of("sub", "test-user"));
+
+    final var authentication = mock(OAuth2AuthenticationToken.class);
+    when(authentication.getPrincipal()).thenReturn(oidcUser);
+
+    final var accessToken = mock(OAuth2AccessToken.class);
+    when(accessToken.getTokenValue()).thenReturn("test-access-token");
+
+    // issuerUri is null — provider configured with explicit jwkSetUri/authorizationUri/tokenUri
+    final var providerDetails = mock(ClientRegistration.ProviderDetails.class);
+    when(providerDetails.getIssuerUri()).thenReturn(null);
+    final var clientRegistration = mock(ClientRegistration.class);
+    when(clientRegistration.getRegistrationId()).thenReturn("no-issuer-reg");
+    when(clientRegistration.getProviderDetails()).thenReturn(providerDetails);
+
+    final var authorizedClient = mock(OAuth2AuthorizedClient.class);
+    when(authorizedClient.getAccessToken()).thenReturn(accessToken);
+    when(authorizedClient.getClientRegistration()).thenReturn(clientRegistration);
+    when(authorizedClientRepository.loadAuthorizedClient(any(), any(), any()))
+        .thenReturn(authorizedClient);
+
+    final var jwt = mock(Jwt.class);
+    when(jwt.getClaims()).thenReturn(Map.of("sub", "test-user"));
+    when(oidcAccessTokenDecoderFactory.createAccessTokenDecoder(any(), any()))
+        .thenReturn(jwtDecoder);
+    when(jwtDecoder.decode(any())).thenReturn(jwt);
+    when(tokenClaimsConverter.convert(any()))
+        .thenReturn(CamundaAuthentication.of(b -> b.user("foo")));
+
+    // when / then — must not throw NullPointerException when issuerUri is null
+    assertThatCode(() -> converter.convert(authentication)).doesNotThrowAnyException();
+
+    // and — null is passed to decoder factory since issuer has no additional JWKS configured
+    verify(oidcAccessTokenDecoderFactory)
+        .createAccessTokenDecoder(eq(clientRegistration), isNull());
+  }
+
+  @Test
+  public void shouldPassNullWhenConstructedWithoutAdditionalUris() {
+    // given — converter created with 4-arg constructor (no additional URIs)
+    final var converter =
+        new OidcUserAuthenticationConverter(
+            authorizedClientRepository,
+            oidcAccessTokenDecoderFactory,
+            tokenClaimsConverter,
+            request);
+
+    final var oidcUser = mock(OidcUser.class);
+    when(oidcUser.getAttributes()).thenReturn(Map.of("sub", "test-user"));
+
+    final var authentication = mock(OAuth2AuthenticationToken.class);
+    when(authentication.getPrincipal()).thenReturn(oidcUser);
+
+    final var accessToken = mock(OAuth2AccessToken.class);
+    when(accessToken.getTokenValue()).thenReturn("test-access-token");
+
+    final var providerDetails = mock(ClientRegistration.ProviderDetails.class);
+    when(providerDetails.getIssuerUri()).thenReturn("https://issuer.example.com");
+    final var clientRegistration = mock(ClientRegistration.class);
+    when(clientRegistration.getRegistrationId()).thenReturn("no-additional");
+    when(clientRegistration.getProviderDetails()).thenReturn(providerDetails);
+
+    final var authorizedClient = mock(OAuth2AuthorizedClient.class);
+    when(authorizedClient.getAccessToken()).thenReturn(accessToken);
+    when(authorizedClient.getClientRegistration()).thenReturn(clientRegistration);
+    when(authorizedClientRepository.loadAuthorizedClient(any(), any(), any()))
+        .thenReturn(authorizedClient);
+
+    final var jwt = mock(Jwt.class);
+    when(jwt.getClaims()).thenReturn(Map.of("sub", "test-user"));
+    when(oidcAccessTokenDecoderFactory.createAccessTokenDecoder(any(), any()))
+        .thenReturn(jwtDecoder);
+    when(jwtDecoder.decode(any())).thenReturn(jwt);
+    when(tokenClaimsConverter.convert(any()))
+        .thenReturn(CamundaAuthentication.of(b -> b.user("foo")));
+
+    // when
+    converter.convert(authentication);
+
+    // then — null passed because empty map has no entry for this issuer
+    verify(oidcAccessTokenDecoderFactory)
+        .createAccessTokenDecoder(eq(clientRegistration), isNull());
   }
 }

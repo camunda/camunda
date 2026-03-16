@@ -126,7 +126,9 @@ public final class EngineProcessors {
 
     final var jobMetrics = new JobProcessingMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var processEngineMetrics =
-        new ProcessEngineMetrics(typedRecordProcessorContext.getMeterRegistry());
+        new ProcessEngineMetrics(
+            typedRecordProcessorContext.getMeterRegistry(),
+            processingState.getElementInstanceState().getActiveProcessInstanceCount());
     final var distributionMetrics =
         new DistributionMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var batchOperationMetrics =

@@ -85,22 +85,12 @@ const authorizationSchema = z.object({
 	ownerId: z.string(),
 	ownerType: ownerTypeSchema,
 	resourceType: resourceTypeSchema,
-	resourceId: z.string(),
-	permissionTypes: z.array(permissionTypeSchema),
-	authorizationKey: z.string(),
-});
-type Authorization = z.infer<typeof authorizationSchema>;
-
-const authorizationResultSchema = z.object({
-	ownerId: z.string(),
-	ownerType: ownerTypeSchema,
-	resourceType: resourceTypeSchema,
 	resourceId: z.string().nullable(),
 	resourcePropertyName: z.string().nullable(),
 	permissionTypes: z.array(permissionTypeSchema),
 	authorizationKey: z.string(),
 });
-type AuthorizationResult = z.infer<typeof authorizationResultSchema>;
+type Authorization = z.infer<typeof authorizationSchema>;
 
 const createAuthorizationRequestBodySchema = authorizationSchema.pick({
 	ownerId: true,
@@ -134,10 +124,10 @@ const queryAuthorizationsRequestBodySchema = getQueryRequestBodySchema({
 });
 type QueryAuthorizationsRequestBody = z.infer<typeof queryAuthorizationsRequestBodySchema>;
 
-const getAuthorizationResponseBodySchema = authorizationResultSchema;
+const getAuthorizationResponseBodySchema = authorizationSchema;
 type GetAuthorizationResponseBody = z.infer<typeof getAuthorizationResponseBodySchema>;
 
-const queryAuthorizationsResponseBodySchema = getQueryResponseBodySchema(authorizationResultSchema);
+const queryAuthorizationsResponseBodySchema = getQueryResponseBodySchema(authorizationSchema);
 type QueryAuthorizationsResponseBody = z.infer<typeof queryAuthorizationsResponseBodySchema>;
 
 const createAuthorization: Endpoint = {
@@ -170,7 +160,6 @@ export {
 	resourceTypeSchema,
 	ownerTypeSchema,
 	authorizationSchema,
-	authorizationResultSchema,
 	createAuthorizationRequestBodySchema,
 	createAuthorizationResponseBodySchema,
 	updateAuthorizationRequestBodySchema,
@@ -189,7 +178,6 @@ export type {
 	ResourceType,
 	OwnerType,
 	Authorization,
-	AuthorizationResult,
 	CreateAuthorizationRequestBody,
 	CreateAuthorizationResponseBody,
 	UpdateAuthorizationRequestBody,

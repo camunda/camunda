@@ -130,6 +130,25 @@ public class ProcessInstanceSortIT {
         Comparator.comparing(p -> p.state().name()));
   }
 
+  @TestTemplate
+  public void shouldSortByBusinessIdAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.businessId().asc(),
+        Comparator.comparing(
+            ProcessInstanceEntity::businessId, Comparator.nullsFirst(Comparator.naturalOrder())));
+  }
+
+  @TestTemplate
+  public void shouldSortByBusinessIdDesc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.businessId().desc(),
+        Comparator.comparing(
+                ProcessInstanceEntity::businessId, Comparator.nullsFirst(Comparator.naturalOrder()))
+            .reversed());
+  }
+
   private void testSorting(
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<ProcessInstanceSort>> sortBuilder,

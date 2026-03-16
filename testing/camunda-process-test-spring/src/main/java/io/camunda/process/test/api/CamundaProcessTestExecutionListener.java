@@ -20,6 +20,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.properties.CamundaClientProperties;
+import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
@@ -29,6 +30,7 @@ import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
+import io.camunda.process.test.impl.judge.JudgeConfigResolver;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.TestCaseRunnerProxy;
@@ -48,6 +50,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,6 +151,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // initialize json mapper
     initializeJsonMapper(jsonMapper, zeebeJsonMapper);
+
+    // initialize judge config
+    initializeJudgeConfig(testContext, runtimeConfiguration);
   }
 
   @Override
@@ -243,6 +249,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
 
     runtime.close();
+
+    CamundaAssert.setJudgeConfig(null);
   }
 
   private void initializeJsonMapper(
@@ -253,6 +261,14 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     } else if (zeebeJsonMapper != null) {
       CamundaAssert.setJsonMapper(zeebeJsonMapper);
     }
+  }
+
+  private void initializeJudgeConfig(
+      final TestContext testContext,
+      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+    JudgeConfigResolver.resolve(
+            testContext.getApplicationContext(), runtimeConfiguration.getJudge())
+        .ifPresent(CamundaAssert::setJudgeConfig);
   }
 
   private CamundaManagementClient createManagementClient(
@@ -319,6 +335,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         LOG.debug("Failed to close client, continue.", e);
       }
     }
+    createdClients.clear();
   }
 
   private CamundaProcessTestRuntime buildRuntime(
@@ -327,6 +344,12 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     final CamundaClientProperties clientProperties =
         testContext.getApplicationContext().getBean(CamundaClientProperties.class);
+
+    final Map<String, CamundaProcessTestContainerProvider> containerProviders =
+        testContext
+            .getApplicationContext()
+            .getBeansOfType(CamundaProcessTestContainerProvider.class);
+    containerProviders.values().forEach(containerRuntimeBuilder::withContainerProvider);
 
     return CamundaSpringProcessTestRuntimeBuilder.buildRuntime(
         containerRuntimeBuilder, runtimeConfiguration, clientProperties);

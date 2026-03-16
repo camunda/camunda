@@ -130,6 +130,25 @@ paths:
         '504':
           description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
+    delete:
+      summary: Reset the internal backup runtime state
+      description: |
+        Resets all internal backup runtime state, including the latest checkpoint info,
+        latest backup info, all checkpoint metadata entries, and all backup range entries.
+        This is an administrative operation intended for use when switching backup stores,
+        allowing the internal state to be cleared so it can be rebuilt against the new store.
+      responses:
+        '204':
+          description: Backup runtime state has been successfully reset
+        '500':
+          description: Internal Error
+          $ref: '#/components/responses/Error'
+        '502':
+          description: Gateway failed to send request to the broker.
+          $ref: '#/components/responses/Error'
+        '504':
+          description: Request from gateway to broker timed out
+          $ref: '#/components/responses/Error'
   /backupRuntime/state/sync:
     post:
       summary: Force-write backup metadata for all partitions

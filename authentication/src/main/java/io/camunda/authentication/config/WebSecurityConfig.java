@@ -53,6 +53,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -79,6 +80,7 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.ContentTypeOptionsConfig;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.HstsConfig;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer.ProtectedResourceMetadataConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.config.observation.SecurityObservationSettings;
 import org.springframework.security.core.Authentication;
@@ -134,7 +136,8 @@ public class WebSecurityConfig {
   public static final String LOGIN_URL = "/login";
   public static final String LOGOUT_URL = "/logout";
   public static final String REDIRECT_URI = "/sso-callback";
-  public static final Set<String> API_PATHS = Set.of("/api/**", "/v1/**", "/v2/**", "/mcp/**");
+  public static final Set<String> API_PATHS =
+      Set.of("/api/**", "/v1/**", "/v2/**", "/mcp/**", "/.well-known/oauth-protected-resource/**");
   public static final Set<String> UNPROTECTED_API_PATHS =
       Set.of(
           // these v2 endpoints are public
@@ -142,7 +145,9 @@ public class WebSecurityConfig {
           "/v2/setup/user",
           "/v2/status",
           // deprecated Tasklist v1 Public Endpoints
-          "/v1/external/process/**");
+          "/v1/external/process/**",
+          // OAuth2 Protected Resource Metadata endpoint (RFC 9728)
+          "/.well-known/oauth-protected-resource/**");
   public static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           // endpoint for failure forwarding
@@ -380,6 +385,7 @@ public class WebSecurityConfig {
     final CookieCsrfTokenRepository repository = new CookieCsrfTokenRepository();
     repository.setHeaderName(X_CSRF_TOKEN);
     repository.setCookieName(X_CSRF_TOKEN);
+    repository.setCookieCustomizer(builder -> builder.httpOnly(false));
     return repository;
   }
 
@@ -631,9 +637,14 @@ public class WebSecurityConfig {
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
         final TokenClaimsConverter tokenClaimsConverter,
-        final HttpServletRequest request) {
+        final HttpServletRequest request,
+        final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
       return new OidcUserAuthenticationConverter(
-          authorizedClientRepository, oidcAccessTokenDecoderFactory, tokenClaimsConverter, request);
+          authorizedClientRepository,
+          oidcAccessTokenDecoderFactory,
+          tokenClaimsConverter,
+          request,
+          buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository));
     }
 
     @Bean
@@ -665,6 +676,20 @@ public class WebSecurityConfig {
                 + "contact your external Identity provider.",
             e);
       }
+    }
+
+    private List<ClientRegistration> extractClientRegistrations(
+        final ClientRegistrationRepository clientRegistrationRepository) {
+      if (!(clientRegistrationRepository instanceof final Iterable<?> iterableRepository)) {
+        throw new IllegalStateException(
+            "Unable to extract OAuth 2.0 client registrations as clientRegistrationRepository %s is not iterable"
+                .formatted(clientRegistrationRepository.getClass()));
+      }
+
+      return StreamSupport.stream(iterableRepository.spliterator(), false)
+          .filter(ClientRegistration.class::isInstance)
+          .map(ClientRegistration.class::cast)
+          .toList();
     }
 
     @Bean
@@ -718,18 +743,25 @@ public class WebSecurityConfig {
     @Bean
     public JwtDecoder jwtDecoder(
         final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
-        final ClientRegistrationRepository clientRegistrationRepository) {
-      final var repository = (Iterable<ClientRegistration>) clientRegistrationRepository;
-      final var clientRegistrations =
-          StreamSupport.stream(repository.spliterator(), false).toList();
+        final ClientRegistrationRepository clientRegistrationRepository,
+        final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
+      final var clientRegistrations = extractClientRegistrations(clientRegistrationRepository);
+
+      final var additionalJwkSetUrisByIssuer =
+          buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository);
 
       if (clientRegistrations.size() == 1) {
         final var clientRegistration = clientRegistrations.getFirst();
+        final var additionalUris =
+            additionalJwkSetUrisByIssuer.get(
+                clientRegistration.getProviderDetails().getIssuerUri());
         LOG.info(
             "Create Access Token JWT Decoder for OIDC Provider: {}",
             clientRegistration.getRegistrationId());
         return new SupplierJwtDecoder(
-            () -> oidcAccessTokenDecoderFactory.createAccessTokenDecoder(clientRegistration));
+            () ->
+                oidcAccessTokenDecoderFactory.createAccessTokenDecoder(
+                    clientRegistration, additionalUris));
       } else {
         LOG.info(
             "Create Issuer Aware JWT Decoder for multiple OIDC Providers: [{}]",
@@ -739,8 +771,31 @@ public class WebSecurityConfig {
         return new SupplierJwtDecoder(
             () ->
                 oidcAccessTokenDecoderFactory.createIssuerAwareAccessTokenDecoder(
-                    clientRegistrations));
+                    clientRegistrations, additionalJwkSetUrisByIssuer));
       }
+    }
+
+    private Map<String, List<String>> buildAdditionalJwkSetUrisByIssuer(
+        final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
+      return oidcProviderRepository.getOidcAuthenticationConfigurations().values().stream()
+          .filter(
+              config ->
+                  config.getIssuerUri() != null
+                      && config.getAdditionalJwkSetUris() != null
+                      && !config.getAdditionalJwkSetUris().isEmpty())
+          .collect(
+              toMap(
+                  OidcAuthenticationConfiguration::getIssuerUri,
+                  config -> List.copyOf(config.getAdditionalJwkSetUris()),
+                  (a, b) -> {
+                    if (!a.equals(b)) {
+                      throw new IllegalStateException(
+                          "Multiple OIDC providers share the same issuer URI with different"
+                              + " additional JWKS URIs. Ensure each issuer has a consistent"
+                              + " configuration.");
+                    }
+                    return a;
+                  }));
     }
 
     @Bean
@@ -824,6 +879,7 @@ public class WebSecurityConfig {
     public SecurityFilterChain oidcApiSecurity(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
+        final ClientRegistrationRepository clientRegistrationRepository,
         final JwtDecoder jwtDecoder,
         final SecurityConfiguration securityConfiguration,
         final CookieCsrfTokenRepository csrfTokenRepository,
@@ -863,6 +919,9 @@ public class WebSecurityConfig {
                   oauth2 ->
                       oauth2
                           .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder))
+                          .protectedResourceMetadata(
+                              oauthProtectedResourceMetadataCustomizer(
+                                  clientRegistrationRepository))
                           .withObjectPostProcessor(postProcessBearerTokenFailureHandler()))
               .oauth2Login(AbstractHttpConfigurer::disable)
               .oidcLogout(AbstractHttpConfigurer::disable)
@@ -948,6 +1007,9 @@ public class WebSecurityConfig {
                   oauth2 ->
                       oauth2
                           .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder))
+                          .protectedResourceMetadata(
+                              oauthProtectedResourceMetadataCustomizer(
+                                  clientRegistrationRepository))
                           .withObjectPostProcessor(postProcessBearerTokenFailureHandler()))
               .oauth2Login(
                   oauthLoginConfigurer -> {
@@ -984,6 +1046,21 @@ public class WebSecurityConfig {
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
       return filterChainBuilder.build();
+    }
+
+    private Customizer<ProtectedResourceMetadataConfigurer>
+        oauthProtectedResourceMetadataCustomizer(
+            final ClientRegistrationRepository clientRegistrationRepository) {
+      final var issuerUris =
+          extractClientRegistrations(clientRegistrationRepository).stream()
+              .map(clientRegistration -> clientRegistration.getProviderDetails().getIssuerUri())
+              .filter(Objects::nonNull)
+              .distinct()
+              .toList();
+
+      return prmConfigurer ->
+          prmConfigurer.protectedResourceMetadataCustomizer(
+              prmBuilder -> issuerUris.forEach(prmBuilder::authorizationServer));
     }
 
     private OAuth2AuthorizationRequestResolver authorizationRequestResolver(

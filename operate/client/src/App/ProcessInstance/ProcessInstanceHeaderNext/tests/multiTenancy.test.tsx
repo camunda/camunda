@@ -12,7 +12,6 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {ProcessInstanceHeader} from '../index';
-import {operationsStore} from 'modules/stores/operations';
 import {mockInstance} from './index.setup';
 import {MemoryRouter} from 'react-router-dom';
 import {createUser, mockProcessXML} from 'modules/testUtils';
@@ -34,7 +33,6 @@ vi.mock('modules/stores/process', () => ({
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {
-      operationsStore.reset();
       authenticationStore.reset();
     };
   }, []);

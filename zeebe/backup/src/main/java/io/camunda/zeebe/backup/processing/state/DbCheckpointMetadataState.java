@@ -160,4 +160,9 @@ public final class DbCheckpointMetadataState {
           }
         });
   }
+
+  /** Removes all checkpoint entries. Used during state reset when switching backup stores. */
+  public void clearAll() {
+    checkpointsColumnFamily.forEachKey(checkpointsColumnFamily::deleteExisting);
+  }
 }

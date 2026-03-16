@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 
@@ -76,9 +75,7 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
     eventTriggerScopeKey.wrapLong(eventScopeKey);
 
     eventTriggerColumnFamily.whileEqualPrefix(
-        eventTriggerScopeKey,
-        (BiConsumer<DbCompositeKey<DbLong, DbLong>, EventTrigger>)
-            (key, value) -> deleteTrigger(key));
+        eventTriggerScopeKey, (DbCompositeKey<DbLong, DbLong> key) -> deleteTrigger(key));
 
     this.eventScopeKey.wrapLong(eventScopeKey);
     eventScopeInstanceColumnFamily.deleteIfExists(this.eventScopeKey);

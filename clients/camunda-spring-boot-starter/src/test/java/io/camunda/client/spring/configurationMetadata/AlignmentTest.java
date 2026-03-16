@@ -50,6 +50,9 @@ public class AlignmentTest {
   private static final Map<String, Getter> NEW_GETTERS =
       Map.ofEntries(
           entry(
+              "camunda.client.use-client-side-load-balancing",
+              new Getter(CamundaClientProperties::isUseClientSideLoadBalancing)),
+          entry(
               "camunda.client.execution-threads",
               new Getter(CamundaClientProperties::getExecutionThreads)),
           entry(

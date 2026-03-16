@@ -302,11 +302,13 @@ final class BackupServiceImpl {
               backupStore
                   .list(
                       new BackupIdentifierWildcardImpl(
-                          Optional.empty(),
-                          Optional.of(partitionId),
-                          CheckpointPattern.of(lastCheckpointId)))
+                          Optional.empty(), Optional.of(partitionId), CheckpointPattern.any()))
                   .thenAcceptAsync(
-                      backups -> backups.forEach(b -> failInProgressBackup(b, executor)), executor)
+                      backups ->
+                          backups.stream()
+                              .filter(b -> b.id().checkpointId() <= lastCheckpointId)
+                              .forEach(b -> failInProgressBackup(b, executor)),
+                      executor)
                   .exceptionallyAsync(
                       failure -> {
                         LOG.warn("Failed to list backups that should be marked as failed", failure);
@@ -357,6 +359,26 @@ final class BackupServiceImpl {
       case final Either.Right<WriteFailure, Long> ignoredPosition -> deleteCompleted.complete(null);
     }
     return deleteCompleted;
+  }
+
+  ActorFuture<Void> writeClearStateCommand(final ConcurrencyControl executor) {
+    final ActorFuture<Void> clearCompleted = executor.createFuture();
+    final var clearWritten =
+        logStreamWriter.tryWrite(
+            WriteContext.internal(),
+            LogAppendEntry.of(
+                new RecordMetadata()
+                    .recordType(RecordType.COMMAND)
+                    .valueType(ValueType.CHECKPOINT)
+                    .intent(CheckpointIntent.CLEAR_STATE),
+                new CheckpointRecord()));
+    switch (clearWritten) {
+      case Either.Left(final var error) ->
+          clearCompleted.completeExceptionally(
+              new RuntimeException("Failed to write CLEAR_STATE command: " + error));
+      case final Either.Right<WriteFailure, Long> ignoredPosition -> clearCompleted.complete(null);
+    }
+    return clearCompleted;
   }
 
   ActorFuture<Void> deleteBackupIfExists(
@@ -503,20 +525,23 @@ final class BackupServiceImpl {
       final SequencedCollection<BackupRange> ranges) {
     final var result = new ArrayList<BackupRangeStatus>(ranges.size());
     for (final var range : ranges) {
+      // IMPORTANT: getCheckpoint() returns a shared mutable flyweight from the column
+      // family. We must extract data into an immutable record immediately after each
+      // call, before the next call overwrites the flyweight's internal buffer.
       final var firstMeta = checkpointMetadataState.getCheckpoint(range.start());
+      final var first = firstMeta == null ? null : toCheckpointInfo(range.start(), firstMeta);
       final var lastMeta = checkpointMetadataState.getCheckpoint(range.end());
-      if (firstMeta == null || lastMeta == null) {
+      final var last = lastMeta == null ? null : toCheckpointInfo(range.end(), lastMeta);
+      if (first == null || last == null) {
         LOG.atWarn()
             .addKeyValue("rangeStart", range.start())
             .addKeyValue("rangeEnd", range.end())
-            .addKeyValue("firstMetaPresent", firstMeta != null)
-            .addKeyValue("lastMetaPresent", lastMeta != null)
+            .addKeyValue("firstMetaPresent", first != null)
+            .addKeyValue("lastMetaPresent", last != null)
             .setMessage("Checkpoint metadata missing for range boundary, skipping range")
             .log();
         continue;
       }
-      final var first = toCheckpointInfo(range.start(), firstMeta);
-      final var last = toCheckpointInfo(range.end(), lastMeta);
       result.add(new BackupRangeStatus(first, last));
     }
     future.complete(result);

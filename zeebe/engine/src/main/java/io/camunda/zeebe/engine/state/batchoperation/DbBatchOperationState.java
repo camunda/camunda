@@ -284,6 +284,20 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
+  public void removeFromPending(final long batchOperationKey) {
+    LOGGER.trace("Removing batch operation with key {} from pending", batchOperationKey);
+    batchKey.wrapLong(batchOperationKey);
+    pendingBatchOperationColumnFamily.deleteIfExists(batchKey);
+  }
+
+  @Override
+  public void addToPending(final long batchOperationKey) {
+    LOGGER.trace("Adding batch operation with key {} to pending", batchOperationKey);
+    batchKey.wrapLong(batchOperationKey);
+    pendingBatchOperationColumnFamily.upsert(batchKey, DbNil.INSTANCE);
+  }
+
+  @Override
   public void complete(final long batchOperationKey) {
     LOGGER.trace("Completing batch operation with key {}", batchOperationKey);
     deleteBatchOperation(batchOperationKey);
@@ -332,16 +346,18 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     final var pendingBatchOperation = new AtomicReference<PersistedBatchOperation>();
 
     pendingBatchOperationColumnFamily.whileTrue(
-        (key, nil) -> {
+        key -> {
           final var batchOperation = batchOperationColumnFamily.get(key);
-          if (batchOperation != null) {
+          if (batchOperation != null && !batchOperation.isSuspended()) {
             pendingBatchOperation.set(batchOperation);
+            // found a non-suspended pending batch operation, stop iterating
+            return false;
           }
-          // only return the first pending batch operation
-          return false;
+          // skip suspended or missing batch operations and continue to the next one
+          return true;
         });
 
-    // return that first pending batch operation if it exists
+    // return the first non-suspended pending batch operation if it exists
     return Optional.ofNullable(pendingBatchOperation.get());
   }
 
@@ -377,10 +393,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
     // then delete all chunks
     batchOperationChunksColumnFamily.whileEqualPrefix(
-        batchKey,
-        (compositeKey, entityTypeValue) -> {
-          batchOperationChunksColumnFamily.deleteExisting(compositeKey);
-        });
+        batchKey, batchOperationChunksColumnFamily::deleteExisting);
 
     // finally delete batch operation itself
     batchOperationColumnFamily.deleteExisting(batchKey);

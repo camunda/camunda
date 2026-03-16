@@ -11,9 +11,10 @@ import { FormModal, UseEntityModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api";
 import { useNotifications } from "src/components/notifications";
-import { Group, updateGroup } from "src/utility/api/groups";
+import { updateGroup } from "src/utility/api/groups";
 import TextField from "src/components/form/TextField";
 import { isValidId } from "src/utility/validate.ts";
+import type { Group } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const EditModal: FC<UseEntityModalProps<Group>> = ({
   entity: group,

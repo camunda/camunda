@@ -8,15 +8,18 @@
 package io.camunda.search.clients.reader;
 
 import io.camunda.search.aggregation.result.GlobalJobStatisticsAggregationResult;
+import io.camunda.search.aggregation.result.JobErrorStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.JobTimeSeriesStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.JobTypeStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.JobWorkerStatisticsAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
+import io.camunda.search.entities.JobErrorStatisticsEntity;
 import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
+import io.camunda.search.query.JobErrorStatisticsQuery;
 import io.camunda.search.query.JobTimeSeriesStatisticsQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
 import io.camunda.search.query.JobWorkerStatisticsQuery;
@@ -58,5 +61,12 @@ public class JobMetricsBatchDocumentReader extends DocumentBasedReader
       final JobTimeSeriesStatisticsQuery query, final ResourceAccessChecks resourceAccessChecks) {
     return aggregateToResult(
         query, JobTimeSeriesStatisticsAggregationResult.class, resourceAccessChecks);
+  }
+
+  @Override
+  public SearchQueryResult<JobErrorStatisticsEntity> getJobErrorStatistics(
+      final JobErrorStatisticsQuery query, final ResourceAccessChecks resourceAccessChecks) {
+    return aggregateToResult(
+        query, JobErrorStatisticsAggregationResult.class, resourceAccessChecks);
   }
 }

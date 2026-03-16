@@ -8,10 +8,17 @@
 
 import styled from 'styled-components';
 
-const Diagram = styled.div`
+const Diagram = styled.div<{$isFullscreen?: boolean}>`
   height: 100%;
   width: 100%;
   position: relative;
+
+  ${({$isFullscreen}) =>
+    $isFullscreen
+      ? `
+    background-color: var(--cds-layer-01);
+  `
+      : ''}
 `;
 
 const DiagramCanvas = styled.div`
@@ -20,6 +27,7 @@ const DiagramCanvas = styled.div`
   width: 100%;
   left: 0;
   top: 0;
+  min-height: 200px;
 
   .op-highlighted.djs-shape .djs-visual > :nth-child(1) {
     stroke: var(--cds-background-brand) !important;
@@ -39,12 +47,54 @@ const DiagramCanvas = styled.div`
     cursor: not-allowed;
   }
 
+  .op-drilldown {
+    user-select: none;
+  }
+
+  .op-drilldown-loading,
+  .op-drilldown-loading * {
+    cursor: wait;
+  }
+
   .op-selected .djs-visual {
     rect,
     circle,
     polygon {
       fill: var(--cds-highlight) !important;
     }
+  }
+
+  .djs-minimap {
+    top: auto !important;
+    bottom: calc(
+      var(--cds-spacing-05) + 48px + var(--cds-spacing-02)
+    ) !important;
+    right: var(--cds-spacing-05) !important;
+    z-index: 10;
+    background-color: var(--cds-layer-01) !important;
+    border-color: var(--cds-border-subtle-01) !important;
+  }
+
+  .djs-minimap .map {
+    width: 240px !important;
+    height: 135px !important;
+  }
+
+  .djs-minimap .toggle:before {
+    content: '' !important;
+  }
+
+  .djs-minimap:not(.open) .toggle {
+    display: none;
+  }
+
+  .djs-minimap.open .overlay {
+    background: var(--cds-layer-02) !important;
+    opacity: 0.2;
+  }
+
+  .djs-minimap .viewport-dom {
+    border-color: var(--cds-background-brand) !important;
   }
 `;
 

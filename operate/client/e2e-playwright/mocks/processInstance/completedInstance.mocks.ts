@@ -10,23 +10,6 @@ import type {InstanceMock} from '.';
 
 const completedInstance: InstanceMock = {
   detail: {
-    id: '2551799813954282',
-    processId: '2251799813694848',
-    processName: 'Timer process',
-    processVersion: 4,
-    startDate: '2023-10-02T06:10:47.979+0000',
-    endDate: '2023-10-02T06:15:48.042+0000',
-    state: 'COMPLETED',
-    bpmnProcessId: 'timerProcess',
-    hasActiveOperation: false,
-    operations: [],
-    parentInstanceId: null,
-    rootInstanceId: null,
-    callHierarchy: [],
-    sortValues: [''],
-    tenantId: '<default>',
-  },
-  detailV2: {
     processInstanceKey: '2551799813954282',
     processDefinitionKey: '2251799813694848',
     processDefinitionName: 'Timer process',
@@ -178,17 +161,7 @@ const completedInstance: InstanceMock = {
       </bpmndi:BPMNDiagram>
     </bpmn:definitions>
     `,
-  sequenceFlows: [
-    {
-      processInstanceId: '2551799813954282',
-      activityId: 'SequenceFlow_0prd963',
-    },
-    {
-      processInstanceId: '2551799813954282',
-      activityId: 'SequenceFlow_15toaun',
-    },
-  ],
-  sequenceFlowsV2: {
+  sequenceFlows: {
     items: [
       {
         processInstanceKey: '2551799813954282',

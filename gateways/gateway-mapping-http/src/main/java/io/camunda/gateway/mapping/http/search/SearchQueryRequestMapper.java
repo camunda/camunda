@@ -40,6 +40,7 @@ import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.JobErrorStatisticsQuery;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
@@ -157,6 +158,14 @@ public final class SearchQueryRequestMapper {
         filter, Either.right(null), page, SearchQueryBuilders::jobTimeSeriesStatisticsSearchQuery);
   }
 
+  public static Either<ProblemDetail, JobErrorStatisticsQuery> toJobErrorStatisticsQuery(
+      final io.camunda.gateway.protocol.model.JobErrorStatisticsQuery request) {
+    final Either<List<String>, SearchQueryPage> page = toSearchQueryPage(request.getPage());
+    final var filter = SearchQueryFilterMapper.toJobErrorStatisticsFilter(request.getFilter());
+    return buildSearchQuery(
+        filter, Either.right(null), page, SearchQueryBuilders::jobErrorStatisticsSearchQuery);
+  }
+
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
       final io.camunda.gateway.protocol.model.simple.ProcessDefinitionSearchQuery query) {
     return toProcessDefinitionQuery(
@@ -173,6 +182,14 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.processDefinitionSearchQuery().build());
     }
+
+    // Validate isLatestVersion constraints
+    final var isLatestVersionValidation =
+        validateProcessDefinitionIsLatestVersionConstraints(request);
+    if (isLatestVersionValidation.isLeft()) {
+      return Either.left(isLatestVersionValidation.getLeft());
+    }
+
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
@@ -885,6 +902,13 @@ public final class SearchQueryRequestMapper {
       return Either.right(null);
     }
 
+    final List<String> violations = new ArrayList<>();
+    validatePageAttributes(requestedPage, violations);
+
+    if (!violations.isEmpty()) {
+      return Either.left(violations);
+    }
+
     return switch (requestedPage) {
       case final CursorBackwardPagination req -> Either.right(innerToSearchQueryPage(req));
       case final CursorForwardPagination req -> Either.right(innerToSearchQueryPage(req));
@@ -892,6 +916,33 @@ public final class SearchQueryRequestMapper {
       case final LimitPagination req -> Either.right(innerToSearchQueryPage(req));
       default -> Either.left(List.of(ERROR_SEARCH_UNKNOWN_PAGE_TYPE));
     };
+  }
+
+  private static void validatePageAttributes(
+      final SearchQueryPageRequest requestedPage, final List<String> violations) {
+    final Integer limit =
+        switch (requestedPage) {
+          case final CursorBackwardPagination req -> req.getLimit();
+          case final CursorForwardPagination req -> req.getLimit();
+          case final OffsetPagination req -> req.getLimit();
+          case final LimitPagination req -> req.getLimit();
+          default -> null;
+        };
+
+    if (limit != null && limit < 0) {
+      violations.add(
+          ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+              "page.limit", limit, "a non-negative number"));
+    }
+
+    if (requestedPage instanceof final OffsetPagination req) {
+      final Integer from = req.getFrom();
+      if (from != null && from < 0) {
+        violations.add(
+            ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+                "page.from", from, "a non-negative number"));
+      }
+    }
   }
 
   private static SearchQueryPage innerToSearchQueryPage(
@@ -915,11 +966,68 @@ public final class SearchQueryRequestMapper {
     return SearchQueryPage.of((p) -> p.size(requestedPage.getLimit()));
   }
 
+  private static Either<ProblemDetail, Void> validateProcessDefinitionIsLatestVersionConstraints(
+      final ProcessDefinitionSearchQuery request) {
+    final List<String> violations = new ArrayList<>();
+
+    // Check if isLatestVersion filter is set to true
+    final var filter = request.getFilter();
+    if (filter == null || filter.getIsLatestVersion() == null || !filter.getIsLatestVersion()) {
+      return Either.right(null);
+    }
+
+    // Validate pagination: only 'after' and 'limit' are allowed
+    final var page = request.getPage();
+    if (page != null) {
+      if (page instanceof CursorBackwardPagination) {
+        violations.add(
+            ERROR_MESSAGE_UNSUPPORTED_PAGINATION_WITH_IS_LATEST_VERSION.formatted("before"));
+      } else if (page instanceof OffsetPagination) {
+        violations.add(
+            ERROR_MESSAGE_UNSUPPORTED_PAGINATION_WITH_IS_LATEST_VERSION.formatted("from"));
+      }
+    }
+
+    // Validate sorting: only 'processDefinitionId' and 'tenantId' are allowed
+    final var sort = request.getSort();
+    if (sort != null && !sort.isEmpty()) {
+      for (final var sortRequest : sort) {
+        final var field = sortRequest.getField();
+        if (field != null
+            && field
+                != io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuerySortRequest
+                    .FieldEnum.PROCESS_DEFINITION_ID
+            && field
+                != io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuerySortRequest
+                    .FieldEnum.TENANT_ID) {
+          violations.add(
+              ERROR_MESSAGE_UNSUPPORTED_SORT_FIELD_WITH_IS_LATEST_VERSION.formatted(field));
+        }
+      }
+    }
+
+    if (!violations.isEmpty()) {
+      final var problem = RequestValidator.createProblemDetail(violations);
+      if (problem.isPresent()) {
+        return Either.left(problem.get());
+      }
+    }
+
+    return Either.right(null);
+  }
+
   private static Either<List<String>, SearchQueryPage> toOffsetPagination(
       final OffsetPagination requestedPage) {
 
     if (requestedPage == null) {
       return Either.right(null);
+    }
+
+    final List<String> violations = new ArrayList<>();
+    validatePageAttributes(requestedPage, violations);
+
+    if (!violations.isEmpty()) {
+      return Either.left(violations);
     }
 
     // Delegate to the existing mapping

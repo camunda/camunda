@@ -10,23 +10,6 @@ import type {InstanceMock} from '.';
 
 const runningInstance: InstanceMock = {
   detail: {
-    id: '2251799813687144',
-    processId: '2251799813686165',
-    processName: 'Signal event',
-    processVersion: 1,
-    startDate: '2023-08-14T05:45:17.331+0000',
-    endDate: null,
-    state: 'ACTIVE',
-    bpmnProcessId: 'signalEventProcess',
-    hasActiveOperation: false,
-    operations: [],
-    parentInstanceId: null,
-    rootInstanceId: null,
-    callHierarchy: [],
-    sortValues: ['', ''],
-    tenantId: '',
-  },
-  detailV2: {
     processInstanceKey: '2251799813687144',
     processDefinitionKey: '2251799813686165',
     processDefinitionName: 'Signal event',
@@ -140,13 +123,7 @@ const runningInstance: InstanceMock = {
       rootProcessInstanceKey: null,
     },
   ],
-  sequenceFlows: [
-    {
-      processInstanceId: '2251799813687144',
-      activityId: 'Flow_0s222mp',
-    },
-  ],
-  sequenceFlowsV2: {
+  sequenceFlows: {
     items: [
       {
         processInstanceKey: '2251799813687144',
@@ -175,32 +152,6 @@ const runningInstance: InstanceMock = {
         completed: 1,
       },
     ],
-  },
-  metaData: {
-    flowNodeInstanceId: '2251799813687150',
-    flowNodeId: null,
-    flowNodeType: null,
-    instanceCount: null,
-    instanceMetadata: {
-      flowNodeId: 'Activity_0dex012',
-      flowNodeInstanceId: '2251799813687150',
-      flowNodeType: 'USER_TASK',
-      startDate: '2023-10-24T08:41:45.911+0000',
-      endDate: null,
-      calledProcessInstanceId: null,
-      calledProcessDefinitionName: null,
-      calledDecisionInstanceId: null,
-      calledDecisionDefinitionName: null,
-      eventId: '2251799813687144_2251799813687150',
-      jobType: 'io.camunda.zeebe:userTask',
-      jobRetries: 1,
-      jobWorker: '',
-      jobDeadline: null,
-      jobCustomHeaders: {},
-      jobId: '',
-    },
-    incidentCount: 0,
-    incident: null,
   },
 };
 

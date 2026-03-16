@@ -15,8 +15,8 @@
  */
 package io.camunda.client.impl.statistics.filter;
 
-import io.camunda.client.api.search.filter.JobTypeStatisticsFilter;
 import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.api.statistics.filter.JobTypeStatisticsFilter;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import java.util.function.Consumer;

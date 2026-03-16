@@ -243,7 +243,7 @@ describe('Target Diagram', () => {
     ).toBeInTheDocument();
   });
 
-  it('should render flow node overlays', async () => {
+  it('should render element overlays', async () => {
     mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockSearchProcessDefinitions().withSuccess(searchResult([]));

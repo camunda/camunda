@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.engine.client.command;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.GlobalTaskListenerEventType;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
@@ -355,6 +356,160 @@ public class GlobalUserTaskListenersTest {
         .containsExactly("oldCreating");
   }
 
+  @Test
+  void shouldMergeConfigurationAndApiGlobalTaskListener() {
+    // given: a process definition and global listeners defined through configuration and API
+
+    // configure global listeners
+    configureGlobalListeners(
+        List.of(
+            createListenerConfig("10_configuration", List.of("creating"), false),
+            createListenerConfig("20_configuration", List.of("creating"), false)));
+    restartBroker();
+
+    // add global listener via API (note that no restart is needed)
+    camundaClient
+        .newCreateGlobalTaskListenerRequest()
+        .id("15_api")
+        .type("15_api")
+        .eventTypes(GlobalTaskListenerEventType.CREATING)
+        .send()
+        .join();
+
+    // setup workers for listeners
+    setupAutocompleteWorker("10_configuration");
+    setupAutocompleteWorker("20_configuration");
+    setupAutocompleteWorker("15_api");
+
+    // deploy process definition
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess("processWithUserTask")
+            .startEvent("start")
+            .userTask("task")
+            .zeebeUserTask()
+            .endEvent("end")
+            .done();
+    final long processDefinitionKey = resourcesHelper.deployProcess(processDefinition);
+
+    // when: process with task is created
+    final var processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+
+    // then: all listeners are executed in correct order
+    assertThat(
+            RecordingExporter.records()
+                .skipUntil(
+                    r -> // skip until task creation is started
+                    r.getIntent() == UserTaskIntent.CREATING
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                .limit(
+                    r -> // stop after task creation has been completed
+                    r.getIntent() == UserTaskIntent.CREATED
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                // get all completed task listener jobs
+                .jobRecords()
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withIntent(JobIntent.COMPLETED))
+        .extracting(Record::getValue)
+        // check that all jobs are for creating event
+        .allMatch(job -> job.getJobListenerEventType() == JobListenerEventType.CREATING)
+        .extracting(JobRecordValue::getType)
+        // check correct listeners have been executed in correct order
+        .containsExactly("10_configuration", "15_api", "20_configuration");
+  }
+
+  @Test
+  void shouldReplaceOnlyConfigurationDefinedGlobalTaskListenersAfterRestart() {
+    // given: a process definition and global listeners defined through configuration and API
+
+    // configure "old" global listeners
+    configureGlobalListeners(
+        List.of(
+            createListenerConfig("10_configuration", List.of("creating"), false),
+            createListenerConfig("20_configuration", List.of("assigning"), false)));
+    restartBroker();
+
+    // add global listener via API (note that no restart is needed)
+    camundaClient
+        .newCreateGlobalTaskListenerRequest()
+        .id("15_api")
+        .type("15_api")
+        .eventTypes(GlobalTaskListenerEventType.CREATING)
+        .send()
+        .join();
+    camundaClient
+        .newCreateGlobalTaskListenerRequest()
+        .id("30_api")
+        .type("30_api")
+        .eventTypes(GlobalTaskListenerEventType.CREATING)
+        .send()
+        .join();
+
+    // setup workers for listeners
+    setupAutocompleteWorker("10_configuration");
+    setupAutocompleteWorker("20_configuration");
+    setupAutocompleteWorker("15_api");
+    setupAutocompleteWorker("30_api");
+
+    // deploy process definition
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess("processWithUserTask")
+            .startEvent("start")
+            .userTask("task")
+            .zeebeUserTask()
+            .endEvent("end")
+            .done();
+    final long processDefinitionKey = resourcesHelper.deployProcess(processDefinition);
+
+    // when: the configuration is changed and the cluster restarted
+
+    // configure "new" global listeners
+    configureGlobalListeners(
+        List.of(
+            // 10_configuration removed
+            // 20_configuration is still there but with different event type
+            createListenerConfig("20_configuration", List.of("creating"), false),
+            // 01_configuration added
+            createListenerConfig("40_configuration", List.of("creating"), false)));
+    restartBroker();
+
+    // setup worker for new listener
+    setupAutocompleteWorker("40_configuration");
+
+    // then: the correct listeners are executed, replacing old configuration-defined listeners
+    //       with the new ones while keeping the API-defined listeners intact
+    // Expected listeners:
+    // 15_api (API, should not be replaced)
+    // 20_configuration (old configuration but with updated event type)
+    // 30_api (API, should not be replaced)
+    // 40_configuration (new configuration)
+    // Note: 10_configuration should not be executed as it has been removed from the configuration
+    final var processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+    assertThat(
+            RecordingExporter.records()
+                .skipUntil(
+                    r -> // skip until task creation is started
+                    r.getIntent() == UserTaskIntent.CREATING
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                .limit(
+                    r -> // stop after task creation has been completed
+                    r.getIntent() == UserTaskIntent.CREATED
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                // get all completed task listener jobs
+                .jobRecords()
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withIntent(JobIntent.COMPLETED))
+        .extracting(Record::getValue)
+        // check that all jobs are for creating event
+        .allMatch(job -> job.getJobListenerEventType() == JobListenerEventType.CREATING)
+        .extracting(JobRecordValue::getType)
+        // check correct listeners have been executed in correct order
+        .containsExactly("15_api", "20_configuration", "30_api", "40_configuration");
+  }
+
   private void setupAutocompleteWorker(final String jobType) {
     camundaClient
         .newWorker()
@@ -381,7 +536,7 @@ public class GlobalUserTaskListenersTest {
   private GlobalListenerCfg createListenerConfig(
       final String type, final List<String> eventTypes, final boolean afterNonGlobal) {
     final GlobalListenerCfg listenerCfg = new GlobalListenerCfg();
-    listenerCfg.setId("GlobalListener_" + type);
+    listenerCfg.setId(type);
     listenerCfg.setType(type);
     listenerCfg.setEventTypes(eventTypes);
     listenerCfg.setAfterNonGlobal(afterNonGlobal);

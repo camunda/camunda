@@ -32,8 +32,8 @@ public class CamundaClientProperties {
   private boolean enabled = true;
 
   /**
-   * The client mode to use. If not set, `saas` mode is detected based on the presence of a
-   * `camunda.client.cloud.cluster-id`.
+   * The client mode to use. If not set, <code>saas</code> mode is detected based on the presence of
+   * a <code>camunda.client.cloud.cluster-id</code>.
    */
   private ClientMode mode;
 
@@ -50,14 +50,14 @@ public class CamundaClientProperties {
   private Duration messageTimeToLive = DEFAULT_MESSAGE_TTL;
 
   /**
-   * A custom `maxMessageSize` sets the maximum inbound message size the client can receive from
-   * Camunda. It specifies the `maxInboundMessageSize` of the gRPC channel.
+   * A custom <code>maxMessageSize</code> sets the maximum inbound message size the client can
+   * receive from Camunda. It specifies the <code>maxInboundMessageSize</code> of the gRPC channel.
    */
   private DataSize maxMessageSize = DataSize.ofBytes(DEFAULT_MAX_MESSAGE_SIZE);
 
   /**
-   * A custom `maxMetadataSize` sets the maximum inbound metadata size the client can receive from
-   * Camunda. It specifies the `maxInboundMetadataSize` of the gRPC channel.
+   * A custom <code>maxMetadataSize</code> sets the maximum inbound metadata size the client can
+   * receive from Camunda. It specifies the <code>maxInboundMetadataSize</code> of the gRPC channel.
    */
   private DataSize maxMetadataSize = DataSize.ofBytes(DEFAULT_MAX_METADATA_SIZE);
 
@@ -79,19 +79,20 @@ public class CamundaClientProperties {
   @NestedConfigurationProperty
   private CamundaClientWorkerProperties worker = new CamundaClientWorkerProperties();
 
-  /** If `true`, prefers REST over gRPC for operations supported by both protocols. */
+  /** If <code>true</code>, prefers REST over gRPC for operations supported by both protocols. */
   private boolean preferRestOverGrpc = DEFAULT_PREFER_REST_OVER_GRPC;
 
   /**
    * The gRPC address of Camunda that the client can connect to. The address must be an absolute
-   * URL, including the scheme. An alternative default is set by both `camunda.client.mode`.
+   * URL, including the scheme. An alternative default is set by both <code>camunda.client.mode
+   * </code>.
    */
   private URI grpcAddress = DEFAULT_GRPC_ADDRESS;
 
   /**
    * The REST API address of the Camunda instance that the client can connect to. The address must
-   * be an absolute URL, including the scheme. An alternative default is set by
-   * both`camunda.client.mode`.
+   * be an absolute URL, including the scheme. An alternative default is set by both <code>
+   * camunda.client.mode</code>.
    */
   private URI restAddress = DEFAULT_REST_ADDRESS;
 
@@ -113,6 +114,13 @@ public class CamundaClientProperties {
 
   /** The maximum number of concurrent HTTP connections the client can open. */
   private int maxHttpConnections = DEFAULT_MAX_HTTP_CONNECTIONS;
+
+  /**
+   * If <code>true</code>, enables client-side load balancing by using DNS-based resolution and
+   * distributing requests across all resolved addresses. Useful for setups without an external load
+   * balancer, such as Docker Compose, Testcontainers, or Kubernetes headless services.
+   */
+  private boolean useClientSideLoadBalancing = DEFAULT_CLIENT_SIDE_LOAD_BALANCING;
 
   public CamundaClientCloudProperties getCloud() {
     return cloud;
@@ -276,6 +284,14 @@ public class CamundaClientProperties {
     this.maxHttpConnections = maxHttpConnections;
   }
 
+  public boolean isUseClientSideLoadBalancing() {
+    return useClientSideLoadBalancing;
+  }
+
+  public void setUseClientSideLoadBalancing(final boolean useClientSideLoadBalancing) {
+    this.useClientSideLoadBalancing = useClientSideLoadBalancing;
+  }
+
   @Override
   public String toString() {
     return "CamundaClientProperties{"
@@ -309,6 +325,8 @@ public class CamundaClientProperties {
         + preferRestOverGrpc
         + ", maxHttpConnections="
         + maxHttpConnections
+        + ", useClientSideLoadBalancing="
+        + useClientSideLoadBalancing
         + ", grpcAddress="
         + grpcAddress
         + ", restAddress="

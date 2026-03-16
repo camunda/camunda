@@ -39,31 +39,19 @@ public class AuthorizationServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final AuthorizationSearchClient authorizationSearchClient,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.authorizationSearchClient = authorizationSearchClient;
   }
 
   @Override
-  public AuthorizationServices withAuthentication(final CamundaAuthentication authentication) {
-    return new AuthorizationServices(
-        brokerClient,
-        securityContextProvider,
-        authorizationSearchClient,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Override
-  public SearchQueryResult<AuthorizationEntity> search(final AuthorizationQuery query) {
+  public SearchQueryResult<AuthorizationEntity> search(
+      final AuthorizationQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             authorizationSearchClient
@@ -74,7 +62,7 @@ public class AuthorizationServices
   }
 
   public CompletableFuture<AuthorizationRecord> createAuthorization(
-      final CreateAuthorizationRequest request) {
+      final CreateAuthorizationRequest request, final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerAuthorizationRequest(AuthorizationIntent.CREATE)
             .setOwnerId(request.ownerId())
@@ -84,10 +72,11 @@ public class AuthorizationServices
             .setResourceId(request.resourceId())
             .setResourcePropertyName(request.resourcePropertyName())
             .setPermissionTypes(request.permissionTypes());
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
-  public AuthorizationEntity getAuthorization(final long authorizationKey) {
+  public AuthorizationEntity getAuthorization(
+      final long authorizationKey, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             authorizationSearchClient
@@ -99,13 +88,14 @@ public class AuthorizationServices
                 .getAuthorization(authorizationKey));
   }
 
-  public CompletableFuture<AuthorizationRecord> deleteAuthorization(final long authorizationKey) {
+  public CompletableFuture<AuthorizationRecord> deleteAuthorization(
+      final long authorizationKey, final CamundaAuthentication authentication) {
     final var brokerRequest = new BrokerAuthorizationDeleteRequest(authorizationKey);
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<AuthorizationRecord> updateAuthorization(
-      final UpdateAuthorizationRequest request) {
+      final UpdateAuthorizationRequest request, final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerAuthorizationRequest(AuthorizationIntent.UPDATE)
             .setAuthorizationKey(request.authorizationKey())
@@ -116,7 +106,7 @@ public class AuthorizationServices
             .setResourcePropertyName(request.resourcePropertyName())
             .setResourceType(request.resourceType())
             .setPermissionTypes(request.permissionTypes());
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public record CreateAuthorizationRequest(

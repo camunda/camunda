@@ -41,7 +41,7 @@ test.beforeEach(async ({page, processInstancePage}) => {
   });
 
   await processInstancePage.gotoProcessInstancePage({
-    id: initialData.instanceWithoutAnIncident.processInstanceKey,
+    key: initialData.instanceWithoutAnIncident.processInstanceKey,
   });
 });
 

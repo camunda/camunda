@@ -6,54 +6,51 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {
+  ClusterVariable,
+  ClusterVariableScope,
+  QueryClusterVariablesRequestBody,
+  QueryClusterVariablesResponseBody,
+  CreateClusterVariableRequestBody,
+} from "@camunda/camunda-api-zod-schemas/8.9";
 import {
   ApiDefinition,
   apiDelete,
   apiGet,
   apiPost,
   apiPut,
-} from "src/utility/api/request.ts";
-import { PageSearchParams, SearchResponse } from "src/utility/api";
-import { EntityData } from "src/components/entityList/EntityList.tsx";
+} from "src/utility/api/request";
 
 export const CLUSTER_VARIABLES_ENDPOINT = "/cluster-variables";
 
-export enum ScopeType {
-  GLOBAL = "GLOBAL",
-  TENANT = "TENANT",
-}
-
-export type ClusterVariable = EntityData & {
-  name: string;
-  scope: ScopeType;
-  tenantId?: string;
-  value: string;
-};
-
-function buildEndpoint(scopeType: ScopeType, tenantId?: string): string {
+function buildEndpoint(
+  scopeType: ClusterVariableScope,
+  tenantId?: string | null,
+): string {
   switch (scopeType) {
-    case ScopeType.GLOBAL:
+    case "GLOBAL":
       return `${CLUSTER_VARIABLES_ENDPOINT}/global`;
-    case ScopeType.TENANT:
+    case "TENANT":
+      if (!tenantId) {
+        throw new Error("tenantId is required for TENANT scope");
+      }
       return `${CLUSTER_VARIABLES_ENDPOINT}/tenants/${tenantId}`;
     default:
       throw new Error(`Unknown scope type: ${scopeType}`);
   }
 }
 
-type SearchClusterVariableParams = {
-  clusterVariableNames: string[];
-};
-
 export const searchClusterVariables: ApiDefinition<
-  SearchResponse<ClusterVariable>,
-  Partial<SearchClusterVariableParams & PageSearchParams> | undefined
+  QueryClusterVariablesResponseBody,
+  | (QueryClusterVariablesRequestBody & { clusterVariableNames?: string[] })
+  | undefined
 > = (params = {}) => {
   const { clusterVariableNames, ...restParams } = params;
 
-  const filters = clusterVariableNames
-    ? { filter: { name: { $in: clusterVariableNames } } }
-    : undefined;
+  const filters: QueryClusterVariablesRequestBody | undefined =
+    clusterVariableNames
+      ? { filter: { name: { $in: clusterVariableNames } } }
+      : undefined;
 
   return apiPost(`${CLUSTER_VARIABLES_ENDPOINT}/search`, {
     ...restParams,
@@ -61,45 +58,26 @@ export const searchClusterVariables: ApiDefinition<
   });
 };
 
-type GetClusterVariableParams = {
-  scope: ScopeType;
-  tenantId?: string;
-  name: string;
-};
-
 export const getClusterVariableDetails: ApiDefinition<
-  SearchResponse<ClusterVariable>,
-  GetClusterVariableParams
+  QueryClusterVariablesResponseBody,
+  Pick<ClusterVariable, "scope" | "tenantId" | "name">
 > = ({ scope, tenantId, name }) =>
   apiGet(`${buildEndpoint(scope, tenantId)}/${name}`);
 
-type CreateClusterVariableParams = GetClusterVariableParams & {
-  value: string;
-};
-
 export const createClusterVariable: ApiDefinition<
   undefined,
-  CreateClusterVariableParams
+  CreateClusterVariableRequestBody & Pick<ClusterVariable, "scope" | "tenantId">
 > = ({ scope, tenantId, ...params }) =>
   apiPost(buildEndpoint(scope, tenantId), params);
 
-export type DeleteClusterVariableParams = GetClusterVariableParams;
-
 export const deleteClusterVariable: ApiDefinition<
   undefined,
-  DeleteClusterVariableParams
+  Pick<ClusterVariable, "scope" | "tenantId" | "name">
 > = ({ scope, tenantId, name }) =>
   apiDelete(`${buildEndpoint(scope, tenantId)}/${name}`);
 
-type UpdateClusterVariableParams = {
-  scope: ScopeType;
-  tenantId?: string;
-  name: string;
-  value: string;
-};
-
 export const updateClusterVariable: ApiDefinition<
   ClusterVariable,
-  UpdateClusterVariableParams
+  ClusterVariable
 > = ({ scope, tenantId, name, value }) =>
   apiPut(`${buildEndpoint(scope, tenantId)}/${name}`, { value });

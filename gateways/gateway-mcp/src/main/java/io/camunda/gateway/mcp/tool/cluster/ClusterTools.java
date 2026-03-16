@@ -10,7 +10,6 @@ package io.camunda.gateway.mcp.tool.cluster;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.TopologyServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import org.springaicommunity.mcp.annotation.McpTool;
@@ -22,13 +21,9 @@ import org.springframework.validation.annotation.Validated;
 public class ClusterTools {
 
   private final TopologyServices topologyServices;
-  private final CamundaAuthenticationProvider authenticationProvider;
 
-  public ClusterTools(
-      final TopologyServices topologyServices,
-      final CamundaAuthenticationProvider authenticationProvider) {
+  public ClusterTools(final TopologyServices topologyServices) {
     this.topologyServices = topologyServices;
-    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaMcpTool(
@@ -36,11 +31,7 @@ public class ClusterTools {
           "Checks the health status of the cluster by verifying if there's at least one partition with a healthy leader.",
       annotations = @McpTool.McpAnnotations(readOnlyHint = true))
   public CallToolResult getClusterStatus() {
-    return CallToolResultMapper.fromPrimitive(
-        topologyServices
-            .withAuthentication(authenticationProvider.getCamundaAuthentication())
-            .getStatus(),
-        Enum::name);
+    return CallToolResultMapper.fromPrimitive(topologyServices.getStatus(), Enum::name);
   }
 
   @CamundaMcpTool(
@@ -48,9 +39,6 @@ public class ClusterTools {
       annotations = @McpTool.McpAnnotations(readOnlyHint = true))
   public CallToolResult getTopology() {
     return CallToolResultMapper.from(
-        topologyServices
-            .withAuthentication(authenticationProvider.getCamundaAuthentication())
-            .getTopology(),
-        ResponseMapper::toTopologyResponse);
+        topologyServices.getTopology(), ResponseMapper::toTopologyResponse);
   }
 }

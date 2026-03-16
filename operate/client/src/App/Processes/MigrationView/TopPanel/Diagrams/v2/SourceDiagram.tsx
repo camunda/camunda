@@ -82,7 +82,7 @@ const SourceDiagram: React.FC = observer(() => {
             selectableElements={[
               ...migrationSourceData.selectableFlowNodes,
               ...migrationSourceData.selectableSequenceFlows,
-            ].map((flowNode) => flowNode.id)}
+            ].map((element) => element.id)}
             selectedElementIds={selectedSourceElementIds}
             onElementSelection={(elementId) => {
               processInstanceMigrationStore.selectSourceElement(elementId);

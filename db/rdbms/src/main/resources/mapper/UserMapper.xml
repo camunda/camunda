@@ -89,7 +89,8 @@
   <resultMap id="searchResultMap" type="io.camunda.search.entities.UserEntity">
     <constructor>
       <idArg column="USER_KEY" javaType="java.lang.Long"/>
-      <arg column="USERNAME" javaType="java.lang.String"/>
+      <arg column="USERNAME" javaType="java.lang.String"
+        typeHandler="io.camunda.db.rdbms.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="NAME" javaType="java.lang.String"/>
       <arg column="EMAIL" javaType="java.lang.String"/>
       <arg column="PASSWORD" javaType="java.lang.String"/>

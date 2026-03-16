@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import java.time.Duration;
+import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,6 @@ public class DataExportTest {
   @TestPropertySource(
       properties = {
         "camunda.data.export.distribution-interval=1m",
-        "camunda.data.export.skip-records=10,20",
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -43,18 +43,12 @@ public class DataExportTest {
     void shouldSetDistributionInterval() {
       assertThat(brokerCfg.getExporting().distributionInterval()).isEqualTo(Duration.ofMinutes(1));
     }
-
-    @Test
-    void shouldSetSkipRecords() {
-      assertThat(brokerCfg.getExporting().skipRecords()).contains(10L, 20L);
-    }
   }
 
   @Nested
   @TestPropertySource(
       properties = {
         "zeebe.broker.exporting.distributionInterval=2m",
-        "zeebe.broker.exporting.skipRecords=30,40",
       })
   class WithOnlyLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -67,11 +61,6 @@ public class DataExportTest {
     void shouldSetDistributionInterval() {
       assertThat(brokerCfg.getExporting().distributionInterval()).isEqualTo(Duration.ofMinutes(2));
     }
-
-    @Test
-    void shouldSetSkipRecords() {
-      assertThat(brokerCfg.getExporting().skipRecords()).contains(30L, 40L);
-    }
   }
 
   @Nested
@@ -79,10 +68,8 @@ public class DataExportTest {
       properties = {
         // new
         "camunda.data.export.distribution-interval=1m",
-        "camunda.data.export.skip-records=10,20",
         // legacy
         "zeebe.broker.exporting.distributionInterval=2m",
-        "zeebe.broker.exporting.skipRecords=30,40",
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -95,10 +82,29 @@ public class DataExportTest {
     void shouldSetDistributionIntervalFromNew() {
       assertThat(brokerCfg.getExporting().distributionInterval()).isEqualTo(Duration.ofMinutes(1));
     }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.export.skip-records.1=10,20",
+        "camunda.data.export.skip-records.2=30",
+      })
+  class WithPerPartitionSkipRecordsSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithPerPartitionSkipRecordsSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
 
     @Test
-    void shouldSetSkipRecordsFromNew() {
-      assertThat(brokerCfg.getExporting().skipRecords()).contains(10L, 20L);
+    void shouldSetSkipRecordsForPartition1() {
+      assertThat(brokerCfg.getExporting().skipRecords()).containsEntry(1, Set.of(10L, 20L));
+    }
+
+    @Test
+    void shouldSetSkipRecordsForPartition2() {
+      assertThat(brokerCfg.getExporting().skipRecords()).containsEntry(2, Set.of(30L));
     }
   }
 }

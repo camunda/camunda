@@ -14,8 +14,8 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { MappingRule } from "src/utility/api/mapping-rules";
 import { unassignGroupMappingRule } from "src/utility/api/groups";
+import type { MappingRule } from "@camunda/camunda-api-zod-schemas/8.9";
 
 type RemoveGroupMappingRuleModalProps = UseEntityModalCustomProps<
   MappingRule,

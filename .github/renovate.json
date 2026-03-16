@@ -525,6 +525,19 @@
       "addLabels": [
         "automerge"
       ]
+    },
+    {
+      "description": "maven-surefire-plugin 3.5.4 has an issue with inner class tests reports https://github.com/apache/maven-surefire/issues/3203, causing the retry of the wrong tests. 3.5.3 version has a bug preventing ArchUnit tests from running. Enable PRs but block auto-merge until the upstream bug is confirmed fixed.",
+      "matchManagers": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "org.apache.maven.plugins:maven-surefire-plugin"
+      ],
+      "automerge": false,
+      "prBodyNotes": [
+        "**Manual verification required before merging:** Check that [apache/maven-surefire#3203](https://github.com/apache/maven-surefire/issues/3203) (inner class test report bug in 3.5.4) is fixed in this version. Do **not** merge until confirmed."
+      ]
     }
   ],
   "dockerfile": {

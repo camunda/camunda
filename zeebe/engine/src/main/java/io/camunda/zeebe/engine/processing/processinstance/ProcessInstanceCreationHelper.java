@@ -53,7 +53,7 @@ public class ProcessInstanceCreationHelper {
   private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =
       "Expected to create instance of process with none start event, but there is no such event";
   private static final String ERROR_MESSAGE_BUSINESS_ID_ALREADY_EXISTS =
-      "Expected to create instance of process with business id '%s', but an instance with this business id already exists for process definition key '%d'";
+      "Expected to create instance of process with business id '%s', but an instance with this business id already exists for process definition '%s'";
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
           BpmnElementType.START_EVENT,
@@ -217,7 +217,9 @@ public class ProcessInstanceCreationHelper {
         .flatMap(
             valid ->
                 validateBusinessIdUniqueness(
-                    businessId, deployedProcess.getKey(), command.getTenantId()))
+                    businessId,
+                    bufferAsString(deployedProcess.getBpmnProcessId()),
+                    command.getTenantId()))
         .map(valid -> deployedProcess);
   }
 
@@ -415,7 +417,7 @@ public class ProcessInstanceCreationHelper {
   }
 
   private Either<Rejection, ?> validateBusinessIdUniqueness(
-      final String businessId, final long processDefinitionKey, final String tenantId) {
+      final String businessId, final String processDefinitionId, final String tenantId) {
     // If the uniqueness check is disabled or if no business id is provided, skip validation
     if (!businessIdUniquenessEnabled || businessId == null || businessId.isEmpty()) {
       return VALID;
@@ -423,12 +425,12 @@ public class ProcessInstanceCreationHelper {
 
     // Check if a process instance with this business id already exists
     if (elementInstanceState.hasActiveProcessInstanceWithBusinessId(
-        businessId, processDefinitionKey, tenantId, bannedInstanceState::isProcessInstanceBanned)) {
+        businessId, processDefinitionId, tenantId, bannedInstanceState::isProcessInstanceBanned)) {
       return Either.left(
           new Rejection(
               RejectionType.ALREADY_EXISTS,
               String.format(
-                  ERROR_MESSAGE_BUSINESS_ID_ALREADY_EXISTS, businessId, processDefinitionKey)));
+                  ERROR_MESSAGE_BUSINESS_ID_ALREADY_EXISTS, businessId, processDefinitionId)));
     }
 
     return VALID;

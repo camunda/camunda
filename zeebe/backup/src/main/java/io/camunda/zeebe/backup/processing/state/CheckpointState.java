@@ -82,4 +82,10 @@ public interface CheckpointState {
    * latest backup is deleted and there is no predecessor backup.
    */
   void clearLatestBackupInfo();
+
+  /**
+   * Clears the latest checkpoint info, resetting it to the initial state (no checkpoint). Used
+   * during state reset when switching backup stores.
+   */
+  void clearLatestCheckpointInfo();
 }

@@ -194,7 +194,7 @@ public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
 
     final Cookie csrfCookie = testResult.getResponse().getCookie(EXPECTED_CSRF_TOKEN_COOKIE_NAME);
 
-    assertThat(csrfCookie.isHttpOnly()).isTrue();
+    assertThat(csrfCookie.isHttpOnly()).isFalse();
     assertThat(csrfCookie.getSecure()).isTrue();
   }
 
@@ -217,7 +217,7 @@ public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
 
     final Cookie csrfCookie = testResult.getResponse().getCookie(EXPECTED_CSRF_TOKEN_COOKIE_NAME);
 
-    assertThat(csrfCookie.isHttpOnly()).isTrue();
+    assertThat(csrfCookie.isHttpOnly()).isFalse();
     assertThat(csrfCookie.getSecure()).isFalse();
   }
 }

@@ -27,7 +27,7 @@ on:
       ttl:
         description: 'Specifies after how many days the load test namespace should be deleted'
         type: number
-        default: 7
+        default: 1
         required: false
       reuse-tag:
         description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
@@ -101,7 +101,7 @@ on:
       ttl:
         description: 'Specifies after how many days the load test namespace should be deleted'
         type: number
-        default: 7
+        default: 1
         required: false
       reuse-tag:
         description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'

@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
+import io.camunda.zeebe.engine.processing.deployment.transform.ValidationConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -123,7 +124,12 @@ public final class DeploymentCreateProcessor
             expressionProcessor,
             keyGenerator,
             featureFlags,
-            config,
+            ValidationConfig.builder()
+                .withMaxIdFieldLength(config.getMaxIdFieldLength())
+                .withMaxNameFieldLength(config.getMaxNameFieldLength())
+                .withMaxWorkerTypeLength(config.getMaxWorkerTypeLength())
+                .withValidatorResultsOutputMaxSize(config.getValidatorsResultsOutputMaxSize())
+                .build(),
             clock,
             expressionLanguageMetrics);
     startEventSubscriptionManager =

@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -42,6 +43,24 @@ final class RecordMetadataTest {
     assertThat(metadata.getAgent()).isNull();
     assertThat(metadata.getBrokerVersion()).isEqualTo(RecordMetadata.CURRENT_BROKER_VERSION);
     assertThat(metadata.getRecordVersion()).isEqualTo(RecordMetadata.DEFAULT_RECORD_VERSION);
+  }
+
+  @Test
+  void shouldCopyAuthInfoWhenSettingAuthorization() {
+    // given
+    final var metadata = new RecordMetadata();
+    final var authInfo = new AuthInfo();
+    authInfo.setFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
+    authInfo.setClaims(Map.of("key", "value"));
+
+    // when
+    metadata.authorization(authInfo);
+    authInfo.reset();
+
+    // then -- metadata should still have the original values
+    final var storedAuth = metadata.getAuthorization();
+    assertThat(storedAuth.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
+    assertThat(storedAuth.getClaims()).isEqualTo(Map.of("key", "value"));
   }
 
   private void encodeDecode(final RecordMetadata metadata) {

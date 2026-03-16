@@ -30,22 +30,18 @@ test.describe('process instance modification', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
-        processInstanceDetailV2: eventBasedGatewayProcessInstance.detailV2,
         callHierarchy: eventBasedGatewayProcessInstance.callHierarchy,
         elementInstances: eventBasedGatewayProcessInstance.elementInstances,
         statistics: eventBasedGatewayProcessInstance.statistics,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
-        sequenceFlowsV2: eventBasedGatewayProcessInstance.sequenceFlowsV2,
         variables: [],
         incidents: eventBasedGatewayProcessInstance.incidents,
-        incidentsV2: eventBasedGatewayProcessInstance.incidentsV2,
         xml: eventBasedGatewayProcessInstance.xml,
-        metaData: eventBasedGatewayProcessInstance.metaData,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: '2251799813888430',
+      key: '2251799813888430',
     });
 
     const modifyInstanceButton = await page.getByRole('button', {
@@ -67,7 +63,7 @@ test.describe('process instance modification', () => {
       path: 'e2e-playwright/docs-screenshots/process-instance-modification/modification-mode.png',
     });
 
-    await page.getByTestId('diagram').getByText('Message task').nth(0).click();
+    await processInstancePage.diagram.getFlowNodeById('messageTask').click();
 
     await expect(
       page.getByRole('button', {
@@ -100,7 +96,7 @@ test.describe('process instance modification', () => {
 
     await commonPage.deleteArrows();
 
-    await page.getByText('Last task').click();
+    await processInstancePage.diagram.getFlowNodeById('lastTask').click();
 
     await expect(
       page.getByRole('button', {name: /Add single element instance/i}),
@@ -134,22 +130,18 @@ test.describe('process instance modification', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
-        processInstanceDetailV2: eventBasedGatewayProcessInstance.detailV2,
         callHierarchy: eventBasedGatewayProcessInstance.callHierarchy,
         elementInstances: eventBasedGatewayProcessInstance.elementInstances,
         statistics: eventBasedGatewayProcessInstance.statistics,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
-        sequenceFlowsV2: eventBasedGatewayProcessInstance.sequenceFlowsV2,
         variables: [],
         incidents: eventBasedGatewayProcessInstance.incidents,
-        incidentsV2: eventBasedGatewayProcessInstance.incidentsV2,
         xml: eventBasedGatewayProcessInstance.xml,
-        metaData: eventBasedGatewayProcessInstance.metaData,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: '2251799813888430',
+      key: '2251799813888430',
     });
 
     await page
@@ -160,7 +152,7 @@ test.describe('process instance modification', () => {
 
     await page.getByRole('button', {name: 'Continue'}).click();
 
-    await page.getByTestId('diagram').getByText('Message task').nth(0).click();
+    await processInstancePage.diagram.getFlowNodeById('messageTask').click();
 
     await expect(
       page.getByRole('button', {
@@ -168,7 +160,7 @@ test.describe('process instance modification', () => {
       }),
     ).toBeVisible();
 
-    const moveTokenButton = await page.getByRole('button', {
+    const moveTokenButton = page.getByRole('button', {
       name: /move selected instance/i,
     });
 
@@ -182,11 +174,10 @@ test.describe('process instance modification', () => {
 
     await moveTokenButton.click();
 
-    const lastTaskFlowNode = await page
-      .getByTestId('diagram')
-      .getByText('Last task');
+    const lastTaskElement =
+      processInstancePage.diagram.getFlowNodeById('lastTask');
 
-    await commonPage.addDownArrow(lastTaskFlowNode);
+    await commonPage.addDownArrow(lastTaskElement);
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/process-instance-modification/move-token-select-target.png',
@@ -194,7 +185,7 @@ test.describe('process instance modification', () => {
 
     await commonPage.deleteArrows();
 
-    await lastTaskFlowNode.click();
+    await lastTaskElement.click();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/process-instance-modification/move-token-result.png',
@@ -254,12 +245,10 @@ test.describe('process instance modification', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
-        processInstanceDetailV2: eventBasedGatewayProcessInstance.detailV2,
         callHierarchy: eventBasedGatewayProcessInstance.callHierarchy,
         elementInstances: eventBasedGatewayProcessInstance.elementInstances,
         statistics: eventBasedGatewayProcessInstance.statistics,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
-        sequenceFlowsV2: eventBasedGatewayProcessInstance.sequenceFlowsV2,
         variables: [
           {
             variableKey: '2251799813888430-test',
@@ -273,9 +262,7 @@ test.describe('process instance modification', () => {
           },
         ],
         incidents: eventBasedGatewayProcessInstance.incidents,
-        incidentsV2: eventBasedGatewayProcessInstance.incidentsV2,
         xml: eventBasedGatewayProcessInstance.xml,
-        metaData: eventBasedGatewayProcessInstance.metaData,
       }),
     );
 
@@ -340,11 +327,11 @@ test.describe('process instance modification', () => {
     // text content inside the modal was not visible in the screenshot without randomly waiting a while
     await page.waitForTimeout(1000);
 
-    const deleteFlowNodeModificationButton = await page.getByRole('button', {
+    const deleteElementModificationButton = page.getByRole('button', {
       name: /delete element modification/i,
     });
 
-    await commonPage.addDownArrow(deleteFlowNodeModificationButton, '(1)');
+    await commonPage.addDownArrow(deleteElementModificationButton, '(1)');
 
     const expandCurrentRowButton = await page
       .getByRole('button', {
@@ -400,22 +387,18 @@ test.describe('process instance modification', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
-        processInstanceDetailV2: eventBasedGatewayProcessInstance.detailV2,
         callHierarchy: eventBasedGatewayProcessInstance.callHierarchy,
         elementInstances: eventBasedGatewayProcessInstance.elementInstances,
         statistics: eventBasedGatewayProcessInstance.statistics,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
-        sequenceFlowsV2: eventBasedGatewayProcessInstance.sequenceFlowsV2,
         variables: [],
         incidents: eventBasedGatewayProcessInstance.incidents,
-        incidentsV2: eventBasedGatewayProcessInstance.incidentsV2,
         xml: eventBasedGatewayProcessInstance.xml,
-        metaData: eventBasedGatewayProcessInstance.metaData,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: '2251799813888430',
+      key: '2251799813888430',
     });
 
     await page
@@ -426,7 +409,8 @@ test.describe('process instance modification', () => {
 
     await page.getByRole('button', {name: 'Continue'}).click();
 
-    const timerEvent = await page.locator('[data-element-id="timerEvent"]');
+    const timerEvent =
+      processInstancePage.diagram.getFlowNodeById('timerEvent');
 
     await commonPage.addDownArrow(timerEvent);
 

@@ -340,7 +340,6 @@ components:
 
     ElementInstanceStateFilterProperty:
       description: ElementInstanceStateEnum property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -401,6 +400,8 @@ components:
         - processInstanceKey
         - processDefinitionKey
         - rootProcessInstanceKey
+        - endDate
+        - incidentKey
       properties:
         processDefinitionId:
           description: The process definition ID associated to this element instance.

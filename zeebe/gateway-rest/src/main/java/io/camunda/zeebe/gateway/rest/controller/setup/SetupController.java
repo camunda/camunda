@@ -73,9 +73,8 @@ public class SetupController {
           GatewayErrorMapper.mapErrorToProblem(exception));
     }
 
-    if (roleServices
-        .withAuthentication(authenticationProvider.getAnonymousCamundaAuthentication())
-        .hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER)) {
+    final var anonymousAuth = authenticationProvider.getAnonymousCamundaAuthentication();
+    if (roleServices.hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER, anonymousAuth)) {
       final var exception = new ServiceException(ADMIN_EXISTS_ERROR_MESSAGE, Status.FORBIDDEN);
       return RestErrorMapper.mapProblemToCompletedResponse(
           GatewayErrorMapper.mapErrorToProblem(exception));
@@ -87,11 +86,7 @@ public class SetupController {
             RestErrorMapper::mapProblemToCompletedResponse,
             dto ->
                 RequestExecutor.executeServiceMethod(
-                    () ->
-                        userServices
-                            .withAuthentication(
-                                authenticationProvider.getAnonymousCamundaAuthentication())
-                            .createInitialAdminUser(dto),
+                    () -> userServices.createInitialAdminUser(dto, anonymousAuth),
                     ResponseMapper::toUserCreateResponse,
                     HttpStatus.CREATED));
   }

@@ -13,7 +13,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult.Builder;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.TopologyServices;
@@ -35,12 +34,8 @@ abstract class RestApiConfigurationTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() {
-    when(processInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(processInstanceServices);
-    when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
+    when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
         .thenReturn(new Builder<ProcessInstanceEntity>().build());
-    when(topologyServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(topologyServices);
     when(topologyServices.getTopology())
         .thenReturn(
             CompletableFuture.completedFuture(

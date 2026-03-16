@@ -170,4 +170,9 @@ public final class DbBackupRangeState {
     rangeEndValue.wrapLong(oldEnd);
     rangesColumnFamily.insert(rangeStartKey, rangeEndValue);
   }
+
+  /** Removes all range entries. Used during state reset when switching backup stores. */
+  public void clearAll() {
+    rangesColumnFamily.forEachKey(rangesColumnFamily::deleteExisting);
+  }
 }

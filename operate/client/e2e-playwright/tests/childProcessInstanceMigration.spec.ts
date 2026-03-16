@@ -128,9 +128,9 @@ test.describe.skip('Child Process Instance Migration @roundtrip', () => {
     // Select target process, version and map flow nodes
     await migrationView.selectTargetProcess('childProcess');
     await migrationView.selectTargetVersion(targetVersion);
-    await migrationView.mapFlowNode({
-      sourceFlowNodeName: 'New Task',
-      targetFlowNodeName: 'Task',
+    await migrationView.mapElement({
+      sourceElementName: 'New Task',
+      targetElementName: 'Task',
     });
 
     // Confirm and finish migration

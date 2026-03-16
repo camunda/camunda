@@ -6,19 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import js from '@eslint/js';
-import tsPlugin from '@typescript-eslint/eslint-plugin';
-import tsParser from '@typescript-eslint/parser';
-import reactRefreshPlugin from 'eslint-plugin-react-refresh';
-import testingLibraryPlugin from 'eslint-plugin-testing-library';
-import licenseHeaderPlugin from 'eslint-plugin-license-header';
-import reactHooksPlugin from 'eslint-plugin-react-hooks';
-import tanstackPlugin from '@tanstack/eslint-plugin-query';
-import prettierConfig from 'eslint-config-prettier';
-import prettierPlugin from 'eslint-plugin-prettier';
-import globals from 'globals';
-import vitestPlugin from '@vitest/eslint-plugin';
 import {defineConfig, globalIgnores} from 'eslint/config';
+import {
+  baseConfig,
+  typescriptConfig,
+  reactConfig,
+  testingConfig,
+  tanstackQueryConfig,
+  licenseConfig,
+} from '@camunda/lint-config/eslint';
 
 const files = {
   browser: ['src/**/*.{js,jsx,ts,tsx}'],
@@ -48,156 +44,24 @@ const files = {
 };
 
 const config = defineConfig([
-  js.configs.recommended,
-  prettierConfig,
+  ...baseConfig,
 
-  {
-    plugins: {
-      prettier: prettierPlugin,
-    },
-    rules: {
-      'prettier/prettier': 'error',
-    },
-  },
+  ...typescriptConfig({
+    browserFiles: files.browser,
+    testFiles: files.test,
+    nodeFiles: files.node,
+    tsconfigRootDir: import.meta.dirname,
+    tsProjects: [
+      './tsconfig.app.json',
+      './tsconfig.vitest.json',
+      './tsconfig.vitest.browser.json',
+    ],
+  }),
 
-  {
-    files: files.node,
-    languageOptions: {
-      ecmaVersion: 2022,
-      sourceType: 'module',
-      parser: tsParser,
-      globals: {
-        ...globals.node,
-        ...globals.es2022,
-      },
-    },
-  },
-
-  {
-    files: [...files.browser, ...files.test],
-    languageOptions: {
-      ecmaVersion: 2022,
-      sourceType: 'module',
-      parser: tsParser,
-      parserOptions: {
-        ecmaFeatures: {
-          jsx: true,
-        },
-        project: [
-          './tsconfig.app.json',
-          './tsconfig.vitest.json',
-          './tsconfig.vitest.browser.json',
-        ],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      globals: {
-        ...globals.browser,
-        ...globals.es2022,
-        React: false,
-      },
-    },
-  },
-
-  {
-    files: files.browser,
-    ignores: files.test,
-    plugins: {
-      'react-refresh': reactRefreshPlugin,
-    },
-    rules: {
-      'react-refresh/only-export-components': [
-        'error',
-        {
-          allowConstantExport: true,
-        },
-      ],
-    },
-  },
-
-  {
-    files: files.browser,
-    plugins: {
-      'react-hooks': reactHooksPlugin,
-    },
-    rules: {
-      ...reactHooksPlugin.configs.recommended.rules,
-    },
-  },
-
-  {
-    files: files.browser,
-    plugins: {
-      '@tanstack/query': tanstackPlugin,
-    },
-    rules: {
-      ...tanstackPlugin.configs.recommended.rules,
-    },
-  },
-
-  {
-    files: files.test,
-    ...vitestPlugin.configs.recommended,
-    rules: {
-      ...vitestPlugin.configs.recommended.rules,
-      'vitest/no-mocks-import': 'warn',
-    },
-    languageOptions: {
-      globals: {
-        ...vitestPlugin.environments.env.globals,
-        ...globals.node,
-        ...globals.es2022,
-      },
-    },
-  },
-
-  {
-    files: files.test,
-    plugins: {
-      'testing-library': testingLibraryPlugin,
-    },
-    rules: {
-      ...testingLibraryPlugin.configs.react.rules,
-      'testing-library/no-debugging-utils': 'error',
-      'testing-library/no-node-access': 'off',
-    },
-  },
-
-  {
-    plugins: {
-      '@typescript-eslint': tsPlugin,
-    },
-    rules: {
-      ...tsPlugin.configs.recommended.rules,
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          args: 'all',
-          argsIgnorePattern: '^_',
-          caughtErrors: 'all',
-          caughtErrorsIgnorePattern: '^_',
-          destructuredArrayIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-          ignoreRestSiblings: true,
-        },
-      ],
-    },
-  },
-
-  {
-    plugins: {
-      'license-header': licenseHeaderPlugin,
-    },
-    rules: {
-      'license-header/header': ['error', './resources/license-header.js'],
-    },
-  },
-
-  {
-    rules: {
-      'no-duplicate-imports': 'error',
-      curly: 'error',
-    },
-  },
+  ...reactConfig({browserFiles: files.browser, testFiles: files.test}),
+  ...testingConfig({testFiles: files.test}),
+  ...tanstackQueryConfig({browserFiles: files.browser}),
+  ...licenseConfig({licenseHeaderPath: './resources/license-header.js'}),
 
   globalIgnores([
     'dist/*',

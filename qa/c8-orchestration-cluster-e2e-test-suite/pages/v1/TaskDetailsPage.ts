@@ -290,13 +290,36 @@ class TaskDetailsPageV1 {
     }
 
     for (const [index, element] of elements.entries()) {
-      const expectedValue = `${value}${index + 1}`;
-      await element.fill(expectedValue);
-
-      // Assert that the value was added correctly
-      await expect(element).toHaveValue(expectedValue);
+      await this.fillElementWithRetry(element, index, value);
     }
   }
+
+  private async fillElementWithRetry(
+    locator: Locator,
+    index: number,
+    value: string,
+  ): Promise<void> {
+    let retryCount = 0;
+    const maxRetries = 3;
+    while (retryCount < maxRetries) {
+      try {
+        const expectedValue = `${value}${index + 1}`;
+        await locator.fill(expectedValue);
+        await expect(locator).toHaveValue(expectedValue);
+        return;
+      } catch {
+        retryCount++;
+        console.log(`Attempt ${retryCount} failed. Retrying...`);
+        await sleep(1000);
+        await locator.click();
+        await locator.clear();
+      }
+    }
+    throw new Error(
+      `${locator} could not be filled with value "${value}" after ${maxRetries} attempts.`,
+    );
+  }
+
 
   async getDynamicListValues(label: string): Promise<string[]> {
     const locator = this.page.getByLabel(label);

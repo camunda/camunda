@@ -54,27 +54,27 @@ public abstract class BackupEndpointStandaloneTest {
   @Test
   public void shouldCallGetWhenIsStandalone() {
     // when
-    backupEndpointStandalone.query(new String[] {"11"});
+    backupEndpointStandalone.query("11");
 
     // then
-    verify(backupEndpoint).query(new String[] {"11"});
+    verify(backupEndpoint).query("11");
   }
 
   @Test
   public void shouldCallDeleteWhenIsStandalone() {
     // when
-    backupEndpointStandalone.delete(11L);
+    backupEndpointStandalone.delete("11");
 
     // then
-    verify(backupEndpoint).delete(11L);
+    verify(backupEndpoint).delete("11");
   }
 
   @Test
   public void shouldCallQueryWhenIsStandalone() {
     // when
-    backupEndpointStandalone.query(new String[] {BackupApi.STATE});
+    backupEndpointStandalone.query(BackupApi.STATE);
 
     // then
-    verify(backupEndpoint).query(new String[] {BackupApi.STATE});
+    verify(backupEndpoint).query(BackupApi.STATE);
   }
 }

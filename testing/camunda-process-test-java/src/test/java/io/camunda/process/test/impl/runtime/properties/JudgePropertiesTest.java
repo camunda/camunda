@@ -1,0 +1,176 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.process.test.impl.runtime.properties;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import io.camunda.process.test.api.judge.ProviderConfig;
+import io.camunda.process.test.impl.judge.BaseProviderConfig;
+import java.util.Properties;
+import org.junit.jupiter.api.Test;
+
+public class JudgePropertiesTest {
+
+  @Test
+  void shouldReturnDefaults() {
+    // given
+    final Properties properties = new Properties();
+
+    // when
+    final JudgeProperties judgeProperties = new JudgeProperties(properties);
+
+    // then
+    assertThat(judgeProperties.getThreshold()).isEqualTo(0.5);
+    assertThat(judgeProperties.getCustomPrompt()).isNull();
+    assertThat(judgeProperties.hasProviderConfigured()).isFalse();
+  }
+
+  @Test
+  void shouldReadThresholdAndCustomPrompt() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.threshold", "0.8");
+    properties.setProperty("judge.customPrompt", "Custom prompt text");
+
+    // when
+    final JudgeProperties judgeProperties = new JudgeProperties(properties);
+
+    // then
+    assertThat(judgeProperties.getThreshold()).isEqualTo(0.8);
+    assertThat(judgeProperties.getCustomPrompt()).isEqualTo("Custom prompt text");
+  }
+
+  @Test
+  void shouldDetectChatModelConfigured() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.provider", "openai");
+
+    // when
+    final JudgeProperties judgeProperties = new JudgeProperties(properties);
+
+    // then
+    assertThat(judgeProperties.hasProviderConfigured()).isTrue();
+  }
+
+  @Test
+  void shouldRejectThresholdAboveOne() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.threshold", "5.0");
+
+    // when / then
+    assertThatThrownBy(() -> new JudgeProperties(properties))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("judge.threshold must be between 0.0 and 1.0");
+  }
+
+  @Test
+  void shouldRejectNegativeThreshold() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.threshold", "-0.1");
+
+    // when / then
+    assertThatThrownBy(() -> new JudgeProperties(properties))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("judge.threshold must be between 0.0 and 1.0");
+  }
+
+  @Test
+  void shouldCreateTypedProviderConfigForKnownProvider() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.provider", "openai");
+    properties.setProperty("judge.chatModel.model", "gpt-4o");
+    properties.setProperty("judge.chatModel.apiKey", "test-key");
+
+    // when
+    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+
+    // then
+    assertThat(config).isInstanceOf(BaseProviderConfig.OpenAiConfig.class);
+    assertThat(config.getProvider()).isEqualTo("openai");
+    assertThat(config.getModel()).isEqualTo("gpt-4o");
+  }
+
+  @Test
+  void shouldCreateBaseProviderConfigForUnknownProvider() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.provider", "my-custom-llm");
+    properties.setProperty("judge.chatModel.model", "custom-model");
+
+    // when
+    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+
+    // then
+    assertThat(config).isExactlyInstanceOf(BaseProviderConfig.GenericConfig.class);
+    assertThat(config.getProvider()).isEqualTo("my-custom-llm");
+    assertThat(config.getModel()).isEqualTo("custom-model");
+    assertThat(config.getCustomProperties()).isEmpty();
+  }
+
+  @Test
+  void shouldPassCustomPropertiesToGenericConfig() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.chatModel.provider", "my-custom-llm");
+    properties.setProperty("judge.chatModel.model", "custom-model");
+    properties.setProperty("judge.chatModel.customProperties.endpoint", "http://localhost:8080");
+    properties.setProperty("judge.chatModel.customProperties.temperature", "0.7");
+
+    // when
+    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+
+    // then
+    assertThat(config).isExactlyInstanceOf(BaseProviderConfig.GenericConfig.class);
+    assertThat(config.getCustomProperties())
+        .containsEntry("endpoint", "http://localhost:8080")
+        .containsEntry("temperature", "0.7")
+        .hasSize(2);
+  }
+
+  @Test
+  void shouldReturnNullProviderConfigWhenNoProviderSet() {
+    // given
+    final Properties properties = new Properties();
+
+    // when
+    final ProviderConfig config = new JudgeProperties(properties).toProviderConfig();
+
+    // then
+    assertThat(config).isNull();
+  }
+
+  @Test
+  void shouldTreatPlaceholderAsAbsent() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty("judge.threshold", "${JUDGE_THRESHOLD}");
+    properties.setProperty("judge.customPrompt", "${JUDGE_PROMPT}");
+    properties.setProperty("judge.chatModel.provider", "${PROVIDER}");
+
+    // when
+    final JudgeProperties judgeProperties = new JudgeProperties(properties);
+
+    // then
+    assertThat(judgeProperties.getThreshold()).isEqualTo(0.5);
+    assertThat(judgeProperties.getCustomPrompt()).isNull();
+    assertThat(judgeProperties.hasProviderConfigured()).isFalse();
+  }
+}

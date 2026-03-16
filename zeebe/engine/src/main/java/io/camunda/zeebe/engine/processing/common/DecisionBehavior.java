@@ -275,8 +275,7 @@ public class DecisionBehavior {
       return ruleId;
     }
 
-    return SYNTHESIZED_RULE_ID_TEMPLATE.formatted(
-        SYNTHESIZED_RULE_ID_PREFIX, decisionId, decisionVersion, rule.ruleIndex());
+    return synthesizeRuleId(decisionId, decisionVersion, rule.ruleIndex());
   }
 
   private void addInputToEvaluationEvent(
@@ -305,6 +304,12 @@ public class DecisionBehavior {
     if (evaluatedOutput.outputName() != null) {
       outputRecord.setOutputName(evaluatedOutput.outputName());
     }
+  }
+
+  public static String synthesizeRuleId(
+      final String decisionId, final int decisionVersion, final int ruleIndex) {
+    return SYNTHESIZED_RULE_ID_TEMPLATE.formatted(
+        SYNTHESIZED_RULE_ID_PREFIX, decisionId, decisionVersion, ruleIndex);
   }
 
   private record DecisionInfo(long key, int version) {

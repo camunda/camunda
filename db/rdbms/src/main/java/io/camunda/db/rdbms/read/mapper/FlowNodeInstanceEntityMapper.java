@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.mapper;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 
@@ -20,15 +22,15 @@ public class FlowNodeInstanceEntityMapper {
         dbModel.processDefinitionKey(),
         dbModel.startDate(),
         dbModel.endDate(),
-        dbModel.flowNodeId(),
-        dbModel.flowNodeName(),
+        nullToEmpty(dbModel.flowNodeId()),
+        nullToEmpty(dbModel.flowNodeName()),
         dbModel.treePath(),
         dbModel.type(),
         dbModel.state(),
         dbModel.hasIncident(),
         dbModel.incidentKey(),
-        dbModel.processDefinitionId(),
-        dbModel.tenantId(),
+        nullToEmpty(dbModel.processDefinitionId()),
+        nullToEmpty(dbModel.tenantId()),
         dbModel.partitionId());
   }
 }

@@ -8,11 +8,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { isOIDC } from "src/configuration";
-import { SearchResponse } from "src/utility/api";
 import { useApiCall, usePaginatedApiCall } from "src/utility/api";
-import { MemberUser } from "src/utility/api/membership";
+import type {
+  User,
+  QueryUsersResponseBody,
+  QueryUsersByGroupResponseBody,
+} from "@camunda/camunda-api-zod-schemas/8.9";
 import { ApiDefinition } from "src/utility/api/request";
-import { searchUser, User } from "src/utility/api/users";
+import { searchUser } from "src/utility/api/users";
 
 type UseEnrichedUsersResult = {
   users: User[];
@@ -23,7 +26,10 @@ type UseEnrichedUsersResult = {
 };
 
 export function useEnrichedUsers<P>(
-  apiDefinition: ApiDefinition<SearchResponse<MemberUser>, P>,
+  apiDefinition: ApiDefinition<
+    QueryUsersResponseBody | QueryUsersByGroupResponseBody,
+    P
+  >,
   params: P,
 ): UseEnrichedUsersResult {
   const [callSearchMembers, paginationProps] =

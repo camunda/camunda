@@ -40,12 +40,15 @@ public final class CheckpointRecordsProcessor
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointRecordsProcessor.class);
 
   private final BackupManager backupManager;
+  private final boolean trackBackupMetadata;
   private CheckpointCreateProcessor checkpointCreateProcessor;
   private CheckpointConfirmBackupProcessor checkpointConfirmBackupProcessor;
   private CheckpointDeleteBackupProcessor checkpointDeleteBackupProcessor;
+  private CheckpointClearStateProcessor checkpointClearStateProcessor;
   private CheckpointCreatedEventApplier checkpointCreatedEventApplier;
   private CheckpointBackupConfirmedApplier checkpointBackupConfirmedApplier;
   private CheckpointBackupDeletedApplier checkpointBackupDeletedApplier;
+  private CheckpointStateClearedApplier checkpointStateClearedApplier;
 
   //  Can be accessed concurrently by other threads to add new listeners. Hence we have to use a
   // thread safe collection
@@ -59,8 +62,11 @@ public final class CheckpointRecordsProcessor
   private PartitionCountSupplier partitionCountSupplier;
 
   public CheckpointRecordsProcessor(
-      final BackupManager backupManager, final MeterRegistry registry) {
+      final BackupManager backupManager,
+      final MeterRegistry registry,
+      final boolean trackBackupMetadata) {
     this.backupManager = backupManager;
+    this.trackBackupMetadata = trackBackupMetadata;
     metrics = new CheckpointMetrics(registry);
   }
 
@@ -98,34 +104,43 @@ public final class CheckpointRecordsProcessor
     if (partitionCountSupplier == null) {
       throw new IllegalStateException("Partition count supplier is not initialized.");
     }
+    checkpointCreatedEventApplier =
+        new CheckpointCreatedEventApplier(
+            checkpointState, checkpointMetadataState, checkpointListeners, trackBackupMetadata);
+    checkpointBackupConfirmedApplier =
+        new CheckpointBackupConfirmedApplier(
+            checkpointState, checkpointMetadataState, backupRangeState, trackBackupMetadata);
+    checkpointBackupDeletedApplier =
+        new CheckpointBackupDeletedApplier(
+            checkpointMetadataState, backupRangeState, checkpointState);
+    checkpointStateClearedApplier =
+        new CheckpointStateClearedApplier(
+            checkpointState, checkpointMetadataState, backupRangeState);
 
     checkpointCreateProcessor =
         new CheckpointCreateProcessor(
             checkpointState,
             backupManager,
-            checkpointMetadataState,
-            checkpointListeners,
             scalingInProgressSupplier,
             partitionCountSupplier,
-            metrics);
+            metrics,
+            checkpointCreatedEventApplier);
 
     checkpointConfirmBackupProcessor =
         new CheckpointConfirmBackupProcessor(
-            checkpointState, checkpointMetadataState, backupRangeState, backupManager);
+            checkpointState,
+            checkpointMetadataState,
+            backupRangeState,
+            backupManager,
+            checkpointBackupConfirmedApplier);
 
     checkpointDeleteBackupProcessor =
         new CheckpointDeleteBackupProcessor(
             checkpointMetadataState, backupRangeState, checkpointState, backupManager);
 
-    checkpointCreatedEventApplier =
-        new CheckpointCreatedEventApplier(
-            checkpointState, checkpointMetadataState, checkpointListeners);
-    checkpointBackupConfirmedApplier =
-        new CheckpointBackupConfirmedApplier(
-            checkpointState, checkpointMetadataState, backupRangeState);
-    checkpointBackupDeletedApplier =
-        new CheckpointBackupDeletedApplier(
-            checkpointMetadataState, backupRangeState, checkpointState);
+    checkpointClearStateProcessor =
+        new CheckpointClearStateProcessor(
+            checkpointState, checkpointMetadataState, backupRangeState, backupManager);
 
     final long checkpointId = checkpointState.getLatestCheckpointId();
     final var checkpointType = checkpointState.getLatestCheckpointType();
@@ -165,6 +180,7 @@ public final class CheckpointRecordsProcessor
               (CheckpointRecord) record.getValue(), record.getTimestamp());
       case DELETED_BACKUP ->
           checkpointBackupDeletedApplier.apply((CheckpointRecord) record.getValue());
+      case STATE_CLEARED -> checkpointStateClearedApplier.apply();
       case IGNORED -> {}
       default ->
           throw new IllegalStateException(
@@ -191,6 +207,8 @@ public final class CheckpointRecordsProcessor
           checkpointConfirmBackupProcessor.process(record, resultBuilder);
       case CheckpointIntent.DELETE_BACKUP ->
           checkpointDeleteBackupProcessor.process(record, resultBuilder);
+      case CheckpointIntent.CLEAR_STATE ->
+          checkpointClearStateProcessor.process(record, resultBuilder);
       default ->
           throw new IllegalArgumentException(
               "Unknown checkpoint intent %s".formatted(record.getIntent()));

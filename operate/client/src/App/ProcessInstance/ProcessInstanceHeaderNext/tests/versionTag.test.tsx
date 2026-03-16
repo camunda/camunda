@@ -15,9 +15,7 @@ import {ProcessInstanceHeader} from '../index';
 import {mockInstance, Wrapper} from './index.setup';
 import {createUser, mockProcessXML} from 'modules/testUtils';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
-import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {mockProcess} from 'modules/mocks/api/mocks/process';
 import {mockMe} from 'modules/mocks/api/v2/me';
 
 describe('InstanceHeader', () => {
@@ -36,8 +34,6 @@ describe('InstanceHeader', () => {
   });
 
   it('should render version tag', async () => {
-    mockFetchProcess().withSuccess(mockProcess);
-
     render(<ProcessInstanceHeader processInstance={mockInstance} />, {
       wrapper: Wrapper,
     });
@@ -47,12 +43,12 @@ describe('InstanceHeader', () => {
     );
 
     expect(screen.getByText('Version Tag')).toBeInTheDocument();
-    expect(screen.getByText(mockProcess.versionTag)).toBeInTheDocument();
+    expect(
+      screen.getByText(mockInstance.processDefinitionVersionTag!),
+    ).toBeInTheDocument();
   });
 
   it('should not render version tag', async () => {
-    mockFetchProcess().withSuccess({...mockProcess, versionTag: null});
-
     render(
       <ProcessInstanceHeader
         processInstance={{
@@ -70,29 +66,8 @@ describe('InstanceHeader', () => {
     );
 
     expect(screen.queryByText('Version Tag')).not.toBeInTheDocument();
-    expect(screen.queryByText(mockProcess.versionTag)).not.toBeInTheDocument();
-  });
-
-  it('should not render version tag on error', async () => {
-    mockFetchProcess().withServerError();
-
-    render(
-      <ProcessInstanceHeader
-        processInstance={{
-          ...mockInstance,
-          processDefinitionVersionTag: null,
-        }}
-      />,
-      {
-        wrapper: Wrapper,
-      },
-    );
-
-    await waitForElementToBeRemoved(
-      screen.queryByTestId('instance-header-skeleton'),
-    );
-
-    expect(screen.queryByText('Version Tag')).not.toBeInTheDocument();
-    expect(screen.queryByText(mockProcess.versionTag)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(mockInstance.processDefinitionVersionTag!),
+    ).not.toBeInTheDocument();
   });
 });

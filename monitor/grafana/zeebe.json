@@ -233,8 +233,8 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 2,
-            "w": 9,
+            "h": 3,
+            "w": 3,
             "x": 8,
             "y": 1
           },
@@ -271,6 +271,80 @@
             }
           ],
           "title": "Banned instances",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Shows the count of active process instances in the partition.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "index": 0,
+                      "text": "None"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 6,
+            "x": 11,
+            "y": 1
+          },
+          "id": 709,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "12.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "max(zeebe_active_instances_count{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (partition)",
+              "legendFormat": "Partition-{{partition}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Active instances",
           "type": "stat"
         },
         {
@@ -418,7 +492,7 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 4,
+            "h": 3,
             "w": 9,
             "x": 8,
             "y": 3
@@ -16205,7 +16279,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "(((max(zeebe_rocksdb_memory_estimate_table_readers_mem{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)) + (max(zeebe_rocksdb_memory_size_all_mem_tables{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}) by (pod)) + (max(zeebe_rocksdb_memory_block_cache_capacity{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)) + (sum(rate(zeebe_rocksdb_live_estimate_num_keys{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (pod) * 10)) \nand on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) )\nor\n( ((sum(zeebe_rocksdb_memory_estimate_table_readers_mem{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_size_all_mem_tables{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_block_cache_capacity{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(rate(zeebe_rocksdb_live_estimate_num_keys{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}[$__rate_interval])) by (pod, partition) * 10)) \nunless on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}))",
+              "expr": "(((sum(zeebe_rocksdb_memory_estimate_table_readers_mem{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)) + (sum(zeebe_rocksdb_memory_size_all_mem_tables{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}) by (pod)) + (max(zeebe_rocksdb_memory_block_cache_capacity{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)) + (sum(rate(zeebe_rocksdb_live_estimate_num_keys{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (pod) * 10)) \nand on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) )\nor\n( ((sum(zeebe_rocksdb_memory_estimate_table_readers_mem{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_size_all_mem_tables{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}) by (pod, partition)) + (sum(zeebe_rocksdb_memory_block_cache_capacity{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}) by (pod, partition)) + (sum(rate(zeebe_rocksdb_live_estimate_num_keys{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",  partition=~\"$partition\"}[$__rate_interval])) by (pod, partition) * 10)) \nunless on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}))",
               "hide": false,
               "interval": "",
               "legendFormat": "{{pod}} memory {{partition}}",
@@ -17189,7 +17263,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "( (sum(zeebe_rocksdb_memory_block_cache_pinned_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)) and on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) )\nor\n( (sum(zeebe_rocksdb_memory_block_cache_pinned_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)) unless on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) )",
+              "expr": "( (max(zeebe_rocksdb_memory_block_cache_pinned_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) by (pod)) and on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) )\nor\n( (sum(zeebe_rocksdb_memory_block_cache_pinned_usage{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}) by (pod, partition)) unless on() (zeebe_rocksdb_memory_allocation_strategy{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}) )",
               "interval": "",
               "legendFormat": "{{pod}} pinned cache",
               "range": true,

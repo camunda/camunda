@@ -148,14 +148,18 @@ public interface ElementInstanceState {
 
   /**
    * Verifies if there is an active process instance with the given business id. This method is used
-   * to enforce uniqueness of business id per process definition (scoped by tenant).
+   * to enforce uniqueness of business id per process definition (scoped by tenant, across
+   * versions).
+   *
+   * <p>Note that it uses process definition id rather than key to find an active process instance
+   * across all versions of the process definition.
    *
    * <p>The {@code ignoreWhen} predicate can be used to exclude certain process instances from the
    * check, for example banned process instances. This allows the caller to handle edge cases where
    * a process instance should not be considered as active.
    *
    * @param businessId the business id to look up
-   * @param processDefinitionKey the process definition key
+   * @param processDefinitionId the id of the process definition to scope the search
    * @param tenantId the tenant id
    * @param ignoreWhen a predicate that takes a process instance key and returns true if the process
    *     instance should be ignored (e.g. because it is banned), and false otherwise
@@ -163,9 +167,19 @@ public interface ElementInstanceState {
    */
   boolean hasActiveProcessInstanceWithBusinessId(
       String businessId,
-      long processDefinitionKey,
+      String processDefinitionId,
       String tenantId,
       final Predicate<Long> ignoreWhen);
+
+  /**
+   * Returns the number of active process instances. This includes all process instances that are
+   * currently active, regardless of their process definition. This method is useful for monitoring
+   * and metrics purposes, as it provides insight into the overall number of active process
+   * instances in the system.
+   *
+   * @return the number of active process instances.
+   */
+  long getActiveProcessInstanceCount();
 
   @FunctionalInterface
   interface TakenSequenceFlowVisitor {

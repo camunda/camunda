@@ -48,6 +48,9 @@ tngp-data
 hs_err*.log
 /data/
 /metrics/
+
+# Test collection output
+scripts/codeowners-utils/output/
 *.exe
 
 .vscode
@@ -75,3 +78,8 @@ cmd/renovate/renovate*/
 
 # HTTP test private environment files
 **/http-client.private.env.json
+
+# local dev tooling
+.c8dev
+/output/
+scripts/codeowners-utils/output/

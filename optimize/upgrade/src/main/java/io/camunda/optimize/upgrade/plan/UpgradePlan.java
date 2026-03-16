@@ -49,4 +49,16 @@ public class UpgradePlan {
   public void setFromVersion(final Semver fromVersion) {
     this.fromVersion = fromVersion;
   }
+
+  @Override
+  public String toString() {
+    return "UpgradePlan("
+        + "from="
+        + fromVersion
+        + ", to="
+        + toVersion
+        + ", steps="
+        + upgradeSteps
+        + ')';
+  }
 }

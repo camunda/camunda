@@ -16,6 +16,7 @@ import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 
@@ -122,7 +123,7 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
     final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
     context
         .getActorSchedulingService()
-        .submitActor(backupManager)
+        .submitActor(backupManager, SchedulingHints.ioBound())
         .onComplete(
             (ignore, error) -> {
               if (error == null) {
@@ -137,9 +138,10 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
 
   private static void installCheckpointProcessor(
       final PartitionTransitionContext context, final BackupManager backupManager) {
+    final var trackBackupMetadata = context.getBrokerCfg().getData().getBackup().isContinuous();
     final CheckpointRecordsProcessor checkpointRecordsProcessor =
         new CheckpointRecordsProcessor(
-            backupManager, context.getPartitionTransitionMeterRegistry());
+            backupManager, context.getPartitionTransitionMeterRegistry(), trackBackupMetadata);
     context.setCheckpointProcessor(checkpointRecordsProcessor);
   }
 

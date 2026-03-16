@@ -11,13 +11,14 @@ import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApi, useApiCall } from "src/utility/api";
-import { searchRoles, Role } from "src/utility/api/roles";
+import { searchRoles } from "src/utility/api/roles";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
-import { assignGroupRole, Group } from "src/utility/api/groups";
+import { assignGroupRole } from "src/utility/api/groups";
 import { useNotifications } from "src/components/notifications";
+import type { Group, Role } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const SelectedRoles = styled.div`
   margin-top: 0;

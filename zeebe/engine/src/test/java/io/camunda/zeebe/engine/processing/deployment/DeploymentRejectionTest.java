@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -570,6 +571,34 @@ public class DeploymentRejectionTest {
   }
 
   @Test
+  public void shouldRejectDeploymentIfMessageStartEventNameIsTooLong() {
+    // given
+    final var tooLongMessageName = "a".repeat(MAX_NAME_FIELD_LENGTH + 1);
+    final var process =
+        Bpmn.createExecutableProcess("processId")
+            .startEvent("startEventId")
+            .message(m -> m.name(tooLongMessageName).id("startmsgId"))
+            .endEvent()
+            .done();
+
+    // when
+    final var rejectedDeployment =
+        ENGINE.deployment().withXmlResource("process.bpmn", process).expectRejection().deploy();
+
+    // then
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains("Names must not be longer than the configured max-name-length")
+        .contains(String.valueOf(MAX_NAME_FIELD_LENGTH));
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= rejectedDeployment.getPosition())
+                .messageStartEventSubscriptionRecords()
+                .withIntent(MessageStartEventSubscriptionIntent.CREATED)
+                .exists())
+        .isFalse();
+  }
+
+  @Test
   public void shouldRejectDeploymentIfWorkerTypeExceedsLimit() {
     final var workerType = "a".repeat(MAX_WORKER_TYPE_LENGTH + 1);
 
@@ -596,6 +625,35 @@ public class DeploymentRejectionTest {
         .contains(
             "- ERROR: Worker types must not be longer than the configured max-worker-type-length of %s characters"
                 .formatted(MAX_WORKER_TYPE_LENGTH));
+  }
+
+  @Test
+  public void shouldRejectDeploymentResourceNameExceedsLengthLimit() {
+    final var resourceName = "a".repeat(MAX_NAME_FIELD_LENGTH - 4) + ".bpmn";
+
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("startEvent")
+            .serviceTask("serviceTask", t -> t.zeebeJobType("workerType"))
+            .endEvent()
+            .done();
+
+    // when
+    final var rejectedDeployment =
+        ENGINE.deployment().withXmlResource(resourceName, process).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .startsWith("Expected to deploy new resources, but encountered the following errors:")
+        .contains(
+            "- Resource name '%s' exceeds maximum length of %d characters"
+                .formatted(resourceName, MAX_NAME_FIELD_LENGTH));
   }
 
   @Test

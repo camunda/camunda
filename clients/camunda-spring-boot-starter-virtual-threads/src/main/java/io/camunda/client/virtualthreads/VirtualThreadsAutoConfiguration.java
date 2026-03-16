@@ -23,12 +23,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
-import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 
 /**
@@ -46,27 +46,6 @@ import org.springframework.context.annotation.Lazy;
 public class VirtualThreadsAutoConfiguration {
 
   /**
-   * Creates a {@link CamundaClientExecutorService} that uses virtual threads for job execution with
-   * metrics support when Micrometer is available.
-   *
-   * @param meterRegistry optional meter registry for metrics (can be null)
-   * @return the configured executor service with virtual threads for job handling and a single
-   *     platform thread for scheduling
-   */
-  @Bean
-  @ConditionalOnClass({MeterRegistry.class, EndpointAutoConfiguration.class})
-  public CamundaClientExecutorService camundaClientExecutorService(
-      @Lazy final MeterRegistry meterRegistry) {
-    final ThreadFactory virtualThreadFactory = createVirtualThreadFactory();
-    final ExecutorService jobHandlingExecutor =
-        Executors.newThreadPerTaskExecutor(virtualThreadFactory);
-    final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(1);
-
-    return new MeteredCamundaClientExecutorService(
-        scheduledExecutor, true, jobHandlingExecutor, true, meterRegistry);
-  }
-
-  /**
    * Fallback bean when Micrometer is not on the classpath.
    *
    * @return the configured executor service without metrics
@@ -82,7 +61,44 @@ public class VirtualThreadsAutoConfiguration {
     return new CamundaClientExecutorService(scheduledExecutor, true, jobHandlingExecutor, true);
   }
 
-  private ThreadFactory createVirtualThreadFactory() {
+  private static ThreadFactory createVirtualThreadFactory() {
     return Thread.ofVirtual().name("job-worker-virtual-", 0).factory();
+  }
+
+  /**
+   * Nested configuration that is only loaded when both Micrometer and Spring Boot Actuator are on
+   * the classpath. This must be a separate nested class because {@code MeterRegistry} is used as a
+   * method parameter type — if it appeared on the enclosing class, {@link
+   * Class#getDeclaredMethods()} would throw {@link NoClassDefFoundError} when Micrometer is absent.
+   *
+   * @see <a href="https://github.com/camunda/camunda/issues/47464">#47464</a>
+   */
+  @Configuration(proxyBeanMethods = false)
+  @ConditionalOnClass(
+      name = {
+        "io.micrometer.core.instrument.MeterRegistry",
+        "org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration"
+      })
+  static class MeteredConfiguration {
+
+    /**
+     * Creates a {@link CamundaClientExecutorService} that uses virtual threads for job execution
+     * with metrics support when Micrometer is available.
+     *
+     * @param meterRegistry the meter registry for metrics
+     * @return the configured executor service with virtual threads for job handling and a single
+     *     platform thread for scheduling
+     */
+    @Bean
+    CamundaClientExecutorService camundaClientExecutorService(
+        @Lazy final MeterRegistry meterRegistry) {
+      final ThreadFactory virtualThreadFactory = createVirtualThreadFactory();
+      final ExecutorService jobHandlingExecutor =
+          Executors.newThreadPerTaskExecutor(virtualThreadFactory);
+      final ScheduledExecutorService scheduledExecutor = Executors.newScheduledThreadPool(1);
+
+      return new MeteredCamundaClientExecutorService(
+          scheduledExecutor, true, jobHandlingExecutor, true, meterRegistry);
+    }
   }
 }

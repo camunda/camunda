@@ -233,6 +233,11 @@ components:
         mappingRuleId:
           type: string
           description: The unique ID of the mapping rule.
+      required:
+        - claimName
+        - claimValue
+        - name
+        - mappingRuleId
 
     MappingRuleCreateResult:
       type: object
@@ -272,6 +277,11 @@ components:
         mappingRuleId:
           type: string
           description: The ID of the mapping rule.
+      required:
+        - claimName
+        - claimValue
+        - name
+        - mappingRuleId
 
     MappingRuleSearchQuerySortRequest:
       type: object

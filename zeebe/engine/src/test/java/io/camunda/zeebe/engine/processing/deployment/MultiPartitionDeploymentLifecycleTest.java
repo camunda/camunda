@@ -31,7 +31,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.ByteValue;
 import java.util.stream.Collectors;
-import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -191,7 +190,7 @@ public class MultiPartitionDeploymentLifecycleTest {
 
     // first one is skipped
     engine.getClock().addTime(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL);
-    Awaitility.await()
+    RecordingExporter.await()
         .untilAsserted(
             () -> {
               // continue to add time to the clock until the deployment is re-distributed

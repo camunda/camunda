@@ -77,8 +77,7 @@ public class DefaultMembershipService implements MembershipService {
 
     final var mappingRules =
         mappingRuleServices
-            .withAuthentication(CamundaAuthentication.anonymous())
-            .getMatchingMappingRules(tokenClaims)
+            .getMatchingMappingRules(tokenClaims, CamundaAuthentication.anonymous())
             .map(MappingRuleEntity::mappingRuleId)
             .collect(Collectors.toSet());
 
@@ -94,8 +93,7 @@ public class DefaultMembershipService implements MembershipService {
     } else {
       groups =
           groupServices
-              .withAuthentication(CamundaAuthentication.anonymous())
-              .getGroupsByMemberTypeAndMemberIds(ownerTypeToIds)
+              .getGroupsByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
               .stream()
               .map(GroupEntity::groupId)
               .collect(Collectors.toSet());
@@ -107,8 +105,7 @@ public class DefaultMembershipService implements MembershipService {
 
     final var roles =
         roleServices
-            .withAuthentication(CamundaAuthentication.anonymous())
-            .getRolesByMemberTypeAndMemberIds(ownerTypeToIds)
+            .getRolesByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
             .stream()
             .map(RoleEntity::roleId)
             .collect(Collectors.toSet());
@@ -119,8 +116,7 @@ public class DefaultMembershipService implements MembershipService {
 
     final var tenants =
         tenantServices
-            .withAuthentication(CamundaAuthentication.anonymous())
-            .getTenantsByMemberTypeAndMemberIds(ownerTypeToIds)
+            .getTenantsByMemberTypeAndMemberIds(ownerTypeToIds, CamundaAuthentication.anonymous())
             .stream()
             .map(TenantEntity::tenantId)
             .toList();

@@ -176,9 +176,9 @@ describe('<TaskDetailsHistoryView />', () => {
       await screen.findByTestId('task-details-history-view'),
     ).toBeInTheDocument();
 
-    expect(screen.getByText('Operation')).toBeInTheDocument();
+    expect(screen.getByText('Operation type')).toBeInTheDocument();
     expect(screen.getByText('Actor')).toBeInTheDocument();
-    expect(screen.getByText('Time')).toBeInTheDocument();
+    expect(screen.getByText('Date')).toBeInTheDocument();
 
     expect(screen.getByText('Create task')).toBeInTheDocument();
     expect(screen.getByText('Assign task')).toBeInTheDocument();
@@ -326,6 +326,7 @@ describe('<TaskDetailsHistoryView />', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent(
       '/0/history/test-audit-log-key',
     );
+    expect(screen.getByTestId('search')).toHaveTextContent('');
   });
 
   it('should close details modal when clicking close button', async () => {
@@ -366,6 +367,7 @@ describe('<TaskDetailsHistoryView />', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent(
       '/0/history/test-audit-log-key-2',
     );
+    expect(screen.getByTestId('search')).toHaveTextContent('');
 
     await user.click(
       within(screen.getByRole('dialog')).getByRole('button', {
@@ -378,9 +380,71 @@ describe('<TaskDetailsHistoryView />', () => {
     ).not.toBeInTheDocument();
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/0/history');
+    expect(screen.getByTestId('search')).toHaveTextContent('');
   });
 
-  it('should display sortable column headers for Operation, Actor, and Time', async () => {
+  it('should preserve query string when opening and closing details modal', async () => {
+    const testAuditLog = auditLogMocks.auditLog({
+      auditLogKey: 'test-audit-log-key-3',
+      operationType: 'ASSIGN',
+    });
+
+    nodeMockServer.use(
+      http.post(
+        endpoints.queryUserTaskAuditLogs.getUrl({
+          userTaskKey: ':userTaskKey',
+        }),
+        () =>
+          HttpResponse.json(
+            auditLogMocks.getQueryUserTaskAuditLogsResponseMock([testAuditLog]),
+          ),
+      ),
+      http.get('/v2/audit-logs/:auditLogKey', () =>
+        HttpResponse.json(testAuditLog),
+      ),
+    );
+
+    const {user} = render(
+      <RouterProvider
+        router={getRouter('/0/history?sort=operationType+desc')}
+      />,
+      {wrapper: getWrapper()},
+    );
+
+    expect(
+      await screen.findByTestId('task-details-history-view'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /open details/i}));
+
+    expect(
+      await screen.findByRole('heading', {name: /assign task/i}),
+    ).toBeInTheDocument();
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      '/0/history/test-audit-log-key-3',
+    );
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      'sort=operationType+desc',
+    );
+
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: /close/i,
+      }),
+    );
+
+    expect(
+      screen.queryByRole('heading', {name: /assign task/i}),
+    ).not.toBeInTheDocument();
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/0/history');
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      'sort=operationType+desc',
+    );
+  });
+
+  it('should display sortable column headers for Operation, Actor, and Date', async () => {
     nodeMockServer.use(
       http.post(
         endpoints.queryUserTaskAuditLogs.getUrl({
@@ -400,13 +464,13 @@ describe('<TaskDetailsHistoryView />', () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: /sort by operation/i}),
+      screen.getByRole('button', {name: /sort by operation type/i}),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: /sort by actor/i}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: /sort by time/i}),
+      screen.getByRole('button', {name: /sort by date/i}),
     ).toBeInTheDocument();
 
     expect(
@@ -435,7 +499,9 @@ describe('<TaskDetailsHistoryView />', () => {
       await screen.findByTestId('task-details-history-view'),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: /sort by operation/i}));
+    await user.click(
+      screen.getByRole('button', {name: /sort by operation type/i}),
+    );
 
     await waitFor(() => {
       expect(screen.getByTestId('search')).toHaveTextContent(
@@ -465,7 +531,7 @@ describe('<TaskDetailsHistoryView />', () => {
       await screen.findByTestId('task-details-history-view'),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: /sort by time/i}));
+    await user.click(screen.getByRole('button', {name: /sort by date/i}));
 
     await waitFor(() => {
       expect(screen.getByTestId('search')).toHaveTextContent(
@@ -473,7 +539,7 @@ describe('<TaskDetailsHistoryView />', () => {
       );
     });
 
-    await user.click(screen.getByRole('button', {name: /sort by time/i}));
+    await user.click(screen.getByRole('button', {name: /sort by date/i}));
 
     await waitFor(() => {
       expect(screen.getByTestId('search')).toHaveTextContent(

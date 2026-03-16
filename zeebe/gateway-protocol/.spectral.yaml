@@ -8,20 +8,24 @@ functions:
   - verifyEventuallyConsistent
   - verifyRequiredPropertiesExist
   - verifyArrayPropertiesRequired
+  - verifyResponsePropertiesRequired
   - verifyDeprecatedEnumMembers
 functionsDir: ./spectral-functions
 rules:
   # Tag validation
   operation-tag-defined: error
-  
-  # Enforce strict schema validation (catches issues like `required: false` at property level)
-  # The oas3-valid-schema-example rule validates that schemas are valid according to the 
-  # OpenAPI 3.0 JSON Schema specifications. This will catch structural issues like:
-  # - Using `required: false` as a boolean at property level (should be array at object level)
-  # - Invalid schema property combinations
-  # - Type mismatches in schema definitions
-  oas3-valid-schema-example: error
-  
+
+  # Schema example validation rules.
+  # Downgraded from error → warn because Spectral does not support Unicode regex
+  # (\p{L}, \p{N}) in pattern validation. Our identifier schemas use Unicode-aware
+  # patterns (e.g. ProcessDefinitionId, DecisionDefinitionId, Tag), which causes
+  # false-positive failures on all example values.
+  # Upstream issue: https://github.com/stoplightio/spectral/issues/2419
+  # Upstream fix:   https://github.com/stoplightio/spectral/pull/2809
+  # TODO: Restore to error once Spectral ships the unicodeRegExp option.
+  oas3-valid-schema-example: warn
+  oas3-valid-media-example: warn
+
   # Custom validation rules migrated from Vacuum
   no-period-in-summary:
     description: Path summary must not include period
@@ -32,7 +36,7 @@ rules:
       functionOptions:
         notMatch: ^.*\.$
     message: Summaries are short descriptions often used in navigation bars, they must not contain periods at the end. Please remove the period at the end of the summary text.
-  
+
   no-flow-node-in-path-summary:
     description: Path summary must not include term "flow node"
     severity: error
@@ -42,7 +46,7 @@ rules:
       functionOptions:
         notMatch: .*(flow-node|flownode|flowNode|flow node).*
     message: Please replace the term "flow node" with "element".
-  
+
   no-flow-node-in-path-description:
     description: Path description must not include term "flow node"
     severity: error
@@ -52,7 +56,7 @@ rules:
       functionOptions:
         notMatch: .*(flow-node|flownode|flowNode|flow node).*
     message: Please replace the term "flow node" with "element".
-  
+
   no-flow-node-in-operation-id:
     description: Path operation ID must not include term "flow node"
     severity: error
@@ -62,7 +66,7 @@ rules:
       functionOptions:
         notMatch: .*(flow-node|flownode|flowNode|FlowNode|Flownode).*
     message: Please replace the term "flow node" with "element".
-  
+
   no-flow-node-in-path:
     description: Paths must not include term "flow node"
     severity: error
@@ -72,7 +76,7 @@ rules:
       functionOptions:
         notMatch: .*(flow-node|flownode|flowNode).*
     message: Please replace the term "flow node" with "element".
-  
+
   no-flow-node-in-component-property:
     description: Component properties must not include term "flow node"
     severity: error
@@ -82,7 +86,7 @@ rules:
       functionOptions:
         notMatch: .*(flownode|flowNode).*
     message: Please replace the term "flow node" with "element".
-  
+
   require-property-descriptions:
     description: Schema properties must have a description.
     severity: error
@@ -90,7 +94,7 @@ rules:
     then:
       field: description
       function: truthy
-  
+
   operation-key-properties-must-be-strings:
     description: "`...Key` parameters must be of type `string`."
     severity: warn
@@ -98,7 +102,7 @@ rules:
     then:
       function: verifyKeyTypesPaths
     message: Make the `...Key` property a `string`.
-  
+
   schema-key-properties-must-be-strings:
     description: "`...Key` properties must be of type `string`."
     severity: warn
@@ -106,7 +110,7 @@ rules:
     then:
       function: verifyKeyTypesSchemas
     message: Make the `...Key` property a `string`.
-  
+
   required-properties-must-exist:
     description: "Every entry in `required` must match a key in `properties`."
     severity: error
@@ -121,6 +125,14 @@ rules:
     message: "{{error}}"
     then:
       function: verifyArrayPropertiesRequired
+
+  response-properties-must-be-required:
+    description: "All response body properties must be listed in `required`."
+    severity: error
+    given: "$.paths[*]"
+    message: "{{error}}"
+    then:
+      function: verifyResponsePropertiesRequired
 
   no-eventually-consistent-on-commands:
     description: "Command (mutating) operations must not have x-eventually-consistent: true."

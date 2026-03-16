@@ -190,7 +190,7 @@ public class BackupRetention extends Actor {
 
   private ActorFuture<RetentionContext> createRetentionContext(final int partitionId) {
     return retrieveBackups(partitionId)
-        .thenApply(this::excludeBackupsWithoutTimestamps)
+        .thenApply(this::excludeBackupsWithoutTimestamps, this)
         .thenApply((statuses) -> processBackups(statuses, partitionId), this);
   }
 

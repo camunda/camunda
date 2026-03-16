@@ -9,6 +9,7 @@ package io.camunda.zeebe.el.impl;
 
 import io.camunda.zeebe.el.Expression;
 import java.util.Optional;
+import java.util.Set;
 
 public final class InvalidExpression implements Expression {
 
@@ -28,6 +29,11 @@ public final class InvalidExpression implements Expression {
   @Override
   public Optional<String> getVariableName() {
     return Optional.empty();
+  }
+
+  @Override
+  public Set<String> getVariableNames() {
+    return Set.of();
   }
 
   @Override

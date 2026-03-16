@@ -49,6 +49,62 @@
       </when>
     </choose>
   </sql>
+  <!--
+    Oracle treats empty strings as NULL. When filtering with EQUALS '' or NOT_EQUALS '',
+    we must use IS NULL / IS NOT NULL instead, because NULL = '' evaluates to UNKNOWN in SQL.
+  -->
+  <sql id="operationCondition" databaseId="oracle">
+    <choose>
+      <when test="operation.operator.name().equals('EQUALS')">
+        <choose>
+          <when test="operation.value != null and operation.value.toString().equals('')">
+            IS NULL
+          </when>
+          <otherwise>
+            = #{operation.value}
+          </otherwise>
+        </choose>
+      </when>
+      <when test="operation.operator.name().equals('NOT_EQUALS')">
+        <choose>
+          <when test="operation.value != null and operation.value.toString().equals('')">
+            IS NOT NULL
+          </when>
+          <otherwise>
+            != #{operation.value}
+          </otherwise>
+        </choose>
+      </when>
+      <when test="operation.operator.name().equals('EXISTS')">
+        IS NOT NULL
+      </when>
+      <when test="operation.operator.name().equals('NOT_EXISTS')">
+        IS NULL
+      </when>
+      <when test="operation.operator.name().equals('GREATER_THAN')">
+        &gt; #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('GREATER_THAN_EQUALS')">
+        &gt;= #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('LOWER_THAN')">
+        &lt; #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('LOWER_THAN_EQUALS')">
+        &lt;= #{operation.value}
+      </when>
+      <when test="operation.operator.name().equals('IN')">
+        IN <foreach collection="operation.values" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      </when>
+      <when test="operation.operator.name().equals('NOT_IN')">
+        NOT IN <foreach collection="operation.values" item="value" open="(" separator=", " close=")">#{value}</foreach>
+      </when>
+      <when test="operation.operator.name().equals('LIKE')">
+        LIKE #{operation.value, typeHandler=io.camunda.db.rdbms.sql.typehandler.WildcardTransformingStringTypeHandler}
+          ESCAPE ${escapeChar}
+      </when>
+    </choose>
+  </sql>
 
   <sql id="keySetPageFilter">
     <if test="page != null and page.keySetPagination != null and !page.keySetPagination.isEmpty()">
@@ -57,7 +113,14 @@
         close=")">
         <foreach collection="keySet.entries" item="entry" open="(" separator=" AND "
           close=")">
-            ${entry.fieldName} ${entry.operator.symbol} #{entry.fieldValue}
+          <choose>
+            <when test="entry.fieldValue != null">
+              ${entry.fieldName} ${entry.operator.symbol} #{entry.fieldValue}
+            </when>
+            <otherwise>
+              ${entry.fieldName} ${entry.operator.symbol}
+            </otherwise>
+          </choose>
         </foreach>
       </foreach>
     </if>
@@ -67,6 +130,21 @@
     <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
       <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
         ${item.column} ${item.order}
+      </foreach>
+    </if>
+  </sql>
+  <!--
+    Oracle sorts NULLs differently from other databases by default:
+    Oracle: NULLs LAST for ASC, NULLs FIRST for DESC
+    PostgreSQL/H2/MySQL/MariaDB: NULLs FIRST for ASC, NULLs LAST for DESC
+    This override ensures consistent NULL ordering across all databases.
+  -->
+  <sql id="orderBy" databaseId="oracle">
+    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
+      <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
+        ${item.column} ${item.order}
+        <if test="item.order.name().equals('ASC')">NULLS FIRST</if>
+        <if test="item.order.name().equals('DESC')">NULLS LAST</if>
       </foreach>
     </if>
   </sql>
@@ -285,6 +363,37 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.historyDeletionByKeys">
       <property name="deletionKeyColumn" value="PROCESS_INSTANCE_KEY"/>
     </include>
+  </sql>
+
+  <!--
+    Vendor-specific SQL fragment that floors a timestamp column to the nearest bucket boundary.
+    Parameters injected from the enclosing query object:
+      ${timeBucketColumn}   - the column name (e.g. START_TIME), substituted at parse time
+      #{resolutionSeconds}  - the bucket size in seconds, bound at execution time
+    Default dialect: H2 (used in unit tests)
+  -->
+  <sql id="timeBucket">
+    TIMESTAMPADD('SECOND', FLOOR(DATEDIFF('SECOND', TIMESTAMP '1970-01-01 00:00:00', ${timeBucketColumn}) / #{resolutionSeconds}) * #{resolutionSeconds}, TIMESTAMP '1970-01-01 00:00:00')
+  </sql>
+
+  <sql id="timeBucket" databaseId="postgresql">
+    TO_TIMESTAMP(FLOOR(EXTRACT(EPOCH FROM ${timeBucketColumn}) / #{resolutionSeconds}) * #{resolutionSeconds})
+  </sql>
+
+  <sql id="timeBucket" databaseId="mysql">
+    FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(${timeBucketColumn}) / #{resolutionSeconds}) * #{resolutionSeconds})
+  </sql>
+
+  <sql id="timeBucket" databaseId="mariadb">
+    FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(${timeBucketColumn}) / #{resolutionSeconds}) * #{resolutionSeconds})
+  </sql>
+
+  <sql id="timeBucket" databaseId="mssql">
+    TODATETIMEOFFSET(DATEADD(SECOND, (DATEDIFF_BIG(SECOND, '1970-01-01', ${timeBucketColumn}) / #{resolutionSeconds}) * #{resolutionSeconds}, '1970-01-01'), 0)
+  </sql>
+
+  <sql id="timeBucket" databaseId="oracle">
+    TIMESTAMP '1970-01-01 00:00:00 UTC' + NUMTODSINTERVAL(FLOOR((EXTRACT(DAY FROM (SYS_EXTRACT_UTC(${timeBucketColumn}) - TIMESTAMP '1970-01-01 00:00:00')) * 86400 + EXTRACT(HOUR FROM (SYS_EXTRACT_UTC(${timeBucketColumn}) - TIMESTAMP '1970-01-01 00:00:00')) * 3600 + EXTRACT(MINUTE FROM (SYS_EXTRACT_UTC(${timeBucketColumn}) - TIMESTAMP '1970-01-01 00:00:00')) * 60 + EXTRACT(SECOND FROM (SYS_EXTRACT_UTC(${timeBucketColumn}) - TIMESTAMP '1970-01-01 00:00:00'))) / #{resolutionSeconds}) * #{resolutionSeconds}, 'SECOND')
   </sql>
 
   <resultMap id="flowNodeStatisticsResultMap"

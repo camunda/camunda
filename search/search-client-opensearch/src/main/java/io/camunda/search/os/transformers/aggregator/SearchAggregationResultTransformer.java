@@ -8,6 +8,7 @@
 package io.camunda.search.os.transformers.aggregator;
 
 import io.camunda.search.clients.aggregator.SearchAggregator;
+import io.camunda.search.clients.aggregator.SearchCompositeAggregator;
 import io.camunda.search.clients.aggregator.SearchTopHitsAggregator;
 import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.core.AggregationResult.Builder;
@@ -47,7 +48,6 @@ public class SearchAggregationResultTransformer<T>
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(SearchAggregationResultTransformer.class);
-  private static final String COMPOSITE_KEY_DELIMITER = "__";
   private final OpensearchTransformers transformers;
   private final List<SearchAggregator> aggregators;
 
@@ -146,10 +146,15 @@ public class SearchAggregationResultTransformer<T>
                   case final LongTermsBucket b ->
                       b.keyAsString() != null ? b.keyAsString() : String.valueOf(b.key().signed());
                   case final DateHistogramBucket b -> String.valueOf(b.key());
-                  case final CompositeBucket b ->
-                      b.key().values().stream()
-                          .map(SearchAggregationResultTransformer::fieldValueToString)
-                          .collect(Collectors.joining(COMPOSITE_KEY_DELIMITER));
+                  case final CompositeBucket b -> {
+                    final Map<String, String> keyMap = new HashMap<>();
+                    b.key()
+                        .forEach(
+                            (k, v) ->
+                                keyMap.put(
+                                    k, SearchAggregationResultTransformer.fieldValueToString(v)));
+                    yield SearchCompositeAggregator.joinKeys(keyMap);
+                  }
                   default ->
                       throw new IllegalStateException(
                           "Unsupported bucket type: " + bucket.getClass());

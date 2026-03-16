@@ -23,7 +23,7 @@ public class FormImpl implements Form {
   private String formId;
   private Long version;
   private Long formKey;
-  private Object schema;
+  private String schema;
   private String tenantId;
 
   public FormImpl(final FormResult item) {
@@ -52,7 +52,7 @@ public class FormImpl implements Form {
   }
 
   @Override
-  public Object getSchema() {
+  public String getSchema() {
     return schema;
   }
 

@@ -35,14 +35,13 @@ public class CheckpointConfirmBackupProcessor {
       final CheckpointState checkpointState,
       final DbCheckpointMetadataState checkpointMetadataState,
       final DbBackupRangeState backupRangeState,
-      final BackupManager backupManager) {
+      final BackupManager backupManager,
+      final CheckpointBackupConfirmedApplier backupConfirmedApplier) {
     this.checkpointState = checkpointState;
     this.checkpointMetadataState = checkpointMetadataState;
     this.backupRangeState = backupRangeState;
     this.backupManager = backupManager;
-    backupConfirmedApplier =
-        new CheckpointBackupConfirmedApplier(
-            checkpointState, checkpointMetadataState, backupRangeState);
+    this.backupConfirmedApplier = backupConfirmedApplier;
   }
 
   public ProcessingResult process(

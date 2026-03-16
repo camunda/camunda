@@ -40,6 +40,7 @@ jobs:
     outputs:
       actionlint: ${{ steps.filter.outputs.actionlint }}
       commitlint: ${{ steps.filter.outputs.commitlint }}
+      codeowners-check: ${{ steps.filter.outputs.codeowners-check }}
       maven-spotless-linter: ${{ steps.filter.outputs.maven-spotless-linter }}
       java-code-changes: ${{ steps.filter.outputs.java-code-changes }}
       camunda-docker-tests: ${{ steps.filter.outputs.camunda-docker-tests}}
@@ -81,7 +82,7 @@ jobs:
       # renovate: datasource=github-releases depName=rhysd/actionlint
       ACTIONLINT_VERSION: '1.7.11'
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
-      CONFTEST_VERSION: '0.66.0'
+      CONFTEST_VERSION: '0.67.0'
     steps:
       - uses: actions/checkout@v6
       - uses: camunda/infra-global-github-actions/actionlint@main
@@ -165,6 +166,36 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  codeowners-check:
+    if: needs.detect-changes.outputs.codeowners-check == 'true'
+    name: "Lint / Codeowners"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/codeowners-setup-cli
+      - name: Check for unowned files
+        run: |
+          set -euo pipefail
+          unowned="$(codeowners-cli unowned --root ./)"
+          if [[ -n "${unowned}" ]]; then
+            echo -e "::error::The following files have no owner in .codeowners:\n${unowned}\n\n"
+            echo "Please add ownership rules for these files in .codeowners"
+            exit 1
+          fi
+          echo "All files have owners."
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   java-checks:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "Java Checks"
@@ -191,6 +222,76 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  dependency-cycle-check:
+    # Temporarily disabling the dependency-cycle-check as too brittle
+    if: ${{ false }}
+    name: "Dependency Cycle Check"
+    needs: [ detect-changes ]
+    runs-on: gcp-core-16-default
+    timeout-minutes: 30
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    strategy:
+      fail-fast: false
+      # The matrix is necessary to run separate analyses
+      matrix:
+        project:
+        # Not necessary - this is a completely different module
+        # written in Go
+        # - name: c8run
+        #   path: ./c8run
+        - name: optimize
+          path: ./optimize
+          maven-config: |
+            -DskipQaBuild=true
+        - name: single-app
+          path: ./
+          maven-config: |
+            -Dquickly=true
+            -DskipQaBuild=true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: dependency-cycle-check
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+        # These steps have been taken from check-licenses.yml workflow
+      - name: Adjust pom.xml files for FOSSA
+        # if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
+        uses: ./.github/actions/adjust-pom-for-license-analysis
+      - name: Update Maven configs
+        if: matrix.project.maven-config != ''
+        env:
+          MAVEN_CONFIG: ${{ matrix.project.maven-config }}
+        run: |
+          echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
+      - name: Check for dependency cycles
+        # Command here is the same used by fossa analyze
+        # and found by enabling the `-debug` flag
+        env:
+          POM_PATH: ${{ matrix.project.path}}/pom.xml
+        run: |
+          ./mvnw com.github.ferstl:depgraph-maven-plugin:4.0.1:aggregate \
+            -f "$POM_PATH" \
+            -DgraphFormat=text \
+            -DmergeScopes \
+            -DreduceEdges=false \
+            -DshowVersions=true \
+            -DshowGroupIds=true \
+            -DshowOptional=true \
+            -DrepeatTransitiveDependenciesInTextGraph=true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "dependency-cycle-check/${{ matrix.project.name }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   build-platform-frontend:
     if: needs.detect-changes.outputs.frontend-changes == 'true'
@@ -557,6 +658,25 @@ jobs:
       test-type: "history-tests"
       test-type-label: "History"
       runs-on: "gcp-perf-core-8-default"
+
+  identity-tests:
+    name: "Identity Integration Tests / ${{ matrix.name }}"
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    strategy:
+      fail-fast: false
+      matrix: *database-matrix
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "${{ matrix.database-type }}"
+      database-container: "${{ matrix.database-container }}"
+      database-image-version: "${{ matrix.database-image-version }}"
+      database-name: "${{ matrix.database-name }}"
+      it-database-type: "${{ matrix.it-database-type }}"
+      maven-profiles: "identity-tests"
+      test-type: "identity-tests"
+      test-type-label: "Identity"
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
@@ -1064,6 +1184,7 @@ jobs:
       - docker-checks
       - general-unit-tests
       - history-tests
+      - identity-tests
       - integration-tests
       - rdbms-integration-tests
       - zeebe-unit-tests
@@ -1094,6 +1215,11 @@ jobs:
         id: history-matrix-read
         with:
           matrix-step-name: history-tests
+      - name: Read identity tests matrix outputs
+        uses: cloudposse/github-action-matrix-outputs-read@v1
+        id: identity-matrix-read
+        with:
+          matrix-step-name: identity-tests
       - name: Collect flaky test results
         id: collect-results
         uses: ./.github/actions/collect-flaky-tests
@@ -1104,6 +1230,8 @@ jobs:
           database-matrix-output-result: ${{ steps.database-integration-matrix-read.outputs.result }}
           history-tests-result: ${{ needs.history-tests.result }}
           history-matrix-output-result: ${{ steps.history-matrix-read.outputs.result }}
+          identity-tests-result: ${{ needs.identity-tests.result }}
+          identity-matrix-output-result: ${{ steps.identity-matrix-read.outputs.result }}
           rdbms-tests-result: ${{ needs.rdbms-integration-tests.result }}
           rdbms-tests-flaky: ${{ needs.rdbms-integration-tests.outputs.flakyTests }}
           docker-checks-result: ${{ needs.docker-checks.result }}
@@ -1357,13 +1485,16 @@ jobs:
       - archunit-tests
       - build-platform-frontend
       - client-components
+      - codeowners-check
       - commitlint
       - database-integration-tests
+      - dependency-cycle-check
       - detect-changes
       - docker-checks
       - general-unit-tests
       - history-tests
       - identity-frontend-tests
+      - identity-tests
       - integration-tests
       - java-checks
       - maven-spotless-linter
@@ -1513,7 +1644,9 @@ jobs:
         id: build-camunda-docker
         with:
           repository: camunda/camunda
-          version: ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
+          version: |
+            ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
+            ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.snapshot_tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile

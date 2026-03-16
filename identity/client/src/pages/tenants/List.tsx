@@ -13,12 +13,13 @@ import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
-import { searchTenant, Tenant } from "src/utility/api/tenants";
+import { searchTenant } from "src/utility/api/tenants";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/tenants/modals/AddModal";
 import DeleteModal from "src/pages/tenants/modals/DeleteModal";
 import PageEmptyState from "src/components/layout/PageEmptyState";
+import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const List: FC = () => {
   const { t } = useTranslate("tenants");

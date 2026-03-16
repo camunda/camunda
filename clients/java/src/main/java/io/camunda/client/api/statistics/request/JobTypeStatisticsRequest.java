@@ -16,9 +16,9 @@
 package io.camunda.client.api.statistics.request;
 
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.search.filter.JobTypeStatisticsFilter;
 import io.camunda.client.api.search.request.TypedFilterableRequest;
 import io.camunda.client.api.search.request.TypedPageableRequest;
+import io.camunda.client.api.statistics.filter.JobTypeStatisticsFilter;
 import io.camunda.client.api.statistics.response.JobTypeStatistics;
 
 /**

@@ -17,16 +17,14 @@ package io.camunda.client.spring.properties;
 
 public class CamundaClientDeploymentProperties {
 
-  /** Indicates if the `@Deployment` annotation is processed. */
+  /** Indicates if the <code>@Deployment</code> annotation is processed. */
   private boolean enabled = true;
 
   /**
    * Indicates if the resources selected by the deployment annotation have to reside in the same jar
-   * as the annotated class.
-   *
-   * <p>This property acts as the default behavior. If the `@Deployment` annotation explicitly sets
-   * its `ownJarOnly` parameter, that annotation-level value overrides this property for the
-   * annotated deployment.
+   * as the annotated class. This property acts as the default behavior. If the <code>@Deployment
+   * </code> annotation explicitly sets its <code>ownJarOnly</code> parameter, that annotation-level
+   * value overrides this property for the annotated deployment.
    */
   private boolean ownJarOnly = false;
 

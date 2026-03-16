@@ -95,7 +95,7 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
     nextDueDate = -1L;
 
     dueDateColumnFamily.whileTrue(
-        (key, nil) -> {
+        key -> {
           final var dueDate = key.first().getValue();
           final var elementAndTimerKey = key.second();
 

@@ -14,13 +14,13 @@ import useTranslate from "src/utility/localization";
 import { isOIDC, isTenantsApiEnabled } from "src/configuration";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import {
-  Authorization,
+  ALL_RESOURCE_TYPES,
   createAuthorization,
   NewAuthorization,
-  OwnerType,
-  PermissionType,
-  ResourcePropertyName,
-  ResourceType,
+  RESOURCE_TYPES_WITHOUT_TENANT,
+  OWNER_TYPES,
+  RESOURCE_PROPERTY_NAMES,
+  type ResourcePropertyName,
 } from "src/utility/api/authorizations";
 import { useNotifications } from "src/components/notifications";
 import TextField from "src/components/form/TextField";
@@ -34,117 +34,73 @@ import {
   isValidResourceId,
   getIdPattern,
 } from "src/utility/validate";
+import type {
+  OwnerType,
+  PermissionType,
+  ResourceType,
+} from "@camunda/camunda-api-zod-schemas/8.9";
 
-type ResourcePermissionsType = {
-  [key in keyof typeof ResourceType]: Authorization["permissionTypes"];
-};
-
-const resourcePermissions: ResourcePermissionsType = {
-  AUDIT_LOG: [PermissionType.READ],
-  AUTHORIZATION: [
-    PermissionType.CREATE,
-    PermissionType.DELETE,
-    PermissionType.READ,
-    PermissionType.UPDATE,
-  ],
+const resourcePermissions: Record<ResourceType, PermissionType[]> = {
+  AUDIT_LOG: ["READ"],
+  AUTHORIZATION: ["CREATE", "DELETE", "READ", "UPDATE"],
   BATCH: [
-    PermissionType.CREATE,
-    PermissionType.CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE,
-    PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION,
-    PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE,
-    PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION,
-    PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE,
-    PermissionType.CREATE_BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE,
-    PermissionType.CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE,
-    PermissionType.CREATE_BATCH_OPERATION_RESOLVE_INCIDENT,
-    PermissionType.READ,
-    PermissionType.UPDATE,
+    "CREATE",
+    "CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE",
+    "CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION",
+    "CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE",
+    "CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION",
+    "CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE",
+    "CREATE_BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE",
+    "CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE",
+    "CREATE_BATCH_OPERATION_RESOLVE_INCIDENT",
+    "READ",
+    "UPDATE",
   ],
-  COMPONENT: [PermissionType.ACCESS],
+  COMPONENT: ["ACCESS"],
   DECISION_DEFINITION: [
-    PermissionType.CREATE_DECISION_INSTANCE,
-    PermissionType.DELETE_DECISION_INSTANCE,
-    PermissionType.READ_DECISION_DEFINITION,
-    PermissionType.READ_DECISION_INSTANCE,
+    "CREATE_DECISION_INSTANCE",
+    "DELETE_DECISION_INSTANCE",
+    "READ_DECISION_DEFINITION",
+    "READ_DECISION_INSTANCE",
   ],
-  DECISION_REQUIREMENTS_DEFINITION: [PermissionType.READ],
-  EXPRESSION: [PermissionType.EVALUATE],
+  DECISION_REQUIREMENTS_DEFINITION: ["READ"],
+  EXPRESSION: ["EVALUATE"],
   RESOURCE: [
-    PermissionType.CREATE,
-    PermissionType.READ,
-    PermissionType.DELETE_DRD,
-    PermissionType.DELETE_FORM,
-    PermissionType.DELETE_PROCESS,
-    PermissionType.DELETE_RESOURCE,
+    "CREATE",
+    "READ",
+    "DELETE_DRD",
+    "DELETE_FORM",
+    "DELETE_PROCESS",
+    "DELETE_RESOURCE",
   ],
-  GROUP: [
-    PermissionType.CREATE,
-    PermissionType.DELETE,
-    PermissionType.READ,
-    PermissionType.UPDATE,
-  ],
-  MAPPING_RULE: [
-    PermissionType.CREATE,
-    PermissionType.DELETE,
-    PermissionType.READ,
-    PermissionType.UPDATE,
-  ],
-  MESSAGE: [PermissionType.CREATE, PermissionType.READ],
+  GROUP: ["CREATE", "DELETE", "READ", "UPDATE"],
+  MAPPING_RULE: ["CREATE", "DELETE", "READ", "UPDATE"],
+  MESSAGE: ["CREATE", "READ"],
   PROCESS_DEFINITION: [
-    PermissionType.CANCEL_PROCESS_INSTANCE,
-    PermissionType.CLAIM_USER_TASK,
-    PermissionType.COMPLETE_USER_TASK,
-    PermissionType.CREATE_PROCESS_INSTANCE,
-    PermissionType.DELETE_PROCESS_INSTANCE,
-    PermissionType.MODIFY_PROCESS_INSTANCE,
-    PermissionType.READ_PROCESS_DEFINITION,
-    PermissionType.READ_PROCESS_INSTANCE,
-    PermissionType.READ_USER_TASK,
-    PermissionType.UPDATE_PROCESS_INSTANCE,
-    PermissionType.UPDATE_USER_TASK,
+    "CANCEL_PROCESS_INSTANCE",
+    "CLAIM_USER_TASK",
+    "COMPLETE_USER_TASK",
+    "CREATE_PROCESS_INSTANCE",
+    "DELETE_PROCESS_INSTANCE",
+    "MODIFY_PROCESS_INSTANCE",
+    "READ_PROCESS_DEFINITION",
+    "READ_PROCESS_INSTANCE",
+    "READ_USER_TASK",
+    "UPDATE_PROCESS_INSTANCE",
+    "UPDATE_USER_TASK",
   ],
-  USER_TASK: [
-    PermissionType.READ,
-    PermissionType.UPDATE,
-    PermissionType.CLAIM,
-    PermissionType.COMPLETE,
-  ],
-  ROLE: [
-    PermissionType.CREATE,
-    PermissionType.DELETE,
-    PermissionType.READ,
-    PermissionType.UPDATE,
-  ],
-  SYSTEM: [
-    PermissionType.READ,
-    PermissionType.READ_JOB_METRIC,
-    PermissionType.READ_USAGE_METRIC,
-    PermissionType.UPDATE,
-  ],
-  TENANT: [
-    PermissionType.CREATE,
-    PermissionType.DELETE,
-    PermissionType.READ,
-    PermissionType.UPDATE,
-  ],
-  USER: [
-    PermissionType.CREATE,
-    PermissionType.DELETE,
-    PermissionType.READ,
-    PermissionType.UPDATE,
-  ],
-  CLUSTER_VARIABLE: [
-    PermissionType.CREATE,
-    PermissionType.UPDATE,
-    PermissionType.DELETE,
-    PermissionType.READ,
-  ],
-  DOCUMENT: [PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE],
+  USER_TASK: ["READ", "UPDATE", "CLAIM", "COMPLETE"],
+  ROLE: ["CREATE", "DELETE", "READ", "UPDATE"],
+  SYSTEM: ["READ", "READ_JOB_METRIC", "READ_USAGE_METRIC", "UPDATE"],
+  TENANT: ["CREATE", "DELETE", "READ", "UPDATE"],
+  USER: ["CREATE", "DELETE", "READ", "UPDATE"],
+  CLUSTER_VARIABLE: ["CREATE", "UPDATE", "DELETE", "READ"],
+  DOCUMENT: ["CREATE", "READ", "DELETE"],
   GLOBAL_LISTENER: [
-    PermissionType.CREATE_TASK_LISTENER,
-    PermissionType.DELETE_TASK_LISTENER,
-    PermissionType.READ_TASK_LISTENER,
-    PermissionType.UPDATE_TASK_LISTENER,
+    "CREATE_TASK_LISTENER",
+    "DELETE_TASK_LISTENER",
+    "READ_TASK_LISTENER",
+    "UPDATE_TASK_LISTENER",
   ],
 };
 
@@ -165,17 +121,9 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
 
   const { DropdownAutoFocus } = useDropdownAutoFocus(open);
 
-  const ownerTypeItems = Object.values(OwnerType);
-  const allResourceTypes = Object.values(ResourceType);
-  const userTaskResourcePropertyNames = Object.values(ResourcePropertyName);
-
-  let resourceTypeItems = allResourceTypes;
-
-  if (!isTenantsApiEnabled) {
-    resourceTypeItems = resourceTypeItems.filter(
-      (type) => type !== ResourceType.TENANT,
-    );
-  }
+  const resourceTypeItems: ResourceType[] = isTenantsApiEnabled
+    ? ALL_RESOURCE_TYPES
+    : RESOURCE_TYPES_WITHOUT_TENANT;
 
   const { control, handleSubmit, watch, setValue } = useForm<NewAuthorization>({
     defaultValues: createEmptyAuthorization(defaultResourceType),
@@ -202,10 +150,10 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
 
   useEffect(() => {
     setValue("permissionTypes", []);
-    if (watchedResourceType !== ResourceType.USER_TASK) {
+    if (watchedResourceType !== "USER_TASK") {
       setValue("resourceId", "");
     } else {
-      setValue("resourcePropertyName", ResourcePropertyName.assignee);
+      setValue("resourcePropertyName", "assignee");
     }
   }, [watchedResourceType, setValue]);
 
@@ -238,24 +186,22 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
             name="ownerType"
             control={control}
             render={({ field }) => (
-              <Dropdown
+              <Dropdown<OwnerType>
                 id="owner-type-dropdown"
                 label={t("selectOwnerType")}
                 titleText={t("ownerType")}
-                items={ownerTypeItems.filter((ownerType) => {
+                items={OWNER_TYPES.filter((ownerType) => {
                   const excludedType = isOIDC
-                    ? []
-                    : [OwnerType.MAPPING_RULE, OwnerType.CLIENT];
+                    ? ["UNSPECIFIED"]
+                    : ["MAPPING_RULE", "CLIENT", "UNSPECIFIED"];
 
                   return !excludedType.includes(ownerType);
                 })}
-                onChange={(item: { selectedItem: OwnerType }) => {
+                onChange={(item) => {
                   setValue("ownerId", "");
                   field.onChange(item.selectedItem);
                 }}
-                itemToString={(item: Authorization["ownerType"]) =>
-                  item ? t(OwnerType[item]) : ""
-                }
+                itemToString={(item) => (item ? t(item) : "")}
                 selectedItem={field.value}
               />
             )}
@@ -286,37 +232,38 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
           name="resourceType"
           control={control}
           render={({ field }) => (
-            <Dropdown
+            <Dropdown<ResourceType>
               id="resource-type-dropdown"
               label={t("selectResourceType")}
               titleText={t("resourceType")}
               items={resourceTypeItems}
-              onChange={(item: { selectedItem: ResourceType }) => {
+              onChange={(item) => {
                 field.onChange(item.selectedItem);
               }}
-              itemToString={(item: string) => (item ? t(item) : "")}
+              itemToString={(item) => (item ? t(item) : "")}
               selectedItem={
-                resourceTypeItems.find((item) => item === field.value) || ""
+                resourceTypeItems.find((item) => item === field.value) ||
+                resourceTypeItems[0]
               }
             />
           )}
         />
         <TextFieldContainer>
-          {watchedResourceType === ResourceType.USER_TASK ? (
+          {watchedResourceType === "USER_TASK" ? (
             <Controller
               name="resourcePropertyName"
               control={control}
               render={({ field, fieldState }) => {
                 return (
-                  <Dropdown
+                  <Dropdown<ResourcePropertyName>
                     id="property-name-dropdown"
                     label={t("selectResourcePropertyName")}
                     titleText={t("resourcePropertyName")}
-                    items={userTaskResourcePropertyNames}
-                    onChange={(item: { selectedItem: string }) => {
+                    items={RESOURCE_PROPERTY_NAMES}
+                    onChange={(item) => {
                       field.onChange(item.selectedItem);
                     }}
-                    itemToString={(item: string) => item || ""}
+                    itemToString={(item) => item || ""}
                     selectedItem={field.value}
                     invalid={!!fieldState.error}
                     invalidText={fieldState.error?.message}
@@ -331,7 +278,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
               rules={{
                 required: t("resourceIdRequired"),
                 validate: (value) =>
-                  isValidResourceId(value) ||
+                  isValidResourceId(value ?? "") ||
                   t("pleaseEnterValidResourceId", {
                     pattern: getIdPattern(),
                   }),
@@ -339,6 +286,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
               render={({ field, fieldState }) => (
                 <TextField
                   {...field}
+                  value={field.value ?? ""}
                   label={t("resourceId")}
                   placeholder={t("enterId")}
                   errors={fieldState.error?.message}
@@ -378,7 +326,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
             {resourcePermissions[watchedResourceType].map((permission) => (
               <Checkbox
                 key={permission}
-                labelText={PermissionType[permission]}
+                labelText={permission}
                 id={permission}
                 checked={field.value.includes(permission)}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
@@ -401,20 +349,22 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
 function createEmptyAuthorization(
   resourceType: ResourceType,
 ): NewAuthorization {
-  if (resourceType === ResourceType.USER_TASK) {
+  if (resourceType === "USER_TASK") {
     return {
-      ownerType: OwnerType.USER,
+      ownerType: "USER",
       ownerId: "",
-      resourceType: ResourceType.USER_TASK,
-      resourcePropertyName: ResourcePropertyName.assignee,
+      resourceType: "USER_TASK",
+      resourceId: null,
+      resourcePropertyName: "assignee",
       permissionTypes: [],
     };
   } else {
     return {
-      ownerType: OwnerType.USER,
+      ownerType: "USER",
       ownerId: "",
-      resourceType: ResourceType.USER,
+      resourceType: "USER",
       resourceId: "",
+      resourcePropertyName: null,
       permissionTypes: [],
     };
   }

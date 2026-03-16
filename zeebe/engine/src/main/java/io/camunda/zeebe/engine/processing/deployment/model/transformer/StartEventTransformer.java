@@ -68,6 +68,10 @@ public final class StartEventTransformer implements ModelElementTransformer<Star
 
     if (startEvent.isMessage() && element.getScope() instanceof Process) {
       evaluateMessageNameExpression(startEvent, context);
+      startEvent
+          .getMessage()
+          .getMessageName()
+          .ifPresent(messageName -> validateMessageNameLength(messageName, context));
     }
 
     if (startEvent.isSignal() && element.getScope() instanceof Process) {
@@ -109,6 +113,14 @@ public final class StartEventTransformer implements ModelElementTransformer<Star
                 "Expected FEEL expression or static value of '%s' of type STRING, but was: %s",
                 messageNameResult.getExpression(), messageNameResult.getType().name()));
       }
+    }
+  }
+
+  private void validateMessageNameLength(final String messageName, final TransformContext context) {
+    if (messageName.length() > context.getMaxNameFieldLength()) {
+      throw new IllegalStateException(
+          "Expected message name '%s' to be at most %d characters long (configured max-name-length), but was %d characters."
+              .formatted(messageName, context.getMaxNameFieldLength(), messageName.length()));
     }
   }
 

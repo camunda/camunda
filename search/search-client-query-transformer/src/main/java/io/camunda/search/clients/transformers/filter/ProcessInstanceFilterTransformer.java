@@ -15,6 +15,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.AC
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_STATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BATCH_OPERATION_IDS;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BUSINESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.END_DATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ERROR_MSG;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT;
@@ -104,6 +105,8 @@ public final class ProcessInstanceFilterTransformer
     if (filter.tags() != null && !filter.tags().isEmpty()) {
       queries.add(and(filter.tags().stream().map(tag -> term(TAGS, tag)).toList()));
     }
+
+    queries.addAll(stringOperations(BUSINESS_ID, filter.businessIdOperations()));
 
     return queries;
   }

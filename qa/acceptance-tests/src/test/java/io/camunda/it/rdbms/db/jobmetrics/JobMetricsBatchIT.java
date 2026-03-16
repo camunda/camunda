@@ -9,6 +9,8 @@ package io.camunda.it.rdbms.db.jobmetrics;
 
 import static io.camunda.it.rdbms.db.fixtures.JobMetricsBatchFixtures.NOW;
 import static io.camunda.it.rdbms.db.fixtures.JobMetricsBatchFixtures.PARTITION_ID;
+import static io.camunda.it.rdbms.db.fixtures.JobMetricsBatchFixtures.assertErrorStats;
+import static io.camunda.it.rdbms.db.fixtures.JobMetricsBatchFixtures.assertTimeSeriesStats;
 import static java.time.ZoneOffset.UTC;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,21 +20,27 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.JobMetricsBatchDbModel;
 import io.camunda.db.rdbms.write.service.JobMetricsBatchWriter;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
+import io.camunda.it.rdbms.db.fixtures.JobFixtures;
 import io.camunda.it.rdbms.db.fixtures.JobMetricsBatchFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
+import io.camunda.search.entities.JobEntity.JobState;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
+import io.camunda.search.query.JobErrorStatisticsQuery;
+import io.camunda.search.query.JobTimeSeriesStatisticsQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
 import io.camunda.search.query.JobWorkerStatisticsQuery;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
+import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -335,7 +343,12 @@ public class JobMetricsBatchIT {
     // when - query for a different time range
     final var actual =
         jobMetricsBatchReader.getGlobalJobStatistics(
-            GlobalJobStatisticsQuery.of(q -> q.filter(f -> f.from(NOW).to(NOW.plusMinutes(10)))),
+            GlobalJobStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(metric.endTime().plusSeconds(10))
+                                .to(metric.endTime().plusMinutes(10)))),
             ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
 
     // then
@@ -1120,8 +1133,8 @@ public class JobMetricsBatchIT {
                 q ->
                     q.filter(
                         f ->
-                            f.from(NOW.plusMinutes(1))
-                                .to(NOW.plusMinutes(10))
+                            f.from(metric.endTime().plusMinutes(1))
+                                .to(metric.endTime().plusMinutes(10))
                                 .jobType(JOB_TYPE_A))),
             ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
 
@@ -1238,5 +1251,771 @@ public class JobMetricsBatchIT {
     assertThat(actual.items()).hasSize(1);
     assertThat(actual.items().getFirst().worker()).isEqualTo(WORKER_1);
     JobMetricsBatchFixtures.assertWorkerStats(actual.items().getFirst(), metrics);
+  }
+
+  // -----------------------------------------------------------------------
+  // Time-series statistics
+  // -----------------------------------------------------------------------
+
+  @TestTemplate
+  public void shouldReturnSingleTimeBucketForSingleMetric() {
+    // given — one row with a resolution larger than the window so everything lands in one bucket
+    final var metric =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT1).jobType(JOB_TYPE_A).worker(WORKER_1).incompleteBatch(false));
+    JobMetricsBatchFixtures.createAndSaveMetric(rdbmsWriters, metric);
+
+    // when — 1-hour resolution: all data lands in one bucket
+    final var actual =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(metric.startTime().minusHours(1))
+                                .to(metric.endTime().plusHours(1))
+                                .jobType(JOB_TYPE_A)
+                                .resolution(Duration.ofHours(1)))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then
+    assertThat(actual.items()).hasSize(1);
+    JobMetricsBatchFixtures.assertTimeSeriesStats(actual.items().getFirst(), metric);
+  }
+
+  @TestTemplate
+  public void shouldAggregateTwoBatchesIntoSameBucket() {
+    // given — two rows with the same start-hour, same jobType → both collapse into one bucket
+    final var base = NOW.truncatedTo(ChronoUnit.HOURS);
+    final var metric1 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base)
+                    .endTime(base.plusMinutes(10))
+                    .incompleteBatch(false));
+    final var metric2 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_2)
+                    .startTime(base.plusMinutes(30))
+                    .endTime(base.plusMinutes(45))
+                    .incompleteBatch(false));
+
+    final List<JobMetricsBatchDbModel> metrics = List.of(metric1, metric2);
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, metrics);
+
+    // when — 1-hour resolution
+    final var actual =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(base.minusMinutes(1))
+                                .to(base.plusHours(1))
+                                .jobType(JOB_TYPE_A)
+                                .resolution(Duration.ofHours(1)))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then — aggregated into a single bucket
+    assertThat(actual.items()).hasSize(1);
+    JobMetricsBatchFixtures.assertTimeSeriesStats(actual.items().getFirst(), metrics);
+  }
+
+  @TestTemplate
+  public void shouldReturnTwoBucketsWhenMetricsSpanTwoHours() {
+    // given — two rows in different hours
+    final var base = NOW.truncatedTo(ChronoUnit.HOURS);
+    final var metric1 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base)
+                    .endTime(base.plusMinutes(30))
+                    .incompleteBatch(false));
+    final var metric2 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base.plusHours(1))
+                    .endTime(base.plusHours(1).plusMinutes(30))
+                    .incompleteBatch(false));
+
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, List.of(metric1, metric2));
+
+    // when — 1-hour resolution → 2 distinct buckets
+    final var actual =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(base.minusMinutes(1))
+                                .to(base.plusHours(2))
+                                .jobType(JOB_TYPE_A)
+                                .resolution(Duration.ofHours(1)))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then — 2 buckets, ordered ascending by time
+    assertThat(actual.items()).hasSize(2);
+    assertThat(actual.items().get(0).time()).isBefore(actual.items().get(1).time());
+    JobMetricsBatchFixtures.assertTimeSeriesStats(actual.items().get(0), metric1);
+    JobMetricsBatchFixtures.assertTimeSeriesStats(actual.items().get(1), metric2);
+  }
+
+  @TestTemplate
+  public void shouldAggregateTwoBatchesIntoFirstBucketAndKeepThirdBucketSeparate() {
+    // given — metric1 and metric2 start within the same minute → same bucket
+    //         metric3 starts in a different minute → separate bucket
+    final var base = NOW.truncatedTo(ChronoUnit.MINUTES);
+
+    final var metric1 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base)
+                    .endTime(base.plusSeconds(30))
+                    .incompleteBatch(false));
+    final var metric2 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_2)
+                    .startTime(base.plusSeconds(25))
+                    .endTime(base.plusSeconds(59))
+                    .incompleteBatch(false));
+    // metric3 starts 1 minute later → falls into the next bucket
+    final var metric3 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base.plusMinutes(1))
+                    .endTime(base.plusMinutes(1).plusSeconds(30))
+                    .incompleteBatch(false));
+
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, List.of(metric1, metric2, metric3));
+
+    // when — 1-minute resolution
+    final var actual =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(base.minusSeconds(1))
+                                .to(base.plusMinutes(2))
+                                .jobType(JOB_TYPE_A)
+                                .resolution(Duration.ofMinutes(1)))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then — exactly 2 buckets ordered ascending by time
+    assertThat(actual.items()).hasSize(2);
+    assertThat(actual.items().get(0).time()).isBefore(actual.items().get(1).time());
+
+    // first bucket aggregates metric1 + metric2
+    JobMetricsBatchFixtures.assertTimeSeriesStats(actual.items().get(0), List.of(metric1, metric2));
+
+    // second bucket contains only metric3
+    JobMetricsBatchFixtures.assertTimeSeriesStats(actual.items().get(1), metric3);
+  }
+
+  @TestTemplate
+  public void shouldRespectJobTypeFilterForTimeSeries() {
+    // given — two different job types in the same time range
+    final var metric1 =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT1).jobType(JOB_TYPE_A).worker(WORKER_1).incompleteBatch(false));
+    final var metric2 =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT1).jobType(JOB_TYPE_B).worker(WORKER_1).incompleteBatch(false));
+    final List<JobMetricsBatchDbModel> allMetrics = List.of(metric1, metric2);
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, allMetrics);
+
+    // when — filter by JOB_TYPE_A only
+    final var actual =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(getMinStartTime(allMetrics).minusMinutes(1))
+                                .to(getMaxEndTime(allMetrics).plusMinutes(1))
+                                .jobType(JOB_TYPE_A)
+                                .resolution(Duration.ofHours(1)))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then — only JOB_TYPE_A data
+    assertThat(actual.items()).hasSize(1);
+    assertTimeSeriesStats(actual.items().get(0), metric1);
+  }
+
+  @TestTemplate
+  public void shouldReturnEmptyTimeSeriesWhenNoDataInRange() {
+    // given — data outside the query window
+    final var metric =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT1).jobType(JOB_TYPE_A).worker(WORKER_1).incompleteBatch(false));
+    JobMetricsBatchFixtures.createAndSaveMetric(rdbmsWriters, metric);
+
+    // when — query window does not overlap the metric
+    final var windowStart = metric.endTime().plusDays(1);
+    final var actual =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(windowStart)
+                                .to(windowStart.plusDays(1))
+                                .jobType(JOB_TYPE_A)
+                                .resolution(Duration.ofHours(1)))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then
+    assertThat(actual.items()).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldReturnFirstPageOfTimeSeries() {
+    // given — 3 batches each in a distinct minute bucket
+    final var base = NOW.truncatedTo(ChronoUnit.MINUTES);
+    final var metric1 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base)
+                    .endTime(base.plusSeconds(30))
+                    .incompleteBatch(false));
+    final var metric2 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base.plusMinutes(1))
+                    .endTime(base.plusMinutes(1).plusSeconds(30))
+                    .incompleteBatch(false));
+    final var metric3 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base.plusMinutes(2))
+                    .endTime(base.plusMinutes(2).plusSeconds(30))
+                    .incompleteBatch(false));
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, List.of(metric1, metric2, metric3));
+
+    // when — request only the first 2 buckets
+    final var firstPage =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                            f ->
+                                f.from(base.minusSeconds(1))
+                                    .to(base.plusMinutes(3))
+                                    .jobType(JOB_TYPE_A)
+                                    .resolution(Duration.ofMinutes(1)))
+                        .page(p -> p.size(2))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then — only the first 2 buckets returned, ordered ascending
+    assertThat(firstPage.items()).hasSize(2);
+    assertThat(firstPage.endCursor()).isNotNull();
+    assertTimeSeriesStats(firstPage.items().get(0), metric1);
+    assertTimeSeriesStats(firstPage.items().get(1), metric2);
+  }
+
+  @TestTemplate
+  public void shouldReturnSecondPageOfTimeSeriesUsingCursor() {
+    // given — 3 batches each in a distinct minute bucket
+    final var base = NOW.truncatedTo(ChronoUnit.MINUTES);
+    final var metric1 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base)
+                    .endTime(base.plusSeconds(30))
+                    .incompleteBatch(false));
+    final var metric2 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base.plusMinutes(1))
+                    .endTime(base.plusMinutes(1).plusSeconds(30))
+                    .incompleteBatch(false));
+    final var metric3 =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.tenantId(TENANT1)
+                    .jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(base.plusMinutes(2))
+                    .endTime(base.plusMinutes(2).plusSeconds(30))
+                    .incompleteBatch(false));
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, List.of(metric1, metric2, metric3));
+
+    final var filter =
+        JobTimeSeriesStatisticsQuery.of(
+            q ->
+                q.filter(
+                        f ->
+                            f.from(base.minusSeconds(1))
+                                .to(base.plusMinutes(3))
+                                .jobType(JOB_TYPE_A)
+                                .resolution(Duration.ofMinutes(1)))
+                    .page(p -> p.size(2)));
+
+    // get the first page to obtain the cursor
+    final var firstPage =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            filter, ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // when — fetch the second page using the end cursor
+    final var secondPage =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                            f ->
+                                f.from(base.minusSeconds(1))
+                                    .to(base.plusMinutes(3))
+                                    .jobType(JOB_TYPE_A)
+                                    .resolution(Duration.ofMinutes(1)))
+                        .page(p -> p.size(2).after(firstPage.endCursor()))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then — only the third bucket is returned
+    assertThat(secondPage.items()).hasSize(1);
+    assertTimeSeriesStats(secondPage.items().getFirst(), metric3);
+  }
+
+  @TestTemplate
+  public void shouldReturnEmptyTimeSeriesWhenTenantNotAuthorized() {
+    // given
+    final var metric =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT1).jobType(JOB_TYPE_A).worker(WORKER_1).incompleteBatch(false));
+    JobMetricsBatchFixtures.createAndSaveMetric(rdbmsWriters, metric);
+
+    // when — authorized for TENANT2 only
+    final var actual =
+        jobMetricsBatchReader.getJobTimeSeriesStatistics(
+            JobTimeSeriesStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(metric.startTime().minusMinutes(1))
+                                .to(metric.endTime().plusMinutes(1))
+                                .jobType(JOB_TYPE_A)
+                                .resolution(Duration.ofHours(1)))),
+            ResourceAccessChecks.of(
+                AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(TENANT2))));
+
+    // then
+    assertThat(actual.items()).isEmpty();
+  }
+
+  // -----------------------------------------------------------------------
+  // getJobErrorStatistics
+  // -----------------------------------------------------------------------
+
+  @TestTemplate
+  public void shouldReturnErrorStatisticsGroupedByErrorCodeAndMessage() {
+    // given — two jobs with the same error, one job with a different error
+    final var uniqueTenant = "error-tenant-" + CommonFixtures.generateRandomString(8);
+    final var now = NOW;
+    final var jobType = "error-job-type-" + CommonFixtures.generateRandomString(6);
+
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
+                .errorCode("IO_ERROR")
+                .errorMessage("Disk full")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(30)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
+                .errorCode("IO_ERROR")
+                .errorMessage("Disk full")
+                .worker("worker-2")
+                .creationTime(now.minusMinutes(20)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
+                .errorCode("TIMEOUT")
+                .errorMessage("Connection timed out")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(10)));
+
+    // when
+    final var result =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f -> f.from(now.minusHours(1)).to(now.plusMinutes(1)).jobType(jobType))),
+            ResourceAccessChecks.of(
+                AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(uniqueTenant))));
+
+    // then
+    assertThat(result.items()).hasSize(2);
+
+    final var ioError =
+        result.items().stream()
+            .filter(e -> "IO_ERROR".equals(e.errorCode()))
+            .findFirst()
+            .orElseThrow();
+    assertErrorStats(ioError, "IO_ERROR", "Disk full", 2);
+
+    final var timeout =
+        result.items().stream()
+            .filter(e -> "TIMEOUT".equals(e.errorCode()))
+            .findFirst()
+            .orElseThrow();
+    assertErrorStats(timeout, "TIMEOUT", "Connection timed out", 1);
+  }
+
+  @TestTemplate
+  public void shouldFilterErrorStatisticsByErrorCodePrefix() {
+    // given
+    final var uniqueTenant = "error-tenant-" + CommonFixtures.generateRandomString(8);
+    final var now = NOW;
+    final var jobType = "filter-error-job-" + CommonFixtures.generateRandomString(6);
+
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
+                .errorCode("IO_ERROR")
+                .errorMessage("Disk full")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(30)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
+                .errorCode("UNHANDLED_EXCEPTION")
+                .errorMessage("NPE")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(20)));
+
+    // when — filter to IO_ERROR only
+    final var result =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(now.minusHours(1))
+                                .to(now.plusMinutes(1))
+                                .jobType(jobType)
+                                .errorCodeOperations(Operation.eq("IO_ERROR")))),
+            ResourceAccessChecks.of(
+                AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(uniqueTenant))));
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertErrorStats(result.items().getFirst(), "IO_ERROR", "Disk full", 1);
+  }
+
+  @TestTemplate
+  public void shouldReturnEmptyErrorStatisticsWhenTenantNotAuthorized() {
+    // given
+    final var now = NOW;
+    final var jobType = "tenant-error-job-" + CommonFixtures.generateRandomString(6);
+
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(TENANT1)
+                .state(JobState.ERROR_THROWN)
+                .errorCode("IO_ERROR")
+                .errorMessage("msg")
+                .worker("w1")
+                .creationTime(now.minusMinutes(10)));
+
+    // when — authorized for TENANT2 only
+    final var result =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f -> f.from(now.minusHours(1)).to(now.plusMinutes(1)).jobType(jobType))),
+            ResourceAccessChecks.of(
+                AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(TENANT2))));
+
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldOnlyCountJobsFromAuthorizedTenants() {
+    // given — one job on TENANT1 (authorized), one on TENANT2 (not authorized), same error
+    final var now = NOW;
+    final var jobType = "multi-tenant-error-job-" + CommonFixtures.generateRandomString(6);
+
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(TENANT1)
+                .state(JobState.ERROR_THROWN)
+                .errorCode("IO_ERROR")
+                .errorMessage("Disk full")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(20)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(TENANT2)
+                .state(JobState.ERROR_THROWN)
+                .errorCode("IO_ERROR")
+                .errorMessage("Disk full")
+                .worker("worker-2")
+                .creationTime(now.minusMinutes(10)));
+
+    // when — authorized for TENANT1 only
+    final var result =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f -> f.from(now.minusHours(1)).to(now.plusMinutes(1)).jobType(jobType))),
+            ResourceAccessChecks.of(
+                AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(TENANT1))));
+
+    // then — only the TENANT1 job is visible: 1 bucket, 1 worker
+    assertThat(result.items()).hasSize(1);
+    assertErrorStats(result.items().getFirst(), "IO_ERROR", "Disk full", 1);
+  }
+
+  @TestTemplate
+  public void shouldIncludeFailedStateAndExcludeCompletedState() {
+    // given — one ERROR_THROWN job (with errorCode), one FAILED job (no errorCode),
+    //         one COMPLETED job (must be excluded by the state filter)
+    final var now = NOW;
+    final var uniqueTenant = "state-filter-tenant-" + CommonFixtures.generateRandomString(8);
+    final var jobType = "state-filter-job-" + CommonFixtures.generateRandomString(6);
+
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
+                .errorCode("IO_ERROR")
+                .errorMessage("Disk full")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(30)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .state(JobState.FAILED)
+                .errorCode("")
+                .errorMessage("Transient failure")
+                .worker("worker-2")
+                .creationTime(now.minusMinutes(20)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .state(JobState.COMPLETED)
+                .errorCode("")
+                .errorMessage("")
+                .worker("worker-3")
+                .creationTime(now.minusMinutes(10)));
+
+    // when
+    final var result =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f -> f.from(now.minusHours(1)).to(now.plusMinutes(1)).jobType(jobType))),
+            ResourceAccessChecks.of(
+                AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(uniqueTenant))));
+
+    // then — ERROR_THROWN and FAILED are both included; COMPLETED is excluded
+    assertThat(result.items()).hasSize(2);
+
+    final var errorThrown =
+        result.items().stream()
+            .filter(e -> "IO_ERROR".equals(e.errorCode()))
+            .findFirst()
+            .orElseThrow();
+    assertErrorStats(errorThrown, "IO_ERROR", "Disk full", 1);
+
+    final var failed =
+        result.items().stream()
+            .filter(e -> e.errorCode() == null || e.errorCode().isEmpty())
+            .findFirst()
+            .orElseThrow();
+    assertThat(failed.errorMessage()).isEqualTo("Transient failure");
+    assertThat(failed.errorCode()).isNullOrEmpty();
+    assertThat(failed.workers()).isEqualTo(1);
+  }
+
+  @TestTemplate
+  public void shouldReturnPagesOfErrorStatisticsUsingCursor() throws InterruptedException {
+    // given — 5 jobs: two FAILED with empty errorCode and three ERROR_THROWN with distinct codes.
+    // Sort order is errorCode ASC NULLS FIRST, then errorMessage ASC, so:
+    //   page 1 (size=2): ("", "fail-msg") and ("", "fail-msg-2")  ← both FAILED
+    //   page 2 (size=2): ("ERR_A", "msg-a") and ("ERR_B", "msg-b")
+    //   page 3 (size=2): ("ERR_C", "msg-c") — then empty on page 4
+    final var now = NOW;
+    final var uniqueTenant = "paging-error-tenant-" + CommonFixtures.generateRandomString(8);
+    final var jobType = "paging-error-job-" + CommonFixtures.generateRandomString(6);
+
+    // FAILED job 1 — empty errorCode, message "fail-msg"
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .state(JobState.FAILED)
+                .errorCode("")
+                .errorMessage("fail-msg")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(50)));
+    // FAILED job 2 — empty errorCode, message "fail-msg-2" (sorts after "fail-msg")
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .state(JobState.FAILED)
+                .errorCode("")
+                .errorMessage("fail-msg-2")
+                .worker("worker-2")
+                .creationTime(now.minusMinutes(40)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
+                .errorCode("ERR_A")
+                .errorMessage("msg-a")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(30)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
+                .errorCode("ERR_B")
+                .errorMessage("msg-b")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(20)));
+    JobFixtures.createAndSaveJob(
+        rdbmsWriters,
+        b ->
+            b.type(jobType)
+                .tenantId(uniqueTenant)
+                .state(JobState.ERROR_THROWN)
+                .errorCode("ERR_C")
+                .errorMessage("msg-c")
+                .worker("worker-1")
+                .creationTime(now.minusMinutes(10)));
+
+    final var accessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(uniqueTenant)));
+
+    // fetch first page (size=2) — both FAILED buckets (empty errorCode, sorted by message)
+    final var firstPage =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(f -> f.from(now.minusHours(1)).to(now.plusMinutes(1)).jobType(jobType))
+                        .page(p -> p.size(2))),
+            accessChecks);
+
+    assertThat(firstPage.items()).hasSize(2);
+    assertThat(firstPage.items().get(0).errorCode()).isNullOrEmpty();
+    assertThat(firstPage.items().get(0).errorMessage()).isEqualTo("fail-msg");
+    assertThat(firstPage.items().get(1).errorCode()).isNullOrEmpty();
+    assertThat(firstPage.items().get(1).errorMessage()).isEqualTo("fail-msg-2");
+    assertThat(firstPage.endCursor()).isNotNull();
+
+    // fetch second page — ERR_A and ERR_B
+    final var secondPage =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(f -> f.from(now.minusHours(1)).to(now.plusMinutes(1)).jobType(jobType))
+                        .page(p -> p.size(2).after(firstPage.endCursor()))),
+            accessChecks);
+
+    assertThat(secondPage.items()).hasSize(2);
+    assertErrorStats(secondPage.items().get(0), "ERR_A", "msg-a", 1);
+    assertErrorStats(secondPage.items().get(1), "ERR_B", "msg-b", 1);
+    assertThat(secondPage.endCursor()).isNotNull();
+
+    // fetch third page — only ERR_C remains
+    final var thirdPage =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(f -> f.from(now.minusHours(1)).to(now.plusMinutes(1)).jobType(jobType))
+                        .page(p -> p.size(2).after(secondPage.endCursor()))),
+            accessChecks);
+
+    assertThat(thirdPage.items()).hasSize(1);
+    assertErrorStats(thirdPage.items().getFirst(), "ERR_C", "msg-c", 1);
+    assertThat(thirdPage.endCursor()).isNotNull();
+
+    // fetch fourth page — cursor exhausted, no more results
+    final var fourthPage =
+        jobMetricsBatchReader.getJobErrorStatistics(
+            JobErrorStatisticsQuery.of(
+                q ->
+                    q.filter(f -> f.from(now.minusHours(1)).to(now.plusMinutes(1)).jobType(jobType))
+                        .page(p -> p.size(2).after(thirdPage.endCursor()))),
+            accessChecks);
+
+    assertThat(fourthPage.items()).isEmpty();
   }
 }

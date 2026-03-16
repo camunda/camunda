@@ -35,7 +35,7 @@ import {
   TextInput,
 } from "@carbon/react";
 import {
-  AuditLogEntityType,
+  type AuditLogEntityType,
   auditLogResultSchema,
 } from "@camunda/camunda-api-zod-schemas/8.9";
 import useDebounce from "react-debounced";
@@ -165,7 +165,7 @@ const List: FC = () => {
               <Heading>{t("filter")}</Heading>
               <MultiSelect
                 id="operationType"
-                items={ALLOWED_OPERATION_TYPES}
+                items={[...ALLOWED_OPERATION_TYPES]}
                 titleText={t("operationType")}
                 label={t("multiSelectLabel")}
                 selectedItems={filters.operationType}
@@ -181,7 +181,7 @@ const List: FC = () => {
               />
               <Dropdown
                 id="entityType"
-                items={ALLOWED_ENTITY_TYPES}
+                items={[...ALLOWED_ENTITY_TYPES]}
                 titleText={t("entityType")}
                 label={t("selectLabel")}
                 selectedItem={filters.entityType ? filters.entityType : ""}
@@ -207,7 +207,7 @@ const List: FC = () => {
                 <>
                   <Dropdown
                     id="relatedEntityType"
-                    items={ALLOWED_ENTITY_TYPES}
+                    items={[...ALLOWED_ENTITY_TYPES]}
                     titleText={t("ownerType")}
                     label={t("selectLabel")}
                     selectedItem={
@@ -342,7 +342,9 @@ const List: FC = () => {
                   ),
                   entityType: spaceAndCapitalize(log.entityType),
                   reference: (
-                    <CodeSnippet type="inline">{log.entityKey}</CodeSnippet>
+                    <CodeSnippet type="inline">
+                      {log.entityDescription?.trim() || log.entityKey}
+                    </CodeSnippet>
                   ),
                   property: <CellProperty item={log} />,
                   actorId: log.actorId ? (

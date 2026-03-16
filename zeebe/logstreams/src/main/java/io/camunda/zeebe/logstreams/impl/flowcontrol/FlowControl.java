@@ -25,6 +25,9 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Maintains a view of in-flight entries as they are being appended, written, committed and finally
@@ -42,29 +45,28 @@ import java.util.List;
  *   <li>Calls to {@link #tryAcquire(WriteContext, List)} from the sequencer, outside the
  *       sequencer's write lock. Multiple calls can overlap concurrently.
  *   <li>Calls to {@link #registerEntry(long, InFlightEntry)} from the sequencer, under the
- *       sequencer's write lock. Only one call at a time.
+ *       sequencer's write lock. Only one call at a time. Returns a per-entry {@link
+ *       AppendListener}.
  *   <li>Calls to {@link #onAppended(InFlightEntry)} from the sequencer, outside the sequencer's
  *       write lock. Multiple calls can overlap concurrently and may also overlap with {@link
- *       #onWrite(long, long)} and {@link #onCommit(long, long)} callbacks.
- *   <li>Calls to {@link #onWrite(long, long)} from the log storage, serialized through the single
- *       raft thread.
- *   <li>Calls to {@link #onCommit(long, long)} from the log storage, serialized through the single
- *       raft thread.
+ *       AppendListener#onWrite} and {@link AppendListener#onCommit} callbacks.
+ *   <li>Per-entry {@link AppendListener#onWrite} from the log storage, serialized through the
+ *       single raft thread.
+ *   <li>Per-entry {@link AppendListener#onCommit} from the log storage, serialized through the
+ *       single raft thread.
  *   <li>Calls to {@link #onProcessed(long)} from the stream processor, serialized through the
  *       stream processor actor.
  * </ol>
  *
- * The entry is registered in the {@link #inFlight} ring buffer via {@link #registerEntry(long,
- * InFlightEntry)} inside the sequencer lock, before {@code logStorage.append} is called. This
- * guarantees that the entry is present in the buffer when {@link #onWrite(long, long)} and {@link
- * #onCommit(long, long)} callbacks fire.
+ * Each {@link #registerEntry(long, InFlightEntry)} call returns a unique {@link
+ * PerEntryAppendListener} that captures the {@link InFlightEntry} reference directly. The {@code
+ * onWrite} and {@code onCommit} callbacks operate on the captured reference without any ring buffer
+ * lookup. The ring buffer is only needed for {@link #onProcessed(long)}, which searches by {@code
+ * highestPosition} via {@link RingBuffer#findAndRemove}.
  *
- * <p>{@link #onWrite(long, long)} and {@link #onCommit(long, long)} and {@link #onProcessed(long)}
- * can be called in any order.
- *
- * <p>The {@link #inFlight} ring buffer is a fixed-capacity {@link RingBuffer} indexed by position.
- * It is modified by {@link #registerEntry(long, InFlightEntry)} (under the sequencer lock) and read
- * from other methods. The ring buffer uses an {@link
+ * <p>The {@link #inFlight} ring buffer is a fixed-capacity {@link RingBuffer} with sequential
+ * indexing. It is modified by {@link #registerEntry(long, InFlightEntry)} (under the sequencer
+ * lock) and read from other methods. The ring buffer uses an {@link
  * java.util.concurrent.atomic.AtomicReferenceArray} internally, providing volatile read/write
  * semantics per slot. This ensures that entries written by the sequencer thread are visible to the
  * raft thread ({@code onWrite}, {@code onCommit}) and the stream processor thread ({@code
@@ -78,20 +80,21 @@ import java.util.List;
  * RateMeasurements to update the cluster load and the exporting rate metrics.
  */
 @SuppressWarnings("UnstableApiUsage")
-public final class FlowControl implements AppendListener {
+@NullMarked
+public final class FlowControl {
 
   private final LogStreamMetrics metrics;
-  private RateLimit writeRateLimit;
-  private Limit requestLimit;
+  @Nullable private RateLimit writeRateLimit;
+  @Nullable private Limit requestLimit;
   private Limiter<Intent> processingLimiter;
-  private RateLimiter writeRateLimiter;
+  @Nullable private RateLimiter writeRateLimiter;
   private final RateMeasurement exportingRate =
       new RateMeasurement(
           ActorClock::currentTimeMillis, Duration.ofMinutes(5), Duration.ofSeconds(10));
   private final RateMeasurement writeRate =
       new RateMeasurement(
           ActorClock::currentTimeMillis, Duration.ofMinutes(5), Duration.ofSeconds(10));
-  private RateLimitThrottle writeRateThrottle;
+  @Nullable private RateLimitThrottle writeRateThrottle;
   private volatile long lastWrittenPosition = -1;
   private volatile long lastExportedPosition;
 
@@ -108,8 +111,8 @@ public final class FlowControl implements AppendListener {
 
   public FlowControl(
       final LogStreamMetrics metrics,
-      final Limit requestLimit,
-      final RateLimit writeRateLimit,
+      final @Nullable Limit requestLimit,
+      final @Nullable RateLimit writeRateLimit,
       final int inFlightCapacity) {
     this.metrics = metrics;
     inFlight = new RingBuffer(inFlightCapacity);
@@ -175,8 +178,20 @@ public final class FlowControl implements AppendListener {
     return Either.right(new InFlightEntry(metrics, copiedMetadata, requestListener));
   }
 
-  public void registerEntry(final long highestPosition, final InFlightEntry entry) {
-    inFlight.put(highestPosition, entry);
+  /**
+   * Registers an in-flight entry in the ring buffer and returns a per-entry {@link AppendListener}
+   * that captures the entry reference directly for write/commit callbacks.
+   *
+   * <p>Must be called under the sequencer lock.
+   *
+   * @param highestPosition the highest log position of the batch
+   * @param entry the in-flight entry to register
+   * @return a per-entry append listener to pass to {@code logStorage.append}
+   */
+  public AppendListener registerEntry(final long highestPosition, final InFlightEntry entry) {
+    entry.highestPosition = highestPosition;
+    inFlight.put(entry);
+    return new PerEntryAppendListener(entry);
   }
 
   public void onAppended(final InFlightEntry entry) {
@@ -184,36 +199,10 @@ public final class FlowControl implements AppendListener {
     metrics.increaseInflightAppends();
   }
 
-  @Override
-  public void onWrite(final long index, final long highestPosition) {
-    lastWrittenPosition = highestPosition;
-    updateWriteRateThrottle();
-    metrics.setLastWrittenPosition(highestPosition);
-    final var inFlightEntry = inFlight.get(highestPosition);
-    if (inFlightEntry != null) {
-      inFlightEntry.onWrite();
-    }
-    if (writeRate.observe(highestPosition) && writeRateLimit != null && writeRateLimit.enabled()) {
-      metrics.setPartitionLoad(
-          Math.min((float) (writeRate.rate() / writeRateLimiter.getRate() * 100L), 100));
-    }
-  }
-
-  @Override
-  public void onCommit(final long index, final long highestPosition) {
-    metrics.setLastCommittedPosition(highestPosition);
-    metrics.decreaseInflightAppends();
-    final var inFlightEntry = inFlight.get(highestPosition);
-    if (inFlightEntry != null) {
-      inFlightEntry.onCommit();
-    }
-  }
-
   public void onProcessed(final long position) {
-    final var inFlightEntry = inFlight.get(position);
-    if (inFlightEntry != null) {
-      inFlightEntry.onProcessed();
-      inFlight.remove(inFlightEntry);
+    final var entry = inFlight.findAndRemove(position);
+    if (entry != null) {
+      entry.onProcessed();
     }
   }
 
@@ -235,11 +224,11 @@ public final class FlowControl implements AppendListener {
     }
   }
 
-  public Limit getRequestLimit() {
+  public @Nullable Limit getRequestLimit() {
     return requestLimit;
   }
 
-  public void setRequestLimit(final Limit requestLimit) {
+  public void setRequestLimit(final @Nullable Limit requestLimit) {
     this.requestLimit = requestLimit;
     processingLimiter =
         requestLimit != null
@@ -247,11 +236,11 @@ public final class FlowControl implements AppendListener {
             : new NoopLimiter<>();
   }
 
-  public RateLimit getWriteRateLimit() {
+  public @Nullable RateLimit getWriteRateLimit() {
     return writeRateLimit;
   }
 
-  public void setWriteRateLimit(final RateLimit writeRateLimit) {
+  public void setWriteRateLimit(final @Nullable RateLimit writeRateLimit) {
     this.writeRateLimit = writeRateLimit;
     writeRateLimiter = writeRateLimit == null ? null : writeRateLimit.limiter();
     writeRateThrottle =
@@ -265,5 +254,43 @@ public final class FlowControl implements AppendListener {
   public enum Rejection {
     WriteRateLimitExhausted,
     RequestLimitExhausted
+  }
+
+  /**
+   * A per-entry {@link AppendListener} that captures the {@link InFlightEntry} reference directly.
+   * The {@code onWrite} and {@code onCommit} callbacks operate on the captured reference without
+   * any ring buffer lookup.
+   */
+  private final class PerEntryAppendListener implements AppendListener {
+    private final InFlightEntry entry;
+
+    PerEntryAppendListener(final InFlightEntry entry) {
+      this.entry = Objects.requireNonNull(entry);
+    }
+
+    @Override
+    public void onWrite(final long index, final long highestPosition) {
+      // Global operations
+      lastWrittenPosition = highestPosition;
+      updateWriteRateThrottle();
+      metrics.setLastWrittenPosition(highestPosition);
+
+      entry.onWrite();
+
+      if (writeRate.observe(highestPosition)
+          && writeRateLimit != null
+          && writeRateLimit.enabled()
+          && writeRateLimiter != null) {
+        metrics.setPartitionLoad(
+            Math.min((float) (writeRate.rate() / writeRateLimiter.getRate() * 100L), 100));
+      }
+    }
+
+    @Override
+    public void onCommit(final long index, final long highestPosition) {
+      metrics.setLastCommittedPosition(highestPosition);
+      metrics.decreaseInflightAppends();
+      entry.onCommit();
+    }
   }
 }

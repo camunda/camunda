@@ -10,9 +10,9 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.SignalServices;
@@ -51,8 +51,6 @@ public class SignalControllerTest extends RestControllerTest {
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(signalServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(signalServices);
   }
 
   @Test
@@ -61,7 +59,7 @@ public class SignalControllerTest extends RestControllerTest {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
-    when(signalServices.broadcastSignal(anyString(), anyMap(), anyString()))
+    when(signalServices.broadcastSignal(anyString(), anyMap(), anyString(), any()))
         .thenReturn(buildSignalResponse("tenantId"));
 
     final var request =
@@ -88,14 +86,14 @@ public class SignalControllerTest extends RestControllerTest {
 
     response.expectBody().json(EXPECTED_PUBLICATION_RESPONSE, JsonCompareMode.STRICT);
     Mockito.verify(signalServices)
-        .broadcastSignal("signalName", Map.of("key", "value"), "tenantId");
+        .broadcastSignal(eq("signalName"), eq(Map.of("key", "value")), eq("tenantId"), any());
   }
 
   @Test
   void shouldBroadcastSignalWithMultitenancyDisabled() {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
-    when(signalServices.broadcastSignal(anyString(), anyMap(), anyString()))
+    when(signalServices.broadcastSignal(anyString(), anyMap(), anyString(), any()))
         .thenReturn(buildSignalResponse(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     final var request =
@@ -121,7 +119,10 @@ public class SignalControllerTest extends RestControllerTest {
 
     Mockito.verify(signalServices)
         .broadcastSignal(
-            "signalName", Map.of("key", "value"), TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+            eq("signalName"),
+            eq(Map.of("key", "value")),
+            eq(TenantOwned.DEFAULT_TENANT_IDENTIFIER),
+            any());
   }
 
   @Test
@@ -130,7 +131,7 @@ public class SignalControllerTest extends RestControllerTest {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
-    when(signalServices.broadcastSignal(anyString(), anyMap(), anyString()))
+    when(signalServices.broadcastSignal(anyString(), anyMap(), anyString(), any()))
         .thenReturn(buildSignalResponse("tenantId"));
 
     final var request =
@@ -156,7 +157,8 @@ public class SignalControllerTest extends RestControllerTest {
             .isOk();
 
     response.expectBody().json(EXPECTED_PUBLICATION_RESPONSE, JsonCompareMode.STRICT);
-    Mockito.verify(signalServices).broadcastSignal("", Map.of("key", "value"), "tenantId");
+    Mockito.verify(signalServices)
+        .broadcastSignal(eq(""), eq(Map.of("key", "value")), eq("tenantId"), any());
   }
 
   @Test

@@ -11,18 +11,25 @@ import com.netflix.concurrency.limits.Limiter.Listener;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.util.CloseableSilently;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import net.jcip.annotations.ThreadSafe;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
+@ThreadSafe
 public final class InFlightEntry {
   final LogStreamMetrics metrics;
-  LogAppendEntryMetadata entryMetadata;
-  Listener requestListener;
-  CloseableSilently writeTimer;
-  CloseableSilently commitTimer;
+  @Nullable LogAppendEntryMetadata entryMetadata;
+  final AtomicReference<@Nullable Listener> requestListener;
+  final AtomicReference<@Nullable CloseableSilently> writeTimer;
+  final AtomicReference<@Nullable CloseableSilently> commitTimer;
 
   /**
-   * The position this entry was registered at in the ring buffer. Set by {@link RingBuffer#put}
-   * before the entry reference is published into the array. Used by {@link RingBuffer#get} to
-   * verify that the entry in a slot actually belongs to the requested position (guards against
+   * The sequential ring buffer index assigned to this entry. Set by {@link RingBuffer#put} before
+   * the entry reference is published into the array. Used by {@link RingBuffer#findAndRemove} to
+   * verify that the entry in a slot belongs to the expected sequential index (guards against
    * wraparound collisions).
    *
    * <p>This field is intentionally <em>not</em> volatile. Visibility is guaranteed by the {@link
@@ -33,21 +40,31 @@ public final class InFlightEntry {
    */
   long position;
 
+  /**
+   * The highest log position of the batch this entry belongs to. Set by {@link
+   * FlowControl#registerEntry} before calling {@link RingBuffer#put}. Used by {@link
+   * RingBuffer#findAndRemove} to locate entries by log position (for {@code onProcessed}).
+   *
+   * <p>Same visibility contract as {@link #position}: written before the volatile publish in {@code
+   * put()}.
+   */
+  long highestPosition;
+
   public InFlightEntry(
       final LogStreamMetrics metrics,
       final LogAppendEntryMetadata entryMetadata,
-      final Listener requestListener) {
+      @Nullable final Listener requestListener) {
     this.metrics = metrics;
     this.entryMetadata = entryMetadata;
-    this.requestListener = requestListener;
-    writeTimer = null;
-    commitTimer = null;
+    this.requestListener = new AtomicReference<>(requestListener);
+    writeTimer = new AtomicReference<>(null);
+    commitTimer = new AtomicReference<>(null);
   }
 
   public void onAppend() {
-    writeTimer = metrics.startWriteTimer();
-    commitTimer = metrics.startCommitTimer();
-    if (requestListener != null) {
+    writeTimer.set(metrics.startWriteTimer());
+    commitTimer.set(metrics.startCommitTimer());
+    if (requestListener.get() != null) {
       metrics.increaseInflightRequests();
     }
   }
@@ -61,46 +78,38 @@ public final class InFlightEntry {
       }
       this.entryMetadata = null;
     }
-    final var writeTimer = this.writeTimer;
-    if (writeTimer != null) {
-      writeTimer.close();
-      this.writeTimer = null;
-    }
+    closeIfPossible(writeTimer);
   }
 
   public void onCommit() {
-    final var commitTimer = this.commitTimer;
-    if (commitTimer != null) {
-      commitTimer.close();
-      this.commitTimer = null;
-    }
+    closeIfPossible(commitTimer);
   }
 
   public void onProcessed() {
-    final var requestListener = this.requestListener;
-    if (requestListener != null) {
-      requestListener.onSuccess();
-      metrics.decreaseInflightRequests();
-      this.requestListener = null;
-    }
+    closeRequestListener(Listener::onSuccess);
   }
 
   public void cleanup() {
-    final var requestListener = this.requestListener;
+    closeRequestListener(Listener::onIgnore);
+    // Discard timers without recording — displaced entries don't represent actual
+    // write/commit latency. Timer.Sample is a pure value object (two longs), so
+    // dropping it without stop() does not leak resources.
+    writeTimer.getAndSet(null);
+    commitTimer.getAndSet(null);
+  }
+
+  private void closeIfPossible(final AtomicReference<@Nullable CloseableSilently> closeableRef) {
+    final var closeable = closeableRef.getAndSet(null);
+    if (closeable != null) {
+      closeable.close();
+    }
+  }
+
+  private void closeRequestListener(final Consumer<Listener> consumer) {
+    final var requestListener = this.requestListener.getAndSet(null);
     if (requestListener != null) {
-      requestListener.onIgnore();
+      consumer.accept(requestListener);
       metrics.decreaseInflightRequests();
-      this.requestListener = null;
-    }
-    final var writeTimer = this.writeTimer;
-    if (writeTimer != null) {
-      writeTimer.close();
-      this.writeTimer = null;
-    }
-    final var commitTimer = this.commitTimer;
-    if (commitTimer != null) {
-      commitTimer.close();
-      this.commitTimer = null;
     }
   }
 }

@@ -22,7 +22,7 @@ public interface MutableBatchOperationState extends BatchOperationState {
    * <p>This method is deprecated because the {@code BatchOperationIntent.CREATED} command could be
    * processed multiple times for the same batch operation key. This probably occurred because the
    * command was not acknowledged during {@link
-   * io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor#processDistributedCommand},
+   * io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreationCreateProcessor#processDistributedCommand},
    * leading to duplicate processing. This would cause a new {@link
    * io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation} instance to be created
    * and upserted in the state, overriding the previous instance via {@link
@@ -132,6 +132,22 @@ public interface MutableBatchOperationState extends BatchOperationState {
    * @param batchOperationKey the key of the batch operation
    */
   void resume(final long batchOperationKey);
+
+  /**
+   * Removes a batch operation from the pending batch operations queue. This prevents the scheduler
+   * from picking it up.
+   *
+   * @param batchOperationKey the key of the batch operation
+   */
+  void removeFromPending(final long batchOperationKey);
+
+  /**
+   * Adds a batch operation to the pending batch operations queue so that the scheduler can pick it
+   * up.
+   *
+   * @param batchOperationKey the key of the batch operation
+   */
+  void addToPending(final long batchOperationKey);
 
   /**
    * Marks a batch operation as completed. This will delete the batch operation from the state.

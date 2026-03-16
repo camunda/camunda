@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "9791e838a8d18c515768d16d36fad2191d7bff0a",
-    "generatedAt": "2026-03-02T16:54:01.929Z",
+    "commit": "50b29f7ba8a2263e69873a7c3a666795ef32197e",
+    "generatedAt": "2026-03-13T15:32:22.956Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "bd8eca74bbad23e0ae1a11c0e234958dc1c6f21b7420f4ab3a2d5f69d92d2f27"
+    "specSha256": "3af1e48dc5806105ff4719c0a680f76f3f78553725cdc54fd5275069f28241ee"
   },
   "responses": [
     {
@@ -26,6 +26,12 @@
                 {
                   "name": "actorType",
                   "type": "string",
+                  "enumValues": [
+                    "ANONYMOUS",
+                    "CLIENT",
+                    "UNKNOWN",
+                    "USER"
+                  ],
                   "nullable": true
                 },
                 {
@@ -262,6 +268,12 @@
           {
             "name": "actorType",
             "type": "string",
+            "enumValues": [
+              "ANONYMOUS",
+              "CLIENT",
+              "UNKNOWN",
+              "USER"
+            ],
             "nullable": true
           },
           {
@@ -472,6 +484,16 @@
             "type": "boolean"
           },
           {
+            "name": "displayName",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "email",
+            "type": "string",
+            "nullable": true
+          },
+          {
             "name": "groups",
             "type": "array<string>"
           },
@@ -488,11 +510,11 @@
             "name": "tenants",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "description",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "name",
@@ -505,27 +527,17 @@
                   "rawRefName": "schema",
                   "wrapper": true
                 }
-              ]
+              ],
+              "optional": []
             }
-          }
-        ],
-        "optional": [
-          {
-            "name": "displayName",
-            "type": "string",
-            "nullable": true
-          },
-          {
-            "name": "email",
-            "type": "string",
-            "nullable": true
           },
           {
             "name": "username",
             "type": "string",
             "nullable": true
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -533,13 +545,13 @@
       "method": "POST",
       "status": "201",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "authorizationKey",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -553,17 +565,6 @@
             "type": "array<schema>",
             "children": {
               "required": [
-                {
-                  "name": "permissionTypes",
-                  "type": "array<string>"
-                },
-                {
-                  "name": "resourcePropertyName",
-                  "type": "string",
-                  "nullable": true
-                }
-              ],
-              "optional": [
                 {
                   "name": "authorizationKey",
                   "type": "string"
@@ -585,7 +586,16 @@
                   ]
                 },
                 {
+                  "name": "permissionTypes",
+                  "type": "array<string>"
+                },
+                {
                   "name": "resourceId",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "resourcePropertyName",
                   "type": "string",
                   "nullable": true
                 },
@@ -615,7 +625,8 @@
                     "USER_TASK"
                   ]
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -656,17 +667,6 @@
       "schema": {
         "required": [
           {
-            "name": "permissionTypes",
-            "type": "array<string>"
-          },
-          {
-            "name": "resourcePropertyName",
-            "type": "string",
-            "nullable": true
-          }
-        ],
-        "optional": [
-          {
             "name": "authorizationKey",
             "type": "string"
           },
@@ -687,7 +687,16 @@
             ]
           },
           {
+            "name": "permissionTypes",
+            "type": "array<string>"
+          },
+          {
             "name": "resourceId",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "resourcePropertyName",
             "type": "string",
             "nullable": true
           },
@@ -717,7 +726,8 @@
               "USER_TASK"
             ]
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -731,13 +741,6 @@
             "type": "array<object>",
             "children": {
               "required": [
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
-                }
-              ],
-              "optional": [
                 {
                   "name": "batchOperationKey",
                   "type": "string"
@@ -772,11 +775,17 @@
                 },
                 {
                   "name": "processedDate",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processInstanceKey",
                   "type": "string"
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "state",
@@ -789,7 +798,8 @@
                     "FAILED"
                   ]
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -835,45 +845,14 @@
             "children": {
               "required": [
                 {
-                  "name": "errors",
-                  "type": "array<object>",
-                  "children": {
-                    "required": [],
-                    "optional": [
-                      {
-                        "name": "message",
-                        "type": "string"
-                      },
-                      {
-                        "name": "partitionId",
-                        "type": "number"
-                      },
-                      {
-                        "name": "type",
-                        "type": "string",
-                        "enumValues": [
-                          "QUERY_FAILED",
-                          "RESULT_BUFFER_SIZE_EXCEEDED"
-                        ]
-                      }
-                    ]
-                  }
-                }
-              ],
-              "optional": [
-                {
                   "name": "actorId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "actorType",
                   "type": "string",
-                  "enumValues": [
-                    "ANONYMOUS",
-                    "CLIENT",
-                    "UNKNOWN",
-                    "USER"
-                  ]
+                  "nullable": true
                 },
                 {
                   "name": "batchOperationKey",
@@ -902,6 +881,31 @@
                   "name": "endDate",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "errors",
+                  "type": "array<object>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "message",
+                        "type": "string"
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number"
+                      },
+                      {
+                        "name": "type",
+                        "type": "string",
+                        "enumValues": [
+                          "QUERY_FAILED",
+                          "RESULT_BUFFER_SIZE_EXCEEDED"
+                        ]
+                      }
+                    ],
+                    "optional": []
+                  }
                 },
                 {
                   "name": "operationsCompletedCount",
@@ -933,7 +937,8 @@
                     "SUSPENDED"
                   ]
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -974,45 +979,14 @@
       "schema": {
         "required": [
           {
-            "name": "errors",
-            "type": "array<object>",
-            "children": {
-              "required": [],
-              "optional": [
-                {
-                  "name": "message",
-                  "type": "string"
-                },
-                {
-                  "name": "partitionId",
-                  "type": "number"
-                },
-                {
-                  "name": "type",
-                  "type": "string",
-                  "enumValues": [
-                    "QUERY_FAILED",
-                    "RESULT_BUFFER_SIZE_EXCEEDED"
-                  ]
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "actorId",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "actorType",
             "type": "string",
-            "enumValues": [
-              "ANONYMOUS",
-              "CLIENT",
-              "UNKNOWN",
-              "USER"
-            ]
+            "nullable": true
           },
           {
             "name": "batchOperationKey",
@@ -1041,6 +1015,31 @@
             "name": "endDate",
             "type": "string",
             "nullable": true
+          },
+          {
+            "name": "errors",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "message",
+                  "type": "string"
+                },
+                {
+                  "name": "partitionId",
+                  "type": "number"
+                },
+                {
+                  "name": "type",
+                  "type": "string",
+                  "enumValues": [
+                    "QUERY_FAILED",
+                    "RESULT_BUFFER_SIZE_EXCEEDED"
+                  ]
+                }
+              ],
+              "optional": []
+            }
           },
           {
             "name": "operationsCompletedCount",
@@ -1072,7 +1071,8 @@
               "SUSPENDED"
             ]
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1092,9 +1092,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1104,7 +1102,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1124,9 +1123,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1136,7 +1133,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1156,9 +1154,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1168,7 +1164,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1183,6 +1180,10 @@
             "children": {
               "required": [
                 {
+                  "name": "isTruncated",
+                  "type": "boolean"
+                },
+                {
                   "name": "name",
                   "type": "string"
                 },
@@ -1193,12 +1194,6 @@
                     "GLOBAL",
                     "TENANT"
                   ]
-                }
-              ],
-              "optional": [
-                {
-                  "name": "isTruncated",
-                  "type": "boolean"
                 },
                 {
                   "name": "tenantId",
@@ -1209,7 +1204,8 @@
                   "name": "value",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -1260,9 +1256,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1272,7 +1266,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1292,9 +1287,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1304,7 +1297,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1324,9 +1318,7 @@
               "GLOBAL",
               "TENANT"
             ]
-          }
-        ],
-        "optional": [
+          },
           {
             "name": "tenantId",
             "type": "string",
@@ -1336,7 +1328,8 @@
             "name": "value",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1353,8 +1346,7 @@
             "name": "processInstances",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "processDefinitionKey",
                   "type": "string"
@@ -1363,7 +1355,8 @@
                   "name": "processInstanceKey",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -1387,7 +1380,8 @@
               "required": [
                 {
                   "name": "correlationKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "correlationTime",
@@ -1396,6 +1390,11 @@
                 {
                   "name": "elementId",
                   "type": "string"
+                },
+                {
+                  "name": "elementInstanceKey",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "messageKey",
@@ -1411,6 +1410,10 @@
                 },
                 {
                   "name": "processDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "processDefinitionKey",
                   "type": "string"
                 },
                 {
@@ -1431,16 +1434,7 @@
                   "type": "string"
                 }
               ],
-              "optional": [
-                {
-                  "name": "elementInstanceKey",
-                  "type": "string"
-                },
-                {
-                  "name": "processDefinitionKey",
-                  "type": "string"
-                }
-              ]
+              "optional": []
             }
           },
           {
@@ -1501,6 +1495,10 @@
             "type": "string"
           },
           {
+            "name": "decisionInstanceKey",
+            "type": "string"
+          },
+          {
             "name": "decisionRequirementsId",
             "type": "string"
           },
@@ -1514,15 +1512,34 @@
             "children": {
               "required": [
                 {
+                  "name": "decisionDefinitionId",
+                  "type": "string"
+                },
+                {
+                  "name": "decisionDefinitionKey",
+                  "type": "string"
+                },
+                {
+                  "name": "decisionDefinitionName",
+                  "type": "string"
+                },
+                {
                   "name": "decisionDefinitionType",
+                  "type": "string"
+                },
+                {
+                  "name": "decisionDefinitionVersion",
+                  "type": "number"
+                },
+                {
+                  "name": "decisionEvaluationInstanceKey",
                   "type": "string"
                 },
                 {
                   "name": "evaluatedInputs",
                   "type": "array<items>",
                   "children": {
-                    "required": [],
-                    "optional": [
+                    "required": [
                       {
                         "name": "inputId",
                         "type": "string"
@@ -1535,7 +1552,8 @@
                         "name": "inputValue",
                         "type": "string"
                       }
-                    ]
+                    ],
+                    "optional": []
                   }
                 },
                 {
@@ -1549,18 +1567,6 @@
                         "children": {
                           "required": [
                             {
-                              "name": "ruleId",
-                              "type": "string",
-                              "nullable": true
-                            },
-                            {
-                              "name": "ruleIndex",
-                              "type": "number",
-                              "nullable": true
-                            }
-                          ],
-                          "optional": [
-                            {
                               "name": "outputId",
                               "type": "string"
                             },
@@ -1571,12 +1577,21 @@
                             {
                               "name": "outputValue",
                               "type": "string"
+                            },
+                            {
+                              "name": "ruleId",
+                              "type": "string",
+                              "nullable": true
+                            },
+                            {
+                              "name": "ruleIndex",
+                              "type": "number",
+                              "nullable": true
                             }
-                          ]
+                          ],
+                          "optional": []
                         }
-                      }
-                    ],
-                    "optional": [
+                      },
                       {
                         "name": "ruleId",
                         "type": "string"
@@ -1585,30 +1600,9 @@
                         "name": "ruleIndex",
                         "type": "number"
                       }
-                    ]
+                    ],
+                    "optional": []
                   }
-                }
-              ],
-              "optional": [
-                {
-                  "name": "decisionDefinitionId",
-                  "type": "string"
-                },
-                {
-                  "name": "decisionDefinitionKey",
-                  "type": "string"
-                },
-                {
-                  "name": "decisionDefinitionName",
-                  "type": "string"
-                },
-                {
-                  "name": "decisionDefinitionVersion",
-                  "type": "number"
-                },
-                {
-                  "name": "decisionEvaluationInstanceKey",
-                  "type": "string"
                 },
                 {
                   "name": "output",
@@ -1618,7 +1612,8 @@
                   "name": "tenantId",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -1640,12 +1635,7 @@
             "type": "string"
           }
         ],
-        "optional": [
-          {
-            "name": "decisionInstanceKey",
-            "type": "string"
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -1658,8 +1648,7 @@
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "decisionDefinitionId",
                   "type": "string"
@@ -1696,7 +1685,8 @@
                   "name": "version",
                   "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -1735,8 +1725,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "decisionDefinitionId",
             "type": "string"
@@ -1773,7 +1762,8 @@
             "name": "version",
             "type": "number"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1787,22 +1777,6 @@
             "type": "array<0>",
             "children": {
               "required": [
-                {
-                  "name": "evaluationFailure",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "tenantId",
-                  "type": "string"
-                }
-              ],
-              "optional": [
                 {
                   "name": "decisionDefinitionId",
                   "type": "string"
@@ -1842,19 +1816,27 @@
                 },
                 {
                   "name": "elementInstanceKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "evaluationDate",
                   "type": "string"
                 },
                 {
+                  "name": "evaluationFailure",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "processDefinitionKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processInstanceKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "result",
@@ -1865,6 +1847,11 @@
                   "type": "string"
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "state",
                   "type": "string",
                   "enumValues": [
@@ -1873,8 +1860,13 @@
                     "UNSPECIFIED",
                     "UNKNOWN"
                   ]
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -1915,93 +1907,6 @@
       "schema": {
         "required": [
           {
-            "name": "evaluatedInputs",
-            "type": "array<object>",
-            "children": {
-              "required": [],
-              "optional": [
-                {
-                  "name": "inputId",
-                  "type": "string"
-                },
-                {
-                  "name": "inputName",
-                  "type": "string"
-                },
-                {
-                  "name": "inputValue",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          {
-            "name": "evaluationFailure",
-            "type": "string",
-            "nullable": true
-          },
-          {
-            "name": "matchedRules",
-            "type": "array<object>",
-            "children": {
-              "required": [
-                {
-                  "name": "evaluatedOutputs",
-                  "type": "array<object>",
-                  "children": {
-                    "required": [
-                      {
-                        "name": "ruleId",
-                        "type": "string",
-                        "nullable": true
-                      },
-                      {
-                        "name": "ruleIndex",
-                        "type": "number",
-                        "nullable": true
-                      }
-                    ],
-                    "optional": [
-                      {
-                        "name": "outputId",
-                        "type": "string"
-                      },
-                      {
-                        "name": "outputName",
-                        "type": "string"
-                      },
-                      {
-                        "name": "outputValue",
-                        "type": "string"
-                      }
-                    ]
-                  }
-                }
-              ],
-              "optional": [
-                {
-                  "name": "ruleId",
-                  "type": "string"
-                },
-                {
-                  "name": "ruleIndex",
-                  "type": "number"
-                }
-              ]
-            }
-          },
-          {
-            "name": "rootProcessInstanceKey",
-            "type": "string",
-            "nullable": true
-          },
-          {
-            "name": "tenantId",
-            "type": "string"
-          }
-        ],
-        "optional": [
-          {
             "name": "decisionDefinitionId",
             "type": "string"
           },
@@ -2040,19 +1945,96 @@
           },
           {
             "name": "elementInstanceKey",
-            "type": "string"
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "evaluatedInputs",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "inputId",
+                  "type": "string"
+                },
+                {
+                  "name": "inputName",
+                  "type": "string"
+                },
+                {
+                  "name": "inputValue",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
           },
           {
             "name": "evaluationDate",
             "type": "string"
           },
           {
+            "name": "evaluationFailure",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "matchedRules",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "evaluatedOutputs",
+                  "type": "array<object>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "outputId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "outputName",
+                        "type": "string"
+                      },
+                      {
+                        "name": "outputValue",
+                        "type": "string"
+                      },
+                      {
+                        "name": "ruleId",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "ruleIndex",
+                        "type": "number",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "ruleId",
+                  "type": "string"
+                },
+                {
+                  "name": "ruleIndex",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
             "name": "processDefinitionKey",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "processInstanceKey",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "result",
@@ -2063,6 +2045,11 @@
             "type": "string"
           },
           {
+            "name": "rootProcessInstanceKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
             "name": "state",
             "type": "string",
             "enumValues": [
@@ -2071,8 +2058,13 @@
               "UNSPECIFIED",
               "UNKNOWN"
             ]
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -2080,8 +2072,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "batchOperationKey",
             "type": "string"
@@ -2102,7 +2093,8 @@
               "UPDATE_VARIABLE"
             ]
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -2115,8 +2107,7 @@
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "decisionRequirementsId",
                   "type": "string"
@@ -2141,7 +2132,8 @@
                   "name": "version",
                   "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -2180,8 +2172,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "decisionRequirementsId",
             "type": "string"
@@ -2206,7 +2197,8 @@
             "name": "version",
             "type": "number"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -2229,8 +2221,7 @@
                   "type": "object",
                   "nullable": true,
                   "children": {
-                    "required": [],
-                    "optional": [
+                    "required": [
                       {
                         "name": "decisionDefinitionId",
                         "type": "string"
@@ -2259,7 +2250,8 @@
                         "name": "version",
                         "type": "number"
                       }
-                    ]
+                    ],
+                    "optional": []
                   }
                 },
                 {
@@ -2267,8 +2259,7 @@
                   "type": "object",
                   "nullable": true,
                   "children": {
-                    "required": [],
-                    "optional": [
+                    "required": [
                       {
                         "name": "decisionRequirementsId",
                         "type": "string"
@@ -2293,7 +2284,8 @@
                         "name": "version",
                         "type": "number"
                       }
-                    ]
+                    ],
+                    "optional": []
                   }
                 },
                 {
@@ -2301,8 +2293,7 @@
                   "type": "object",
                   "nullable": true,
                   "children": {
-                    "required": [],
-                    "optional": [
+                    "required": [
                       {
                         "name": "formId",
                         "type": "string"
@@ -2326,7 +2317,8 @@
                         "name": "version",
                         "type": "number"
                       }
-                    ]
+                    ],
+                    "optional": []
                   }
                 },
                 {
@@ -2364,8 +2356,7 @@
                   "type": "object",
                   "nullable": true,
                   "children": {
-                    "required": [],
-                    "optional": [
+                    "required": [
                       {
                         "name": "resourceId",
                         "type": "string"
@@ -2389,7 +2380,8 @@
                         "name": "version",
                         "type": "number"
                       }
-                    ]
+                    ],
+                    "optional": []
                   }
                 }
               ],
@@ -2409,8 +2401,7 @@
       "method": "POST",
       "status": "201",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "camunda.document.type",
             "type": "string",
@@ -2420,7 +2411,8 @@
           },
           {
             "name": "contentHash",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "documentId",
@@ -2428,23 +2420,21 @@
           },
           {
             "name": "metadata",
-            "type": "metadata",
-            "rawRefName": "metadata",
+            "type": "object",
             "children": {
               "required": [
-                {
-                  "name": "customProperties",
-                  "type": "object"
-                }
-              ],
-              "optional": [
                 {
                   "name": "contentType",
                   "type": "string"
                 },
                 {
+                  "name": "customProperties",
+                  "type": "object"
+                },
+                {
                   "name": "expiresAt",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "fileName",
@@ -2452,24 +2442,28 @@
                 },
                 {
                   "name": "processDefinitionId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processInstanceKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "size",
                   "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
             "name": "storeId",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -2482,8 +2476,7 @@
             "name": "createdDocuments",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "camunda.document.type",
                   "type": "string",
@@ -2493,7 +2486,8 @@
                 },
                 {
                   "name": "contentHash",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "documentId",
@@ -2501,23 +2495,21 @@
                 },
                 {
                   "name": "metadata",
-                  "type": "metadata",
-                  "rawRefName": "metadata",
+                  "type": "object",
                   "children": {
                     "required": [
-                      {
-                        "name": "customProperties",
-                        "type": "object"
-                      }
-                    ],
-                    "optional": [
                       {
                         "name": "contentType",
                         "type": "string"
                       },
                       {
+                        "name": "customProperties",
+                        "type": "object"
+                      },
+                      {
                         "name": "expiresAt",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "fileName",
@@ -2525,32 +2517,35 @@
                       },
                       {
                         "name": "processDefinitionId",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "processInstanceKey",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "size",
                         "type": "number"
                       }
-                    ]
+                    ],
+                    "optional": []
                   }
                 },
                 {
                   "name": "storeId",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
             "name": "failedDocuments",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "detail",
                   "type": "string"
@@ -2567,7 +2562,8 @@
                   "name": "title",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -2584,8 +2580,7 @@
             "name": "createdDocuments",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "camunda.document.type",
                   "type": "string",
@@ -2595,7 +2590,8 @@
                 },
                 {
                   "name": "contentHash",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "documentId",
@@ -2603,23 +2599,21 @@
                 },
                 {
                   "name": "metadata",
-                  "type": "metadata",
-                  "rawRefName": "metadata",
+                  "type": "object",
                   "children": {
                     "required": [
-                      {
-                        "name": "customProperties",
-                        "type": "object"
-                      }
-                    ],
-                    "optional": [
                       {
                         "name": "contentType",
                         "type": "string"
                       },
                       {
+                        "name": "customProperties",
+                        "type": "object"
+                      },
+                      {
                         "name": "expiresAt",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "fileName",
@@ -2627,32 +2621,35 @@
                       },
                       {
                         "name": "processDefinitionId",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "processInstanceKey",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "size",
                         "type": "number"
                       }
-                    ]
+                    ],
+                    "optional": []
                   }
                 },
                 {
                   "name": "storeId",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
             "name": "failedDocuments",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "detail",
                   "type": "string"
@@ -2669,7 +2666,8 @@
                   "name": "title",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -2681,8 +2679,7 @@
       "method": "POST",
       "status": "201",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "expiresAt",
             "type": "string"
@@ -2691,7 +2688,8 @@
             "name": "url",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -2718,8 +2716,18 @@
                   "type": "string"
                 },
                 {
+                  "name": "endDate",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "hasIncident",
                   "type": "boolean"
+                },
+                {
+                  "name": "incidentKey",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processDefinitionId",
@@ -2789,18 +2797,7 @@
                   ]
                 }
               ],
-              "optional": [
-                {
-                  "name": "endDate",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "incidentKey",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
+              "optional": []
             }
           },
           {
@@ -2853,8 +2850,18 @@
             "type": "string"
           },
           {
+            "name": "endDate",
+            "type": "string",
+            "nullable": true
+          },
+          {
             "name": "hasIncident",
             "type": "boolean"
+          },
+          {
+            "name": "incidentKey",
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "processDefinitionId",
@@ -2924,18 +2931,7 @@
             ]
           }
         ],
-        "optional": [
-          {
-            "name": "endDate",
-            "type": "string",
-            "nullable": true
-          },
-          {
-            "name": "incidentKey",
-            "type": "string",
-            "nullable": true
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -2949,22 +2945,6 @@
             "type": "array<schema>",
             "children": {
               "required": [
-                {
-                  "name": "jobKey",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "tenantId",
-                  "type": "string"
-                }
-              ],
-              "optional": [
                 {
                   "name": "creationTime",
                   "type": "string"
@@ -3008,6 +2988,11 @@
                   "type": "string"
                 },
                 {
+                  "name": "jobKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "processDefinitionId",
                   "type": "string"
                 },
@@ -3020,16 +3005,27 @@
                   "type": "string"
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "state",
                   "type": "string",
                   "enumValues": [
                     "ACTIVE",
                     "MIGRATED",
                     "PENDING",
-                    "RESOLVED"
+                    "RESOLVED",
+                    "UNKNOWN"
                   ]
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -3306,11 +3302,11 @@
       "method": "POST",
       "status": "201",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "description",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "groupId",
@@ -3320,7 +3316,8 @@
             "name": "name",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -3333,11 +3330,11 @@
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "description",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "groupId",
@@ -3347,7 +3344,8 @@
                   "name": "name",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -3386,11 +3384,11 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "description",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "groupId",
@@ -3400,7 +3398,8 @@
             "name": "name",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -3408,11 +3407,11 @@
       "method": "PUT",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "description",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "groupId",
@@ -3422,7 +3421,8 @@
             "name": "name",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -3435,13 +3435,13 @@
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "clientId",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -3485,8 +3485,7 @@
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "claimName",
                   "type": "string"
@@ -3503,7 +3502,8 @@
                   "name": "name",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -3547,11 +3547,11 @@
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "description",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "name",
@@ -3561,7 +3561,8 @@
                   "name": "roleId",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -3605,8 +3606,7 @@
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "username",
                   "type": "string",
@@ -3614,7 +3614,8 @@
                   "rawRefName": "schema",
                   "wrapper": true
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -3660,22 +3661,6 @@
             "children": {
               "required": [
                 {
-                  "name": "jobKey",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "tenantId",
-                  "type": "string"
-                }
-              ],
-              "optional": [
-                {
                   "name": "creationTime",
                   "type": "string"
                 },
@@ -3718,6 +3703,11 @@
                   "type": "string"
                 },
                 {
+                  "name": "jobKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "processDefinitionId",
                   "type": "string"
                 },
@@ -3730,16 +3720,27 @@
                   "type": "string"
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "state",
                   "type": "string",
                   "enumValues": [
                     "ACTIVE",
                     "MIGRATED",
                     "PENDING",
-                    "RESOLVED"
+                    "RESOLVED",
+                    "UNKNOWN"
                   ]
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -3779,22 +3780,6 @@
       "status": "200",
       "schema": {
         "required": [
-          {
-            "name": "jobKey",
-            "type": "string",
-            "nullable": true
-          },
-          {
-            "name": "rootProcessInstanceKey",
-            "type": "string",
-            "nullable": true
-          },
-          {
-            "name": "tenantId",
-            "type": "string"
-          }
-        ],
-        "optional": [
           {
             "name": "creationTime",
             "type": "string"
@@ -3838,6 +3823,11 @@
             "type": "string"
           },
           {
+            "name": "jobKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
             "name": "processDefinitionId",
             "type": "string"
           },
@@ -3850,16 +3840,27 @@
             "type": "string"
           },
           {
+            "name": "rootProcessInstanceKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
             "name": "state",
             "type": "string",
             "enumValues": [
               "ACTIVE",
               "MIGRATED",
               "PENDING",
-              "RESOLVED"
+              "RESOLVED",
+              "UNKNOWN"
             ]
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -3872,8 +3873,7 @@
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "activeInstancesWithErrorCount",
                   "type": "number"
@@ -3907,7 +3907,8 @@
                   "rawRefName": "schema",
                   "wrapper": true
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -3951,8 +3952,7 @@
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "activeInstancesWithErrorCount",
                   "type": "number"
@@ -3965,7 +3965,8 @@
                   "name": "errorMessage",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -4099,21 +4100,20 @@
                   "type": "string"
                 },
                 {
-                  "name": "variables",
-                  "type": "object"
-                },
-                {
-                  "name": "worker",
-                  "type": "string"
-                }
-              ],
-              "optional": [
-                {
                   "name": "userTask",
                   "type": "object",
                   "nullable": true,
                   "children": {
                     "required": [
+                      {
+                        "name": "action",
+                        "type": "string"
+                      },
+                      {
+                        "name": "assignee",
+                        "type": "string",
+                        "nullable": true
+                      },
                       {
                         "name": "candidateGroups",
                         "type": "array<string>"
@@ -4125,17 +4125,6 @@
                       {
                         "name": "changedAttributes",
                         "type": "array<string>"
-                      }
-                    ],
-                    "optional": [
-                      {
-                        "name": "action",
-                        "type": "string"
-                      },
-                      {
-                        "name": "assignee",
-                        "type": "string",
-                        "nullable": true
                       },
                       {
                         "name": "dueDate",
@@ -4149,7 +4138,8 @@
                       },
                       {
                         "name": "formKey",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "priority",
@@ -4161,10 +4151,20 @@
                         "type": "string",
                         "nullable": true
                       }
-                    ]
+                    ],
+                    "optional": []
                   }
+                },
+                {
+                  "name": "variables",
+                  "type": "object"
+                },
+                {
+                  "name": "worker",
+                  "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -4183,8 +4183,23 @@
             "children": {
               "required": [
                 {
+                  "name": "creationTime",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "customHeaders",
                   "type": "object"
+                },
+                {
+                  "name": "deadline",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "deniedReason",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "elementId",
@@ -4196,8 +4211,28 @@
                   "type": "string"
                 },
                 {
+                  "name": "endTime",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "errorCode",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "errorMessage",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "hasFailedWithRetriesLeft",
                   "type": "boolean"
+                },
+                {
+                  "name": "isDenied",
+                  "type": "boolean",
+                  "nullable": true
                 },
                 {
                   "name": "jobKey",
@@ -4212,6 +4247,11 @@
                     "TASK_LISTENER",
                     "AD_HOC_SUB_PROCESS"
                   ]
+                },
+                {
+                  "name": "lastUpdateTime",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "listenerEventType",
@@ -4278,46 +4318,7 @@
                   "type": "string"
                 }
               ],
-              "optional": [
-                {
-                  "name": "creationTime",
-                  "type": "string"
-                },
-                {
-                  "name": "deadline",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "deniedReason",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "endTime",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "errorCode",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "errorMessage",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "isDenied",
-                  "type": "boolean",
-                  "nullable": true
-                },
-                {
-                  "name": "lastUpdateTime",
-                  "type": "string"
-                }
-              ]
+              "optional": []
             }
           },
           {
@@ -4747,6 +4748,64 @@
       }
     },
     {
+      "path": "/jobs/statistics/errors",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "errorCode",
+                  "type": "string"
+                },
+                {
+                  "name": "errorMessage",
+                  "type": "string"
+                },
+                {
+                  "name": "workers",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
       "path": "/license",
       "method": "GET",
       "status": "200",
@@ -4778,8 +4837,7 @@
       "method": "POST",
       "status": "201",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "claimName",
             "type": "string"
@@ -4796,7 +4854,8 @@
             "name": "name",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -4809,8 +4868,7 @@
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "claimName",
                   "type": "string"
@@ -4827,7 +4885,8 @@
                   "name": "name",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -4866,8 +4925,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "claimName",
             "type": "string"
@@ -4884,7 +4942,8 @@
             "name": "name",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -4892,8 +4951,7 @@
       "method": "PUT",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "claimName",
             "type": "string"
@@ -4910,7 +4968,8 @@
             "name": "name",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -4925,15 +4984,9 @@
             "children": {
               "required": [
                 {
-                  "name": "rootProcessInstanceKey",
+                  "name": "correlationKey",
                   "type": "string",
                   "nullable": true
-                }
-              ],
-              "optional": [
-                {
-                  "name": "correlationKey",
-                  "type": "string"
                 },
                 {
                   "name": "elementId",
@@ -4941,7 +4994,8 @@
                 },
                 {
                   "name": "elementInstanceKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "lastUpdatedDate",
@@ -4971,11 +5025,18 @@
                 },
                 {
                   "name": "processDefinitionKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processInstanceKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "tenantId",
@@ -4984,7 +5045,8 @@
                   "rawRefName": "schema",
                   "wrapper": true
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -5023,8 +5085,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "messageKey",
             "type": "string"
@@ -5037,7 +5098,8 @@
             "name": "tenantId",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5045,8 +5107,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "messageKey",
             "type": "string"
@@ -5055,7 +5116,8 @@
             "name": "tenantId",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5068,8 +5130,7 @@
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "hasStartForm",
                   "type": "boolean"
@@ -5104,7 +5165,8 @@
                   "type": "string",
                   "nullable": true
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -5148,8 +5210,7 @@
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "activeSubscriptions",
                   "type": "number"
@@ -5170,7 +5231,8 @@
                   "name": "tenantId",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -5214,8 +5276,7 @@
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "activeInstancesWithIncidentCount",
                   "type": "number"
@@ -5247,7 +5308,8 @@
                   "rawRefName": "schema",
                   "wrapper": true
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -5286,8 +5348,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "hasStartForm",
             "type": "boolean"
@@ -5322,7 +5383,8 @@
             "type": "string",
             "nullable": true
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5330,8 +5392,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "formId",
             "type": "string"
@@ -5342,7 +5403,7 @@
           },
           {
             "name": "schema",
-            "type": "object"
+            "type": "string"
           },
           {
             "name": "tenantId",
@@ -5352,7 +5413,8 @@
             "name": "version",
             "type": "number"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5365,8 +5427,7 @@
             "name": "items",
             "type": "array<items>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "active",
                   "type": "number"
@@ -5387,7 +5448,8 @@
                   "name": "incidents",
                   "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -5476,6 +5538,11 @@
       "schema": {
         "required": [
           {
+            "name": "businessId",
+            "type": "string",
+            "nullable": true
+          },
+          {
             "name": "processDefinitionId",
             "type": "string"
           },
@@ -5504,13 +5571,7 @@
             "type": "object"
           }
         ],
-        "optional": [
-          {
-            "name": "businessId",
-            "type": "string",
-            "nullable": true
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -5518,8 +5579,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "batchOperationKey",
             "type": "string"
@@ -5540,7 +5600,8 @@
               "UPDATE_VARIABLE"
             ]
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5548,8 +5609,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "batchOperationKey",
             "type": "string"
@@ -5570,7 +5630,8 @@
               "UPDATE_VARIABLE"
             ]
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5578,8 +5639,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "batchOperationKey",
             "type": "string"
@@ -5600,7 +5660,8 @@
               "UPDATE_VARIABLE"
             ]
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5608,8 +5669,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "batchOperationKey",
             "type": "string"
@@ -5630,7 +5690,8 @@
               "UPDATE_VARIABLE"
             ]
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5638,8 +5699,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "batchOperationKey",
             "type": "string"
@@ -5660,7 +5720,8 @@
               "UPDATE_VARIABLE"
             ]
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5893,8 +5954,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "batchOperationKey",
             "type": "string"
@@ -5915,7 +5975,8 @@
               "UPDATE_VARIABLE"
             ]
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5929,22 +5990,6 @@
             "type": "array<schema>",
             "children": {
               "required": [
-                {
-                  "name": "jobKey",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "tenantId",
-                  "type": "string"
-                }
-              ],
-              "optional": [
                 {
                   "name": "creationTime",
                   "type": "string"
@@ -5988,6 +6033,11 @@
                   "type": "string"
                 },
                 {
+                  "name": "jobKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "processDefinitionId",
                   "type": "string"
                 },
@@ -6000,16 +6050,27 @@
                   "type": "string"
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "state",
                   "type": "string",
                   "enumValues": [
                     "ACTIVE",
                     "MIGRATED",
                     "PENDING",
-                    "RESOLVED"
+                    "RESOLVED",
+                    "UNKNOWN"
                   ]
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -6055,13 +6116,6 @@
             "children": {
               "required": [
                 {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "nullable": true
-                }
-              ],
-              "optional": [
-                {
                   "name": "elementId",
                   "type": "string"
                 },
@@ -6078,6 +6132,11 @@
                   "type": "string"
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "sequenceFlowId",
                   "type": "string"
                 },
@@ -6088,7 +6147,8 @@
                   "rawRefName": "schema",
                   "wrapper": true
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -6105,8 +6165,7 @@
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "active",
                   "type": "number"
@@ -6127,7 +6186,8 @@
                   "name": "incidents",
                   "type": "number"
                 }
-              ]
+              ],
+              "optional": []
             }
           }
         ],
@@ -6139,8 +6199,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "resourceId",
             "type": "string"
@@ -6163,9 +6222,11 @@
           },
           {
             "name": "versionTag",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -6184,18 +6245,11 @@
       "schema": {
         "required": [
           {
-            "name": "resourceKey",
-            "type": "string"
-          }
-        ],
-        "optional": [
-          {
             "name": "batchOperation",
             "type": "schema",
             "nullable": true,
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "batchOperationKey",
                   "type": "string"
@@ -6216,10 +6270,16 @@
                     "UPDATE_VARIABLE"
                   ]
                 }
-              ]
+              ],
+              "optional": []
             }
+          },
+          {
+            "name": "resourceKey",
+            "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -6227,11 +6287,11 @@
       "method": "POST",
       "status": "201",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "description",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "name",
@@ -6241,7 +6301,8 @@
             "name": "roleId",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -6254,11 +6315,11 @@
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "description",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "name",
@@ -6268,7 +6329,8 @@
                   "name": "roleId",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -6307,11 +6369,11 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "description",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "name",
@@ -6321,7 +6383,8 @@
             "name": "roleId",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -6329,11 +6392,11 @@
       "method": "PUT",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "description",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "name",
@@ -6343,7 +6406,8 @@
             "name": "roleId",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -6356,13 +6420,13 @@
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "clientId",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -6406,13 +6470,13 @@
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "groupId",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -6456,8 +6520,7 @@
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "claimName",
                   "type": "string"
@@ -6474,7 +6537,8 @@
                   "name": "name",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -6518,8 +6582,7 @@
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "username",
                   "type": "string",
@@ -6527,7 +6590,8 @@
                   "rawRefName": "schema",
                   "wrapper": true
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -6566,15 +6630,16 @@
       "method": "POST",
       "status": "201",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "email",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "name",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "username",
@@ -6583,7 +6648,8 @@
             "rawRefName": "schema",
             "wrapper": true
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -6611,12 +6677,6 @@
       "schema": {
         "required": [
           {
-            "name": "tenants",
-            "type": "object"
-          }
-        ],
-        "optional": [
-          {
             "name": "activeTenants",
             "type": "number"
           },
@@ -6631,8 +6691,56 @@
           {
             "name": "processInstances",
             "type": "number"
+          },
+          {
+            "name": "tenants",
+            "type": "object"
           }
-        ]
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/system/configuration",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "jobMetrics",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "enabled",
+                  "type": "boolean"
+                },
+                {
+                  "name": "exportInterval",
+                  "type": "string"
+                },
+                {
+                  "name": "maxJobTypeLength",
+                  "type": "number"
+                },
+                {
+                  "name": "maxTenantIdLength",
+                  "type": "number"
+                },
+                {
+                  "name": "maxUniqueKeys",
+                  "type": "number"
+                },
+                {
+                  "name": "maxWorkerNameLength",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
       }
     },
     {
@@ -6640,11 +6748,11 @@
       "method": "POST",
       "status": "201",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "description",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "name",
@@ -6657,7 +6765,8 @@
             "rawRefName": "schema",
             "wrapper": true
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -6670,11 +6779,11 @@
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "description",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "name",
@@ -6687,7 +6796,8 @@
                   "rawRefName": "schema",
                   "wrapper": true
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -6726,11 +6836,11 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "description",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "name",
@@ -6743,7 +6853,8 @@
             "rawRefName": "schema",
             "wrapper": true
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -6751,11 +6862,11 @@
       "method": "PUT",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "description",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "name",
@@ -6768,7 +6879,8 @@
             "rawRefName": "schema",
             "wrapper": true
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -6781,13 +6893,13 @@
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "clientId",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -6831,13 +6943,13 @@
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "groupId",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -6881,8 +6993,7 @@
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "claimName",
                   "type": "string"
@@ -6899,7 +7010,8 @@
                   "name": "name",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -6943,11 +7055,11 @@
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "description",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "name",
@@ -6957,7 +7069,8 @@
                   "name": "roleId",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -7001,8 +7114,7 @@
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "username",
                   "type": "string",
@@ -7010,7 +7122,8 @@
                   "rawRefName": "schema",
                   "wrapper": true
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -7107,6 +7220,11 @@
             }
           },
           {
+            "name": "clusterId",
+            "type": "string",
+            "nullable": true
+          },
+          {
             "name": "clusterSize",
             "type": "number"
           },
@@ -7127,13 +7245,7 @@
             "type": "number"
           }
         ],
-        "optional": [
-          {
-            "name": "clusterId",
-            "type": "string",
-            "nullable": true
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -7141,15 +7253,16 @@
       "method": "POST",
       "status": "201",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "email",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "name",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "username",
@@ -7158,7 +7271,8 @@
             "rawRefName": "schema",
             "wrapper": true
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -7171,15 +7285,16 @@
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "email",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "name",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "username",
@@ -7188,7 +7303,8 @@
                   "rawRefName": "schema",
                   "wrapper": true
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -7227,15 +7343,16 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "email",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "name",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "username",
@@ -7244,7 +7361,8 @@
             "rawRefName": "schema",
             "wrapper": true
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -7252,15 +7370,16 @@
       "method": "PUT",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "email",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "name",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "username",
@@ -7269,7 +7388,8 @@
             "rawRefName": "schema",
             "wrapper": true
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -7302,6 +7422,10 @@
                   "nullable": true
                 },
                 {
+                  "name": "creationDate",
+                  "type": "string"
+                },
+                {
                   "name": "customHeaders",
                   "type": "object"
                 },
@@ -7309,6 +7433,14 @@
                   "name": "dueDate",
                   "type": "string",
                   "nullable": true
+                },
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "elementInstanceKey",
+                  "type": "string"
                 },
                 {
                   "name": "externalFormReference",
@@ -7326,32 +7458,9 @@
                   "nullable": true
                 },
                 {
-                  "name": "rootProcessInstanceKey",
+                  "name": "name",
                   "type": "string",
                   "nullable": true
-                },
-                {
-                  "name": "tags",
-                  "type": "array<string>",
-                  "rawRefName": "tags"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "creationDate",
-                  "type": "string"
-                },
-                {
-                  "name": "elementId",
-                  "type": "string"
-                },
-                {
-                  "name": "elementInstanceKey",
-                  "type": "string"
-                },
-                {
-                  "name": "name",
-                  "type": "string"
                 },
                 {
                   "name": "priority",
@@ -7379,6 +7488,11 @@
                   "nullable": true
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "state",
                   "type": "string",
                   "enumValues": [
@@ -7394,6 +7508,11 @@
                   ]
                 },
                 {
+                  "name": "tags",
+                  "type": "array<string>",
+                  "rawRefName": "tags"
+                },
+                {
                   "name": "tenantId",
                   "type": "string",
                   "underlyingPrimitive": "string",
@@ -7404,7 +7523,8 @@
                   "name": "userTaskKey",
                   "type": "string"
                 }
-              ]
+              ],
+              "optional": []
             }
           },
           {
@@ -7463,6 +7583,10 @@
             "nullable": true
           },
           {
+            "name": "creationDate",
+            "type": "string"
+          },
+          {
             "name": "customHeaders",
             "type": "object"
           },
@@ -7470,6 +7594,14 @@
             "name": "dueDate",
             "type": "string",
             "nullable": true
+          },
+          {
+            "name": "elementId",
+            "type": "string"
+          },
+          {
+            "name": "elementInstanceKey",
+            "type": "string"
           },
           {
             "name": "externalFormReference",
@@ -7487,32 +7619,9 @@
             "nullable": true
           },
           {
-            "name": "rootProcessInstanceKey",
+            "name": "name",
             "type": "string",
             "nullable": true
-          },
-          {
-            "name": "tags",
-            "type": "array<string>",
-            "rawRefName": "tags"
-          }
-        ],
-        "optional": [
-          {
-            "name": "creationDate",
-            "type": "string"
-          },
-          {
-            "name": "elementId",
-            "type": "string"
-          },
-          {
-            "name": "elementInstanceKey",
-            "type": "string"
-          },
-          {
-            "name": "name",
-            "type": "string"
           },
           {
             "name": "priority",
@@ -7540,6 +7649,11 @@
             "nullable": true
           },
           {
+            "name": "rootProcessInstanceKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
             "name": "state",
             "type": "string",
             "enumValues": [
@@ -7555,6 +7669,11 @@
             ]
           },
           {
+            "name": "tags",
+            "type": "array<string>",
+            "rawRefName": "tags"
+          },
+          {
             "name": "tenantId",
             "type": "string",
             "underlyingPrimitive": "string",
@@ -7565,7 +7684,8 @@
             "name": "userTaskKey",
             "type": "string"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -7587,6 +7707,12 @@
                 {
                   "name": "actorType",
                   "type": "string",
+                  "enumValues": [
+                    "ANONYMOUS",
+                    "CLIENT",
+                    "UNKNOWN",
+                    "USER"
+                  ],
                   "nullable": true
                 },
                 {
@@ -7814,8 +7940,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "formId",
             "type": "string"
@@ -7826,7 +7951,7 @@
           },
           {
             "name": "schema",
-            "type": "object"
+            "type": "string"
           },
           {
             "name": "tenantId",
@@ -7836,7 +7961,8 @@
             "name": "version",
             "type": "number"
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -7850,6 +7976,10 @@
             "type": "array<0>",
             "children": {
               "required": [
+                {
+                  "name": "isTruncated",
+                  "type": "boolean"
+                },
                 {
                   "name": "name",
                   "type": "string"
@@ -7872,20 +8002,15 @@
                   "type": "string"
                 },
                 {
+                  "name": "value",
+                  "type": "string"
+                },
+                {
                   "name": "variableKey",
                   "type": "string"
                 }
               ],
-              "optional": [
-                {
-                  "name": "isTruncated",
-                  "type": "boolean"
-                },
-                {
-                  "name": "value",
-                  "type": "string"
-                }
-              ]
+              "optional": []
             }
           },
           {
@@ -7931,6 +8056,10 @@
             "children": {
               "required": [
                 {
+                  "name": "isTruncated",
+                  "type": "boolean"
+                },
+                {
                   "name": "name",
                   "type": "string"
                 },
@@ -7952,20 +8081,15 @@
                   "type": "string"
                 },
                 {
+                  "name": "value",
+                  "type": "string"
+                },
+                {
                   "name": "variableKey",
                   "type": "string"
                 }
               ],
-              "optional": [
-                {
-                  "name": "isTruncated",
-                  "type": "boolean"
-                },
-                {
-                  "name": "value",
-                  "type": "string"
-                }
-              ]
+              "optional": []
             }
           },
           {
@@ -8027,16 +8151,15 @@
             "type": "string"
           },
           {
+            "name": "value",
+            "type": "string"
+          },
+          {
             "name": "variableKey",
             "type": "string"
           }
         ],
-        "optional": [
-          {
-            "name": "value",
-            "type": "string"
-          }
-        ]
+        "optional": []
       }
     }
   ]

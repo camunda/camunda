@@ -24,17 +24,20 @@ import com.google.cloud.storage.StorageException;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.StreamSupport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ManifestManager {
 
@@ -49,6 +52,7 @@ public final class ManifestManager {
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
   public static final int PRECONDITION_FAILED = 412;
+  private static final Logger LOG = LoggerFactory.getLogger(ManifestManager.class);
 
   /**
    * Format for path to all manifests.
@@ -78,22 +82,26 @@ public final class ManifestManager {
   private final BucketInfo bucketInfo;
   private final Storage client;
   private final String basePath;
+  private final ExecutorService executor;
 
-  ManifestManager(final Storage client, final BucketInfo bucketInfo, final String basePath) {
+  ManifestManager(
+      final Storage client,
+      final BucketInfo bucketInfo,
+      final String basePath,
+      final ExecutorService executor) {
     this.bucketInfo = bucketInfo;
     this.client = client;
     this.basePath = basePath;
+    this.executor = executor;
   }
 
   PersistedManifest createInitialManifest(final Backup backup) {
-    final var manifestBlobInfo = manifestBlobInfo(backup.id());
     final var manifest = Manifest.createInProgress(backup);
+    final var blobInfo = manifestBlobInfoWithMetadata(backup.id(), manifest);
     try {
       final var blob =
           client.create(
-              manifestBlobInfo,
-              MAPPER.writeValueAsBytes(manifest),
-              BlobTargetOption.doesNotExist());
+              blobInfo, MAPPER.writeValueAsBytes(manifest), BlobTargetOption.doesNotExist());
       return new PersistedManifest(blob.getGeneration(), manifest);
     } catch (final StorageException e) {
       if (e.getCode() == PRECONDITION_FAILED) { // blob must already exist
@@ -110,7 +118,7 @@ public final class ManifestManager {
     final var completed = persistedManifest.manifest().complete();
     try {
       client.create(
-          manifestBlobInfo(completed.id()),
+          manifestBlobInfoWithMetadata(completed.id(), completed),
           MAPPER.writeValueAsBytes(completed),
           BlobTargetOption.generationMatch(generation));
     } catch (final StorageException e) {
@@ -138,11 +146,11 @@ public final class ManifestManager {
   }
 
   void markAsFailed(final BackupIdentifier id, final String failureReason) {
-    final var blobInfo = manifestBlobInfo(id);
-    final var blob = client.get(blobInfo.getBlobId());
+    final var blob = client.get(manifestBlobInfo(id).getBlobId());
     try {
       if (blob == null) {
         final var failed = Manifest.createFailed(id);
+        final var blobInfo = manifestBlobInfoWithMetadata(id, failed);
         client.create(blobInfo, MAPPER.writeValueAsBytes(failed), BlobTargetOption.doesNotExist());
       } else {
         final var existingManifest = MAPPER.readValue(blob.getContent(), Manifest.class);
@@ -169,35 +177,61 @@ public final class ManifestManager {
     if (existingManifest != updatedManifest) {
       try {
         client.create(
-            manifestBlobInfo(existingManifest.id()), MAPPER.writeValueAsBytes(updatedManifest));
+            manifestBlobInfoWithMetadata(existingManifest.id(), updatedManifest),
+            MAPPER.writeValueAsBytes(updatedManifest));
       } catch (final JsonProcessingException e) {
         throw new RuntimeException(e);
       }
     }
   }
 
-  public Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
-    final var spliterator =
-        Spliterators.spliteratorUnknownSize(
-            client
-                .list(bucketInfo.getName(), BlobListOption.prefix(wildcardPrefix(wildcard)))
-                .iterateAll()
-                .iterator(),
-            Spliterator.IMMUTABLE);
-    return StreamSupport.stream(spliterator, false)
-        .filter(filterBlobsByWildcard(wildcard))
-        .parallel()
-        .map(Blob::getContent)
-        .map(
-            content -> {
-              try {
-                return MAPPER.readValue(content, Manifest.class);
-              } catch (final IOException e) {
-                throw new UncheckedIOException(e);
-              }
-            })
-        .filter(m -> wildcard.matches(m.id()))
+  /**
+   * Lists backup statuses by reading status information directly from blob custom metadata,
+   * avoiding the need to download each manifest's content. Falls back to downloading the manifest
+   * for blobs that don't have metadata (written by older versions).
+   */
+  public Collection<BackupStatus> listBackupStatuses(final BackupIdentifierWildcard wildcard) {
+    final var blobFilter = filterBlobsByWildcard(wildcard);
+    LOG.debug("Listing backup statuses for wildcard {}", wildcard);
+    final var listing =
+        client
+            .list(bucketInfo.getName(), BlobListOption.prefix(wildcardPrefix(wildcard)))
+            .iterateAll();
+    final var statusFutures = new ArrayList<CompletableFuture<BackupStatus>>();
+    for (final var blob : listing) {
+      if (!blobFilter.test(blob)) {
+        continue;
+      }
+      final var fromMetadata = ManifestMetadata.toBackupStatus(blob, basePath, MANIFEST_BLOB_NAME);
+      if (fromMetadata.isPresent()) {
+        statusFutures.add(CompletableFuture.completedFuture(fromMetadata.get()));
+      } else {
+        // Fallback: download the manifest for blobs without metadata
+        statusFutures.add(downloadManifestStatus(blob));
+      }
+    }
+
+    CompletableFuture.allOf(statusFutures.toArray(CompletableFuture[]::new)).join();
+    LOG.debug("Found {} matching backup statuses for wildcard {}", statusFutures.size(), wildcard);
+
+    return statusFutures.stream()
+        .map(CompletableFuture::join)
+        .filter(status -> wildcard.matches(status.id()))
         .toList();
+  }
+
+  private CompletableFuture<BackupStatus> downloadManifestStatus(final Blob blob) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            final var manifest =
+                MAPPER.readValue(client.readAllBytes(blob.getBlobId()), Manifest.class);
+            return Manifest.toStatus(manifest);
+          } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        },
+        executor);
   }
 
   public void deleteManifest(final Manifest manifest) {
@@ -214,9 +248,10 @@ public final class ManifestManager {
           case FAILED -> manifest.asFailed().delete();
         };
     if (manifest != deletedManifest) {
-      final var blobInfo = manifestBlobInfo(manifest.id());
       try {
-        client.create(blobInfo, MAPPER.writeValueAsBytes(deletedManifest));
+        client.create(
+            manifestBlobInfoWithMetadata(manifest.id(), deletedManifest),
+            MAPPER.writeValueAsBytes(deletedManifest));
       } catch (final JsonProcessingException e) {
         throw new RuntimeException(e);
       }
@@ -228,6 +263,17 @@ public final class ManifestManager {
         MANIFEST_PATH_FORMAT.formatted(
             basePath, id.partitionId(), id.checkpointId(), id.nodeId(), MANIFEST_BLOB_NAME);
     return BlobInfo.newBuilder(bucketInfo, blobName).setContentType("application/json").build();
+  }
+
+  private BlobInfo manifestBlobInfoWithMetadata(
+      final BackupIdentifier id, final Manifest manifest) {
+    final var blobName =
+        MANIFEST_PATH_FORMAT.formatted(
+            basePath, id.partitionId(), id.checkpointId(), id.nodeId(), MANIFEST_BLOB_NAME);
+    return BlobInfo.newBuilder(bucketInfo, blobName)
+        .setContentType("application/json")
+        .setMetadata(ManifestMetadata.fromManifest(manifest))
+        .build();
   }
 
   /**

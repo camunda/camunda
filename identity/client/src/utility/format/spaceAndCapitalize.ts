@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const spaceAndCapitalize = (str: string): string => {
+const spaceAndCapitalize = (str: string | null | undefined): string => {
+  if (!str) return "";
   const spaced = str.replace(/[-_]/gi, " ");
   return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
 };

@@ -18,7 +18,7 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
-import io.camunda.zeebe.engine.processing.deployment.transform.BpmnValidatorConfig;
+import io.camunda.zeebe.engine.processing.deployment.transform.ValidationConfig;
 import io.camunda.zeebe.model.bpmn.instance.NamedBpmnElement;
 import io.camunda.zeebe.model.bpmn.instance.dc.Font;
 import io.camunda.zeebe.model.bpmn.instance.di.Diagram;
@@ -81,7 +81,7 @@ public class NamedBpmnElementValidatorsArchTest {
 
       // Use reflection to call getValidators and extract registered types
       final var validators =
-          ZeebeConfigurationValidators.getValidators(BpmnValidatorConfig.builder().build());
+          ZeebeConfigurationValidators.getValidators(ValidationConfig.builder().build());
 
       final Set<String> registeredTypes =
           validators.stream()

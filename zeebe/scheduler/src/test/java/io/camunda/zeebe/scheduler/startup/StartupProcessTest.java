@@ -57,6 +57,34 @@ class StartupProcessTest {
 
   private static final ConcurrencyControl TEST_CONCURRENCY_CONTROL = new TestConcurrencyControl();
 
+  private static final class InterruptibleStartupStep implements StartupStep<Object> {
+
+    private volatile boolean shutdownCalled = false;
+
+    @Override
+    public String getName() {
+      return "InterruptibleStartupStep";
+    }
+
+    @Override
+    public ActorFuture<Object> startup(final Object o) {
+      // Return a future that never completes on its own - it will be completed exceptionally
+      // when the step is interrupted by the shutdown process
+      return new TestActorFuture<>();
+    }
+
+    @Override
+    public ActorFuture<Object> shutdown(final Object o) {
+      shutdownCalled = true;
+      return completedFuture(o);
+    }
+
+    @Override
+    public boolean isInterruptible() {
+      return true;
+    }
+  }
+
   @Nested
   class MainUseCase {
 
@@ -235,6 +263,39 @@ class StartupProcessTest {
 
       assertThat(startupFuture.isCompletedExceptionally()).isTrue();
       assertThat(shutdownFuture.join()).isSameAs(SHUTDOWN_CONTEXT);
+    }
+
+    @Test
+    void shouldInterruptOngoingStartupStepWhenShutdownIsCalledAndStepIsInterruptible() {
+      // given
+      final var step1 = new InterruptibleStartupStep();
+
+      final var sut = new StartupProcess<>(List.of(step1, mockStep2));
+
+      // when
+      final var startupFuture = sut.startup(TEST_CONCURRENCY_CONTROL, STARTUP_CONTEXT);
+      // shutdown before the step is completed - this will interrupt the step
+      final var shutdownFuture = sut.shutdown(TEST_CONCURRENCY_CONTROL, SHUTDOWN_CONTEXT);
+
+      // then
+      verifyNoInteractions(mockStep2);
+
+      await().until(startupFuture::isDone);
+      await().until(shutdownFuture::isDone);
+
+      assertThat(startupFuture.isCompletedExceptionally()).isTrue();
+      assertThatThrownBy(startupFuture::join)
+          .isInstanceOf(ExecutionException.class)
+          .cause()
+          .isInstanceOf(StartupProcessException.class)
+          .hasSuppressedException(
+              new StartupProcessStepException(
+                  "InterruptibleStartupStep", new InterruptedException()));
+
+      assertThat(shutdownFuture.join()).isSameAs(SHUTDOWN_CONTEXT);
+
+      // verify that the step was interrupted
+      assertThat(step1.shutdownCalled).isTrue();
     }
   }
 

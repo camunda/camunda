@@ -118,4 +118,110 @@ class RequestValidatorTest {
     assertThat(violations.get(0)).contains("testField");
     assertThat(violations.get(0)).contains("is not a valid key");
   }
+
+  // --- validateProcessDefinitionId tests ---
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "my-process",
+        "_internal",
+        "Process_v2.1",
+        "üöäßÜÖÄ",
+        "中文流程",
+        "процесс",
+        "café-workflow"
+      })
+  @DisplayName("Should accept valid process definition IDs including Unicode")
+  void shouldAcceptValidProcessDefinitionIds(final String validId) {
+    // given
+    final List<String> violations = new ArrayList<>();
+
+    // when
+    RequestValidator.validateProcessDefinitionId(validId, violations);
+
+    // then
+    assertThat(violations).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"9invalid", "-dash-start", ".dot-start", "has space", "has\ttab"})
+  @DisplayName("Should reject invalid process definition IDs")
+  void shouldRejectInvalidProcessDefinitionIds(final String invalidId) {
+    // given
+    final List<String> violations = new ArrayList<>();
+
+    // when
+    RequestValidator.validateProcessDefinitionId(invalidId, violations);
+
+    // then
+    assertThat(violations).hasSize(1);
+    assertThat(violations.getFirst()).contains("processDefinitionId");
+  }
+
+  @Test
+  @DisplayName("Should accept null process definition ID without violations")
+  void shouldAcceptNullProcessDefinitionId() {
+    // given
+    final List<String> violations = new ArrayList<>();
+
+    // when
+    RequestValidator.validateProcessDefinitionId(null, violations);
+
+    // then
+    assertThat(violations).isEmpty();
+  }
+
+  // --- validateDecisionDefinitionId tests ---
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "my-decision",
+        "_internal",
+        "Decision_v2.1",
+        "üöäßÜÖÄ",
+        "中文决策",
+        "процесс",
+        "café-workflow"
+      })
+  @DisplayName("Should accept valid decision definition IDs including Unicode")
+  void shouldAcceptValidDecisionDefinitionIds(final String validId) {
+    // given
+    final List<String> violations = new ArrayList<>();
+
+    // when
+    RequestValidator.validateDecisionDefinitionId(validId, violations);
+
+    // then
+    assertThat(violations).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"9invalid", "-dash-start", ".dot-start", "has space", "has\ttab"})
+  @DisplayName("Should reject invalid decision definition IDs")
+  void shouldRejectInvalidDecisionDefinitionIds(final String invalidId) {
+    // given
+    final List<String> violations = new ArrayList<>();
+
+    // when
+    RequestValidator.validateDecisionDefinitionId(invalidId, violations);
+
+    // then
+    assertThat(violations).hasSize(1);
+    assertThat(violations.getFirst()).contains("decisionDefinitionId");
+  }
+
+  @Test
+  @DisplayName("Should accept null decision definition ID without violations")
+  void shouldAcceptNullDecisionDefinitionId() {
+    // given
+    final List<String> violations = new ArrayList<>();
+
+    // when
+    RequestValidator.validateDecisionDefinitionId(null, violations);
+
+    // then
+    assertThat(violations).isEmpty();
+  }
 }

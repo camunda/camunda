@@ -102,8 +102,7 @@ test.describe('Process Instance Modifications', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  // skipped due to bug 41143: https://github.com/camunda/camunda/issues/41143
-  test.skip('Should apply/remove edit variable modifications', async ({
+  test('Should apply/remove edit variable modifications', async ({
     operateProcessInstancePage,
     operateProcessInstanceViewModificationModePage,
   }) => {
@@ -224,13 +223,12 @@ test.describe('Process Instance Modifications', () => {
         operateProcessInstancePage.getVariableTestId('foo'),
       ).toBeVisible();
 
-      // Skipped due to bug 42546: https://github.com/camunda/camunda/issues/42546
-      // await expect(
-      //   operateProcessInstancePage.getEditVariableFieldSelector('test'),
-      // ).toHaveValue('123');
-      // await expect(
-      //   operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      // ).toHaveValue('1');
+      await expect(
+        operateProcessInstancePage.getEditVariableFieldSelector('test'),
+      ).toHaveValue('123');
+      await expect(
+        operateProcessInstancePage.getEditVariableFieldSelector('foo'),
+      ).toHaveValue('1');
     });
 
     await test.step('Undo again and verify all modifications removed', async () => {
@@ -650,10 +648,7 @@ test.describe('Process Instance Modifications', () => {
     });
   });
 
-  // Skipped due to bug 42546: https://github.com/camunda/camunda/issues/42546
-  // !Note: assert the code after the bug is fixed as it was discoverd during the test implementation
-  // eslint-disable-next-line playwright/no-skipped-test
-  test.skip('Should apply/remove add variable modifications', async ({
+  test('Should apply/remove add variable modifications', async ({
     page,
     operateProcessInstancePage,
     operateProcessInstanceViewModificationModePage,
@@ -803,10 +798,9 @@ test.describe('Process Instance Modifications', () => {
     await test.step('Undo again and verify new variable field removed', async () => {
       await operateProcessInstancePage.undoModification();
 
-      // here might be needed change from hidden to add token operation
       await expect(
         operateProcessInstancePage.lastAddedModificationText,
-      ).toBeHidden();
+      ).toBeVisible();
       await expect(
         operateProcessInstancePage.getVariableTestId('newVariables[0]'),
       ).toBeHidden();
@@ -822,7 +816,7 @@ test.describe('Process Instance Modifications', () => {
       const addedTokenInHistory = `${neverFailsHistoryItem}, this element instance is planned to be added`;
       await operateProcessInstancePage.clickTreeItem(addedTokenInHistory);
       await expect(
-        page.getByText(/The Flow Node has no Variables/i),
+        page.getByText(/The element has no Variables/i),
       ).toBeVisible();
 
       await operateProcessInstancePage.addNewVariableModificationMode(

@@ -27,31 +27,19 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final FormSearchClient formSearchClient,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.formSearchClient = formSearchClient;
   }
 
   @Override
-  public FormServices withAuthentication(final CamundaAuthentication authentication) {
-    return new FormServices(
-        brokerClient,
-        securityContextProvider,
-        formSearchClient,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Override
-  public SearchQueryResult<FormEntity> search(final FormQuery query) {
+  public SearchQueryResult<FormEntity> search(
+      final FormQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             formSearchClient
@@ -59,7 +47,7 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
                 .searchForms(query));
   }
 
-  public FormEntity getByKey(final Long key) {
+  public FormEntity getByKey(final Long key, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             formSearchClient
@@ -68,12 +56,13 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
   }
 
   public Optional<FormEntity> getLatestVersionByFormIdAndTenantId(
-      final String formId, final String tenantId) {
+      final String formId, final String tenantId, final CamundaAuthentication authentication) {
     return search(
             SearchQueryBuilders.formSearchQuery()
                 .filter(f -> f.formIds(formId).tenantId(tenantId))
                 .sort(s -> s.version().desc())
-                .build())
+                .build(),
+            authentication)
         .items()
         .stream()
         .findFirst();

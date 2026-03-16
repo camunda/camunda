@@ -31,6 +31,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.cmd.IllegalTenantRequestException;
 import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
+import io.camunda.zeebe.gateway.cmd.InvalidVariableRequestException;
 import io.camunda.zeebe.msgpack.MsgpackException;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
@@ -149,6 +150,10 @@ public class ErrorMapper {
       case final IllegalTenantRequestException ignored -> {
         LOGGER.debug(error.getMessage(), rootError);
         yield new ServiceError(error.getMessage(), UNAUTHORIZED);
+      }
+      case final InvalidVariableRequestException ignored -> {
+        LOGGER.debug(error.getMessage(), rootError);
+        yield new ServiceError(error.getMessage(), INVALID_ARGUMENT);
       }
       case final IllegalArgumentException ignored -> {
         final var message = "Expected to handle request, but JSON property was invalid";

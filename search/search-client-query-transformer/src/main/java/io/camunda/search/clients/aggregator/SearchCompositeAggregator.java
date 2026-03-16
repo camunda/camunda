@@ -8,8 +8,13 @@
 package io.camunda.search.clients.aggregator;
 
 import io.camunda.util.ObjectBuilder;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public record SearchCompositeAggregator(
     String name,
@@ -18,6 +23,46 @@ public record SearchCompositeAggregator(
     List<SearchAggregator> aggregations,
     List<SearchAggregator> sources)
     implements SearchAggregator {
+
+  public static final String COMPOSITE_KEY_DELIMITER = "__";
+
+  /**
+   * Joins a map of composite source key→value pairs into a single bucket map key.
+   *
+   * <p>Entries are sorted by key name before joining to guarantee a deterministic order regardless
+   * of the underlying {@link Map} iteration order.
+   *
+   * @param keyValues a map of source name → field value (as produced by a composite bucket)
+   * @return the joined key string
+   */
+  public static String joinKeys(final Map<String, String> keyValues) {
+    return keyValues.entrySet().stream()
+        .sorted(Map.Entry.comparingByKey())
+        .map(Map.Entry::getValue)
+        .collect(Collectors.joining(COMPOSITE_KEY_DELIMITER));
+  }
+
+  /**
+   * Splits a composite bucket key values string back into a {@code Map} of source name → value.
+   *
+   * <p>The provided {@code keys} are sorted alphabetically to match the order used by {@link
+   * #joinKeys(Map)}. The split uses a bounded limit equal to the number of keys so that the last
+   * value may itself contain the delimiter.
+   *
+   * @param compositeKeyValues the joined values string (e.g. {@code "THECODE__THEMESSAGE"})
+   * @param keys the source names whose values are encoded in {@code compositeKeyValues} (e.g.
+   *     {@code "errorCode", "errorMessage"})
+   * @return a map from source name to its value
+   */
+  public static Map<String, String> splitKeyValues(
+      final String compositeKeyValues, final String... keys) {
+    Arrays.sort(keys);
+    final String[] parts = compositeKeyValues.split(COMPOSITE_KEY_DELIMITER, keys.length);
+    final Map<String, String> result = new HashMap<>();
+    IntStream.range(0, keys.length)
+        .forEach(i -> result.put(keys[i], i < parts.length ? parts[i] : null));
+    return result;
+  }
 
   @Override
   public String getName() {

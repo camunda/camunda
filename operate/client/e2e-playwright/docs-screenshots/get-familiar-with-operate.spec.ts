@@ -117,19 +117,17 @@ test.describe('get familiar with operate', () => {
       URL_API_PATTERN,
       mockProcessInstanceDetailResponses({
         processInstanceDetail: runningOrderProcessInstance.detail,
-        processInstanceDetailV2: runningOrderProcessInstance.detailV2,
         callHierarchy: runningOrderProcessInstance.callHierarchy,
         elementInstances: runningOrderProcessInstance.elementInstances,
         statistics: runningOrderProcessInstance.statistics,
         sequenceFlows: runningOrderProcessInstance.sequenceFlows,
-        sequenceFlowsV2: runningOrderProcessInstance.sequenceFlowsV2,
         variables: runningOrderProcessInstance.variables,
         xml: runningOrderProcessInstance.xml,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: '225179981395430',
+      key: '225179981395430',
     });
 
     await page.waitForTimeout(2000);

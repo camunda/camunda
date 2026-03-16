@@ -42,7 +42,7 @@ test.describe('Call Activities', () => {
 
     const {instanceHeader, diagram, instanceHistory} = processInstancePage;
 
-    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({key: processInstanceKey});
 
     await expect(page.getByTestId('instance-header-skeleton')).toBeHidden();
 
@@ -95,10 +95,10 @@ test.describe('Call Activities', () => {
 
     // Expect correct diagram
 
-    await expect(diagram.getFlowNode('call activity')).toBeVisible();
+    await expect(diagram.getElement('call activity')).toBeVisible();
 
     // Navigate to called process instance
-    await diagram.clickFlowNode('call Activity');
+    await diagram.clickElement('call Activity');
 
     const popover = page.getByTestId('popover');
 
@@ -130,7 +130,7 @@ test.describe('Call Activities', () => {
     await expect(instanceHistory.getByText('Event_0y6k56d')).toBeVisible();
 
     // Expect correct diagram
-    await expect(diagram.getFlowNode('Process started')).toBeVisible();
+    await expect(diagram.getElement('Process started')).toBeVisible();
 
     // Navigate to parent instance
     await instanceHeader
@@ -158,6 +158,6 @@ test.describe('Call Activities', () => {
     ).toBeVisible();
     await expect(instanceHistory.getByText('Event_1p0nsc7')).toBeVisible();
 
-    await expect(diagram.getFlowNode('Call Activity')).toBeVisible();
+    await expect(diagram.getElement('Call Activity')).toBeVisible();
   });
 });

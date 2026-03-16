@@ -49,11 +49,9 @@ public class ConditionalController {
 
   private CompletableFuture<ResponseEntity<Object>> evaluateConditionalEvent(
       final EvaluateConditionalRequest createRequest) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () ->
-            conditionalServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .evaluateConditional(createRequest),
+        () -> conditionalServices.evaluateConditional(createRequest, authentication),
         ResponseMapper::toConditionalEvaluationResponse,
         HttpStatus.OK);
   }

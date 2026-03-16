@@ -11,6 +11,7 @@ import type {Locator, Page} from '@playwright/test';
 export class Diagram {
   private page: Page;
   readonly diagram: Locator;
+  readonly diagramCanvas: Locator;
   readonly popover: Locator;
   readonly resetDiagramZoomButton: Locator;
   readonly diagramSpinner: Locator;
@@ -19,6 +20,7 @@ export class Diagram {
   constructor(page: Page) {
     this.page = page;
     this.diagram = this.page.getByTestId('diagram');
+    this.diagramCanvas = this.page.getByTestId('diagram-canvas');
     this.popover = this.page.getByTestId('popover');
     this.resetDiagramZoomButton = this.page.getByRole('button', {
       name: /Reset diagram zoom/i,
@@ -50,23 +52,29 @@ export class Diagram {
     await this.page.mouse.up();
   }
 
-  clickFlowNode(flowNodeName: string) {
-    return this.getFlowNode(flowNodeName).click();
+  clickElement(elementName: string) {
+    return this.getElement(elementName).click();
   }
 
   clickSubProcess(subProcessName: string) {
     // Click on the top left corner of the sub process.
     // This avoids clicking on child elements inside the sub process.
-    return this.getFlowNode(subProcessName).click({
+    return this.getElement(subProcessName).click({
       position: {x: 5, y: 5},
       force: true,
     });
   }
 
-  getFlowNode(flowNodeName: string) {
-    return this.diagram
-      .locator('.djs-element')
-      .filter({hasText: new RegExp(`^${flowNodeName}$`, 'i')});
+  getElement(elementName: string) {
+    return this.diagramCanvas
+      .locator('.djs-element[data-element-id]')
+      .filter({hasText: new RegExp(`^${elementName}$`, 'i')});
+  }
+
+  getFlowNodeById(elementId: string) {
+    return this.diagramCanvas.locator(
+      `.djs-element[data-element-id="${elementId}"]`,
+    );
   }
 
   clickGateway(gatewayName: string) {
@@ -83,13 +91,13 @@ export class Diagram {
   }
 
   async getLabeledElement(eventName: string) {
-    const eventLabel = this.diagram
+    const eventLabel = this.diagramCanvas
       .locator('.djs-element')
       .filter({hasText: new RegExp(`${eventName}`, 'i')});
 
     const labelId = await eventLabel.getAttribute('data-element-id');
     const eventId = labelId?.split(/_label$/)[0];
-    return this.diagram.locator(`[data-element-id="${eventId}"]`);
+    return this.diagramCanvas.locator(`[data-element-id="${eventId}"]`);
   }
 
   showMetaData() {
@@ -99,7 +107,7 @@ export class Diagram {
   }
 
   getExecutionCount(elementId: string) {
-    return this.diagram.evaluate(
+    return this.diagramCanvas.evaluate(
       (node, {elementId}) => {
         const completedOverlay: HTMLDivElement | null = node.querySelector(
           `[data-container-id="${elementId}"] [data-testid="state-overlay-completed"]`,

@@ -13,10 +13,11 @@ import {
   DeleteModal as Modal,
   UseEntityModalProps,
 } from "src/components/modal";
-import { deleteTenant, DeleteTenantParams } from "src/utility/api/tenants";
+import { deleteTenant } from "src/utility/api/tenants";
 import { useNotifications } from "src/components/notifications";
+import type { Tenant } from "@camunda/camunda-api-zod-schemas/8.9";
 
-const DeleteTenantModal: FC<UseEntityModalProps<DeleteTenantParams>> = ({
+const DeleteTenantModal: FC<UseEntityModalProps<Tenant>> = ({
   open,
   onClose,
   onSuccess,

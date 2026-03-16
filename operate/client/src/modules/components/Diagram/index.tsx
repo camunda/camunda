@@ -6,10 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useRef, useEffect, useLayoutEffect, useState} from 'react';
+import React, {
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useCallback,
+} from 'react';
 import {
   BpmnJS,
   type OnElementSelection,
+  type OnElementDoubleClick,
   type OverlayData,
 } from 'modules/bpmn-js/BpmnJS';
 import DiagramControls from './DiagramControls';
@@ -44,6 +51,76 @@ type Props = {
   highlightedElementIds?: string[];
   nonSelectableNodeTooltipText?: string;
   hasOuterBorderOnSelection?: boolean;
+  onElementDoubleClick?: OnElementDoubleClick;
+  customElementClasses?: [elementId: string, className: string][];
+};
+
+const useFullscreen = (
+  diagramRef: React.RefObject<HTMLDivElement | null>,
+  viewerRef: React.RefObject<BpmnJS | null>,
+) => {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const handleFullscreen = useCallback(() => {
+    const el = diagramRef.current;
+    if (el === null) {
+      return;
+    }
+
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+      return;
+    }
+
+    el.requestFullscreen();
+  }, [diagramRef]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(document.fullscreenElement === diagramRef.current);
+
+      requestAnimationFrame(() => {
+        viewerRef.current?.notifyResize();
+        viewerRef.current?.zoomReset();
+      });
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [diagramRef, viewerRef]);
+
+  return {isFullscreen, handleFullscreen};
+};
+
+const useMinimap = (
+  diagramCanvasRef: React.RefObject<HTMLDivElement | null>,
+  viewer: BpmnJS,
+  isDiagramRendered: boolean,
+) => {
+  const [isMinimapOpen, setIsMinimapOpen] = useState(false);
+
+  const resetMinimap = useCallback(() => {
+    setIsMinimapOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (isDiagramRendered && diagramCanvasRef.current) {
+      const minimap = diagramCanvasRef.current.querySelector('.djs-minimap');
+      if (minimap) {
+        minimap.setAttribute('aria-hidden', 'true');
+      }
+    }
+  }, [isDiagramRendered, diagramCanvasRef]);
+
+  const handleMinimapToggle = useCallback(() => {
+    viewer.toggleMinimap();
+    setIsMinimapOpen(viewer.isMinimapOpen());
+  }, [viewer]);
+
+  return {isMinimapOpen, handleMinimapToggle, resetMinimap};
 };
 
 const Diagram: React.FC<Props> = observer(
@@ -61,8 +138,11 @@ const Diagram: React.FC<Props> = observer(
     highlightedElementIds,
     nonSelectableNodeTooltipText,
     hasOuterBorderOnSelection = true,
+    onElementDoubleClick,
+    customElementClasses,
   }) => {
     const diagramCanvasRef = useRef<HTMLDivElement | null>(null);
+    const diagramRef = useRef<HTMLDivElement | null>(null);
     const [isDiagramRendered, setIsDiagramRendered] = useState(false);
     const viewerRef = useRef<BpmnJS | null>(null);
     const [isViewboxChanging, setIsViewboxChanging] = useState(false);
@@ -74,6 +154,16 @@ const Diagram: React.FC<Props> = observer(
       return viewerRef.current;
     }
     const viewer = getViewer();
+
+    const {isFullscreen, handleFullscreen} = useFullscreen(
+      diagramRef,
+      viewerRef,
+    );
+    const {isMinimapOpen, handleMinimapToggle, resetMinimap} = useMinimap(
+      diagramCanvasRef,
+      viewer,
+      isDiagramRendered,
+    );
 
     useLayoutEffect(() => {
       async function renderDiagram() {
@@ -89,8 +179,10 @@ const Diagram: React.FC<Props> = observer(
             highlightedElementIds,
             nonSelectableNodeTooltipText,
             hasOuterBorderOnSelection,
+            customElementClasses,
           });
           setIsDiagramRendered(true);
+          resetMinimap();
         }
       }
       renderDiagram();
@@ -104,6 +196,8 @@ const Diagram: React.FC<Props> = observer(
       highlightedElementIds,
       nonSelectableNodeTooltipText,
       hasOuterBorderOnSelection,
+      resetMinimap,
+      customElementClasses,
     ]);
 
     useEffect(() => {
@@ -117,7 +211,9 @@ const Diagram: React.FC<Props> = observer(
           onRootChange?.(rootElementId, getSelectionRootId);
         };
       }
-    }, [viewer, onElementSelection, onRootChange]);
+
+      viewer.onElementDoubleClick = onElementDoubleClick;
+    }, [viewer, onElementSelection, onRootChange, onElementDoubleClick]);
 
     useEffect(() => {
       return () => {
@@ -126,8 +222,12 @@ const Diagram: React.FC<Props> = observer(
     }, [viewer]);
 
     return (
-      <StyledDiagram data-testid="diagram">
-        <DiagramCanvas ref={diagramCanvasRef} />
+      <StyledDiagram
+        data-testid="diagram"
+        ref={diagramRef}
+        $isFullscreen={isFullscreen}
+      >
+        <DiagramCanvas ref={diagramCanvasRef} data-testid="diagram-canvas" />
         {isDiagramRendered && (
           <>
             {IS_NEW_PROCESS_INSTANCE_PAGE ? (
@@ -135,6 +235,10 @@ const Diagram: React.FC<Props> = observer(
                 handleZoomIn={viewer.zoomIn}
                 handleZoomOut={viewer.zoomOut}
                 handleZoomReset={viewer.zoomReset}
+                handleFullscreen={handleFullscreen}
+                isFullscreen={isFullscreen}
+                handleMinimapToggle={handleMinimapToggle}
+                isMinimapOpen={isMinimapOpen}
                 processDefinitionKey={processDefinitionKey}
               />
             ) : (

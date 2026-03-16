@@ -228,59 +228,86 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
       throw new IllegalStateException(
           "Expected to acquire initial lease, but lease is already acquired: " + currentLease);
     }
-    var i = 0;
-    var availableLeaseCount = clusterSize;
-    NodeIdRepository.StoredLease storedLease = null;
-    while (currentLease == null) {
-      if (i % availableLeaseCount == 0 && i > 0) {
-        // Refresh available lease count - a scale operation might have added new leases
-        final var refreshedCount = nodeIdRepository.getAvailableLeaseCount();
-        if (refreshedCount > availableLeaseCount) {
-          LOG.debug(
-              "Available lease count increased from {} to {} (likely due to scale operation)",
-              availableLeaseCount,
-              refreshedCount);
-          availableLeaseCount = refreshedCount;
-        }
 
-        // wait a bit before retrying on all leases again.
-        try {
-          final var currentDelay = backoff.nextDelay();
-          LOG.debug(
-              "Attempt to acquire the lease failed for all {} nodeIds, sleeping {} and retrying again",
-              availableLeaseCount,
-              currentDelay);
-          Thread.sleep(currentDelay);
-        } catch (final InterruptedException e) {
-          break;
+    var attempt = 0;
+    var availableLeaseCount = clusterSize;
+    StoredLease lastAttemptedLease = null;
+
+    while (currentLease == null) {
+      final boolean completedFullRound = attempt > 0 && attempt % availableLeaseCount == 0;
+
+      if (completedFullRound) {
+        availableLeaseCount = refreshAvailableLeaseCount(availableLeaseCount);
+        if (!sleepWithBackoff(availableLeaseCount)) {
+          break; // interrupted
         }
       }
-      final var nodeId = i++ % availableLeaseCount;
-      storedLease = nodeIdRepository.getLease(nodeId);
-      currentLease = tryAcquireInitialLease(storedLease);
+
+      final var nodeId = attempt++ % availableLeaseCount;
+      lastAttemptedLease = tryAcquireLeaseForNode(nodeId);
     }
-    if (currentLease != null) {
-      LOG.info(
-          "Acquired lease w/ nodeId={}.  {}", currentLease.lease().nodeInstance(), currentLease);
-      // storedLease should always be non-null as currentLease is not null.
-      if (storedLease != null) {
-        final var gracefullyShutdown =
-            switch (storedLease) {
-              case final StoredLease.Uninitialized u -> true;
-              case final StoredLease.Initialized initialized ->
-                  initialized
-                      .lease()
-                      .isExpiredBeyondThreshold(clock.instant(), expiredLeaseThreshold);
-              // the following scenario won't happen because the currentLease will be null. We are
-              // adding it for completeness, but it won't have any effect on the outcome.
-              case final StoredLease.Unusable u -> true;
-            };
-        previousNodeGracefullyShutdown.complete(gracefullyShutdown);
-      }
-      backoff.reset();
-    } else {
+
+    if (currentLease == null) {
       throw new IllegalStateException("Failed to acquire a lease");
     }
+
+    LOG.info("Acquired lease w/ nodeId={}. {}", currentLease.lease().nodeInstance(), currentLease);
+    previousNodeGracefullyShutdown.complete(wasGracefullyShutdown(lastAttemptedLease));
+    backoff.reset();
+  }
+
+  private StoredLease tryAcquireLeaseForNode(final int nodeId) {
+    try {
+      final var storedLease = nodeIdRepository.getLease(nodeId);
+      currentLease = tryAcquireInitialLease(storedLease);
+      return storedLease;
+    } catch (final Exception e) {
+      LOG.warn("Failed to acquire initial lease for nodeId {}", nodeId, e);
+      return null;
+    }
+  }
+
+  private boolean wasGracefullyShutdown(final StoredLease storedLease) {
+    return switch (storedLease) {
+      case final StoredLease.Uninitialized u -> true;
+      case final StoredLease.Initialized initialized ->
+          initialized.lease().isExpiredBeyondThreshold(clock.instant(), expiredLeaseThreshold);
+      // the following scenario won't happen because the currentLease will be null. We are
+      // adding it for completeness, but it won't have any effect on the outcome.
+      case final StoredLease.Unusable u -> true;
+    };
+  }
+
+  private boolean sleepWithBackoff(final int availableLeaseCount) {
+    try {
+      final var currentDelay = backoff.nextDelay();
+      LOG.debug(
+          "Attempt to acquire the lease failed for all {} nodeIds, sleeping {} and retrying",
+          availableLeaseCount,
+          currentDelay);
+      Thread.sleep(currentDelay);
+      return true;
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return false;
+    }
+  }
+
+  private int refreshAvailableLeaseCount(final int currentCount) {
+    try {
+      final var refreshedCount = nodeIdRepository.getAvailableLeaseCount();
+      if (refreshedCount > currentCount) {
+        LOG.debug(
+            "Available lease count increased from {} to {} (likely due to scale operation)",
+            currentCount,
+            refreshedCount);
+        return refreshedCount;
+      }
+    } catch (final Exception e) {
+      LOG.warn(
+          "Failed to refresh available lease count, using previous value: {}", currentCount, e);
+    }
+    return currentCount;
   }
 
   private StoredLease.Initialized tryAcquireInitialLease(final StoredLease lease) {
@@ -300,6 +327,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
             .map(m -> Map.entry(Integer.parseInt(m.id().id()), Version.of(m.nodeVersion())))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     knownVersionMappings = new VersionMappings(nodeInstances);
+    LOG.trace("Updating known version mappings to {}", knownVersionMappings);
   }
 
   private boolean isBroker(final MemberId memberId) {

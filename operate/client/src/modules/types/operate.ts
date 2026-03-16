@@ -27,51 +27,6 @@ type InstanceEntityState =
   | 'INCIDENT'
   | 'TERMINATED';
 
-interface OperationEntity {
-  id: string;
-  name: null | string;
-  type: OperationEntityType;
-  startDate: string;
-  endDate: null | string;
-  instancesCount: number;
-  operationsTotalCount: number;
-  operationsFinishedCount: number;
-  sortValues?: [string, string];
-  failedOperationsCount?: number; // Should become required when BE issue #6294 gets resolved
-  completedOperationsCount?: number; // Should become required when BE issue #6294 gets resolved
-}
-
-interface InstanceOperationEntity {
-  id?: string;
-  batchOperationId?: string;
-  type: OperationEntityType;
-  state: 'SENT' | 'COMPLETED' | 'SCHEDULED' | 'LOCKED' | 'FAILED';
-  errorMessage: null | string;
-  completedDate: null | string;
-}
-
-interface ProcessInstanceEntity {
-  id: string;
-  processId: string;
-  processName: string;
-  processVersion: number;
-  processVersionTag?: string | null;
-  startDate: string;
-  endDate: null | string;
-  state: InstanceEntityState;
-  bpmnProcessId: string;
-  hasActiveOperation: boolean;
-  operations: Array<InstanceOperationEntity>;
-  sortValues: ReadonlyArray<string>;
-  parentInstanceId: null | string;
-  rootInstanceId: null | string;
-  callHierarchy: ReadonlyArray<{
-    instanceId: string;
-    processDefinitionName: string;
-  }>;
-  tenantId: string;
-}
-
 type ElementInstancePlaceholder = {
   id: string;
   type: string;
@@ -88,8 +43,5 @@ export type {
   OperationEntityType,
   ElementState,
   InstanceEntityState,
-  OperationEntity,
-  InstanceOperationEntity,
-  ProcessInstanceEntity,
   ElementInstancePlaceholder,
 };

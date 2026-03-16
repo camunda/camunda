@@ -15,7 +15,7 @@ import {
 } from 'modules/testUtils';
 import {Filters} from '../index';
 import {
-  selectFlowNode,
+  selectElement,
   selectProcess,
 } from 'modules/testUtils/selectComboBoxOption';
 import {Paths} from 'modules/Routes';
@@ -80,7 +80,7 @@ describe('Filters', () => {
     );
 
     await selectProcess({user, option: 'Big variable process'});
-    await selectFlowNode({user, option: 'Start Event 1'});
+    await selectElement({user, option: 'Start Event 1'});
 
     expect(screen.getByRole('combobox', {name: /version/i})).toBeEnabled();
     expect(screen.getByRole('combobox', {name: /element/i})).toBeEnabled();

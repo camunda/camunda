@@ -14,7 +14,8 @@ import {
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api";
 import { useNotifications } from "src/components/notifications";
-import { deleteGroup, Group } from "src/utility/api/groups";
+import { deleteGroup } from "src/utility/api/groups";
+import type { Group } from "@camunda/camunda-api-zod-schemas/8.9";
 
 const DeleteModal: FC<UseEntityModalProps<Group>> = ({
   entity: { groupId },

@@ -110,7 +110,27 @@ describe('<OperationActions />', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledTimes(1);
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title: 'Operation could not be created',
+      title: 'Operation cannot be suspended',
+      isDismissable: true,
+    });
+  });
+
+  it('should display not found notification when suspend operation returns 404', async () => {
+    mockSuspendBatchOperation().withServerError(404);
+
+    const {user} = render(
+      <OperationsActions {...defaultProps} batchOperationState="ACTIVE" />,
+      {wrapper: Wrapper},
+    );
+
+    await user.click(screen.getByRole('button', {name: /Suspend/i}));
+
+    expect(notificationsStore.displayNotification).toHaveBeenCalledTimes(1);
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'Operation cannot be suspended',
+      subtitle:
+        'Batch operation not found. It may have already completed or failed.',
       isDismissable: true,
     });
   });
@@ -155,7 +175,27 @@ describe('<OperationActions />', () => {
     expect(notificationsStore.displayNotification).toHaveBeenCalledTimes(1);
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       kind: 'error',
-      title: 'Operation could not be created',
+      title: 'Operation cannot be resumed',
+      isDismissable: true,
+    });
+  });
+
+  it('should display not found notification when resume operation returns 404', async () => {
+    mockResumeBatchOperation().withServerError(404);
+
+    const {user} = render(
+      <OperationsActions {...defaultProps} batchOperationState="SUSPENDED" />,
+      {wrapper: Wrapper},
+    );
+
+    await user.click(screen.getByRole('button', {name: /Resume/i}));
+
+    expect(notificationsStore.displayNotification).toHaveBeenCalledTimes(1);
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'Operation cannot be resumed',
+      subtitle:
+        'Batch operation not found. It may have already completed or failed.',
       isDismissable: true,
     });
   });
@@ -183,6 +223,46 @@ describe('<OperationActions />', () => {
     vi.runOnlyPendingTimers();
 
     vi.useRealTimers();
+  });
+
+  it('should display notification when cancel operation fails', async () => {
+    mockCancelBatchOperation().withServerError(500);
+
+    const {user} = render(
+      <OperationsActions {...defaultProps} batchOperationState="SUSPENDED" />,
+      {wrapper: Wrapper},
+    );
+
+    await user.click(screen.getByRole('button', {name: /Options/i}));
+    await user.click(screen.getByText('Cancel'));
+
+    expect(notificationsStore.displayNotification).toHaveBeenCalledTimes(1);
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'Operation cannot be canceled',
+      isDismissable: true,
+    });
+  });
+
+  it('should display not found notification when cancel operation returns 404', async () => {
+    mockCancelBatchOperation().withServerError(404);
+
+    const {user} = render(
+      <OperationsActions {...defaultProps} batchOperationState="SUSPENDED" />,
+      {wrapper: Wrapper},
+    );
+
+    await user.click(screen.getByRole('button', {name: /Options/i}));
+    await user.click(screen.getByText('Cancel'));
+
+    expect(notificationsStore.displayNotification).toHaveBeenCalledTimes(1);
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'Operation cannot be canceled',
+      subtitle:
+        'Batch operation not found. It may have already completed or failed.',
+      isDismissable: true,
+    });
   });
 
   it.each(['COMPLETED', 'PARTIALLY_COMPLETED', 'FAILED', 'CANCELED'] as const)(

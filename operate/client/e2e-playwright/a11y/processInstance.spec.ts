@@ -38,19 +38,16 @@ test.describe('process detail', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: runningInstance.detail,
-        processInstanceDetailV2: runningInstance.detailV2,
         callHierarchy: runningInstance.callHierarchy,
         elementInstances: runningInstance.elementInstances,
         statistics: runningInstance.statistics,
         sequenceFlows: runningInstance.sequenceFlows,
-        sequenceFlowsV2: runningInstance.sequenceFlowsV2,
         xml: runningInstance.xml,
-        metaData: runningInstance.metaData,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: '1',
+      key: '1',
     });
 
     // TODO: Enable 'aria-required-parent' and 'list' rules when https://github.com/carbon-design-system/carbon/issues/14944 is implemented and necessary changes are made in our code base.
@@ -60,7 +57,7 @@ test.describe('process detail', () => {
 
     validateResults(results);
 
-    await processInstancePage.diagram.clickFlowNode('signal user task');
+    await processInstancePage.diagram.clickElement('signal user task');
 
     const resultsWithMetadataPopover = await makeAxeBuilder()
       .disableRules(['aria-required-parent', 'list'])
@@ -78,22 +75,18 @@ test.describe('process detail', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: instanceWithIncident.detail,
-        processInstanceDetailV2: instanceWithIncident.detailV2,
         callHierarchy: instanceWithIncident.callHierarchy,
         elementInstances: instanceWithIncident.elementInstances,
         statistics: instanceWithIncident.statistics,
         sequenceFlows: instanceWithIncident.sequenceFlows,
-        sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
         variables: instanceWithIncident.variables,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
-        incidentsV2: instanceWithIncident.incidentsV2,
-        metaData: instanceWithIncident.metaData,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: '1',
+      key: '1',
     });
 
     // TODO: Enable 'aria-required-parent' and 'list' rules when https://github.com/carbon-design-system/carbon/issues/14944 is implemented and necessary changes are made in our code base.
@@ -124,7 +117,7 @@ test.describe('process detail', () => {
     validateResults(resultsWithAddVariableState);
 
     // meta data popover visible
-    await processInstancePage.diagram.clickFlowNode('check payment');
+    await processInstancePage.diagram.clickElement('check payment');
 
     const resultsWithMetadataPopover = await makeAxeBuilder()
       .disableRules(['aria-required-parent', 'list'])
@@ -142,20 +135,17 @@ test.describe('process detail', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: runningInstance.detail,
-        processInstanceDetailV2: runningInstance.detailV2,
         callHierarchy: runningInstance.callHierarchy,
         elementInstances: runningInstance.elementInstances,
         statistics: runningInstance.statistics,
         sequenceFlows: runningInstance.sequenceFlows,
-        sequenceFlowsV2: runningInstance.sequenceFlowsV2,
         variables: runningInstance.variables,
         xml: runningInstance.xml,
-        metaData: runningInstance.metaData,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: '1',
+      key: '1',
     });
 
     await page.getByRole('button', {name: /modify instance/i}).click();
@@ -166,7 +156,9 @@ test.describe('process detail', () => {
     validateResults(results);
 
     await page.getByRole('button', {name: /continue/i}).click();
-    await page.getByTestId('diagram').getByText('Signal user task').click();
+    await processInstancePage.diagram
+      .getFlowNodeById('Activity_0dex012')
+      .click();
     await page
       .getByRole('button', {name: 'Add single element instance'})
       .click();

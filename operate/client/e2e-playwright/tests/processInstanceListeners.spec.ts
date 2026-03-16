@@ -40,7 +40,7 @@ test.describe('Process Instance Listeners', () => {
   }) => {
     const processInstanceKey =
       initialData.processWithListenerInstance.processInstanceKey;
-    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({key: processInstanceKey});
 
     await expect(processInstancePage.listenersTabButton).toBeVisible();
 
@@ -58,7 +58,7 @@ test.describe('Process Instance Listeners', () => {
   test('Listeners data displayed', async ({page, processInstancePage}) => {
     const processInstanceKey =
       initialData.processWithListenerInstance.processInstanceKey;
-    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({key: processInstanceKey});
 
     await processInstancePage.instanceHistory
       .getByText(/service task b/i)
@@ -74,10 +74,10 @@ test.describe('Process Instance Listeners', () => {
   }) => {
     const processInstanceKey =
       initialData.processWithListenerInstance.processInstanceKey;
-    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({key: processInstanceKey});
 
     // select flow node in diagram, check amount of listeners and add a token to it
-    await processInstancePage.diagram.clickFlowNode('Service Task B');
+    await processInstancePage.diagram.clickElement('Service Task B');
     await processInstancePage.listenersTabButton.click();
     expect(
       await page
@@ -87,7 +87,7 @@ test.describe('Process Instance Listeners', () => {
     ).toBe(1);
     await processInstancePage.modifyInstanceButton.click();
     await page.getByRole('button', {name: 'Continue'}).click();
-    await processInstancePage.diagram.clickFlowNode('Service Task B');
+    await processInstancePage.diagram.clickElement('Service Task B');
     await page
       .getByRole('button', {name: 'Add single flow node instance'})
       .click();
@@ -104,7 +104,7 @@ test.describe('Process Instance Listeners', () => {
       .toBe(2);
 
     // select flow node again, it should have 2 listeners (1 for each instance)
-    await processInstancePage.diagram.clickFlowNode('Service Task B');
+    await processInstancePage.diagram.clickElement('Service Task B');
     await processInstancePage.listenersTabButton.click();
     await expect(
       page.getByRole('row').filter({hasText: /execution listener/i}),
@@ -124,7 +124,7 @@ test.describe('Process Instance Listeners', () => {
   }) => {
     const processInstanceKey =
       initialData.userTaskProcessInstance.processInstanceKey;
-    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({key: processInstanceKey});
 
     const userTaskKeyRegex = new RegExp('\\d{16}');
     let userTaskKey = '';
@@ -132,9 +132,9 @@ test.describe('Process Instance Listeners', () => {
     const responsePromise = page.waitForResponse('**/flow-node-metadata');
 
     await expect(
-      processInstancePage.diagram.getFlowNode('Service Task B'),
+      processInstancePage.diagram.getElement('Service Task B'),
     ).toBeVisible();
-    await processInstancePage.diagram.clickFlowNode('Service Task B');
+    await processInstancePage.diagram.clickElement('Service Task B');
 
     const response = await responsePromise;
     const data = await response.json();
@@ -203,12 +203,12 @@ test.describe('Process Instance Listeners', () => {
     const processInstanceKey =
       initialData.processWithListenerOnRootInstance.processInstanceKey;
     await processInstancePage.gotoProcessInstancePage({
-      id: processInstanceKey,
+      key: processInstanceKey,
     });
 
     await processInstancePage.modifyInstanceButton.click();
     await page.getByRole('button', {name: 'Continue'}).click();
-    await processInstancePage.diagram.clickFlowNode('Service Task B');
+    await processInstancePage.diagram.clickElement('Service Task B');
     await page
       .getByRole('button', {
         name: 'Move selected instance in this flow node to another target',

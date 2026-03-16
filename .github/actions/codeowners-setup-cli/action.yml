@@ -1,0 +1,49 @@
+---
+name: Setup codeowners-cli
+
+# owner: @camunda/orchestration-cluster
+
+description: Downloads and caches the codeowners-plus CLI binary for use in workflows
+
+inputs:
+  version:
+    description: 'Version of codeowners-cli to install (e.g. v1.9.0)'
+    required: false
+    default: 'v1.9.0'
+
+runs:
+  using: composite
+  steps:
+    - name: Restore cached codeowners-cli
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ runner.temp }}/codeowners-cli/${{ inputs.version }}
+        key: codeowners-cli-${{ runner.os }}-${{ runner.arch }}-${{ inputs.version }}
+
+    - name: Download codeowners-cli
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        version="${{ inputs.version }}"
+        target_dir="${RUNNER_TEMP}/codeowners-cli/${version}"
+        archive_path="${RUNNER_TEMP}/codeowners-cli_${version}.tar.gz"
+        download_url="https://github.com/multimediallc/codeowners-plus/releases/download/${version}/codeowners-cli_${version#v}_Linux_x86_64.tar.gz"
+
+        mkdir -p "${target_dir}"
+        echo "Downloading codeowners-cli ${version} from ${download_url}"
+        curl -fsSL "${download_url}" -o "${archive_path}"
+        tar -xzf "${archive_path}" -C "${target_dir}"
+        chmod +x "${target_dir}/codeowners-cli"
+        rm -f "${archive_path}"
+
+    - name: Add codeowners-cli to PATH
+      shell: bash
+      run: echo "${RUNNER_TEMP}/codeowners-cli/${{ inputs.version }}" >> "${GITHUB_PATH}"
+
+    - name: Verify installation
+      shell: bash
+      run: codeowners-cli --version
+

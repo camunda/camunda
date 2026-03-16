@@ -184,6 +184,9 @@ components:
             $ref: '#/components/schemas/VariableSearchResult'
 
     VariableSearchResult:
+      required:
+        - isTruncated
+        - value
       description: Variable search response item.
       type: object
       allOf:
@@ -199,6 +202,8 @@ components:
     VariableResult:
       description: Variable search response item.
       type: object
+      required:
+        - value
       allOf:
         - $ref: '#/components/schemas/VariableResultBase'
       properties:

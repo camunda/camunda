@@ -44,12 +44,12 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import oracle.net.nt.Clock;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.localstack.LocalStackContainer;
@@ -206,7 +206,33 @@ public class DynamicNodeIdIT {
     }
   }
 
+  @Test
+  // configure timeout less than the nodeIdprovider.readinessCheckTimeout to ensure the
+  // test fails if the node does not become ready with in time.
+  @Timeout(100)
+  void shouldBecomeReadyAfterRestartingWithExpiredLease() {
+    final var broker = testCluster.brokers().values().iterator().next();
+    final int nodeIdBeforeRestart =
+        broker.bean(BrokerBasedProperties.class).getCluster().getNodeId();
+    final var leaseBeforeRestart = awaitValidLease(nodeIdBeforeRestart);
+
+    broker.stop();
+
+    // Create a fake "expired" lease in S3
+    expireLease(nodeIdBeforeRestart);
+
+    // when - then
+    broker.start().await(TestHealthProbe.READY);
+    testCluster.awaitCompleteTopology();
+
+    final Lease leaseAfterRestart = awaitValidLease(nodeIdBeforeRestart);
+    assertThat(leaseAfterRestart.nodeInstance().id()).isEqualTo(nodeIdBeforeRestart);
+    assertThat(leaseAfterRestart.nodeInstance().version().version())
+        .isGreaterThan(leaseBeforeRestart.nodeInstance().version().version());
+  }
+
   @ParameterizedTest
+  @Timeout(120)
   @ValueSource(booleans = {true, false})
   public void shouldCreateNewVersionedFolderAfterRestartWithHardLinks(
       final boolean gracefulShutdown) throws IOException {
@@ -242,22 +268,7 @@ public class DynamicNodeIdIT {
 
       if (!gracefulShutdown) {
         // Create a fake "expired" lease in S3 for each broker
-        final var expiredLease =
-            new Lease(
-                "fake-object",
-                Clock.currentTimeMillis() - LEASE_DURATION.toMillis() * 2,
-                new NodeInstance(nodeId, Version.of(1L)),
-                VersionMappings.empty());
-        final var body = RequestBody.fromBytes(expiredLease.toJsonBytes(OBJECT_MAPPER));
-        final var metadata = Metadata.fromLease(expiredLease);
-        final var request =
-            PutObjectRequest.builder()
-                .bucket(BUCKET_NAME)
-                .key(S3NodeIdRepository.objectKey(nodeId))
-                .metadata(metadata.asMap())
-                .contentType("application/json")
-                .build();
-        s3Client.putObject(request, body);
+        expireLease(nodeId);
       }
     }
 
@@ -314,6 +325,25 @@ public class DynamicNodeIdIT {
                 assertThat(completedJobs.size()).isEqualTo(startedProcesses);
               });
     }
+  }
+
+  private static void expireLease(final int nodeId) {
+    final var expiredLease =
+        new Lease(
+            "fake-object",
+            System.currentTimeMillis() - LEASE_DURATION.toMillis() * 2,
+            new NodeInstance(nodeId, Version.of(1L)),
+            VersionMappings.empty());
+    final var body = RequestBody.fromBytes(expiredLease.toJsonBytes(OBJECT_MAPPER));
+    final var metadata = Metadata.fromLease(expiredLease);
+    final var request =
+        PutObjectRequest.builder()
+            .bucket(BUCKET_NAME)
+            .key(S3NodeIdRepository.objectKey(nodeId))
+            .metadata(metadata.asMap())
+            .contentType("application/json")
+            .build();
+    s3Client.putObject(request, body);
   }
 
   private Path getDataDirectoryPath(final TestStandaloneBroker broker) {

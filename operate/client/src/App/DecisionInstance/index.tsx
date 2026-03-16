@@ -16,6 +16,7 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {InstanceDetail} from '../Layout/InstanceDetail';
 import {DecisionPanel} from './DecisionPanel';
 import {Header} from './Header';
+import {Header as HeaderNext} from './HeaderNext';
 import {VariablesPanel} from './VariablesPanel';
 import {Forbidden} from 'modules/components/Forbidden';
 import {DrdPanel} from './DrdPanel';
@@ -23,6 +24,7 @@ import {DecisionInstanceContainer} from './styled';
 import {Drd} from './Drd';
 import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecisionInstance';
 import {useDrdPanelState} from 'modules/queries/decisionInstances/useDrdPanelState';
+import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
 
 const DecisionInstance: React.FC = () => {
   const {decisionInstanceId = ''} = useParams<{decisionInstanceId: string}>();
@@ -85,10 +87,17 @@ const DecisionInstance: React.FC = () => {
       <DecisionInstanceContainer>
         <InstanceDetail
           header={
-            <Header
-              decisionEvaluationInstanceKey={decisionInstanceId}
-              onChangeDrdPanelState={setDrdPanelState}
-            />
+            IS_NEW_PROCESS_INSTANCE_PAGE ? (
+              <HeaderNext
+                decisionEvaluationInstanceKey={decisionInstanceId}
+                onChangeDrdPanelState={setDrdPanelState}
+              />
+            ) : (
+              <Header
+                decisionEvaluationInstanceKey={decisionInstanceId}
+                onChangeDrdPanelState={setDrdPanelState}
+              />
+            )
           }
           topPanel={
             <DecisionPanel decisionEvaluationInstanceKey={decisionInstanceId} />

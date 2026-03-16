@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.mapper;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 
@@ -16,17 +18,17 @@ public class MessageSubscriptionEntityMapper {
       final MessageSubscriptionDbModel messageSubscriptionDbModel) {
     return MessageSubscriptionEntity.builder()
         .messageSubscriptionKey(messageSubscriptionDbModel.messageSubscriptionKey())
-        .processDefinitionId(messageSubscriptionDbModel.processDefinitionId())
+        .processDefinitionId(nullToEmpty(messageSubscriptionDbModel.processDefinitionId()))
         .processDefinitionKey(messageSubscriptionDbModel.processDefinitionKey())
         .processInstanceKey(messageSubscriptionDbModel.processInstanceKey())
         .rootProcessInstanceKey(messageSubscriptionDbModel.rootProcessInstanceKey())
-        .flowNodeId(messageSubscriptionDbModel.flowNodeId())
+        .flowNodeId(nullToEmpty(messageSubscriptionDbModel.flowNodeId()))
         .flowNodeInstanceKey(messageSubscriptionDbModel.flowNodeInstanceKey())
         .messageSubscriptionState(messageSubscriptionDbModel.messageSubscriptionState())
         .dateTime(messageSubscriptionDbModel.dateTime())
-        .messageName(messageSubscriptionDbModel.messageName())
-        .correlationKey(messageSubscriptionDbModel.correlationKey())
-        .tenantId(messageSubscriptionDbModel.tenantId())
+        .messageName(nullToEmpty(messageSubscriptionDbModel.messageName()))
+        .correlationKey(nullToEmpty(messageSubscriptionDbModel.correlationKey()))
+        .tenantId(nullToEmpty(messageSubscriptionDbModel.tenantId()))
         .build();
   }
 }

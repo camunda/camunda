@@ -40,7 +40,7 @@ const TargetDiagram: React.FC = observer(() => {
     processDefinitionId: targetProcessDefinition?.processDefinitionId,
   });
 
-  const {data: flowNodeData} = useProcessInstancesElementStates(
+  const {data: elementData} = useProcessInstancesElementStates(
     {
       filter: {
         processInstanceKey: getMigrationProcessInstancesFilter(),
@@ -63,15 +63,15 @@ const TargetDiagram: React.FC = observer(() => {
     return 'content';
   };
 
-  const getFlowNodeCountByTargetId = () => {
+  const getElementCountByTargetId = () => {
     return Object.entries(
       processInstanceMigrationStore.state.elementMapping,
     ).reduce<{
       [targetElementId: string]: number;
     }>((mappingByTarget, [sourceElementId, targetElementId]) => {
       const previousCount = mappingByTarget[targetElementId];
-      const newCount = flowNodeData
-        ? flowNodeData
+      const newCount = elementData
+        ? elementData
             .filter((state) => {
               return (
                 state.elementId === sourceElementId &&
@@ -113,7 +113,7 @@ const TargetDiagram: React.FC = observer(() => {
             selectableElements={[
               ...data.selectableFlowNodes,
               ...data.selectableSequenceFlows,
-            ].map((flowNode) => flowNode.id)}
+            ].map((element) => element.id)}
             selectedElementIds={
               processInstanceMigrationStore.selectedTargetElementId
                 ? [processInstanceMigrationStore.selectedTargetElementId]
@@ -124,7 +124,7 @@ const TargetDiagram: React.FC = observer(() => {
             }
             overlaysData={
               isSummaryStep
-                ? Object.entries(getFlowNodeCountByTargetId()).map(
+                ? Object.entries(getElementCountByTargetId()).map(
                     ([targetId, count]) => ({
                       payload: {count},
                       type: OVERLAY_TYPE,

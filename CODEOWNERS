@@ -22,6 +22,7 @@
 /.github/actions/paths-filter/*                          @camunda/monorepo-devops-team
 /.github/actions/setup-build/*                           @camunda/monorepo-devops-team
 /.github/actions/setup-maven*/*                          @camunda/monorepo-devops-team
+/.github/actions/renew-github-token/*                    @camunda/monorepo-devops-team
 /.github/workflows/add-to-projects.yml                   @camunda/monorepo-devops-team
 /.github/workflows/backport.yml                          @camunda/monorepo-devops-team
 /.github/workflows/camunda-helm-integration.yml          @camunda/monorepo-devops-team
@@ -150,3 +151,4 @@
 
 # C8 REST OpenAPI specification
 /zeebe/gateway-protocol/src/main/proto/v2/ @camunda/c8-api-team
+/docs/rest-api-endpoint-guidelines.md @camunda/c8-api-team

@@ -34,19 +34,17 @@ test.describe('modifications', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: runningInstance.detail,
-        processInstanceDetailV2: runningInstance.detailV2,
         callHierarchy: runningInstance.callHierarchy,
         elementInstances: runningInstance.elementInstances,
         statistics: runningInstance.statistics,
         sequenceFlows: runningInstance.sequenceFlows,
-        sequenceFlowsV2: runningInstance.sequenceFlowsV2,
         variables: runningInstance.variables,
         xml: runningInstance.xml,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: runningInstance.detail.id,
+      key: runningInstance.detail.processInstanceKey,
     });
 
     await page
@@ -63,20 +61,17 @@ test.describe('modifications', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: runningInstance.detail,
-        processInstanceDetailV2: runningInstance.detailV2,
         callHierarchy: runningInstance.callHierarchy,
         elementInstances: runningInstance.elementInstances,
         statistics: runningInstance.statistics,
         sequenceFlows: runningInstance.sequenceFlows,
-        sequenceFlowsV2: runningInstance.sequenceFlowsV2,
         variables: runningInstance.variables,
         xml: runningInstance.xml,
-        metaData: runningInstance.metaData,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: runningInstance.detail.id,
+      key: runningInstance.detail.processInstanceKey,
     });
 
     await page
@@ -90,7 +85,9 @@ test.describe('modifications', () => {
         name: /continue/i,
       })
       .click();
-    await page.getByTestId('diagram').getByText('Signal user task').click();
+    await processInstancePage.diagram
+      .getFlowNodeById('Activity_0dex012')
+      .click();
     await page
       .getByRole('button', {name: 'Add single element instance'})
       .click();
@@ -100,7 +97,7 @@ test.describe('modifications', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test('diagram badges and flow node instance history panel', async ({
+  test('diagram badges and element instance history panel', async ({
     page,
     processInstancePage,
   }) => {
@@ -108,21 +105,17 @@ test.describe('modifications', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: instanceWithIncident.detail,
-        processInstanceDetailV2: instanceWithIncident.detailV2,
         callHierarchy: instanceWithIncident.callHierarchy,
         elementInstances: instanceWithIncident.elementInstances,
         statistics: instanceWithIncident.statistics,
         sequenceFlows: instanceWithIncident.sequenceFlows,
-        sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
-        incidentsV2: instanceWithIncident.incidentsV2,
-        metaData: instanceWithIncident.metaData,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: instanceWithIncident.detail.id,
+      key: instanceWithIncident.detail.processInstanceKey,
     });
 
     await page
@@ -140,17 +133,13 @@ test.describe('modifications', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: instanceWithIncident.detail,
-        processInstanceDetailV2: instanceWithIncident.detailV2,
         callHierarchy: instanceWithIncident.callHierarchy,
         elementInstances: instanceWithIncident.elementInstances,
         statistics: instanceWithIncident.statistics,
         sequenceFlows: instanceWithIncident.sequenceFlows,
-        sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
         variables: instanceWithIncident.variables,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
-        incidentsV2: instanceWithIncident.incidentsV2,
-        metaData: instanceWithIncident.metaData,
       }),
     );
 
@@ -160,7 +149,7 @@ test.describe('modifications', () => {
       })
       .click();
 
-    await processInstancePage.diagram.clickFlowNode('check payment');
+    await processInstancePage.diagram.clickElement('check payment');
 
     await expect(page.getByTestId('dropdown-spinner')).not.toBeVisible();
 
@@ -168,8 +157,8 @@ test.describe('modifications', () => {
       .getByTitle(/move selected instance in this element to another target/i)
       .click();
 
-    await processInstancePage.diagram.clickFlowNode('check order items');
-    await processInstancePage.diagram.clickFlowNode('check payment');
+    await processInstancePage.diagram.clickElement('check order items');
+    await processInstancePage.diagram.clickElement('check payment');
     await page
       .getByRole('button', {
         name: /Add single element instance/i,
@@ -187,22 +176,18 @@ test.describe('modifications', () => {
       URL_API_PATTERN,
       mockResponses({
         processInstanceDetail: instanceWithIncident.detail,
-        processInstanceDetailV2: instanceWithIncident.detailV2,
         callHierarchy: instanceWithIncident.callHierarchy,
         elementInstances: instanceWithIncident.elementInstances,
         statistics: instanceWithIncident.statistics,
         sequenceFlows: instanceWithIncident.sequenceFlows,
-        sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
         variables: instanceWithIncident.variables,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
-        incidentsV2: instanceWithIncident.incidentsV2,
-        metaData: instanceWithIncident.metaData,
       }),
     );
 
     await processInstancePage.gotoProcessInstancePage({
-      id: instanceWithIncident.detail.id,
+      key: instanceWithIncident.detail.processInstanceKey,
     });
 
     await page
@@ -217,7 +202,7 @@ test.describe('modifications', () => {
       })
       .click();
 
-    await processInstancePage.diagram.clickFlowNode('check payment');
+    await processInstancePage.diagram.clickElement('check payment');
 
     await expect(page.getByTestId('dropdown-spinner')).not.toBeVisible();
 
@@ -225,7 +210,7 @@ test.describe('modifications', () => {
       .getByTitle(/move selected instance in this element to another target/i)
       .click();
 
-    await processInstancePage.diagram.clickFlowNode('check order items');
+    await processInstancePage.diagram.clickElement('check order items');
 
     const firstVariableValueInput = page
       .getByRole('textbox', {

@@ -89,7 +89,7 @@ final class CheckpointRecordsProcessorTest {
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);
 
     resultBuilder = new MockProcessingResultBuilder();
-    processor = new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry());
+    processor = new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), true);
 
     processor.setScalingInProgressSupplier(scalingInProgress::get);
     processor.setPartitionCountSupplier(() -> (int) dynamicPartitionCount.get());
@@ -354,7 +354,7 @@ final class CheckpointRecordsProcessorTest {
   void shouldNotifyListenerOnInit() {
     // given
     final RecordProcessorContextImpl context = createContext(null, zeebedb);
-    processor = new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry());
+    processor = new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), true);
     processor.setScalingInProgressSupplier(scalingInProgress::get);
     processor.setPartitionCountSupplier(dynamicPartitionCount::get);
     final long checkpointId = 3;
@@ -779,6 +779,68 @@ final class CheckpointRecordsProcessorTest {
     verify(backupManager, times(0)).takeBackup(eq(backupId), any());
   }
 
+  @Test
+  void shouldNotStoreMarkerMetadataWhenRuntimeTrackingDisabled() {
+    // given
+    final RecordProcessorContextImpl context = createContext(executor, zeebedb);
+    final var processorWithoutRuntimeTracking =
+        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), false);
+    processorWithoutRuntimeTracking.setScalingInProgressSupplier(scalingInProgress::get);
+    processorWithoutRuntimeTracking.setPartitionCountSupplier(dynamicPartitionCount::get);
+    processorWithoutRuntimeTracking.init(context);
+
+    final var checkpointId = 101L;
+    final var checkpointPosition = 1001L;
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(checkpointId)
+            .setCheckpointPosition(checkpointPosition)
+            .setCheckpointType(CheckpointType.MARKER);
+    final var record =
+        new MockTypedCheckpointRecord(
+            checkpointPosition, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+
+    // when
+    processorWithoutRuntimeTracking.process(record, new MockProcessingResultBuilder());
+
+    // then
+    assertThat(state.getLatestCheckpointId()).isEqualTo(checkpointId);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(checkpointPosition);
+    assertThat(checkpointMetadataState.getCheckpoint(checkpointId)).isNull();
+  }
+
+  @Test
+  void shouldNotStoreBackupMetadataAndRangesWhenRuntimeTrackingDisabled() {
+    // given
+    final RecordProcessorContextImpl context = createContext(executor, zeebedb);
+    final var processorWithoutRuntimeTracking =
+        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), false);
+    processorWithoutRuntimeTracking.setScalingInProgressSupplier(scalingInProgress::get);
+    processorWithoutRuntimeTracking.setPartitionCountSupplier(dynamicPartitionCount::get);
+    processorWithoutRuntimeTracking.init(context);
+
+    final var checkpointId = 202L;
+    final var checkpointPosition = 2002L;
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(checkpointId)
+            .setCheckpointPosition(checkpointPosition)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP)
+            .setFirstLogPosition(2000L);
+    final var record =
+        new MockTypedCheckpointRecord(
+            checkpointPosition + 1, 0, CheckpointIntent.CONFIRM_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    processorWithoutRuntimeTracking.process(record, new MockProcessingResultBuilder());
+
+    // then
+    assertThat(state.getLatestBackupId()).isEqualTo(checkpointId);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(checkpointPosition);
+    assertThat(checkpointMetadataState.getCheckpoint(checkpointId)).isNull();
+    assertThat(backupRangeState.getAllRanges()).isEmpty();
+  }
+
   @ParameterizedTest
   @ValueSource(strings = {"SCHEDULED_BACKUP", "MANUAL_BACKUP"})
   void shouldTakeBackupOnBackupType(final String checkpointType) {
@@ -915,7 +977,7 @@ final class CheckpointRecordsProcessorTest {
 
     final var context = createContext(executor, zeebedb);
     final var syncProcessor =
-        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry());
+        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), true);
     syncProcessor.setScalingInProgressSupplier(scalingInProgress::get);
     syncProcessor.setPartitionCountSupplier(dynamicPartitionCount::get);
     syncProcessor.init(context);
@@ -951,7 +1013,7 @@ final class CheckpointRecordsProcessorTest {
     // given — a processor with a backup manager and an existing newer backup
     final var context = createContext(executor, zeebedb);
     final var syncProcessor =
-        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry());
+        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), true);
     syncProcessor.setScalingInProgressSupplier(scalingInProgress::get);
     syncProcessor.setPartitionCountSupplier(dynamicPartitionCount::get);
     syncProcessor.init(context);
@@ -985,5 +1047,115 @@ final class CheckpointRecordsProcessorTest {
 
     // then — no exception, backup manager still called for fail in-progress
     verify(backupManager).failInProgressBackup(anyLong());
+  }
+
+  @Test
+  void shouldClearStateOnClearStateCommand() {
+    // given — populate all state components
+    state.setLatestCheckpointInfo(5L, 50L, 5000L, CheckpointType.MANUAL_BACKUP);
+    state.setLatestBackupInfo(3L, 30L, 3000L, CheckpointType.SCHEDULED_BACKUP, 20L);
+    checkpointMetadataState.addBackupCheckpoint(
+        1L, 100L, 1000L, CheckpointType.SCHEDULED_BACKUP, 50L);
+    checkpointMetadataState.addBackupCheckpoint(
+        3L, 300L, 3000L, CheckpointType.MANUAL_BACKUP, 200L);
+    backupRangeState.startNewRange(1L);
+    backupRangeState.updateRangeEnd(1L, 3L);
+
+    final var value = new CheckpointRecord();
+    final var record =
+        new MockTypedCheckpointRecord(
+            60, 0, CheckpointIntent.CLEAR_STATE, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then — state is cleared
+    assertThat(state.getLatestCheckpointId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestBackupId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(checkpointMetadataState.getCheckpoint(1L)).isNull();
+    assertThat(checkpointMetadataState.getCheckpoint(3L)).isNull();
+    assertThat(backupRangeState.getAllRanges()).isEmpty();
+
+    // then — STATE_CLEARED follow-up event is written
+    assertThat(result.records())
+        .singleElement()
+        .returns(CheckpointIntent.STATE_CLEARED, Event::intent)
+        .returns(RecordType.EVENT, Event::type);
+  }
+
+  @Test
+  void shouldScheduleSyncPostCommitTaskOnClearState() {
+    // given — a processor with a backup manager
+    when(backupManager.syncMetadata(any(), any()))
+        .thenReturn(CompletableActorFuture.completed(null));
+
+    final var value = new CheckpointRecord();
+    final var record =
+        new MockTypedCheckpointRecord(
+            60, 0, CheckpointIntent.CLEAR_STATE, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then — a post-commit task is registered
+    assertThat(result.postCommitTasks()).hasSize(1);
+
+    // when — the post-commit task is executed
+    final var success = result.executePostCommitTasks();
+
+    // then — task succeeds and sync metadata is called
+    assertThat(success).isTrue();
+    verify(backupManager).syncMetadata(any(), any());
+  }
+
+  @Test
+  void shouldReplayStateClearedEvent() {
+    // given — populate state before replay
+    state.setLatestCheckpointInfo(10L, 100L, 10000L, CheckpointType.MANUAL_BACKUP);
+    state.setLatestBackupInfo(8L, 80L, 8000L, CheckpointType.SCHEDULED_BACKUP, 70L);
+    checkpointMetadataState.addBackupCheckpoint(
+        8L, 80L, 8000L, CheckpointType.SCHEDULED_BACKUP, 70L);
+    backupRangeState.startNewRange(8L);
+
+    final var value = new CheckpointRecord();
+    final var record =
+        new MockTypedCheckpointRecord(
+            110, 100, CheckpointIntent.STATE_CLEARED, RecordType.EVENT, value);
+
+    // when
+    processor.replay(record);
+
+    // then — all state is cleared
+    assertThat(state.getLatestCheckpointId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestBackupId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(checkpointMetadataState.getCheckpoint(8L)).isNull();
+    assertThat(backupRangeState.getAllRanges()).isEmpty();
+  }
+
+  @Test
+  void shouldClearAlreadyEmptyState() {
+    // given — state is already empty
+
+    final var value = new CheckpointRecord();
+    final var record =
+        new MockTypedCheckpointRecord(
+            60, 0, CheckpointIntent.CLEAR_STATE, RecordType.COMMAND, value);
+
+    // when — should not throw
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then — STATE_CLEARED event is still written
+    assertThat(result.records())
+        .singleElement()
+        .returns(CheckpointIntent.STATE_CLEARED, Event::intent)
+        .returns(RecordType.EVENT, Event::type);
+
+    // state remains empty
+    assertThat(state.getLatestCheckpointId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestBackupId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
   }
 }

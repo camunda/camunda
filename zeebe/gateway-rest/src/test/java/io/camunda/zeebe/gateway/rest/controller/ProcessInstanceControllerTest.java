@@ -9,6 +9,8 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -20,7 +22,6 @@ import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
@@ -45,6 +46,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -97,8 +99,6 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(processInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(processInstanceServices);
   }
 
   @Test
@@ -114,7 +114,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -142,7 +143,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
     assertThat(capturedRequest.tenantId()).isEqualTo("tenantId");
@@ -158,7 +159,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setProcessInstanceKey(123L)
             .setTenantId("<default>");
 
-    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -194,7 +196,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
     assertThat(capturedRequest.tenantId()).isEqualTo("<default>");
@@ -213,7 +215,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -242,7 +245,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
     assertThat(capturedRequest.version()).isEqualTo(1);
@@ -261,7 +264,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -289,7 +293,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
     assertThat(capturedRequest.version()).isEqualTo(-1);
@@ -307,7 +311,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setTenantId("<default>")
             .setBusinessId(businessId);
 
-    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -345,10 +350,158 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
     assertThat(capturedRequest.businessId()).isEqualTo(businessId);
+  }
+
+  @Test
+  void shouldCreateProcessInstanceWithRuntimeInstructionsByProcessDefinitionId() {
+    // given
+    final var mockResponse =
+        new ProcessInstanceCreationRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(456L)
+            .setTenantId("<default>");
+
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "startInstructions": [
+                    { "elementId": "Activity_1" }
+                ],
+                "runtimeInstructions": [
+                    { "afterElementId": "Activity_1", "type": "TERMINATE_PROCESS_INSTANCE" }
+                ]
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
+    assertThat(capturedRequest.startInstructions()).hasSize(1);
+    assertThat(capturedRequest.startInstructions().getFirst().getElementId())
+        .isEqualTo("Activity_1");
+    assertThat(capturedRequest.runtimeInstructions()).hasSize(1);
+    assertThat(capturedRequest.runtimeInstructions().getFirst().getType())
+        .isEqualTo(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE);
+    assertThat(capturedRequest.runtimeInstructions().getFirst().getAfterElementId())
+        .isEqualTo("Activity_1");
+  }
+
+  @Test
+  void shouldCreateProcessInstanceWithRuntimeInstructionsByProcessDefinitionKey() {
+    // given
+    final var mockResponse =
+        new ProcessInstanceCreationRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(456L)
+            .setTenantId("<default>");
+
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+            {
+                "processDefinitionKey": "123",
+                "startInstructions": [
+                    { "elementId": "Activity_1" }
+                ],
+                "runtimeInstructions": [
+                    { "afterElementId": "Activity_1", "type": "TERMINATE_PROCESS_INSTANCE" }
+                ]
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
+    assertThat(capturedRequest.startInstructions()).hasSize(1);
+    assertThat(capturedRequest.startInstructions().getFirst().getElementId())
+        .isEqualTo("Activity_1");
+    assertThat(capturedRequest.runtimeInstructions()).hasSize(1);
+    assertThat(capturedRequest.runtimeInstructions().getFirst().getType())
+        .isEqualTo(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE);
+    assertThat(capturedRequest.runtimeInstructions().getFirst().getAfterElementId())
+        .isEqualTo("Activity_1");
+  }
+
+  @Test
+  void shouldCreateProcessInstanceWithMultipleRuntimeInstructions() {
+    // given
+    final var mockResponse =
+        new ProcessInstanceCreationRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(456L)
+            .setTenantId("<default>");
+
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "runtimeInstructions": [
+                    { "afterElementId": "Activity_1", "type": "TERMINATE_PROCESS_INSTANCE" },
+                    { "afterElementId": "Activity_2", "type": "TERMINATE_PROCESS_INSTANCE" }
+                ]
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.runtimeInstructions()).hasSize(2);
+    assertThat(capturedRequest.runtimeInstructions().get(0).getType())
+        .isEqualTo(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE);
+    assertThat(capturedRequest.runtimeInstructions().get(0).getAfterElementId())
+        .isEqualTo("Activity_1");
+    assertThat(capturedRequest.runtimeInstructions().get(1).getType())
+        .isEqualTo(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE);
+    assertThat(capturedRequest.runtimeInstructions().get(1).getAfterElementId())
+        .isEqualTo("Activity_2");
   }
 
   @Test
@@ -365,7 +518,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstanceWithResult(
-            any(ProcessInstanceCreateRequest.class)))
+            any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -394,7 +547,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices).createProcessInstanceWithResult(createRequestCaptor.capture());
+    verify(processInstanceServices)
+        .createProcessInstanceWithResult(createRequestCaptor.capture(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
     assertThat(capturedRequest.awaitCompletion()).isTrue();
@@ -414,7 +568,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstanceWithResult(
-            any(ProcessInstanceCreateRequest.class)))
+            any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -444,7 +598,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices).createProcessInstanceWithResult(createRequestCaptor.capture());
+    verify(processInstanceServices)
+        .createProcessInstanceWithResult(createRequestCaptor.capture(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
     assertThat(capturedRequest.version()).isEqualTo(1);
@@ -464,7 +619,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstanceWithResult(
-            any(ProcessInstanceCreateRequest.class)))
+            any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -493,7 +648,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices).createProcessInstanceWithResult(createRequestCaptor.capture());
+    verify(processInstanceServices)
+        .createProcessInstanceWithResult(createRequestCaptor.capture(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
     assertThat(capturedRequest.version()).isEqualTo(-1);
@@ -513,7 +669,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstanceWithResult(
-            any(ProcessInstanceCreateRequest.class)))
+            any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -543,7 +699,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices).createProcessInstanceWithResult(createRequestCaptor.capture());
+    verify(processInstanceServices)
+        .createProcessInstanceWithResult(createRequestCaptor.capture(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
     assertThat(capturedRequest.awaitCompletion()).isTrue();
@@ -563,7 +720,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setBusinessId(businessId);
 
     when(processInstanceServices.createProcessInstanceWithResult(
-            any(ProcessInstanceCreateRequest.class)))
+            any(ProcessInstanceCreateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
     final var request =
@@ -602,7 +759,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices).createProcessInstanceWithResult(createRequestCaptor.capture());
+    verify(processInstanceServices)
+        .createProcessInstanceWithResult(createRequestCaptor.capture(), any());
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
     assertThat(capturedRequest.awaitCompletion()).isTrue();
@@ -721,7 +879,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldCancelProcessInstance() {
     // given
-    when(processInstanceServices.cancelProcessInstance(any(ProcessInstanceCancelRequest.class)))
+    when(processInstanceServices.cancelProcessInstance(
+            any(ProcessInstanceCancelRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceRecord()));
 
     final var request =
@@ -741,7 +900,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(processInstanceServices).cancelProcessInstance(cancelRequestCaptor.capture());
+    Mockito.verify(processInstanceServices)
+        .cancelProcessInstance(cancelRequestCaptor.capture(), any());
     final var capturedRequest = cancelRequestCaptor.getValue();
     assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
     assertThat(capturedRequest.operationReference()).isEqualTo(123L);
@@ -750,7 +910,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldCancelProcessInstanceWithNoBody() {
     // given
-    when(processInstanceServices.cancelProcessInstance(any(ProcessInstanceCancelRequest.class)))
+    when(processInstanceServices.cancelProcessInstance(
+            any(ProcessInstanceCancelRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceRecord()));
 
     // when/then
@@ -763,7 +924,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(processInstanceServices).cancelProcessInstance(cancelRequestCaptor.capture());
+    Mockito.verify(processInstanceServices)
+        .cancelProcessInstance(cancelRequestCaptor.capture(), any());
     final var capturedRequest = cancelRequestCaptor.getValue();
     assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
     assertThat(capturedRequest.operationReference()).isNull();
@@ -772,7 +934,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldDeleteResourceWithEmptyBody() {
     // given
-    when(processInstanceServices.cancelProcessInstance(any(ProcessInstanceCancelRequest.class)))
+    when(processInstanceServices.cancelProcessInstance(
+            any(ProcessInstanceCancelRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceRecord()));
 
     final var request =
@@ -790,7 +953,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(processInstanceServices).cancelProcessInstance(cancelRequestCaptor.capture());
+    Mockito.verify(processInstanceServices)
+        .cancelProcessInstance(cancelRequestCaptor.capture(), any());
     final var capturedRequest = cancelRequestCaptor.getValue();
     assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
     assertThat(capturedRequest.operationReference()).isNull();
@@ -834,7 +998,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldMigrateProcessInstance() {
     // given
-    when(processInstanceServices.migrateProcessInstance(any(ProcessInstanceMigrateRequest.class)))
+    when(processInstanceServices.migrateProcessInstance(
+            any(ProcessInstanceMigrateRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceMigrationRecord()));
 
     final var request =
@@ -865,7 +1030,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(processInstanceServices).migrateProcessInstance(migrateRequestCaptor.capture());
+    Mockito.verify(processInstanceServices)
+        .migrateProcessInstance(migrateRequestCaptor.capture(), any());
     final var capturedRequest = migrateRequestCaptor.getValue();
     assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
     assertThat(capturedRequest.targetProcessDefinitionKey()).isEqualTo(123456);
@@ -1086,7 +1252,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldModifyProcessInstance() {
     // given
-    when(processInstanceServices.modifyProcessInstance(any(ProcessInstanceModifyRequest.class)))
+    when(processInstanceServices.modifyProcessInstance(
+            any(ProcessInstanceModifyRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceModificationRecord()));
 
     final var variables = new UnsafeBuffer(MsgPackConverter.convertToMsgPack(Map.of("foo", "bar")));
@@ -1337,14 +1504,16 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(processInstanceServices).modifyProcessInstance(modifyRequestCaptor.capture());
+    Mockito.verify(processInstanceServices)
+        .modifyProcessInstance(modifyRequestCaptor.capture(), any());
     assertThat(modifyRequestCaptor.getValue()).isEqualTo(expectedMappedRequest);
   }
 
   @Test
   void shouldModifyProcessInstanceWithOnlyTerminateInstructions() {
     // given
-    when(processInstanceServices.modifyProcessInstance(any(ProcessInstanceModifyRequest.class)))
+    when(processInstanceServices.modifyProcessInstance(
+            any(ProcessInstanceModifyRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceModificationRecord()));
 
     final var request =
@@ -1372,7 +1541,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(processInstanceServices).modifyProcessInstance(modifyRequestCaptor.capture());
+    Mockito.verify(processInstanceServices)
+        .modifyProcessInstance(modifyRequestCaptor.capture(), any());
     final var capturedRequest = modifyRequestCaptor.getValue();
     assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
     assertThat(capturedRequest.activateInstructions()).isEmpty();
@@ -1384,7 +1554,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldModifyProcessInstanceWithOnlyActivateInstructions() {
     // given
-    when(processInstanceServices.modifyProcessInstance(any(ProcessInstanceModifyRequest.class)))
+    when(processInstanceServices.modifyProcessInstance(
+            any(ProcessInstanceModifyRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceModificationRecord()));
 
     final var request =
@@ -1414,7 +1585,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(processInstanceServices).modifyProcessInstance(modifyRequestCaptor.capture());
+    Mockito.verify(processInstanceServices)
+        .modifyProcessInstance(modifyRequestCaptor.capture(), any());
     final var capturedRequest = modifyRequestCaptor.getValue();
     assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
     assertThat(capturedRequest.activateInstructions()).hasSize(2);
@@ -1426,7 +1598,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldModifyProcessInstanceWithOnlyMoveInstructions() {
     // given
-    when(processInstanceServices.modifyProcessInstance(any(ProcessInstanceModifyRequest.class)))
+    when(processInstanceServices.modifyProcessInstance(
+            any(ProcessInstanceModifyRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceModificationRecord()));
 
     final var request =
@@ -1455,7 +1628,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(processInstanceServices).modifyProcessInstance(modifyRequestCaptor.capture());
+    Mockito.verify(processInstanceServices)
+        .modifyProcessInstance(modifyRequestCaptor.capture(), any());
     final var capturedRequest = modifyRequestCaptor.getValue();
     assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
     assertThat(capturedRequest.activateInstructions()).isEmpty();
@@ -1876,7 +2050,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     record.setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
 
     when(processInstanceServices.cancelProcessInstanceBatchOperationWithResult(
-            any(ProcessInstanceFilter.class)))
+            any(ProcessInstanceFilter.class), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -1908,7 +2082,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
-        .cancelProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class));
+        .cancelProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
   }
 
   @Test
@@ -1919,7 +2093,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     record.setBatchOperationType(BatchOperationType.MODIFY_PROCESS_INSTANCE);
 
     when(processInstanceServices.modifyProcessInstancesBatchOperation(
-            any(ProcessInstanceModifyBatchOperationRequest.class)))
+            any(ProcessInstanceModifyBatchOperationRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -1958,7 +2132,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     verify(processInstanceServices)
         .modifyProcessInstancesBatchOperation(
-            any(ProcessInstanceModifyBatchOperationRequest.class));
+            any(ProcessInstanceModifyBatchOperationRequest.class), any());
   }
 
   @Test
@@ -1966,7 +2140,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // given
     final long processInstanceKey = 1L;
     final var stats = List.of(new ProcessFlowNodeStatisticsEntity("node1", 1L, 1L, 1L, 1L));
-    when(processInstanceServices.elementStatistics(processInstanceKey)).thenReturn(stats);
+    when(processInstanceServices.elementStatistics(eq(processInstanceKey), any()))
+        .thenReturn(stats);
     final var response =
         """
             {"items":[
@@ -1994,7 +2169,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(response, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices).elementStatistics(processInstanceKey);
+    verify(processInstanceServices).elementStatistics(eq(processInstanceKey), any());
   }
 
   @Test
@@ -2005,7 +2180,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     record.setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT);
 
     when(processInstanceServices.resolveIncidentsBatchOperationWithResult(
-            any(ProcessInstanceFilter.class)))
+            any(ProcessInstanceFilter.class), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -2037,7 +2212,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
-        .resolveIncidentsBatchOperationWithResult(any(ProcessInstanceFilter.class));
+        .resolveIncidentsBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
   }
 
   @Test
@@ -2048,7 +2223,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     record.setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
 
     when(processInstanceServices.migrateProcessInstancesBatchOperation(
-            any(ProcessInstanceMigrateBatchOperationRequest.class)))
+            any(ProcessInstanceMigrateBatchOperationRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -2089,7 +2264,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     verify(processInstanceServices)
         .migrateProcessInstancesBatchOperation(
-            any(ProcessInstanceMigrateBatchOperationRequest.class));
+            any(ProcessInstanceMigrateBatchOperationRequest.class), any());
   }
 
   @Test
@@ -2099,7 +2274,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var sequenceFlows =
         List.of(
             new SequenceFlowEntity("pi1_sequenceFlow1", "node1", 1L, 37L, 1L, "pd1", "<default>"));
-    when(processInstanceServices.sequenceFlows(processInstanceKey)).thenReturn(sequenceFlows);
+    when(processInstanceServices.sequenceFlows(eq(processInstanceKey), any()))
+        .thenReturn(sequenceFlows);
     final var response =
         """
             {"items":[
@@ -2127,7 +2303,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(response, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices).sequenceFlows(processInstanceKey);
+    verify(processInstanceServices).sequenceFlows(eq(processInstanceKey), any());
   }
 
   @Test
@@ -2157,7 +2333,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .endCursor("<cursor after>")
             .build();
     final var query = new IncidentQuery.Builder().build();
-    when(processInstanceServices.searchIncidents(processInstanceKey, query))
+    when(processInstanceServices.searchIncidents(eq(processInstanceKey), eq(query), any()))
         .thenReturn(queryResult);
     final var expectedResponse =
         """
@@ -2200,7 +2376,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(processInstanceServices).searchIncidents(processInstanceKey, query);
+    verify(processInstanceServices).searchIncidents(eq(processInstanceKey), eq(query), any());
   }
 
   @Test
@@ -2486,7 +2662,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     record.setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
 
     when(processInstanceServices.migrateProcessInstancesBatchOperation(
-            any(ProcessInstanceMigrateBatchOperationRequest.class)))
+            any(ProcessInstanceMigrateBatchOperationRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -2531,7 +2707,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     record.setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
 
     when(processInstanceServices.migrateProcessInstancesBatchOperation(
-            any(ProcessInstanceMigrateBatchOperationRequest.class)))
+            any(ProcessInstanceMigrateBatchOperationRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -2733,7 +2909,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
 
     when(processInstanceServices.deleteProcessInstancesBatchOperation(
-            any(ProcessInstanceFilter.class)))
+            any(ProcessInstanceFilter.class), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -2765,7 +2941,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
-        .deleteProcessInstancesBatchOperation(any(ProcessInstanceFilter.class));
+        .deleteProcessInstancesBatchOperation(any(ProcessInstanceFilter.class), any());
   }
 
   @Test
@@ -2869,7 +3045,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     record.setResourceKey(123L);
     record.setResourceType(HistoryDeletionType.PROCESS_INSTANCE);
 
-    when(processInstanceServices.deleteProcessInstance(1L, 123L))
+    when(processInstanceServices.deleteProcessInstance(eq(1L), eq(123L), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -2897,7 +3073,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     record.setResourceKey(123L);
     record.setResourceType(HistoryDeletionType.PROCESS_INSTANCE);
 
-    when(processInstanceServices.deleteProcessInstance(1L, null))
+    when(processInstanceServices.deleteProcessInstance(eq(1L), isNull(), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     // when / then
@@ -2917,7 +3093,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     record.setResourceKey(123L);
     record.setResourceType(HistoryDeletionType.PROCESS_INSTANCE);
 
-    when(processInstanceServices.deleteProcessInstance(1L, null))
+    when(processInstanceServices.deleteProcessInstance(eq(1L), isNull(), any()))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -2939,7 +3115,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldRejectDeleteProcessInstanceOnProcessInstanceNotFound() {
     // given
-    when(processInstanceServices.deleteProcessInstance(1L, null))
+    when(processInstanceServices.deleteProcessInstance(eq(1L), isNull(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new io.camunda.service.exception.ServiceException(
@@ -2986,7 +3162,83 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "type":"about:blank",
                 "title":"INVALID_ARGUMENT",
                 "status":400,
-                "detail":"The provided processDefinitionId contains illegal characters. It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\\\-.]*$'.",
+                "detail":"The provided processDefinitionId contains illegal characters. It must match the pattern '^[\\\\p{L}_][\\\\p{L}\\\\p{N}_\\\\-.]*$'.",
+                "instance":"/v2/process-instances"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectCreateProcessInstanceByIdWithBusinessIdExceedingMaxLength() {
+    // given — businessId exceeds 256 characters
+    final var tooLongBusinessId = "a".repeat(257);
+    final var request =
+        """
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "businessId": "%s"
+            }"""
+            .formatted(tooLongBusinessId);
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The provided businessId exceeds the limit of 256 characters.",
+                "instance":"/v2/process-instances"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectCreateProcessInstanceByKeyWithBusinessIdExceedingMaxLength() {
+    // given — businessId exceeds 256 characters
+    final var tooLongBusinessId = "a".repeat(257);
+    final var request =
+        """
+            {
+                "processDefinitionKey": "123",
+                "businessId": "%s"
+            }"""
+            .formatted(tooLongBusinessId);
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The provided businessId exceeds the limit of 256 characters.",
                 "instance":"/v2/process-instances"
              }""";
 

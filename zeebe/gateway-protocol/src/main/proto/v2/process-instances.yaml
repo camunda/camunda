@@ -915,6 +915,7 @@ components:
         - variables
         - processInstanceKey
         - tags
+        - businessId
       type: object
       properties:
         processDefinitionId:
@@ -978,6 +979,7 @@ components:
             - state
             - hasIncident
             - tenantId
+            - businessId
         order:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
@@ -1043,7 +1045,16 @@ components:
         batchOperationId:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
-          description: The batch operation id.
+          description: >
+            The batch operation id.
+
+            **Deprecated**: Use `batchOperationKey` instead. This field will be removed in a future release.
+            If both `batchOperationId` and `batchOperationKey` are provided, the request will be rejected with a 400 error.
+          deprecated: true
+        batchOperationKey:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The batch operation key.
         errorMessage:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
@@ -1068,6 +1079,10 @@ components:
           description: The incident error hash code, associated with this process.
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+        businessId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: The business id associated with the process instance.
 
     ProcessDefinitionStatisticsFilter:
       description: Process definition statistics search filter.
@@ -1331,6 +1346,12 @@ components:
       type: object
       required:
         - rootProcessInstanceKey
+        - elementId
+        - processDefinitionId
+        - processDefinitionKey
+        - processInstanceKey
+        - sequenceFlowId
+        - tenantId
       properties:
         sequenceFlowId:
           type: string
@@ -1683,7 +1704,6 @@ components:
 
     ProcessInstanceStateFilterProperty:
       description: ProcessInstanceStateEnum property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match

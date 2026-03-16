@@ -14,12 +14,6 @@ const runningOrderProcessInstance: InstanceMock = {
   ...runningInstance,
   detail: {
     ...runningInstance.detail,
-    id: '225179981395430',
-    processName: 'Order process',
-    bpmnProcessId: 'orderProcess',
-  },
-  detailV2: {
-    ...runningInstance.detailV2,
     processInstanceKey: '225179981395430',
     processDefinitionName: 'Order process',
     processDefinitionId: 'orderProcess',
@@ -49,13 +43,7 @@ const runningOrderProcessInstance: InstanceMock = {
       rootProcessInstanceKey: null,
     },
   ],
-  sequenceFlows: [
-    {
-      processInstanceId: '225179981395430',
-      activityId: 'SequenceFlow_0j6tsnn',
-    },
-  ],
-  sequenceFlowsV2: {
+  sequenceFlows: {
     items: [
       {
         processInstanceKey: '225179981395430',

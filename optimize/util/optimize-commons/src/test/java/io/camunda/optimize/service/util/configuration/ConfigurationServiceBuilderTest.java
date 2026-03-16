@@ -26,15 +26,69 @@ class ConfigurationServiceBuilderTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("configLocationCases")
-    void shouldResolveConfigLocationsFromEnvironment(
+    void shouldResolveConfigLocationsFromEnvironmentAsCommaSeparatedList(
         final String caseName,
-        final String importValue,
-        final String locationValue,
+        final List<String> importFiles,
+        final List<String> locationPaths,
         final List<String> expectedLocations) {
       // given
       final FakeEnvironment environment = new FakeEnvironment();
-      environment.setProperty("spring.config.import", importValue);
-      environment.setProperty("spring.config.location", locationValue);
+      if (importFiles != null) {
+        environment.setProperty("spring.config.import", String.join(",", importFiles));
+      }
+      if (locationPaths != null) {
+        environment.setProperty("spring.config.location", String.join(",", locationPaths));
+      }
+
+      // when
+      final var configLocations = ConfigEnvironment.resolveConfigLocations(environment);
+
+      // then
+      Assertions.assertThat(configLocations).containsExactlyElementsOf(expectedLocations);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("configLocationCases")
+    void shouldResolveConfigLocationsFromEnvironmentAsCommaSeparatedListWithWhitespace(
+        final String caseName,
+        final List<String> importFiles,
+        final List<String> locationPaths,
+        final List<String> expectedLocations) {
+      // given
+      final FakeEnvironment environment = new FakeEnvironment();
+      if (importFiles != null) {
+        environment.setProperty("spring.config.import", String.join(" , ", importFiles));
+      }
+      if (locationPaths != null) {
+        environment.setProperty("spring.config.location", String.join(" , ", locationPaths));
+      }
+
+      // when
+      final var configLocations = ConfigEnvironment.resolveConfigLocations(environment);
+
+      // then
+      Assertions.assertThat(configLocations).containsExactlyElementsOf(expectedLocations);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("configLocationCases")
+    void shouldResolveConfigLocationsFromEnvironmentAsIndexedProperties(
+        final String caseName,
+        final List<String> importFiles,
+        final List<String> locationPaths,
+        final List<String> expectedLocations) {
+      // given
+      final FakeEnvironment environment = new FakeEnvironment();
+      if (importFiles != null) {
+        for (var i = 0; i < importFiles.size(); i++) {
+          environment.setProperty("spring.config.import[" + i + "]", importFiles.get(i));
+        }
+      }
+      if (locationPaths != null) {
+        for (var i = 0; i < locationPaths.size(); i++) {
+          environment.setProperty("spring.config.location[" + i + "]", locationPaths.get(i));
+        }
+      }
 
       // when
       final var configLocations = ConfigEnvironment.resolveConfigLocations(environment);
@@ -48,29 +102,30 @@ class ConfigurationServiceBuilderTest {
           Arguments.arguments("no import files or locations", null, null, List.of()),
           Arguments.arguments(
               "only import files",
-              "config-from-import.yaml,another-config.yaml",
+              List.of("config-from-import.yaml", "another-config.yaml"),
               null,
               List.of("config-from-import.yaml", "another-config.yaml")),
-          Arguments.arguments("only locations", null, "my-path/,another-path/", List.of()),
+          Arguments.arguments(
+              "only locations", null, List.of("my-path/", "another-path/"), List.of()),
           Arguments.arguments(
               "single import",
-              "config-from-import.yaml",
-              "my-path/",
+              List.of("config-from-import.yaml"),
+              List.of("my-path/"),
               List.of("my-path/config-from-import.yaml")),
           Arguments.arguments(
               "multiple files in single import",
-              "config-from-import.yaml,another-config.yaml",
-              "my-path/",
+              List.of("config-from-import.yaml", "another-config.yaml"),
+              List.of("my-path/"),
               List.of("my-path/config-from-import.yaml", "my-path/another-config.yaml")),
           Arguments.arguments(
               "single file in multiple locations",
-              "config-from-import.yaml",
-              "my-path/,another-path/",
+              List.of("config-from-import.yaml"),
+              List.of("my-path/", "another-path/"),
               List.of("my-path/config-from-import.yaml", "another-path/config-from-import.yaml")),
           Arguments.arguments(
               "multiple files in multiple locations",
-              "config-from-import.yaml,another-config.yaml",
-              "my-path/,another-path/",
+              List.of("config-from-import.yaml", "another-config.yaml"),
+              List.of("my-path/", "another-path/"),
               List.of(
                   "my-path/config-from-import.yaml",
                   "another-path/config-from-import.yaml",
@@ -78,69 +133,61 @@ class ConfigurationServiceBuilderTest {
                   "another-path/another-config.yaml")),
           Arguments.arguments(
               "absolute path as file in import should be added as is",
-              "/absolute/path/config-from-import.yaml",
-              "path-should-be-ignored/",
+              List.of("/absolute/path/config-from-import.yaml"),
+              List.of("path-should-be-ignored/"),
               List.of("/absolute/path/config-from-import.yaml")),
           Arguments.arguments(
               "optional prefix should be ignored",
-              "optional:config-from-import.yaml",
-              "my-path/",
+              List.of("optional:config-from-import.yaml"),
+              List.of("my-path/"),
               List.of("my-path/config-from-import.yaml")),
           Arguments.arguments(
               "optional prefix with absolute path should be ignored and path should be added as is",
-              "optional:/absolute/path/config-from-import.yaml",
-              "path-should-be-ignored/",
+              List.of("optional:/absolute/path/config-from-import.yaml"),
+              List.of("path-should-be-ignored/"),
               List.of("/absolute/path/config-from-import.yaml")),
           Arguments.arguments(
               "file protocol with absolute path in import should be added as absolute file path",
-              "file:/absolute/path/config-from-import.yaml",
-              "path-should-be-ignored/",
+              List.of("file:/absolute/path/config-from-import.yaml"),
+              List.of("path-should-be-ignored/"),
               List.of("/absolute/path/config-from-import.yaml")),
           Arguments.arguments(
               "optional prefix with file protocol and absolute path in import should be absolute",
-              "optional:file:/absolute/path/config-from-import.yaml",
-              "path-should-be-ignored/",
+              List.of("optional:file:/absolute/path/config-from-import.yaml"),
+              List.of("path-should-be-ignored/"),
               List.of("/absolute/path/config-from-import.yaml")),
           Arguments.arguments(
               "optional prefix with file protocol and relative path should be resolved relatively",
-              "optional:file:config-from-import.yaml",
-              "my-path/",
+              List.of("optional:file:config-from-import.yaml"),
+              List.of("my-path/"),
               List.of("my-path/config-from-import.yaml")),
           Arguments.arguments(
               "multiple absolute paths in import should be added as is",
-              "/absolute/path/config-from-import.yaml,/another-absolute/path/another-config.yaml",
-              "path-should-be-ignored/",
+              List.of(
+                  "/absolute/path/config-from-import.yaml",
+                  "/another-absolute/path/another-config.yaml"),
+              List.of("path-should-be-ignored/"),
               List.of(
                   "/absolute/path/config-from-import.yaml",
                   "/another-absolute/path/another-config.yaml")),
           Arguments.arguments(
               "multiple absolute paths with optional:file: prefix should be added as is",
-              "optional:file:/absolute/path/config-from-import.yaml,optional:file:/another-absolute/path/another-config.yaml",
-              "path-should-be-ignored/",
+              List.of(
+                  "optional:file:/absolute/path/config-from-import.yaml",
+                  "optional:file:/another-absolute/path/another-config.yaml"),
+              List.of("path-should-be-ignored/"),
               List.of(
                   "/absolute/path/config-from-import.yaml",
                   "/another-absolute/path/another-config.yaml")),
-          Arguments.arguments(
-              "multiple absolute paths with spaces and optional:file: prefix should be added as is",
-              "optional:file:/absolute/path/config-from-import.yaml , optional:file:/another-absolute/path/another-config.yaml",
-              "path-should-be-ignored/",
-              List.of(
-                  "/absolute/path/config-from-import.yaml",
-                  "/another-absolute/path/another-config.yaml")),
-          Arguments.arguments(
-              "multiple paths with spaces in spring.config.location should be resolved correctly",
-              "config-from-import.yaml",
-              "my-path/ , another-path/ ",
-              List.of("my-path/config-from-import.yaml", "another-path/config-from-import.yaml")),
           Arguments.arguments(
               "empty file in import should be ignored",
-              "config-from-import.yaml, ,another-config.yaml",
-              "my-path/",
+              List.of("config-from-import.yaml", "", "another-config.yaml"),
+              List.of("my-path/"),
               List.of("my-path/config-from-import.yaml", "my-path/another-config.yaml")),
           Arguments.arguments(
               "empty path in location should be ignored",
-              "config-from-import.yaml",
-              "my-path/, ,another-path/",
+              List.of("config-from-import.yaml"),
+              List.of("my-path/", "", "another-path/"),
               List.of("my-path/config-from-import.yaml", "another-path/config-from-import.yaml")));
     }
 

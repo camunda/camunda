@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -72,6 +73,7 @@ final class MemoryBoundedColumnIterationTest {
     iteration.drain(spiedColumn, (k, v) -> {});
 
     // then - expect 4 transactions since our limit is 50 longs, and each iteration adds 2 longs
-    Mockito.verify(spiedColumn, Mockito.times(4)).whileTrue(Mockito.any());
+    Mockito.verify(spiedColumn, Mockito.times(4))
+        .whileTrue(Mockito.<KeyValuePairVisitor<DbLong, DbLong>>any());
   }
 }

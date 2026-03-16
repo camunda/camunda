@@ -15,55 +15,40 @@ import type {
   ProcessInstance,
   QueryProcessInstanceIncidentsResponseBody,
   QueryElementInstancesResponseBody,
+  QueryAuditLogsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.9';
-import type {
-  ProcessInstanceEntity,
-  MetaDataDto,
-  ProcessInstanceIncidentsDto,
-  SequenceFlowsDto,
-} from '@/types';
 
 type InstanceMock = {
   xml: string;
-  detail: ProcessInstanceEntity;
-  detailV2: ProcessInstance;
+  detail: ProcessInstance;
   callHierarchy: GetProcessInstanceCallHierarchyResponseBody;
   elementInstances: QueryElementInstancesResponseBody;
   statistics: GetProcessDefinitionStatisticsResponseBody;
-  sequenceFlows: SequenceFlowsDto;
-  sequenceFlowsV2: GetProcessInstanceSequenceFlowsResponseBody;
+  sequenceFlows: GetProcessInstanceSequenceFlowsResponseBody;
   variables: Variable[];
-  incidents?: ProcessInstanceIncidentsDto;
-  incidentsV2?: QueryProcessInstanceIncidentsResponseBody;
-  metaData?: MetaDataDto;
+  incidents?: QueryProcessInstanceIncidentsResponseBody;
 };
 
 function mockResponses({
   processInstanceDetail,
-  processInstanceDetailV2,
   callHierarchy,
   elementInstances,
   statistics,
   sequenceFlows,
-  sequenceFlowsV2,
   variables,
   xml,
   incidents,
-  incidentsV2,
-  metaData,
+  auditLogs,
 }: {
-  processInstanceDetail?: ProcessInstanceEntity;
-  processInstanceDetailV2?: ProcessInstance;
+  processInstanceDetail?: ProcessInstance;
   callHierarchy?: GetProcessInstanceCallHierarchyResponseBody;
   elementInstances?: QueryElementInstancesResponseBody;
   statistics?: GetProcessDefinitionStatisticsResponseBody;
-  sequenceFlows?: SequenceFlowsDto;
-  sequenceFlowsV2?: GetProcessInstanceSequenceFlowsResponseBody;
+  sequenceFlows?: GetProcessInstanceSequenceFlowsResponseBody;
   variables?: Variable[];
   xml?: string;
-  incidents?: ProcessInstanceIncidentsDto;
-  incidentsV2?: QueryProcessInstanceIncidentsResponseBody;
-  metaData?: MetaDataDto;
+  incidents?: QueryProcessInstanceIncidentsResponseBody;
+  auditLogs?: QueryAuditLogsResponseBody;
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/v2/authentication/me')) {
@@ -132,15 +117,6 @@ function mockResponses({
     }
 
     if (route.request().url().includes('sequence-flows')) {
-      if (route.request().url().includes('v2')) {
-        return route.fulfill({
-          status: sequenceFlowsV2 === undefined ? 400 : 200,
-          body: JSON.stringify(sequenceFlowsV2),
-          headers: {
-            'content-type': 'application/json',
-          },
-        });
-      }
       return route.fulfill({
         status: sequenceFlows === undefined ? 400 : 200,
         body: JSON.stringify(sequenceFlows),
@@ -197,28 +173,8 @@ function mockResponses({
         .match(/\/v2\/process-instances\/\d+\/incidents\/search/)
     ) {
       return route.fulfill({
-        status: incidentsV2 === undefined ? 400 : 200,
-        body: JSON.stringify(incidentsV2),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (route.request().url().includes('incidents')) {
-      return route.fulfill({
         status: incidents === undefined ? 400 : 200,
         body: JSON.stringify(incidents),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (route.request().url().includes('flow-node-metadata')) {
-      return route.fulfill({
-        status: metaData === undefined ? 400 : 200,
-        body: JSON.stringify(metaData),
         headers: {
           'content-type': 'application/json',
         },
@@ -235,20 +191,10 @@ function mockResponses({
       });
     }
 
-    if (route.request().url().includes('/api/process-instances/')) {
+    if (route.request().url().includes('/v2/process-instances/')) {
       return route.fulfill({
         status: processInstanceDetail === undefined ? 400 : 200,
         body: JSON.stringify(processInstanceDetail),
-        headers: {
-          'content-type': 'application/json',
-        },
-      });
-    }
-
-    if (route.request().url().includes('/v2/process-instances/')) {
-      return route.fulfill({
-        status: processInstanceDetailV2 === undefined ? 400 : 200,
-        body: JSON.stringify(processInstanceDetailV2),
         headers: {
           'content-type': 'application/json',
         },
@@ -289,6 +235,16 @@ function mockResponses({
           operationsTotalCount: 1,
           operationsFinishedCount: 0,
         }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('/v2/audit-logs/search')) {
+      return route.fulfill({
+        status: auditLogs === undefined ? 400 : 200,
+        body: JSON.stringify(auditLogs),
         headers: {
           'content-type': 'application/json',
         },

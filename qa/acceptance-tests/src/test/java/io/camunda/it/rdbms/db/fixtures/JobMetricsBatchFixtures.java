@@ -14,6 +14,8 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.JobMetricsBatchDbModel;
 import io.camunda.db.rdbms.write.domain.JobMetricsBatchDbModel.Builder;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
+import io.camunda.search.entities.JobErrorStatisticsEntity;
+import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import java.time.OffsetDateTime;
@@ -246,6 +248,73 @@ public final class JobMetricsBatchFixtures extends CommonFixtures {
                 .orElseThrow());
     assertThat(stats.isIncomplete())
         .isEqualTo(metrics.stream().anyMatch(JobMetricsBatchDbModel::incompleteBatch));
+  }
+
+  /**
+   * Asserts that a {@link JobTimeSeriesStatisticsEntity} exactly matches the counts and timestamps
+   * of a single {@link JobMetricsBatchDbModel} (single bucket = single row).
+   *
+   * <p>Timestamps are compared after normalizing both sides to UTC.
+   */
+  public static void assertTimeSeriesStats(
+      final JobTimeSeriesStatisticsEntity stats, final JobMetricsBatchDbModel metric) {
+    assertThat(stats.created().count()).isEqualTo(metric.createdCount());
+    assertThat(stats.created().lastUpdatedAt()).isEqualTo(toUtc(metric.lastCreatedAt()));
+    assertThat(stats.completed().count()).isEqualTo(metric.completedCount());
+    assertThat(stats.completed().lastUpdatedAt()).isEqualTo(toUtc(metric.lastCompletedAt()));
+    assertThat(stats.failed().count()).isEqualTo(metric.failedCount());
+    assertThat(stats.failed().lastUpdatedAt()).isEqualTo(toUtc(metric.lastFailedAt()));
+  }
+
+  /**
+   * Asserts that a {@link JobTimeSeriesStatisticsEntity} matches the aggregated result of a list of
+   * {@link JobMetricsBatchDbModel}: counts are summed, timestamps are the MAX across all models.
+   *
+   * <p>Timestamps are compared after normalizing both sides to UTC.
+   */
+  public static void assertTimeSeriesStats(
+      final JobTimeSeriesStatisticsEntity stats, final List<JobMetricsBatchDbModel> metrics) {
+    assertThat(stats.created().count())
+        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::createdCount).sum());
+    assertThat(stats.created().lastUpdatedAt())
+        .isEqualTo(
+            metrics.stream()
+                .map(JobMetricsBatchDbModel::lastCreatedAt)
+                .max(OffsetDateTime::compareTo)
+                .map(JobMetricsBatchFixtures::toUtc)
+                .orElseThrow());
+    assertThat(stats.completed().count())
+        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::completedCount).sum());
+    assertThat(stats.completed().lastUpdatedAt())
+        .isEqualTo(
+            metrics.stream()
+                .map(JobMetricsBatchDbModel::lastCompletedAt)
+                .max(OffsetDateTime::compareTo)
+                .map(JobMetricsBatchFixtures::toUtc)
+                .orElseThrow());
+    assertThat(stats.failed().count())
+        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::failedCount).sum());
+    assertThat(stats.failed().lastUpdatedAt())
+        .isEqualTo(
+            metrics.stream()
+                .map(JobMetricsBatchDbModel::lastFailedAt)
+                .max(OffsetDateTime::compareTo)
+                .map(JobMetricsBatchFixtures::toUtc)
+                .orElseThrow());
+  }
+
+  /**
+   * Asserts that a {@link JobErrorStatisticsEntity} matches the expected errorCode, errorMessage
+   * and distinct worker count derived from a list of {@link JobMetricsBatchDbModel}.
+   */
+  public static void assertErrorStats(
+      final JobErrorStatisticsEntity stats,
+      final String expectedErrorCode,
+      final String expectedErrorMessage,
+      final int expectedWorkers) {
+    assertThat(stats.errorCode()).isEqualTo(expectedErrorCode);
+    assertThat(stats.errorMessage()).isEqualTo(expectedErrorMessage);
+    assertThat(stats.workers()).isEqualTo(expectedWorkers);
   }
 
   private static OffsetDateTime toUtc(final OffsetDateTime timestamp) {

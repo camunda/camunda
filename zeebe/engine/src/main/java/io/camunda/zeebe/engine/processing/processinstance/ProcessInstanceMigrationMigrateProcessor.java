@@ -29,7 +29,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
@@ -93,8 +92,6 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final BpmnBehaviors bpmnBehaviors;
   private final ProcessInstanceMigrationCatchEventBehaviour migrationCatchEventBehaviour;
   private final KeyGenerator keyGenerator;
-  private final boolean businessIdUniquenessEnabled;
-  private final BannedInstanceState bannedInstanceState;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
@@ -104,8 +101,7 @@ public class ProcessInstanceMigrationMigrateProcessor
       final int partitionId,
       final RoutingInfo routingInfo,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final KeyGenerator keyGenerator,
-      final boolean businessIdUniquenessEnabled) {
+      final KeyGenerator keyGenerator) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -117,11 +113,9 @@ public class ProcessInstanceMigrationMigrateProcessor
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     messageState = processingState.getMessageState();
-    bannedInstanceState = processingState.getBannedInstanceState();
     this.authCheckBehavior = authCheckBehavior;
     this.bpmnBehaviors = bpmnBehaviors;
     this.keyGenerator = keyGenerator;
-    this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
 
     migrationCatchEventBehaviour =
         new ProcessInstanceMigrationCatchEventBehaviour(
@@ -183,12 +177,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullTargetProcessDefinition(targetProcessDefinition, targetProcessDefinitionKey);
     requireNoStartEventInstanceForTargetProcess(
         processInstance, targetProcessDefinition, messageState);
-    requireNoBusinessIdConflictForTargetProcess(
-        processInstance,
-        targetProcessDefinitionKey,
-        elementInstanceState,
-        businessIdUniquenessEnabled,
-        bannedInstanceState::isProcessInstanceBanned);
     requireReferredElementsExist(
         sourceProcessDefinition, targetProcessDefinition, mappingInstructions, processInstanceKey);
 

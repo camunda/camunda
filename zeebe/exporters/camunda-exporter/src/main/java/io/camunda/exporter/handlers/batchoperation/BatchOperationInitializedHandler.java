@@ -18,12 +18,21 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationInitializationRecordValue;
 import io.camunda.zeebe.util.DateUtil;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class BatchOperationInitializedHandler
     implements ExportHandler<BatchOperationEntity, BatchOperationInitializationRecordValue> {
+
+  static final String CONDITIONAL_UPDATE_SCRIPT =
+      """
+      if (ctx._source.state == null || ctx._source.state == 'CREATED') {
+          ctx._source.state = params.state;
+      }
+      if (ctx._source.startDate == null) {
+          ctx._source.startDate = params.startDate;
+      }
+      """;
 
   private final String indexName;
 
@@ -68,10 +77,20 @@ public class BatchOperationInitializedHandler
   @Override
   public void flush(final BatchOperationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    final Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put(BatchOperationTemplate.STATE, entity.getState());
-    updateFields.put(BatchOperationTemplate.START_DATE, entity.getStartDate());
-    batchRequest.update(indexName, entity.getId(), updateFields);
+    // Use upsertWithScript to be resilient against cross-partition ordering. Each partition
+    // independently produces an INITIALIZED event, so multiple exporters write state=ACTIVE to
+    // the same document. A late write from a slow partition could overwrite a state that has
+    // already advanced (e.g., COMPLETED). The Painless script only transitions to ACTIVE if the
+    // current state is CREATED or null, preventing state regression.
+    // If the document does not yet exist, the upsert creates it from the entity.
+    batchRequest.upsertWithScript(
+        indexName,
+        entity.getId(),
+        entity,
+        CONDITIONAL_UPDATE_SCRIPT,
+        Map.of(
+            BatchOperationTemplate.STATE, entity.getState().name(),
+            BatchOperationTemplate.START_DATE, entity.getStartDate()));
   }
 
   @Override

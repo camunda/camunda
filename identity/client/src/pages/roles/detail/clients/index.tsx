@@ -11,12 +11,13 @@ import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";
-import { getClientsByRoleId, Role } from "src/utility/api/roles";
+import { getClientsByRoleId } from "src/utility/api/roles";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/roles/detail/clients/DeleteModal";
 import AssignClientsModal from "src/pages/roles/detail/clients/AssignClientsModal";
 import TabEmptyState from "src/components/layout/TabEmptyState";
+import type { Role } from "@camunda/camunda-api-zod-schemas/8.9";
 
 type ClientsProps = {
   roleId: Role["roleId"];

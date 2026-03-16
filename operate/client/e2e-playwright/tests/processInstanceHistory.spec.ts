@@ -76,7 +76,7 @@ test.describe('Process Instance History', () => {
       initialData.manyFlowNodeInstancesProcessInstance.processInstanceKey;
 
     await processInstancePage.gotoProcessInstancePage({
-      id: processInstanceKey,
+      key: processInstanceKey,
     });
 
     await expect(
@@ -170,7 +170,7 @@ test.describe('Process Instance History', () => {
     });
 
     await processInstancePage.gotoProcessInstancePage({
-      id: processInstanceKey,
+      key: processInstanceKey,
     });
 
     const firstSubtree = page.getByRole('treeitem').nth(4);

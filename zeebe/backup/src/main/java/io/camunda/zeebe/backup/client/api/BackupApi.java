@@ -83,4 +83,10 @@ public interface BackupApi {
 
   /** Force-write backup metadata for all partitions. */
   CompletionStage<BackupRangesResponse> syncMetadata();
+
+  /**
+   * Resets the backup runtime state on all partitions. Clears all checkpoint info, backup info,
+   * checkpoint metadata, and backup ranges. Used when switching backup stores.
+   */
+  CompletionStage<Void> deleteRuntimeState();
 }

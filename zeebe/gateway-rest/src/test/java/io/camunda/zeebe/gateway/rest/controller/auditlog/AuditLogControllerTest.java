@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.auditlog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -29,7 +30,6 @@ import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.AuditLogSort;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AuditLogServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -169,15 +169,13 @@ public class AuditLogControllerTest extends RestControllerTest {
   void setUp() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(auditLogServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(auditLogServices);
   }
 
   @Test
   void shouldSearchAuditLogsWithEmptyBody() {
     // given
     final var searchResult = SearchQueryResult.of(AUDIT_LOG_ENTITY);
-    when(auditLogServices.search(any(AuditLogQuery.class))).thenReturn(searchResult);
+    when(auditLogServices.search(any(AuditLogQuery.class), any())).thenReturn(searchResult);
 
     // when/then
     webClient
@@ -191,7 +189,7 @@ public class AuditLogControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     final var captor = ArgumentCaptor.forClass(AuditLogQuery.class);
-    verify(auditLogServices).search(captor.capture());
+    verify(auditLogServices).search(captor.capture(), any());
     assertThat(captor.getValue()).isNotNull();
   }
 
@@ -199,7 +197,7 @@ public class AuditLogControllerTest extends RestControllerTest {
   void shouldGetAuditLogByKey() {
     // given
     final var auditLogKey = "123";
-    when(auditLogServices.getAuditLog(auditLogKey)).thenReturn(AUDIT_LOG_ENTITY);
+    when(auditLogServices.getAuditLog(eq(auditLogKey), any())).thenReturn(AUDIT_LOG_ENTITY);
 
     // when/then
     webClient
@@ -212,7 +210,7 @@ public class AuditLogControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_GET_BY_KEY_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(auditLogServices).getAuditLog(auditLogKey);
+    verify(auditLogServices).getAuditLog(eq(auditLogKey), any());
   }
 
   @Test
@@ -232,7 +230,7 @@ public class AuditLogControllerTest extends RestControllerTest {
         }
         """;
     final var searchResult = SearchQueryResult.of(AUDIT_LOG_ENTITY);
-    when(auditLogServices.search(any(AuditLogQuery.class))).thenReturn(searchResult);
+    when(auditLogServices.search(any(AuditLogQuery.class), any())).thenReturn(searchResult);
 
     // when/then
     webClient
@@ -261,7 +259,7 @@ public class AuditLogControllerTest extends RestControllerTest {
                     AuditLogCategoryEnum.DEPLOYED_RESOURCES))
             .results(AuditLogResultConverter.toInternalResultAsString(AuditLogResultEnum.SUCCESS))
             .build();
-    verify(auditLogServices).search(new AuditLogQuery.Builder().filter(filter).build());
+    verify(auditLogServices).search(eq(new AuditLogQuery.Builder().filter(filter).build()), any());
   }
 
   @Test
@@ -301,7 +299,7 @@ public class AuditLogControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(auditLogServices, never()).search(any(AuditLogQuery.class));
+    verify(auditLogServices, never()).search(any(AuditLogQuery.class), any());
   }
 
   @Test
@@ -323,7 +321,7 @@ public class AuditLogControllerTest extends RestControllerTest {
         }
         """;
     final var searchResult = SearchQueryResult.of(AUDIT_LOG_ENTITY);
-    when(auditLogServices.search(any(AuditLogQuery.class))).thenReturn(searchResult);
+    when(auditLogServices.search(any(AuditLogQuery.class), any())).thenReturn(searchResult);
 
     // when/then
     webClient
@@ -339,15 +337,17 @@ public class AuditLogControllerTest extends RestControllerTest {
 
     verify(auditLogServices)
         .search(
-            new AuditLogQuery.Builder()
-                .sort(
-                    new AuditLogSort.Builder()
-                        .actorId()
-                        .desc()
-                        .decisionDefinitionKey()
-                        .asc()
-                        .build())
-                .build());
+            eq(
+                new AuditLogQuery.Builder()
+                    .sort(
+                        new AuditLogSort.Builder()
+                            .actorId()
+                            .desc()
+                            .decisionDefinitionKey()
+                            .asc()
+                            .build())
+                    .build()),
+            any());
   }
 
   @Test
@@ -390,6 +390,6 @@ public class AuditLogControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedResponse, JsonCompareMode.STRICT);
 
-    verify(auditLogServices, never()).search(any(AuditLogQuery.class));
+    verify(auditLogServices, never()).search(any(AuditLogQuery.class), any());
   }
 }

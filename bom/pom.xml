@@ -102,6 +102,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>camunda-spring-boot-3-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>camunda-spring-boot-4-starter</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -120,7 +126,19 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>camunda-process-test-spring-boot-3</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>camunda-process-test-spring-4</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-process-test-langchain4j</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>

@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.scheduler.future;
 
-import static org.agrona.UnsafeAccess.UNSAFE;
-
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorTask;
 import io.camunda.zeebe.scheduler.ActorThread;
@@ -27,6 +25,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.agrona.UnsafeApi;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /** Completable future implementation that is garbage free and reusable */
@@ -43,7 +42,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
   static {
     try {
       STATE_OFFSET =
-          UNSAFE.objectFieldOffset(CompletableActorFuture.class.getDeclaredField("state"));
+          UnsafeApi.objectFieldOffset(CompletableActorFuture.class.getDeclaredField("state"));
     } catch (final Exception ex) {
       throw new RuntimeException(ex);
     }
@@ -184,7 +183,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
 
   @Override
   public void complete(final V value) {
-    if (UNSAFE.compareAndSwapInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING)) {
+    if (UnsafeApi.compareAndSetInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING)) {
       this.value = value;
       state = COMPLETED;
       completedAt = System.nanoTime();
@@ -205,7 +204,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     // important for other actors that consume this by #runOnCompletion
     ensureValidThrowable(throwable);
 
-    if (UNSAFE.compareAndSwapInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING)) {
+    if (UnsafeApi.compareAndSetInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING)) {
       this.failure = failure;
       failureCause = throwable;
       state = COMPLETED_EXCEPTIONALLY;
@@ -251,9 +250,10 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
       // to use this in production code.
       Loggers.ACTOR_LOGGER.warn(
           """
-              [PotentiallyBlocking] No executor provided for ActorFuture#onComplete callback.\
+              [PotentiallyBlocking] No executor provided for ActorFuture#onComplete callback for {}.\
                This could block the actor that completes the future.\
-               Use onComplete(consumer, executor) instead.""");
+               Use onComplete(consumer, executor) instead.""",
+          consumer.getClass().getName());
       onComplete(consumer, Runnable::run);
     }
   }
@@ -387,9 +387,10 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
       // to use this in production code.
       Loggers.ACTOR_LOGGER.warn(
           """
-              [PotentiallyBlocking] No executor provided for ActorFuture#thenApply method.\
+              [PotentiallyBlocking] No executor provided for ActorFuture#thenApply method at {}.\
                This could block the actor that completes the future.\
-               Use thenApply(consumer, executor) instead.""");
+               Use thenApply(consumer, executor) instead.""",
+          next.getClass().getName());
       return thenApply(next, Runnable::run);
     }
   }
@@ -420,7 +421,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
 
   /** future is reusable after close */
   public boolean close() {
-    final int prevState = UNSAFE.getAndSetInt(this, STATE_OFFSET, CLOSED);
+    final int prevState = UnsafeApi.getAndSetInt(this, STATE_OFFSET, CLOSED);
 
     if (prevState != CLOSED) {
       value = null;

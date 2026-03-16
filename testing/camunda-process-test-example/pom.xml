@@ -15,7 +15,7 @@
 
   <properties>
     <version.java>17</version.java>
-    <version.wiremock-spring-boot>4.2.0</version.wiremock-spring-boot>
+    <version.wiremock-spring-boot>4.2.1</version.wiremock-spring-boot>
   </properties>
 
   <dependencies>

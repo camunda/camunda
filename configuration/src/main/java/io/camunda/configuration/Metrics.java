@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Metrics {
 
@@ -24,6 +25,9 @@ public class Metrics {
 
   /** Enable exporter execution metrics */
   private boolean enableExporterExecutionMetrics;
+
+  /** Configure job metrics export settings */
+  @NestedConfigurationProperty private JobMetricsConfig jobMetrics = new JobMetricsConfig();
 
   public boolean isActor() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -49,5 +53,13 @@ public class Metrics {
 
   public void setEnableExporterExecutionMetrics(final boolean enableExporterExecutionMetrics) {
     this.enableExporterExecutionMetrics = enableExporterExecutionMetrics;
+  }
+
+  public JobMetricsConfig getJobMetrics() {
+    return jobMetrics;
+  }
+
+  public void setJobMetrics(final JobMetricsConfig jobMetrics) {
+    this.jobMetrics = jobMetrics;
   }
 }

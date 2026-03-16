@@ -49,12 +49,14 @@ public final class ProcessInstanceFilterMapper {
     target.setParentProcessInstanceKey(filter.getParentProcessInstanceKey());
     target.setParentElementInstanceKey(filter.getParentElementInstanceKey());
     target.setBatchOperationId(filter.getBatchOperationId());
+    target.setBatchOperationKey(filter.getBatchOperationKey());
     target.setErrorMessage(filter.getErrorMessage());
     target.setHasRetriesLeft(filter.getHasRetriesLeft());
     target.setElementInstanceState(filter.getElementInstanceState());
     target.setElementId(filter.getElementId());
     target.setHasElementInstanceIncident(filter.getHasElementInstanceIncident());
     target.setIncidentErrorHashCode(filter.getIncidentErrorHashCode());
+    target.setBusinessId(filter.getBusinessId());
 
     return target;
   }

@@ -44,4 +44,6 @@ public interface ProcessInstanceSort extends SearchRequestSort<ProcessInstanceSo
   ProcessInstanceSort hasIncident();
 
   ProcessInstanceSort tenantId();
+
+  ProcessInstanceSort businessId();
 }

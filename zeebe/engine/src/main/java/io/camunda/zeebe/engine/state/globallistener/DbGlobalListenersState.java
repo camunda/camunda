@@ -144,7 +144,7 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
     final var referenced = new MutableBoolean(false);
     pinnedConfigColumnFamily.whileEqualPrefix(
         this.versionKey,
-        (compositeKey, nil) -> {
+        ignored -> {
           referenced.set(true);
           // Early exit as soon as we find a reference
           return false;

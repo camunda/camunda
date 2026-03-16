@@ -132,7 +132,7 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test('filled with data and one flow node selected', async ({
+  test('filled with data and one element selected', async ({
     page,
     processesPage,
     processesPage: {filtersPanel},
@@ -168,7 +168,7 @@ test.describe('processes page', () => {
       },
     });
 
-    await filtersPanel.selectFlowNode('Event Subprocess task');
+    await filtersPanel.selectElement('Event Subprocess task');
 
     await expect(page).toHaveScreenshot();
   });

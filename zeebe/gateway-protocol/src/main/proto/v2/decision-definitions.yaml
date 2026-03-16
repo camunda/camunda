@@ -426,6 +426,13 @@ components:
         - decisionDefinitionType
         - evaluatedInputs
         - matchedRules
+        - decisionDefinitionId
+        - decisionDefinitionKey
+        - decisionDefinitionName
+        - decisionDefinitionVersion
+        - decisionEvaluationInstanceKey
+        - output
+        - tenantId
       x-semantic-provider:
         - decisionEvaluationInstanceKey
       type: object

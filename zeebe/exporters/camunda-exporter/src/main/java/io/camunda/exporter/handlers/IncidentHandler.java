@@ -129,6 +129,7 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
     updateFields.put(FLOW_NODE_ID, entity.getFlowNodeId());
     updateFields.put(POSITION, entity.getPosition());
     updateFields.put(TREE_PATH, entity.getTreePath());
+    updateFields.put(STATE, entity.getState());
     batchRequest.upsert(indexName, String.valueOf(entity.getKey()), entity, updateFields);
   }
 

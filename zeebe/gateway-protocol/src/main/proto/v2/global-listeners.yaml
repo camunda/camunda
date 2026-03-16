@@ -340,7 +340,6 @@ components:
             - $ref: '#/components/schemas/GlobalListenerSourceFilterProperty'
     GlobalListenerSourceFilterProperty:
       description: Global listener source property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -373,7 +372,6 @@ components:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
     GlobalTaskListenerEventTypeFilterProperty:
       description: Global listener event type property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match

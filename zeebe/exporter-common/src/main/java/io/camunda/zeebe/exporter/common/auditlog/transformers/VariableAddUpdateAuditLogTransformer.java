@@ -27,9 +27,9 @@ public class VariableAddUpdateAuditLogTransformer
   }
 
   @Override
-  public boolean supports(final Record<?> record) {
-    final VariableRecordValue value = (VariableRecordValue) record.getValue();
-    return AuditLogTransformer.super.supports(record)
-        && VariableOperationType.API.equals(value.getSource().getType());
+  public boolean supports(final Record<VariableRecordValue> record) {
+    final VariableRecordValue value = record.getValue();
+    return VariableOperationType.API.equals(value.getSource().getType())
+        && AuditLogTransformer.super.supports(record);
   }
 }

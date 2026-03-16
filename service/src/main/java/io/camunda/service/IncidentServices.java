@@ -41,25 +41,25 @@ public class IncidentServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final IncidentSearchClient incidentSearchClient,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.incidentSearchClient = incidentSearchClient;
   }
 
   public SearchQueryResult<IncidentEntity> search(
-      final Function<IncidentQuery.Builder, ObjectBuilder<IncidentQuery>> fn) {
-    return search(incidentSearchQuery(fn));
+      final Function<IncidentQuery.Builder, ObjectBuilder<IncidentQuery>> fn,
+      final CamundaAuthentication authentication) {
+    return search(incidentSearchQuery(fn), authentication);
   }
 
   @Override
-  public SearchQueryResult<IncidentEntity> search(final IncidentQuery query) {
+  public SearchQueryResult<IncidentEntity> search(
+      final IncidentQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             incidentSearchClient
@@ -69,18 +69,7 @@ public class IncidentServices
                 .searchIncidents(query));
   }
 
-  @Override
-  public IncidentServices withAuthentication(final CamundaAuthentication authentication) {
-    return new IncidentServices(
-        brokerClient,
-        securityContextProvider,
-        incidentSearchClient,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  public IncidentEntity getByKey(final Long key) {
+  public IncidentEntity getByKey(final Long key, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             incidentSearchClient
@@ -93,17 +82,20 @@ public class IncidentServices
   }
 
   public CompletableFuture<IncidentRecord> resolveIncident(
-      final long incidentKey, final Long operationReference) {
+      final long incidentKey,
+      final Long operationReference,
+      final CamundaAuthentication authentication) {
     final var brokerRequest = new BrokerResolveIncidentRequest(incidentKey);
     if (operationReference != null) {
       brokerRequest.setOperationReference(operationReference);
     }
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public SearchQueryResult<IncidentProcessInstanceStatisticsByErrorEntity>
       incidentProcessInstanceStatisticsByError(
-          final IncidentProcessInstanceStatisticsByErrorQuery query) {
+          final IncidentProcessInstanceStatisticsByErrorQuery query,
+          final CamundaAuthentication authentication) {
     final var sanitizedQuery =
         IncidentProcessInstanceStatisticsByErrorQuery.of(
             b ->
@@ -121,7 +113,8 @@ public class IncidentServices
 
   public SearchQueryResult<IncidentProcessInstanceStatisticsByDefinitionEntity>
       searchIncidentProcessInstanceStatisticsByDefinition(
-          final IncidentProcessInstanceStatisticsByDefinitionQuery query) {
+          final IncidentProcessInstanceStatisticsByDefinitionQuery query,
+          final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             incidentSearchClient

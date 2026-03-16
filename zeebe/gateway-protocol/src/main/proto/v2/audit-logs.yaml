@@ -518,7 +518,6 @@ components:
 
     AuditLogEntityKeyFilterProperty:
       description: EntityKey property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -556,7 +555,6 @@ components:
 
     EntityTypeFilterProperty:
       description: AuditLogEntityTypeEnum property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -591,7 +589,6 @@ components:
 
     OperationTypeFilterProperty:
       description: AuditLogOperationTypeEnum property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -626,7 +623,6 @@ components:
 
     CategoryFilterProperty:
       description: AuditLogCategoryEnum property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -661,7 +657,6 @@ components:
 
     AuditLogResultFilterProperty:
       description: AuditLogResultEnum property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match
@@ -696,7 +691,6 @@ components:
 
     AuditLogActorTypeFilterProperty:
       description: AuditLogActorTypeEnum property with full advanced search capabilities.
-      type: object
       oneOf:
         - type: string
           title: Exact match

@@ -140,10 +140,7 @@ final class ProcessInstanceElementCompletedV2Applier
     final String businessId = value.getBusinessId();
     if (!businessId.isEmpty()) {
       elementInstanceState.deleteProcessInstanceKeyMappingByBusinessId(
-          businessId,
-          value.getProcessDefinitionKey(),
-          value.getTenantId(),
-          value.getProcessInstanceKey());
+          businessId, value.getBpmnProcessId(), value.getTenantId(), value.getProcessInstanceKey());
     }
   }
 }

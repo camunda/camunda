@@ -1,0 +1,32 @@
+# description: trigger workflow to run the camunda-client-compatibility-test.yml workflow on a schedule
+# type: CI
+# owner: @camunda/camunda-ex
+name: Camunda Compatibility Tests - Trigger
+
+on:
+  schedule:
+    # Run daily at 02:00 UTC
+    - cron: "0 2 * * *"
+
+jobs:
+  trigger-stable-8-8:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger compatibility tests on stable/8.8
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run .github/workflows/camunda-client-compatibility-test.yml \
+            --ref stable/8.8 \
+            --repo ${{ github.repository }}
+
+  trigger-stable-8-9:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger compatibility tests on stable/8.9
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run .github/workflows/camunda-client-compatibility-test.yml \
+            --ref stable/8.9 \
+            --repo ${{ github.repository }}

@@ -1,0 +1,51 @@
+{
+	"name": "@camunda/lint-config",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"exports": {
+		"./eslint": "./eslint/index.js",
+		"./eslint/*": "./eslint/*.js",
+		"./prettier": "./prettier/index.js"
+	},
+	"peerDependencies": {
+		"@eslint/js": ">=9",
+		"@tanstack/eslint-plugin-query": ">=5",
+		"@typescript-eslint/eslint-plugin": ">=8",
+		"@typescript-eslint/parser": ">=8",
+		"@vitest/eslint-plugin": ">=1.6",
+		"eslint": ">=9",
+		"eslint-config-prettier": ">=10",
+		"eslint-plugin-import": ">=2",
+		"eslint-plugin-license-header": ">=0.9",
+		"eslint-plugin-prettier": ">=5",
+		"eslint-plugin-react-hooks": ">=5",
+		"eslint-plugin-react-refresh": ">=0.4",
+		"eslint-plugin-testing-library": ">=6",
+		"globals": ">=15",
+		"prettier": ">=3"
+	},
+	"peerDependenciesMeta": {
+		"@tanstack/eslint-plugin-query": {
+			"optional": true
+		},
+		"@vitest/eslint-plugin": {
+			"optional": true
+		},
+		"eslint-plugin-import": {
+			"optional": true
+		},
+		"eslint-plugin-testing-library": {
+			"optional": true
+		},
+		"eslint-plugin-react-hooks": {
+			"optional": true
+		},
+		"eslint-plugin-react-refresh": {
+			"optional": true
+		},
+		"eslint-plugin-license-header": {
+			"optional": true
+		}
+	}
+}

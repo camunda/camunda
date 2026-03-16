@@ -10,13 +10,11 @@ import {test} from '../visual-fixtures';
 
 import {
   mockResponses as mockProcessesResponses,
-  mockDeleteProcess,
   mockProcessDefinitions,
 } from '../mocks/processes.mocks';
 import {
   mockDecisionXml,
   mockResponses as mockDecisionsResponses,
-  mockDeleteDecision,
   mockEmptyDecisionInstances,
   mockedDecisionDefinitions,
 } from '../mocks/decisions.mocks';
@@ -62,7 +60,6 @@ test.describe.skip('delete resource definitions', () => {
         processXml: openFile(
           './e2e-playwright/mocks/resources/orderProcess.bpmn',
         ),
-        deleteProcess: mockDeleteProcess,
       }),
     );
 
@@ -148,7 +145,6 @@ test.describe.skip('delete resource definitions', () => {
         },
         decisionInstances: mockEmptyDecisionInstances,
         decisionXml: mockDecisionXml,
-        deleteDecision: mockDeleteDecision,
       }),
     );
 

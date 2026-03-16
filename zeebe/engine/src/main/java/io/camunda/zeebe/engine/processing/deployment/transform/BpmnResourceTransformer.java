@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
@@ -59,25 +58,18 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       final ProcessState processState,
       final ExpressionProcessor expressionProcessor,
       final boolean enableStraightThroughProcessingLoopDetector,
-      final EngineConfiguration config,
+      final ValidationConfig config,
       final InstantSource clock,
       final ExpressionLanguageMetrics expressionLanguageMetrics) {
-    bpmnTransformer = BpmnFactory.createTransformer(clock, expressionLanguageMetrics);
+    bpmnTransformer =
+        BpmnFactory.createTransformer(
+            clock, expressionLanguageMetrics, config.maxNameFieldLength());
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.checksumGenerator = checksumGenerator;
     this.processState = processState;
     validator =
-        BpmnFactory.createValidator(
-            clock,
-            expressionProcessor,
-            BpmnValidatorConfig.builder()
-                .withMaxIdFieldLength(config.getMaxIdFieldLength())
-                .withMaxNameFieldLength(config.getMaxNameFieldLength())
-                .withMaxWorkerTypeLength(config.getMaxWorkerTypeLength())
-                .withValidatorResultsOutputMaxSize(config.getValidatorsResultsOutputMaxSize())
-                .build(),
-            expressionLanguageMetrics);
+        BpmnFactory.createValidator(clock, expressionProcessor, config, expressionLanguageMetrics);
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
   }
 

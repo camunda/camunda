@@ -31,6 +31,7 @@ public final class FlowNodeInstanceFixtures extends CommonFixtures {
             .processDefinitionKey(nextKey())
             .processDefinitionId("process-" + generateRandomString(20))
             .flowNodeId("flowNode-" + generateRandomString(20))
+            .flowNodeName("flowNodeName-" + generateRandomString(20))
             .flowNodeScopeKey(nextKey())
             .startDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .endDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))

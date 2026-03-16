@@ -9,6 +9,8 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.GROUPS_API_DISABLED_ERROR_MESSAGE;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -16,7 +18,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.protocol.model.GroupCreateRequest;
 import io.camunda.gateway.protocol.model.GroupUpdateRequest;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
@@ -221,8 +222,6 @@ public class GroupControllerTest {
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-      when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(groupServices);
       when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
     }
 
@@ -233,7 +232,7 @@ public class GroupControllerTest {
       final var groupName = "testGroup";
       final var description = "description";
       final var createGroupRequest = new GroupDTO(groupId, groupName, description);
-      when(groupServices.createGroup(createGroupRequest))
+      when(groupServices.createGroup(eq(createGroupRequest), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new GroupRecord()
@@ -254,7 +253,7 @@ public class GroupControllerTest {
           .isCreated();
 
       // then
-      verify(groupServices, times(1)).createGroup(createGroupRequest);
+      verify(groupServices, times(1)).createGroup(eq(createGroupRequest), any());
     }
 
     @Test
@@ -416,7 +415,7 @@ public class GroupControllerTest {
       final var groupId = "111";
       final var groupName = "updatedName";
       final var description = "updatedDescription";
-      when(groupServices.updateGroup(groupId, groupName, description))
+      when(groupServices.updateGroup(eq(groupId), eq(groupName), eq(description), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new GroupRecord()
@@ -448,7 +447,8 @@ public class GroupControllerTest {
               JsonCompareMode.STRICT);
 
       // then
-      verify(groupServices, times(1)).updateGroup(groupId, groupName, description);
+      verify(groupServices, times(1))
+          .updateGroup(eq(groupId), eq(groupName), eq(description), any());
     }
 
     @Test
@@ -458,7 +458,7 @@ public class GroupControllerTest {
       final var groupId = "111";
       final var groupName = "updatedName";
       final var description = "";
-      when(groupServices.updateGroup(groupId, groupName, description))
+      when(groupServices.updateGroup(eq(groupId), eq(groupName), eq(description), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new GroupRecord()
@@ -490,7 +490,8 @@ public class GroupControllerTest {
               JsonCompareMode.STRICT);
 
       // then
-      verify(groupServices, times(1)).updateGroup(groupId, groupName, description);
+      verify(groupServices, times(1))
+          .updateGroup(eq(groupId), eq(groupName), eq(description), any());
     }
 
     @Test
@@ -533,7 +534,7 @@ public class GroupControllerTest {
       final var name = "name";
       final var uri = "%s/%s".formatted(GROUP_BASE_URL, groupId);
       final String description = null;
-      when(groupServices.updateGroup(groupId, name, description))
+      when(groupServices.updateGroup(eq(groupId), eq(name), isNull(), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new GroupRecord().setGroupId(groupId).setName(name).setDescription(description)));
@@ -560,7 +561,7 @@ public class GroupControllerTest {
                   .formatted(groupId, name, ""),
               JsonCompareMode.STRICT);
 
-      verify(groupServices, times(1)).updateGroup(groupId, name, description);
+      verify(groupServices, times(1)).updateGroup(eq(groupId), eq(name), eq(description), any());
     }
 
     @Test
@@ -570,7 +571,7 @@ public class GroupControllerTest {
       final var groupName = "newName";
       final var path = "%s/%s".formatted(GROUP_BASE_URL, groupId);
       final var description = "updatedDescription";
-      when(groupServices.updateGroup(groupId, groupName, description))
+      when(groupServices.updateGroup(eq(groupId), eq(groupName), eq(description), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -588,7 +589,8 @@ public class GroupControllerTest {
           .expectStatus()
           .isNotFound();
 
-      verify(groupServices, times(1)).updateGroup(groupId, groupName, description);
+      verify(groupServices, times(1))
+          .updateGroup(eq(groupId), eq(groupName), eq(description), any());
     }
 
     @ParameterizedTest
@@ -628,7 +630,7 @@ public class GroupControllerTest {
 
       final var groupRecord = new GroupRecord().setGroupId(groupId);
 
-      when(groupServices.deleteGroup(groupId))
+      when(groupServices.deleteGroup(eq(groupId), any()))
           .thenReturn(CompletableFuture.completedFuture(groupRecord));
 
       // when
@@ -641,7 +643,7 @@ public class GroupControllerTest {
           .isNoContent();
 
       // then
-      verify(groupServices, times(1)).deleteGroup(groupId);
+      verify(groupServices, times(1)).deleteGroup(eq(groupId), any());
     }
 
     @Test
@@ -650,7 +652,8 @@ public class GroupControllerTest {
       final String groupId = "111";
       final String username = "222";
       final var request = new GroupMemberDTO(groupId, username, EntityType.USER);
-      when(groupServices.assignMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+      when(groupServices.assignMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
       webClient
@@ -662,7 +665,7 @@ public class GroupControllerTest {
           .isNoContent();
 
       // then
-      verify(groupServices, times(1)).assignMember(request);
+      verify(groupServices, times(1)).assignMember(eq(request), any());
     }
 
     @Test
@@ -672,7 +675,7 @@ public class GroupControllerTest {
       final String username = "222";
       final var path = "%s/%s/users/%s".formatted(GROUP_BASE_URL, groupId, username);
       final var request = new GroupMemberDTO(groupId, username, EntityType.USER);
-      when(groupServices.assignMember(request))
+      when(groupServices.assignMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -692,7 +695,7 @@ public class GroupControllerTest {
           .isNotFound();
 
       // then
-      verify(groupServices, times(1)).assignMember(request);
+      verify(groupServices, times(1)).assignMember(eq(request), any());
     }
 
     @Test
@@ -702,7 +705,7 @@ public class GroupControllerTest {
       final String username = "222";
       final var path = "%s/%s/users/%s".formatted(GROUP_BASE_URL, groupId, username);
       final var request = new GroupMemberDTO(groupId, username, EntityType.USER);
-      when(groupServices.assignMember(request))
+      when(groupServices.assignMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -722,7 +725,7 @@ public class GroupControllerTest {
           .isNotFound();
 
       // then
-      verify(groupServices, times(1)).assignMember(request);
+      verify(groupServices, times(1)).assignMember(eq(request), any());
     }
 
     @Test
@@ -731,7 +734,8 @@ public class GroupControllerTest {
       final var groupId = Strings.newRandomValidIdentityId();
       final var mappingRuleId = Strings.newRandomValidIdentityId();
       final var request = new GroupMemberDTO(groupId, mappingRuleId, EntityType.MAPPING_RULE);
-      when(groupServices.assignMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+      when(groupServices.assignMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
       webClient
@@ -743,7 +747,7 @@ public class GroupControllerTest {
           .isNoContent();
 
       // then
-      verify(groupServices, times(1)).assignMember(request);
+      verify(groupServices, times(1)).assignMember(eq(request), any());
     }
 
     @Test
@@ -752,7 +756,7 @@ public class GroupControllerTest {
       final var groupId = Strings.newRandomValidIdentityId();
       final var mappingRuleId = Strings.newRandomValidIdentityId();
       final var request = new GroupMemberDTO(groupId, mappingRuleId, EntityType.MAPPING_RULE);
-      when(groupServices.assignMember(request))
+      when(groupServices.assignMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -772,7 +776,7 @@ public class GroupControllerTest {
           .isNotFound();
 
       // then
-      verify(groupServices, times(1)).assignMember(request);
+      verify(groupServices, times(1)).assignMember(eq(request), any());
     }
 
     @Test
@@ -781,7 +785,7 @@ public class GroupControllerTest {
       final var groupId = Strings.newRandomValidIdentityId();
       final var mappingRuleId = Strings.newRandomValidIdentityId();
       final var request = new GroupMemberDTO(groupId, mappingRuleId, EntityType.MAPPING_RULE);
-      when(groupServices.assignMember(request))
+      when(groupServices.assignMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -801,7 +805,7 @@ public class GroupControllerTest {
           .isNotFound();
 
       // then
-      verify(groupServices, times(1)).assignMember(request);
+      verify(groupServices, times(1)).assignMember(eq(request), any());
     }
 
     @Test
@@ -872,7 +876,8 @@ public class GroupControllerTest {
       final String groupId = "111";
       final String username = "222";
       final var request = new GroupMemberDTO(groupId, username, EntityType.USER);
-      when(groupServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+      when(groupServices.removeMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
       webClient
@@ -884,7 +889,7 @@ public class GroupControllerTest {
           .isNoContent();
 
       // then
-      verify(groupServices, times(1)).removeMember(request);
+      verify(groupServices, times(1)).removeMember(eq(request), any());
     }
 
     @Test
@@ -894,7 +899,7 @@ public class GroupControllerTest {
       final String username = "222";
       final var path = "%s/%s/users/%s".formatted(GROUP_BASE_URL, groupId, username);
       final var request = new GroupMemberDTO(groupId, username, EntityType.USER);
-      when(groupServices.removeMember(request))
+      when(groupServices.removeMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -914,7 +919,7 @@ public class GroupControllerTest {
           .isNotFound();
 
       // then
-      verify(groupServices, times(1)).removeMember(request);
+      verify(groupServices, times(1)).removeMember(eq(request), any());
     }
 
     @Test
@@ -924,7 +929,7 @@ public class GroupControllerTest {
       final String username = "222";
       final var path = "%s/%s/users/%s".formatted(GROUP_BASE_URL, groupId, username);
       final var request = new GroupMemberDTO(groupId, username, EntityType.USER);
-      when(groupServices.removeMember(request))
+      when(groupServices.removeMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -944,7 +949,7 @@ public class GroupControllerTest {
           .isNotFound();
 
       // then
-      verify(groupServices, times(1)).removeMember(request);
+      verify(groupServices, times(1)).removeMember(eq(request), any());
     }
 
     @Test
@@ -953,7 +958,8 @@ public class GroupControllerTest {
       final var groupId = Strings.newRandomValidIdentityId();
       final var mappingRuleId = Strings.newRandomValidIdentityId();
       final var request = new GroupMemberDTO(groupId, mappingRuleId, EntityType.MAPPING_RULE);
-      when(groupServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
+      when(groupServices.removeMember(eq(request), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
 
       // when
       webClient
@@ -965,7 +971,7 @@ public class GroupControllerTest {
           .isNoContent();
 
       // then
-      verify(groupServices, times(1)).removeMember(request);
+      verify(groupServices, times(1)).removeMember(eq(request), any());
     }
 
     @Test
@@ -974,7 +980,7 @@ public class GroupControllerTest {
       final var groupId = Strings.newRandomValidIdentityId();
       final var mappingRuleId = Strings.newRandomValidIdentityId();
       final var request = new GroupMemberDTO(groupId, mappingRuleId, EntityType.MAPPING_RULE);
-      when(groupServices.removeMember(request))
+      when(groupServices.removeMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -994,7 +1000,7 @@ public class GroupControllerTest {
           .isNotFound();
 
       // then
-      verify(groupServices, times(1)).removeMember(request);
+      verify(groupServices, times(1)).removeMember(eq(request), any());
     }
 
     @Test
@@ -1003,7 +1009,7 @@ public class GroupControllerTest {
       final var groupId = Strings.newRandomValidIdentityId();
       final var mappingRuleId = Strings.newRandomValidIdentityId();
       final var request = new GroupMemberDTO(groupId, mappingRuleId, EntityType.MAPPING_RULE);
-      when(groupServices.removeMember(request))
+      when(groupServices.removeMember(eq(request), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   ErrorMapper.mapBrokerRejection(
@@ -1023,7 +1029,7 @@ public class GroupControllerTest {
           .isNotFound();
 
       // then
-      verify(groupServices, times(1)).removeMember(request);
+      verify(groupServices, times(1)).removeMember(eq(request), any());
     }
 
     @Test

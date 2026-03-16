@@ -191,6 +191,8 @@ import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.GlobalJobStatisticsRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByErrorRequest;
+import io.camunda.client.api.statistics.request.JobErrorStatisticsRequest;
+import io.camunda.client.api.statistics.request.JobTimeSeriesStatisticsRequest;
 import io.camunda.client.api.statistics.request.JobTypeStatisticsRequest;
 import io.camunda.client.api.statistics.request.JobWorkerStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
@@ -366,6 +368,8 @@ import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
 import io.camunda.client.impl.statistics.request.GlobalJobStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequestImpl;
 import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsByErrorRequestImpl;
+import io.camunda.client.impl.statistics.request.JobErrorStatisticsRequestImpl;
+import io.camunda.client.impl.statistics.request.JobTimeSeriesStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.JobTypeStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.JobWorkerStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
@@ -479,8 +483,16 @@ public final class CamundaClientImpl implements CamundaClient {
     final URI address;
     address = config.getGrpcAddress();
 
-    final NettyChannelBuilder channelBuilder =
-        NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
+    final NettyChannelBuilder channelBuilder;
+    if (config.useClientSideLoadBalancing()) {
+      final String host = address.getHost();
+      final String authority = host.contains(":") ? "[" + host + "]" : host;
+      channelBuilder =
+          NettyChannelBuilder.forTarget("dns:///" + authority + ":" + address.getPort());
+      channelBuilder.defaultLoadBalancingPolicy("round_robin");
+    } else {
+      channelBuilder = NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
+    }
 
     configureConnectionSecurity(config, channelBuilder);
     channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);
@@ -950,6 +962,19 @@ public final class CamundaClientImpl implements CamundaClient {
       final OffsetDateTime from, final OffsetDateTime to, final String jobType) {
     return new JobWorkerStatisticsRequestImpl(
         httpClient, config.getJsonMapper(), from, to, jobType);
+  }
+
+  @Override
+  public JobTimeSeriesStatisticsRequest newJobTimeSeriesStatisticsRequest(
+      final OffsetDateTime from, final OffsetDateTime to, final String jobType) {
+    return new JobTimeSeriesStatisticsRequestImpl(
+        httpClient, config.getJsonMapper(), from, to, jobType);
+  }
+
+  @Override
+  public JobErrorStatisticsRequest newJobErrorStatisticsRequest(
+      final OffsetDateTime from, final OffsetDateTime to, final String jobType) {
+    return new JobErrorStatisticsRequestImpl(httpClient, config.getJsonMapper(), from, to, jobType);
   }
 
   @Override

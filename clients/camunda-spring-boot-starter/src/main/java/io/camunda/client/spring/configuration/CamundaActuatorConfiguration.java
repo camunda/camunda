@@ -26,21 +26,20 @@ import io.camunda.client.spring.actuator.CamundaClientHealthIndicator;
 import io.camunda.client.spring.actuator.JobWorkerController;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.micrometer.core.instrument.MeterRegistry;
-import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 
 @AutoConfigureBefore(MetricsDefaultConfiguration.class)
 @ConditionalOnCamundaClientEnabled
-@ConditionalOnClass({
-  EndpointAutoConfiguration.class,
-  MeterRegistry.class
-}) // only if actuator is on classpath
+@ConditionalOnClass(
+    name = {
+      "org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration",
+      "io.micrometer.core.instrument.MeterRegistry"
+    }) // only if actuator is on classpath
 public class CamundaActuatorConfiguration {
 
   @Bean
@@ -71,7 +70,7 @@ public class CamundaActuatorConfiguration {
       prefix = "management.health.camunda",
       name = "enabled",
       matchIfMissing = true)
-  @ConditionalOnClass(HealthIndicator.class)
+  @ConditionalOnClass(name = "org.springframework.boot.health.contributor.HealthIndicator")
   @ConditionalOnMissingBean(name = "camundaClientHealthIndicator")
   public CamundaClientHealthIndicator camundaClientHealthIndicator(final HealthCheck healthCheck) {
     return new CamundaClientHealthIndicator(healthCheck);

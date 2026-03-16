@@ -263,12 +263,14 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, CorrelateMessageRequest> toMessageCorrelationRequest(
-      final MessageCorrelationRequest correlationRequest, final boolean multiTenancyEnabled) {
+      final MessageCorrelationRequest correlationRequest,
+      final boolean multiTenancyEnabled,
+      final int maxNameFieldLength) {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(correlationRequest.getTenantId(), multiTenancyEnabled, "Correlate Message")
             .flatMap(
                 tenantId ->
-                    validateMessageCorrelationRequest(correlationRequest)
+                    validateMessageCorrelationRequest(correlationRequest, maxNameFieldLength)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)));
 
@@ -508,13 +510,14 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, PublicationMessageRequest> toMessagePublicationRequest(
       final MessagePublicationRequest messagePublicationRequest,
-      final boolean multiTenancyEnabled) {
+      final boolean multiTenancyEnabled,
+      final int maxNameFieldLength) {
     final Either<ProblemDetail, String> validationResponse =
         validateTenantId(
                 messagePublicationRequest.getTenantId(), multiTenancyEnabled, "Publish Message")
             .flatMap(
                 tenantId ->
-                    validateMessagePublicationRequest(messagePublicationRequest)
+                    validateMessagePublicationRequest(messagePublicationRequest, maxNameFieldLength)
                         .map(Either::<ProblemDetail, String>left)
                         .orElseGet(() -> Either.right(tenantId)));
 

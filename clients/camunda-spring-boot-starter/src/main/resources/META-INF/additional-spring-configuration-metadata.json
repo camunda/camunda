@@ -14,7 +14,7 @@
     },
     {
       "name": "camunda.client.cloud",
-      "description": "Properties for connecting the Camunda client to SaaS. These are used to compose default connection details when the client is configured to `camunda.client.mode: saas`."
+      "description": "Properties for connecting the Camunda client to SaaS. These are used to compose default connection details when the client is configured to <code>camunda.client.mode: saas</code>."
     },
     {
       "name": "camunda.client.worker",
@@ -30,7 +30,7 @@
     },
     {
       "name": "management.endpoint.jobworkers",
-      "description": "Properties for configuring the `jobworkers` management endpoint."
+      "description": "Properties for configuring the <code>jobworkers</code> management endpoint."
     },
     {
       "name": "camunda.client.zeebe",
@@ -50,7 +50,7 @@
     {
       "name": "camunda.client.zeebe.override",
       "type": "java.util.Map",
-      "description": "Properties for overriding individual job workers registered to the Camunda client. Replaced by `camunda.client.worker.override`."
+      "description": "Properties for overriding individual job workers registered to the Camunda client. Replaced by <code>camunda.client.worker.override</code>."
     },
     {
       "name": "camunda.client.identity",
@@ -109,7 +109,7 @@
     {
       "name": "zeebe.client.worker.override",
       "type": "java.util.Map",
-      "description": "Properties to override the individual job workers registered with the Camunda client. Replaced by `camunda.client.worker.override`."
+      "description": "Properties to override the individual job workers registered with the Camunda client. Replaced by <code>camunda.client.worker.override</code>."
     }
   ],
   "properties": [
@@ -225,6 +225,10 @@
     {
       "name": "camunda.client.execution-threads",
       "defaultValue": 1
+    },
+    {
+      "name": "camunda.client.use-client-side-load-balancing",
+      "defaultValue": false
     },
     {
       "name": "common.auth-url",
@@ -433,7 +437,7 @@
     {
       "name": "zeebe.client.connection-mode",
       "type": "java.lang.String",
-      "description": "Connection mode can be set to \"CLOUD\" (connect to SaaS with properties), or \"ADDRESS\" (to use a manually set address to the broker) If not set, \"CLOUD\" is used if a `zeebe.client.cloud.cluster-id` property is set, \"ADDRESS\" otherwise.",
+      "description": "Connection mode can be set to \"CLOUD\" (connect to SaaS with properties), or \"ADDRESS\" (to use a manually set address to the broker) If not set, \"CLOUD\" is used if a <code>zeebe.client.cloud.cluster-id</code> property is set, \"ADDRESS\" otherwise.",
       "sourceType": "io.camunda.spring.client.properties.ZeebeClientConfigurationProperties",
       "deprecation": {
         "reason": "Client modes are now available.",

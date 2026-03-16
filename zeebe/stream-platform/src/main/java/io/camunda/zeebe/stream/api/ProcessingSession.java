@@ -41,9 +41,8 @@ public interface ProcessingSession {
 
   default void appendAuthInfoToFollowUps(final AuthInfo authInfo) {
     if (authInfo != null && authInfo.hasAnyClaims()) {
-      // make a copy to rule out any side effects
-      final var authorization = AuthInfo.of(authInfo);
-      appendMetadataToFollowUps(metadata -> metadata.authorization(authorization));
+      // no explicit copy needed: RecordMetadata.authorization() already copies via copyFrom()
+      appendMetadataToFollowUps(metadata -> metadata.authorization(authInfo));
     }
   }
 

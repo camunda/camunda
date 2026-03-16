@@ -63,6 +63,14 @@ class TaskDetailsPage {
   readonly processTab: Locator;
   readonly bpmnDiagram: Locator;
   readonly assignedToMeText: Locator;
+  readonly historyTabButton: Locator;
+  readonly historyTable: Locator;
+  readonly historyTableRow: Locator;
+  readonly historyTableOperationTypeHeader: Locator;
+  readonly historyTableDetailsHeader: Locator;
+  readonly historyTableActorHeader: Locator;
+  readonly historyTableDateHeader: Locator;
+  readonly historyTableAssignCell: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -112,6 +120,34 @@ class TaskDetailsPage {
     this.assignedToMeText = page
       .getByTestId('assignee')
       .getByText('Assigned to me');
+    this.historyTabButton = page.getByRole('link', {
+      name: 'Show task history',
+    });
+    this.historyTable = page
+      .getByTestId('task-details-history-view')
+      .getByRole('table');
+    this.historyTableRow = this.historyTable.getByRole('row');
+    this.historyTableOperationTypeHeader = this.historyTable.getByRole(
+      'columnheader',
+      {
+        name: 'Operation type',
+      },
+    );
+    this.historyTableDetailsHeader = this.historyTable.getByRole(
+      'columnheader',
+      {
+        name: 'Details',
+      },
+    );
+    this.historyTableActorHeader = this.historyTable.getByRole('columnheader', {
+      name: 'Actor',
+    });
+    this.historyTableDateHeader = this.historyTable.getByRole('columnheader', {
+      name: 'Date',
+    });
+    this.historyTableAssignCell = this.historyTable.getByRole('cell', {
+      name: 'Assign task',
+    });
   }
 
   async clickAssignToMeButton() {
@@ -292,12 +328,34 @@ class TaskDetailsPage {
     }
 
     for (const [index, element] of elements.entries()) {
-      const expectedValue = `${value}${index + 1}`;
-      await element.fill(expectedValue);
-
-      // Assert that the value was added correctly
-      await expect(element).toHaveValue(expectedValue);
+      await this.fillElementWithRetry(element, index, value);
     }
+  }
+
+  private async fillElementWithRetry(
+    locator: Locator,
+    index: number,
+    value: string,
+  ): Promise<void> {
+    let retryCount = 0;
+    const maxRetries = 3;
+    while (retryCount < maxRetries) {
+      try {
+        const expectedValue = `${value}${index + 1}`;
+        await locator.fill(expectedValue);
+        await expect(locator).toHaveValue(expectedValue);
+        return;
+      } catch {
+        retryCount++;
+        console.log(`Attempt ${retryCount} failed. Retrying...`);
+        await sleep(1000);
+        await locator.click();
+        await locator.clear();
+      }
+    }
+    throw new Error(
+      `${locator} could not be filled with value "${value}" after ${maxRetries} attempts.`,
+    );
   }
 
   async getDynamicListValues(label: string): Promise<string[]> {
@@ -340,6 +398,18 @@ class TaskDetailsPage {
 
   async clickProcessTab(): Promise<void> {
     await this.processTab.click();
+  }
+
+  async clickHistoryTab(): Promise<void> {
+    await this.historyTabButton.click();
+  }
+
+  getHistoryTableRowCount(): Promise<number> {
+    return this.historyTableRow.count();
+  }
+
+  getHistoryTableAssignCellCount(): Promise<number> {
+    return this.historyTableAssignCell.count();
   }
 }
 

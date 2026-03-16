@@ -16,7 +16,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
@@ -49,8 +48,6 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
   void setUpServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(adHocSubProcessActivityServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(adHocSubProcessActivityServices);
   }
 
   @Nested
@@ -62,7 +59,7 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
     @ValueSource(booleans = {true, false})
     void shouldActivateActivities(final boolean cancelRemainingInstances) {
       when(adHocSubProcessActivityServices.activateActivities(
-              any(AdHocSubProcessActivateActivitiesRequest.class)))
+              any(AdHocSubProcessActivateActivitiesRequest.class), any()))
           .thenReturn(CompletableFuture.completedFuture(new AdHocSubProcessInstructionRecord()));
 
       webClient
@@ -118,13 +115,14 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
                               assertThat(element.elementId()).isEqualTo("C");
                               assertThat(element.variables()).isEmpty();
                             });
-                  }));
+                  }),
+              any());
     }
 
     @Test
     void shouldActivateActivitiesWithMissingCancelRemainingActivitiesFlag() {
       when(adHocSubProcessActivityServices.activateActivities(
-              any(AdHocSubProcessActivateActivitiesRequest.class)))
+              any(AdHocSubProcessActivateActivitiesRequest.class), any()))
           .thenReturn(CompletableFuture.completedFuture(new AdHocSubProcessInstructionRecord()));
 
       webClient
@@ -158,7 +156,8 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
                               assertThat(element.elementId()).isEqualTo("A");
                               assertThat(element.variables()).isEmpty();
                             });
-                  }));
+                  }),
+              any());
     }
 
     @ParameterizedTest

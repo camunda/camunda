@@ -23,7 +23,7 @@ import {
 } from 'modules/testUtils';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {Paths} from 'modules/Routes';
-import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 import {mockElementInstance} from 'App/ProcessInstance/TopPanel/MetadataPopover/Details/mocks';
 
 const PROCESS_INSTANCE_ID = '123';

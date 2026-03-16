@@ -47,12 +47,12 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -137,11 +137,6 @@ class UserTaskToolsTest extends ToolsTest {
   @Captor private ArgumentCaptor<UserTaskQuery> userTaskQueryCaptor;
   @Captor private ArgumentCaptor<VariableQuery> variableQueryCaptor;
 
-  @BeforeEach
-  void mockApiServices() {
-    mockApiServiceAuthentication(userTaskServices);
-  }
-
   private void assertExampleUserTask(final UserTaskResult userTask) {
     assertThat(userTask.getUserTaskKey()).isEqualTo("5");
     assertThat(userTask.getName()).isEqualTo("Task Name");
@@ -178,7 +173,7 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldGetUserTaskByKey() {
       // given
-      when(userTaskServices.getByKey(anyLong())).thenReturn(USER_TASK_ENTITY);
+      when(userTaskServices.getByKey(anyLong(), any())).thenReturn(USER_TASK_ENTITY);
 
       // when
       final CallToolResult result =
@@ -196,7 +191,7 @@ class UserTaskToolsTest extends ToolsTest {
           objectMapper.convertValue(result.structuredContent(), UserTaskResult.class);
       assertExampleUserTask(userTask);
 
-      verify(userTaskServices).getByKey(5L);
+      verify(userTaskServices).getByKey(eq(5L), any());
 
       assertTextContentFallback(result);
     }
@@ -204,7 +199,7 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldFailGetUserTaskByKeyOnException() {
       // given
-      when(userTaskServices.getByKey(anyLong()))
+      when(userTaskServices.getByKey(anyLong(), any()))
           .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
 
       // when
@@ -226,6 +221,48 @@ class UserTaskToolsTest extends ToolsTest {
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
 
       assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldFailGetUserTaskByKeyOnMissingKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("getUserTask").arguments(Map.of()).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("userTaskKey: User task key must not be null."));
+    }
+
+    @Test
+    void shouldFailGetUserTaskByKeyOnNullKey() {
+      // when
+      final var arguments = new HashMap<String, Object>();
+      arguments.put("userTaskKey", null);
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("getUserTask").arguments(arguments).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("userTaskKey: User task key must not be null."));
     }
 
     @Test
@@ -258,7 +295,7 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldSearchUserTasksWithFilterSortAndPaging() {
       // given
-      when(userTaskServices.search(any(UserTaskQuery.class)))
+      when(userTaskServices.search(any(UserTaskQuery.class), any()))
           .thenReturn(USER_TASK_SEARCH_QUERY_RESULT);
 
       // when
@@ -291,7 +328,7 @@ class UserTaskToolsTest extends ToolsTest {
           .first()
           .satisfies(UserTaskToolsTest.this::assertExampleUserTask);
 
-      verify(userTaskServices).search(userTaskQueryCaptor.capture());
+      verify(userTaskServices).search(userTaskQueryCaptor.capture(), any());
       final UserTaskQuery capturedQuery = userTaskQueryCaptor.getValue();
 
       final UserTaskFilter filter = capturedQuery.filter();
@@ -320,7 +357,7 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldSearchUserTasksWithCreationDateRangeFilter() {
       // given
-      when(userTaskServices.search(any(UserTaskQuery.class)))
+      when(userTaskServices.search(any(UserTaskQuery.class), any()))
           .thenReturn(USER_TASK_SEARCH_QUERY_RESULT);
 
       final var creationDateFrom = OffsetDateTime.of(2025, 5, 23, 9, 35, 12, 0, ZoneOffset.UTC);
@@ -343,7 +380,7 @@ class UserTaskToolsTest extends ToolsTest {
       // then
       assertThat(result.isError()).isFalse();
 
-      verify(userTaskServices).search(userTaskQueryCaptor.capture());
+      verify(userTaskServices).search(userTaskQueryCaptor.capture(), any());
       final UserTaskQuery capturedQuery = userTaskQueryCaptor.getValue();
 
       assertThat(capturedQuery.filter().creationDateOperations())
@@ -356,7 +393,7 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldSearchUserTasksWithCompletionDateRangeFilter() {
       // given
-      when(userTaskServices.search(any(UserTaskQuery.class)))
+      when(userTaskServices.search(any(UserTaskQuery.class), any()))
           .thenReturn(USER_TASK_SEARCH_QUERY_RESULT);
 
       final var completionDateFrom = OffsetDateTime.of(2026, 1, 15, 10, 20, 30, 0, ZoneOffset.UTC);
@@ -379,7 +416,7 @@ class UserTaskToolsTest extends ToolsTest {
       // then
       assertThat(result.isError()).isFalse();
 
-      verify(userTaskServices).search(userTaskQueryCaptor.capture());
+      verify(userTaskServices).search(userTaskQueryCaptor.capture(), any());
       final UserTaskQuery capturedQuery = userTaskQueryCaptor.getValue();
 
       assertThat(capturedQuery.filter().completionDateOperations())
@@ -392,7 +429,7 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldSearchUserTasksWithProcessInstanceVariablesFilter() {
       // given
-      when(userTaskServices.search(any(UserTaskQuery.class)))
+      when(userTaskServices.search(any(UserTaskQuery.class), any()))
           .thenReturn(USER_TASK_SEARCH_QUERY_RESULT);
 
       // when
@@ -413,7 +450,7 @@ class UserTaskToolsTest extends ToolsTest {
       // then
       assertThat(result.isError()).isFalse();
 
-      verify(userTaskServices).search(userTaskQueryCaptor.capture());
+      verify(userTaskServices).search(userTaskQueryCaptor.capture(), any());
       final UserTaskQuery capturedQuery = userTaskQueryCaptor.getValue();
 
       assertThat(capturedQuery.filter().processInstanceVariableFilter())
@@ -436,7 +473,7 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldSearchUserTasksWithLocalVariablesFilter() {
       // given
-      when(userTaskServices.search(any(UserTaskQuery.class)))
+      when(userTaskServices.search(any(UserTaskQuery.class), any()))
           .thenReturn(USER_TASK_SEARCH_QUERY_RESULT);
 
       // when
@@ -457,7 +494,7 @@ class UserTaskToolsTest extends ToolsTest {
       // then
       assertThat(result.isError()).isFalse();
 
-      verify(userTaskServices).search(userTaskQueryCaptor.capture());
+      verify(userTaskServices).search(userTaskQueryCaptor.capture(), any());
       final UserTaskQuery capturedQuery = userTaskQueryCaptor.getValue();
 
       assertThat(capturedQuery.filter().localVariableFilters())
@@ -480,7 +517,7 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldIgnoreTenantIdCandidateGroupAndCandidateUserInFilter() {
       // given
-      when(userTaskServices.search(any(UserTaskQuery.class)))
+      when(userTaskServices.search(any(UserTaskQuery.class), any()))
           .thenReturn(USER_TASK_SEARCH_QUERY_RESULT);
 
       // when (tenantId, candidateGroup, candidateUser passed in arguments should be ignored by MCP
@@ -501,7 +538,7 @@ class UserTaskToolsTest extends ToolsTest {
               .build());
 
       // then
-      verify(userTaskServices).search(userTaskQueryCaptor.capture());
+      verify(userTaskServices).search(userTaskQueryCaptor.capture(), any());
       final UserTaskQuery capturedQuery = userTaskQueryCaptor.getValue();
       assertThat(capturedQuery.filter().tenantIdOperations()).isEmpty();
       assertThat(capturedQuery.filter().candidateGroupOperations()).isEmpty();
@@ -511,7 +548,7 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldFailSearchUserTasksOnException() {
       // given
-      when(userTaskServices.search(any(UserTaskQuery.class)))
+      when(userTaskServices.search(any(UserTaskQuery.class), any()))
           .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
 
       // when
@@ -539,7 +576,8 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldAssignUserTaskByKey() {
       // given
-      when(userTaskServices.assignUserTask(anyLong(), anyString(), anyString(), anyBoolean()))
+      when(userTaskServices.assignUserTask(
+              anyLong(), anyString(), anyString(), anyBoolean(), any()))
           .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
 
       // when
@@ -561,13 +599,15 @@ class UserTaskToolsTest extends ToolsTest {
                   assertThat(textContent.text())
                       .isEqualTo("User task with key 5 assigned to jane.doe."));
 
-      verify(userTaskServices).assignUserTask(5L, "jane.doe", "assign", true);
+      verify(userTaskServices)
+          .assignUserTask(eq(5L), eq("jane.doe"), eq("assign"), eq(true), any());
     }
 
     @Test
     void shouldAssignUserTaskWithOptions() {
       // given
-      when(userTaskServices.assignUserTask(anyLong(), anyString(), anyString(), anyBoolean()))
+      when(userTaskServices.assignUserTask(
+              anyLong(), anyString(), anyString(), anyBoolean(), any()))
           .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
 
       // when
@@ -596,13 +636,14 @@ class UserTaskToolsTest extends ToolsTest {
                   assertThat(textContent.text())
                       .isEqualTo("User task with key 5 assigned to jane.doe."));
 
-      verify(userTaskServices).assignUserTask(5L, "jane.doe", "claim", false);
+      verify(userTaskServices)
+          .assignUserTask(eq(5L), eq("jane.doe"), eq("claim"), eq(false), any());
     }
 
     @Test
     void shouldUnassignUserTaskWhenAssigneeIsMissing() {
       // given
-      when(userTaskServices.unassignUserTask(anyLong(), anyString()))
+      when(userTaskServices.unassignUserTask(anyLong(), anyString(), any()))
           .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
 
       // when
@@ -623,7 +664,7 @@ class UserTaskToolsTest extends ToolsTest {
               textContent ->
                   assertThat(textContent.text()).isEqualTo("User task with key 5 unassigned."));
 
-      verify(userTaskServices).unassignUserTask(5L, "unassign");
+      verify(userTaskServices).unassignUserTask(eq(5L), eq("unassign"), any());
     }
 
     @ParameterizedTest
@@ -631,7 +672,7 @@ class UserTaskToolsTest extends ToolsTest {
     @ValueSource(strings = {"  "})
     void shouldUnassignUserTaskWhenAssigneeIsNullOrEmpty(final String assignee) {
       // given
-      when(userTaskServices.unassignUserTask(anyLong(), anyString()))
+      when(userTaskServices.unassignUserTask(anyLong(), anyString(), any()))
           .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
 
       // when
@@ -652,13 +693,14 @@ class UserTaskToolsTest extends ToolsTest {
               textContent ->
                   assertThat(textContent.text()).isEqualTo("User task with key 5 unassigned."));
 
-      verify(userTaskServices).unassignUserTask(5L, "unassign");
+      verify(userTaskServices).unassignUserTask(eq(5L), eq("unassign"), any());
     }
 
     @Test
     void shouldFailAssignUserTaskOnException() {
       // given
-      when(userTaskServices.assignUserTask(anyLong(), anyString(), anyString(), anyBoolean()))
+      when(userTaskServices.assignUserTask(
+              anyLong(), anyString(), anyString(), anyBoolean(), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   new ServiceException("Expected failure", Status.NOT_FOUND)));
@@ -682,6 +724,52 @@ class UserTaskToolsTest extends ToolsTest {
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
 
       assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldFailAssignUserTaskOnMissingKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("assignUserTask")
+                  .arguments(Map.of("assignee", "jane.doe"))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("userTaskKey: User task key must not be null."));
+    }
+
+    @Test
+    void shouldFailAssignUserTaskOnNullKey() {
+      // when
+      final var arguments = new HashMap<String, Object>();
+      arguments.put("userTaskKey", null);
+      arguments.put("assignee", "jane.doe");
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("assignUserTask").arguments(arguments).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("userTaskKey: User task key must not be null."));
     }
 
     @Test
@@ -714,7 +802,7 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldSearchUserTaskVariablesWithTruncation() {
       // given
-      when(userTaskServices.searchUserTaskVariables(anyLong(), any(VariableQuery.class)))
+      when(userTaskServices.searchUserTaskVariables(anyLong(), any(VariableQuery.class), any()))
           .thenReturn(VARIABLE_SEARCH_QUERY_RESULT);
 
       // when
@@ -752,7 +840,8 @@ class UserTaskToolsTest extends ToolsTest {
                 assertThat(variable.getValue()).isEqualTo(TRUNCATED_VALUE);
               });
 
-      verify(userTaskServices).searchUserTaskVariables(eq(5L), variableQueryCaptor.capture());
+      verify(userTaskServices)
+          .searchUserTaskVariables(eq(5L), variableQueryCaptor.capture(), any());
 
       assertTextContentFallback(result);
     }
@@ -760,7 +849,7 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldSearchUserTaskVariablesWithoutTruncation() {
       // given
-      when(userTaskServices.searchUserTaskVariables(anyLong(), any(VariableQuery.class)))
+      when(userTaskServices.searchUserTaskVariables(anyLong(), any(VariableQuery.class), any()))
           .thenReturn(VARIABLE_SEARCH_QUERY_RESULT);
 
       // when
@@ -787,7 +876,8 @@ class UserTaskToolsTest extends ToolsTest {
                 assertThat(variable.getValue()).isEqualTo(FULL_VALUE);
               });
 
-      verify(userTaskServices).searchUserTaskVariables(eq(5L), variableQueryCaptor.capture());
+      verify(userTaskServices)
+          .searchUserTaskVariables(eq(5L), variableQueryCaptor.capture(), any());
 
       assertTextContentFallback(result);
     }
@@ -795,7 +885,7 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldSearchUserTaskVariablesWithFilterSortAndPaging() {
       // given
-      when(userTaskServices.searchUserTaskVariables(anyLong(), any(VariableQuery.class)))
+      when(userTaskServices.searchUserTaskVariables(anyLong(), any(VariableQuery.class), any()))
           .thenReturn(VARIABLE_SEARCH_QUERY_RESULT);
 
       // when
@@ -818,7 +908,8 @@ class UserTaskToolsTest extends ToolsTest {
       // then
       assertThat(result.isError()).isFalse();
 
-      verify(userTaskServices).searchUserTaskVariables(eq(5L), variableQueryCaptor.capture());
+      verify(userTaskServices)
+          .searchUserTaskVariables(eq(5L), variableQueryCaptor.capture(), any());
       final VariableQuery capturedQuery = variableQueryCaptor.getValue();
 
       assertThat(capturedQuery.filter().nameOperations())
@@ -836,7 +927,7 @@ class UserTaskToolsTest extends ToolsTest {
     @Test
     void shouldFailSearchUserTaskVariablesOnException() {
       // given
-      when(userTaskServices.searchUserTaskVariables(anyLong(), any(VariableQuery.class)))
+      when(userTaskServices.searchUserTaskVariables(anyLong(), any(VariableQuery.class), any()))
           .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
 
       // when
@@ -858,6 +949,54 @@ class UserTaskToolsTest extends ToolsTest {
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
 
       assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldFailSearchUserTaskVariablesOnMissingKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchUserTaskVariables")
+                  .arguments(Map.of())
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("userTaskKey: User task key must not be null."));
+    }
+
+    @Test
+    void shouldFailSearchUserTaskVariablesOnNullKey() {
+      // when
+      final var arguments = new HashMap<String, Object>();
+      arguments.put("userTaskKey", null);
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("searchUserTaskVariables")
+                  .arguments(arguments)
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("userTaskKey: User task key must not be null."));
     }
 
     @Test
