@@ -545,6 +545,17 @@
       </exclusions>
     </dependency>
 
+    <!-- Required by TomcatEncodedSlashConfig for encoded slash passthrough (issue #45215) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-tomcat</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-web-server</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jdbc</artifactId>
@@ -1037,10 +1048,8 @@
             <!-- Needed for the debug CLI tool -->
             <dependency>io.camunda:debug-cli</dependency>
 
-            <!-- Needed for Spring Actuators, REST API, and Tomcat encoded slash config -->
+            <!-- Needed for Spring Actuators, and REST API -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
-            <dependency>org.springframework.boot:spring-boot-tomcat</dependency>
-            <dependency>org.springframework.boot:spring-boot-web-server</dependency>
             <dependency>org.springframework.boot:spring-boot-jackson2</dependency>
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
