@@ -178,6 +178,7 @@ public class ExpressionControllerTest extends RestControllerTest {
             """
             {
                 "expression": "=invalid_function()",
+                "result": null,
                 "warnings": [
                     {
                         "message": "No function found with name 'invalid_function' and 0 parameters"

@@ -83,5 +83,5 @@ components:
         message:
           type: string
           description: The warning message
-          example: "No function found with name '{}' and {} parameters"
+          example: "No function found with name 'random' and 1 parameters"
 

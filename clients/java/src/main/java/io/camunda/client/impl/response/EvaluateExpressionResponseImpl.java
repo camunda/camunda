@@ -16,8 +16,8 @@
 package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.EvaluateExpressionResponse;
+import io.camunda.client.api.response.EvaluationWarning;
 import io.camunda.client.protocol.rest.ExpressionEvaluationResult;
-import io.camunda.client.protocol.rest.ExpressionEvaluationWarningItem;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,14 +25,14 @@ public class EvaluateExpressionResponseImpl implements EvaluateExpressionRespons
 
   private final String expression;
   private final Object result;
-  private final List<String> warnings;
+  private final List<EvaluationWarning> warnings;
 
   public EvaluateExpressionResponseImpl(final ExpressionEvaluationResult response) {
     expression = response.getExpression();
     result = response.getResult();
     warnings =
         response.getWarnings().stream()
-            .map(ExpressionEvaluationWarningItem::getMessage)
+            .map(EvaluationWarningImpl::new)
             .collect(Collectors.toList());
   }
 
@@ -47,7 +47,7 @@ public class EvaluateExpressionResponseImpl implements EvaluateExpressionRespons
   }
 
   @Override
-  public List<String> getWarnings() {
+  public List<EvaluationWarning> getWarnings() {
     return warnings;
   }
 }
