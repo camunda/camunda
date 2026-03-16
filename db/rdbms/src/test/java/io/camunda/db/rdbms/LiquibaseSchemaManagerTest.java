@@ -10,8 +10,20 @@ package io.camunda.db.rdbms;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import java.sql.Connection;
+import java.time.Duration;
+import java.util.Date;
+import javax.sql.DataSource;
+import liquibase.database.Database;
+import liquibase.exception.DatabaseException;
+import liquibase.lockservice.DatabaseChangeLogLock;
+import liquibase.lockservice.LockService;
 import org.junit.jupiter.api.Test;
 
 class LiquibaseSchemaManagerTest {
@@ -51,15 +63,106 @@ class LiquibaseSchemaManagerTest {
     assertThat(schemaManager.isInitialized()).isFalse();
   }
 
+  @Test
+  void shouldSkipStaleLockCheckWhenDdlLockWaitTimeoutIsNull() throws Exception {
+    // given
+    final var schemaManager = new TestLiquibaseSchemaManager();
+    schemaManager.setDdlLockWaitTimeout(null);
+    final var mockDataSource = mock(DataSource.class);
+    schemaManager.setDataSource(mockDataSource);
+
+    // when
+    schemaManager.releaseStaleLockIfPresent();
+
+    // then - no interaction with datasource because timeout is null
+    verify(mockDataSource, never()).getConnection();
+  }
+
+  @Test
+  void shouldSkipStaleLockCheckWhenDataSourceIsNull() throws Exception {
+    // given
+    final var schemaManager = new TestLiquibaseSchemaManager();
+    schemaManager.setDdlLockWaitTimeout(Duration.ofMinutes(10));
+    // No datasource set
+
+    // when / then - should not throw any exception
+    schemaManager.releaseStaleLockIfPresent();
+  }
+
+  @Test
+  void shouldNotReleaseLockWhenNoLocksPresent() throws Exception {
+    // given
+    final var mockLockService = mock(LockService.class);
+    when(mockLockService.listLocks()).thenReturn(new DatabaseChangeLogLock[0]);
+
+    final var schemaManager = new TestableSchemaManager(mockLockService);
+    schemaManager.setDdlLockWaitTimeout(Duration.ofMinutes(10));
+
+    // when
+    schemaManager.releaseStaleLockIfPresent();
+
+    // then
+    verify(mockLockService, never()).forceReleaseLock();
+  }
+
+  @Test
+  void shouldNotReleaseLockWhenLockIsRecent() throws Exception {
+    // given
+    final var recentLock = new DatabaseChangeLogLock(1, new Date(), "some-host");
+    final var mockLockService = mock(LockService.class);
+    when(mockLockService.listLocks()).thenReturn(new DatabaseChangeLogLock[] {recentLock});
+
+    final var schemaManager = new TestableSchemaManager(mockLockService);
+    schemaManager.setDdlLockWaitTimeout(Duration.ofMinutes(10));
+
+    // when
+    schemaManager.releaseStaleLockIfPresent();
+
+    // then - lock is recent (just now), so it should not be released
+    verify(mockLockService, never()).forceReleaseLock();
+  }
+
+  @Test
+  void shouldReleaseLockWhenLockIsStale() throws Exception {
+    // given
+    final var staleLockTime = new Date(System.currentTimeMillis() - Duration.ofHours(1).toMillis());
+    final var staleLock = new DatabaseChangeLogLock(1, staleLockTime, "crashed-pod");
+    final var mockLockService = mock(LockService.class);
+    when(mockLockService.listLocks()).thenReturn(new DatabaseChangeLogLock[] {staleLock});
+
+    final var schemaManager = new TestableSchemaManager(mockLockService);
+    schemaManager.setDdlLockWaitTimeout(Duration.ofMinutes(10));
+
+    // when
+    schemaManager.releaseStaleLockIfPresent();
+
+    // then - stale lock (1 hour old, timeout 10 min) should be released
+    verify(mockLockService).forceReleaseLock();
+  }
+
+  @Test
+  void shouldContinueMigrationWhenStaleLockCheckThrowsException() throws Exception {
+    // given
+    final var schemaManager = new TestLiquibaseSchemaManager();
+    schemaManager.setDdlLockWaitTimeout(Duration.ofMinutes(10));
+    final var mockDataSource = mock(DataSource.class);
+    when(mockDataSource.getConnection()).thenThrow(new RuntimeException("DB connection failed"));
+    schemaManager.setDataSource(mockDataSource);
+
+    // when / then - exception should be swallowed, method should return normally
+    schemaManager.releaseStaleLockIfPresent();
+  }
+
   /**
    * Test implementation that overrides the parent's afterPropertiesSet to avoid actual Liquibase
-   * initialization.
+   * initialization. Designed for extension by test subclasses (e.g. {@code TestableSchemaManager}).
    */
-  private static final class TestLiquibaseSchemaManager extends LiquibaseSchemaManager {
+  private static class TestLiquibaseSchemaManager extends LiquibaseSchemaManager {
     @Override
     public void afterPropertiesSet() throws Exception {
       // Skip the actual Liquibase initialization (super.afterPropertiesSet())
       // and just perform our state update
+      releaseStaleLockIfPresent();
       performMigration();
       setInitialized();
     }
@@ -77,6 +180,36 @@ class LiquibaseSchemaManagerTest {
       } catch (final Exception e) {
         throw new RuntimeException(e);
       }
+    }
+  }
+
+  /**
+   * Test implementation that injects a mock {@link LockService} and a mock {@link DataSource} to
+   * allow testing of stale lock detection without a real database.
+   */
+  private static final class TestableSchemaManager extends TestLiquibaseSchemaManager {
+    private final LockService mockLockService;
+
+    TestableSchemaManager(final LockService mockLockService) {
+      this.mockLockService = mockLockService;
+      final var mockDataSource = mock(DataSource.class);
+      final var mockConnection = mock(Connection.class);
+      try {
+        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+      } catch (final Exception e) {
+        throw new RuntimeException(e);
+      }
+      setDataSource(mockDataSource);
+    }
+
+    @Override
+    protected Database openDatabase(final Connection connection) throws DatabaseException {
+      return mock(Database.class);
+    }
+
+    @Override
+    protected LockService getLockService(final Database database) {
+      return mockLockService;
     }
   }
 }
