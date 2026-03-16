@@ -150,7 +150,7 @@ public class SemanticSimilarityAssertTest {
                       .hasVariableSimilarTo("result", "Hello there"))
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining("result")
-          .hasMessageContaining("0.00")
+          .hasMessageContaining("0.0")
           .hasMessageContaining("0.80")
           .hasMessageContaining("Hello there")
           .hasMessageContaining("\"Hello, World!\"");
@@ -263,7 +263,7 @@ public class SemanticSimilarityAssertTest {
                           ElementSelectors.byId("task1"), "localVar", "some expectation"))
           .isInstanceOf(AssertionError.class)
           .hasMessageContaining("localVar")
-          .hasMessageContaining("0.00")
+          .hasMessageContaining("0.0")
           .hasMessageContaining("0.80")
           .hasMessageContaining("some expectation");
     }

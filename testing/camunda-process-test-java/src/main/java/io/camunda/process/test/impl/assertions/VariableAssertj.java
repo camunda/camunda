@@ -551,10 +551,11 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     final float[] actualEmbedding =
         semanticSimilarityConfig.getEmbeddingModel().embed(processedActual);
     final double score = CosineSimilarity.compute(expectedEmbedding, actualEmbedding);
+    LOG.debug("Computed similarity score for variable '{}': {}", variableName, score);
     final double threshold = semanticSimilarityConfig.getThreshold();
     if (score < threshold) {
       fail(
-          "%s variable '%s' similarity score %.2f is below threshold %.2f.\n"
+          "%s variable '%s' similarity score %s is below threshold %.2f.\n"
               + "  Expected: %s\n"
               + "  Actual: %s",
           actual, variableName, score, threshold, expectedValue, variableValue);
