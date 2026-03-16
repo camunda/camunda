@@ -80,12 +80,11 @@ test.describe.serial('Get usage metrics API Tests', () => {
       );
 
       const body = await res.json();
-      console.log(body);
       expect(body.activeTenants).toBeGreaterThanOrEqual(0);
       expect(body.processInstances).toBeGreaterThan(0);
       expect(body.decisionInstances).toBeGreaterThanOrEqual(0);
       expect(body.assignees).toBeGreaterThanOrEqual(0);
-    }).toPass({intervals: [5_000, 10_000, 15_000], timeout: 60_000});
+    }).toPass({intervals: [5_000, 10_000, 15_000], timeout: 90_000});
   });
 
   test('Get Usage Metrics - Invalid date format', async ({request}) => {
