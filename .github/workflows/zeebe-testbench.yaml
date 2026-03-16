@@ -99,6 +99,11 @@ jobs:
         with:
           directory: ./tasklist/client
           package-manager: npm
+      - name: Build identity frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./identity/client
+          package-manager: npm
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
