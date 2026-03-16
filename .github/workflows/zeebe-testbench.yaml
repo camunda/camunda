@@ -85,8 +85,24 @@ jobs:
           echo "image-tag=$version-$branch-${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
         env:
           BRANCH: ${{ inputs.branch }}
+      - name: Build optimize frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./optimize/client
+      - name: Build operate frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./operate/client
+          package-manager: npm
+      - name: Build tasklist frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./tasklist/client
+          package-manager: npm
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        with:
+          maven-extra-args: -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
