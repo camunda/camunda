@@ -770,6 +770,8 @@ final class CamundaExporterIT {
 
       camundaExporter.export(record);
 
+      camundaExporter.close();
+
       // then
       assertThat(controller.getPosition()).isEqualTo(record.getPosition());
       verify(controller, times(1))
@@ -816,6 +818,7 @@ final class CamundaExporterIT {
 
       camundaExporter.export(record);
 
+      camundaExporter.close();
       // if importers completed this would trigger scheduled flush which would result in the
       // record being visible in ES/OS
       controller.runScheduledTasks(Duration.ofSeconds(config.getBulk().getDelay()));
@@ -858,6 +861,7 @@ final class CamundaExporterIT {
               UserIntent.CREATED);
 
       camundaExporter.export(record);
+      camundaExporter.close();
 
       // then
       assertThat(controller.getPosition()).isEqualTo(record.getPosition());
@@ -905,6 +909,7 @@ final class CamundaExporterIT {
               UserIntent.CREATED);
 
       camundaExporter.export(record);
+      camundaExporter.close();
 
       // as the importer state is ignored, this should trigger a flush still resulting in the
       // record being visible in ES/OS
@@ -964,12 +969,13 @@ final class CamundaExporterIT {
               UserIntent.CREATED);
 
       camundaExporter.export(record);
-
       final var record2 =
           factory.generateRecord(
               ValueType.USER,
               r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
               UserIntent.CREATED);
+
+      camundaExporter.close();
 
       // then
       assertThatThrownBy(() -> camundaExporter.export(record2))
