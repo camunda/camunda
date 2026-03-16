@@ -193,8 +193,43 @@ describe('ElementInstanceLog', () => {
     ).toBeInTheDocument();
   });
 
-  it.skip('should display permissions error when access to the process definition is forbidden', async () => {
+  it('should display permissions error when access to the process definition is forbidden', async () => {
     mockFetchProcessDefinitionXml().withServerError(403);
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(<ElementInstanceLog />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Missing permissions to access Instance History'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Please contact your organization owner or admin to give you the necessary permissions to access this instance history',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should display permissions error when element instances search returns 403', async () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockSearchElementInstances().withServerError(403);
+    mockQueryBatchOperationItems().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     render(<ElementInstanceLog />, {wrapper: Wrapper});
 
