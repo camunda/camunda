@@ -11,16 +11,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionMessageSubscriptionStatisticsDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.it.rdbms.db.fixtures.MessageSubscriptionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.MessageSubscriptionEntity;
+import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MessageSubscriptionQuery;
+import io.camunda.search.query.ProcessDefinitionMessageSubscriptionStatisticsQuery;
 import io.camunda.search.sort.MessageSubscriptionSort;
+import io.camunda.security.reader.ResourceAccessChecks;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -123,6 +127,106 @@ public class MessageSubscriptionIT {
     assertThat(searchResult.total()).isEqualTo(100);
     assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
     assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
+  public void shouldFindProcessDefinitionMessageSubscriptionStatisticsWithPagination(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessDefinitionMessageSubscriptionStatisticsDbReader statisticsReader =
+        rdbmsService.getProcessDefinitionMessageSubscriptionStatisticsDbReader();
+
+    final var messageName = "message-stats-pagination-" + UUID.randomUUID();
+    final var processDefinitionKey1 = 101L;
+    final var processDefinitionKey2 = 102L;
+    final var processDefinitionKey3 = 103L;
+    final var processDefinitionId1 = "process-def-1";
+    final var processDefinitionId2 = "process-def-2";
+    final var processDefinitionId3 = "process-def-3";
+    final var tenantId1 = "tenant-a";
+    final var tenantId2 = "tenant-b";
+
+    MessageSubscriptionFixtures.createAndSaveMessageSubscription(
+        rdbmsWriters,
+        b ->
+            b.messageName(messageName)
+                .processDefinitionId(processDefinitionId1)
+                .processDefinitionKey(processDefinitionKey1)
+                .tenantId(tenantId1)
+                .flowNodeInstanceKey(2001L)
+                .processInstanceKey(3001L));
+    MessageSubscriptionFixtures.createAndSaveMessageSubscription(
+        rdbmsWriters,
+        b ->
+            b.messageName(messageName)
+                .processDefinitionId(processDefinitionId1)
+                .processDefinitionKey(processDefinitionKey1)
+                .tenantId(tenantId1)
+                .flowNodeInstanceKey(2002L)
+                .processInstanceKey(3001L));
+    MessageSubscriptionFixtures.createAndSaveMessageSubscription(
+        rdbmsWriters,
+        b ->
+            b.messageName(messageName)
+                .processDefinitionId(processDefinitionId2)
+                .processDefinitionKey(processDefinitionKey2)
+                .tenantId(tenantId1)
+                .flowNodeInstanceKey(2003L)
+                .processInstanceKey(3002L));
+    MessageSubscriptionFixtures.createAndSaveMessageSubscription(
+        rdbmsWriters,
+        b ->
+            b.messageName(messageName)
+                .processDefinitionId(processDefinitionId2)
+                .processDefinitionKey(processDefinitionKey2)
+                .tenantId(tenantId1)
+                .flowNodeInstanceKey(2004L)
+                .processInstanceKey(3003L));
+    MessageSubscriptionFixtures.createAndSaveMessageSubscription(
+        rdbmsWriters,
+        b ->
+            b.messageName(messageName)
+                .processDefinitionId(processDefinitionId3)
+                .processDefinitionKey(processDefinitionKey3)
+                .tenantId(tenantId2)
+                .flowNodeInstanceKey(2005L)
+                .processInstanceKey(3004L));
+
+    final var allResults =
+        statisticsReader.aggregate(
+            new ProcessDefinitionMessageSubscriptionStatisticsQuery.Builder()
+                .filter(f -> f.messageNames(messageName))
+                .page(p -> p.from(0).size(10))
+                .build(),
+            ResourceAccessChecks.disabled());
+
+    final var firstPage =
+        statisticsReader.aggregate(
+            new ProcessDefinitionMessageSubscriptionStatisticsQuery.Builder()
+                .filter(f -> f.messageNames(messageName))
+                .page(p -> p.size(2))
+                .build(),
+            ResourceAccessChecks.disabled());
+
+    final var nextPage =
+        statisticsReader.aggregate(
+            new ProcessDefinitionMessageSubscriptionStatisticsQuery.Builder()
+                .filter(f -> f.messageNames(messageName))
+                .page(p -> p.size(2).after(firstPage.endCursor()))
+                .build(),
+            ResourceAccessChecks.disabled());
+
+    assertThat(allResults.items())
+        .containsExactly(
+            new ProcessDefinitionMessageSubscriptionStatisticsEntity(
+                processDefinitionId1, tenantId1, processDefinitionKey1, 1L, 2L),
+            new ProcessDefinitionMessageSubscriptionStatisticsEntity(
+                processDefinitionId2, tenantId1, processDefinitionKey2, 2L, 2L),
+            new ProcessDefinitionMessageSubscriptionStatisticsEntity(
+                processDefinitionId3, tenantId2, processDefinitionKey3, 1L, 1L));
+    assertThat(nextPage.items()).hasSize(1);
+    assertThat(nextPage.items()).isEqualTo(allResults.items().subList(2, 3));
   }
 
   @TestTemplate
