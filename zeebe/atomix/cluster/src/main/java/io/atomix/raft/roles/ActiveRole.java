@@ -44,6 +44,11 @@ public abstract class ActiveRole extends PassiveRole {
     // If the request indicates a term that is greater than the current term then
     // assign that term and leader to the current context and transition to follower.
     final boolean transition = updateTermAndLeader(request.term(), request.leader());
+    if (transition) {
+      // A new leader was elected; the previous leader will no longer complete any in-progress
+      // snapshot replication, so we must abort it to avoid waiting forever.
+      abortPendingSnapshots();
+    }
 
     // Handle the append request.
     final CompletableFuture<AppendResponse> future = handleAppend(request);
