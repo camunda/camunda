@@ -222,13 +222,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     variableState.removeScope(key);
     awaitProcessInstanceResultMetadataColumnFamily.deleteIfExists(elementInstanceKey);
     removeNumberOfTakenSequenceFlows(key);
-    decrementActiveProcessInstanceCount();
 
     final var recordValue = instance.getValue();
     if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
       processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
       processInstanceKeyByProcessDefinitionKeyColumnFamily.deleteExisting(
           processInstanceKeyByProcessDefinitionKey);
+      decrementActiveProcessInstanceCount();
     }
 
     if (parent > 0) {
@@ -252,13 +252,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     elementInstanceColumnFamily.insert(elementInstanceKey, instance);
     parentChildColumnFamily.insert(parentChildKey, DbNil.INSTANCE);
     variableState.createScope(elementInstanceKey.getValue(), parentKey.inner().getValue());
-    incrementActiveProcessInstanceCount();
 
     final var recordValue = instance.getValue();
     if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
       processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
       processInstanceKeyByProcessDefinitionKeyColumnFamily.insert(
           processInstanceKeyByProcessDefinitionKey, DbNil.INSTANCE);
+      incrementActiveProcessInstanceCount();
     }
   }
 
