@@ -11,6 +11,8 @@ import {makeObservable, observable, action, override} from 'mobx';
 import {searchElementInstances} from 'modules/api/v2/elementInstances/searchElementInstances';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from 'modules/stores/networkReconnectionHandler';
+import type {RequestError} from 'modules/request';
+import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 
 const PAGE_SIZE = 50;
 const POLLING_INTERVAL = 5000;
@@ -24,7 +26,7 @@ type PageMetadata = {
 type NodeData = {
   items: ElementInstance[];
   pageMetadata: PageMetadata;
-  status: 'idle' | 'loading' | 'error' | 'loaded';
+  status: 'idle' | 'loading' | 'error' | 'error-permissions' | 'loaded';
 };
 
 type State = {
@@ -154,7 +156,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
         status: 'loaded',
       });
     } else {
-      this.setNodeStatus(scopeKey, 'error');
+      this.setNodeStatus(scopeKey, 'error', error);
       logger.error('Failed to fetch element instances', error);
     }
   };
@@ -257,7 +259,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
 
       return Math.max(0, response.items.length - PAGE_SIZE);
     } else {
-      this.setNodeStatus(scopeKey, 'error');
+      this.setNodeStatus(scopeKey, 'error', error);
       logger.error('Failed to fetch next page', error);
       return -1;
     }
@@ -312,18 +314,28 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
 
       return Math.min(PAGE_SIZE, response.items.length);
     } else {
-      this.setNodeStatus(scopeKey, 'error');
+      this.setNodeStatus(scopeKey, 'error', error);
       logger.error('Failed to fetch previous page', error);
       return -1;
     }
   };
 
-  private setNodeStatus = (scopeKey: string, status: NodeData['status']) => {
+  private setNodeStatus = (
+    scopeKey: string,
+    status: NodeData['status'],
+    error?: RequestError | null,
+  ) => {
+    const resolvedStatus =
+      status === 'error' &&
+      error?.variant === 'failed-response' &&
+      error.response.status === HTTP_STATUS_FORBIDDEN
+        ? 'error-permissions'
+        : status;
     const nodeData = this.state.nodes.get(scopeKey);
     if (nodeData) {
       this.setNodeData(scopeKey, {
         ...nodeData,
-        status,
+        status: resolvedStatus,
       });
     } else {
       this.setNodeData(scopeKey, {
@@ -333,7 +345,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
           windowStart: 0,
           windowEnd: 0,
         },
-        status,
+        status: resolvedStatus,
       });
     }
   };
@@ -463,7 +475,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
             });
           } else {
             if (!signal.aborted) {
-              this.setNodeStatus(scopeKey, 'error');
+              this.setNodeStatus(scopeKey, 'error', error);
               logger.error('Failed to poll element instances', error);
             }
           }

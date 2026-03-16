@@ -20,6 +20,7 @@ import {
   NodeContainer,
   TreeNode,
 } from './styled';
+import {ErrorMessage} from '../styled';
 import {Bar} from './Bar';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {useSearchElementInstancesByScope} from 'modules/queries/elementInstances/useSearchElementInstancesByScope';
@@ -822,11 +823,20 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
       return elementInstancesTreeStore.reset;
     }, []);
 
-    if (
-      elementInstancesTreeStore.state.nodes.get(
-        processInstance.processInstanceKey,
-      )?.status === 'error'
-    ) {
+    const rootNodeData = elementInstancesTreeStore.state.nodes.get(
+      processInstance.processInstanceKey,
+    );
+
+    if (rootNodeData?.status === 'error-permissions') {
+      return (
+        <ErrorMessage
+          message="Missing permissions to access Instance History"
+          additionalInfo="Please contact your organization owner or admin to give you the necessary permissions to access this instance history"
+        />
+      );
+    }
+
+    if (rootNodeData?.status === 'error') {
       return errorMessage;
     }
 

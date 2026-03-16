@@ -248,6 +248,36 @@ describe('elementInstancesTreeStore', () => {
     });
   });
 
+  it('should set status to error-permissions when expansion fails with forbidden', async () => {
+    mockSearchElementInstances().withServerError(403);
+
+    await elementInstancesTreeStore.expandNode(mockChildScopeKey1);
+
+    const nodeData =
+      elementInstancesTreeStore.state.nodes.get(mockChildScopeKey1);
+
+    expect(nodeData?.status).toBe('error-permissions');
+  });
+
+  it('should clear error-permissions status after successful fetch', async () => {
+    mockSearchElementInstances().withServerError(403);
+    await elementInstancesTreeStore.expandNode(mockChildScopeKey1);
+
+    expect(
+      elementInstancesTreeStore.state.nodes.get(mockChildScopeKey1)?.status,
+    ).toBe('error-permissions');
+
+    elementInstancesTreeStore.collapseNode(mockChildScopeKey1);
+
+    mockSearchElementInstances().withSuccess(mockChildResponse);
+    await elementInstancesTreeStore.expandNode(mockChildScopeKey1);
+
+    const nodeData =
+      elementInstancesTreeStore.state.nodes.get(mockChildScopeKey1);
+
+    expect(nodeData?.status).toBe('loaded');
+  });
+
   it('should collapse node and remove from expandedNodes set', async () => {
     mockSearchElementInstances().withSuccess(mockEmptyResponse);
     await elementInstancesTreeStore.expandNode(mockChildScopeKey1);
