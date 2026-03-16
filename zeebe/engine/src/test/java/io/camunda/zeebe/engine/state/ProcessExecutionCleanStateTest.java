@@ -61,7 +61,8 @@ public final class ProcessExecutionCleanStateTest {
           ZbColumnFamilies.JOB_METRICS_META,
           ZbColumnFamilies.JOB_METRICS_STRING_ENCODING,
           ZbColumnFamilies.JOB_METRICS,
-          ZbColumnFamilies.GLOBAL_LISTENER_CURRENT_CONFIG);
+          ZbColumnFamilies.GLOBAL_LISTENER_CURRENT_CONFIG,
+          ZbColumnFamilies.ACTIVE_PROCESS_INSTANCE_COUNT);
 
   @Rule public EngineRule engineRule = EngineRule.singlePartition();
 

@@ -434,6 +434,8 @@ public final class ElementInstanceStateTest {
     final var nonEmptyColumns =
         Arrays.stream(ZbColumnFamilies.values())
             .filter(not(ZbColumnFamilies.KEY::equals))
+            // ACTIVE_PROCESS_INSTANCE_COUNT tracks the count of active process instances
+            .filter(not(ZbColumnFamilies.ACTIVE_PROCESS_INSTANCE_COUNT::equals))
             .filter(not(processingState::isEmpty))
             .collect(Collectors.toList());
 
@@ -580,23 +582,21 @@ public final class ElementInstanceStateTest {
         elementInstanceState.newInstance(
             rootKey2, rootRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
-    // add child instances to rootInstance1
-    final ProcessInstanceRecord childRecord =
-        createProcessInstanceRecord().setElementId("subProcess");
+    // add child process instances started via call activities
+    final ProcessInstanceRecord childProcessRecord =
+        createProcessInstanceRecord()
+            .setElementId("childProcess")
+            .setBpmnElementType(BpmnElementType.PROCESS);
     elementInstanceState.newInstance(
-        rootInstance1, 400L, childRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+        rootInstance1, 500L, childProcessRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
     elementInstanceState.newInstance(
-        rootInstance1, 401L, childRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
-
-    // add child instance to rootInstance2
-    elementInstanceState.newInstance(
-        rootInstance2, 402L, childRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+        rootInstance2, 501L, childProcessRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
 
     // when
     final long count = elementInstanceState.getActiveProcessInstanceCount();
 
-    // then we should still only have 2 root instances, and 3 child instances.
-    assertThat(count).isEqualTo(5);
+    // then we should have 2 root process instances + 2 child process instances
+    assertThat(count).isEqualTo(4);
   }
 
   private void assertElementInstance(final ElementInstance elementInstance, final int childCount) {
