@@ -452,7 +452,7 @@ test.describe('task details page', () => {
     await taskDetailsPageV1.assertFieldValue('Number', '2');
     await taskDetailsPageV1.clickDecrementButton();
     await taskDetailsPageV1.assertFieldValue('Number', '1');
-    await sleep(200);
+    await sleep(1000);
     await taskDetailsPageV1.clickCompleteTaskButton();
     await expect(taskDetailsPageV1.taskCompletedBanner).toBeVisible();
 
