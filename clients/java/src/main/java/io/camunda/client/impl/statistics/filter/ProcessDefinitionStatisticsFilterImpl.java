@@ -184,9 +184,31 @@ public class ProcessDefinitionStatisticsFilterImpl
 
   @Override
   public ProcessDefinitionStatisticsFilter batchOperationId(final Consumer<StringProperty> fn) {
+    if (filter.getBatchOperationKey() != null) {
+      throw new IllegalArgumentException(
+          "Cannot set batchOperationId when batchOperationKey is already set. Use batchOperationKey instead.");
+    }
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setBatchOperationId(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public ProcessDefinitionStatisticsFilter batchOperationKey(final String batchOperationKey) {
+    batchOperationKey(b -> b.eq(batchOperationKey));
+    return this;
+  }
+
+  @Override
+  public ProcessDefinitionStatisticsFilter batchOperationKey(final Consumer<StringProperty> fn) {
+    if (filter.getBatchOperationId() != null) {
+      throw new IllegalArgumentException(
+          "Cannot set batchOperationKey when batchOperationId is already set. Use batchOperationKey instead.");
+    }
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setBatchOperationKey(provideSearchRequestProperty(property));
     return this;
   }
 

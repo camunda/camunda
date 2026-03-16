@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useEffect} from 'react';
+import {useEffect} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import {IconButton, InlineNotification, SkeletonText} from '@carbon/react';
 import {ArrowLeft} from '@carbon/react/icons';

@@ -40,31 +40,32 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final GroupSearchClient groupSearchClient,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.groupSearchClient = groupSearchClient;
   }
 
   public List<GroupEntity> getGroupsByMemberTypeAndMemberIds(
-      final Map<EntityType, Set<String>> memberTypesToMemberIds) {
+      final Map<EntityType, Set<String>> memberTypesToMemberIds,
+      final CamundaAuthentication authentication) {
     return search(
             GroupQuery.of(
                 groupQuery ->
                     groupQuery
                         .filter(groupFilter -> groupFilter.memberIdsByType(memberTypesToMemberIds))
-                        .unlimited()))
+                        .unlimited()),
+            authentication)
         .items();
   }
 
   @Override
-  public SearchQueryResult<GroupEntity> search(final GroupQuery query) {
+  public SearchQueryResult<GroupEntity> search(
+      final GroupQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             groupSearchClient
@@ -74,26 +75,17 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
                 .searchGroups(query));
   }
 
-  @Override
-  public GroupServices withAuthentication(final CamundaAuthentication authentication) {
-    return new GroupServices(
-        brokerClient,
-        securityContextProvider,
-        groupSearchClient,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  public CompletableFuture<GroupRecord> createGroup(final GroupDTO groupDTO) {
+  public CompletableFuture<GroupRecord> createGroup(
+      final GroupDTO groupDTO, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerGroupCreateRequest()
             .setGroupId(groupDTO.groupId)
             .setName(groupDTO.name)
-            .setDescription(groupDTO.description));
+            .setDescription(groupDTO.description),
+        authentication);
   }
 
-  public GroupEntity getGroup(final String groupId) {
+  public GroupEntity getGroup(final String groupId, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             groupSearchClient
@@ -104,30 +96,40 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public CompletableFuture<GroupRecord> updateGroup(
-      final String groupId, final String name, final String description) {
+      final String groupId,
+      final String name,
+      final String description,
+      final CamundaAuthentication authentication) {
     return sendBrokerRequest(
-        new BrokerGroupUpdateRequest(groupId).setName(name).setDescription(description));
+        new BrokerGroupUpdateRequest(groupId).setName(name).setDescription(description),
+        authentication);
   }
 
-  public CompletableFuture<GroupRecord> deleteGroup(final String groupId) {
-    return sendBrokerRequest(new BrokerGroupDeleteRequest(groupId));
+  public CompletableFuture<GroupRecord> deleteGroup(
+      final String groupId, final CamundaAuthentication authentication) {
+    return sendBrokerRequest(new BrokerGroupDeleteRequest(groupId), authentication);
   }
 
-  public CompletableFuture<GroupRecord> assignMember(final GroupMemberDTO groupMemberDTO) {
+  public CompletableFuture<GroupRecord> assignMember(
+      final GroupMemberDTO groupMemberDTO, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         BrokerGroupMemberRequest.createAddRequest(groupMemberDTO.groupId)
             .setMemberId(groupMemberDTO.memberId)
-            .setMemberType(groupMemberDTO.memberType));
+            .setMemberType(groupMemberDTO.memberType),
+        authentication);
   }
 
-  public CompletableFuture<GroupRecord> removeMember(final GroupMemberDTO groupMemberDTO) {
+  public CompletableFuture<GroupRecord> removeMember(
+      final GroupMemberDTO groupMemberDTO, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         BrokerGroupMemberRequest.createRemoveRequest(groupMemberDTO.groupId)
             .setMemberId(groupMemberDTO.memberId)
-            .setMemberType(groupMemberDTO.memberType));
+            .setMemberType(groupMemberDTO.memberType),
+        authentication);
   }
 
-  public SearchQueryResult<GroupMemberEntity> searchMembers(final GroupMemberQuery query) {
+  public SearchQueryResult<GroupMemberEntity> searchMembers(
+      final GroupMemberQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             groupSearchClient

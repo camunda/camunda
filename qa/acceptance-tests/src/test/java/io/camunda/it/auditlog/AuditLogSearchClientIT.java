@@ -620,8 +620,7 @@ public class AuditLogSearchClientIT {
     assertThat(auditLogItems)
         .allSatisfy(
             auditLogResult -> {
-              assertThat(OffsetDateTime.parse(auditLogResult.getTimestamp()))
-                  .isAfter(OffsetDateTime.now().minusHours(1));
+              assertThat(auditLogResult.getTimestamp()).isAfter(OffsetDateTime.now().minusHours(1));
 
               assertThat(auditLogResult.getDecisionDefinitionKey())
                   .isEqualTo(String.valueOf(decision.getDecisionKey()));
@@ -746,7 +745,7 @@ public class AuditLogSearchClientIT {
     assertThat(auditLog.getResult()).isEqualTo(AuditLogResultEnum.SUCCESS);
     assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
     assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
-    assertThat(auditLog.getTimestamp()).isNotBlank();
+    assertThat(auditLog.getTimestamp()).isNotNull();
   }
 
   private List<AuditLogResult> awaitAuditLogEntryWithFilters(

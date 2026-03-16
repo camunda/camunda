@@ -50,11 +50,6 @@ public record IncidentSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
-    public Builder errorMessage() {
-      currentOrdering = new FieldSorting("errorMessage", null);
-      return this;
-    }
-
     public Builder flowNodeId() {
       currentOrdering = new FieldSorting("flowNodeId", null);
       return this;

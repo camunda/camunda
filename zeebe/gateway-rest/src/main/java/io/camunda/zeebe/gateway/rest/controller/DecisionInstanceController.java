@@ -56,13 +56,12 @@ public class DecisionInstanceController {
 
   @CamundaGetMapping(path = "/{decisionEvaluationInstanceKey}")
   public ResponseEntity<DecisionInstanceGetQueryResult> getDecisionInstanceById(
-      @PathVariable("decisionEvaluationInstanceKey") final String decisionEvaluationInstanceKey) {
+      @PathVariable final String decisionEvaluationInstanceKey) {
     try {
+      final var authentication = authenticationProvider.getCamundaAuthentication();
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionInstanceGetQueryResponse(
-              decisionInstanceServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .getById(decisionEvaluationInstanceKey)));
+              decisionInstanceServices.getById(decisionEvaluationInstanceKey, authentication)));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }
@@ -71,15 +70,14 @@ public class DecisionInstanceController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{decisionInstanceKey}/deletion")
   public CompletableFuture<ResponseEntity<Object>> deleteDecisionInstance(
-      @PathVariable("decisionInstanceKey") final long decisionInstanceKey,
+      @PathVariable final long decisionInstanceKey,
       @RequestBody(required = false) final DeleteDecisionInstanceRequest request) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            decisionInstanceServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .deleteDecisionInstance(
-                    decisionInstanceKey,
-                    Objects.nonNull(request) ? request.getOperationReference() : null));
+            decisionInstanceServices.deleteDecisionInstance(
+                decisionInstanceKey,
+                Objects.nonNull(request) ? request.getOperationReference() : null,
+                authenticationProvider.getCamundaAuthentication()));
   }
 
   @RequiresSecondaryStorage
@@ -93,10 +91,8 @@ public class DecisionInstanceController {
   private ResponseEntity<DecisionInstanceSearchQueryResult> search(
       final DecisionInstanceQuery query) {
     try {
-      final var decisionInstances =
-          decisionInstanceServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
+      final var authentication = authenticationProvider.getCamundaAuthentication();
+      final var decisionInstances = decisionInstanceServices.search(query, authentication);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionInstanceSearchQueryResponse(decisionInstances));
     } catch (final Exception e) {
@@ -106,11 +102,10 @@ public class DecisionInstanceController {
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationDeletion(
       final io.camunda.search.filter.DecisionInstanceFilter filter) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
         () ->
-            decisionInstanceServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .deleteDecisionInstancesBatchOperation(filter),
+            decisionInstanceServices.deleteDecisionInstancesBatchOperation(filter, authentication),
         ResponseMapper::toBatchOperationCreatedWithResultResponse,
         HttpStatus.OK);
   }

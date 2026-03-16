@@ -25,18 +25,17 @@ public abstract class SearchQueryService<T extends ApiServices<T>, Q extends Sea
   protected SearchQueryService(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
 
-  public abstract SearchQueryResult<D> search(final Q query);
+  public abstract SearchQueryResult<D> search(
+      final Q query, final CamundaAuthentication authentication);
 
   protected <R> R executeSearchRequest(final Supplier<R> searchRequest) {
     try {

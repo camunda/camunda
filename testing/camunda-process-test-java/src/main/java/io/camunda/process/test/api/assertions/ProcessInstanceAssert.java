@@ -15,7 +15,9 @@
  */
 package io.camunda.process.test.api.assertions;
 
+import io.camunda.process.test.api.judge.JudgeConfig;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 import org.assertj.core.api.ThrowingConsumer;
 
 /** The assertion object to verify a process instance. */
@@ -562,4 +564,63 @@ public interface ProcessInstanceAssert {
    * @return the assertion object
    */
   ProcessInstanceAssert hasCorrelatedMessage(final String messageName, final String correlationKey);
+
+  /**
+   * Modifies the current {@link JudgeConfig} for subsequent judge assertions in this chain. The
+   * modifier receives the current config (either the global default or a previously set override)
+   * and returns a new config. The global default is not affected.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   *   assertThat(pi)
+   *       .withJudgeConfig(config -&gt; config.withCustomPrompt("You are a financial data judge"))
+   *       .hasVariableSatisfiesJudge("result", "should contain valid data");
+   * </pre>
+   *
+   * @param modifier a function that receives the current judge config and returns a modified one
+   * @return the assertion object
+   */
+  ProcessInstanceAssert withJudgeConfig(UnaryOperator<JudgeConfig> modifier);
+
+  /**
+   * Verifies that a process variable's value satisfies a natural language expectation using an LLM
+   * judge. Uses the threshold from the configured {@link JudgeConfig}.
+   *
+   * <p>The assertion waits until the variable exists, then runs the judge evaluation once.
+   *
+   * @param variableName the variable name
+   * @param expectation the natural language expectation
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasVariableSatisfiesJudge(String variableName, String expectation);
+
+  /**
+   * Verifies that a local variable's value satisfies a natural language expectation using an LLM
+   * judge. Uses the threshold from the configured {@link JudgeConfig}.
+   *
+   * <p>The assertion waits until the variable exists, then runs the judge evaluation once.
+   *
+   * @param elementId the BPMN element ID
+   * @param variableName the variable name
+   * @param expectation the natural language expectation
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
+      String elementId, String variableName, String expectation);
+
+  /**
+   * Verifies that a local variable's value satisfies a natural language expectation using an LLM
+   * judge. Uses the threshold from the configured {@link JudgeConfig}.
+   *
+   * <p>The assertion waits until the variable exists, then runs the judge evaluation once.
+   *
+   * @param selector the selector for the BPMN element
+   * @param variableName the variable name
+   * @param expectation the natural language expectation
+   * @return the assertion object
+   * @see ElementSelectors
+   */
+  ProcessInstanceAssert hasLocalVariableSatisfiesJudge(
+      ElementSelector selector, String variableName, String expectation);
 }

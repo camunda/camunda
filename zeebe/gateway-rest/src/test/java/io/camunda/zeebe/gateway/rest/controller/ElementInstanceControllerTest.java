@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
@@ -45,14 +44,12 @@ public class ElementInstanceControllerTest extends RestControllerTest {
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(elementInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(elementInstanceServices);
   }
 
   @Test
   void shouldSetSetVariables() {
     // given
-    when(elementInstanceServices.setVariables(any(SetVariablesRequest.class)))
+    when(elementInstanceServices.setVariables(any(SetVariablesRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(new VariableDocumentRecord()));
 
     final var request =
@@ -76,7 +73,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(elementInstanceServices).setVariables(requestCaptor.capture());
+    Mockito.verify(elementInstanceServices).setVariables(requestCaptor.capture(), any());
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.elementInstanceKey()).isEqualTo(123L);
     assertThat(capturedRequest.variables()).isEqualTo(Map.of("key", "value"));

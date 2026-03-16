@@ -65,9 +65,8 @@ public class ElementInstanceController {
       final SetVariablesRequest variablesRequest) {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
-            elementInstanceServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .setVariables(variablesRequest));
+            elementInstanceServices.setVariables(
+                variablesRequest, authenticationProvider.getCamundaAuthentication()));
   }
 
   @RequiresSecondaryStorage
@@ -84,9 +83,8 @@ public class ElementInstanceController {
       @PathVariable("elementInstanceKey") final Long elementInstanceKey) {
     try {
       final FlowNodeInstanceEntity element =
-          elementInstanceServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .getByKey(elementInstanceKey);
+          elementInstanceServices.getByKey(
+              elementInstanceKey, authenticationProvider.getCamundaAuthentication());
 
       return ResponseEntity.ok().body(SearchQueryResponseMapper.toElementInstance(element));
     } catch (final Exception e) {
@@ -110,9 +108,7 @@ public class ElementInstanceController {
       final FlowNodeInstanceQuery query) {
     try {
       final var result =
-          elementInstanceServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
+          elementInstanceServices.search(query, authenticationProvider.getCamundaAuthentication());
 
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toElementInstanceSearchQueryResponse(result));
@@ -125,9 +121,8 @@ public class ElementInstanceController {
       final long elementInstanceKey, final IncidentQuery query) {
     try {
       final var result =
-          elementInstanceServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .searchIncidents(elementInstanceKey, query);
+          elementInstanceServices.searchIncidents(
+              elementInstanceKey, query, authenticationProvider.getCamundaAuthentication());
 
       return ResponseEntity.ok(SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
     } catch (final Exception e) {

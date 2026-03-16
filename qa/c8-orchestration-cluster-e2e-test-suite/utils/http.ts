@@ -14,7 +14,7 @@ export type Credentials = {
 };
 
 export const credentials: Credentials = {
-  baseUrl: 'http://localhost:8080',
+  baseUrl: process.env.CORE_APPLICATION_URL ?? 'http://localhost:8080',
   accessToken: encode(`demo:demo`),
 };
 

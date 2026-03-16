@@ -307,10 +307,15 @@ jobs:
 
   operate-fe-visual-regression-tests:
     if: inputs.runFeTests
-    name: "Unit / Front End - Visual Regression"
+    name: "Unit / Front End - Visual Regression [${{ matrix.shardIndex }}/${{ matrix.shardTotal }}]"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
+    strategy:
+      fail-fast: false
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
     env:
       TEST_TYPE: visual-regression
       TEST_OWNER: Core Features
@@ -336,9 +341,60 @@ jobs:
       - name: Start server
         run: npm run start:visual-regression &
       - name: Run Visual regression tests
-        run: npm run test:visual
-      - uses: actions/upload-artifact@v7
+        run: npm run test:visual -- --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: operate-visual-regression-blob-report-${{ matrix.shardIndex }}
+          path: operate/client/blob-report
+          retention-days: 1
+      - name: Observe build status
         if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "operate-ci/operate-fe-visual-regression-tests-${{ matrix.shardIndex }}"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          user_description: "team-core-features"
+
+  operate-fe-visual-regression-merge:
+    if: ${{ !cancelled() && inputs.runFeTests }}
+    needs: [operate-fe-visual-regression-tests]
+    name: "Unit / Front End - Visual Regression - Merge Reports"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {} # GITHUB_TOKEN unused in this job
+    env:
+      TEST_TYPE: visual-regression
+      TEST_OWNER: Core Features
+    defaults:
+      run:
+        working-directory: operate/client
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v6
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Setup NodeJS
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Install node dependencies
+        run: npm ci
+      - name: Download blob reports
+        uses: actions/download-artifact@v8
+        with:
+          path: operate/client/all-blob-reports
+          pattern: operate-visual-regression-blob-report-*
+          merge-multiple: true
+      - name: Merge into HTML Report
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v7
         with:
           name: operate-visual-regression-report
           path: operate/client/playwright-report/

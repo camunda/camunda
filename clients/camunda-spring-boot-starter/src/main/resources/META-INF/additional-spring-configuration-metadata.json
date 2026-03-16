@@ -227,6 +227,10 @@
       "defaultValue": 1
     },
     {
+      "name": "camunda.client.use-client-side-load-balancing",
+      "defaultValue": false
+    },
+    {
       "name": "common.auth-url",
       "type": "java.lang.String",
       "sourceType": "io.camunda.spring.client.properties.CommonConfigurationProperties",

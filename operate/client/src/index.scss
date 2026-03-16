@@ -50,6 +50,10 @@ body,
 #root {
   min-width: 960px;
   min-height: 540px;
+
+  &:has(.camunda-process-instance-page) {
+    min-width: 672px;
+  }
 }
 
 /* removes dotted default focus */

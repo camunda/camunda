@@ -32,20 +32,19 @@ public class MessageSubscriptionServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final MessageSubscriptionSearchClient searchClient,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.searchClient = searchClient;
   }
 
   @Override
-  public SearchQueryResult<MessageSubscriptionEntity> search(final MessageSubscriptionQuery query) {
+  public SearchQueryResult<MessageSubscriptionEntity> search(
+      final MessageSubscriptionQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             searchClient
@@ -56,7 +55,7 @@ public class MessageSubscriptionServices
   }
 
   public SearchQueryResult<CorrelatedMessageSubscriptionEntity> searchCorrelated(
-      final CorrelatedMessageSubscriptionQuery query) {
+      final CorrelatedMessageSubscriptionQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             searchClient
@@ -64,17 +63,5 @@ public class MessageSubscriptionServices
                     securityContextProvider.provideSecurityContext(
                         authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
                 .searchCorrelatedMessageSubscriptions(query));
-  }
-
-  @Override
-  public MessageSubscriptionServices withAuthentication(
-      final CamundaAuthentication authentication) {
-    return new MessageSubscriptionServices(
-        brokerClient,
-        securityContextProvider,
-        searchClient,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
   }
 }

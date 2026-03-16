@@ -9,6 +9,7 @@ package io.camunda.gateway.mcp.tool.incident;
 
 import static io.camunda.gateway.mcp.mapper.CallToolResultMapper.mapErrorToResult;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.INCIDENT_KEY_NOT_NULL_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.INCIDENT_KEY_POSITIVE_MESSAGE;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
@@ -19,7 +20,6 @@ import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.gateway.protocol.model.simple.IncidentSearchQuery;
-import io.camunda.search.entities.IncidentEntity;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
@@ -68,9 +69,8 @@ public class IncidentTools {
 
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toIncidentSearchQueryResponse(
-              incidentServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .search(incidentSearchQuery.get())));
+              incidentServices.search(
+                  incidentSearchQuery.get(), authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -83,14 +83,14 @@ public class IncidentTools {
       @McpToolParam(
               description =
                   "The assigned key of the incident, which acts as a unique identifier for this incident.")
+          @NotNull(message = INCIDENT_KEY_NOT_NULL_MESSAGE)
           @Positive(message = INCIDENT_KEY_POSITIVE_MESSAGE)
           final Long incidentKey) {
     try {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toIncident(
-              incidentServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .getByKey(incidentKey)));
+              incidentServices.getByKey(
+                  incidentKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -99,17 +99,17 @@ public class IncidentTools {
   @CamundaMcpTool(description = "Resolve incident by key. " + EVENTUAL_CONSISTENCY_NOTE)
   public CallToolResult resolveIncident(
       @McpToolParam(description = "Key of the incident to resolve.")
+          @NotNull(message = INCIDENT_KEY_NOT_NULL_MESSAGE)
           @Positive(message = INCIDENT_KEY_POSITIVE_MESSAGE)
           final Long incidentKey) {
     try {
+      final var authentication = authenticationProvider.getCamundaAuthentication();
       return CallToolResultMapper.fromPrimitive(
-          incidentServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .resolveIncident(incidentKey, null),
+          incidentServices.resolveIncident(incidentKey, null, authentication),
           r -> "Incident with key %s resolved.".formatted(incidentKey),
           error ->
               isNoJobRetriesLeft(error)
-                  ? resolveJobIncident(incidentKey)
+                  ? resolveJobIncident(incidentKey, authentication)
                   : mapErrorToResult(error));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
@@ -122,15 +122,13 @@ public class IncidentTools {
         && se.getMessage().contains("no retries left");
   }
 
-  private CallToolResult resolveJobIncident(final Long incidentKey) {
+  private CallToolResult resolveJobIncident(
+      final Long incidentKey, final CamundaAuthentication authentication) {
     try {
-      final CamundaAuthentication camundaAuthentication =
-          authenticationProvider.getCamundaAuthentication();
       // fetch the incident to retrieve the job key
-      final IncidentEntity incident =
-          incidentServices.withAuthentication(camundaAuthentication).getByKey(incidentKey);
+      final var incident = incidentServices.getByKey(incidentKey, authentication);
       // incident cannot be null, service throws exception if incident not found
-      final Long jobKey = incident.jobKey();
+      final var jobKey = incident.jobKey();
       if (jobKey == null) {
         throw new ServiceException(
             "Cannot retrieve job key for job-based incident.", Status.INVALID_STATE);
@@ -138,15 +136,13 @@ public class IncidentTools {
       // update retries for the job to 1
       final Either<Throwable, JobRecord> updateResult =
           CallToolResultMapper.executeServiceMethod(
-              jobServices
-                  .withAuthentication(camundaAuthentication)
-                  .updateJob(jobKey, null, new UpdateJobChangeset(1, null)));
+              jobServices.updateJob(jobKey, null, new UpdateJobChangeset(1, null), authentication));
       if (updateResult.isLeft()) {
         return CallToolResultMapper.mapErrorToResult(updateResult.getLeft());
       }
       // resolve incident again
       return CallToolResultMapper.fromPrimitive(
-          incidentServices.resolveIncident(incidentKey, null),
+          incidentServices.resolveIncident(incidentKey, null, authentication),
           r -> "Incident with key %s resolved.".formatted(incidentKey));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);

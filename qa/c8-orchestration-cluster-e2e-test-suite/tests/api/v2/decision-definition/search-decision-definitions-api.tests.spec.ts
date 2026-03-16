@@ -366,12 +366,16 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
         totalItemGreaterThan: 1,
       });
       const json = await res.json();
-      expect(json.items[0].decisionDefinitionId).toBe(
-        decisionDefinition1.decisionDefinitionId,
+      const ids = json.items.map(
+        (it: {decisionDefinitionId: string}) => it.decisionDefinitionId,
       );
-      expect(json.items[1].decisionDefinitionId).toBe(
-        decisionDefinition2.decisionDefinitionId,
-      );
+
+      const index1 = ids.indexOf(decisionDefinition1.decisionDefinitionId);
+      const index2 = ids.indexOf(decisionDefinition2.decisionDefinitionId);
+
+      expect(index1).toBeGreaterThan(-1);
+      expect(index2).toBeGreaterThan(-1);
+      expect(index1).toBeLessThan(index2);
       assertDecisionDefinitionInResponse(
         json,
         expectedBody1,
@@ -408,12 +412,16 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
         totalItemGreaterThan: 1,
       });
       const json = await res.json();
-      expect(json.items[0].decisionDefinitionId).toBe(
-        decisionDefinition2.decisionDefinitionId,
+      const ids = json.items.map(
+        (it: {decisionDefinitionId: string}) => it.decisionDefinitionId,
       );
-      expect(json.items[1].decisionDefinitionId).toBe(
-        decisionDefinition1.decisionDefinitionId,
-      );
+
+      const index1 = ids.indexOf(decisionDefinition1.decisionDefinitionId);
+      const index2 = ids.indexOf(decisionDefinition2.decisionDefinitionId);
+
+      expect(index1).toBeGreaterThan(-1);
+      expect(index2).toBeGreaterThan(-1);
+      expect(index2).toBeLessThan(index1);
       assertDecisionDefinitionInResponse(
         json,
         expectedBody1,

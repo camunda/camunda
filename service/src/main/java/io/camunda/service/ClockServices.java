@@ -21,32 +21,21 @@ public final class ClockServices extends ApiServices<ClockServices> {
   public ClockServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
   }
 
-  @Override
-  public ClockServices withAuthentication(final CamundaAuthentication authentication) {
-    return new ClockServices(
-        brokerClient,
-        securityContextProvider,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
+  public CompletableFuture<ClockRecord> pinClock(
+      final long pinnedEpoch, final CamundaAuthentication authentication) {
+    return sendBrokerRequest(new BrokerClockPinRequest(pinnedEpoch), authentication);
   }
 
-  public CompletableFuture<ClockRecord> pinClock(final long pinnedEpoch) {
-    return sendBrokerRequest(new BrokerClockPinRequest(pinnedEpoch));
-  }
-
-  public CompletableFuture<ClockRecord> resetClock() {
-    return sendBrokerRequest(new BrokerClockResetRequest());
+  public CompletableFuture<ClockRecord> resetClock(final CamundaAuthentication authentication) {
+    return sendBrokerRequest(new BrokerClockResetRequest(), authentication);
   }
 }

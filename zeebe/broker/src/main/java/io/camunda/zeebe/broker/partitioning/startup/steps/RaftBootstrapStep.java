@@ -43,10 +43,14 @@ public final class RaftBootstrapStep implements StartupStep<PartitionStartupCont
         .bootstrap(context.partitionManagementService(), context.snapshotStore())
         .whenComplete(
             (raftPartition, throwable) -> {
-              if (throwable == null) {
-                result.complete(context);
-              } else {
-                result.completeExceptionally(throwable);
+              try {
+                if (throwable == null) {
+                  result.complete(context);
+                } else {
+                  result.completeExceptionally(throwable);
+                }
+              } catch (final Exception e) {
+                // Future is already completed due to interrupted by shutdown
               }
             });
 
@@ -74,5 +78,14 @@ public final class RaftBootstrapStep implements StartupStep<PartitionStartupCont
         });
 
     return result;
+  }
+
+  @Override
+  public boolean isInterruptible() {
+    // It is safe to interrupt the bootstrap step, as the initial setup of RaftContext is done in a
+    // blocking way and the async waiting is done to catch up the log. It is safe to interrupt the
+    // async waiting for shutdown and the RaftServer will be shutdown cleanly when shutdown is
+    // triggered.
+    return true;
   }
 }

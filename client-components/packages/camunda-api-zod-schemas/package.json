@@ -395,9 +395,9 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"packageManager": "npm@11.11.0",
+	"packageManager": "npm@11.11.1",
 	"devDependencies": {
-		"@types/node": "25.3.3",
+		"@types/node": "25.5.0",
 		"changelogen": "0.6.2",
 		"typescript": "5.9.3",
 		"vite": "7.3.1",

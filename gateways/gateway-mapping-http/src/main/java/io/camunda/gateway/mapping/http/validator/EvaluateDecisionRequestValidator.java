@@ -8,6 +8,7 @@
 package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDecisionDefinitionId;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
 
 import io.camunda.gateway.protocol.model.DecisionEvaluationById;
@@ -40,6 +41,7 @@ public class EvaluateDecisionRequestValidator {
                   ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
                       "[decisionDefinitionId, decisionDefinitionKey]"));
             }
+            validateDecisionDefinitionId(byId.getDecisionDefinitionId(), violations);
           });
     }
     return Optional.empty();

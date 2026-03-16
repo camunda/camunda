@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -15,7 +16,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.gateway.protocol.model.MappingRuleCreateRequest;
 import io.camunda.gateway.protocol.model.MappingRuleUpdateRequest;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.MappingRuleServices;
@@ -47,8 +47,6 @@ public class MappingRuleControllerTest extends RestControllerTest {
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(mappingRuleServices);
     when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
   }
 
@@ -68,7 +66,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             .setMappingRuleId(id)
             .setName(dto.name());
 
-    when(mappingRuleServices.createMappingRule(dto))
+    when(mappingRuleServices.createMappingRule(eq(dto), any()))
         .thenReturn(CompletableFuture.completedFuture(mappingRecord));
 
     // when
@@ -83,7 +81,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
         .isCreated();
 
     // then
-    verify(mappingRuleServices, times(1)).createMappingRule(dto);
+    verify(mappingRuleServices, times(1)).createMappingRule(eq(dto), any());
   }
 
   @Test
@@ -312,7 +310,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
 
     final var mappingRecord = new MappingRuleRecord().setMappingRuleId(mappingId);
 
-    when(mappingRuleServices.deleteMappingRule(mappingId))
+    when(mappingRuleServices.deleteMappingRule(eq(mappingId), any()))
         .thenReturn(CompletableFuture.completedFuture(mappingRecord));
 
     // when
@@ -325,7 +323,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
         .isNoContent();
 
     // then
-    verify(mappingRuleServices, times(1)).deleteMappingRule(mappingId);
+    verify(mappingRuleServices, times(1)).deleteMappingRule(eq(mappingId), any());
   }
 
   @ParameterizedTest
@@ -348,7 +346,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
             .setMappingRuleId(id)
             .setName(dto.name());
 
-    when(mappingRuleServices.updateMappingRule(dto))
+    when(mappingRuleServices.updateMappingRule(eq(dto), any()))
         .thenReturn(CompletableFuture.completedFuture(mappingRecord));
 
     // when
@@ -363,7 +361,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
         .isOk();
 
     // then
-    verify(mappingRuleServices, times(1)).updateMappingRule(dto);
+    verify(mappingRuleServices, times(1)).updateMappingRule(eq(dto), any());
   }
 
   @Test

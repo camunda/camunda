@@ -25,6 +25,7 @@ type Props = {
   rightPanel?: React.ReactNode;
   type: 'process' | 'decision';
   hasLoadingOverlay?: boolean;
+  className?: string;
 };
 const InstanceDetail: React.FC<Props> = observer(
   ({
@@ -36,6 +37,7 @@ const InstanceDetail: React.FC<Props> = observer(
     bottomPanel,
     rightPanel,
     hasLoadingOverlay,
+    className,
   }) => {
     const [clientHeight, setClientHeight] = useState(0);
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -48,6 +50,7 @@ const InstanceDetail: React.FC<Props> = observer(
 
     return (
       <Container
+        className={className}
         $hasBreadcrumb={breadcrumb !== undefined}
         $hasFooter={footer !== undefined}
       >

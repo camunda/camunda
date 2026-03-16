@@ -115,6 +115,13 @@ public class CamundaClientProperties {
   /** The maximum number of concurrent HTTP connections the client can open. */
   private int maxHttpConnections = DEFAULT_MAX_HTTP_CONNECTIONS;
 
+  /**
+   * If <code>true</code>, enables client-side load balancing by using DNS-based resolution and
+   * distributing requests across all resolved addresses. Useful for setups without an external load
+   * balancer, such as Docker Compose, Testcontainers, or Kubernetes headless services.
+   */
+  private boolean useClientSideLoadBalancing = DEFAULT_CLIENT_SIDE_LOAD_BALANCING;
+
   public CamundaClientCloudProperties getCloud() {
     return cloud;
   }
@@ -277,6 +284,14 @@ public class CamundaClientProperties {
     this.maxHttpConnections = maxHttpConnections;
   }
 
+  public boolean isUseClientSideLoadBalancing() {
+    return useClientSideLoadBalancing;
+  }
+
+  public void setUseClientSideLoadBalancing(final boolean useClientSideLoadBalancing) {
+    this.useClientSideLoadBalancing = useClientSideLoadBalancing;
+  }
+
   @Override
   public String toString() {
     return "CamundaClientProperties{"
@@ -310,6 +325,8 @@ public class CamundaClientProperties {
         + preferRestOverGrpc
         + ", maxHttpConnections="
         + maxHttpConnections
+        + ", useClientSideLoadBalancing="
+        + useClientSideLoadBalancing
         + ", grpcAddress="
         + grpcAddress
         + ", restAddress="

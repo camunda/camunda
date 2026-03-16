@@ -74,7 +74,7 @@
     <quartz.version>2.5.2</quartz.version>
 
     <!-- testing config -->
-    <mockito.version>5.22.0</mockito.version>
+    <mockito.version>5.23.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
     <mockserver.version>5.15.0</mockserver.version>
     <assertj.version>3.27.7</assertj.version>
@@ -301,7 +301,7 @@
             <skipTests>${skip.unit.tests}</skipTests>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <useModulePath>false</useModulePath>
-            <argLine>--add-opens java.base/java.lang=ALL-UNNAMED
+            <argLine>${jvm.module.opens} --add-opens java.base/java.lang=ALL-UNNAMED
               --add-opens java.base/java.util=ALL-UNNAMED</argLine>
             <systemPropertyVariables>
               <database.type>${database.type}</database.type>
@@ -330,7 +330,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.6.1</version>
+          <version>3.6.2</version>
           <configuration>
             <createDependencyReducedPom>false</createDependencyReducedPom>
           </configuration>

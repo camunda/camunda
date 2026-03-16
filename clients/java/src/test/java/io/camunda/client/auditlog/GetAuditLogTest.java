@@ -26,6 +26,7 @@ import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import org.instancio.Instancio;
+import org.instancio.Select;
 import org.junit.jupiter.api.Test;
 
 public class GetAuditLogTest extends ClientRestTest {
@@ -36,7 +37,11 @@ public class GetAuditLogTest extends ClientRestTest {
   void shouldGetAuditLog() {
     // given
     gatewayService.onGetAuditLogRequest(
-        AUDIT_LOG_KEY, Instancio.create(AuditLogResult.class).auditLogKey(AUDIT_LOG_KEY));
+        AUDIT_LOG_KEY,
+        Instancio.of(AuditLogResult.class)
+            .set(Select.field(AuditLogResult.class, "timestamp"), "2024-01-15T10:30:00+00:00")
+            .create()
+            .auditLogKey(AUDIT_LOG_KEY));
     // when
     client.newAuditLogGetRequest(AUDIT_LOG_KEY).send().join();
 

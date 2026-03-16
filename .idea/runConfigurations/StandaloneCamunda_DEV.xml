@@ -13,6 +13,7 @@
       <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME" value="io.camunda.exporter.CamundaExporter" />
       <env name="CAMUNDA_MCP_ENABLED" value="true" />
     </envs>
+    <option name="VM_PARAMETERS" value="--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED" />
     <module name="camunda-zeebe" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="io.camunda.application.StandaloneCamunda" />
     <extension name="net.ashald.envfile">

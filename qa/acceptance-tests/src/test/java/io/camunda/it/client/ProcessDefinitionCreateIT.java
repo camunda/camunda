@@ -8,10 +8,12 @@
 package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -22,6 +24,26 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 public class ProcessDefinitionCreateIT {
 
   private static CamundaClient camundaClient;
+
+  @Test
+  void shouldDeployProcessDefinitionWithMultibyteUTF8() {
+    final String name = "カムンダ";
+    final var processDefinition =
+        Bpmn.createExecutableProcess("processId").name(name).startEvent().endEvent().done();
+
+    camundaClient
+        .newDeployResourceCommand()
+        .addProcessModel(processDefinition, "process.bpmn")
+        .execute();
+
+    waitForProcessesToBeDeployed(camundaClient, 1);
+
+    final var result =
+        camundaClient.newProcessDefinitionSearchRequest().filter(f -> f.name(name)).execute();
+    assertThat(result).isNotNull();
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items()).extracting(ProcessDefinition::getName).containsExactly(name);
+  }
 
   @Test
   @EnabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")

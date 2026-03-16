@@ -444,7 +444,9 @@ jobs:
         id: build-zeebe-docker
         with:
           repository: camunda/zeebe
-          version: ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
+          version: |
+            ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
+            ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.snapshot_tag }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}

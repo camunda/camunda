@@ -62,12 +62,12 @@ public class AdHocSubProcessActivityServicesTest {
   @Captor private ArgumentCaptor<BrokerActivateAdHocSubProcessActivityRequest> requestCaptor;
 
   private AdHocSubProcessActivityServices services;
+  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     final Map<String, Object> tokenClaims = Map.of("claim", "value");
-    final CamundaAuthentication authentication =
-        CamundaAuthentication.of(b -> b.claims(tokenClaims));
+    authentication = CamundaAuthentication.of(b -> b.claims(tokenClaims));
     when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     when(brokerRequestAuthorizationConverter.convert(eq(authentication)))
         .thenReturn(Map.of(USER_TOKEN_CLAIMS, tokenClaims));
@@ -75,7 +75,6 @@ public class AdHocSubProcessActivityServicesTest {
         new AdHocSubProcessActivityServices(
             brokerClient,
             securityContextProvider,
-            authentication,
             executorProvider,
             brokerRequestAuthorizationConverter);
   }
@@ -91,7 +90,7 @@ public class AdHocSubProcessActivityServicesTest {
 
     // when
     final CompletableFuture<AdHocSubProcessInstructionRecord> result =
-        services.activateActivities(DEFAULT_ACTIVATION_REQUEST);
+        services.activateActivities(DEFAULT_ACTIVATION_REQUEST, authentication);
 
     // then
     assertThat(result).isNotCompleted();
@@ -120,35 +119,12 @@ public class AdHocSubProcessActivityServicesTest {
 
     // when
     final AdHocSubProcessInstructionRecord result =
-        services.activateActivities(DEFAULT_ACTIVATION_REQUEST).join();
+        services.activateActivities(DEFAULT_ACTIVATION_REQUEST, authentication).join();
 
     // then
     assertThat(result).isEqualTo(expectedResponse);
     assertThat(requestCaptor.getValue().getAuthorization().getClaims())
         .containsExactly(entry(USER_TOKEN_CLAIMS, Map.of("claim", "value")));
-  }
-
-  @Test
-  public void shouldReturnNewServiceInstanceWithUpdatedAuthentication() {
-    // given
-    final CamundaAuthentication newAuthentication =
-        CamundaAuthentication.of(b -> b.claims(Map.of("newClaim", "newValue")));
-    when(brokerRequestAuthorizationConverter.convert(eq(newAuthentication)))
-        .thenReturn(Map.of(USER_TOKEN_CLAIMS, Map.of("newClaim", "newValue")));
-
-    // when
-    when(brokerClient.sendRequest(requestCaptor.capture()))
-        .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));
-
-    final AdHocSubProcessActivityServices newServices =
-        services.withAuthentication(newAuthentication);
-
-    newServices.activateActivities(DEFAULT_ACTIVATION_REQUEST).join();
-
-    // then
-    assertThat(newServices).isNotSameAs(services);
-    assertThat(requestCaptor.getValue().getAuthorization().getClaims())
-        .containsExactly(entry(USER_TOKEN_CLAIMS, Map.of("newClaim", "newValue")));
   }
 
   @ParameterizedTest
@@ -167,7 +143,7 @@ public class AdHocSubProcessActivityServicesTest {
         .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));
 
     // when
-    services.activateActivities(request).join();
+    services.activateActivities(request, authentication).join();
 
     // then
     final var instruction = requestCaptor.getValue().getRequestWriter();
@@ -199,7 +175,7 @@ public class AdHocSubProcessActivityServicesTest {
         .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));
 
     // when
-    services.activateActivities(request).join();
+    services.activateActivities(request, authentication).join();
 
     // then
     final var instruction = requestCaptor.getValue().getRequestWriter();

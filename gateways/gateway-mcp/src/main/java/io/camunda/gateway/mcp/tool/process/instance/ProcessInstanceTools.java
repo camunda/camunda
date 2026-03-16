@@ -8,6 +8,7 @@
 package io.camunda.gateway.mcp.tool.process.instance;
 
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_INSTANCE_KEY_NOT_NULL_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_INSTANCE_KEY_POSITIVE_MESSAGE;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
@@ -22,9 +23,9 @@ import io.camunda.gateway.protocol.model.simple.ProcessInstanceSearchQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
-import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
@@ -61,9 +62,8 @@ public class ProcessInstanceTools {
 
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(
-              processInstanceServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .search(processInstanceQuery.get())));
+              processInstanceServices.search(
+                  processInstanceQuery.get(), authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -76,14 +76,14 @@ public class ProcessInstanceTools {
       @McpToolParam(
               description =
                   "The assigned key of the process instance, which acts as a unique identifier for this process instance.")
+          @NotNull(message = PROCESS_INSTANCE_KEY_NOT_NULL_MESSAGE)
           @Positive(message = PROCESS_INSTANCE_KEY_POSITIVE_MESSAGE)
           final Long processInstanceKey) {
     try {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toProcessInstance(
-              processInstanceServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .getByKey(processInstanceKey)));
+              processInstanceServices.getByKey(
+                  processInstanceKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
@@ -111,19 +111,18 @@ public class ProcessInstanceTools {
         return CallToolResultMapper.mapProblemToResult(request.getLeft());
       }
 
-      final var authenticatedServices =
-          processInstanceServices.withAuthentication(
-              authenticationProvider.getCamundaAuthentication());
-
-      final ProcessInstanceCreateRequest processInstanceCreateRequest = request.get();
+      final var processInstanceCreateRequest = request.get();
+      final var camundaAuthentication = authenticationProvider.getCamundaAuthentication();
       if (Boolean.TRUE.equals(processInstanceCreateRequest.awaitCompletion())) {
         return CallToolResultMapper.from(
-            authenticatedServices.createProcessInstanceWithResult(processInstanceCreateRequest),
+            processInstanceServices.createProcessInstanceWithResult(
+                processInstanceCreateRequest, camundaAuthentication),
             ResponseMapper::toCreateProcessInstanceWithResultResponse);
       }
 
       return CallToolResultMapper.from(
-          authenticatedServices.createProcessInstance(processInstanceCreateRequest),
+          processInstanceServices.createProcessInstance(
+              processInstanceCreateRequest, camundaAuthentication),
           ResponseMapper::toCreateProcessInstanceResponse);
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);

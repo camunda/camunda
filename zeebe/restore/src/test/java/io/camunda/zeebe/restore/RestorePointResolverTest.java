@@ -154,11 +154,10 @@ final class RestorePointResolverTest {
     // when – from=t2 means range start timestamp must be <= t2 (not after t2)
     final var result = RestorePointResolver.resolve(List.of(meta), t2, null, Map.of());
 
-    // then – only checkpoints from range [1,2] are usable
-    // range [1,2] start=cp1 at t1, t1.isAfter(t2)=false -> qualifies
-    // range [3,4] start=cp3 at t3, t3.isAfter(t2)=true -> filtered out
+    // then – range [3,4] is filtered out (start=t3 > from=t2), and within range [1,2],
+    // cp1 is trimmed because its timestamp (t1) is before 'from' (t2)
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1, cp2);
+    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp2);
   }
 
   @Test
@@ -402,7 +401,7 @@ final class RestorePointResolverTest {
 
   @Test
   void shouldUseFromAndToTogether() {
-    // given – from filters the range, to picks the checkpoint within that range
+    // given – single range with 4 checkpoints; from trims early ones, to limits the end
     final var t1 = Instant.parse("2025-01-01T00:00:00Z");
     final var t2 = Instant.parse("2025-02-01T00:00:00Z");
     final var t3 = Instant.parse("2025-03-01T00:00:00Z");
@@ -413,19 +412,14 @@ final class RestorePointResolverTest {
     final var cp3 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201));
     final var cp4 = entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(301));
 
-    // from=t2: range [1,2] start=cp1 at t1, t1.isAfter(t2)=false -> qualifies
-    //          range [3,4] start=cp3 at t3, t3.isAfter(t2)=true -> filtered out
-    // to=t1 picks checkpoint closest to t1 within range [1,2] -> checkpoint 1
-    final var meta =
-        metadata(
-            1, List.of(cp1, cp2, cp3, cp4), List.of(new RangeEntry(1, 2), new RangeEntry(3, 4)));
+    final var meta = metadata(1, List.of(cp1, cp2, cp3, cp4), List.of(new RangeEntry(1, 4)));
 
-    // when
-    final var result = RestorePointResolver.resolve(List.of(meta), t2, t1, Map.of());
+    // when – from=t2 trims cp1 (t1 < t2), to=t3 picks cp3 as common checkpoint
+    final var result = RestorePointResolver.resolve(List.of(meta), t2, t3, Map.of());
 
-    // then
-    assertThat(result.globalCheckpointId()).isOne();
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1);
+    // then – cp1 trimmed by from, cp4 excluded by to → only cp2 and cp3
+    assertThat(result.globalCheckpointId()).isEqualTo(3);
+    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp2, cp3);
   }
 
   @Test
@@ -546,32 +540,39 @@ final class RestorePointResolverTest {
 
   @Test
   void shouldFilterCommonCheckpointByPerPartitionExportedPosition() {
-    // given – two partitions share checkpoints 1 and 2; partition 2's exported position
-    // requires checkpoint position >= 200, so checkpoint 1 (position 110 on P2) is skipped
+    // given – two partitions share checkpoints 2 and 3; partition 2's exported position
+    // requires checkpoint position >= 200, so checkpoint 2 (position 110 on P2) is skipped
     final var t1 = Instant.parse("2025-01-01T00:00:00Z");
     final var t2 = Instant.parse("2025-01-02T00:00:00Z");
+    final var t3 = Instant.parse("2025-01-03T00:00:00Z");
 
     final var metadataByPartition =
         List.of(
             metadata(
                 1,
                 List.of(
-                    entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50)),
-                    entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101))),
-                List.of(new RangeEntry(1, 2))),
+                    entry(2, 100, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50)),
+                    entry(3, 200, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101))),
+                List.of(new RangeEntry(2, 3))),
             metadata(
                 2,
                 List.of(
-                    entry(1, 110, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(60)),
-                    entry(2, 210, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(111))),
-                List.of(new RangeEntry(1, 2))));
+                    entry(1, 10, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(109)),
+                    entry(2, 110, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(60)),
+                    entry(3, 210, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(111))),
+                List.of(new RangeEntry(1, 3))));
 
     // when – P2 exportedPosition=200 means cp1 on P2 (checkpointPosition=110) < 200 -> skip cp1
     final var result =
         RestorePointResolver.resolve(metadataByPartition, null, null, Map.of(2, 200L));
 
-    // then – checkpoint 2 is selected (cp2 on P2 has checkpointPosition=210 >= 200)
-    assertThat(result.globalCheckpointId()).isEqualTo(2);
+    // then – checkpoint 3 is selected (cp2 on P2 has checkpointPosition=210 >= 200)
+    assertThat(result.globalCheckpointId()).isEqualTo(3);
+    // P1 has no exported position → all checkpoints kept
+    assertThat(result.backupsByPartitionId().get(1)).hasSize(2);
+    // P2 cp2 (pos=110) is kept as the safe starting snapshot (last before exportedPosition=200) but
+    // cp1 is discarded based on the exporter position.
+    assertThat(result.backupsByPartitionId().get(2)).hasSize(2);
   }
 
   @Test
@@ -819,6 +820,137 @@ final class RestorePointResolverTest {
             () -> RestorePointResolver.resolve(metadataByPartition, null, null, Map.of()))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Unexpected data gaps");
+  }
+
+  @Test
+  void shouldTrimCheckpointsBeforeExportedPosition() {
+    // given – 4 checkpoints in one range, exportedPosition between cp2 and cp3
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var t2 = Instant.parse("2025-01-02T00:00:00Z");
+    final var t3 = Instant.parse("2025-01-03T00:00:00Z");
+    final var t4 = Instant.parse("2025-01-04T00:00:00Z");
+
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var cp3 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201));
+    final var cp4 = entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(301));
+
+    final var meta = metadata(1, List.of(cp1, cp2, cp3, cp4), List.of(new RangeEntry(1, 4)));
+
+    // when – exportedPosition=250 is between cp2(pos=200) and cp3(pos=300)
+    final var result = RestorePointResolver.resolve(List.of(meta), null, null, Map.of(1, 250L));
+
+    // then – cp1 is trimmed, but cp2 is kept as the starting snapshot because its exporter
+    // position is guaranteed to be <= the RDBMS exported position
+    assertThat(result.globalCheckpointId()).isEqualTo(4);
+    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp2, cp3, cp4);
+  }
+
+  @Test
+  void shouldTrimCheckpointsBeforeFromTimestamp() {
+    // given – 4 checkpoints in one range, from between t2 and t3
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var t2 = Instant.parse("2025-02-01T00:00:00Z");
+    final var t3 = Instant.parse("2025-03-01T00:00:00Z");
+    final var t4 = Instant.parse("2025-04-01T00:00:00Z");
+
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var cp3 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201));
+    final var cp4 = entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(301));
+
+    final var meta = metadata(1, List.of(cp1, cp2, cp3, cp4), List.of(new RangeEntry(1, 4)));
+
+    // when – from=Feb 15 means cp1(Jan 1) and cp2(Feb 1) are before the requested start
+    final var from = Instant.parse("2025-02-15T00:00:00Z");
+    final var result = RestorePointResolver.resolve(List.of(meta), from, null, Map.of());
+
+    // then – cp1 and cp2 trimmed, only cp3 and cp4 are restored
+    assertThat(result.globalCheckpointId()).isEqualTo(4);
+    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp3, cp4);
+  }
+
+  @Test
+  void shouldTrimDifferentlyPerPartitionBasedOnExportedPosition() {
+    // given – two partitions with 4 checkpoints each and different exported positions
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var t2 = Instant.parse("2025-01-02T00:00:00Z");
+    final var t3 = Instant.parse("2025-01-03T00:00:00Z");
+    final var t4 = Instant.parse("2025-01-04T00:00:00Z");
+
+    final var cp1p1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var cp2p1 = entry(2, 200, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var cp3p1 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(201));
+    final var cp4p1 = entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(301));
+
+    final var cp1p2 = entry(1, 110, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(60));
+    final var cp2p2 = entry(2, 210, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(111));
+    final var cp3p2 = entry(3, 310, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(211));
+    final var cp4p2 = entry(4, 410, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(311));
+
+    final var metadataByPartition =
+        List.of(
+            metadata(1, List.of(cp1p1, cp2p1, cp3p1, cp4p1), List.of(new RangeEntry(1, 4))),
+            metadata(2, List.of(cp1p2, cp2p2, cp3p2, cp4p2), List.of(new RangeEntry(1, 4))));
+
+    // when – P1 exportedPosition=250 (between cp2 and cp3), P2 exportedPosition=350 (between cp3
+    // and cp4)
+    final var result =
+        RestorePointResolver.resolve(metadataByPartition, null, null, Map.of(1, 250L, 2, 350L));
+
+    // then – P1 starts from cp2 (last before 250), P2 starts from cp3 (last before 350)
+    assertThat(result.globalCheckpointId()).isEqualTo(4);
+    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp2p1, cp3p1, cp4p1);
+    assertThat(result.backupsByPartitionId().get(2)).containsExactly(cp3p2, cp4p2);
+  }
+
+  @Test
+  void shouldNotTrimSafeBackupWhenMarkerIsInterspersedBeforeExportedPosition() {
+    // given – a MARKER sits between the last safe backup and the first backup >= exportedPosition
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var t2 = Instant.parse("2025-01-02T00:00:00Z");
+    final var t3 = Instant.parse("2025-01-03T00:00:00Z");
+    final var t4 = Instant.parse("2025-01-04T00:00:00Z");
+
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var marker = entry(2, 200, t2, CheckpointType.MARKER, OptionalLong.empty());
+    final var cp3 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var cp4 = entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(301));
+
+    final var meta = metadata(1, List.of(cp1, marker, cp3, cp4), List.of(new RangeEntry(1, 4)));
+
+    // when – exportedPosition=250 is between marker(pos=200) and cp3(pos=300);
+    // cp1(pos=100) is the last backup before exportedPosition and must be kept
+    final var result = RestorePointResolver.resolve(List.of(meta), null, null, Map.of(1, 250L));
+
+    // then – cp1 must not be trimmed; it is the safe starting snapshot
+    assertThat(result.globalCheckpointId()).isEqualTo(4);
+    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1, cp3, cp4);
+  }
+
+  @Test
+  void shouldNotTrimSafeBackupWhenMarkerIsInterspersedBeforeFromTimestamp() {
+    // given – a MARKER sits between the last backup before 'from' and the first backup >= 'from'
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var t2 = Instant.parse("2025-01-15T00:00:00Z");
+    final var t3 = Instant.parse("2025-02-01T00:00:00Z");
+    final var t4 = Instant.parse("2025-03-01T00:00:00Z");
+
+    final var cp1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(50));
+    final var marker = entry(2, 200, t2, CheckpointType.MARKER, OptionalLong.empty());
+    final var cp3 = entry(3, 300, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var cp4 = entry(4, 400, t4, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(301));
+
+    final var meta = metadata(1, List.of(cp1, marker, cp3, cp4), List.of(new RangeEntry(1, 4)));
+
+    // when – from=Jan 20 is between marker(t2=Jan 15) and cp3(t3=Feb 1);
+    // the first backup-type checkpoint at or after 'from' is cp3
+    final var from = Instant.parse("2025-01-20T00:00:00Z");
+    final var result = RestorePointResolver.resolve(List.of(meta), from, null, Map.of());
+
+    // then – cp1 is trimmed (before 'from'), marker is skipped, restore starts from cp3
+    assertThat(result.globalCheckpointId()).isEqualTo(4);
+    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp3, cp4);
   }
 
   private static CheckpointEntry entry(

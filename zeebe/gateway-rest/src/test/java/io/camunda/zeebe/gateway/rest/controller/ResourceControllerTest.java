@@ -9,10 +9,10 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
@@ -67,8 +67,6 @@ public class ResourceControllerTest extends RestControllerTest {
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(resourceServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(resourceServices);
   }
 
   @Test
@@ -88,7 +86,7 @@ public class ResourceControllerTest extends RestControllerTest {
         .setVersion(1)
         .setKey(123456L)
         .setChecksum(BufferUtil.wrapString("checksum"));
-    when(resourceServices.deployResources(any()))
+    when(resourceServices.deployResources(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(mockedResponse));
 
     final var multipartBodyBuilder = new MultipartBodyBuilder();
@@ -106,7 +104,7 @@ public class ResourceControllerTest extends RestControllerTest {
             .expectStatus()
             .isOk();
 
-    verify(resourceServices).deployResources(deployRequestCaptor.capture());
+    verify(resourceServices).deployResources(deployRequestCaptor.capture(), any());
     final var capturedRequest = deployRequestCaptor.getValue();
     assertThat(capturedRequest.resources()).isNotEmpty();
     assertThat(capturedRequest.resources()).size().isEqualTo(1);
@@ -156,7 +154,7 @@ public class ResourceControllerTest extends RestControllerTest {
         .setVersion(1)
         .setKey(123456L)
         .setChecksum(BufferUtil.wrapString("checksum"));
-    when(resourceServices.deployResources(any()))
+    when(resourceServices.deployResources(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(mockedResponse));
 
     final var multipartBodyBuilder = new MultipartBodyBuilder();
@@ -174,7 +172,7 @@ public class ResourceControllerTest extends RestControllerTest {
             .expectStatus()
             .isOk();
 
-    verify(resourceServices).deployResources(deployRequestCaptor.capture());
+    verify(resourceServices).deployResources(deployRequestCaptor.capture(), any());
     final var capturedRequest = deployRequestCaptor.getValue();
     assertThat(capturedRequest.resources()).isNotEmpty();
     assertThat(capturedRequest.resources()).size().isEqualTo(1);
@@ -227,7 +225,7 @@ public class ResourceControllerTest extends RestControllerTest {
         .setKey(123456L)
         .setTenantId("tenantId")
         .setChecksum(BufferUtil.wrapString("checksum"));
-    when(resourceServices.deployResources(any()))
+    when(resourceServices.deployResources(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(mockedResponse));
 
     final var multipartBodyBuilder = new MultipartBodyBuilder();
@@ -246,7 +244,7 @@ public class ResourceControllerTest extends RestControllerTest {
             .expectStatus()
             .isOk();
 
-    verify(resourceServices).deployResources(deployRequestCaptor.capture());
+    verify(resourceServices).deployResources(deployRequestCaptor.capture(), any());
     final var capturedRequest = deployRequestCaptor.getValue();
     assertThat(capturedRequest.resources()).isNotEmpty();
     assertThat(capturedRequest.resources()).size().isEqualTo(1);
@@ -317,7 +315,7 @@ public class ResourceControllerTest extends RestControllerTest {
         .setFormId("formId")
         .setFormKey(123456L)
         .setChecksum(BufferUtil.wrapString("checksum"));
-    when(resourceServices.deployResources(any()))
+    when(resourceServices.deployResources(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(mockedResponse));
 
     final var multipartBodyBuilder = new MultipartBodyBuilder();
@@ -343,7 +341,7 @@ public class ResourceControllerTest extends RestControllerTest {
             .expectStatus()
             .isOk();
 
-    verify(resourceServices).deployResources(deployRequestCaptor.capture());
+    verify(resourceServices).deployResources(deployRequestCaptor.capture(), any());
     final var capturedRequest = deployRequestCaptor.getValue();
     assertThat(capturedRequest.resources()).isNotEmpty();
     assertThat(capturedRequest.resources()).size().isEqualTo(3);
@@ -421,7 +419,7 @@ public class ResourceControllerTest extends RestControllerTest {
   @Test
   void shouldGetResource() {
     // given
-    when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
+    when(resourceServices.fetchResource(eq(new ResourceFetchRequest(1)), any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new ResourceRecord()
@@ -457,7 +455,7 @@ public class ResourceControllerTest extends RestControllerTest {
   @Test
   void getResourceShouldYieldNotFoundWhenResourceNotFound() {
     // given
-    when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
+    when(resourceServices.fetchResource(eq(new ResourceFetchRequest(1)), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -492,7 +490,7 @@ public class ResourceControllerTest extends RestControllerTest {
   @Test
   void getResourceShouldYieldInternalServerErrorForProcessingErrorRejection() {
     // given
-    when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
+    when(resourceServices.fetchResource(eq(new ResourceFetchRequest(1)), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -530,7 +528,7 @@ public class ResourceControllerTest extends RestControllerTest {
   @Test
   void getResourceShouldYieldInternalServerErrorForBrokerError() {
     // given
-    when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
+    when(resourceServices.fetchResource(eq(new ResourceFetchRequest(1)), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerError(
@@ -572,7 +570,7 @@ public class ResourceControllerTest extends RestControllerTest {
           "script": "foo"
         }
         """;
-    when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
+    when(resourceServices.fetchResource(eq(new ResourceFetchRequest(1)), any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new ResourceRecord().setResource(BufferUtil.wrapString(content))));
@@ -591,7 +589,7 @@ public class ResourceControllerTest extends RestControllerTest {
   @Test
   void getResourceContentShouldYieldNotFoundWhenResourceNotFound() {
     // given
-    when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
+    when(resourceServices.fetchResource(eq(new ResourceFetchRequest(1)), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -626,7 +624,7 @@ public class ResourceControllerTest extends RestControllerTest {
   @Test
   void getResourceContentShouldYieldInternalServerErrorForProcessingErrorRejection() {
     // given
-    when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
+    when(resourceServices.fetchResource(eq(new ResourceFetchRequest(1)), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -664,7 +662,7 @@ public class ResourceControllerTest extends RestControllerTest {
   @Test
   void getResourceContentShouldYieldInternalServerErrorForBrokerError() {
     // given
-    when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
+    when(resourceServices.fetchResource(eq(new ResourceFetchRequest(1)), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerError(
@@ -702,7 +700,7 @@ public class ResourceControllerTest extends RestControllerTest {
     void shouldDeleteResource() {
       // given
       final var resourceKey = 1L;
-      when(resourceServices.deleteResource(any(ResourceDeletionRequest.class)))
+      when(resourceServices.deleteResource(any(ResourceDeletionRequest.class), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new ResourceDeletionRecord().setResourceKey(resourceKey)));
@@ -733,7 +731,7 @@ public class ResourceControllerTest extends RestControllerTest {
               """,
               JsonCompareMode.STRICT);
 
-      Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture());
+      Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture(), any());
       final var capturedRequest = deleteRequestCaptor.getValue();
       assertThat(capturedRequest.resourceKey()).isEqualTo(resourceKey);
       assertThat(capturedRequest.operationReference()).isEqualTo(123L);
@@ -744,7 +742,7 @@ public class ResourceControllerTest extends RestControllerTest {
     void shouldDeleteResourceWithNoBody() {
       // given
       final var resourceKey = 1L;
-      when(resourceServices.deleteResource(any(ResourceDeletionRequest.class)))
+      when(resourceServices.deleteResource(any(ResourceDeletionRequest.class), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new ResourceDeletionRecord().setResourceKey(resourceKey)));
@@ -768,7 +766,7 @@ public class ResourceControllerTest extends RestControllerTest {
               """,
               JsonCompareMode.STRICT);
 
-      Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture());
+      Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture(), any());
       final var capturedRequest = deleteRequestCaptor.getValue();
       assertThat(capturedRequest.resourceKey()).isEqualTo(resourceKey);
       assertThat(capturedRequest.operationReference()).isNull();
@@ -779,7 +777,7 @@ public class ResourceControllerTest extends RestControllerTest {
     void shouldDeleteResourceWithEmptyRequestBody() {
       // given
       final var resourceKey = 1L;
-      when(resourceServices.deleteResource(any(ResourceDeletionRequest.class)))
+      when(resourceServices.deleteResource(any(ResourceDeletionRequest.class), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new ResourceDeletionRecord().setResourceKey(resourceKey)));
@@ -808,7 +806,7 @@ public class ResourceControllerTest extends RestControllerTest {
               """,
               JsonCompareMode.STRICT);
 
-      Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture());
+      Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture(), any());
       final var capturedRequest = deleteRequestCaptor.getValue();
       assertThat(capturedRequest.resourceKey()).isEqualTo(resourceKey);
       assertThat(capturedRequest.operationReference()).isNull();
@@ -826,7 +824,7 @@ public class ResourceControllerTest extends RestControllerTest {
               .setBatchOperationKey(999L)
               .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
 
-      when(resourceServices.deleteResource(any(ResourceDeletionRequest.class)))
+      when(resourceServices.deleteResource(any(ResourceDeletionRequest.class), any()))
           .thenReturn(CompletableFuture.completedFuture(deletionRecord));
 
       final var request =
@@ -858,7 +856,7 @@ public class ResourceControllerTest extends RestControllerTest {
               """,
               JsonCompareMode.STRICT);
 
-      Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture());
+      Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture(), any());
       final var capturedRequest = deleteRequestCaptor.getValue();
       assertThat(capturedRequest.resourceKey()).isEqualTo(resourceKey);
       assertThat(capturedRequest.deleteHistory()).isTrue();
@@ -875,7 +873,7 @@ public class ResourceControllerTest extends RestControllerTest {
               .setBatchOperationKey(555L)
               .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
 
-      when(resourceServices.deleteResource(any(ResourceDeletionRequest.class)))
+      when(resourceServices.deleteResource(any(ResourceDeletionRequest.class), any()))
           .thenReturn(CompletableFuture.completedFuture(deletionRecord));
 
       final var request =
@@ -908,7 +906,7 @@ public class ResourceControllerTest extends RestControllerTest {
               """,
               JsonCompareMode.STRICT);
 
-      Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture());
+      Mockito.verify(resourceServices).deleteResource(deleteRequestCaptor.capture(), any());
       final var capturedRequest = deleteRequestCaptor.getValue();
       assertThat(capturedRequest.resourceKey()).isEqualTo(resourceKey);
       assertThat(capturedRequest.operationReference()).isEqualTo(123L);

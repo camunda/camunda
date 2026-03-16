@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
@@ -63,6 +64,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
   private final MeterRegistry meterRegistry;
+  private final int maxVariableNameLength;
 
   private Gateway gateway;
 
@@ -78,7 +80,8 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       @Autowired(required = false) final JwtDecoder jwtDecoder,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final GatewayRestConfiguration gatewayRestConfiguration) {
     this.configuration = configuration;
     this.securityConfiguration = securityConfiguration;
     this.springGatewayBridge = springGatewayBridge;
@@ -90,6 +93,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
     this.meterRegistry = meterRegistry;
+    this.maxVariableNameLength = gatewayRestConfiguration.getMaxNameFieldLength();
   }
 
   @Bean(destroyMethod = "close")
@@ -117,7 +121,8 @@ public class GatewayModuleConfiguration implements CloseableSilently {
             userServices,
             passwordEncoder,
             jwtDecoder,
-            meterRegistry);
+            meterRegistry,
+            maxVariableNameLength);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
     springGatewayBridge.registerClusterStateSupplier(
         () ->

@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static java.util.Collections.emptyList;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,7 +24,6 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.BatchOperationSort;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -52,8 +52,6 @@ class BatchOperationControllerTest extends RestControllerTest {
   void setUpServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(batchOperationServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(batchOperationServices);
   }
 
   @Test
@@ -61,7 +59,8 @@ class BatchOperationControllerTest extends RestControllerTest {
     final var batchOperationKey = "1";
     final var batchOperationEntity = getBatchOperationEntity(batchOperationKey);
 
-    when(batchOperationServices.getById(batchOperationKey)).thenReturn(batchOperationEntity);
+    when(batchOperationServices.getById(eq(batchOperationKey), any()))
+        .thenReturn(batchOperationEntity);
 
     webClient
         .get()
@@ -96,7 +95,8 @@ class BatchOperationControllerTest extends RestControllerTest {
         getFailedBatchOperationEntity(
             batchOperationKey, BatchOperationState.PARTIALLY_COMPLETED, 10, 0, 10);
 
-    when(batchOperationServices.getById(batchOperationKey)).thenReturn(batchOperationEntity);
+    when(batchOperationServices.getById(eq(batchOperationKey), any()))
+        .thenReturn(batchOperationEntity);
 
     webClient
         .get()
@@ -141,7 +141,8 @@ class BatchOperationControllerTest extends RestControllerTest {
     final var batchOperationEntity =
         getFailedBatchOperationEntity(batchOperationKey, BatchOperationState.FAILED, 0, 0, 0);
 
-    when(batchOperationServices.getById(batchOperationKey)).thenReturn(batchOperationEntity);
+    when(batchOperationServices.getById(eq(batchOperationKey), any()))
+        .thenReturn(batchOperationEntity);
 
     webClient
         .get()
@@ -268,7 +269,7 @@ class BatchOperationControllerTest extends RestControllerTest {
             .formatted(filterString);
 
     // when / then
-    when(batchOperationServices.search(any(BatchOperationQuery.class)))
+    when(batchOperationServices.search(any(BatchOperationQuery.class), any()))
         .thenReturn(new SearchQueryResult<>(1, false, List.of(entity), null, null));
 
     webClient
@@ -307,13 +308,14 @@ class BatchOperationControllerTest extends RestControllerTest {
            }""",
             JsonCompareMode.STRICT);
 
-    verify(batchOperationServices).search(new BatchOperationQuery.Builder().filter(filter).build());
+    verify(batchOperationServices)
+        .search(eq(new BatchOperationQuery.Builder().filter(filter).build()), any());
   }
 
   @Test
   void shouldCancelBatchOperation() {
     final var batchOperationKey = "1";
-    when(batchOperationServices.cancel(batchOperationKey))
+    when(batchOperationServices.cancel(eq(batchOperationKey), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     webClient
@@ -328,7 +330,7 @@ class BatchOperationControllerTest extends RestControllerTest {
   @Test
   void shouldSuspendBatchOperation() {
     final var batchOperationKey = "1";
-    when(batchOperationServices.suspend(batchOperationKey))
+    when(batchOperationServices.suspend(eq(batchOperationKey), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     webClient
@@ -343,7 +345,7 @@ class BatchOperationControllerTest extends RestControllerTest {
   @Test
   void shouldResumeBatchOperation() {
     final var batchOperationKey = "1";
-    when(batchOperationServices.resume(batchOperationKey))
+    when(batchOperationServices.resume(eq(batchOperationKey), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     webClient
@@ -414,7 +416,7 @@ class BatchOperationControllerTest extends RestControllerTest {
         { "sort": [{ "field": "%s", "order": "%s" }] }"""
             .formatted(sortedByField, order);
 
-    when(batchOperationServices.search(any(BatchOperationQuery.class)))
+    when(batchOperationServices.search(any(BatchOperationQuery.class), any()))
         .thenReturn(
             new SearchQueryResult<>(
                 searchResultItems.size(), false, searchResultItems, null, null));
@@ -435,7 +437,8 @@ class BatchOperationControllerTest extends RestControllerTest {
         .isEqualTo(expectedOrder.get(1));
 
     // then
-    verify(batchOperationServices).search(new BatchOperationQuery.Builder().sort(sort).build());
+    verify(batchOperationServices)
+        .search(eq(new BatchOperationQuery.Builder().sort(sort).build()), any());
   }
 
   private static BatchOperationEntity getBatchOperationEntity(final String batchOperationKey) {

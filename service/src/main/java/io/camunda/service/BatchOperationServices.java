@@ -41,31 +41,19 @@ public final class BatchOperationServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final BatchOperationSearchClient batchOperationSearchClient,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.batchOperationSearchClient = batchOperationSearchClient;
   }
 
   @Override
-  public BatchOperationServices withAuthentication(final CamundaAuthentication authentication) {
-    return new BatchOperationServices(
-        brokerClient,
-        securityContextProvider,
-        batchOperationSearchClient,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  @Override
-  public SearchQueryResult<BatchOperationEntity> search(final BatchOperationQuery query) {
+  public SearchQueryResult<BatchOperationEntity> search(
+      final BatchOperationQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             batchOperationSearchClient
@@ -76,7 +64,7 @@ public final class BatchOperationServices
   }
 
   public SearchQueryResult<BatchOperationItemEntity> searchItems(
-      final BatchOperationItemQuery query) {
+      final BatchOperationItemQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             batchOperationSearchClient
@@ -86,7 +74,8 @@ public final class BatchOperationServices
                 .searchBatchOperationItems(query));
   }
 
-  public BatchOperationEntity getById(final String batchOperationKey) {
+  public BatchOperationEntity getById(
+      final String batchOperationKey, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             batchOperationSearchClient
@@ -98,35 +87,35 @@ public final class BatchOperationServices
   }
 
   public CompletableFuture<BatchOperationLifecycleManagementRecord> cancel(
-      final String batchOperationKey) {
+      final String batchOperationKey, final CamundaAuthentication authentication) {
     LOGGER.debug("Cancelling batch operation with key '{}'", batchOperationKey);
 
     final var brokerRequest =
         new BrokerCancelBatchOperationRequest()
             .setBatchOperationKey(getBatchOperationKey(batchOperationKey));
 
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<BatchOperationLifecycleManagementRecord> suspend(
-      final String batchOperationKey) {
+      final String batchOperationKey, final CamundaAuthentication authentication) {
     LOGGER.debug("Suspending batch operation with key '{}'", batchOperationKey);
 
     final var brokerRequest =
         new BrokerSuspendBatchOperationRequest()
             .setBatchOperationKey(getBatchOperationKey(batchOperationKey));
 
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<BatchOperationLifecycleManagementRecord> resume(
-      final String batchOperationKey) {
+      final String batchOperationKey, final CamundaAuthentication authentication) {
     LOGGER.debug("Resuming batch operation with key '{}'", batchOperationKey);
 
     final var brokerRequest =
         new BrokerResumeBatchOperationRequest()
             .setBatchOperationKey(getBatchOperationKey(batchOperationKey));
 
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 }

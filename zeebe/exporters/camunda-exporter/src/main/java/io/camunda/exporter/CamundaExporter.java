@@ -89,6 +89,9 @@ public class CamundaExporter implements Exporter {
   private SearchEngineClient searchEngineClient;
   private int partitionId;
   private Context context;
+  private long lastFlushTimestamp = 0L;
+
+  private long flushDelayMs;
 
   public CamundaExporter() {
     // the metadata will be initialized on open
@@ -110,6 +113,7 @@ public class CamundaExporter implements Exporter {
   public void configure(final Context context) {
     this.context = context;
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
+    flushDelayMs = configuration.getBulk().getDelay() * 1000L;
     partitionId = context.getPartitionId();
 
     LOG.info("Configuring exporter with {}", configuration);
@@ -135,7 +139,7 @@ public class CamundaExporter implements Exporter {
       writer = createBatchWriter();
       controller.readMetadata().ifPresent(metadata::deserialize);
       taskManager.start();
-      scheduleDelayedFlush();
+      scheduleDelayedFlush(context.clock().millis());
 
       LOG.info("Exporter opened");
     } catch (final Exception e) {
@@ -307,35 +311,40 @@ public class CamundaExporter implements Exporter {
     return builder.build();
   }
 
-  private void scheduleDelayedFlush() {
-    controller.scheduleCancellableTask(
-        Duration.ofSeconds(configuration.getBulk().getDelay()), this::flushAndReschedule);
+  private void scheduleDelayedFlush(final long now) {
+    long nextDelayMs = flushDelayMs;
+    if (lastFlushTimestamp > 0) {
+      nextDelayMs = Math.max(0, flushDelayMs - (now - lastFlushTimestamp));
+    }
+
+    controller.scheduleCancellableTask(Duration.ofMillis(nextDelayMs), this::flushAndReschedule);
   }
 
   private void flushAndReschedule() {
+    final var now = context.clock().millis();
     try {
-      flush();
-      updateLastExportedPosition(lastPosition);
+      if (now - lastFlushTimestamp >= flushDelayMs) {
+        flush();
+      }
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
     }
-    scheduleDelayedFlush();
+    scheduleDelayedFlush(now);
   }
 
   private void flush() {
-    if (writer.getBatchSize() == 0) {
-      return;
-    }
-
-    try (final var ignored = metrics.measureFlushDuration()) {
-      metrics.recordBulkSize(writer.getBatchSize());
-      final BatchRequest batchRequest = clientAdapter.createBatchRequest().withMetrics(metrics);
-      writer.flush(batchRequest);
-      metrics.recordFlushOccurrence(Instant.now());
-      metrics.stopFlushLatencyMeasurement();
-    } catch (final PersistenceException ex) {
-      metrics.recordFailedFlush();
-      throw new ExporterException(ex.getMessage(), ex);
+    if (writer.getBatchSize() > 0) {
+      try (final var ignored = metrics.measureFlushDuration()) {
+        metrics.recordBulkSize(writer.getBatchSize());
+        final BatchRequest batchRequest = clientAdapter.createBatchRequest().withMetrics(metrics);
+        writer.flush(batchRequest);
+        metrics.recordFlushOccurrence(Instant.now());
+        metrics.stopFlushLatencyMeasurement();
+        lastFlushTimestamp = context.clock().millis();
+      } catch (final PersistenceException ex) {
+        metrics.recordFailedFlush();
+        throw new ExporterException(ex.getMessage(), ex);
+      }
     }
 
     // Update the record counters only after the flush was successful. If the synchronous flush

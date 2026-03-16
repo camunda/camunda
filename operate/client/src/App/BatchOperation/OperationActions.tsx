@@ -16,7 +16,7 @@ import {useSuspendBatchOperation} from 'modules/mutations/batchOperations/useSus
 import {useResumeBatchOperation} from 'modules/mutations/batchOperations/useResumeBatchOperation';
 import {useCancelBatchOperation} from 'modules/mutations/batchOperations/useCancelBatchOperation';
 import {ActionsContainer} from './styled';
-import {handleOperationError} from 'modules/utils/notifications';
+import {handleBatchOperationError} from 'modules/utils/notifications';
 import {tracking} from 'modules/tracking';
 
 type Props = {
@@ -51,7 +51,10 @@ const OperationsActions: React.FC<Props> = ({
       });
     },
     onError: (error) => {
-      handleOperationError(error.response?.status);
+      handleBatchOperationError(
+        error.response?.status,
+        'Operation cannot be suspended',
+      );
     },
   });
   const resumeMutation = useResumeBatchOperation({
@@ -63,7 +66,10 @@ const OperationsActions: React.FC<Props> = ({
       });
     },
     onError: (error) => {
-      handleOperationError(error.response?.status);
+      handleBatchOperationError(
+        error.response?.status,
+        'Operation cannot be resumed',
+      );
     },
   });
   const cancelMutation = useCancelBatchOperation({
@@ -75,7 +81,10 @@ const OperationsActions: React.FC<Props> = ({
       });
     },
     onError: (error) => {
-      handleOperationError(error.response?.status);
+      handleBatchOperationError(
+        error.response?.status,
+        'Operation cannot be canceled',
+      );
     },
   });
 
@@ -110,7 +119,12 @@ const OperationsActions: React.FC<Props> = ({
         </Button>
       )}
       {allowedActions.includes('CANCEL') && (
-        <OverflowMenu size="md" aria-label="overflow-menu" flipped>
+        <OverflowMenu
+          size="md"
+          aria-label="overflow-menu"
+          flipped
+          align="bottom-end"
+        >
           <OverflowMenuItem
             itemText="Cancel"
             isDelete

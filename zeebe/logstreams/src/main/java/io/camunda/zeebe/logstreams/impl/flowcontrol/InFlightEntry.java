@@ -13,18 +13,23 @@ import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import net.jcip.annotations.ThreadSafe;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
+@ThreadSafe
 public final class InFlightEntry {
   final LogStreamMetrics metrics;
-  LogAppendEntryMetadata entryMetadata;
-  final AtomicReference<Listener> requestListener;
-  final AtomicReference<CloseableSilently> writeTimer;
-  final AtomicReference<CloseableSilently> commitTimer;
+  @Nullable LogAppendEntryMetadata entryMetadata;
+  final AtomicReference<@Nullable Listener> requestListener;
+  final AtomicReference<@Nullable CloseableSilently> writeTimer;
+  final AtomicReference<@Nullable CloseableSilently> commitTimer;
 
   /**
-   * The position this entry was registered at in the ring buffer. Set by {@link RingBuffer#put}
-   * before the entry reference is published into the array. Used by {@link RingBuffer#get} to
-   * verify that the entry in a slot actually belongs to the requested position (guards against
+   * The sequential ring buffer index assigned to this entry. Set by {@link RingBuffer#put} before
+   * the entry reference is published into the array. Used by {@link RingBuffer#findAndRemove} to
+   * verify that the entry in a slot belongs to the expected sequential index (guards against
    * wraparound collisions).
    *
    * <p>This field is intentionally <em>not</em> volatile. Visibility is guaranteed by the {@link
@@ -35,10 +40,20 @@ public final class InFlightEntry {
    */
   long position;
 
+  /**
+   * The highest log position of the batch this entry belongs to. Set by {@link
+   * FlowControl#registerEntry} before calling {@link RingBuffer#put}. Used by {@link
+   * RingBuffer#findAndRemove} to locate entries by log position (for {@code onProcessed}).
+   *
+   * <p>Same visibility contract as {@link #position}: written before the volatile publish in {@code
+   * put()}.
+   */
+  long highestPosition;
+
   public InFlightEntry(
       final LogStreamMetrics metrics,
       final LogAppendEntryMetadata entryMetadata,
-      final Listener requestListener) {
+      @Nullable final Listener requestListener) {
     this.metrics = metrics;
     this.entryMetadata = entryMetadata;
     this.requestListener = new AtomicReference<>(requestListener);
@@ -83,7 +98,7 @@ public final class InFlightEntry {
     commitTimer.getAndSet(null);
   }
 
-  private void closeIfPossible(final AtomicReference<CloseableSilently> closeableRef) {
+  private void closeIfPossible(final AtomicReference<@Nullable CloseableSilently> closeableRef) {
     final var closeable = closeableRef.getAndSet(null);
     if (closeable != null) {
       closeable.close();

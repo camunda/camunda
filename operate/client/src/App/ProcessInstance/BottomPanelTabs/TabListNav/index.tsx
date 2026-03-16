@@ -7,6 +7,7 @@
  */
 
 import {useLocation, useNavigate, type Path} from 'react-router-dom';
+import {Tag} from '@carbon/react';
 import {cn} from './cn';
 import {Nav, Button} from './styled';
 
@@ -20,6 +21,7 @@ type Props = {
     selected: boolean;
     to: Partial<Path>;
     visible?: boolean;
+    count?: number;
   }>;
 };
 
@@ -30,7 +32,7 @@ const TabListNav: React.FC<Props> = ({className, label, items}) => {
   return (
     <Nav className={cn(className, 'cds--tabs')}>
       <div className="cds--tab--list" aria-label={label}>
-        {items.map(({key, title, label, selected, to, visible}) => {
+        {items.map(({key, title, label, selected, to, visible, count}) => {
           const isHidden = visible === false;
           return (
             <Button
@@ -54,6 +56,11 @@ const TabListNav: React.FC<Props> = ({className, label, items}) => {
             >
               <div className="cds--tabs__nav-item-label-wrapper">
                 <span className="cds--tabs__nav-item-label">{title}</span>
+                {count !== undefined && count > 0 && (
+                  <Tag size="sm" type="high-contrast">
+                    {count}
+                  </Tag>
+                )}
               </div>
             </Button>
           );

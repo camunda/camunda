@@ -39,5 +39,5 @@ public interface EvaluateExpressionResponse {
    *
    * @return the list of warnings, or an empty list if none
    */
-  List<String> getWarnings();
+  List<EvaluationWarning> getWarnings();
 }

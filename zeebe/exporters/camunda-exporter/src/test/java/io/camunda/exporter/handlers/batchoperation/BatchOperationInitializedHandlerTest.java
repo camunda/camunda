@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers.batchoperation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -98,13 +99,14 @@ class BatchOperationInitializedHandlerTest {
   }
 
   @Test
-  void shouldUpdateEntityOnFlush() throws PersistenceException {
+  void shouldUpsertWithConditionalScriptOnFlush() throws PersistenceException {
     // given
+    final var startDate = OffsetDateTime.now();
     final var entity =
         new BatchOperationEntity()
             .setId("123")
             .setState(BatchOperationState.ACTIVE)
-            .setStartDate(OffsetDateTime.now());
+            .setStartDate(startDate);
     final var mockRequest = mock(BatchRequest.class);
 
     // when
@@ -112,11 +114,11 @@ class BatchOperationInitializedHandlerTest {
 
     // then
     verify(mockRequest, times(1))
-        .update(
-            indexName,
-            entity.getId(),
-            Map.of(
-                "state", entity.getState(),
-                "startDate", entity.getStartDate()));
+        .upsertWithScript(
+            eq(indexName),
+            eq(entity.getId()),
+            eq(entity),
+            eq(BatchOperationInitializedHandler.CONDITIONAL_UPDATE_SCRIPT),
+            eq(Map.of("state", BatchOperationState.ACTIVE.name(), "startDate", startDate)));
   }
 }

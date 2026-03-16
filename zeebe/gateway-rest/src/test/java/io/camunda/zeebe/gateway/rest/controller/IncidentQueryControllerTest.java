@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,7 +25,6 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.IncidentSort;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.exception.ErrorMapper;
@@ -34,7 +34,6 @@ import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -213,14 +212,12 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   void setupIncidentServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(incidentServices.withAuthentication(ArgumentMatchers.any(CamundaAuthentication.class)))
-        .thenReturn(incidentServices);
   }
 
   @Test
   void shouldSearchIncidentWithEmptyBody() {
     // given
-    when(incidentServices.search(any(IncidentQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    when(incidentServices.search(any(IncidentQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
     // when / then
     webClient
         .post()
@@ -233,13 +230,13 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(incidentServices).search(new IncidentQuery.Builder().build());
+    verify(incidentServices).search(eq(new IncidentQuery.Builder().build()), any());
   }
 
   @Test
   void shouldSearchIncidentWithEmptyQuery() {
     // given
-    when(incidentServices.search(any(IncidentQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    when(incidentServices.search(any(IncidentQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
     final var request = "{}";
     // when / then
     webClient
@@ -256,12 +253,12 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(incidentServices).search(new IncidentQuery.Builder().build());
+    verify(incidentServices).search(eq(new IncidentQuery.Builder().build()), any());
   }
 
   @Test
   void shouldSearchIncidentWithAllFilters() {
-    when(incidentServices.search(any(IncidentQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    when(incidentServices.search(any(IncidentQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
             {
@@ -301,28 +298,30 @@ public class IncidentQueryControllerTest extends RestControllerTest {
 
     verify(incidentServices)
         .search(
-            new IncidentQuery.Builder()
-                .filter(
-                    new IncidentFilter.Builder()
-                        .incidentKeys(5L)
-                        .processDefinitionKeys(23L)
-                        .processDefinitionIds("complexProcess")
-                        .processInstanceKeys(42L)
-                        .errorTypes(ErrorType.JOB_NO_RETRIES.name())
-                        .errorMessages("No retries left.")
-                        .flowNodeIds("elementId")
-                        .flowNodeInstanceKeys(17L)
-                        .creationTime(creationTime)
-                        .states(IncidentState.ACTIVE.name())
-                        .jobKeys(101L)
-                        .tenantIds("tenantId")
-                        .build())
-                .build());
+            eq(
+                new IncidentQuery.Builder()
+                    .filter(
+                        new IncidentFilter.Builder()
+                            .incidentKeys(5L)
+                            .processDefinitionKeys(23L)
+                            .processDefinitionIds("complexProcess")
+                            .processInstanceKeys(42L)
+                            .errorTypes(ErrorType.JOB_NO_RETRIES.name())
+                            .errorMessages("No retries left.")
+                            .flowNodeIds("elementId")
+                            .flowNodeInstanceKeys(17L)
+                            .creationTime(creationTime)
+                            .states(IncidentState.ACTIVE.name())
+                            .jobKeys(101L)
+                            .tenantIds("tenantId")
+                            .build())
+                    .build()),
+            any());
   }
 
   @Test
   void shouldSearchIncidentWithFullSorting() {
-    when(incidentServices.search(any(IncidentQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    when(incidentServices.search(any(IncidentQuery.class), any())).thenReturn(SEARCH_QUERY_RESULT);
     final var request =
         """
             {
@@ -351,14 +350,16 @@ public class IncidentQueryControllerTest extends RestControllerTest {
 
     verify(incidentServices)
         .search(
-            new IncidentQuery.Builder()
-                .sort(new IncidentSort.Builder().incidentKey().asc().build())
-                .build());
+            eq(
+                new IncidentQuery.Builder()
+                    .sort(new IncidentSort.Builder().incidentKey().asc().build())
+                    .build()),
+            any());
   }
 
   @Test
   void shouldGetIncidentByKey() {
-    when(incidentServices.getByKey(any(Long.class))).thenReturn(GET_QUERY_RESULT);
+    when(incidentServices.getByKey(any(Long.class), any())).thenReturn(GET_QUERY_RESULT);
     // when / then
     webClient
         .get()
@@ -371,12 +372,12 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_GET_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(incidentServices).getByKey(23L);
+    verify(incidentServices).getByKey(eq(23L), any());
   }
 
   @Test
   void shouldThrowNotFoundIfKeyNotExistsForGetIncidentByKey() {
-    when(incidentServices.getByKey(any(Long.class)))
+    when(incidentServices.getByKey(any(Long.class), any()))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException("", CamundaSearchException.Reason.NOT_FOUND)));
@@ -401,13 +402,13 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                 """,
             JsonCompareMode.STRICT);
 
-    verify(incidentServices).getByKey(5L);
+    verify(incidentServices).getByKey(eq(5L), any());
   }
 
   @Test
   void shouldReturnIncidentProcessInstanceStatisticsByError() {
     when(incidentServices.incidentProcessInstanceStatisticsByError(
-            any(IncidentProcessInstanceStatisticsByErrorQuery.class)))
+            any(IncidentProcessInstanceStatisticsByErrorQuery.class), any()))
         .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_QUERY_RESULT);
 
     webClient
@@ -426,14 +427,14 @@ public class IncidentQueryControllerTest extends RestControllerTest {
 
     verify(incidentServices)
         .incidentProcessInstanceStatisticsByError(
-            new IncidentProcessInstanceStatisticsByErrorQuery.Builder().build());
+            eq(new IncidentProcessInstanceStatisticsByErrorQuery.Builder().build()), any());
   }
 
   @Test
   void shouldSortIncidentProcessInstanceStatisticsByError() {
     // given
     when(incidentServices.incidentProcessInstanceStatisticsByError(
-            any(IncidentProcessInstanceStatisticsByErrorQuery.class)))
+            any(IncidentProcessInstanceStatisticsByErrorQuery.class), any()))
         .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_QUERY_RESULT);
 
     final var request =
@@ -471,16 +472,18 @@ public class IncidentQueryControllerTest extends RestControllerTest {
 
     verify(incidentServices)
         .incidentProcessInstanceStatisticsByError(
-            new IncidentProcessInstanceStatisticsByErrorQuery.Builder()
-                .sort(s -> s.errorMessage().asc().activeInstancesWithErrorCount().desc())
-                .build());
+            eq(
+                new IncidentProcessInstanceStatisticsByErrorQuery.Builder()
+                    .sort(s -> s.errorMessage().asc().activeInstancesWithErrorCount().desc())
+                    .build()),
+            any());
   }
 
   @Test
   void shouldPaginateIncidentProcessInstanceStatisticsByError() {
     // given
     when(incidentServices.incidentProcessInstanceStatisticsByError(
-            any(IncidentProcessInstanceStatisticsByErrorQuery.class)))
+            any(IncidentProcessInstanceStatisticsByErrorQuery.class), any()))
         .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR_QUERY_RESULT);
 
     final var request =
@@ -509,16 +512,18 @@ public class IncidentQueryControllerTest extends RestControllerTest {
 
     verify(incidentServices)
         .incidentProcessInstanceStatisticsByError(
-            new IncidentProcessInstanceStatisticsByErrorQuery.Builder()
-                .page(p -> p.from(0).size(5))
-                .build());
+            eq(
+                new IncidentProcessInstanceStatisticsByErrorQuery.Builder()
+                    .page(p -> p.from(0).size(5))
+                    .build()),
+            any());
   }
 
   @Test
   void shouldReturnIncidentProcessInstanceStatisticsByDefinition() {
     // given
     when(incidentServices.searchIncidentProcessInstanceStatisticsByDefinition(
-            any(IncidentProcessInstanceStatisticsByDefinitionQuery.class)))
+            any(IncidentProcessInstanceStatisticsByDefinitionQuery.class), any()))
         .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_QUERY_RESULT);
 
     final var request =
@@ -549,7 +554,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         new IncidentProcessInstanceStatisticsByDefinitionQuery.Builder()
             .filter(f -> f.errorHashCode(ERROR_HASH_CODE).state(IncidentState.ACTIVE.name()))
             .build();
-    verify(incidentServices).searchIncidentProcessInstanceStatisticsByDefinition(result);
+    verify(incidentServices).searchIncidentProcessInstanceStatisticsByDefinition(eq(result), any());
   }
 
   @Test
@@ -659,7 +664,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   void shouldSortIncidentProcessInstanceStatisticsByDefinition() {
     // given
     when(incidentServices.searchIncidentProcessInstanceStatisticsByDefinition(
-            any(IncidentProcessInstanceStatisticsByDefinitionQuery.class)))
+            any(IncidentProcessInstanceStatisticsByDefinitionQuery.class), any()))
         .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_QUERY_RESULT);
 
     final var request =
@@ -704,24 +709,27 @@ public class IncidentQueryControllerTest extends RestControllerTest {
 
     verify(incidentServices)
         .searchIncidentProcessInstanceStatisticsByDefinition(
-            new IncidentProcessInstanceStatisticsByDefinitionQuery.Builder()
-                .filter(f -> f.errorHashCode(ERROR_HASH_CODE).state(IncidentState.ACTIVE.name()))
-                .sort(
-                    s ->
-                        s.processDefinitionKey()
-                            .asc()
-                            .tenantId()
-                            .desc()
-                            .activeInstancesWithErrorCount()
-                            .asc())
-                .build());
+            eq(
+                new IncidentProcessInstanceStatisticsByDefinitionQuery.Builder()
+                    .filter(
+                        f -> f.errorHashCode(ERROR_HASH_CODE).state(IncidentState.ACTIVE.name()))
+                    .sort(
+                        s ->
+                            s.processDefinitionKey()
+                                .asc()
+                                .tenantId()
+                                .desc()
+                                .activeInstancesWithErrorCount()
+                                .asc())
+                    .build()),
+            any());
   }
 
   @Test
   void shouldPaginateIncidentProcessInstanceStatisticsByDefinition() {
     // given
     when(incidentServices.searchIncidentProcessInstanceStatisticsByDefinition(
-            any(IncidentProcessInstanceStatisticsByDefinitionQuery.class)))
+            any(IncidentProcessInstanceStatisticsByDefinitionQuery.class), any()))
         .thenReturn(INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_DEFINITION_QUERY_RESULT);
 
     final var request =
@@ -751,10 +759,13 @@ public class IncidentQueryControllerTest extends RestControllerTest {
 
     verify(incidentServices)
         .searchIncidentProcessInstanceStatisticsByDefinition(
-            new IncidentProcessInstanceStatisticsByDefinitionQuery.Builder()
-                .filter(f -> f.errorHashCode(ERROR_HASH_CODE).state(IncidentState.ACTIVE.name()))
-                .page(p -> p.from(0).size(5))
-                .build());
+            eq(
+                new IncidentProcessInstanceStatisticsByDefinitionQuery.Builder()
+                    .filter(
+                        f -> f.errorHashCode(ERROR_HASH_CODE).state(IncidentState.ACTIVE.name()))
+                    .page(p -> p.from(0).size(5))
+                    .build()),
+            any());
   }
 
   @Test

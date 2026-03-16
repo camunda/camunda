@@ -7,6 +7,8 @@
  */
 package io.camunda.configuration;
 
+import static io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.DEFAULT_ROCKSDB_MEMORY_ALLOCATION_STRATEGY;
+
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import java.util.Properties;
@@ -71,7 +73,8 @@ public class RocksDb {
    * memory limit. If set to 'FRACTION', Zeebe will allocate a configurable percentage of total RAM
    * to RocksDB that can be configured via the memoryFraction configuration [0,1].
    */
-  private MemoryAllocationStrategy memoryAllocationStrategy = MemoryAllocationStrategy.PARTITION;
+  private MemoryAllocationStrategy memoryAllocationStrategy =
+      DEFAULT_ROCKSDB_MEMORY_ALLOCATION_STRATEGY;
 
   /**
    * Configures the fraction of total system memory to allocate to RocksDB when using the 'FRACTION'

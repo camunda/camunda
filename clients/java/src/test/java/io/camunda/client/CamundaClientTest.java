@@ -28,6 +28,7 @@ import static io.camunda.client.ClientProperties.MAX_METADATA_SIZE;
 import static io.camunda.client.ClientProperties.PREFER_REST_OVER_GRPC;
 import static io.camunda.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.client.ClientProperties.STREAM_ENABLED;
+import static io.camunda.client.ClientProperties.USE_CLIENT_SIDE_LOAD_BALANCING;
 import static io.camunda.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_GRPC_ADDRESS;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MAX_HTTP_CONNECTIONS;
@@ -43,6 +44,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.KEEP_ALIV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFER_REST_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.REST_ADDRESS_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_CLIENT_SIDE_LOAD_BALANCING_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR;
 import static io.camunda.client.impl.LegacyZeebeClientEnvironmentVariables.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
@@ -1422,5 +1424,70 @@ public final class CamundaClientTest {
 
     // then
     assertThat(builder.getMaxHttpConnections()).isEqualTo(1234);
+  }
+
+  @Test
+  public void shouldUseClientSideLoadBalancing() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.useClientSideLoadBalancing(true);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.useClientSideLoadBalancing()).isTrue();
+  }
+
+  @Test
+  public void shouldNotUseClientSideLoadBalancingByDefault() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.useClientSideLoadBalancing()).isFalse();
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        USE_CLIENT_SIDE_LOAD_BALANCING_VAR,
+        LegacyZeebeClientEnvironmentVariables.USE_CLIENT_SIDE_LOAD_BALANCING_VAR
+      })
+  public void shouldOverrideClientSideLoadBalancingWithEnvVar(final String envName) {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.useClientSideLoadBalancing(false);
+    Environment.system().put(envName, "true");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.useClientSideLoadBalancing()).isTrue();
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        USE_CLIENT_SIDE_LOAD_BALANCING,
+        LegacyZeebeClientProperties.USE_CLIENT_SIDE_LOAD_BALANCING
+      })
+  public void shouldOverrideClientSideLoadBalancingWithProperty(final String propertyName) {
+    // given
+    final Properties properties = new Properties();
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.useClientSideLoadBalancing(false);
+    properties.setProperty(propertyName, "true");
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.useClientSideLoadBalancing()).isTrue();
   }
 }

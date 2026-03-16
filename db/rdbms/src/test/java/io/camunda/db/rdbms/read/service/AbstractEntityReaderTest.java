@@ -25,6 +25,7 @@ import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
 import java.util.List;
 import org.instancio.Instancio;
+import org.instancio.Select;
 import org.junit.jupiter.api.Test;
 
 class AbstractEntityReaderTest {
@@ -195,5 +196,327 @@ class AbstractEntityReaderTest {
             new SortingEntry<>(ProcessInstanceSearchColumn.START_DATE, SortOrder.DESC),
             // Note: duplicated PROCESS_DEFINITION_NAME is ignored
             new SortingEntry<>(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+  }
+
+  // ---- Null-value keyset pagination tests ----
+
+  @Test
+  void shouldBuildSearchAfterWithNullInFirstColumnTwoCols() {
+    // given: an entity whose first sort column (processDefinitionName) is null
+    final var entity =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(Select.field(ProcessInstanceEntity::processDefinitionName), null)
+            .create();
+
+    final DbQuerySorting<ProcessInstanceEntity> sort =
+        DbQuerySorting.of(
+            b ->
+                b.addEntry(ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME, SortOrder.ASC)
+                    .addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+
+    final SearchQueryResult result = reader.buildSearchQueryResult(1L, List.of(entity), sort);
+
+    // when
+    final SearchQueryPage page =
+        SearchQueryPage.of(p -> p.from(0).size(10).after(result.endCursor()));
+    final DbQueryPage dbPage = reader.convertPaging(sort, page);
+
+    // then: 2 keyset entries
+    assertThat(dbPage.keySetPagination()).hasSize(2);
+
+    // first entry: processDefinitionName IS NOT NULL (null + ASC + searchAfter => IS_NOT_NULL)
+    final var ks0 = dbPage.keySetPagination().get(0);
+    assertThat(ks0.entries())
+        .containsExactly(
+            new KeySetPaginationFieldEntry("PROCESS_DEFINITION_NAME", Operator.IS_NOT_NULL, null));
+
+    // second entry: processDefinitionName IS_NULL (null equality prefix) AND processInstanceKey >
+    // value
+    final var ks1 = dbPage.keySetPagination().get(1);
+    assertThat(ks1.entries())
+        .containsExactly(
+            new KeySetPaginationFieldEntry("PROCESS_DEFINITION_NAME", Operator.IS_NULL, null),
+            new KeySetPaginationFieldEntry(
+                "PROCESS_INSTANCE_KEY", Operator.GREATER, entity.processInstanceKey()));
+  }
+
+  @Test
+  void shouldBuildSearchAfterWithNullInSecondColumnThreeCols() {
+    // given: an entity whose second sort column (processDefinitionVersionTag) is null
+    final var entity =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(Select.field(ProcessInstanceEntity::processDefinitionVersionTag), null)
+            .create();
+
+    final DbQuerySorting<ProcessInstanceEntity> sort =
+        DbQuerySorting.of(
+            b ->
+                b.addEntry(ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME, SortOrder.ASC)
+                    .addEntry(
+                        ProcessInstanceSearchColumn.PROCESS_DEFINITION_VERSION_TAG, SortOrder.ASC)
+                    .addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+
+    final SearchQueryResult result = reader.buildSearchQueryResult(1L, List.of(entity), sort);
+
+    // when
+    final SearchQueryPage page =
+        SearchQueryPage.of(p -> p.from(0).size(10).after(result.endCursor()));
+    final DbQueryPage dbPage = reader.convertPaging(sort, page);
+
+    // then: 3 keyset entries
+    assertThat(dbPage.keySetPagination()).hasSize(3);
+
+    // ks0: processDefinitionName > value  (non-null, ASC, searchAfter)
+    final var ks0 = dbPage.keySetPagination().get(0);
+    assertThat(ks0.entries())
+        .containsExactly(
+            new KeySetPaginationFieldEntry(
+                "PROCESS_DEFINITION_NAME", Operator.GREATER, entity.processDefinitionName()));
+
+    // ks1: processDefinitionName = value AND processDefinitionVersionTag IS NOT NULL
+    //       (null + ASC + searchAfter => IS_NOT_NULL)
+    final var ks1 = dbPage.keySetPagination().get(1);
+    assertThat(ks1.entries())
+        .containsExactly(
+            new KeySetPaginationFieldEntry(
+                "PROCESS_DEFINITION_NAME", Operator.EQUALS, entity.processDefinitionName()),
+            new KeySetPaginationFieldEntry(
+                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NOT_NULL, null));
+
+    // ks2: processDefinitionName = value AND processDefinitionVersionTag IS NULL AND
+    //       processInstanceKey > value
+    final var ks2 = dbPage.keySetPagination().get(2);
+    assertThat(ks2.entries())
+        .containsExactly(
+            new KeySetPaginationFieldEntry(
+                "PROCESS_DEFINITION_NAME", Operator.EQUALS, entity.processDefinitionName()),
+            new KeySetPaginationFieldEntry(
+                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NULL, null),
+            new KeySetPaginationFieldEntry(
+                "PROCESS_INSTANCE_KEY", Operator.GREATER, entity.processInstanceKey()));
+  }
+
+  @Test
+  void shouldBuildSearchAfterWithNullInFirstColumnThreeCols() {
+    // given: entity where the first sort column (processDefinitionVersionTag) is null
+    final var entity =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(Select.field(ProcessInstanceEntity::processDefinitionVersionTag), null)
+            .create();
+
+    final DbQuerySorting<ProcessInstanceEntity> sort =
+        DbQuerySorting.of(
+            b ->
+                b.addEntry(
+                        ProcessInstanceSearchColumn.PROCESS_DEFINITION_VERSION_TAG, SortOrder.ASC)
+                    .addEntry(ProcessInstanceSearchColumn.START_DATE, SortOrder.DESC)
+                    .addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+
+    final SearchQueryResult result = reader.buildSearchQueryResult(1L, List.of(entity), sort);
+
+    // when
+    final SearchQueryPage page =
+        SearchQueryPage.of(p -> p.from(0).size(10).after(result.endCursor()));
+    final DbQueryPage dbPage = reader.convertPaging(sort, page);
+
+    // then: 3 keyset entries
+    assertThat(dbPage.keySetPagination()).hasSize(3);
+
+    // ks0: processDefinitionVersionTag IS NOT NULL  (null + ASC + searchAfter => IS_NOT_NULL)
+    assertThat(dbPage.keySetPagination().get(0).entries())
+        .containsExactly(
+            new KeySetPaginationFieldEntry(
+                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NOT_NULL, null));
+
+    // ks1: processDefinitionVersionTag IS NULL (null equality) AND startDate < value
+    //       (DESC + searchAfter => LOWER)
+    assertThat(dbPage.keySetPagination().get(1).entries())
+        .containsExactly(
+            new KeySetPaginationFieldEntry(
+                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NULL, null),
+            new KeySetPaginationFieldEntry("START_DATE", Operator.LOWER, entity.startDate()));
+
+    // ks2: processDefinitionVersionTag IS NULL AND startDate = value AND processInstanceKey > value
+    assertThat(dbPage.keySetPagination().get(2).entries())
+        .containsExactly(
+            new KeySetPaginationFieldEntry(
+                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NULL, null),
+            new KeySetPaginationFieldEntry("START_DATE", Operator.EQUALS, entity.startDate()),
+            new KeySetPaginationFieldEntry(
+                "PROCESS_INSTANCE_KEY", Operator.GREATER, entity.processInstanceKey()));
+  }
+
+  @Test
+  void shouldBuildSearchBeforeWithNullInFirstColumnTwoCols() {
+    // given: entity where first column (processDefinitionVersionTag) is null
+    final var entity =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(Select.field(ProcessInstanceEntity::processDefinitionVersionTag), null)
+            .create();
+
+    final DbQuerySorting<ProcessInstanceEntity> sort =
+        DbQuerySorting.of(
+            b ->
+                b.addEntry(
+                        ProcessInstanceSearchColumn.PROCESS_DEFINITION_VERSION_TAG, SortOrder.ASC)
+                    .addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+
+    final SearchQueryResult result = reader.buildSearchQueryResult(1L, List.of(entity), sort);
+
+    // when
+    final SearchQueryPage page =
+        SearchQueryPage.of(p -> p.from(0).size(10).before(result.startCursor()));
+    final DbQueryPage dbPage = reader.convertPaging(sort, page);
+
+    // then: 2 keyset entries
+    assertThat(dbPage.keySetPagination()).hasSize(2);
+
+    // ks0: processDefinitionVersionTag IS NOT NULL  (null + ASC + searchBefore => IS_NOT_NULL)
+    assertThat(dbPage.keySetPagination().get(0).entries())
+        .containsExactly(
+            new KeySetPaginationFieldEntry(
+                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NOT_NULL, null));
+
+    // ks1: processDefinitionVersionTag IS NULL AND processInstanceKey < value
+    assertThat(dbPage.keySetPagination().get(1).entries())
+        .containsExactly(
+            new KeySetPaginationFieldEntry(
+                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NULL, null),
+            new KeySetPaginationFieldEntry(
+                "PROCESS_INSTANCE_KEY", Operator.LOWER, entity.processInstanceKey()));
+  }
+
+  @Test
+  void shouldBuildSearchAfterDescWithNullInFirstColumn() {
+    // given: entity where the DESC sort column (processDefinitionVersionTag) is null
+    // null + DESC + searchAfter => IS_NULL (null rows come last in DESC, so "after null" = nothing
+    // further; but "is null" is the correct comparator for rows at the same null level)
+    final var entity =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(Select.field(ProcessInstanceEntity::processDefinitionVersionTag), null)
+            .create();
+
+    final DbQuerySorting<ProcessInstanceEntity> sort =
+        DbQuerySorting.of(
+            b ->
+                b.addEntry(
+                        ProcessInstanceSearchColumn.PROCESS_DEFINITION_VERSION_TAG, SortOrder.DESC)
+                    .addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+
+    final SearchQueryResult result = reader.buildSearchQueryResult(1L, List.of(entity), sort);
+
+    // when
+    final SearchQueryPage page =
+        SearchQueryPage.of(p -> p.from(0).size(10).after(result.endCursor()));
+    final DbQueryPage dbPage = reader.convertPaging(sort, page);
+
+    // then: 2 keyset entries
+    assertThat(dbPage.keySetPagination()).hasSize(2);
+
+    // ks0: processDefinitionVersionTag IS NULL  (null + DESC + searchAfter => IS_NULL)
+    assertThat(dbPage.keySetPagination().get(0).entries())
+        .containsExactly(
+            new KeySetPaginationFieldEntry(
+                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NULL, null));
+
+    // ks1: processDefinitionVersionTag IS NULL AND processInstanceKey > value
+    assertThat(dbPage.keySetPagination().get(1).entries())
+        .containsExactly(
+            new KeySetPaginationFieldEntry(
+                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NULL, null),
+            new KeySetPaginationFieldEntry(
+                "PROCESS_INSTANCE_KEY", Operator.GREATER, entity.processInstanceKey()));
+  }
+
+  @Test
+  void shouldBuildSearchBeforeDescWithNullInFirstColumn() {
+    // given: entity where the DESC sort column (processDefinitionVersionTag) is null
+    // null + DESC + searchBefore => IS_NULL  (reverse of searchAfter+DESC+null)
+    final var entity =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(Select.field(ProcessInstanceEntity::processDefinitionVersionTag), null)
+            .create();
+
+    final DbQuerySorting<ProcessInstanceEntity> sort =
+        DbQuerySorting.of(
+            b ->
+                b.addEntry(
+                        ProcessInstanceSearchColumn.PROCESS_DEFINITION_VERSION_TAG, SortOrder.DESC)
+                    .addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+
+    final SearchQueryResult result = reader.buildSearchQueryResult(1L, List.of(entity), sort);
+
+    // when
+    final SearchQueryPage page =
+        SearchQueryPage.of(p -> p.from(0).size(10).before(result.startCursor()));
+    final DbQueryPage dbPage = reader.convertPaging(sort, page);
+
+    // then: 2 keyset entries
+    assertThat(dbPage.keySetPagination()).hasSize(2);
+
+    // ks0: processDefinitionVersionTag IS NULL  (null + DESC + searchBefore => IS_NULL)
+    assertThat(dbPage.keySetPagination().get(0).entries())
+        .containsExactly(
+            new KeySetPaginationFieldEntry(
+                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NULL, null));
+
+    // ks1: processDefinitionVersionTag IS NULL AND processInstanceKey < value
+    assertThat(dbPage.keySetPagination().get(1).entries())
+        .containsExactly(
+            new KeySetPaginationFieldEntry(
+                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NULL, null),
+            new KeySetPaginationFieldEntry(
+                "PROCESS_INSTANCE_KEY", Operator.LOWER, entity.processInstanceKey()));
+  }
+
+  @Test
+  void shouldBuildSearchAfterWithAllNullSortColumnsThreeCols() {
+    // given: all three sort columns are null except the tiebreaker (processInstanceKey)
+    final var entity =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(Select.field(ProcessInstanceEntity::processDefinitionVersionTag), null)
+            .set(Select.field(ProcessInstanceEntity::processDefinitionName), null)
+            .create();
+
+    final DbQuerySorting<ProcessInstanceEntity> sort =
+        DbQuerySorting.of(
+            b ->
+                b.addEntry(
+                        ProcessInstanceSearchColumn.PROCESS_DEFINITION_VERSION_TAG, SortOrder.ASC)
+                    .addEntry(ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME, SortOrder.ASC)
+                    .addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+
+    final SearchQueryResult result = reader.buildSearchQueryResult(1L, List.of(entity), sort);
+
+    // when
+    final SearchQueryPage page =
+        SearchQueryPage.of(p -> p.from(0).size(10).after(result.endCursor()));
+    final DbQueryPage dbPage = reader.convertPaging(sort, page);
+
+    // then: 3 keyset entries
+    assertThat(dbPage.keySetPagination()).hasSize(3);
+
+    // ks0: processDefinitionVersionTag IS NOT NULL  (null + ASC + searchAfter)
+    assertThat(dbPage.keySetPagination().get(0).entries())
+        .containsExactly(
+            new KeySetPaginationFieldEntry(
+                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NOT_NULL, null));
+
+    // ks1: processDefinitionVersionTag IS NULL AND processDefinitionName IS NOT NULL
+    assertThat(dbPage.keySetPagination().get(1).entries())
+        .containsExactly(
+            new KeySetPaginationFieldEntry(
+                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NULL, null),
+            new KeySetPaginationFieldEntry("PROCESS_DEFINITION_NAME", Operator.IS_NOT_NULL, null));
+
+    // ks2: processDefinitionVersionTag IS NULL AND processDefinitionName IS NULL
+    //       AND processInstanceKey > value
+    assertThat(dbPage.keySetPagination().get(2).entries())
+        .containsExactly(
+            new KeySetPaginationFieldEntry(
+                "PROCESS_DEFINITION_VERSION_TAG", Operator.IS_NULL, null),
+            new KeySetPaginationFieldEntry("PROCESS_DEFINITION_NAME", Operator.IS_NULL, null),
+            new KeySetPaginationFieldEntry(
+                "PROCESS_INSTANCE_KEY", Operator.GREATER, entity.processInstanceKey()));
   }
 }

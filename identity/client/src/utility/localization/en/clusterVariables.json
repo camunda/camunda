@@ -30,5 +30,6 @@
   "save": "Save",
   "clusterVariableUpdated": "Cluster variable updated",
   "clusterVariableUpdatedSuccessfully": "You have successfully updated cluster variable {{name}}",
-  "updatingClusterVariable": "Updating cluster variable"
+  "updatingClusterVariable": "Updating cluster variable",
+  "clusterVariableUpdateTakingLonger": "The operation is taking longer than expected. The list may not reflect the latest changes yet."
 }

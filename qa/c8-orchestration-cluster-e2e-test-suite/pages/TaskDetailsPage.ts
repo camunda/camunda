@@ -63,6 +63,14 @@ class TaskDetailsPage {
   readonly processTab: Locator;
   readonly bpmnDiagram: Locator;
   readonly assignedToMeText: Locator;
+  readonly historyTabButton: Locator;
+  readonly historyTable: Locator;
+  readonly historyTableRow: Locator;
+  readonly historyTableOperationTypeHeader: Locator;
+  readonly historyTableDetailsHeader: Locator;
+  readonly historyTableActorHeader: Locator;
+  readonly historyTableDateHeader: Locator;
+  readonly historyTableAssignCell: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -112,6 +120,34 @@ class TaskDetailsPage {
     this.assignedToMeText = page
       .getByTestId('assignee')
       .getByText('Assigned to me');
+    this.historyTabButton = page.getByRole('link', {
+      name: 'Show task history',
+    });
+    this.historyTable = page
+      .getByTestId('task-details-history-view')
+      .getByRole('table');
+    this.historyTableRow = this.historyTable.getByRole('row');
+    this.historyTableOperationTypeHeader = this.historyTable.getByRole(
+      'columnheader',
+      {
+        name: 'Operation type',
+      },
+    );
+    this.historyTableDetailsHeader = this.historyTable.getByRole(
+      'columnheader',
+      {
+        name: 'Details',
+      },
+    );
+    this.historyTableActorHeader = this.historyTable.getByRole('columnheader', {
+      name: 'Actor',
+    });
+    this.historyTableDateHeader = this.historyTable.getByRole('columnheader', {
+      name: 'Date',
+    });
+    this.historyTableAssignCell = this.historyTable.getByRole('cell', {
+      name: 'Assign task',
+    });
   }
 
   async clickAssignToMeButton() {
@@ -362,6 +398,18 @@ class TaskDetailsPage {
 
   async clickProcessTab(): Promise<void> {
     await this.processTab.click();
+  }
+
+  async clickHistoryTab(): Promise<void> {
+    await this.historyTabButton.click();
+  }
+
+  getHistoryTableRowCount(): Promise<number> {
+    return this.historyTableRow.count();
+  }
+
+  getHistoryTableAssignCellCount(): Promise<number> {
+    return this.historyTableAssignCell.count();
   }
 }
 

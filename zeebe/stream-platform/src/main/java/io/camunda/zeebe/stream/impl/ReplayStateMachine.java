@@ -17,6 +17,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamBatchReader;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchReader.Batch;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.RecordMetadataBlock;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -26,7 +27,6 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.stream.api.EventFilter;
-import io.camunda.zeebe.stream.api.MetadataFilter;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
@@ -49,9 +49,6 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   private static final String ERROR_MSG_EXPECTED_TO_READ_METADATA =
       "Expected to read the metadata for the record '%s', but an exception was thrown.";
 
-  private static final MetadataFilter REPLAY_FILTER =
-      recordMetadata -> recordMetadata.getRecordType() == RecordType.EVENT;
-
   private final RecordMetadata metadata = new RecordMetadata();
   private final KeyGeneratorControls keyGeneratorControls;
   private final MutableLastProcessedPositionState lastProcessedPositionState;
@@ -60,7 +57,12 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
 
   private final RecordValues recordValues;
 
-  private final EventFilter eventFilter = new MetadataEventFilter(REPLAY_FILTER);
+  private final RecordMetadataBlock recordTypeDecoder = new RecordMetadataBlock();
+  private final EventFilter eventFilter =
+      event -> {
+        recordTypeDecoder.wrap(event.getMetadata(), event.getMetadataOffset());
+        return recordTypeDecoder.recordType() == RecordType.EVENT;
+      };
 
   private final LogStreamBatchReader logStreamBatchReader;
 

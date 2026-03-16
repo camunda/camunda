@@ -80,7 +80,7 @@ public class AuditLogUserTaskOperationsIT {
     for (int i = 0; i < auditLogItems.items().size() - 1; i++) {
       final var current = auditLogItems.items().get(i);
       final var next = auditLogItems.items().get(i + 1);
-      assertThat(current.getTimestamp()).isGreaterThanOrEqualTo(next.getTimestamp());
+      assertThat(current.getTimestamp()).isAfterOrEqualTo(next.getTimestamp());
     }
   }
 

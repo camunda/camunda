@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.USERS_API_DISABLED_ERROR_MESSAGE;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -17,7 +18,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.gateway.protocol.model.UserUpdateRequest;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
@@ -64,8 +64,6 @@ public class UserControllerTest {
     void setup() {
       when(authenticationProvider.getCamundaAuthentication())
           .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-      when(userServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(userServices);
       when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
     }
 
@@ -92,7 +90,8 @@ public class UserControllerTest {
               .setEmail(dto.email())
               .setPassword(dto.password());
 
-      when(userServices.createUser(dto)).thenReturn(CompletableFuture.completedFuture(userRecord));
+      when(userServices.createUser(eq(dto), any()))
+          .thenReturn(CompletableFuture.completedFuture(userRecord));
 
       // when
       webClient
@@ -117,7 +116,7 @@ public class UserControllerTest {
               JsonCompareMode.STRICT);
 
       // then
-      verify(userServices, times(1)).createUser(dto);
+      verify(userServices, times(1)).createUser(eq(dto), any());
     }
 
     @Test
@@ -127,7 +126,7 @@ public class UserControllerTest {
 
       final var dto = validCreateUserRequest("foo");
 
-      when(userServices.createUser(dto))
+      when(userServices.createUser(eq(dto), any()))
           .thenThrow(
               ErrorMapper.mapBrokerRejection(
                   new BrokerRejection(
@@ -239,7 +238,8 @@ public class UserControllerTest {
       final var dto = new UserDTO("foo", null, null, "zabraboof");
       final var userRecord =
           new UserRecord().setUsername(dto.username()).setPassword(dto.password());
-      when(userServices.createUser(dto)).thenReturn(CompletableFuture.completedFuture(userRecord));
+      when(userServices.createUser(eq(dto), any()))
+          .thenReturn(CompletableFuture.completedFuture(userRecord));
 
       // when
       webClient
@@ -264,7 +264,7 @@ public class UserControllerTest {
               JsonCompareMode.STRICT);
 
       // then
-      verify(userServices, times(1)).createUser(dto);
+      verify(userServices, times(1)).createUser(eq(dto), any());
     }
 
     @Test
@@ -342,7 +342,7 @@ public class UserControllerTest {
 
       final var userRecord = new UserRecord().setUsername(username);
 
-      when(userServices.deleteUser(username))
+      when(userServices.deleteUser(eq(username), any()))
           .thenReturn(CompletableFuture.completedFuture(userRecord));
 
       // when
@@ -355,7 +355,7 @@ public class UserControllerTest {
           .isNoContent();
 
       // then
-      verify(userServices, times(1)).deleteUser(username);
+      verify(userServices, times(1)).deleteUser(eq(username), any());
     }
 
     @Test
@@ -363,7 +363,7 @@ public class UserControllerTest {
       // given
       final String username = "alice-test";
       final UserDTO user = new UserDTO(username, "Alice", "test+alice@camunda.com", null);
-      when(userServices.updateUser(any()))
+      when(userServices.updateUser(any(), any()))
           .thenReturn(
               CompletableFuture.completedFuture(
                   new UserRecord()
@@ -386,7 +386,7 @@ public class UserControllerTest {
           .expectStatus()
           .isOk();
 
-      verify(userServices, times(1)).updateUser(user);
+      verify(userServices, times(1)).updateUser(eq(user), any());
     }
 
     private UserDTO validCreateUserRequest(final String username) {

@@ -12,6 +12,8 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.FILTER_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PAGE_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.SORT_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.TRUNCATE_VARIABLES_DESCRIPTION;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_KEY_DESCRIPTION;
+import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_KEY_NOT_NULL_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_KEY_POSITIVE_MESSAGE;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_VALUE_RETURN_FORMAT;
 
@@ -25,6 +27,7 @@ import io.camunda.gateway.protocol.model.simple.VariableFilter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.VariableServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
@@ -67,9 +70,8 @@ public class VariableTools {
       final boolean shouldTruncate = truncateValues == null || truncateValues;
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toVariableSearchQueryResponse(
-              variableServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .search(variableSearchQuery.get()),
+              variableServices.search(
+                  variableSearchQuery.get(), authenticationProvider.getCamundaAuthentication()),
               shouldTruncate));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
@@ -81,13 +83,15 @@ public class VariableTools {
           "Get variable by key. " + VARIABLE_VALUE_RETURN_FORMAT + " " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult getVariable(
-      @McpToolParam @Positive(message = VARIABLE_KEY_POSITIVE_MESSAGE) final Long variableKey) {
+      @McpToolParam(description = VARIABLE_KEY_DESCRIPTION)
+          @NotNull(message = VARIABLE_KEY_NOT_NULL_MESSAGE)
+          @Positive(message = VARIABLE_KEY_POSITIVE_MESSAGE)
+          final Long variableKey) {
     try {
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toVariableItem(
-              variableServices
-                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .getByKey(variableKey)));
+              variableServices.getByKey(
+                  variableKey, authenticationProvider.getCamundaAuthentication())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }

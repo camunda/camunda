@@ -7,9 +7,19 @@
  */
 
 import {styled} from 'styled-components';
+import {breakpoints} from '@carbon/elements';
 
 const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
   background-color: var(--cds-layer);
+
+  @media (max-width: ${breakpoints.lg.width}) {
+    min-height: 250px;
+    flex: 1;
+  }
 `;
 
 export {Container};

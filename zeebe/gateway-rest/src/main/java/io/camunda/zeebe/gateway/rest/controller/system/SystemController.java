@@ -73,12 +73,10 @@ public class SystemController {
 
   private ResponseEntity<UsageMetricsResponse> getMetrics(final UsageMetricsQuery query) {
     try {
-      final var result =
-          usageMetricsServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
       return ResponseEntity.ok(
-          SearchQueryResponseMapper.toUsageMetricsResponse(result, query.filter().withTenants()));
+          SearchQueryResponseMapper.toUsageMetricsResponse(
+              usageMetricsServices.search(query, authenticationProvider.getCamundaAuthentication()),
+              query.filter().withTenants()));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

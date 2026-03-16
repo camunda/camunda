@@ -47,6 +47,15 @@ const DiagramCanvas = styled.div`
     cursor: not-allowed;
   }
 
+  .op-drilldown {
+    user-select: none;
+  }
+
+  .op-drilldown-loading,
+  .op-drilldown-loading * {
+    cursor: wait;
+  }
+
   .op-selected .djs-visual {
     rect,
     circle,

@@ -19,91 +19,221 @@ on:
     # Runs at 1am every monday https://crontab.guru/#0_1_*_*_1
     - cron: 0 1 * * 1
 
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
+
 jobs:
   test-data:
     name: Collect test data
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { }
     outputs:
-      test: ${{ steps.data.outputs.test }}
-      operate: ${{ steps.data.outputs.operate }}
+      image-tag: ${{ steps.data.outputs.image-tag }}
     steps:
       - uses: actions/checkout@v6
       - name: Collect test data
         id: data
+        env:
+          REUSE_TAG: ${{ inputs.reuse-tag }}
         run: |
-          var=${{ inputs.reuse-tag || '' }}
-          # ${#var} will return the length of the string
-          if [[ ${#var} -eq 0 ]]; then
+          if [[ -z "$REUSE_TAG" ]]; then
             echo "Creating new weekly test tag"
-            echo "test=medic-$(date +%Y)-$(date +%V)-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+            echo "image-tag=medic-$(date +%Y)-$(date +%V)-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
           else
-            # Example:
-            # $ echo ${var%?}
-            # medic-y-2025-cw-18-b1bd4006-test-b1bd400
-            # $ echo ${var%-*}
-            # medic-y-2025-cw-18-b1bd4006-test
-            tag=${{ inputs.reuse-tag }}
-            var=${tag%-*}
-            echo "Re-creating weekly test, with name: $var and tag: $tag"
-            echo "test=$var" >> "$GITHUB_OUTPUT"
+            echo "Re-creating weekly test, with tag: $REUSE_TAG"
+            echo "image-tag=$REUSE_TAG" >> "$GITHUB_OUTPUT"
           fi
-          echo "full-ref=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  build-camunda-image:
+    name: Build Camunda Image
+    needs: test-data
+    if: ${{ inputs.reuse-tag == '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          harbor: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      - uses: ./.github/actions/build-frontend
+        name: Build Operate Frontend
+        with:
+          directory: ./operate/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Tasklist Frontend
+        with:
+          directory: ./tasklist/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Identity Frontend
+        with:
+          directory: ./identity/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-zeebe
+        name: Build Camunda Platform
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild -P\!include-optimize
+      - uses: ./.github/actions/build-platform-docker
+        name: Build and Push Camunda Docker Image
+        with:
+          repository: '${{ env.IMAGE_REPOSITORY }}/camunda'
+          push: true
+          version: ${{ needs.test-data.outputs.image-tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          dockerfile: 'camunda.Dockerfile'
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  build-load-test-images:
+    name: Build Starter and Worker
+    needs: test-data
+    if: ${{ inputs.reuse-tag == '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          harbor: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - run: ./mvnw -B -DskipTests -DskipChecks -P\!include-optimize -pl load-tests/load-tester -am install
+      - name: Build Starter Image
+        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/starter:${{ needs.test-data.outputs.image-tag }}"
+      - name: Build Worker Image
+        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/worker:${{ needs.test-data.outputs.image-tag }}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   setup-typical-load-test:
     name: Typical load test
     needs:
       - test-data
+      - build-camunda-image
+      - build-load-test-images
+    if: |
+      always() &&
+      needs.test-data.result == 'success' &&
+      (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
+      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
-      name: ${{ needs.test-data.outputs.test }}-typical
-      ttl: ${{ inputs.ttl || 28 }}
-      reuse-tag: ${{ inputs.reuse-tag || '' }}
+      name: ${{ needs.test-data.outputs.image-tag }}-typical
+      ttl: ${{ fromJSON(inputs.ttl || '28') }}
+      reuse-tag: ${{ needs.test-data.outputs.image-tag }}
       scenario: typical
-      build-frontend: true
+
   setup-rdbms-realistic-load-test:
     name: Postgres realistic load test
     needs:
       - test-data
+      - build-camunda-image
+      - build-load-test-images
+    if: |
+      always() &&
+      needs.test-data.result == 'success' &&
+      (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
+      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
-      name: ${{ needs.test-data.outputs.test }}-rdbms-realistic
-      ttl: ${{ inputs.ttl || 28 }}
-      reuse-tag: ${{ inputs.reuse-tag || '' }}
+      name: ${{ needs.test-data.outputs.image-tag }}-rdbms-realistic
+      ttl: ${{ fromJSON(inputs.ttl || '28') }}
+      reuse-tag: ${{ needs.test-data.outputs.image-tag }}
       secondary-storage-type: 'postgresql'
-      build-frontend: true
       scenario: realistic
+
   setup-realistic-test:
     name: Realistic load test
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     needs:
       - test-data
+      - build-camunda-image
+      - build-load-test-images
+    if: |
+      always() &&
+      needs.test-data.result == 'success' &&
+      (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
+      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
     with:
-      name: ${{ needs.test-data.outputs.test }}-realistic
-      ttl: ${{ inputs.ttl || 28 }}
-      reuse-tag: ${{ inputs.reuse-tag || '' }}
+      name: ${{ needs.test-data.outputs.image-tag }}-realistic
+      ttl: ${{ fromJSON(inputs.ttl || '28') }}
+      reuse-tag: ${{ needs.test-data.outputs.image-tag }}
       scenario: realistic
-      build-frontend: true
+
   setup-latency-test:
     name: Latency test
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     needs:
       - test-data
+      - build-camunda-image
+      - build-load-test-images
+    if: |
+      always() &&
+      needs.test-data.result == 'success' &&
+      (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
+      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
     with:
-      name: ${{ needs.test-data.outputs.test }}-latency
-      ttl: ${{ inputs.ttl || 28 }}
-      reuse-tag: ${{ inputs.reuse-tag || '' }}
+      name: ${{ needs.test-data.outputs.image-tag }}-latency
+      ttl: ${{ fromJSON(inputs.ttl || '28') }}
+      reuse-tag: ${{ needs.test-data.outputs.image-tag }}
       scenario: latency
-      build-frontend: true
 
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ setup-typical-load-test, setup-rdbms-realistic-load-test, setup-realistic-test, setup-latency-test ]
+    needs: [ build-camunda-image, build-load-test-images, setup-typical-load-test, setup-rdbms-realistic-load-test, setup-realistic-test, setup-latency-test ]
     if: failure()
+    timeout-minutes: 5
+    permissions: { }
     steps:
       - uses: actions/checkout@v6
       - id: slack-notify
@@ -118,15 +248,24 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":warning: *Medic load test creation failed:*"
+                    "text": ":warning: *Weekly Medic load test creation failed:*"
                   }
                 },
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "@zeebe-medic Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                    "text": "@reliability-testing-team Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
                   }
                 }
               ]
             }
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

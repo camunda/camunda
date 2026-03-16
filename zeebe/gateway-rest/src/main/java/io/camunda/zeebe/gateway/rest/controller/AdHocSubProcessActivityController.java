@@ -46,10 +46,8 @@ public class AdHocSubProcessActivityController {
 
   private CompletableFuture<ResponseEntity<Object>> activateActivities(
       final AdHocSubProcessActivateActivitiesRequest request) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethodWithNoContentResult(
-        () ->
-            adHocSubProcessActivityServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .activateActivities(request));
+        () -> adHocSubProcessActivityServices.activateActivities(request, authentication));
   }
 }

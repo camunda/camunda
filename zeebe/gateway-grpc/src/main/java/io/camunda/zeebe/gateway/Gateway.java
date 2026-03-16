@@ -33,6 +33,7 @@ import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.query.impl.QueryApiImpl;
+import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -100,6 +101,7 @@ public final class Gateway implements CloseableSilently {
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
   private final MeterRegistry meterRegistry;
+  private final int maxVariableNameLength;
 
   public Gateway(
       final GatewayCfg gatewayCfg,
@@ -121,7 +123,8 @@ public final class Gateway implements CloseableSilently {
         userServices,
         passwordEncoder,
         jwtDecoder,
-        meterRegistry);
+        meterRegistry,
+        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
   }
 
   public Gateway(
@@ -135,6 +138,32 @@ public final class Gateway implements CloseableSilently {
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
       final MeterRegistry meterRegistry) {
+    this(
+        shutdownDuration,
+        gatewayCfg,
+        securityConfiguration,
+        brokerClient,
+        actorSchedulingService,
+        jobStreamer,
+        userServices,
+        passwordEncoder,
+        jwtDecoder,
+        meterRegistry,
+        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
+  }
+
+  public Gateway(
+      final Duration shutdownDuration,
+      final GatewayCfg gatewayCfg,
+      final SecurityConfiguration securityConfiguration,
+      final BrokerClient brokerClient,
+      final ActorSchedulingService actorSchedulingService,
+      final ClientStreamer<JobActivationProperties> jobStreamer,
+      final UserServices userServices,
+      final PasswordEncoder passwordEncoder,
+      final JwtDecoder jwtDecoder,
+      final MeterRegistry meterRegistry,
+      final int maxVariableNameLength) {
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
     this.securityConfiguration = securityConfiguration;
@@ -145,6 +174,7 @@ public final class Gateway implements CloseableSilently {
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
     this.meterRegistry = meterRegistry;
+    this.maxVariableNameLength = maxVariableNameLength;
 
     healthManager = new GatewayHealthManagerImpl();
   }
@@ -217,7 +247,12 @@ public final class Gateway implements CloseableSilently {
     applySecurityConfiguration(serverBuilder);
 
     final var endpointManager =
-        new EndpointManager(brokerClient, activateJobsHandler, streamJobsHandler, multiTenancy);
+        new EndpointManager(
+            brokerClient,
+            activateJobsHandler,
+            streamJobsHandler,
+            multiTenancy,
+            maxVariableNameLength);
     final var gatewayGrpcService = new GatewayGrpcService(endpointManager);
     return buildServer(serverBuilder, gatewayGrpcService);
   }

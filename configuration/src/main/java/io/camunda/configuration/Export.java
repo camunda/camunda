@@ -11,15 +11,13 @@ import static io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.DE
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
-import org.springframework.core.ResolvableType;
 
 public class Export {
   private static final String PREFIX = "camunda.data.export";
   private static final Set<String> LEGACY_DISTRIBUTION_INTERVAL_PROPERTIES =
       Set.of("zeebe.broker.exporting.distributionInterval");
-  private static final Set<String> LEGACY_SKIP_RECORDS_PROPERTIES =
-      Set.of("zeebe.broker.exporting.skipRecords");
 
   /**
    * Configures the rate at which exporter positions are distributed to the followers. This is
@@ -31,12 +29,16 @@ public class Export {
   private Duration distributionInterval = DEFAULT_DISTRIBUTION_INTERVAL;
 
   /**
-   * Enable the exporters to skip record position. Allows to skip certain records by their position.
-   * This is useful for debugging or skipping a record that is preventing processing or exporting to
-   * continue. Record positions defined to skip in this definition will be skipped in all exporters.
-   * The value is a comma-separated list of records ids to skip. Whitespace is ignored.
+   * Enable the exporters to skip record positions per partition. Allows to skip certain records by
+   * their position for a specific partition. This is useful for debugging or skipping a record that
+   * is preventing processing or exporting to continue. Record positions defined to skip in this
+   * definition will be skipped only for the specified partition. The value is a map of partition id
+   * to a comma-separated list of record positions to skip. Whitespace is ignored.
+   *
+   * <p><b> Backwards compatibility with the legacy `zeebe.broker.exporting.skip-records` is broken
+   * deliberately as this configuration should only be used for recovery purposes</b>
    */
-  private Set<Long> skipRecords = Set.of();
+  private Map<Integer, Set<Long>> skipRecords = Map.of();
 
   public Duration getDistributionInterval() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -51,16 +53,11 @@ public class Export {
     this.distributionInterval = distributionInterval;
   }
 
-  public Set<Long> getSkipRecords() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".skip-records",
-        skipRecords,
-        ResolvableType.forClassWithGenerics(Set.class, Long.class),
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_SKIP_RECORDS_PROPERTIES);
+  public Map<Integer, Set<Long>> getSkipRecords() {
+    return skipRecords;
   }
 
-  public void setSkipRecords(final Set<Long> skipRecords) {
+  public void setSkipRecords(final Map<Integer, Set<Long>> skipRecords) {
     this.skipRecords = skipRecords;
   }
 }

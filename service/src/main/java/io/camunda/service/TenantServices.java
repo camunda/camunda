@@ -40,20 +40,19 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final TenantSearchClient tenantSearchClient,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.tenantSearchClient = tenantSearchClient;
   }
 
   @Override
-  public SearchQueryResult<TenantEntity> search(final TenantQuery query) {
+  public SearchQueryResult<TenantEntity> search(
+      final TenantQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             tenantSearchClient
@@ -63,7 +62,8 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
                 .searchTenants(query));
   }
 
-  public SearchQueryResult<TenantMemberEntity> searchMembers(final TenantMemberQuery query) {
+  public SearchQueryResult<TenantMemberEntity> searchMembers(
+      final TenantMemberQuery query, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             tenantSearchClient
@@ -73,59 +73,59 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
                 .searchTenantMembers(query));
   }
 
-  @Override
-  public TenantServices withAuthentication(final CamundaAuthentication authentication) {
-    return new TenantServices(
-        brokerClient,
-        securityContextProvider,
-        tenantSearchClient,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
-  }
-
-  public CompletableFuture<TenantRecord> createTenant(final TenantRequest request) {
+  public CompletableFuture<TenantRecord> createTenant(
+      final TenantRequest request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerTenantCreateRequest()
             .setTenantId(request.tenantId())
             .setName(request.name())
-            .setDescription(request.description()));
+            .setDescription(request.description()),
+        authentication);
   }
 
-  public CompletableFuture<TenantRecord> updateTenant(final TenantRequest request) {
+  public CompletableFuture<TenantRecord> updateTenant(
+      final TenantRequest request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerTenantUpdateRequest(request.tenantId())
             .setName(request.name())
-            .setDescription(request.description()));
+            .setDescription(request.description()),
+        authentication);
   }
 
-  public CompletableFuture<TenantRecord> deleteTenant(final String tenantId) {
-    return sendBrokerRequest(new BrokerTenantDeleteRequest(tenantId));
+  public CompletableFuture<TenantRecord> deleteTenant(
+      final String tenantId, final CamundaAuthentication authentication) {
+    return sendBrokerRequest(new BrokerTenantDeleteRequest(tenantId), authentication);
   }
 
-  public CompletableFuture<TenantRecord> addMember(final TenantMemberRequest request) {
+  public CompletableFuture<TenantRecord> addMember(
+      final TenantMemberRequest request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createAddRequest()
             .setTenantId(request.tenantId())
-            .setEntity(request.entityType(), request.entityId()));
+            .setEntity(request.entityType(), request.entityId()),
+        authentication);
   }
 
-  public CompletableFuture<TenantRecord> removeMember(final TenantMemberRequest request) {
+  public CompletableFuture<TenantRecord> removeMember(
+      final TenantMemberRequest request, final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         BrokerTenantEntityRequest.createRemoveRequest()
             .setTenantId(request.tenantId())
-            .setEntity(request.entityType(), request.entityId()));
+            .setEntity(request.entityType(), request.entityId()),
+        authentication);
   }
 
   public List<TenantEntity> getTenantsByMemberTypeAndMemberIds(
-      final Map<EntityType, Set<String>> memberTypesToMemberIds) {
+      final Map<EntityType, Set<String>> memberTypesToMemberIds,
+      final CamundaAuthentication authentication) {
     return search(
             TenantQuery.of(
-                q -> q.filter(f -> f.memberIdsByType(memberTypesToMemberIds)).unlimited()))
+                q -> q.filter(f -> f.memberIdsByType(memberTypesToMemberIds)).unlimited()),
+            authentication)
         .items();
   }
 
-  public TenantEntity getById(final String tenantId) {
+  public TenantEntity getById(final String tenantId, final CamundaAuthentication authentication) {
     return executeSearchRequest(
         () ->
             tenantSearchClient

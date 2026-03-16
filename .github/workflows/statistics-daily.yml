@@ -101,10 +101,10 @@ jobs:
 
               # Try to find GH issues about related flaky tests:
               # First, search specifically by test class name + test name + "flaky"
-              GH_ISSUE_ID=$(gh issue list -R camunda/camunda --search "in:title $TEST_CLASS_NAME AND in:title $TEST_NAME AND in:title flaky" --json number --jq '.[].number' | head -n 1)
+              GH_ISSUE_ID=$(gh issue list -R camunda/camunda --search "in:title $TEST_CLASS_NAME AND in:title $TEST_NAME AND (label:kind/flake OR in:title flaky)" --json number --jq '.[].number' | head -n 1)
               if [ -z "$GH_ISSUE_ID" ]; then
                 # If nothing found, search by test class name + "flaky"
-                GH_ISSUE_ID=$(gh issue list -R camunda/camunda --search "in:title $TEST_CLASS_NAME AND in:title flaky" --json number --jq '.[].number' | head -n 1)
+                GH_ISSUE_ID=$(gh issue list -R camunda/camunda --search "in:title $TEST_CLASS_NAME AND (label:kind/flake OR in:title flaky)" --json number --jq '.[].number' | head -n 1)
               fi
               if [ -n "$GH_ISSUE_ID" ]; then
                 SUFFIX=" (<https://github.com/camunda/camunda/issues/$GH_ISSUE_ID|GH issue>)"

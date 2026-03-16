@@ -13,7 +13,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ExpressionServices;
@@ -49,8 +48,6 @@ public class ExpressionControllerTest extends RestControllerTest {
   void setupServices() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(expressionServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(expressionServices);
     when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(true);
   }
 
@@ -62,7 +59,7 @@ public class ExpressionControllerTest extends RestControllerTest {
     when(expressionRecord.getResultValue()).thenReturn("10");
     when(expressionRecord.getWarnings()).thenReturn(List.of());
 
-    when(expressionServices.evaluateExpression(any(ExpressionEvaluationRequest.class)))
+    when(expressionServices.evaluateExpression(any(ExpressionEvaluationRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(expressionRecord));
 
     final var request =
@@ -92,7 +89,7 @@ public class ExpressionControllerTest extends RestControllerTest {
             }""",
             JsonCompareMode.STRICT);
 
-    verify(expressionServices).evaluateExpression(requestCaptor.capture());
+    verify(expressionServices).evaluateExpression(requestCaptor.capture(), any());
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.expression()).isEqualTo("=x + y");
     assertThat(capturedRequest.tenantId()).isEqualTo("tenant1");
@@ -106,7 +103,7 @@ public class ExpressionControllerTest extends RestControllerTest {
     when(expressionRecord.getResultValue()).thenReturn("10");
     when(expressionRecord.getWarnings()).thenReturn(List.of());
 
-    when(expressionServices.evaluateExpression(any(ExpressionEvaluationRequest.class)))
+    when(expressionServices.evaluateExpression(any(ExpressionEvaluationRequest.class), any()))
         .thenReturn(CompletableFuture.completedFuture(expressionRecord));
 
     final var request =
@@ -140,11 +137,55 @@ public class ExpressionControllerTest extends RestControllerTest {
             }""",
             JsonCompareMode.STRICT);
 
-    verify(expressionServices).evaluateExpression(requestCaptor.capture());
+    verify(expressionServices).evaluateExpression(requestCaptor.capture(), any());
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.expression()).isEqualTo("=x + y");
     assertThat(capturedRequest.tenantId()).isEqualTo("tenant1");
     assertThat(capturedRequest.variables()).isEqualTo(Map.of("x", 4, "y", 6));
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithWarnings() {
+    // given
+    final var expressionRecord = mock(ExpressionRecord.class);
+    when(expressionRecord.getExpression()).thenReturn("=invalid_function()");
+    when(expressionRecord.getResultValue()).thenReturn(null);
+    when(expressionRecord.getWarnings())
+        .thenReturn(List.of("No function found with name 'invalid_function' and 0 parameters"));
+
+    when(expressionServices.evaluateExpression(any(ExpressionEvaluationRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(expressionRecord));
+
+    final var request =
+        """
+        {
+            "expression": "=invalid_function()",
+            "tenantId": "tenant1"
+        }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(EXPRESSION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+                "expression": "=invalid_function()",
+                "result": null,
+                "warnings": [
+                    {
+                        "message": "No function found with name 'invalid_function' and 0 parameters"
+                    }
+                ]
+            }""",
+            JsonCompareMode.STRICT);
   }
 
   @Test

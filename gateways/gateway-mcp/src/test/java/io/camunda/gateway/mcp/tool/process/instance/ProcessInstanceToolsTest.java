@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,12 +46,12 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -105,11 +106,6 @@ class ProcessInstanceToolsTest extends ToolsTest {
   @Captor private ArgumentCaptor<ProcessInstanceQuery> queryCaptor;
   @Captor private ArgumentCaptor<ProcessInstanceCreateRequest> createRequestCaptor;
 
-  @BeforeEach
-  void mockApiServices() {
-    mockApiServiceAuthentication(processInstanceServices);
-  }
-
   private void assertExampleProcessInstance(final ProcessInstanceResult processInstance) {
     assertThat(processInstance.getProcessInstanceKey()).isEqualTo("123");
     assertThat(processInstance.getProcessDefinitionId()).isEqualTo("demoProcess");
@@ -133,7 +129,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
     @Test
     void shouldGetProcessInstanceByKey() {
       // given
-      when(processInstanceServices.getByKey(any())).thenReturn(PROCESS_INSTANCE_ENTITY);
+      when(processInstanceServices.getByKey(any(), any())).thenReturn(PROCESS_INSTANCE_ENTITY);
 
       // when
       final CallToolResult result =
@@ -151,7 +147,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
           objectMapper.convertValue(result.structuredContent(), ProcessInstanceResult.class);
       assertExampleProcessInstance(processInstance);
 
-      verify(processInstanceServices).getByKey(123L);
+      verify(processInstanceServices).getByKey(eq(123L), any());
 
       assertTextContentFallback(result);
     }
@@ -159,7 +155,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
     @Test
     void shouldFailGetProcessInstanceByKeyOnException() {
       // given
-      when(processInstanceServices.getByKey(any()))
+      when(processInstanceServices.getByKey(any(), any()))
           .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
 
       // when
@@ -181,6 +177,48 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
 
       assertTextContentFallback(result);
+    }
+
+    @Test
+    void shouldFailGetProcessInstanceByKeyOnMissingKey() {
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("getProcessInstance").arguments(Map.of()).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("processInstanceKey: Process instance key must not be null."));
+    }
+
+    @Test
+    void shouldFailGetProcessInstanceByKeyOnNullKey() {
+      // when
+      final var arguments = new HashMap<String, Object>();
+      arguments.put("processInstanceKey", null);
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder().name("getProcessInstance").arguments(arguments).build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .isEqualTo("processInstanceKey: Process instance key must not be null."));
     }
 
     @Test
@@ -214,7 +252,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
     @Test
     void shouldSearchProcessInstancesWithFilterSortAndPaging() {
       // given
-      when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
+      when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
           .thenReturn(SEARCH_QUERY_RESULT);
 
       // when
@@ -260,7 +298,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
           .first()
           .satisfies(ProcessInstanceToolsTest.this::assertExampleProcessInstance);
 
-      verify(processInstanceServices).search(queryCaptor.capture());
+      verify(processInstanceServices).search(queryCaptor.capture(), any());
       final ProcessInstanceQuery capturedQuery = queryCaptor.getValue();
 
       final ProcessInstanceFilter filter = capturedQuery.filter();
@@ -304,7 +342,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
     @Test
     void shouldIgnoreTenantIdInFilter() {
       // given
-      when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
+      when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
           .thenReturn(SEARCH_QUERY_RESULT);
 
       // when (tenantId passed in arguments should be ignored by MCP filter schema)
@@ -315,7 +353,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
               .build());
 
       // then
-      verify(processInstanceServices).search(queryCaptor.capture());
+      verify(processInstanceServices).search(queryCaptor.capture(), any());
       final ProcessInstanceQuery capturedQuery = queryCaptor.getValue();
       assertThat(capturedQuery.filter().tenantIdOperations()).isEmpty();
     }
@@ -323,7 +361,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
     @Test
     void shouldFailSearchProcessInstancesOnException() {
       // given
-      when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
+      when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
           .thenThrow(new ServiceException("Expected failure", Status.NOT_FOUND));
 
       // when
@@ -361,7 +399,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
               .setTenantId("<default>")
               .setTags(Set.of());
 
-      when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+      when(processInstanceServices.createProcessInstance(
+              any(ProcessInstanceCreateRequest.class), any()))
           .thenReturn(CompletableFuture.completedFuture(createResponse));
 
       // when
@@ -383,7 +422,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
       final var capturedRequest = createRequestCaptor.getValue();
       assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
       assertThat(capturedRequest.tenantId()).isEqualTo("<default>");
@@ -417,7 +456,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
               .setTenantId("<default>")
               .setTags(Set.of("mcp-tool:abc"));
 
-      when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+      when(processInstanceServices.createProcessInstance(
+              any(ProcessInstanceCreateRequest.class), any()))
           .thenReturn(CompletableFuture.completedFuture(createResponse));
 
       // when
@@ -440,7 +480,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
       // then
       assertThat(result.isError()).isFalse();
 
-      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
       final var capturedRequest = createRequestCaptor.getValue();
       assertThat(capturedRequest.bpmnProcessId()).contains("testProcessId");
       assertThat(capturedRequest.version()).isEqualTo(7);
@@ -479,7 +519,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
               .setTags(Set.of("mcp-tool:abc"));
 
       when(processInstanceServices.createProcessInstanceWithResult(
-              any(ProcessInstanceCreateRequest.class)))
+              any(ProcessInstanceCreateRequest.class), any()))
           .thenReturn(CompletableFuture.completedFuture(createResponse));
 
       // when
@@ -507,7 +547,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(result.isError()).isFalse();
 
       verify(processInstanceServices)
-          .createProcessInstanceWithResult(createRequestCaptor.capture());
+          .createProcessInstanceWithResult(createRequestCaptor.capture(), any());
       final var capturedRequest = createRequestCaptor.getValue();
       assertThat(capturedRequest.awaitCompletion()).isTrue();
       assertThat(capturedRequest.fetchVariables()).containsExactly("foo");
@@ -543,7 +583,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
               .setTags(Set.of("mcp-tool:abc"));
 
       when(processInstanceServices.createProcessInstanceWithResult(
-              any(ProcessInstanceCreateRequest.class)))
+              any(ProcessInstanceCreateRequest.class), any()))
           .thenReturn(CompletableFuture.completedFuture(createResponse));
 
       // when
@@ -571,7 +611,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(result.isError()).isFalse();
 
       verify(processInstanceServices)
-          .createProcessInstanceWithResult(createRequestCaptor.capture());
+          .createProcessInstanceWithResult(createRequestCaptor.capture(), any());
       final var capturedRequest = createRequestCaptor.getValue();
       assertThat(capturedRequest.awaitCompletion()).isTrue();
       assertThat(capturedRequest.requestTimeout()).isEqualTo(60000L);
@@ -595,7 +635,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
       // given
       when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);
 
-      when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+      when(processInstanceServices.createProcessInstance(
+              any(ProcessInstanceCreateRequest.class), any()))
           .thenThrow(new ServiceException("Expected failure", Status.INVALID_ARGUMENT));
 
       // when
@@ -676,7 +717,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
               .setTenantId("tenant-a")
               .setTags(Set.of());
 
-      when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+      when(processInstanceServices.createProcessInstance(
+              any(ProcessInstanceCreateRequest.class), any()))
           .thenReturn(CompletableFuture.completedFuture(createResponse));
 
       // when
@@ -700,7 +742,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
       final var capturedRequest = createRequestCaptor.getValue();
       assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
       assertThat(capturedRequest.tenantId()).isEqualTo("tenant-a");
@@ -734,7 +776,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
               .setTenantId("tenant-a")
               .setTags(Set.of("mcp-tool:abc"));
 
-      when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+      when(processInstanceServices.createProcessInstance(
+              any(ProcessInstanceCreateRequest.class), any()))
           .thenReturn(CompletableFuture.completedFuture(createResponse));
 
       // when
@@ -759,7 +802,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
       // then
       assertThat(result.isError()).isFalse();
 
-      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
       final var capturedRequest = createRequestCaptor.getValue();
       assertThat(capturedRequest.bpmnProcessId()).contains("testProcessId");
       assertThat(capturedRequest.version()).isEqualTo(7);
@@ -853,7 +896,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
               .setTags(Set.of())
               .setBusinessId(businessId);
 
-      when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+      when(processInstanceServices.createProcessInstance(
+              any(ProcessInstanceCreateRequest.class), any()))
           .thenReturn(CompletableFuture.completedFuture(createResponse));
 
       // when
@@ -868,7 +912,7 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(result.isError()).isFalse();
       assertThat(result.structuredContent()).isNotNull();
 
-      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
       final var capturedRequest = createRequestCaptor.getValue();
       assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
       assertThat(capturedRequest.businessId()).isEqualTo(businessId);

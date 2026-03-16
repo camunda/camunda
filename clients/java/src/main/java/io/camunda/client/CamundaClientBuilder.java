@@ -298,6 +298,17 @@ public interface CamundaClientBuilder {
    */
   CamundaClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
 
+  /**
+   * If enabled, the client will use DNS-based name resolution and balance across all addresses.
+   * This allows the client to distribute requests across multiple gateway instances resolved by DNS
+   * without requiring an external load balancer.
+   *
+   * <p>Default is {@code false}.
+   *
+   * @param useClientSideLoadBalancing if true, enables DNS resolution and randomized load balancing
+   */
+  CamundaClientBuilder useClientSideLoadBalancing(final boolean useClientSideLoadBalancing);
+
   /** Sets the maximum number of concurrent HTTP connections the client can open. */
   CamundaClientBuilder maxHttpConnections(int maxConnections);
 

@@ -38,6 +38,7 @@ public final class ToolDescriptions {
       "The assigned key of the process definition, which acts as a unique identifier for this process definition.";
 
   public static final String USER_TASK_KEY_DESCRIPTION = "The user task key.";
+  public static final String VARIABLE_KEY_DESCRIPTION = "The variable key.";
 
   /* Variable descriptions */
   public static final String VARIABLE_FILTER_FORMAT_NOTE =
@@ -54,16 +55,25 @@ public final class ToolDescriptions {
   /** Validation constraint messages */
   public static final String POSITIVE_NUMBER_MESSAGE = "must be a positive number.";
 
+  public static final String NOT_NULL_MESSAGE = "must not be null.";
+
   public static final String INCIDENT_KEY_POSITIVE_MESSAGE =
       "Incident key " + POSITIVE_NUMBER_MESSAGE;
+  public static final String INCIDENT_KEY_NOT_NULL_MESSAGE = "Incident key " + NOT_NULL_MESSAGE;
   public static final String PROCESS_INSTANCE_KEY_POSITIVE_MESSAGE =
       "Process instance key " + POSITIVE_NUMBER_MESSAGE;
+  public static final String PROCESS_INSTANCE_KEY_NOT_NULL_MESSAGE =
+      "Process instance key " + NOT_NULL_MESSAGE;
   public static final String VARIABLE_KEY_POSITIVE_MESSAGE =
       "Variable key " + POSITIVE_NUMBER_MESSAGE;
+  public static final String VARIABLE_KEY_NOT_NULL_MESSAGE = "Variable key " + NOT_NULL_MESSAGE;
   public static final String PROCESS_DEFINITION_KEY_POSITIVE_MESSAGE =
       "Process definition key " + POSITIVE_NUMBER_MESSAGE;
+  public static final String PROCESS_DEFINITION_KEY_NOT_NULL_MESSAGE =
+      "Process definition key " + NOT_NULL_MESSAGE;
   public static final String USER_TASK_KEY_POSITIVE_MESSAGE =
       "User task key " + POSITIVE_NUMBER_MESSAGE;
+  public static final String USER_TASK_KEY_NOT_NULL_MESSAGE = "User task key " + NOT_NULL_MESSAGE;
 
   private ToolDescriptions() {
     // Utility class

@@ -14,56 +14,62 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCorrelateMessageRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
+import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public final class MessageServices extends ApiServices<MessageServices> {
+  private final int maxVariableNameLength;
 
   public MessageServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    this(
+        brokerClient,
+        securityContextProvider,
+        executorProvider,
+        brokerRequestAuthorizationConverter,
+        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
+  }
+
+  public MessageServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final int maxVariableNameLength) {
     super(
         brokerClient,
         securityContextProvider,
-        authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
-  }
-
-  @Override
-  public MessageServices withAuthentication(final CamundaAuthentication authentication) {
-    return new MessageServices(
-        brokerClient,
-        securityContextProvider,
-        authentication,
-        executorProvider,
-        brokerRequestAuthorizationConverter);
+    this.maxVariableNameLength = maxVariableNameLength;
   }
 
   public CompletableFuture<MessageCorrelationRecord> correlateMessage(
-      final CorrelateMessageRequest correlationRequest) {
+      final CorrelateMessageRequest correlationRequest,
+      final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerCorrelateMessageRequest(
-                correlationRequest.name, correlationRequest.correlationKey)
+                correlationRequest.name, correlationRequest.correlationKey, maxVariableNameLength)
             .setVariables(getDocumentOrEmpty(correlationRequest.variables))
             .setTenantId(correlationRequest.tenantId);
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest, authentication);
   }
 
   public CompletableFuture<BrokerResponse<MessageRecord>> publishMessage(
-      final PublicationMessageRequest request) {
+      final PublicationMessageRequest request, final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerPublishMessageRequest(request.name, request.correlationKey)
             .setTimeToLive(request.timeToLive)
             .setMessageId(request.messageId)
             .setVariables(getDocumentOrEmpty(request.variables))
             .setTenantId(request.tenantId);
-    return sendBrokerRequestWithFullResponse(brokerRequest);
+    return sendBrokerRequestWithFullResponse(brokerRequest, authentication);
   }
 
   public record CorrelateMessageRequest(

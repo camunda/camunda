@@ -35,7 +35,7 @@
 		"react-dom": "19.2.4",
 		"sass": "^1.81.0",
 		"sass-loader": "^16.0.3",
-		"storybook": "10.2.8",
+		"storybook": "10.2.10",
 		"style-loader": "^4.0.0",
 		"typescript": "5.9.3"
 	},
