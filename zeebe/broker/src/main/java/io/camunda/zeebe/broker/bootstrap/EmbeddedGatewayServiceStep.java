@@ -42,6 +42,7 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
             brokerStartupContext.getShutdownTimeout(),
             brokerStartupContext.getBrokerConfiguration(),
             brokerStartupContext.getSecurityConfiguration(),
+            brokerStartupContext.getAuthenticationConfig(),
             scheduler,
             concurrencyControl,
             jobStreamClient,

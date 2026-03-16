@@ -10,10 +10,10 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 import io.camunda.gatekeeper.auth.OidcGroupsLoader;
 import io.camunda.gatekeeper.auth.OidcPrincipalLoader;
 import io.camunda.gatekeeper.auth.OidcPrincipalLoader.OidcPrincipals;
+import io.camunda.gatekeeper.config.OidcConfig;
 import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryBuilders;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.util.Either;
 import io.grpc.Context;
@@ -51,21 +51,16 @@ public sealed interface AuthenticationHandler {
 
     public static final String BEARER_PREFIX = "Bearer ";
     private final JwtDecoder jwtDecoder;
-    private final OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
+    private final OidcConfig oidcConfig;
     private final OidcPrincipalLoader oidcPrincipalLoader;
     private final OidcGroupsLoader oidcGroupsLoader;
 
-    public Oidc(
-        final JwtDecoder jwtDecoder,
-        final OidcAuthenticationConfiguration oidcAuthenticationConfiguration) {
+    public Oidc(final JwtDecoder jwtDecoder, final OidcConfig oidcConfig) {
       this.jwtDecoder = Objects.requireNonNull(jwtDecoder);
-      this.oidcAuthenticationConfiguration =
-          Objects.requireNonNull(oidcAuthenticationConfiguration);
+      this.oidcConfig = Objects.requireNonNull(oidcConfig);
       oidcPrincipalLoader =
-          new OidcPrincipalLoader(
-              oidcAuthenticationConfiguration.getUsernameClaim(),
-              oidcAuthenticationConfiguration.getClientIdClaim());
-      oidcGroupsLoader = new OidcGroupsLoader(oidcAuthenticationConfiguration.getGroupsClaim());
+          new OidcPrincipalLoader(oidcConfig.usernameClaim(), oidcConfig.clientIdClaim());
+      oidcGroupsLoader = new OidcGroupsLoader(oidcConfig.groupsClaim());
     }
 
     @Override
@@ -88,11 +83,8 @@ public sealed interface AuthenticationHandler {
 
       var context = Context.current();
       context = context.withValue(IS_CAMUNDA_USERS_ENABLED, false);
-      context =
-          context.withValue(
-              IS_CAMUNDA_GROUPS_ENABLED,
-              !oidcAuthenticationConfiguration.isGroupsClaimConfigured());
-      if (oidcAuthenticationConfiguration.isGroupsClaimConfigured()) {
+      context = context.withValue(IS_CAMUNDA_GROUPS_ENABLED, !oidcConfig.isGroupsClaimConfigured());
+      if (oidcConfig.isGroupsClaimConfigured()) {
         try {
           context = context.withValue(GROUPS_CLAIMS, oidcGroupsLoader.load(token.getClaims()));
         } catch (final Exception e) {
@@ -117,12 +109,10 @@ public sealed interface AuthenticationHandler {
         return Either.left(
             Status.UNAUTHENTICATED.augmentDescription(
                 "Expected either a username (claim: %s) or client ID (claim: %s) on the token, but no matching claim found"
-                    .formatted(
-                        oidcAuthenticationConfiguration.getUsernameClaim(),
-                        oidcAuthenticationConfiguration.getClientIdClaim())));
+                    .formatted(oidcConfig.usernameClaim(), oidcConfig.clientIdClaim())));
       }
 
-      final var preferUsernameClaim = oidcAuthenticationConfiguration.isPreferUsernameClaim();
+      final var preferUsernameClaim = oidcConfig.preferUsernameClaim();
       if ((preferUsernameClaim && principals.username() != null) || principals.clientId() == null) {
         return Either.right(
             context

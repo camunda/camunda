@@ -19,6 +19,7 @@ import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.JobServices;
 import io.camunda.service.security.SecurityContextProvider;
@@ -440,7 +441,8 @@ public class JobControllerLongPollingTest extends RestControllerTest {
           activateJobsHandler,
           null,
           new ApiServicesExecutorProvider(1, 1, 1, 1),
-          new BrokerRequestAuthorizationConverter(new SecurityConfiguration()));
+          new BrokerRequestAuthorizationConverter(
+              SecurityConfigurations.toAuthenticationConfig(new SecurityConfiguration())));
     }
   }
 }

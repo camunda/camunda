@@ -7,16 +7,25 @@
  */
 package io.camunda.security.configuration;
 
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
+import java.time.Duration;
 
 public class SecurityConfigurations {
+
   public static SecurityConfiguration unauthenticatedAndUnauthorized() {
     final SecurityConfiguration securityConfiguration = new SecurityConfiguration();
-    final AuthenticationConfiguration authenticationConfiguration =
-        securityConfiguration.getAuthentication();
-    authenticationConfiguration.setMethod(AuthenticationMethod.BASIC);
-    authenticationConfiguration.setUnprotectedApi(true);
     securityConfiguration.getAuthorizations().setEnabled(false);
     return securityConfiguration;
+  }
+
+  /**
+   * Creates a default {@link AuthenticationConfig} for test contexts where {@link
+   * SecurityConfiguration} no longer carries authentication fields. Returns a BASIC auth config with
+   * unprotected API enabled.
+   */
+  public static AuthenticationConfig toAuthenticationConfig(
+      final SecurityConfiguration securityConfiguration) {
+    return new AuthenticationConfig(AuthenticationMethod.BASIC, Duration.ofSeconds(30), true, null);
   }
 }

@@ -34,9 +34,9 @@ public class OidcMcpServerIT extends AuthenticatedMcpServerTest {
       new TestCamundaApplication()
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withAuthorizationsEnabled()
+          .withProperty("camunda.security.authentication.oidc.client-id-claim", "client_id")
           .withSecurityConfig(
               c -> {
-                c.getAuthentication().getOidc().setClientIdClaim("client_id");
                 c.getInitialization().getUsers().clear();
               })
           .withProperty("camunda.mcp.enabled", true);

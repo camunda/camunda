@@ -14,13 +14,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
+import io.camunda.gatekeeper.config.OidcConfig;
 import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import io.camunda.identity.webapp.controllers.AdminClientConfigController;
-import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SaasConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -111,14 +112,11 @@ public class AdminClientConfigControllerTest {
       final String expectedClusterId)
       throws Exception {
 
+    final var authenticationConfig = createAuthenticationConfig(authMethod, groupsClaim);
     final var securityConfiguration =
-        createSecurityConfiguration(
-            authMethod,
-            groupsClaim,
-            multiTenancyEnabled,
-            expectedOrganizationId,
-            expectedClusterId);
-    final var controller = new AdminClientConfigController(securityConfiguration);
+        createSecurityConfiguration(multiTenancyEnabled, expectedOrganizationId, expectedClusterId);
+    final var controller =
+        new AdminClientConfigController(authenticationConfig, securityConfiguration);
 
     // Setup MockMvc with the controller for this specific test
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
@@ -145,26 +143,43 @@ public class AdminClientConfigControllerTest {
         .containsEntry("clusterId", expectedClusterId);
   }
 
+  private AuthenticationConfig createAuthenticationConfig(
+      final AuthenticationMethod authMethod, final String groupsClaim) {
+    final OidcConfig oidcConfig;
+    if (authMethod == AuthenticationMethod.OIDC) {
+      oidcConfig =
+          new OidcConfig(
+              null,
+              null,
+              null,
+              null,
+              List.of(),
+              null,
+              null,
+              null,
+              null,
+              null,
+              groupsClaim,
+              false,
+              null,
+              List.of(),
+              null,
+              null,
+              false,
+              null,
+              null,
+              null,
+              null);
+    } else {
+      oidcConfig = null;
+    }
+    return new AuthenticationConfig(authMethod, null, false, oidcConfig);
+  }
+
   private SecurityConfiguration createSecurityConfiguration(
-      final AuthenticationMethod authMethod,
-      final String groupsClaim,
-      final boolean multiTenancyEnabled,
-      final String organizationId,
-      final String clusterId) {
+      final boolean multiTenancyEnabled, final String organizationId, final String clusterId) {
 
     final var securityConfiguration = new SecurityConfiguration();
-
-    // Configure authentication
-    final var authentication = new AuthenticationConfiguration();
-    authentication.setMethod(authMethod);
-
-    if (authMethod == AuthenticationMethod.OIDC) {
-      final var oidcConfig = new OidcAuthenticationConfiguration();
-      oidcConfig.setGroupsClaim(groupsClaim);
-      authentication.setOidc(oidcConfig);
-    }
-
-    securityConfiguration.setAuthentication(authentication);
 
     // Configure multi-tenancy
     final var multiTenancy = new MultiTenancyConfiguration();

@@ -48,8 +48,8 @@ public class TasklistV1ApiOidcClientIT {
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withAuthorizationsEnabled()
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withSecurityConfig(c -> c.getAuthentication().getOidc().setClientIdClaim("client_id"))
-          .withSecurityConfig(c -> c.getAuthentication().getOidc().setUsernameClaim("no_username"))
+          .withProperty("camunda.security.authentication.oidc.client-id-claim", "client_id")
+          .withProperty("camunda.security.authentication.oidc.username-claim", "no_username")
           .withSecurityConfig(c -> c.getInitialization().getUsers().clear());
 
   // Injected by the MultiDbTest extension

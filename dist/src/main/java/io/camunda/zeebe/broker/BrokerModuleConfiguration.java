@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -61,6 +62,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final BrokerShutdownHelper shutdownHelper;
   private final MeterRegistry meterRegistry;
   private final SecurityConfiguration securityConfiguration;
+  private final AuthenticationConfig authenticationConfig;
   private final UserServices userServices;
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
@@ -80,6 +82,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final BrokerShutdownHelper shutdownHelper,
       final MeterRegistry meterRegistry,
       final SecurityConfiguration securityConfiguration,
+      final AuthenticationConfig authenticationConfig,
       // The UserServices class is not available if you want to start-up the Standalone Broker
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
@@ -95,6 +98,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.shutdownHelper = shutdownHelper;
     this.meterRegistry = meterRegistry;
     this.securityConfiguration = securityConfiguration;
+    this.authenticationConfig = authenticationConfig;
     this.userServices = userServices;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
@@ -125,11 +129,12 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             brokerClient,
             meterRegistry,
             securityConfiguration,
+            authenticationConfig,
             userServices,
             passwordEncoder,
             jwtDecoder,
             searchClientsProxy,
-            new BrokerRequestAuthorizationConverter(securityConfiguration),
+            new BrokerRequestAuthorizationConverter(authenticationConfig),
             nodeIdProvider);
     springBrokerBridge.registerShutdownHelper(
         errorCode -> shutdownHelper.initiateShutdown(errorCode));

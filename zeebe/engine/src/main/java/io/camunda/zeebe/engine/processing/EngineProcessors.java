@@ -345,7 +345,12 @@ public final class EngineProcessors {
         commandDistributionBehavior);
 
     IdentitySetupProcessors.addIdentitySetupProcessors(
-        keyGenerator, typedRecordProcessors, writers, securityConfig, config);
+        keyGenerator,
+        typedRecordProcessors,
+        writers,
+        securityConfig,
+        brokerRequestAuthorizationConverter.getGroupsClaim(),
+        config);
 
     addResourceFetchProcessors(typedRecordProcessors, writers, processingState, authCheckBehavior);
 

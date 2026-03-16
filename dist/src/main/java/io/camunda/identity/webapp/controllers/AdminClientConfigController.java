@@ -9,6 +9,7 @@ package io.camunda.identity.webapp.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -35,14 +36,19 @@ public class AdminClientConfigController {
   private final String clientConfigAsJS;
   private final ObjectMapper objectMapper;
 
-  public AdminClientConfigController(final SecurityConfiguration securityConfiguration) {
+  public AdminClientConfigController(
+      final AuthenticationConfig authenticationConfig,
+      final SecurityConfiguration securityConfiguration) {
     objectMapper = new ObjectMapper();
-    clientConfigAsJS = generateClientConfig(securityConfiguration);
+    clientConfigAsJS = generateClientConfig(authenticationConfig, securityConfiguration);
   }
 
-  private String generateClientConfig(final SecurityConfiguration securityConfiguration) {
+  private String generateClientConfig(
+      final AuthenticationConfig authenticationConfig,
+      final SecurityConfiguration securityConfiguration) {
     try {
-      final Map<String, String> config = createConfigMap(securityConfiguration);
+      final Map<String, String> config =
+          createConfigMap(authenticationConfig, securityConfiguration);
       final String configJson = objectMapper.writeValueAsString(config);
       return String.format(CONFIG_JS_TEMPLATE, configJson);
     } catch (final JsonProcessingException e) {
@@ -51,13 +57,15 @@ public class AdminClientConfigController {
     }
   }
 
-  private Map<String, String> createConfigMap(final SecurityConfiguration securityConfiguration) {
+  private Map<String, String> createConfigMap(
+      final AuthenticationConfig authenticationConfig,
+      final SecurityConfiguration securityConfiguration) {
     final var config = new java.util.HashMap<String, String>();
     final var saasConfiguration = securityConfiguration.getSaas();
 
-    config.put(IS_OIDC, String.valueOf(isOidcAuthentication(securityConfiguration)));
+    config.put(IS_OIDC, String.valueOf(isOidcAuthentication(authenticationConfig)));
     config.put(
-        IS_CAMUNDA_GROUPS_ENABLED, String.valueOf(isCamundaGroupsEnabled(securityConfiguration)));
+        IS_CAMUNDA_GROUPS_ENABLED, String.valueOf(isCamundaGroupsEnabled(authenticationConfig)));
     config.put(
         IS_TENANTS_API_ENABLED,
         String.valueOf(securityConfiguration.getMultiTenancy().isApiEnabled()));
@@ -68,16 +76,13 @@ public class AdminClientConfigController {
     return config;
   }
 
-  private boolean isOidcAuthentication(final SecurityConfiguration securityConfiguration) {
-    return AuthenticationMethod.OIDC.equals(securityConfiguration.getAuthentication().getMethod());
+  private boolean isOidcAuthentication(final AuthenticationConfig authenticationConfig) {
+    return AuthenticationMethod.OIDC.equals(authenticationConfig.method());
   }
 
-  private boolean isCamundaGroupsEnabled(final SecurityConfiguration securityConfiguration) {
-    final var authentication = securityConfiguration.getAuthentication();
-    final var oidcConfig = authentication.getOidc();
-    return oidcConfig == null
-        || oidcConfig.getGroupsClaim() == null
-        || oidcConfig.getGroupsClaim().isEmpty();
+  private boolean isCamundaGroupsEnabled(final AuthenticationConfig authenticationConfig) {
+    final var oidcConfig = authenticationConfig.oidc();
+    return oidcConfig == null || !oidcConfig.isGroupsClaimConfigured();
   }
 
   @GetMapping(path = "/admin/config.js", produces = "text/javascript;charset=UTF-8")

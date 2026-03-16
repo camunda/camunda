@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.setup;
 
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.gatekeeper.model.identity.AuthenticationMethod;
 import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
@@ -14,7 +15,6 @@ import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.UserMapper;
 import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
 import io.camunda.gateway.protocol.model.UserRequest;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.UserValidator;
 import io.camunda.service.RoleServices;
@@ -46,19 +46,19 @@ public class SetupController {
           .formatted(DefaultRole.ADMIN.getId());
   private final UserServices userServices;
   private final RoleServices roleServices;
-  private final SecurityConfiguration securityConfiguration;
+  private final AuthenticationConfig authenticationConfig;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final UserMapper userMapper;
 
   public SetupController(
       final UserServices userServices,
       final RoleServices roleServices,
-      final SecurityConfiguration securityConfiguration,
+      final AuthenticationConfig authenticationConfig,
       final CamundaAuthenticationProvider authenticationProvider,
       final IdentifierValidator identifierValidator) {
     this.userServices = userServices;
     this.roleServices = roleServices;
-    this.securityConfiguration = securityConfiguration;
+    this.authenticationConfig = authenticationConfig;
     this.authenticationProvider = authenticationProvider;
     userMapper = new UserMapper(new UserRequestValidator(new UserValidator(identifierValidator)));
   }
@@ -66,7 +66,7 @@ public class SetupController {
   @CamundaPostMapping(path = "/user")
   public CompletableFuture<ResponseEntity<Object>> createAdminUser(
       @RequestBody final UserRequest request) {
-    if (securityConfiguration.getAuthentication().getMethod() != AuthenticationMethod.BASIC) {
+    if (authenticationConfig.method() != AuthenticationMethod.BASIC) {
       final var exception =
           new ServiceException(WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE, Status.FORBIDDEN);
       return RestErrorMapper.mapProblemToCompletedResponse(

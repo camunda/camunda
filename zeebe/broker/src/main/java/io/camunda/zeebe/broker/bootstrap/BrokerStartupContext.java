@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -133,6 +134,8 @@ public interface BrokerStartupContext {
   MeterRegistry getMeterRegistry();
 
   SecurityConfiguration getSecurityConfiguration();
+
+  AuthenticationConfig getAuthenticationConfig();
 
   UserServices getUserServices();
 

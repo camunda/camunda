@@ -26,10 +26,9 @@ import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.ClientConfig;
 import io.camunda.operate.webapp.rest.ClientConfigRestService;
-import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.configuration.SaasConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import org.junit.Before;
 import org.junit.Test;
@@ -63,18 +62,16 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
   @MockitoBean private EnvironmentService environmentService;
   @MockitoBean private SecurityConfiguration securityConfiguration;
   @MockitoBean private AuthorizationsConfiguration authorizationsConfiguration;
-  @MockitoBean private AuthenticationConfiguration authenticationConfiguration;
   @MockitoBean private MultiTenancyConfiguration multiTenancyConfiguration;
-  @MockitoBean private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
+  @MockitoBean private SaasConfiguration saasConfiguration;
 
   @Autowired private OperateProperties operateProperties;
 
   @Before
   public void setUp() {
-    given(securityConfiguration.getAuthentication()).willReturn(authenticationConfiguration);
     given(securityConfiguration.getAuthorizations()).willReturn(authorizationsConfiguration);
     given(securityConfiguration.getMultiTenancy()).willReturn(multiTenancyConfiguration);
-    given(authenticationConfiguration.getOidc()).willReturn(oidcAuthenticationConfiguration);
+    given(securityConfiguration.getSaas()).willReturn(saasConfiguration);
     given(operateProfileService.isLoginDelegated()).willReturn(true);
     given(environmentService.getDatabaseType()).willReturn("document-store");
   }
@@ -83,7 +80,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
   public void testGetClientConfig() throws Exception {
     operateProperties.setTasklistUrl("https://tasklist.camunda.io/tl");
     given(authorizationsConfiguration.isEnabled()).willReturn(true);
-    given(oidcAuthenticationConfiguration.getOrganizationId()).willReturn(null);
+    given(saasConfiguration.getOrganizationId()).willReturn(null);
 
     final MockHttpServletRequestBuilder request = get("/operate/client-config.js");
     final MvcResult mvcResult =

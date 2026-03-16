@@ -8,6 +8,8 @@
 package io.camunda.zeebe.gateway;
 
 import com.google.rpc.Code;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -88,6 +90,7 @@ public final class Gateway implements CloseableSilently {
 
   private final GatewayCfg gatewayCfg;
   private final SecurityConfiguration securityConfiguration;
+  private final AuthenticationConfig authenticationConfig;
   private final ActorSchedulingService actorSchedulingService;
   private final GatewayHealthManager healthManager;
   private final ClientStreamer<JobActivationProperties> jobStreamer;
@@ -105,6 +108,7 @@ public final class Gateway implements CloseableSilently {
   public Gateway(
       final GatewayCfg gatewayCfg,
       final SecurityConfiguration securityConfiguration,
+      final AuthenticationConfig authenticationConfig,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer,
@@ -116,6 +120,7 @@ public final class Gateway implements CloseableSilently {
         DEFAULT_SHUTDOWN_TIMEOUT,
         gatewayCfg,
         securityConfiguration,
+        authenticationConfig,
         brokerClient,
         actorSchedulingService,
         jobStreamer,
@@ -130,6 +135,7 @@ public final class Gateway implements CloseableSilently {
       final Duration shutdownDuration,
       final GatewayCfg gatewayCfg,
       final SecurityConfiguration securityConfiguration,
+      final AuthenticationConfig authenticationConfig,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer,
@@ -166,6 +172,7 @@ public final class Gateway implements CloseableSilently {
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
     this.securityConfiguration = securityConfiguration;
+    this.authenticationConfig = authenticationConfig;
     this.brokerClient = brokerClient;
     this.actorSchedulingService = actorSchedulingService;
     this.jobStreamer = jobStreamer;
@@ -443,14 +450,12 @@ public final class Gateway implements CloseableSilently {
     Collections.reverse(interceptors);
     interceptors.add(new ContextInjectingInterceptor(queryApi));
 
-    if (securityConfiguration.isApiProtected()) {
-      final var authMethod = securityConfiguration.getAuthentication().getMethod();
+    if (!authenticationConfig.unprotectedApi()) {
+      final var authMethod = authenticationConfig.method();
       final var handler =
           switch (authMethod) {
             case BASIC -> basicAuth();
-            case OIDC ->
-                new AuthenticationHandler.Oidc(
-                    jwtDecoder, securityConfiguration.getAuthentication().getOidc());
+            case OIDC -> new AuthenticationHandler.Oidc(jwtDecoder, authenticationConfig.oidc());
           };
       interceptors.add(
           new AuthenticationInterceptor(

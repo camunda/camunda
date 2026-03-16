@@ -8,15 +8,13 @@
 package io.camunda.authentication.adapter;
 
 import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
-import io.camunda.gatekeeper.model.identity.UserProfile;
-import io.camunda.gatekeeper.spi.UserProfileProvider;
 import io.camunda.service.UserServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public final class UserProfileAdapter implements UserProfileProvider {
+public final class UserProfileAdapter {
 
   private static final Logger LOG = LoggerFactory.getLogger(UserProfileAdapter.class);
 
@@ -26,7 +24,7 @@ public final class UserProfileAdapter implements UserProfileProvider {
     this.userServices = userServices;
   }
 
-  @Override
+  /** Returns the display name and email for the given username, or null if not found. */
   public UserProfile getUserProfile(final String username) {
     try {
       final var user = userServices.getUser(username, CamundaAuthentication.anonymous());
@@ -39,4 +37,7 @@ public final class UserProfileAdapter implements UserProfileProvider {
       return null;
     }
   }
+
+  /** Simple record holding user display name and email. */
+  public record UserProfile(String displayName, String email) {}
 }

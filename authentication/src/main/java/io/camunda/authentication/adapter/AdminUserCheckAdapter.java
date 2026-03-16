@@ -8,7 +8,6 @@
 package io.camunda.authentication.adapter;
 
 import io.camunda.gatekeeper.model.identity.CamundaAuthentication;
-import io.camunda.gatekeeper.spi.AdminUserCheckProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.RoleServices;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
@@ -20,7 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public final class AdminUserCheckAdapter implements AdminUserCheckProvider {
+public final class AdminUserCheckAdapter {
 
   private static final Logger LOG = LoggerFactory.getLogger(AdminUserCheckAdapter.class);
   private static final String ADMIN_ROLE_ID = DefaultRole.ADMIN.getId();
@@ -35,7 +34,6 @@ public final class AdminUserCheckAdapter implements AdminUserCheckProvider {
     this.roleServices = roleServices;
   }
 
-  @Override
   public boolean hasAdminUser() {
     final var hasConfiguredAdminUser =
         !securityConfiguration

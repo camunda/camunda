@@ -226,9 +226,16 @@ final class StandaloneGatewaySecurityTest {
     final var gatewayRestConfiguration = new GatewayRestConfiguration();
     gatewayRestConfiguration.setMaxNameFieldLength(32 * 1024);
 
+    final var authConfig =
+        new io.camunda.gatekeeper.config.AuthenticationConfig(
+            io.camunda.gatekeeper.model.identity.AuthenticationMethod.BASIC,
+            java.time.Duration.ofSeconds(30),
+            false,
+            null);
     return new GatewayModuleConfiguration(
         gatewayConfig,
         new SecurityConfiguration(),
+        authConfig,
         new SpringGatewayBridge(),
         actorScheduler,
         atomixCluster,

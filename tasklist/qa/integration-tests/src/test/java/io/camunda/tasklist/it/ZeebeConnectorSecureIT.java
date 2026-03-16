@@ -71,7 +71,7 @@ public class ZeebeConnectorSecureIT {
                   cfg.getApi().getGrpc().getSsl().setCertificatePrivateKey(privateKeyFile);
                   cfg.getApi().getGrpc().getSsl().setCertificate(certFile);
                 })
-            .withSecurityConfig(cfg -> cfg.getAuthentication().setUnprotectedApi(true));
+            .withProperty("camunda.security.authentication.unprotected-api", true);
     broker.start();
 
     // replace loopback address with localhost for certificate match

@@ -8,6 +8,7 @@
 package io.camunda.application.commons.security;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -35,10 +36,14 @@ public class CamundaSecurityConfiguration {
       "CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED";
 
   private final CamundaSecurityProperties camundaSecurityProperties;
+  private final AuthenticationConfig authenticationConfig;
 
   @Autowired
-  public CamundaSecurityConfiguration(final CamundaSecurityProperties camundaSecurityProperties) {
+  public CamundaSecurityConfiguration(
+      final CamundaSecurityProperties camundaSecurityProperties,
+      final AuthenticationConfig authenticationConfig) {
     this.camundaSecurityProperties = camundaSecurityProperties;
+    this.authenticationConfig = authenticationConfig;
   }
 
   @Bean
@@ -57,13 +62,16 @@ public class CamundaSecurityConfiguration {
   public IdentifierValidator identifierValidator() {
     return new IdentifierValidator(
         camundaSecurityProperties.getCompiledIdValidationPattern(),
-        camundaSecurityProperties.getCompiledGroupIdValidationPattern());
+        camundaSecurityProperties.getCompiledGroupIdValidationPattern(
+            authenticationConfig.oidc() != null
+                ? authenticationConfig.oidc().groupsClaim()
+                : null));
   }
 
   @PostConstruct
   public void validate() {
     final var multiTenancyEnabled = camundaSecurityProperties.getMultiTenancy().isChecksEnabled();
-    final var apiUnprotected = camundaSecurityProperties.getAuthentication().getUnprotectedApi();
+    final var apiUnprotected = authenticationConfig.unprotectedApi();
 
     if (multiTenancyEnabled && apiUnprotected) {
       throw new IllegalStateException(

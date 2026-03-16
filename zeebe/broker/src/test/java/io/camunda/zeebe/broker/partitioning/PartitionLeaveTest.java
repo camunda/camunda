@@ -232,6 +232,7 @@ final class PartitionLeaveTest {
             atomixCluster,
             brokerClient,
             SecurityConfigurations.unauthenticatedAndUnauthorized(),
+            SecurityConfigurations.toAuthenticationConfig(null),
             null,
             null,
             null,

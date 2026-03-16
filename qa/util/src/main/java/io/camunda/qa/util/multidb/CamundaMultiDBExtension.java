@@ -448,16 +448,13 @@ public class CamundaMultiDBExtension
       setupKeycloak();
       applicationUnderTest
           .application()
-          .withSecurityConfig(
-              cfg -> {
-                final var oidcConfig = cfg.getAuthentication().getOidc();
-                oidcConfig.setClientId("example");
-                oidcConfig.setRedirectUri("example.com");
-                oidcConfig.setIssuerUri(
-                    keycloakContainer.getAuthServerUrl()
-                        + "/realms/"
-                        + CamundaMultiDBExtension.KEYCLOAK_REALM);
-              });
+          .withProperty("camunda.security.authentication.oidc.client-id", "example")
+          .withProperty("camunda.security.authentication.oidc.redirect-uri", "example.com")
+          .withProperty(
+              "camunda.security.authentication.oidc.issuer-uri",
+              keycloakContainer.getAuthServerUrl()
+                  + "/realms/"
+                  + CamundaMultiDBExtension.KEYCLOAK_REALM);
     }
 
     if (shouldSetupKeycloak) {

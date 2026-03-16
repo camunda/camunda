@@ -14,7 +14,9 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.gatekeeper.config.AuthenticationConfig;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
@@ -77,6 +79,8 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private SnowflakeIdGenerator requestIdGenerator = mock(SnowflakeIdGenerator.class);
   private MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private SecurityConfiguration securityConfiguration = new SecurityConfiguration();
+  private AuthenticationConfig authenticationConfig =
+      SecurityConfigurations.toAuthenticationConfig(null);
   private UserServices userServices = mock(UserServices.class);
   private PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
   private JwtDecoder jwtDecoder = mock(JwtDecoder.class);
@@ -353,6 +357,11 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
 
   public void setSecurityConfiguration(final SecurityConfiguration securityConfiguration) {
     this.securityConfiguration = securityConfiguration;
+  }
+
+  @Override
+  public AuthenticationConfig getAuthenticationConfig() {
+    return authenticationConfig;
   }
 
   @Override

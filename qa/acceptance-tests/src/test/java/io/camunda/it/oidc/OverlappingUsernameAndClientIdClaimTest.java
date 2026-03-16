@@ -61,9 +61,9 @@ public class OverlappingUsernameAndClientIdClaimTest {
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withAuthorizationsEnabled()
           .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
-          .withSecurityConfig(c -> c.getAuthentication().getOidc().setClientIdClaim("client_id"))
-          .withSecurityConfig(c -> c.getAuthentication().getOidc().setUsernameClaim("client_id"))
-          .withSecurityConfig(c -> c.getAuthentication().getOidc().setPreferUsernameClaim(true))
+          .withProperty("camunda.security.authentication.oidc.client-id-claim", "client_id")
+          .withProperty("camunda.security.authentication.oidc.username-claim", "client_id")
+          .withProperty("camunda.security.authentication.oidc.prefer-username-claim", "true")
           .withSecurityConfig(c -> c.getInitialization().getUsers().clear())
           .withSecurityConfig(
               c ->

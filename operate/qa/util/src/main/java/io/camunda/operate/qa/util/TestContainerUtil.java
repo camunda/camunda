@@ -457,9 +457,9 @@ public class TestContainerUtil {
                       "true"))
               .withGatewayEnabled(true)
               .withDataConfig(data -> data.setSnapshotPeriod(Duration.ofMinutes(1)))
+              .withProperty("camunda.security.authentication.unprotected-api", true)
               .withSecurityConfig(
                   cfg -> {
-                    cfg.getAuthentication().setUnprotectedApi(true);
                     cfg.getAuthorizations().setEnabled(false);
                     final var user = new ConfiguredUser("demo", "demo", "Demo", "demo@example.com");
                     cfg.getInitialization().setUsers(List.of(user));

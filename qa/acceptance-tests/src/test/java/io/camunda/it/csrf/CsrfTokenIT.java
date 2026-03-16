@@ -15,7 +15,6 @@ import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestWebappClient.TestLoggedInWebappClient;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.security.configuration.CsrfConfiguration;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -40,12 +39,7 @@ public class CsrfTokenIT {
   private static final TestCamundaApplication CAMUNDA_APPLICATION =
       new TestCamundaApplication()
           .withAuthenticatedAccess()
-          .withSecurityConfig(
-              sc -> {
-                final var csrfConfig = new CsrfConfiguration();
-                csrfConfig.setEnabled(true);
-                sc.setCsrf(csrfConfig);
-              })
+          .withProperty("camunda.security.csrf.enabled", "true")
           .withAdditionalProfile("consolidated-auth");
 
   // Test endpoints
