@@ -392,7 +392,12 @@ public class PassiveRole extends InactiveRole {
   public CompletableFuture<AppendResponse> onAppend(final InternalAppendRequest request) {
     raft.checkThread();
     logRequest(request);
-    updateTermAndLeader(request.term(), request.leader());
+    final boolean leaderChanged = updateTermAndLeader(request.term(), request.leader());
+    if (leaderChanged) {
+      // A new leader was elected; the previous leader will no longer complete any in-progress
+      // snapshot replication, so we must abort it to avoid waiting forever.
+      abortPendingSnapshots();
+    }
     return handleAppend(request);
   }
 
@@ -544,7 +549,7 @@ public class PassiveRole extends InactiveRole {
     nextPendingSnapshotChunkId = nextChunkId;
   }
 
-  private void abortPendingSnapshots() {
+  protected void abortPendingSnapshots() {
     if (pendingSnapshot != null) {
       setNextExpected(null);
       previouslyReceivedSnapshotChunkId = null;
