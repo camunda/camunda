@@ -87,7 +87,6 @@ describe('OperationsLogTab', () => {
           result: 'SUCCESS',
           actorId: 'user1',
           timestamp: '2024-01-01T00:00:00.000Z',
-          annotation: 'Updated variable',
           actorType: 'USER',
           category: 'USER_TASKS',
           entityDescription: 'variableValue',
