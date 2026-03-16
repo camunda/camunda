@@ -108,6 +108,7 @@
           </ignoredUnusedDeclaredDependencies>
           <ignoredUsedUndeclaredDependencies>
             <dep>io.camunda:zeebe-gateway-rest</dep>
+            <dep>io.camunda:camunda-gateway-mapping-http</dep>
             <dep>io.camunda:camunda-gateway-mcp</dep>
             <dep>io.camunda:camunda-client-java</dep>
             <dep>io.camunda:camunda-service</dep>

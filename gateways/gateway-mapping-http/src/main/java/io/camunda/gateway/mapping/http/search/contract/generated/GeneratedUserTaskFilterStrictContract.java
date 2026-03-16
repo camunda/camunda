@@ -1,0 +1,695 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ *
+ * GENERATED FILE - DO NOT EDIT.
+ * Source: zeebe/gateway-protocol/src/main/proto/v2/user-tasks.yaml#/components/schemas/UserTaskFilter
+ */
+package io.camunda.gateway.mapping.http.search.contract.generated;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.gateway.mapping.http.search.contract.policy.ContractPolicy;
+import io.camunda.gateway.mapping.http.util.KeyUtil;
+import jakarta.annotation.Generated;
+import java.util.ArrayList;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+
+
+@JsonInclude(JsonInclude.Include.ALWAYS)
+@NullMarked
+@Generated(value = "io.camunda.gateway.mapping.http.tools.GenerateContractMappingPoc")
+public record GeneratedUserTaskFilterStrictContract(
+    @Nullable Object state,
+    @Nullable Object assignee,
+    @Nullable Object priority,
+    @Nullable String elementId,
+    @Nullable Object name,
+    @Nullable Object candidateGroup,
+    @Nullable Object candidateUser,
+    @Nullable Object tenantId,
+    @Nullable String processDefinitionId,
+    @Nullable Object creationDate,
+    @Nullable Object completionDate,
+    @Nullable Object followUpDate,
+    @Nullable Object dueDate,
+    java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract> processInstanceVariables,
+    java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract> localVariables,
+    @Nullable String userTaskKey,
+    @Nullable String processDefinitionKey,
+    @Nullable String processInstanceKey,
+    @Nullable String elementInstanceKey,
+    java.util.@Nullable Set<String> tags
+) {
+
+  public static java.util.List<GeneratedVariableValueFilterPropertyStrictContract> coerceProcessInstanceVariables(final Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (!(value instanceof java.util.List<?> listValue)) {
+      throw new IllegalArgumentException(
+          "processInstanceVariables must be a List of GeneratedVariableValueFilterPropertyStrictContract, but was " + value.getClass().getName());
+    }
+
+    final var result = new ArrayList<GeneratedVariableValueFilterPropertyStrictContract>(listValue.size());
+    for (final var item : listValue) {
+      if (item == null) {
+        result.add(null);
+      } else if (item instanceof GeneratedVariableValueFilterPropertyStrictContract strictItem) {
+        result.add(strictItem);
+
+      } else {
+        throw new IllegalArgumentException(
+            "processInstanceVariables must contain only GeneratedVariableValueFilterPropertyStrictContract items, but got "
+                + item.getClass().getName());
+      }
+    }
+    return java.util.List.copyOf(result);
+  }
+
+
+  public static java.util.List<GeneratedVariableValueFilterPropertyStrictContract> coerceLocalVariables(final Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (!(value instanceof java.util.List<?> listValue)) {
+      throw new IllegalArgumentException(
+          "localVariables must be a List of GeneratedVariableValueFilterPropertyStrictContract, but was " + value.getClass().getName());
+    }
+
+    final var result = new ArrayList<GeneratedVariableValueFilterPropertyStrictContract>(listValue.size());
+    for (final var item : listValue) {
+      if (item == null) {
+        result.add(null);
+      } else if (item instanceof GeneratedVariableValueFilterPropertyStrictContract strictItem) {
+        result.add(strictItem);
+
+      } else {
+        throw new IllegalArgumentException(
+            "localVariables must contain only GeneratedVariableValueFilterPropertyStrictContract items, but got "
+                + item.getClass().getName());
+      }
+    }
+    return java.util.List.copyOf(result);
+  }
+
+
+  public static String coerceUserTaskKey(final Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof String stringValue) {
+      return stringValue;
+    }
+    if (value instanceof Number numberValue) {
+      return KeyUtil.keyToString(numberValue.longValue());
+    }
+    throw new IllegalArgumentException(
+        "userTaskKey must be a String or Number, but was " + value.getClass().getName());
+  }
+
+
+  public static String coerceProcessDefinitionKey(final Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof String stringValue) {
+      return stringValue;
+    }
+    if (value instanceof Number numberValue) {
+      return KeyUtil.keyToString(numberValue.longValue());
+    }
+    throw new IllegalArgumentException(
+        "processDefinitionKey must be a String or Number, but was " + value.getClass().getName());
+  }
+
+
+  public static String coerceProcessInstanceKey(final Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof String stringValue) {
+      return stringValue;
+    }
+    if (value instanceof Number numberValue) {
+      return KeyUtil.keyToString(numberValue.longValue());
+    }
+    throw new IllegalArgumentException(
+        "processInstanceKey must be a String or Number, but was " + value.getClass().getName());
+  }
+
+
+  public static String coerceElementInstanceKey(final Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof String stringValue) {
+      return stringValue;
+    }
+    if (value instanceof Number numberValue) {
+      return KeyUtil.keyToString(numberValue.longValue());
+    }
+    throw new IllegalArgumentException(
+        "elementInstanceKey must be a String or Number, but was " + value.getClass().getName());
+  }
+
+
+
+  public static OptionalStep builder() {
+    return new Builder();
+  }
+
+  public static final class Builder implements OptionalStep {
+    private Object state;
+    private Object assignee;
+    private Object priority;
+    private String elementId;
+    private Object name;
+    private Object candidateGroup;
+    private Object candidateUser;
+    private Object tenantId;
+    private String processDefinitionId;
+    private Object creationDate;
+    private Object completionDate;
+    private Object followUpDate;
+    private Object dueDate;
+    private Object processInstanceVariables;
+    private Object localVariables;
+    private Object userTaskKey;
+    private Object processDefinitionKey;
+    private Object processInstanceKey;
+    private Object elementInstanceKey;
+    private java.util.Set<String> tags;
+
+    private Builder() {}
+
+    @Override
+    public OptionalStep state(final @Nullable Object state) {
+      this.state = state;
+      return this;
+    }
+
+    @Override
+    public OptionalStep state(final @Nullable Object state, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.state = policy.apply(state, Fields.STATE, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep assignee(final @Nullable Object assignee) {
+      this.assignee = assignee;
+      return this;
+    }
+
+    @Override
+    public OptionalStep assignee(final @Nullable Object assignee, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.assignee = policy.apply(assignee, Fields.ASSIGNEE, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep priority(final @Nullable Object priority) {
+      this.priority = priority;
+      return this;
+    }
+
+    @Override
+    public OptionalStep priority(final @Nullable Object priority, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.priority = policy.apply(priority, Fields.PRIORITY, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep elementId(final @Nullable String elementId) {
+      this.elementId = elementId;
+      return this;
+    }
+
+    @Override
+    public OptionalStep elementId(final @Nullable String elementId, final ContractPolicy.FieldPolicy<String> policy) {
+      this.elementId = policy.apply(elementId, Fields.ELEMENT_ID, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep name(final @Nullable Object name) {
+      this.name = name;
+      return this;
+    }
+
+    @Override
+    public OptionalStep name(final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.name = policy.apply(name, Fields.NAME, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep candidateGroup(final @Nullable Object candidateGroup) {
+      this.candidateGroup = candidateGroup;
+      return this;
+    }
+
+    @Override
+    public OptionalStep candidateGroup(final @Nullable Object candidateGroup, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.candidateGroup = policy.apply(candidateGroup, Fields.CANDIDATE_GROUP, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep candidateUser(final @Nullable Object candidateUser) {
+      this.candidateUser = candidateUser;
+      return this;
+    }
+
+    @Override
+    public OptionalStep candidateUser(final @Nullable Object candidateUser, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.candidateUser = policy.apply(candidateUser, Fields.CANDIDATE_USER, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep tenantId(final @Nullable Object tenantId) {
+      this.tenantId = tenantId;
+      return this;
+    }
+
+    @Override
+    public OptionalStep tenantId(final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.tenantId = policy.apply(tenantId, Fields.TENANT_ID, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep processDefinitionId(final @Nullable String processDefinitionId) {
+      this.processDefinitionId = processDefinitionId;
+      return this;
+    }
+
+    @Override
+    public OptionalStep processDefinitionId(final @Nullable String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy) {
+      this.processDefinitionId = policy.apply(processDefinitionId, Fields.PROCESS_DEFINITION_ID, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep creationDate(final @Nullable Object creationDate) {
+      this.creationDate = creationDate;
+      return this;
+    }
+
+    @Override
+    public OptionalStep creationDate(final @Nullable Object creationDate, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.creationDate = policy.apply(creationDate, Fields.CREATION_DATE, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep completionDate(final @Nullable Object completionDate) {
+      this.completionDate = completionDate;
+      return this;
+    }
+
+    @Override
+    public OptionalStep completionDate(final @Nullable Object completionDate, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.completionDate = policy.apply(completionDate, Fields.COMPLETION_DATE, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep followUpDate(final @Nullable Object followUpDate) {
+      this.followUpDate = followUpDate;
+      return this;
+    }
+
+    @Override
+    public OptionalStep followUpDate(final @Nullable Object followUpDate, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.followUpDate = policy.apply(followUpDate, Fields.FOLLOW_UP_DATE, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep dueDate(final @Nullable Object dueDate) {
+      this.dueDate = dueDate;
+      return this;
+    }
+
+    @Override
+    public OptionalStep dueDate(final @Nullable Object dueDate, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.dueDate = policy.apply(dueDate, Fields.DUE_DATE, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep processInstanceVariables(final java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract> processInstanceVariables) {
+      this.processInstanceVariables = processInstanceVariables;
+      return this;
+    }
+
+    @Override
+    public OptionalStep processInstanceVariables(final @Nullable Object processInstanceVariables) {
+      this.processInstanceVariables = processInstanceVariables;
+      return this;
+    }
+
+    public Builder processInstanceVariables(final java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract> processInstanceVariables, final ContractPolicy.FieldPolicy<java.util.List<GeneratedVariableValueFilterPropertyStrictContract>> policy) {
+      this.processInstanceVariables = policy.apply(processInstanceVariables, Fields.PROCESS_INSTANCE_VARIABLES, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep processInstanceVariables(final @Nullable Object processInstanceVariables, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.processInstanceVariables = policy.apply(processInstanceVariables, Fields.PROCESS_INSTANCE_VARIABLES, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep localVariables(final java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract> localVariables) {
+      this.localVariables = localVariables;
+      return this;
+    }
+
+    @Override
+    public OptionalStep localVariables(final @Nullable Object localVariables) {
+      this.localVariables = localVariables;
+      return this;
+    }
+
+    public Builder localVariables(final java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract> localVariables, final ContractPolicy.FieldPolicy<java.util.List<GeneratedVariableValueFilterPropertyStrictContract>> policy) {
+      this.localVariables = policy.apply(localVariables, Fields.LOCAL_VARIABLES, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep localVariables(final @Nullable Object localVariables, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.localVariables = policy.apply(localVariables, Fields.LOCAL_VARIABLES, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep userTaskKey(final @Nullable String userTaskKey) {
+      this.userTaskKey = userTaskKey;
+      return this;
+    }
+
+    @Override
+    public OptionalStep userTaskKey(final @Nullable Object userTaskKey) {
+      this.userTaskKey = userTaskKey;
+      return this;
+    }
+
+    public Builder userTaskKey(final @Nullable String userTaskKey, final ContractPolicy.FieldPolicy<String> policy) {
+      this.userTaskKey = policy.apply(userTaskKey, Fields.USER_TASK_KEY, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep userTaskKey(final @Nullable Object userTaskKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.userTaskKey = policy.apply(userTaskKey, Fields.USER_TASK_KEY, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep processDefinitionKey(final @Nullable String processDefinitionKey) {
+      this.processDefinitionKey = processDefinitionKey;
+      return this;
+    }
+
+    @Override
+    public OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey) {
+      this.processDefinitionKey = processDefinitionKey;
+      return this;
+    }
+
+    public Builder processDefinitionKey(final @Nullable String processDefinitionKey, final ContractPolicy.FieldPolicy<String> policy) {
+      this.processDefinitionKey = policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.processDefinitionKey = policy.apply(processDefinitionKey, Fields.PROCESS_DEFINITION_KEY, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep processInstanceKey(final @Nullable String processInstanceKey) {
+      this.processInstanceKey = processInstanceKey;
+      return this;
+    }
+
+    @Override
+    public OptionalStep processInstanceKey(final @Nullable Object processInstanceKey) {
+      this.processInstanceKey = processInstanceKey;
+      return this;
+    }
+
+    public Builder processInstanceKey(final @Nullable String processInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+      this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep processInstanceKey(final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.processInstanceKey = policy.apply(processInstanceKey, Fields.PROCESS_INSTANCE_KEY, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep elementInstanceKey(final @Nullable String elementInstanceKey) {
+      this.elementInstanceKey = elementInstanceKey;
+      return this;
+    }
+
+    @Override
+    public OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey) {
+      this.elementInstanceKey = elementInstanceKey;
+      return this;
+    }
+
+    public Builder elementInstanceKey(final @Nullable String elementInstanceKey, final ContractPolicy.FieldPolicy<String> policy) {
+      this.elementInstanceKey = policy.apply(elementInstanceKey, Fields.ELEMENT_INSTANCE_KEY, null);
+      return this;
+    }
+
+    @Override
+    public OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy) {
+      this.elementInstanceKey = policy.apply(elementInstanceKey, Fields.ELEMENT_INSTANCE_KEY, null);
+      return this;
+    }
+
+
+    @Override
+    public OptionalStep tags(final java.util.@Nullable Set<String> tags) {
+      this.tags = tags;
+      return this;
+    }
+
+    @Override
+    public OptionalStep tags(final java.util.@Nullable Set<String> tags, final ContractPolicy.FieldPolicy<java.util.Set<String>> policy) {
+      this.tags = policy.apply(tags, Fields.TAGS, null);
+      return this;
+    }
+
+    @Override
+    public GeneratedUserTaskFilterStrictContract build() {
+      return new GeneratedUserTaskFilterStrictContract(
+          this.state,
+          this.assignee,
+          this.priority,
+          this.elementId,
+          this.name,
+          this.candidateGroup,
+          this.candidateUser,
+          this.tenantId,
+          this.processDefinitionId,
+          this.creationDate,
+          this.completionDate,
+          this.followUpDate,
+          this.dueDate,
+          coerceProcessInstanceVariables(this.processInstanceVariables),
+          coerceLocalVariables(this.localVariables),
+          coerceUserTaskKey(this.userTaskKey),
+          coerceProcessDefinitionKey(this.processDefinitionKey),
+          coerceProcessInstanceKey(this.processInstanceKey),
+          coerceElementInstanceKey(this.elementInstanceKey),
+          this.tags);
+    }
+  }
+
+  public interface OptionalStep {
+  OptionalStep state(final @Nullable Object state);
+
+  OptionalStep state(final @Nullable Object state, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep assignee(final @Nullable Object assignee);
+
+  OptionalStep assignee(final @Nullable Object assignee, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep priority(final @Nullable Object priority);
+
+  OptionalStep priority(final @Nullable Object priority, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep elementId(final @Nullable String elementId);
+
+  OptionalStep elementId(final @Nullable String elementId, final ContractPolicy.FieldPolicy<String> policy);
+
+
+  OptionalStep name(final @Nullable Object name);
+
+  OptionalStep name(final @Nullable Object name, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep candidateGroup(final @Nullable Object candidateGroup);
+
+  OptionalStep candidateGroup(final @Nullable Object candidateGroup, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep candidateUser(final @Nullable Object candidateUser);
+
+  OptionalStep candidateUser(final @Nullable Object candidateUser, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep tenantId(final @Nullable Object tenantId);
+
+  OptionalStep tenantId(final @Nullable Object tenantId, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep processDefinitionId(final @Nullable String processDefinitionId);
+
+  OptionalStep processDefinitionId(final @Nullable String processDefinitionId, final ContractPolicy.FieldPolicy<String> policy);
+
+
+  OptionalStep creationDate(final @Nullable Object creationDate);
+
+  OptionalStep creationDate(final @Nullable Object creationDate, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep completionDate(final @Nullable Object completionDate);
+
+  OptionalStep completionDate(final @Nullable Object completionDate, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep followUpDate(final @Nullable Object followUpDate);
+
+  OptionalStep followUpDate(final @Nullable Object followUpDate, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep dueDate(final @Nullable Object dueDate);
+
+  OptionalStep dueDate(final @Nullable Object dueDate, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep processInstanceVariables(final java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract> processInstanceVariables);
+
+  OptionalStep processInstanceVariables(final @Nullable Object processInstanceVariables);
+
+  OptionalStep processInstanceVariables(final java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract> processInstanceVariables, final ContractPolicy.FieldPolicy<java.util.List<GeneratedVariableValueFilterPropertyStrictContract>> policy);
+
+  OptionalStep processInstanceVariables(final @Nullable Object processInstanceVariables, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep localVariables(final java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract> localVariables);
+
+  OptionalStep localVariables(final @Nullable Object localVariables);
+
+  OptionalStep localVariables(final java.util.@Nullable List<GeneratedVariableValueFilterPropertyStrictContract> localVariables, final ContractPolicy.FieldPolicy<java.util.List<GeneratedVariableValueFilterPropertyStrictContract>> policy);
+
+  OptionalStep localVariables(final @Nullable Object localVariables, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep userTaskKey(final @Nullable String userTaskKey);
+
+  OptionalStep userTaskKey(final @Nullable Object userTaskKey);
+
+  OptionalStep userTaskKey(final @Nullable String userTaskKey, final ContractPolicy.FieldPolicy<String> policy);
+
+  OptionalStep userTaskKey(final @Nullable Object userTaskKey, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep processDefinitionKey(final @Nullable String processDefinitionKey);
+
+  OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey);
+
+  OptionalStep processDefinitionKey(final @Nullable String processDefinitionKey, final ContractPolicy.FieldPolicy<String> policy);
+
+  OptionalStep processDefinitionKey(final @Nullable Object processDefinitionKey, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep processInstanceKey(final @Nullable String processInstanceKey);
+
+  OptionalStep processInstanceKey(final @Nullable Object processInstanceKey);
+
+  OptionalStep processInstanceKey(final @Nullable String processInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+
+  OptionalStep processInstanceKey(final @Nullable Object processInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep elementInstanceKey(final @Nullable String elementInstanceKey);
+
+  OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey);
+
+  OptionalStep elementInstanceKey(final @Nullable String elementInstanceKey, final ContractPolicy.FieldPolicy<String> policy);
+
+  OptionalStep elementInstanceKey(final @Nullable Object elementInstanceKey, final ContractPolicy.FieldPolicy<Object> policy);
+
+
+  OptionalStep tags(final java.util.@Nullable Set<String> tags);
+
+  OptionalStep tags(final java.util.@Nullable Set<String> tags, final ContractPolicy.FieldPolicy<java.util.Set<String>> policy);
+
+
+    GeneratedUserTaskFilterStrictContract build();
+  }
+
+
+  public static final class Fields {
+    public static final ContractPolicy.FieldRef STATE = ContractPolicy.field("UserTaskFilter", "state");
+    public static final ContractPolicy.FieldRef ASSIGNEE = ContractPolicy.field("UserTaskFilter", "assignee");
+    public static final ContractPolicy.FieldRef PRIORITY = ContractPolicy.field("UserTaskFilter", "priority");
+    public static final ContractPolicy.FieldRef ELEMENT_ID = ContractPolicy.field("UserTaskFilter", "elementId");
+    public static final ContractPolicy.FieldRef NAME = ContractPolicy.field("UserTaskFilter", "name");
+    public static final ContractPolicy.FieldRef CANDIDATE_GROUP = ContractPolicy.field("UserTaskFilter", "candidateGroup");
+    public static final ContractPolicy.FieldRef CANDIDATE_USER = ContractPolicy.field("UserTaskFilter", "candidateUser");
+    public static final ContractPolicy.FieldRef TENANT_ID = ContractPolicy.field("UserTaskFilter", "tenantId");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_ID = ContractPolicy.field("UserTaskFilter", "processDefinitionId");
+    public static final ContractPolicy.FieldRef CREATION_DATE = ContractPolicy.field("UserTaskFilter", "creationDate");
+    public static final ContractPolicy.FieldRef COMPLETION_DATE = ContractPolicy.field("UserTaskFilter", "completionDate");
+    public static final ContractPolicy.FieldRef FOLLOW_UP_DATE = ContractPolicy.field("UserTaskFilter", "followUpDate");
+    public static final ContractPolicy.FieldRef DUE_DATE = ContractPolicy.field("UserTaskFilter", "dueDate");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_VARIABLES = ContractPolicy.field("UserTaskFilter", "processInstanceVariables");
+    public static final ContractPolicy.FieldRef LOCAL_VARIABLES = ContractPolicy.field("UserTaskFilter", "localVariables");
+    public static final ContractPolicy.FieldRef USER_TASK_KEY = ContractPolicy.field("UserTaskFilter", "userTaskKey");
+    public static final ContractPolicy.FieldRef PROCESS_DEFINITION_KEY = ContractPolicy.field("UserTaskFilter", "processDefinitionKey");
+    public static final ContractPolicy.FieldRef PROCESS_INSTANCE_KEY = ContractPolicy.field("UserTaskFilter", "processInstanceKey");
+    public static final ContractPolicy.FieldRef ELEMENT_INSTANCE_KEY = ContractPolicy.field("UserTaskFilter", "elementInstanceKey");
+    public static final ContractPolicy.FieldRef TAGS = ContractPolicy.field("UserTaskFilter", "tags");
+
+    private Fields() {}
+  }
+
+
+}
