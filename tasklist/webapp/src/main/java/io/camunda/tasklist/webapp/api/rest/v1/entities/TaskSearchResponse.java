@@ -233,6 +233,11 @@ public class TaskSearchResponse {
     return this;
   }
 
+  public TaskSearchResponse setFormVersion(final Number formVersion) {
+    this.formVersion = formVersion == null ? null : formVersion.longValue();
+    return this;
+  }
+
   public Boolean getIsFormEmbedded() {
     return isFormEmbedded;
   }
@@ -338,6 +343,11 @@ public class TaskSearchResponse {
 
   public TaskSearchResponse setPriority(final int priority) {
     this.priority = priority;
+    return this;
+  }
+
+  public TaskSearchResponse setPriority(final Number priority) {
+    this.priority = priority == null ? 0 : priority.intValue();
     return this;
   }
 
