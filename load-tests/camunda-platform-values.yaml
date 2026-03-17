@@ -194,6 +194,11 @@ orchestration:
         # RocksDB memory limit setting, limits the overall RocksDB memory usage
         # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
         zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
+    # This file is loaded after application.yml (higher priority). It is empty by default,
+    # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
+    # like disabling consistency checks without duplicating the full application.yml content.
+    - file: application-override.yml
+      content: "# no overrides"
 
   # Zeebe config
   extraVolumes:
@@ -233,7 +238,9 @@ orchestration:
     # To be able to load a separate/additional configuration
     # See https://github.com/camunda/camunda-platform-helm/issues/2197
     - name: SPRING_CONFIG_ADDITIONALLOCATION
-      value: "/usr/local/camunda/config/application.yml"
+      # application-override.yml is listed second so it has higher priority and can override application.yml.
+      # Marked optional so Spring does not fail if this file is not mounted in a given deployment configuration.
+      value: "/usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml"
 
 # Change these settings to configure a different way to collect metrics
 prometheusServiceMonitor:
