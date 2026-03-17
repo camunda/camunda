@@ -30,6 +30,10 @@ public class BpmnLinkedResourceBehavior {
 
   public Either<Failure, Void> createVariables(
       final BpmnElementContext context, final JobProperties j) {
+    if (j.getLinkedResources() == null) {
+      return Either.right(null);
+    }
+
     j.getLinkedResources().stream()
         .filter(resource -> !Strings.isNullOrEmpty(resource.getVariableName()))
         .flatMap(
