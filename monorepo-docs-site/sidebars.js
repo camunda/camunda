@@ -25,14 +25,13 @@ const sidebars = {
       type: 'category',
       label: 'Architecture',
       items: [
-        'architecture/architecture_overview',
         {
           type: 'category',
           label: 'Components',
           items: [
             {
               type: 'category',
-              label: 'Identity',
+              label: 'Orchestration Cluster Identity',
               items: [
                 'architecture/components/identity/identity_architecture_docs',
                 {
@@ -56,11 +55,11 @@ const sidebars = {
                 },
                 {
                   type: 'category',
-                  label: 'Misc',
+                  label: 'Supporting concepts',
                   items: [
-                    'architecture/components/identity/misc/data-model',
-                    'architecture/components/identity/misc/default-roles',
-                    'architecture/components/identity/misc/rp-initiated-logout',
+                    'architecture/components/identity/supporting-concepts/data-model',
+                    'architecture/components/identity/supporting-concepts/default-roles',
+                    'architecture/components/identity/supporting-concepts/rp-initiated-logout',
                   ],
                 },
               ],

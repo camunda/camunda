@@ -30,3 +30,4 @@ development scenarios. An optional no-auth mode is also available for local or d
 - Requires customers to operate or adopt an OIDC-capable IdP (e.g. Keycloak, Okta, Auth0,
   Microsoft Entra ID, Amazon Cognito).
 - Additional configuration complexity compared to Basic auth.
+
