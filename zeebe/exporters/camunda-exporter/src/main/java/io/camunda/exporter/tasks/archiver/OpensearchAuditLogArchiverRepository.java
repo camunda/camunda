@@ -98,19 +98,9 @@ public class OpensearchAuditLogArchiverRepository extends OpensearchRepository
 
                                         final var auditLogIds =
                                             auditLogHits.stream().map(Hit::id).toList();
-                                        // If we fetched as many audit logs as the batch size limit
-                                        // allows, there may be more remaining. In that case, keep
-                                        // the cleanup entities so the next run can continue
-                                        // processing the remaining audit logs.
-                                        final var batchSizeLimit =
-                                            historyConfig.getRolloverBatchSize();
-                                        final var resolvedCleanupIds =
-                                            auditLogIds.size() >= batchSizeLimit
-                                                ? List.<String>of()
-                                                : cleanupEntityIds;
                                         return CompletableFuture.completedFuture(
                                             new AuditLogCleanupBatch(
-                                                finishDate, resolvedCleanupIds, auditLogIds));
+                                                finishDate, cleanupEntityIds, auditLogIds));
                                       }));
                     },
                     executor));
@@ -122,10 +112,6 @@ public class OpensearchAuditLogArchiverRepository extends OpensearchRepository
     final var bulkRequestBuilder = new BulkRequest.Builder();
     final var sourceIndexName = auditLogCleanupIndex.getFullQualifiedName();
     final var ids = batch.auditLogCleanupIds();
-
-    if (ids.isEmpty()) {
-      return CompletableFuture.completedFuture(0);
-    }
 
     ids.forEach(
         id -> bulkRequestBuilder.operations(op -> op.delete(d -> d.index(sourceIndexName).id(id))));
