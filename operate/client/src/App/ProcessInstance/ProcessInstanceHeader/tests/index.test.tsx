@@ -17,9 +17,11 @@ import {ProcessInstanceHeader} from '../index';
 import {mockInstance, Wrapper} from './index.setup';
 
 import {
+  createIncident,
   createUser,
   mockCallActivityProcessXML,
   mockProcessXML,
+  searchResult,
 } from 'modules/testUtils';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -30,7 +32,6 @@ import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetc
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockDeleteProcessInstance} from 'modules/mocks/api/v2/processInstances/deleteProcessInstance';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
-import {mockIncidents} from 'App/ProcessInstance/IncidentsWrapper/tests/mocks';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -112,7 +113,7 @@ describe('InstanceHeader', () => {
     } satisfies typeof mockInstance;
     mockSearchIncidentsByProcessInstance(
       failedInstance.processInstanceKey,
-    ).withSuccess(mockIncidents);
+    ).withSuccess(searchResult([createIncident(), createIncident()]));
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(<ProcessInstanceHeader processInstance={failedInstance} />, {
