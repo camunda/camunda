@@ -128,6 +128,7 @@ final class AssertionJwkProviderTest {
         null,
         null,
         null,
+        null,
         "sub",
         null,
         null,

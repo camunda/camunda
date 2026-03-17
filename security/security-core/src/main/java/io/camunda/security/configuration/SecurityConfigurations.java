@@ -21,8 +21,8 @@ public class SecurityConfigurations {
 
   /**
    * Creates a default {@link AuthenticationConfig} for test contexts where {@link
-   * SecurityConfiguration} no longer carries authentication fields. Returns a BASIC auth config with
-   * unprotected API enabled.
+   * SecurityConfiguration} no longer carries authentication fields. Returns a BASIC auth config
+   * with unprotected API enabled.
    */
   public static AuthenticationConfig toAuthenticationConfig(
       final SecurityConfiguration securityConfiguration) {

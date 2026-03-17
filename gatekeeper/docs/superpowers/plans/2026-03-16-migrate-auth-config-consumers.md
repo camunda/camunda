@@ -97,6 +97,7 @@ new AuthenticationHandler.Oidc(jwtDecoder, authenticationConfig.oidc())
 ```
 
 Also change `securityConfiguration.getAuthentication().getMethod()` to use injected `AuthenticationConfig`:
+
 ```java
 // Before:
 final var authMethod = securityConfiguration.getAuthentication().getMethod();
@@ -284,6 +285,7 @@ Fix any remaining references to `getAuthentication()` or `getCsrf()` on `Securit
 These utilities mutate `securityConfig.getAuthentication().setXxx()`. Replace with Spring property overrides.
 
 Pattern:
+
 ```java
 // Before:
 securityConfig.getAuthentication().setUnprotectedApi(true);
@@ -313,6 +315,7 @@ Check each utility for a `withProperty` method or equivalent. These test builder
 Tests that call `.withSecurityConfig(c -> c.getAuthentication().getOidc().setXxx())` should switch to `.withProperty("camunda.security.authentication.oidc.xxx", "value")`.
 
 Common patterns:
+
 ```java
 // Before:
 .withSecurityConfig(c -> c.getAuthentication().getOidc().setClientIdClaim("client_id"))
@@ -394,3 +397,4 @@ Run: `cd gatekeeper && ../mvnw test`
 git add -A
 git commit -m "refactor: migrate auth config consumers to gatekeeper types, remove AuthenticationConfiguration and OidcAuthenticationConfiguration from security-core"
 ```
+

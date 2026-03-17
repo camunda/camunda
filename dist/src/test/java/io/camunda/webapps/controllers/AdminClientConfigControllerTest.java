@@ -159,6 +159,7 @@ public class AdminClientConfigControllerTest {
               null,
               null,
               null,
+              null,
               groupsClaim,
               false,
               null,

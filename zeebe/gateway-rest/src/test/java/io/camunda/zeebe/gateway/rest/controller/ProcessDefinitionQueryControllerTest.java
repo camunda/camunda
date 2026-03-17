@@ -15,8 +15,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.gateway.protocol.model.simple.ProcessDefinitionSearchQuerySortRequest;
 import io.camunda.gatekeeper.spi.CamundaAuthenticationProvider;
+import io.camunda.gateway.protocol.model.simple.ProcessDefinitionSearchQuerySortRequest;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;

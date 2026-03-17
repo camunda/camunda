@@ -229,11 +229,12 @@ public class GatekeeperProperties {
     private String authorizationUri;
     private String tokenUri;
     private String endSessionEndpointUri;
+    private String userInfoEndpointUri;
     private String usernameClaim = "sub";
     private String clientIdClaim;
     private String groupsClaim;
     private boolean preferUsernameClaim = false;
-    private String scope;
+    private String scope = "openid profile";
     private List<String> audiences = new ArrayList<>();
     private String redirectUri;
     private String clockSkew = "PT60S";
@@ -264,6 +265,7 @@ public class GatekeeperProperties {
           authorizationUri,
           tokenUri,
           endSessionEndpointUri,
+          userInfoEndpointUri,
           usernameClaim,
           clientIdClaim,
           groupsClaim,
@@ -341,6 +343,14 @@ public class GatekeeperProperties {
 
     public void setEndSessionEndpointUri(final String endSessionEndpointUri) {
       this.endSessionEndpointUri = endSessionEndpointUri;
+    }
+
+    public String getUserInfoEndpointUri() {
+      return userInfoEndpointUri;
+    }
+
+    public void setUserInfoEndpointUri(final String userInfoEndpointUri) {
+      this.userInfoEndpointUri = userInfoEndpointUri;
     }
 
     public String getUsernameClaim() {

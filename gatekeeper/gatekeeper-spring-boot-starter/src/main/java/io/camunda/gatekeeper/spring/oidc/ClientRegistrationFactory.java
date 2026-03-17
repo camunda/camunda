@@ -71,6 +71,9 @@ public final class ClientRegistrationFactory {
       metadata.put("end_session_endpoint", config.endSessionEndpointUri());
       builder.providerConfigurationMetadata(metadata);
     }
+    if (config.userInfoEndpointUri() != null) {
+      builder.userInfoUri(config.userInfoEndpointUri());
+    }
     if (config.tokenUri() != null) {
       builder.tokenUri(config.tokenUri());
     }
@@ -78,7 +81,7 @@ public final class ClientRegistrationFactory {
       builder.jwkSetUri(config.jwkSetUri());
     }
     if (config.scope() != null) {
-      builder.scope(config.scope());
+      builder.scope(config.scope().split("\\s+"));
     }
     if (config.grantType() != null) {
       builder.authorizationGrantType(new AuthorizationGrantType(config.grantType()));

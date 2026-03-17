@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
  * original WebSecurityConfig constants.
  */
 @Component
-public final class DefaultSecurityPathProvider implements SecurityPathProvider {
+public final class CamundaSecurityPathProvider implements SecurityPathProvider {
 
   @Override
   public Set<String> apiPaths() {
@@ -40,6 +40,7 @@ public final class DefaultSecurityPathProvider implements SecurityPathProvider {
         "/swagger-ui/**",
         "/v3/api-docs/**",
         "/rest-api.yaml",
+        "/post-logout",
         "/new/**",
         "/tasklist/new/**",
         "/favicon.ico");

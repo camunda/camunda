@@ -234,6 +234,7 @@ public final class GatekeeperOidcAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
+  @org.springframework.context.annotation.Lazy
   public OAuth2AuthorizedClientManager authorizedClientManager(
       final ClientRegistrationRepository clientRegistrationRepository,
       final OAuth2AuthorizedClientRepository authorizedClientRepository) {
