@@ -25,7 +25,7 @@ import {
   mappingRuleIdFromState,
 } from '@requestHelpers';
 import {MAPPING_RULES_EXPECTED_BODY} from '../../../../utils/beans/requestBeans';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 test.describe.serial('Tenant Mapping Rule API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -66,7 +66,10 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
     };
 
     const res = await request.put(
-      buildUrl('/tenants/{tenantId}/mapping-rules/{mappingRuleId}', stateParams),
+      buildUrl(
+        '/tenants/{tenantId}/mapping-rules/{mappingRuleId}',
+        stateParams,
+      ),
       {
         headers: jsonHeaders(),
       },
@@ -86,7 +89,10 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
     };
 
     const res = await request.put(
-      buildUrl('/tenants/{tenantId}/mapping-rules/{mappingRuleId}', stateParams),
+      buildUrl(
+        '/tenants/{tenantId}/mapping-rules/{mappingRuleId}',
+        stateParams,
+      ),
       {
         headers: jsonHeaders(),
       },
@@ -145,6 +151,7 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
       mappingRuleId: mappingRuleIdFromState('tenantId2', state) as string,
       tenantId: state['tenantId2'] as string,
     };
+
     await test.step('Unassign Mapping Rule From Tenant', async () => {
       await expect(async () => {
         const res = await request.delete(
@@ -157,35 +164,34 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
       }).toPass(defaultAssertionOptions);
     });
 
-    await test.step(
-      'Search Tenant Mapping Rules After Deletion',
-      async () => {
-        await expect(async () => {
-          const res = await request.post(
-            buildUrl('/tenants/{tenantId}/mapping-rules/search', p),
-            {
-              headers: jsonHeaders(),
-              data: {},
-            },
-          );
+    await test.step('Search Tenant Mapping Rules After Deletion', async () => {
+      await expect(async () => {
+        const res = await request.post(
+          buildUrl('/tenants/{tenantId}/mapping-rules/search', p),
+          {
+            headers: jsonHeaders(),
+            data: {},
+          },
+        );
 
-          await assertStatusCode(res, 200);
-          await validateResponse(
-            {
-                path: '/tenants/{tenantId}/mapping-rules/search',
-                method: 'POST',
-                status: '200',
-            },
-            res,
-          );
-          const json = await res.json();
-          expect(json.page.totalItems).toBe(0);
-        }).toPass(defaultAssertionOptions);
-      },
-    );
+        await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/tenants/{tenantId}/mapping-rules/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
+        const json = await res.json();
+        expect(json.page.totalItems).toBe(0);
+      }).toPass(defaultAssertionOptions);
+    });
   });
 
-  test('Unassign Mapping Rule From Tenant - Unauthorized', async ({request}) => {
+  test('Unassign Mapping Rule From Tenant - Unauthorized', async ({
+    request,
+  }) => {
     const p = {
       mappingRuleId: mappingRuleIdFromState('tenantId2', state) as string,
       tenantId: state['tenantId2'] as string,
@@ -251,9 +257,9 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
       await assertStatusCode(res, 200);
       await validateResponse(
         {
-            path: '/tenants/{tenantId}/mapping-rules/search',
-            method: 'POST',
-            status: '200',
+          path: '/tenants/{tenantId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
         },
         res,
       );
@@ -298,9 +304,9 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
       await assertStatusCode(res, 200);
       await validateResponse(
         {
-            path: '/tenants/{tenantId}/mapping-rules/search',
-            method: 'POST',
-            status: '200',
+          path: '/tenants/{tenantId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
         },
         res,
       );
@@ -316,7 +322,9 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  test('Search Tenant Mapping Rules Tenant Not Found - Not Found', async ({request}) => {
+  test('Search Tenant Mapping Rules Tenant Not Found - Not Found', async ({
+    request,
+  }) => {
     const p = {tenantId: 'invalid-tenant-id'};
     const res = await request.post(
       buildUrl('/tenants/{tenantId}/mapping-rules/search', p),
@@ -325,9 +333,9 @@ test.describe.serial('Tenant Mapping Rule API Tests', () => {
     await assertStatusCode(res, 200);
     await validateResponse(
       {
-          path: '/tenants/{tenantId}/mapping-rules/search',
-          method: 'POST',
-          status: '200',
+        path: '/tenants/{tenantId}/mapping-rules/search',
+        method: 'POST',
+        status: '200',
       },
       res,
     );
