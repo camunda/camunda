@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.lang.management.ManagementFactory;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,16 +28,13 @@ import org.springframework.util.unit.DataSize;
 class RocksDbSharedCacheTest {
   private static final int DEFAULT_PARTITION_COUNT = 1;
   private BrokerCfg brokerCfg;
+  private MeterRegistry meterRegistry;
 
   @BeforeEach
   void setUp() {
     brokerCfg = new BrokerCfg();
     brokerCfg.getExperimental().getRocksdb().setMemoryLimit(DataSize.ofBytes(512 * 1024 * 1024L));
-    // it's already the default, but to be explicit
-    brokerCfg
-        .getExperimental()
-        .getRocksdb()
-        .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
+    meterRegistry = new SimpleMeterRegistry();
   }
 
   /**
@@ -78,6 +77,10 @@ class RocksDbSharedCacheTest {
   void shouldValidateMaxMemoryFractionConfiguration(
       final double maxMemoryFraction, final boolean shouldThrow) {
     // when
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
     brokerCfg.getExperimental().getRocksdb().setMaxMemoryFraction(maxMemoryFraction);
     brokerCfg.getExperimental().getRocksdb().setMemoryLimit(DataSize.ofBytes(128L * 1024 * 1024L));
     // then
@@ -109,6 +112,10 @@ class RocksDbSharedCacheTest {
   void shouldValidateMemoryAllocationAgainstMaxFraction(
       final DataSize memoryLimit, final double fraction, final boolean shouldThrow) {
     // when
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
     brokerCfg.getExperimental().getRocksdb().setMaxMemoryFraction(fraction);
     brokerCfg.getExperimental().getRocksdb().setMemoryLimit(memoryLimit);
 
@@ -138,6 +145,10 @@ class RocksDbSharedCacheTest {
   @Test
   void shouldThrowIfTriesToAllocateMoreThanFractionalOfRam() {
     // when
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
     brokerCfg.getExperimental().getRocksdb().setMaxMemoryFraction(0.100);
     brokerCfg
         .getExperimental()
@@ -167,6 +178,10 @@ class RocksDbSharedCacheTest {
     brokerCfg
         .getExperimental()
         .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
         .setMemoryLimit(DataSize.ofBytes(200L * 1024 * 1024)); // 200MB
     // then when we allocate more than half of the memory to rocks db, we expect NO exception
     try (final var managementFactoryMock = mockMemoryEnvironment(256L * 1024 * 1024)) { // 256MB
@@ -183,6 +198,10 @@ class RocksDbSharedCacheTest {
   void shouldThrowIfMemoryPerPartitionTooSmall() {
     // when
     // we only give half of the minimum required memory per partition
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
     brokerCfg
         .getExperimental()
         .getRocksdb()
@@ -239,6 +258,36 @@ class RocksDbSharedCacheTest {
                     brokerCfg.getExperimental().getRocksdb(), morePartitionsCount);
               })
           .doesNotThrowAnyException();
+    }
+  }
+
+  @Test
+  void shouldAccountForReplicationFactorWhenAllocatingMemoryPerPartition() {
+    // given
+    // 8 partitions, 3 replicas, 4 brokers =>
+    // partitionsPerBroker = 8 * 3 / 4 = 6 partitions per broker
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
+    brokerCfg.getCluster().setPartitionsCount(8);
+    brokerCfg.getCluster().setReplicationFactor(3);
+    brokerCfg.getCluster().setClusterSize(4);
+    brokerCfg
+        .getExperimental()
+        .getRocksdb()
+        .setMemoryLimit(DataSize.ofBytes(64L * 1024 * 1024)); // 64MB per partition
+
+    // when
+    // Total allocation = 64MB * 6 partitions per broker = 384MB
+    try (final var ignored = mockMemoryEnvironment(512L * 1024 * 1024)) { // 512MB
+      try (final var sharedResources =
+          RocksDbSharedCache.allocateSharedCache(brokerCfg, meterRegistry)) {
+        // then
+        // Expected: 64MB * (8 partitions * 3 replicas / 4 brokers) = 64MB * 6 = 384MB
+        final long expectedAllocation = 64L * 1024 * 1024 * 6;
+        assertThat(sharedResources.reservedMemory()).isEqualTo(expectedAllocation);
+      }
     }
   }
 
@@ -358,5 +407,64 @@ class RocksDbSharedCacheTest {
         .hasMessageContaining(
             "Expected the memoryFraction for RocksDB FRACTION memory allocation strategy to be between 0 and 1, but was %s.",
             0.0);
+  }
+
+  static Stream<Arguments> provideExceedsTotalSystemMemoryScenarios() {
+    return Stream.of(
+        // 512MB limit with PARTITION strategy, 1 partition, 256MB total system memory
+        Arguments.of(
+            512L * 1024 * 1024,
+            MemoryAllocationStrategy.PARTITION,
+            1,
+            256L * 1024 * 1024,
+            new String[] {"512 MB", "256 MB", "PARTITION"}),
+        // 512MB limit with BROKER strategy, 1 partition, 256MB total system memory
+        Arguments.of(
+            512L * 1024 * 1024,
+            MemoryAllocationStrategy.BROKER,
+            1,
+            256L * 1024 * 1024,
+            new String[] {"BROKER"}),
+        // 128MB per partition with 4 partitions = 512MB, 256MB total system memory
+        Arguments.of(
+            128L * 1024 * 1024,
+            MemoryAllocationStrategy.PARTITION,
+            4,
+            256L * 1024 * 1024,
+            new String[] {"512 MB", "256 MB", "Partitions count: 4"}));
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideExceedsTotalSystemMemoryScenarios")
+  void shouldThrowIfRequestedMemoryExceedsTotalSystemMemory(
+      final long memoryLimitBytes,
+      final MemoryAllocationStrategy strategy,
+      final int partitionsCount,
+      final long totalSystemMemory,
+      final String[] expectedMessageParts) {
+    // given
+    brokerCfg.getExperimental().getRocksdb().setMemoryLimit(DataSize.ofBytes(memoryLimitBytes));
+    brokerCfg.getExperimental().getRocksdb().setMemoryAllocationStrategy(strategy);
+
+    // when/then
+    try (final var ignored = mockMemoryEnvironment(totalSystemMemory)) {
+      final var throwable =
+          catchThrowable(
+              () ->
+                  RocksDbSharedCache.validateRocksDbMemory(
+                      brokerCfg.getExperimental().getRocksdb(), partitionsCount));
+
+      var assertion =
+          assertThat(throwable)
+              .isInstanceOf(IllegalArgumentException.class)
+              .hasMessageContaining("Requested RocksDB memory")
+              .hasMessageContaining("exceeds total system memory")
+              .hasMessageContaining(
+                  "Consider reducing the value of CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYLIMIT");
+
+      for (final String part : expectedMessageParts) {
+        assertion = assertion.hasMessageContaining(part);
+      }
+    }
   }
 }
