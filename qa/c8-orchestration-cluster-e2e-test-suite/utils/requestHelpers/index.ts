@@ -84,3 +84,4 @@ export {
   searchCorrelatedMessageSubscriptions,
   CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT,
 } from './message-requestHelpers';
+export {type AuditLog} from './audit-log-requestHelpers';

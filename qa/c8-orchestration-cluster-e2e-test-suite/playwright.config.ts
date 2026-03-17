@@ -77,6 +77,7 @@ const apiTestMatch = isRDBMSApiTestsOnly
 const apiTestIgnore = [
   'tests/api/v2/clock/*.spec.ts',
   'tests/api/v2/usage-metrics/*.spec.ts',
+  'tests/api/v2/audit-log/*.spec.ts',
 ];
 // Projects
 const normalProjects = [
@@ -92,6 +93,7 @@ const normalProjects = [
     testMatch: [
       'tests/api/v2/clock/*.spec.ts',
       'tests/api/v2/usage-metrics/*.spec.ts',
+      'tests/api/v2/audit-log/*.spec.ts',
     ],
     use: devices['Desktop Chrome'],
     workers: 1,
