@@ -17,11 +17,11 @@ It provides:
 
 - Unified access management for cluster components: Zeebe, Operate, Tasklist, Orchestration Cluster REST/gRPC APIs.
 - Flexible authentication:
-  - OIDC with external IdPs (Keycloak, Okta, Auth0, Microsoft Entra ID, Amazon Cognito and other OIDC providers).
+  - OIDC with external IdPs (Keycloak, Okta, Auth0, Microsoft Entra ID, Amazon Cognito, and other OIDC providers).
   - Basic authentication.
   - Optional no‑auth for local and simple Self‑Managed setups.
-- Fine‑grained, resource‑based authorizations across runtime resources (for example PROCESS_DEFINITION, PROCESS_INSTANCE, USER_TASK).
-- Tenant management handled directly in Orchestration Cluster Identity (Self‑Managed), allowing tenants per cluster for runtime data and access isolation.
+- Fine‑grained, resource‑based authorizations across runtime resources (for example, PROCESS_DEFINITION, PROCESS_INSTANCE, USER_TASK).
+- Tenant management is handled directly in Orchestration Cluster Identity (Self‑Managed), allowing tenants per cluster for runtime data and access isolation.
 - No dedicated identity database; Identity entities reuse Zeebe primary and secondary storage.
 
 Goals:
@@ -36,19 +36,19 @@ Goals:
 Selected high‑level requirements:
 
 - R1 – Cluster‑scoped access control
-  Identity controls access to Zeebe, Operate, Tasklist and Orchestration Cluster APIs per cluster.
+  Identity controls access to Zeebe, Operate, Tasklist, and Orchestration Cluster APIs per cluster.
 
 - R2 – External IdP integration
-  OIDC integration with enterprise IdPs; mapping of token claims to users, groups, roles, tenants and authorizations.
+  OIDC integration with enterprise IdPs; mapping of token claims to users, groups, roles, tenants, and authorizations.
 
 - R3 – Fine‑grained authorizations
   Resource‑based permissions evaluated uniformly across UIs and APIs.
 
 - R4 – Multi‑tenancy (Self‑Managed)
-  Tenants created, assigned and enforced at Orchestration Cluster level. Management Identity is no longer source of truth for runtime tenants.
+  Tenants created, assigned, and enforced at Orchestration Cluster level. Management Identity is no longer a source of truth for runtime tenants.
 
 - R5 – Migration from Management Identity
-  Tooling and mappings to migrate users, groups, roles, tenants, mapping rules and resource authorizations from Management Identity.
+  Tooling and mappings to migrate users, groups, roles, tenants, mapping rules, and resource authorizations from Management Identity.
 
 ### 1.3 Quality goals (top level)
 
@@ -83,11 +83,10 @@ TBD
   Authorization checks use the shared framework and behaviors owned by the Identity team but extensible by feature teams.
 
 - No Management Identity dependency for runtime
-  Engine and runtime UIs should not depend on Management Identity. That component is reserved for Web Modeler, Console and Optimize in Self‑Managed.
+  Engine and runtime UIs should not depend on Management Identity. That component is reserved for Web Modeler, Console, and Optimize in Self‑Managed.
 
 - Reuse of existing storage
   No separate identity database; Identity entities reuse Zeebe primary and secondary storage.
-
 
 ## 3. System context and scope
 
@@ -147,20 +146,19 @@ Entities:
 - Orchestration Cluster: runtime deployment containing Zeebe, Operate, Tasklist, Identity, REST/gRPC APIs.
 - Enterprise IdP: customer IdP providing SSO and tokens via OIDC/SAML (e.g. Okta, Entra, Keycloak, etc.).
 - Primary Database: RocksDB used for Zeebe Engine state.
-- Secondary Database: Elasticsearch, OpenSearch, or RDBMS used for search queries. Contains Runtime, History, and Identity data.
+- Secondary Database: Elasticsearch, OpenSearch, or RDBMS are used for search queries. Contains Runtime, History, and Identity data.
 
 External interfaces (technical):
 
 - Incoming:
   - Browser‑based UIs (Operate, Tasklist, Admin UI) using OIDC or Basic auth.
-  - REST/gRPC APIs for workers, service accounts and applications (Bearer tokens from IdP).
+  - REST/gRPC APIs for workers, service accounts, and applications (Bearer tokens from IdP).
 - Outgoing:
   - OIDC IdP for login redirects, token introspection, or validation depending on IdP use.
   - Requests against secondary database for search queries.
 - Internal:
   - Calls from UIs and APIs to Authentication and Authorization engine.
   - Persistence of identity entities in primary and secondary storage.
-
 
 ## 4. Solution strategy
 
@@ -169,11 +167,11 @@ External interfaces (technical):
 
 - Multi‑protocol authentication
   Basic for simple Self‑Managed setups and development.
-  OIDC for production with SSO, MFA and centralized user lifecycle.
+  OIDC for production with SSO, MFA, and centralized user lifecycle.
   Optional no‑auth for local or demo scenarios.
 
 - Resource‑based authorization
-  Fine‑grained authorizations per resource type and action (for example PROCESS_DEFINITION:READ, USER_TASK:ASSIGN) across UIs and APIs.
+  Fine‑grained authorizations per resource type and action (for example, PROCESS_DEFINITION:READ, USER_TASK:ASSIGN) across UIs and APIs.
 
 - Cluster‑local tenant model
   Tenants are managed directly in Identity per cluster. Management Identity tenants remain only for Optimize in Self‑Managed.
@@ -183,7 +181,6 @@ External interfaces (technical):
 
 - Reuse of Zeebe storage
   Identity entities are stored using Zeebe’s existing primary (RocksDB) and secondary (ES/OS/RDBMS) storage instead of a separate identity database.
-
 
 ## 5. Building block view
 
@@ -287,14 +284,14 @@ Key responsibilities:
 - Spring Security Configuration (`WebSecurityConfig.BasicConfiguration`): Spring `@Configuration` subclass of `WebSecurityConfig`, activated by `camunda.security.authentication.method=basic`. It is responsible for configuring the Spring Security filter chains for Basic auth and registering the `UsernamePasswordAuthenticationTokenConverter` bean. The `@ConditionalOnProtectedApi` annotation on individual filter chain beans controls whether API endpoints require authentication (based on the `camunda.security.api.unprotected` property).
 - Basic Auth Converter (`UsernamePasswordAuthenticationTokenConverter`): converts Basic auth credentials (username/password or clientId/secret) into a `CamundaAuthentication` by loading the user entity and its roles and tenants via Camunda Services.
 - Claims Converter (`TokenClaimsConverter`): core converter that extracts username or clientId from token claims and loads group, role, and tenant memberships via `MembershipService`.
-- Mapping Rules Processor (`MappingRuleMatcher`): evaluates JSONPath mapping rules against IdP claims to assign roles, groups, tenants and authorizations.
+- Mapping Rules Processor (`MappingRuleMatcher`): evaluates JSONPath mapping rules against IdP claims to assign roles, groups, tenants, and authorizations.
 - Authentication Provider (`DefaultCamundaAuthenticationProvider`): bridges Spring Security to the Camunda authentication context via `CamundaAuthentication`.
 - Session Repository (`WebSessionRepository`): creates and invalidates server‑side sessions backed by secondary storage.
 
 Extern responsibilities:
 
 - Spring Security (`UsernamePasswordAuthenticationFilter`): performs the actual credential extraction and delegates to the configured converter.
-- Camunda Services: provide access to user, role, group, tenant and mapping rule data via the Camunda Search Client (secondary database). Used services include `UserServices`, `RoleServices`, `GroupServices`, `TenantServices`, and `MappingRuleServices`.
+- Camunda Services: provide access to user, role, group, tenant, and mapping rule data via the Camunda Search Client (secondary database). Used services include `UserServices`, `RoleServices`, `GroupServices`, `TenantServices`, and `MappingRuleServices`.
 - Camunda Search Client: used to query the secondary database for user, role, tenant and mapping rule data during authentication, or in case of the WebSessionRepository to store the session.
 
 ##### OIDC flow
@@ -354,7 +351,7 @@ Key responsibilities:
   - OIDC User Service (`OidcUserService`): loads OIDC user details from the IdP's userinfo endpoint during browser login.
   - OIDC Token Converter (`OidcTokenAuthenticationConverter`): converts Bearer JWTs (M2M) into a `CamundaAuthentication` (OIDC M2M only)..
 - Claims Converter (`TokenClaimsConverter`): core converter that extracts username or clientId from token claims and loads group, role, and tenant memberships via `MembershipService`.
-- Mapping Rules Processor (`MappingRuleMatcher`): evaluates JSONPath mapping rules against IdP claims to assign roles, groups, tenants and authorizations.
+- Mapping Rules Processor (`MappingRuleMatcher`): evaluates JSONPath mapping rules against IdP claims to assign roles, groups, tenants, and authorizations.
 - Authentication Provider (`DefaultCamundaAuthenticationProvider`): bridges Spring Security to the Camunda authentication context via `CamundaAuthentication`.
 - Session Repository (`WebSessionRepository`): creates and invalidates server‑side sessions backed by secondary storage.
 
@@ -442,9 +439,8 @@ Key responsibilities:
 - RBAC Authorization Engine (`AuthorizationCheckBehavior`): main entry point; receives the principal and the requested resource + action and decides whether to allow or deny the command. It does not read directly from RocksDB but instead delegates to the engine's State classes (`ProcessingState`, `AuthorizationState`, `MembershipState`, `MappingRuleState`), which abstract the underlying RocksDB storage.
 - Claims Extractor (`ClaimsExtractor`): extracts username, clientId, and groups from the raw claims in an authorization request.
 - Tenant Resolver (`TenantResolver`): resolves the set of tenants the principal is authorized for, using membership state and mapping rules read from primary storage via the State classes.
-- Permission Check (`AuthorizationRequest`): record holding the resource type, required permission, tenant ID and property constraints for a single authorization check.
+- Permission Check (`AuthorizationRequest`): record holding the resource type, required permission, tenant ID, and property constraints for a single authorization check.
 - State classes (`ProcessingState`, `AuthorizationState`, `MembershipState`, `MappingRuleState`): abstract the RocksDB state access; `AuthorizationCheckBehavior` reads all identity state (authorizations, roles, memberships, mapping rules) through these classes.
-
 
 ## 6. Runtime view
 
@@ -928,7 +924,6 @@ sequenceDiagram
   SECONDARY_DB-->>EXPORTER: Persisted authorization
 ```
 
-
 ## 7. Deployment view
 
 Identity‑specific aspects:
@@ -938,13 +933,12 @@ Identity‑specific aspects:
 
 - Storage
   Identity entities are stored using:
+
   - Primary storage: RocksDB.
   - Secondary storage: the configured search database (ES/OS/RDBMS).
-
 - Self‑Managed deployments
   - Typically deployed on Kubernetes using the Camunda 8 Helm charts.
   - Identity runs within the Orchestration Cluster pods; no separate identity database or service is required for runtime.
-
 - SaaS deployments
   - Orchestration Clusters are hosted by Camunda.
   - Identity is included per cluster and integrated with Camunda's SaaS control plane and IdP setup.
@@ -995,7 +989,6 @@ flowchart TB
   IDENTITY <-->|"OIDC / token validation"| IDP
 ```
 
-
 ## 8. Crosscutting concepts
 
 - Authentication concept
@@ -1004,7 +997,7 @@ flowchart TB
 
 - Authorization and RBAC concept
   Central resource‑based authorization model, decoupled from individual UIs and services.
-  Shared checks used by engine, Operate, Tasklist and APIs.
+  Shared checks used by engine, Operate, Tasklist, and APIs.
   For detailed behavior and examples, see the [Authorization concept](authorizations/authorization-concept.md), [Engine authorization checks](authorizations/engine-authorization.md), and [REST authorization checks](authorizations/rest-authorization.md).
 
 - Tenant concept
@@ -1016,24 +1009,21 @@ flowchart TB
   Enables identity‑as‑code and external lifecycle via IdP.
 
 - Migration concept (from Management Identity)
-  Identity Migration tooling to move roles, groups, tenants, resource authorizations and mapping rules.
+  Identity Migration tooling to move roles, groups, tenants, resource authorizations, and mapping rules.
   Designed to be idempotent and re‑runnable.
 
 - Storage and consistency
   Identity state follows Zeebe's durability and snapshot mechanisms via shared storage.
   Secondary storage ensures efficient querying for Admin UI and APIs.
 
-
 ## 9. Architectural decisions
 
-The architectural decisions for Identity are documented as individual ADR files in the
-[/adr](docs/monorepo-docs/architecture/components/identity/adr) folder:
+The architectural decisions for Identity are documented as individual ADR files:
 
 - [ADR-0001: Cluster-Embedded Identity Instead of External Component](adr/0001-cluster-embedded-identity.md)
 - [ADR-0002: OIDC as Default Production Authentication](adr/0002-oidc-default-production-authentication.md)
 - [ADR-0003: Resource-Based Authorization Model](adr/0003-resource-based-authorization-model.md)
 - [ADR-0004: Support Multiple JWKS Endpoints per OIDC Issuer](adr/0004-multi-jwks-endpoints-per-issuer.md)
-
 
 ## 10. Risks and technical debt
 
@@ -1042,26 +1032,26 @@ The architectural decisions for Identity are documented as individual ADR files 
   Mitigation: dedicated Identity Migration App, idempotent runs, detailed logs; still requires careful testing in customer environments.
 
 - Dual identity model during transition
-  Management Identity remains for Web Modeler, Console and Optimize (Self‑Managed) while Orchestration Cluster Identity serves runtime.
+  Management Identity remains for Web Modeler, Console, and Optimize (Self‑Managed) while Orchestration Cluster Identity serves runtime.
   Risk of confusion about the source of truth and duplicated configuration until long‑term consolidation is complete.
 
 - IdP dependency
   For OIDC, availability and correctness of the external IdP are critical for login and token issuance.
   Misconfigured claims or group mappings can lead to over‑ or under‑provisioned access.
 
-
 ## 11. Glossary
 
-| Term                           | Definition                                                                                                     |
-|--------------------------------|----------------------------------------------------------------------------------------------------------------|
-| Orchestration Cluster          | Unified Camunda 8 runtime: Zeebe, Operate, Tasklist, Identity, REST/gRPC APIs.                                |
-| Orchestration Cluster Identity | Cluster‑embedded identity service for authentication, authorization and identity entities.                    |
-| Orchestration Cluster Admin    | UI surface for cluster Identity (new name in 8.9); hosts identity features.                                   |
-| Management Identity            | Standalone identity app (Self‑Managed) for Web Modeler, Console and Optimize.                                 |
-| Tenant                         | Logical partition of data and access within a cluster (runtime multi‑tenancy).                                |
-| Authorization                  | Permission linking a principal to a resource type and action (for example READ, UPDATE, DELETE).              |
+|              Term              |                                                    Definition                                                     |
+|--------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| Orchestration Cluster          | Unified Camunda 8 runtime: Zeebe, Operate, Tasklist, Identity, REST/gRPC APIs.                                    |
+| Orchestration Cluster Identity | Cluster‑embedded identity service for authentication, authorization and identity entities.                        |
+| Orchestration Cluster Admin    | UI surface for cluster Identity (new name in 8.9); hosts identity features.                                       |
+| Management Identity            | Standalone identity app (Self‑Managed) for Web Modeler, Console and Optimize.                                     |
+| Tenant                         | Logical partition of data and access within a cluster (runtime multi‑tenancy).                                    |
+| Authorization                  | Permission linking a principal to a resource type and action (for example READ, UPDATE, DELETE).                  |
 | Mapping rule                   | Rule mapping IdP claims (groups, attributes) to identity entities such as groups, roles, tenants, authorizations. |
-| User                           | Human user performing modeling, operations or task work.                                                      |
-| Service accounts / workers     | Non‑interactive clients calling REST/gRPC APIs using client credentials.                                      |
-| OIDC IdP                       | External identity provider; source of identity, attributes and group claims.                                  |
-| Cluster components             | Runtime components enforcing Identity decisions for user and client operations.                               |
+| User                           | Human user performing modeling, operations or task work.                                                          |
+| Service accounts / workers     | Non‑interactive clients calling REST/gRPC APIs using client credentials.                                          |
+| OIDC IdP                       | External identity provider; source of identity, attributes and group claims.                                      |
+| Cluster components             | Runtime components enforcing Identity decisions for user and client operations.                                   |
+
