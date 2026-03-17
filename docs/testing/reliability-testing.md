@@ -187,33 +187,16 @@ Arbitrary Helm arguments can be passed, making it easier to customize the load t
 
 ##### Creating manually
 
-As a last resort, if more customization is needed, it is also possible to manually deploy a benchmark. The [zeebe-benchmark](https://github.com/camunda/zeebe-benchmark-helm) Helm chart repository contains a [detailed](https://github.com/camunda/zeebe-benchmark-helm/blob/main/charts/zeebe-benchmark/README.md) guide regarding this.
-
-```shell
-# Add the Zeebe benchmark chart to the local repository
-helm repo add zeebe-benchmark https://camunda.github.io/zeebe-benchmark-helm/
-# Install a new Helm Chart release to the current namespace
-helm install RELEASE-NAME zeebe-benchmark/zeebe-benchmark
-```
-
-To apply configuration changes, either edit the existing [values](https://github.com/camunda/zeebe-benchmark-helm/blob/main/charts/zeebe-benchmark/values.yaml) file in the repository (and apply them via **\-f**) or set configurations via the **\--se**t flag. For more information, see also the [related Helm documentation](https://helm.sh/docs/chart_template_guide/values_files/).
+As a last resort, if more customization is needed, it is also possible to manually deploy a benchmark.
+For further details on this topic, follow the [README](../../zeebe/benchmarks/setup/README.md) in our `zeebe/benchmarks/setup` directory.
 
 ##### SaaS Test
 
-One use case to create load tests manually is to run load tests against an SaaS cluster.
+One use case for manually creating load tests is running them against an SaaS cluster.
 
 As a precondition for such tests, you need to create a cluster in SaaS (the stage doesn’t matter, may it be **DEV**, **INT,** or **PROD**). Additionally, we need client credentials deployed with the SaaS load tests, such that the starters and workers can connect to the right cluster.
 
-```shell
-# Source the downloaded credentials first, before run the following install command
-helm install ck-saas-load-test zeebe-benchmark/zeebe-benchmark \
-  --set camunda-platform.enabled=false \
-  --set saas.enabled=true \
-  --set saas.credentials.clientId="$ZEEBE_CLIENT_ID" \
-  --set saas.credentials.clientSecret="$ZEEBE_CLIENT_SECRET" \
-  --set saas.credentials.zeebeAddress="$ZEEBE_ADDRESS" \
-  --set saas.credentials.authServer="$ZEEBE_AUTHORIZATION_SERVER_URL"
-```
+For further details on this topic, follow the [README](../../zeebe/benchmarks/setup/README.md#load-testing-camunda-saas) in our `zeebe/benchmarks/setup` directory.
 
 ## Chaos engineering
 
