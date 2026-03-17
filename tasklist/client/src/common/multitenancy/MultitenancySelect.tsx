@@ -8,15 +8,18 @@
 
 import {Select, SelectItem} from '@carbon/react';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
+import {useTranslation} from 'react-i18next';
 
 type Props = React.ComponentProps<typeof Select>;
 
 const MultitenancySelect: React.FC<Props> = (props) => {
   const {data: currentUser} = useCurrentUser();
+  const {t} = useTranslation();
   const tenants = currentUser?.tenants ?? [];
 
   return (
     <Select {...props} disabled={props.disabled || currentUser === undefined}>
+      <SelectItem value="" text={t('customFiltersModalAllTenants')} />
       {tenants.map(({tenantId, name}) => (
         <SelectItem key={tenantId} value={tenantId} text={name} />
       ))}
