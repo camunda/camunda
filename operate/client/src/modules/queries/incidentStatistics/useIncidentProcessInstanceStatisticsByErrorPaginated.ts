@@ -89,8 +89,4 @@ const useIncidentProcessInstanceStatisticsByErrorPaginated = <
   });
 };
 
-export {
-  useIncidentProcessInstanceStatisticsByErrorPaginated,
-  PAGE_LIMIT,
-  PAGES_LIMIT,
-};
+export {useIncidentProcessInstanceStatisticsByErrorPaginated, PAGE_LIMIT};

@@ -22,10 +22,6 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 const mockInstance = createProcessInstance();
 
-const mockInstanceWithParentInstance = createProcessInstance({
-  parentProcessInstanceKey: '8724390842390124',
-});
-
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {
@@ -50,4 +46,4 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   );
 };
 
-export {mockInstance, mockInstanceWithParentInstance, Wrapper};
+export {mockInstance, Wrapper};
