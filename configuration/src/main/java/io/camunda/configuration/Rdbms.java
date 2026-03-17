@@ -38,6 +38,13 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
    */
   private Integer maxVarcharFieldLength = RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH;
 
+  /**
+   * The maximum duration a Liquibase lock can be held before it is considered stale and forcibly
+   * released. This allows recovery from container crashes that left the schema locked. Set to null
+   * to disable stale lock detection. Default is 15 minutes.
+   */
+  private Duration ddlLockWaitTimeout = Duration.ofMinutes(15);
+
   /** Process definition cache configuration. Defines the size of the process definition cache. */
   private RdbmsCache processCache = new RdbmsCache();
 
@@ -189,5 +196,13 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   public void setMaxVarcharFieldLength(final Integer maxVarcharFieldLength) {
     this.maxVarcharFieldLength = maxVarcharFieldLength;
+  }
+
+  public Duration getDdlLockWaitTimeout() {
+    return ddlLockWaitTimeout;
+  }
+
+  public void setDdlLockWaitTimeout(final Duration ddlLockWaitTimeout) {
+    this.ddlLockWaitTimeout = ddlLockWaitTimeout;
   }
 }

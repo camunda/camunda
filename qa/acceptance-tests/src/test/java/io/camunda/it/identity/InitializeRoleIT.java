@@ -21,6 +21,7 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.configuration.ConfiguredRole;
+import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -39,10 +40,13 @@ class InitializeRoleIT {
           "role1",
           "Role 1",
           "something to test",
-          List.of(ADMIN),
+          List.of("test-user", ADMIN),
           List.of(TEST_CLIENT_ID),
           List.of(),
           List.of());
+
+  private static final ConfiguredUser CONFIGURED_USER =
+      new ConfiguredUser("test-user", DEFAULT_PASSWORD, "test-user", "");
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -50,7 +54,10 @@ class InitializeRoleIT {
           .withBasicAuth()
           .withAuthorizationsEnabled()
           .withSecurityConfig(
-              conf -> conf.getInitialization().setRoles(List.of(CONFIGURED_ROLE_1)));
+              conf -> {
+                conf.getInitialization().setRoles(List.of(CONFIGURED_ROLE_1));
+                conf.getInitialization().getUsers().add(CONFIGURED_USER);
+              });
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -91,7 +98,10 @@ class InitializeRoleIT {
 
     // then:
     assertThat(membersResponse.items()).hasSize(1);
-    assertThat(membersResponse.items()).anyMatch(actual -> actual.getUsername().equals(ADMIN));
+    assertThat(membersResponse.items())
+        .anyMatch(actual -> actual.getUsername().equals("test-user"));
+    // the admin user is created later on via API and should not be added as a member.
+    assertThat(membersResponse.items()).noneMatch(actual -> actual.getUsername().equals(ADMIN));
   }
 
   @Test

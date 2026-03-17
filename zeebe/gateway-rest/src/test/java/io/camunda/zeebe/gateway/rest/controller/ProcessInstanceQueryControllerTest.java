@@ -1045,6 +1045,49 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldReturnBadRequestForInvalidRootFilterWithValidOrClause() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {
+            "processInstanceKey": "abc",
+            "$or": [
+              { "processDefinitionId": "process_v1" }
+            ]
+          }
+        }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "The provided processInstanceKey 'abc' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?.",
+                  "instance": "%s"
+                }""",
+            PROCESS_INSTANCES_SEARCH_URL);
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
+  }
+
+  @Test
   public void shouldReturnCallHierarchyForGivenKey() {
     // given
     final var processInstanceKey = 123L;

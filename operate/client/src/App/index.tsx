@@ -7,11 +7,13 @@
  */
 
 import {
+  Navigate,
   Outlet,
   Route,
   RouterProvider,
   createBrowserRouter,
   createRoutesFromElements,
+  useLocation,
 } from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -33,6 +35,13 @@ import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 import {PageErrorBoundary} from 'modules/components/PageErrorBoundary';
 import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
+
+const RedirectToVariables: React.FC = () => {
+  const location = useLocation();
+  return (
+    <Navigate to={{pathname: 'variables', search: location.search}} replace />
+  );
+};
 
 const Wrapper: React.FC = () => {
   return (
@@ -93,8 +102,9 @@ const routes = createRoutesFromElements(
       >
         {IS_NEW_PROCESS_INSTANCE_PAGE ? (
           <>
+            <Route index element={<RedirectToVariables />} />
             <Route
-              index
+              path={Paths.processInstanceVariables({isRelative: true})}
               lazy={async () => {
                 const {VariablesTab} =
                   await import('./ProcessInstance/BottomPanelTabs/VariablesTab/index');

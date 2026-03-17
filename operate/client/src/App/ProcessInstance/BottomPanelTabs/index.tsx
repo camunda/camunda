@@ -8,7 +8,7 @@
 
 import {Outlet} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
-import {Container} from './styled';
+import {Container, TabContent} from './styled';
 import {TabListNav} from './TabListNav';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {useCurrentPage} from 'modules/hooks/useCurrentPage';
@@ -37,9 +37,9 @@ const BottomPanelTabs: React.FC = () => {
     },
     {
       label: 'Variables',
-      to: {pathname: Paths.processInstance(processInstanceId)},
+      to: {pathname: Paths.processInstanceVariables({processInstanceId})},
       key: 'variables',
-      selected: currentPage === 'process-details',
+      selected: currentPage === 'process-details-variables',
       title: 'Variables',
       visible: true,
     },
@@ -91,7 +91,9 @@ const BottomPanelTabs: React.FC = () => {
   return (
     <Container>
       <TabListNav label="Process Instance Bottom Panel Tabs" items={tabItems} />
-      <Outlet />
+      <TabContent>
+        <Outlet />
+      </TabContent>
     </Container>
   );
 };
