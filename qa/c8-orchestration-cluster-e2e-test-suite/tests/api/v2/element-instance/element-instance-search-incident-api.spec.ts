@@ -311,7 +311,11 @@ test.describe('Element Instance Incident Search API', () => {
           },
         },
       );
-      await assertBadRequest(res, 'For input string: \"notANumber\"');
+      await assertBadRequest(
+        res,
+        "The provided processInstanceKey 'notANumber' is not a valid key",
+        'INVALID_ARGUMENT',
+      );
     }).toPass(defaultAssertionOptions);
   });
 
