@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
+import org.apache.ibatis.annotations.Param;
 
 public interface ProcessInstanceMapper {
 
@@ -38,7 +39,10 @@ public interface ProcessInstanceMapper {
 
   List<ProcessInstanceEntity> search(ProcessInstanceDbQuery filter);
 
-  List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(long processInstanceKey);
+  List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(
+      @Param("processInstanceKey") long processInstanceKey,
+      @Param("authorizedResourceIds") List<String> authorizedResourceIds,
+      @Param("authorizedTenantIds") List<String> authorizedTenantIds);
 
   int deleteByKeys(List<Long> processInstanceKeys);
 
