@@ -18,9 +18,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 
 /**
@@ -34,6 +34,8 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
   private final ListViewTemplate processInstanceTemplate;
   private final List<ProcessInstanceDependant> processInstanceDependants;
   private final RecentlyArchivedProcessInstances recentlyArchivedProcessInstances;
+  private final Queue<ProcessInstanceArchiveBatch> pendingBatches =
+      new java.util.concurrent.ConcurrentLinkedQueue<>();
 
   public ProcessInstanceArchiverJob(
       final HistoryConfiguration config,
@@ -86,13 +88,26 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
 
   @Override
   CompletableFuture<ProcessInstanceArchiveBatch> getNextBatch() {
+    if (!pendingBatches.isEmpty()) {
+      System.out.printf("Return next batch from %d%n", pendingBatches.size());
+      return CompletableFuture.completedFuture(pendingBatches.poll());
+    }
     final var overRequest =
         Math.min(
             config.getRolloverBatchSizeOverRequest(),
             recentlyArchivedProcessInstances.getRecentlyArchiveCount());
     return getArchiverRepository()
         .getProcessInstancesNextBatch(largeBatchSize() + overRequest)
-        .thenApply(this::deduplicateAndLimitBatch);
+        .thenApply(this::deduplicateAndLimitBatch)
+        .thenApply(
+            batch -> {
+              final var chunks = batch.chunk(config.getRolloverBatchSize());
+              System.out.printf(
+                  "Split batch of size %d into %d chunks%n", batch.size(), chunks.size());
+              final var first = chunks.removeFirst();
+              pendingBatches.addAll(chunks);
+              return first;
+            });
   }
 
   @Override
@@ -103,20 +118,13 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
   @Override
   protected CompletableFuture<Integer> archive(
       final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
-    final var chunks = batch.chunk(config.getRolloverBatchSize());
-    System.out.println(
-        "Archiving batch of size " + batch.size() + " in " + chunks.size() + " chunks");
-    final var i = new AtomicInteger();
-    final var totalArchived = new AtomicInteger();
-    return AsyncRepeatUntil.repeatUntil(
-            () -> {
-              System.out.println("Archiving chunk " + (i.get() + 1) + "/" + chunks.size());
-              final var chunk = chunks.get(i.getAndIncrement());
-              return archiveSubBatch(templateDescriptor, chunk)
-                  .thenAccept(totalArchived::addAndGet);
-            },
-            (res) -> i.get() >= chunks.size())
-        .thenApply(v -> totalArchived.get());
+    return archiveProcessDependants(batch)
+        .thenComposeAsync(v -> super.archive(templateDescriptor, batch), getExecutor())
+        .thenApply(
+            archived -> {
+              recentlyArchivedProcessInstances.markRecentlyArchived(batch);
+              return archived;
+            });
   }
 
   @Override
@@ -149,17 +157,6 @@ public class ProcessInstanceArchiverJob extends ArchiverJob<ProcessInstanceArchi
           batch.rootProcessInstanceKeys().stream().map(String::valueOf).toList());
     }
     return idsMap;
-  }
-
-  private CompletableFuture<Integer> archiveSubBatch(
-      final IndexTemplateDescriptor templateDescriptor, final ProcessInstanceArchiveBatch batch) {
-    return archiveProcessDependants(batch)
-        .thenComposeAsync(v -> super.archive(templateDescriptor, batch), getExecutor())
-        .thenApply(
-            archived -> {
-              recentlyArchivedProcessInstances.markRecentlyArchived(batch);
-              return archived;
-            });
   }
 
   private ProcessInstanceArchiveBatch deduplicateAndLimitBatch(
