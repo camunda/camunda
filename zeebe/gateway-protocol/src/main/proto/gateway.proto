@@ -1040,8 +1040,8 @@ service Gateway {
           JSON document where the root node is an object.
 
       ALREADY_EXISTS:
-        - the request contains a businessId, Business ID Uniqueness Control is enabled,
-          and an active root process instance with the same businessId already exists
+        - Business ID Uniqueness Control is enabled, and an active root process instance
+          with the provided businessId already exists
           for the same process definition and tenant.
    */
   rpc CreateProcessInstance (CreateProcessInstanceRequest) returns (CreateProcessInstanceResponse) {
@@ -1052,8 +1052,8 @@ service Gateway {
 
     Errors:
       ALREADY_EXISTS:
-        - the request contains a businessId, Business ID Uniqueness Control is enabled,
-          and an active root process instance with the same businessId already exists
+        - Business ID Uniqueness Control is enabled, and an active root process instance
+          with the provided businessId already exists
           for the same process definition and tenant.
   */
   rpc CreateProcessInstanceWithResult (CreateProcessInstanceWithResultRequest) returns (CreateProcessInstanceWithResultResponse) {
