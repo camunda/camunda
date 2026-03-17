@@ -61,7 +61,10 @@ public class UserTaskListenersTest {
 
   @TestZeebe
   private static final TestStandaloneBroker ZEEBE =
-      new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withUnauthenticatedAccess()
+          .withProperty("zeebe.broker.gateway.cluster.requestTimeout", "1s");
 
   @AutoClose private CamundaClient client;
 
