@@ -77,9 +77,12 @@ jobs:
         run: |
           ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true -Dskip.fe.build=false package -P'!include-optimize'
           ARTIFACT=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
-          export ARTIFACT
-          echo "distball=dist/target/${ARTIFACT}.tar.gz" >> "$GITHUB_OUTPUT"
-          echo "distzip=dist/target/${ARTIFACT}.zip" >> "$GITHUB_OUTPUT"
+          OPTIMIZE_ARTIFACT=$(./mvnw -pl optimize-distro/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
+          {
+            echo "distball=dist/target/${ARTIFACT}.tar.gz"
+            echo "distzip=dist/target/${ARTIFACT}.zip"
+            echo "optimize_distball=optimize-distro/target/${OPTIMIZE_ARTIFACT}-production.tar.gz"
+          } >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/build-platform-docker
         id: build-push-camunda-docker
         name: Build & Push zeebe-io/camunda
@@ -130,7 +133,7 @@ jobs:
         with:
           repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/optimize
           version: ${{ steps.image-tag.outputs.image-tag }}
-          distball: ${{ steps.build-camunda.outputs.distball }}
+          distball: ${{ steps.build-camunda.outputs.optimize_distball }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: optimize.Dockerfile
           push: true
