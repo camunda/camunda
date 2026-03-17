@@ -21,7 +21,7 @@ package io.camunda.client.api.search.page;
  * <p>Use this to navigate backward through result sets using the {@code startCursor} from the
  * previous response.
  */
-public interface CursorBackwardPage extends SearchRequestPage<CursorBackwardPage> {
+public interface CursorBackwardPage extends SearchPagination<CursorBackwardPage> {
 
   /**
    * Get previous page before the cursor. Use the {@code startCursor} value from the previous

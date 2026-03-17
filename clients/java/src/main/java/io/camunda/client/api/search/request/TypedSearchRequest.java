@@ -15,14 +15,14 @@
  */
 package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.page.SearchRequestPage;
+import io.camunda.client.api.search.page.SearchPagination;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import io.camunda.client.api.search.request.TypedSortableRequest.SearchRequestSort;
 
 public interface TypedSearchRequest<
         F extends SearchRequestFilter,
         S extends SearchRequestSort<S>,
-        P extends SearchRequestPage<P>,
+        P extends SearchPagination<P>,
         SELF extends TypedSearchRequest<F, S, P, SELF>>
     extends TypedFilterableRequest<F, SELF>,
         TypedSortableRequest<S, SELF>,

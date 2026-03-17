@@ -200,6 +200,13 @@ public final class SearchRequestBuilders {
     return sort;
   }
 
+  /**
+   * @deprecated Use {@link #anyPage(Consumer)} instead. The returned {@link SearchRequestPage}
+   *     cannot be passed to {@code .page(...)} on typed search requests because it does not
+   *     implement the new {@link io.camunda.client.api.search.page.SearchPagination} marker
+   *     interface. This method will be removed in a future release.
+   */
+  @Deprecated
   public static SearchRequestPage searchRequestPage(final Consumer<SearchRequestPage> fn) {
     final SearchRequestPage filter = new SearchRequestPageImpl();
     fn.accept(filter);

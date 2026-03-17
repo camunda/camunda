@@ -976,6 +976,7 @@ After the REST endpoint is complete, extend the Java client:
    - `CursorForwardPage` (factory: `SearchRequestBuilders.cursorForwardPage()`) — when the schema uses `CursorForwardPagination` (cursor-only, `after` + `limit`).
 
    Each page type has a corresponding `*Impl` class that implements `TypedSearchRequestPropertyProvider<T>`, where `T` must match the generated protocol model expected by the endpoint. Using the wrong page type causes a `ClassCastException` at runtime. Follow the same type-safety pattern used for sort (`TypedSortableRequest<S, SELF>`).
+
 5. Provide client-level unit tests mocking REST API interactions.
 
 ---

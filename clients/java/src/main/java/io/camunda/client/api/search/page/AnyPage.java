@@ -32,7 +32,7 @@ package io.camunda.client.api.search.page;
  * <p>Mixing pagination styles (e.g., {@code from(10).after("cursor")}) will result in a runtime
  * error.
  */
-public interface AnyPage extends SearchRequestPage<AnyPage> {
+public interface AnyPage extends SearchPagination<AnyPage> {
 
   /** Start the page from the given offset (0-based index). */
   AnyPage from(final Integer value);

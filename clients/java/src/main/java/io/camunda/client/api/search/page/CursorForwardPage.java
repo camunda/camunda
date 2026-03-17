@@ -21,7 +21,7 @@ package io.camunda.client.api.search.page;
  * <p>Use this to navigate forward through result sets using the {@code endCursor} from the previous
  * response.
  */
-public interface CursorForwardPage extends SearchRequestPage<CursorForwardPage> {
+public interface CursorForwardPage extends SearchPagination<CursorForwardPage> {
 
   /**
    * Get next page after the cursor. Use the {@code endCursor} value from the previous response to

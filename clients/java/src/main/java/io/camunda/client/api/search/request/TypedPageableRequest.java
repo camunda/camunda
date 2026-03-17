@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.page.SearchRequestPage;
+import io.camunda.client.api.search.page.SearchPagination;
 import java.util.function.Consumer;
 
 /**
@@ -30,7 +30,7 @@ import java.util.function.Consumer;
  * @param <SELF> the concrete request type for fluent method chaining
  */
 public interface TypedPageableRequest<
-    P extends SearchRequestPage<P>, SELF extends TypedPageableRequest<P, SELF>> {
+    P extends SearchPagination<P>, SELF extends TypedPageableRequest<P, SELF>> {
 
   /**
    * Support for pagination.

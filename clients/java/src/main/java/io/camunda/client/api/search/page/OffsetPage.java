@@ -21,7 +21,7 @@ package io.camunda.client.api.search.page;
  * <p>Use this for pagination where you need to skip a specific number of results and limit the
  * returned items.
  */
-public interface OffsetPage extends SearchRequestPage<OffsetPage> {
+public interface OffsetPage extends SearchPagination<OffsetPage> {
 
   /** Start the page from the given offset (0-based index). */
   OffsetPage from(final Integer value);
