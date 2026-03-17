@@ -45,6 +45,34 @@ components:
           schema:
             $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
 
+    GatewayTimeoutTaskListenerBlocking:
+      description: >
+        The request timed out between the gateway and the broker. For these endpoints, this often
+        happens when user task listeners are configured and the corresponding listener job is not
+        completed within the request timeout. Common causes include no available job workers for
+        the listener type, busy or crashed job workers, or delayed job completion. As with any
+        gateway timeout, general timeout causes (for example transient network issues) can also
+        result in a 504 response.
+
+        Troubleshooting:
+        - verify that job workers for the listener type are running and healthy
+        - check worker logs for crashes, retries, and completion failures
+        - check network connectivity between workers, gateway, and broker
+        - retry with backoff after transient failures
+        - fail without retries if a problem persists
+      content:
+        application/problem+json:
+          schema:
+            $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+          examples:
+            taskListenerTimeout:
+              value:
+                type: about:blank
+                title: DEADLINE_EXCEEDED
+                status: 504
+                detail: Expected to handle request, but request timed out between gateway and broker
+                instance: /v2/user-tasks/123/completion
+
     UnsupportedMediaType:
       description: |
         The server cannot process the request because the media type (Content-Type) of the request payload is not supported
