@@ -47,4 +47,6 @@ public interface Variable {
 
   /* Check if the variable is truncated */
   Boolean isTruncated();
+
+  <T> T getValueAsType(Class<T> type);
 }
