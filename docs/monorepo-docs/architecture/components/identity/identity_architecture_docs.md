@@ -1,8 +1,15 @@
-# 1. Introduction and goals
+---
+toc_min_heading_level: 2
+toc_max_heading_level: 5
+---
+
+# Identity Architecture Documentation
+
+## 1. Introduction and goals
 
 This documentation is based on [arc42](https://arc42.org/overview) which is a common architecture documentation template for software systems. It is structured into several sections that cover different aspects of the system's architecture, including constraints, system context, solution strategy, building blocks, and runtime view.
 
-## 1.1 Overview
+### 1.1 Overview
 
 The Identity module is the cluster‑embedded authentication and authorization service for a Camunda 8 Orchestration Cluster.
 
@@ -24,7 +31,7 @@ Goals:
 3. Support enterprise IdP integration via OIDC for human SSO and machine‑to‑machine access.
 4. Align semantics across SaaS and Self‑Managed, with cluster‑level roles and groups in both.
 
-## 1.2 Requirements overview (functional)
+### 1.2 Requirements overview (functional)
 
 Selected high‑level requirements:
 
@@ -43,7 +50,7 @@ Selected high‑level requirements:
 - R5 – Migration from Management Identity
   Tooling and mappings to migrate users, groups, roles, tenants, mapping rules and resource authorizations from Management Identity.
 
-## 1.3 Quality goals (top level)
+### 1.3 Quality goals (top level)
 
 - Security
   Strong, auditable authentication and authorization; OIDC‑based SSO recommended for production.
@@ -57,11 +64,11 @@ Selected high‑level requirements:
 - Extensibility
   Other teams can introduce new resource or permission types while reusing the shared RBAC framework.
 
-## 1.4 Stakeholders
+### 1.4 Stakeholders
 
 TBD
 
-# 2. Constraints
+## 2. Constraints
 
 - Embedded in Orchestration Cluster
   Identity is shipped as part of the Orchestration Cluster artifact (JAR/container).
@@ -82,9 +89,9 @@ TBD
   No separate identity database; Identity entities reuse Zeebe primary and secondary storage.
 
 
-# 3. System context and scope
+## 3. System context and scope
 
-## 3.1 Business context
+### 3.1 Business context
 
 ```mermaid
 ---
@@ -114,7 +121,7 @@ Entities:
 - Orchestration Cluster: runtime deployment containing Zeebe, Operate, Tasklist, Identity, REST/gRPC APIs.
 - Enterprise IdP: customer IdP providing SSO and tokens via OIDC/SAML (e.g. Okta, Entra, Keycloak, etc.).
 
-## 3.2 Technical context
+### 3.2 Technical context
 
 ```mermaid
 ---
@@ -155,7 +162,7 @@ External interfaces (technical):
   - Persistence of identity entities in primary and secondary storage.
 
 
-# 4. Solution strategy
+## 4. Solution strategy
 
 - Cluster‑embedded identity service
   Identity runs inside the Orchestration Cluster and is the source of truth for runtime IAM instead of Management Identity.
@@ -178,9 +185,9 @@ External interfaces (technical):
   Identity entities are stored using Zeebe’s existing primary (RocksDB) and secondary (ES/OS/RDBMS) storage instead of a separate identity database.
 
 
-# 5. Building block view
+## 5. Building block view
 
-## 5.1 Whitebox overall system
+### 5.1 Whitebox overall system
 
 ```mermaid
 ---
@@ -230,9 +237,9 @@ Main building blocks:
 - Primary Database: RocksDB used for Zeebe Engine state.
 - Secondary Database: Elasticsearch, OpenSearch, or RDBMS used for search queries. Contains Runtime, History, and Identity data.
 
-## 5.2 Building Blocks
+### 5.2 Building Blocks
 
-## 5.2.1 Authentication - Level 2
+#### 5.2.1 Authentication - Level 2
 
 The Authentication building block provides configuration classes, converters, and helpers that extend Spring Security.
 Spring Security itself manages the filter chains, token exchange, and IdP communication.
@@ -240,7 +247,7 @@ Authentication classes enrich the resulting principal with Camunda-specific clai
 
 To keep it simple, we describe the Basic Auth and OIDC flows separately, but they share several components such as `TokenClaimsConverter`, `MappingRuleMatcher`, `DefaultCamundaAuthenticationProvider` and `WebSessionRepository`.
 
-### Basic Auth flow
+##### Basic Auth flow
 
 ```mermaid
 ---
@@ -290,7 +297,7 @@ Extern responsibilities:
 - Camunda Services: provide access to user, role, group, tenant and mapping rule data via the Camunda Search Client (secondary database). Used services include `UserServices`, `RoleServices`, `GroupServices`, `TenantServices`, and `MappingRuleServices`.
 - Camunda Search Client: used to query the secondary database for user, role, tenant and mapping rule data during authentication, or in case of the WebSessionRepository to store the session.
 
-### OIDC flow
+##### OIDC flow
 
 ```mermaid
 ---
@@ -358,7 +365,7 @@ Extern responsibilities:
 - Camunda Services: provide access to role, group, tenant, and mapping rule data via the Camunda Search Client (secondary database). Used services include `RoleServices`, `GroupServices`, `TenantServices`, and `MappingRuleServices` (via `DefaultMembershipService`).
 - Camunda Search Client: used to query the secondary database for user, role, tenant and mapping rule data during authentication, or in case of the WebSessionRepository to store the session.
 
-## 5.2.2 Security - Level 2
+#### 5.2.2 Security - Level 2
 
 The Security building block provides authorization checks for REST queries executed via the Camunda Search Client.
 It implements the shared RBAC framework for data access control, ensuring that search results are filtered according to the caller's permissions.
@@ -397,7 +404,7 @@ Key responsibilities:
 - Permission Evaluator (`AuthorizationChecker`): resolves the effective permissions of a principal by combining direct authorizations and role‑based authorizations. It reads authorization and role data exclusively via the Camunda Search Client — it does not access the secondary database directly.
 - Resource Filter Builder: translates the effective permissions into a search‑engine filter that restricts query results to authorized resources only.
 
-## 5.2.3 Engine Identity - Level 2
+#### 5.2.3 Engine Identity - Level 2
 
 Engine Identity is the RBAC authorization engine embedded directly inside the Zeebe Engine.
 It intercepts engine commands (such as creating process instances or completing user tasks) and enforces authorization before the command is applied.
@@ -439,9 +446,11 @@ Key responsibilities:
 - State classes (`ProcessingState`, `AuthorizationState`, `MembershipState`, `MappingRuleState`): abstract the RocksDB state access; `AuthorizationCheckBehavior` reads all identity state (authorizations, roles, memberships, mapping rules) through these classes.
 
 
-# 6. Runtime view
+## 6. Runtime view
 
-## 6.1.1 User login (Basic Auth)
+### 6.1 User login
+
+#### 6.1.1 Basic Auth
 
 Scenario: human user logs into Operate or Tasklist using username and password (Basic Auth).
 
@@ -490,7 +499,7 @@ sequenceDiagram
   UI-->>USER: Dashboard rendered
 ```
 
-## 6.1.2 User login (OIDC)
+#### 6.1.2 OIDC
 
 Scenario: human user logs into Operate or Tasklist via OIDC.
 
@@ -498,7 +507,7 @@ Scenario: human user logs into Operate or Tasklist via OIDC.
 2. Spring Security redirects the browser to the external IdP for login.
 3. IdP authenticates the user and returns ID/access tokens.
 4. Identity validates the token, extracts username and group or attribute claims, and applies mapping rules.
-5. Subsequent UI or API calls include the session and are authorized. Logout behavior, including RP‑initiated logout back to the IdP, is described in [RP‑initiated logout](https://github.com/camunda/camunda/blob/main/docs/identity/rp-initiated-logout.md).
+5. Subsequent UI or API calls include the session and are authorized. Logout behavior, including RP‑initiated logout back to the IdP, is described in [RP‑initiated logout](misc/rp-initiated-logout.md).
 
 ```mermaid
 sequenceDiagram
@@ -550,7 +559,9 @@ sequenceDiagram
   UI-->>USER: Dashboard rendered
 ```
 
-## 6.2.1 User logout (Basic Auth)
+### 6.2 User logout
+
+#### 6.2.1 Basic Auth
 
 Scenario: human user logs out of a cluster UI when authenticated with Basic Auth.
 Since no external IdP session was established, logout only invalidates the local server‑side session.
@@ -579,7 +590,7 @@ sequenceDiagram
   SS-->>USER: Redirect to login form
 ```
 
-## 6.2.2 User logout (OIDC)
+#### 6.2.2 OIDC
 
 Scenario: human user logs out of a cluster UI when authenticated via OIDC.
 Logout involves both local session invalidation and RP‑initiated logout to propagate the logout back to the external IdP.
@@ -621,7 +632,9 @@ sequenceDiagram
   POST_LOGOUT-->>USER: Redirect to application login page
 ```
 
-## 6.3.1 Machine‑to‑machine access (Bearer Token / OIDC)
+### 6.3. Machine‑to‑machine access
+
+#### 6.3.1 Bearer Token / OIDC
 
 Scenario: worker or backend service calls REST APIs using an OIDC JWT Bearer Token acquired via the OAuth2 client credentials grant.
 
@@ -669,7 +682,7 @@ sequenceDiagram
   SS-->>REST: Authorized request continues
 ```
 
-## 6.3.2 Machine‑to‑machine access (Client ID + Secret / Basic Auth)
+#### 6.3.2 Client ID + Secret / Basic Auth
 
 Scenario: worker or backend service calls REST APIs using a Client ID and Secret via HTTP Basic authentication.
 No external IdP is involved; credentials are verified directly against Identity entities stored in the Secondary Database.
@@ -709,7 +722,7 @@ sequenceDiagram
   SS-->>REST: Authorized request continues
 ```
 
-## 6.4 Sending a command via REST
+### 6.4 Sending a command via REST
 
 Scenario: a client starts a process instance via the REST API; the Zeebe Engine enforces RBAC via Engine Identity before applying the command.
 
@@ -756,7 +769,7 @@ sequenceDiagram
   REST-->>CLIENT: 200 OK with process instance key
 ```
 
-## 6.5 Reading resources via REST
+### 6.5 Reading resources via REST
 
 Scenario: a client queries process instances via the REST API; the Camunda Search Client uses Security (`DefaultResourceAccessProvider`) to filter results to authorized resources only.
 
@@ -807,7 +820,7 @@ sequenceDiagram
   REST-->>CLIENT: 200 OK with process instances
 ```
 
-## 6.6 Creating a new user
+### 6.6 Creating a new user
 
 Scenario: an administrator creates a new user via the REST API; the command is applied by the Engine, written to the Primary Database via State classes, and then asynchronously propagated to the Secondary Database by the Exporter.
 
@@ -861,7 +874,7 @@ sequenceDiagram
   SECONDARY_DB-->>EXPORTER: Persisted user
 ```
 
-## 6.7 Creating a new authorization
+### 6.7 Creating a new authorization
 
 Scenario: an administrator creates a new authorization (permission grant) via the REST API; the Engine applies and persists it to the Primary Database, and the Exporter propagates it asynchronously to the Secondary Database.
 
@@ -916,7 +929,7 @@ sequenceDiagram
 ```
 
 
-# 7. Deployment view
+## 7. Deployment view
 
 Identity‑specific aspects:
 
@@ -938,7 +951,7 @@ Identity‑specific aspects:
 
 For detailed infrastructure topologies, see the Camunda 8 reference architectures listed in the sources appendix.
 
-## 7.1 Deployment view (Basic Auth)
+### 7.1 Basic Auth
 
 In a Basic Auth setup, no external IdP is involved.
 All authentication and authorization is handled directly by the Identity components embedded within the Orchestration Cluster.
@@ -959,7 +972,7 @@ flowchart TB
   CLIENTS -->|"REST / gRPC / Browser"| OC_POD
 ```
 
-## 7.2 Deployment view (OIDC)
+### 7.2 OIDC
 
 In an OIDC setup, an external IdP handles SSO and token issuance.
 Spring Security communicates directly with the IdP for authorization code exchange and token validation (JWKS).
@@ -983,7 +996,7 @@ flowchart TB
 ```
 
 
-# 8. Crosscutting concepts
+## 8. Crosscutting concepts
 
 - Authentication concept
   Unified Spring Security configuration for Basic and OIDC.
@@ -992,7 +1005,7 @@ flowchart TB
 - Authorization and RBAC concept
   Central resource‑based authorization model, decoupled from individual UIs and services.
   Shared checks used by engine, Operate, Tasklist and APIs.
-  For detailed behavior and examples, see the [Authorization concept](https://github.com/camunda/camunda/blob/main/docs/identity/authorizations/authorization-concept.md), [Engine authorization checks](https://github.com/camunda/camunda/blob/main/docs/identity/authorizations/engine-authorization.md), and [REST authorization checks](https://github.com/camunda/camunda/blob/main/docs/identity/authorizations/rest-authorization.md).
+  For detailed behavior and examples, see the [Authorization concept](authorizations/authorization-concept.md), [Engine authorization checks](authorizations/engine-authorization.md), and [REST authorization checks](authorizations/rest-authorization.md).
 
 - Tenant concept
   Cluster‑local tenants defined in Identity.
@@ -1011,10 +1024,10 @@ flowchart TB
   Secondary storage ensures efficient querying for Admin UI and APIs.
 
 
-# 9. Architectural decisions
+## 9. Architectural decisions
 
 The architectural decisions for Identity are documented as individual ADR files in the
-[docs/identity/adr](adr/) folder:
+[/adr](docs/monorepo-docs/architecture/components/identity/adr) folder:
 
 - [ADR-0001: Cluster-Embedded Identity Instead of External Component](adr/0001-cluster-embedded-identity.md)
 - [ADR-0002: OIDC as Default Production Authentication](adr/0002-oidc-default-production-authentication.md)
@@ -1022,7 +1035,7 @@ The architectural decisions for Identity are documented as individual ADR files 
 - [ADR-0004: Support Multiple JWKS Endpoints per OIDC Issuer](adr/0004-multi-jwks-endpoints-per-issuer.md)
 
 
-# 10. Risks and technical debt
+## 10. Risks and technical debt
 
 - Migration complexity and failure modes
   Migration from Management Identity introduces complexity and potential misconfiguration (for example mismatched IdP setups, conflicting mapping rules).
@@ -1037,7 +1050,7 @@ The architectural decisions for Identity are documented as individual ADR files 
   Misconfigured claims or group mappings can lead to over‑ or under‑provisioned access.
 
 
-# 11. Glossary
+## 11. Glossary
 
 | Term                           | Definition                                                                                                     |
 |--------------------------------|----------------------------------------------------------------------------------------------------------------|
@@ -1052,16 +1065,3 @@ The architectural decisions for Identity are documented as individual ADR files 
 | Service accounts / workers     | Non‑interactive clients calling REST/gRPC APIs using client credentials.                                      |
 | OIDC IdP                       | External identity provider; source of identity, attributes and group claims.                                  |
 | Cluster components             | Runtime components enforcing Identity decisions for user and client operations.                               |
-
-
-Appendix A – sources
-
-- [docs: Rename Orchestration Cluster Identity to Admin (8.9)](https://github.com/camunda/camunda/pull/26614)
-- [Introduction to Identity – Camunda 8 Docs](https://docs.camunda.io/docs/self-managed/identity/what-is-identity/)
-- [What's new in Camunda 8.8 – Camunda 8 Docs](https://docs.camunda.io/docs/reference/release-notes/880/)
-- [Identity and access management in Camunda 8 – Camunda 8 Docs](https://docs.camunda.io/docs/self-managed/identity/what-is-identity/)
-- [Orchestration Cluster authentication in Self‑Managed – Camunda 8 Docs](https://docs.camunda.io/docs/self-managed/identity/authentication/overview/)
-- [8.8 Release notes – Camunda 8 Docs](https://docs.camunda.io/docs/reference/release-notes/880/)
-- [Connect Identity to an identity provider – Camunda 8 Docs](https://docs.camunda.io/docs/self-managed/identity/authentication/connect-to-an-identity-provider/)
-- [Upgrade Camunda components from 8.7 to 8.8 – Camunda 8 Docs](https://docs.camunda.io/docs/self-managed/operational-guides/update-guide/820-to-830/)
-- [Camunda 8 reference architectures – Camunda 8 Docs](https://docs.camunda.io/docs/self-managed/reference-architecture/overview/)
