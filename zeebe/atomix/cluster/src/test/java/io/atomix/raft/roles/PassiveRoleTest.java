@@ -245,7 +245,6 @@ public class PassiveRoleTest {
     assertThat(response.succeeded()).isTrue();
   }
 
-
   @Test
   public void shouldNotAbortPendingSnapshotOnEmptyAppend() throws Exception {
     // given - a pending snapshot is in progress
