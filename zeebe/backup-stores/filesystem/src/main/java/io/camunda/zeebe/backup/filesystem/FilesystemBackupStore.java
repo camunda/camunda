@@ -58,6 +58,7 @@ public final class FilesystemBackupStore implements BackupStore {
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
+  private final FilesystemBackupConfig config;
   private final Path rangesDir;
   private final Path metadataBaseDir;
 
@@ -67,7 +68,7 @@ public final class FilesystemBackupStore implements BackupStore {
 
   FilesystemBackupStore(final FilesystemBackupConfig config, final ExecutorService executor) {
     validateConfig(config);
-
+    this.config = config;
     this.executor = executor;
 
     final var contentsDir = Path.of(config.basePath()).resolve(CONTENTS_PATH);
@@ -258,6 +259,24 @@ public final class FilesystemBackupStore implements BackupStore {
                 e);
           }
         });
+  }
+
+  @Override
+  public CompletableFuture<Void> verifyConnection() {
+    return CompletableFuture.runAsync(
+        () -> {
+          final var basePath = Path.of(config.basePath());
+          final var file = basePath.toFile();
+          if (!file.exists() || !file.isDirectory()) {
+            throw new IllegalArgumentException(
+                "Backup base directory '%s' does not exist".formatted(config.basePath()));
+          }
+          if (!Files.isWritable(basePath)) {
+            throw new IllegalArgumentException(
+                "Backup base directory '%s' is not writable".formatted(config.basePath()));
+          }
+        },
+        executor);
   }
 
   public static void validateConfig(final FilesystemBackupConfig config) {

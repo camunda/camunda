@@ -14,10 +14,16 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.azure.AzureBackupStoreException;
+import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
+import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
+import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
@@ -112,6 +118,108 @@ class BackupStoreTransitionStepTest {
         .withThrowableOfType(ExecutionException.class);
   }
 
+  @Test
+  void shouldFailConnectionCheckWhenRequiredAndS3NotReachable() {
+    // given
+    setUpCurrentRole(null);
+    configureStore(BackupStoreType.S3);
+    final var s3Config = new S3BackupStoreConfig();
+    s3Config.setBucketName("non-existent-bucket");
+    s3Config.setRegion("us-east-1");
+    s3Config.setEndpoint("http://localhost:1");
+    s3Config.setAccessKey("key");
+    s3Config.setSecretKey("secret");
+    configureRequiredStore(BackupStoreType.S3, s3Config);
+    final var targetRole = Role.LEADER;
+
+    // when
+    step.prepareTransition(transitionContext, 1, targetRole).join();
+    final var transitionFuture = step.transitionTo(transitionContext, 1, targetRole);
+
+    // then
+    assertThat(transitionFuture)
+        .describedAs(
+            "Expected to fail installation when backup is required and S3 is not reachable.")
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class);
+    assertThat(transitionContext.getBackupStore()).isNull();
+  }
+
+  @Test
+  void shouldFailConnectionCheckWhenRequiredAndFilesystemBasePathNotWritable() {
+    // given
+    setUpCurrentRole(null);
+    final var filesystemConfig =
+        new io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig();
+    filesystemConfig.setBasePath("/proc/non-existent-path-that-cannot-be-created");
+    configureRequiredStore(filesystemConfig);
+    final var targetRole = Role.LEADER;
+
+    // when
+    step.prepareTransition(transitionContext, 1, targetRole).join();
+    final var transitionFuture = step.transitionTo(transitionContext, 1, targetRole);
+
+    // then
+    assertThat(transitionFuture)
+        .describedAs(
+            "Expected to fail installation when backup is required and filesystem path is not writable.")
+        .failsWithin(Duration.ofMillis(500))
+        .withThrowableOfType(ExecutionException.class);
+    assertThat(transitionContext.getBackupStore()).isNull();
+  }
+
+  @Test
+  void shouldFailConnectionCheckWhenRequiredAndAzureNotReachable() {
+    // given
+    setUpCurrentRole(null);
+    final var azureConfig = new AzureBackupStoreConfig();
+    azureConfig.setEndpoint("http://localhost:1");
+    azureConfig.setAccountName("devstoreaccount1");
+    azureConfig.setAccountKey(
+        "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==");
+    azureConfig.setBasePath("non-existent-container");
+    configureRequiredStore(BackupStoreType.AZURE, azureConfig);
+    final var targetRole = Role.LEADER;
+
+    // when
+    step.prepareTransition(transitionContext, 1, targetRole).join();
+    final var transitionFuture = step.transitionTo(transitionContext, 1, targetRole);
+
+    // then
+    assertThat(transitionFuture)
+        .describedAs(
+            "Expected to fail installation when backup is required and Azure is not reachable.")
+        .failsWithin(Duration.ofSeconds(11))
+        .withThrowableOfType(ExecutionException.class)
+        .withRootCauseInstanceOf(AzureBackupStoreException.ConfigurationException.class);
+    assertThat(transitionContext.getBackupStore()).isNull();
+  }
+
+  @Test
+  void shouldFailConnectionCheckWhenRequiredAndGcsNotReachable() {
+    // given
+    setUpCurrentRole(null);
+    final var gcsConfig = new GcsBackupStoreConfig();
+    gcsConfig.setBucketName("non-existent-bucket");
+    gcsConfig.setHost("http://localhost:1");
+    gcsConfig.setAuth(GcsBackupStoreAuth.NONE);
+    configureRequiredStore(BackupStoreType.GCS, gcsConfig);
+    final var targetRole = Role.LEADER;
+
+    // when
+    step.prepareTransition(transitionContext, 1, targetRole).join();
+    final var transitionFuture = step.transitionTo(transitionContext, 1, targetRole);
+
+    // then
+    assertThat(transitionFuture)
+        .describedAs(
+            "Expected to fail installation when backup is required and GCS is not reachable.")
+        .failsWithin(Duration.ofSeconds(11))
+        .withThrowableOfType(ExecutionException.class)
+        .withRootCauseInstanceOf(ConfigurationException.class);
+    assertThat(transitionContext.getBackupStore()).isNull();
+  }
+
   @ParameterizedTest
   @ArgumentsSource(TransitionsThatShouldInstallService.class)
   void shouldNotInstallServiceWhenStoreTypeIsNone(final Role currentRole, final Role targetRole) {
@@ -156,6 +264,45 @@ class BackupStoreTransitionStepTest {
     final var backupCfg = new BackupCfg();
     backupCfg.setStore(type);
     backupCfg.setS3(s3Config);
+    when(brokerCfg.getData()).thenReturn(dataCfg);
+    when(dataCfg.getBackup()).thenReturn(backupCfg);
+  }
+
+  private void configureRequiredStore(
+      final BackupStoreType type, final S3BackupStoreConfig s3Config) {
+    final var backupCfg = new BackupCfg();
+    backupCfg.setStore(type);
+    backupCfg.setRequired(true);
+    backupCfg.setS3(s3Config);
+    when(brokerCfg.getData()).thenReturn(dataCfg);
+    when(dataCfg.getBackup()).thenReturn(backupCfg);
+  }
+
+  private void configureRequiredStore(
+      final BackupStoreType type, final AzureBackupStoreConfig azureConfig) {
+    final var backupCfg = new BackupCfg();
+    backupCfg.setStore(type);
+    backupCfg.setRequired(true);
+    backupCfg.setAzure(azureConfig);
+    when(brokerCfg.getData()).thenReturn(dataCfg);
+    when(dataCfg.getBackup()).thenReturn(backupCfg);
+  }
+
+  private void configureRequiredStore(
+      final BackupStoreType type, final GcsBackupStoreConfig gcsConfig) {
+    final var backupCfg = new BackupCfg();
+    backupCfg.setStore(type);
+    backupCfg.setRequired(true);
+    backupCfg.setGcs(gcsConfig);
+    when(brokerCfg.getData()).thenReturn(dataCfg);
+    when(dataCfg.getBackup()).thenReturn(backupCfg);
+  }
+
+  private void configureRequiredStore(final FilesystemBackupStoreConfig filesystemConfig) {
+    final var backupCfg = new BackupCfg();
+    backupCfg.setStore(BackupStoreType.FILESYSTEM);
+    backupCfg.setRequired(true);
+    backupCfg.setFilesystem(filesystemConfig);
     when(brokerCfg.getData()).thenReturn(dataCfg);
     when(dataCfg.getBackup()).thenReturn(backupCfg);
   }
