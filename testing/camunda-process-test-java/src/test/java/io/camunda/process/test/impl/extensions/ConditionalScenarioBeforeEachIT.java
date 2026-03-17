@@ -57,7 +57,9 @@ public class ConditionalScenarioBeforeEachIT {
                 assertThat(ProcessInstanceSelectors.byProcessId("user-happiness-check"))
                     .hasActiveElement("State_Happiness", 1))
         .then(() -> processTestContext.completeUserTask("State_Happiness", UNHAPPY))
-        .then(() -> processTestContext.completeUserTask("State_Happiness", HAPPY))
+        .then(() -> processTestContext.completeUserTask("State_Happiness", HAPPY));
+
+    processTestContext
         .when(
             () ->
                 assertThatProcessInstance(

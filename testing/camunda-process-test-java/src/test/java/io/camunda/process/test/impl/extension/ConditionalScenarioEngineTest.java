@@ -296,11 +296,8 @@ class ConditionalScenarioEngineTest {
     final AtomicInteger firstActionCount = new AtomicInteger(0);
     final AtomicInteger secondActionCount = new AtomicInteger(0);
 
-    engine
-        .when(() -> {})
-        .then(firstActionCount::incrementAndGet)
-        .when(() -> {})
-        .then(secondActionCount::incrementAndGet);
+    engine.when(() -> {}).then(firstActionCount::incrementAndGet);
+    engine.when(() -> {}).then(secondActionCount::incrementAndGet);
 
     await()
         .untilAsserted(

@@ -16,8 +16,8 @@
 package io.camunda.process.test.api;
 
 /**
- * A step in the conditional scenario builder that allows chaining additional actions or defining
- * new scenarios.
+ * A step in the conditional scenario builder that allows chaining additional actions for repeated
+ * condition matches.
  */
 public interface ConditionalScenarioActionStep {
 
@@ -30,12 +30,4 @@ public interface ConditionalScenarioActionStep {
    * @return this step for further chaining
    */
   ConditionalScenarioActionStep then(Runnable action);
-
-  /**
-   * Defines a new conditional scenario with the given condition.
-   *
-   * @param condition the condition to evaluate
-   * @return the condition step for defining the action
-   */
-  ConditionalScenarioConditionStep when(ScenarioCondition condition);
 }
