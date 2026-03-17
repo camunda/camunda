@@ -75,4 +75,11 @@ public abstract sealed class S3BackupStoreException extends RuntimeException {
       super(message, cause);
     }
   }
+
+  public static final class ConfigurationException extends S3BackupStoreException {
+
+    public ConfigurationException(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+  }
 }
