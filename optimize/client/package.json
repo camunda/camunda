@@ -83,7 +83,7 @@
     "@types/enzyme": "3.10.19",
     "@types/enzyme-adapter-react-16": "1.0.9",
     "@types/jest": "29.5.14",
-    "@types/node": "22.19.7",
+    "@types/node": "22.19.15",
     "@types/react": "^18.3.5",
     "@types/react-date-range": "1.4.10",
     "@types/react-dom": "^18.3.0",
@@ -137,8 +137,6 @@
     "xml2js": "^0.6.2"
   },
   "resolutions": {
-    "**/jpeg-js": "^0.4.0",
-    "**/kind-of": "^6.0.3",
     "react-is": "^19.0.0"
   },
   "jest": {
@@ -158,5 +156,6 @@
     "not dead",
     "not ie <= 11",
     "not op_mini all"
-  ]
+  ],
+  "packageManager": "yarn@1.22.22"
 }
