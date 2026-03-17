@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {VariablePanel} from '../index';
+import {VariablesTab} from '../index';
 import {
   render,
   screen,
@@ -225,10 +225,7 @@ describe('New Variable Modifications', () => {
     modificationsStore.enableModificationMode();
     modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
@@ -262,10 +259,7 @@ describe('New Variable Modifications', () => {
     modificationsStore.enableModificationMode();
     modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
@@ -326,10 +320,7 @@ describe('New Variable Modifications', () => {
       },
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
@@ -432,10 +423,7 @@ describe('New Variable Modifications', () => {
     modificationsStore.enableModificationMode();
     modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
@@ -478,7 +466,7 @@ describe('New Variable Modifications', () => {
 
     const {user} = render(
       <>
-        <VariablePanel setListenerTabVisibility={vi.fn()} />
+        <VariablesTab />
         <LastModification />
       </>,
       {wrapper: getWrapper()},
@@ -671,10 +659,7 @@ describe('New Variable Modifications', () => {
     modificationsStore.enableModificationMode();
     modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
 
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
@@ -765,10 +750,7 @@ describe('New Variable Modifications', () => {
       },
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
@@ -933,14 +915,11 @@ describe('New Variable Modifications', () => {
       },
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {
-        wrapper: getWrapper([
-          `${Paths.processInstance('instance_id')}?elementId=element-that-has-not-run-yet`,
-        ]),
-      },
-    );
+    const {user} = render(<VariablesTab />, {
+      wrapper: getWrapper([
+        `${Paths.processInstance('instance_id')}?elementId=element-that-has-not-run-yet`,
+      ]),
+    });
     expect(
       await screen.findByText('The element has no variables'),
     ).toBeInTheDocument();

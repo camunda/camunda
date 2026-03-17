@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {VariablePanel} from '../index';
+import {VariablesTab} from '../index';
 import {render, screen} from 'modules/testing-library';
 import {
   createVariable,
@@ -86,7 +86,7 @@ const selectedElementInstance = {
   tenantId: '<default>',
 };
 
-describe('VariablePanel placeholders', () => {
+describe('VariablesTab placeholders', () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
@@ -182,12 +182,9 @@ describe('VariablePanel placeholders', () => {
         },
       });
 
-      const {user} = render(
-        <VariablePanel setListenerTabVisibility={vi.fn()} />,
-        {
-          wrapper: getWrapper(),
-        },
-      );
+      const {user} = render(<VariablesTab />, {
+        wrapper: getWrapper(),
+      });
 
       expect(await screen.findByTestId('variables-list')).toBeInTheDocument();
 
@@ -221,12 +218,9 @@ describe('VariablePanel placeholders', () => {
         },
       });
 
-      const {user} = render(
-        <VariablePanel setListenerTabVisibility={vi.fn()} />,
-        {
-          wrapper: getWrapper(),
-        },
-      );
+      const {user} = render(<VariablesTab />, {
+        wrapper: getWrapper(),
+      });
 
       expect(await screen.findByTestId('variables-list')).toBeInTheDocument();
 
@@ -263,12 +257,9 @@ describe('VariablePanel placeholders', () => {
         },
       });
 
-      const {user} = render(
-        <VariablePanel setListenerTabVisibility={vi.fn()} />,
-        {
-          wrapper: getWrapper(),
-        },
-      );
+      const {user} = render(<VariablesTab />, {
+        wrapper: getWrapper(),
+      });
 
       expect(await screen.findByTestId('variables-list')).toBeInTheDocument();
 
@@ -305,12 +296,9 @@ describe('VariablePanel placeholders', () => {
         },
       });
 
-      const {user} = render(
-        <VariablePanel setListenerTabVisibility={vi.fn()} />,
-        {
-          wrapper: getWrapper(),
-        },
-      );
+      const {user} = render(<VariablesTab />, {
+        wrapper: getWrapper(),
+      });
 
       expect(await screen.findByTestId('variables-list')).toBeInTheDocument();
 

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {VariablePanel} from '../index';
+import {VariablesTab} from '../index';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {
   createVariable,
@@ -40,7 +40,7 @@ const selectedElementInstance: ElementInstance = {
   tenantId: '<default>',
 };
 
-describe('VariablePanel readonly', () => {
+describe('VariablesTab readonly', () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
@@ -97,7 +97,7 @@ describe('VariablePanel readonly', () => {
       },
     });
 
-    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
+    render(<VariablesTab />, {
       wrapper: getWrapper(),
     });
 
@@ -128,7 +128,7 @@ describe('VariablePanel readonly', () => {
       },
     });
 
-    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
+    render(<VariablesTab />, {
       wrapper: getWrapper(),
     });
 
@@ -168,7 +168,7 @@ describe('VariablePanel readonly', () => {
       },
     });
 
-    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
+    render(<VariablesTab />, {
       wrapper: getWrapper([
         `${Paths.processInstance('1')}?elementId=Activity_0qtp1k6&elementInstanceKey=2`,
       ]),

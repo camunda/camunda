@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {VariablePanel} from '../index';
+import {VariablesTab} from '../index';
 import {
   render,
   screen,
@@ -17,7 +17,6 @@ import {
   createVariable,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
-import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {getWrapper as getBaseWrapper, mockProcessInstance} from './mocks';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
@@ -49,18 +48,6 @@ const TestSelectionControls: React.FC = () => {
         }
       >
         select element instance
-      </button>
-      <button
-        type="button"
-        onClick={() =>
-          selectElementInstance({
-            elementId: 'non-existing',
-            elementInstanceKey: 'non-existing-placeholder',
-            isPlaceholder: true,
-          })
-        }
-      >
-        select placeholder scope
       </button>
     </>
   );
@@ -98,7 +85,7 @@ const selectedElementInstance: ElementInstance = {
   tenantId: '<default>',
 };
 
-describe('VariablePanel spinner', () => {
+describe('VariablesTab spinner', () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
@@ -137,62 +124,6 @@ describe('VariablePanel spinner', () => {
     });
   });
 
-  it('should display spinner for variables tab when switching between tabs', async () => {
-    mockSearchVariables().withDelay({
-      items: [createVariable()],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
-    await waitFor(() => {
-      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
-    });
-    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
-
-    mockFetchElementInstance('2').withSuccess(selectedElementInstance);
-    mockSearchVariables().withDelay({
-      items: [createVariable()],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-    mockSearchJobs().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-
-    await user.click(
-      screen.getByRole('button', {name: /select element instance/i}),
-    );
-
-    expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('variables-spinner'),
-    );
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
-
-    await user.click(screen.getByRole('tab', {name: 'Variables'}));
-    expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
-  });
-
   it('should display spinner on second variable fetch', async () => {
     mockSearchJobs().withSuccess({
       items: [],
@@ -222,12 +153,9 @@ describe('VariablePanel spinner', () => {
       },
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {
-        wrapper: getWrapper(),
-      },
-    );
+    const {user} = render(<VariablesTab />, {
+      wrapper: getWrapper(),
+    });
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -242,68 +170,5 @@ describe('VariablePanel spinner', () => {
     await waitForElementToBeRemoved(() =>
       screen.queryByTestId('variables-spinner'),
     );
-  });
-
-  it('should not display spinner for variables tab when switching between tabs if scope does not exist', async () => {
-    modificationsStore.enableModificationMode();
-    mockSearchVariables().withSuccess({
-      items: [createVariable()],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-    mockSearchVariables().withSuccess({
-      items: [createVariable()],
-      page: {
-        totalItems: 1,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
-    await waitFor(() => {
-      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
-    });
-    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
-
-    mockSearchVariables().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-    mockSearchJobs().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-        startCursor: null,
-        endCursor: null,
-        hasMoreTotalItems: false,
-      },
-    });
-    await user.click(
-      screen.getByRole('button', {name: /select placeholder scope/i}),
-    );
-
-    await waitFor(() => {
-      expect(screen.queryByText('testVariableName')).not.toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
-    expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', {name: 'Variables'}));
-    expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
   });
 });

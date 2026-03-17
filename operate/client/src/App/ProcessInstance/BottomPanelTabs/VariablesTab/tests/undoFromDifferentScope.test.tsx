@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {VariablePanel} from '../index';
+import {VariablesTab} from '../index';
 import {render, screen, waitFor, type UserEvent} from 'modules/testing-library';
 import {createVariable} from 'modules/testUtils';
 import {
@@ -160,10 +160,7 @@ describe('Undo variable modifications from different scope', () => {
       },
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
 
     expect(await screen.findByDisplayValue('"bar"')).toBeInTheDocument();
     expect(screen.getByDisplayValue('123')).toBeInTheDocument();
@@ -281,10 +278,7 @@ describe('Undo variable modifications from different scope', () => {
       },
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
 
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();

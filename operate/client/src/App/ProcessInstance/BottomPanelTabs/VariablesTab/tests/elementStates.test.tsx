@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {VariablePanel} from '../index';
+import {VariablesTab} from '../index';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {
   createVariable,
@@ -207,7 +207,7 @@ const getWrapper = (...args: Parameters<typeof getBaseWrapper>) => {
   return Wrapper;
 };
 
-describe('VariablePanel element states', () => {
+describe('VariablesTab element states', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -226,12 +226,9 @@ describe('VariablePanel element states', () => {
 
     modificationsStore.enableModificationMode();
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {
-        wrapper: getWrapper(),
-      },
-    );
+    const {user} = render(<VariablesTab />, {
+      wrapper: getWrapper(),
+    });
 
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
@@ -367,10 +364,7 @@ describe('VariablePanel element states', () => {
 
     modificationsStore.enableModificationMode();
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -425,15 +419,6 @@ describe('VariablePanel element states', () => {
     expect(
       screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
-    expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', {name: 'Variables'}));
-    expect(
-      await screen.findByText('The element has no variables'),
-    ).toBeInTheDocument();
-    expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
 
     act(() => {
       modificationsStore.addModification({
@@ -505,10 +490,9 @@ describe('VariablePanel element states', () => {
 
     modificationsStore.enableModificationMode();
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablesTab />, {
+      wrapper: getWrapper(),
+    });
 
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
@@ -536,12 +520,11 @@ describe('VariablePanel element states', () => {
       screen.getByRole('button', {name: /^select activity element$/i}),
     );
 
-    await waitFor(() =>
-      expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument(),
-    );
-    expect(
-      await screen.findByText(/the element has no variables/i),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText(/the element has no variables/i),
+      ).toBeInTheDocument();
+    });
     expect(
       screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
@@ -572,16 +555,6 @@ describe('VariablePanel element states', () => {
       screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', {name: 'Variables'}));
-    await waitFor(() =>
-      expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument(),
-    );
-    expect(
-      await screen.findByText(
-        /to view the variables, select a single element instance in the instance history/i,
-      ),
-    ).toBeInTheDocument();
-
     mockSearchVariables().withSuccess(emptyVariablesResponse);
     mockSearchJobs().withSuccess(emptyJobsResponse);
 
@@ -589,12 +562,12 @@ describe('VariablePanel element states', () => {
       screen.getByRole('button', {name: /^select new activity scope$/i}),
     );
 
-    await waitFor(() =>
-      expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument(),
-    );
-    expect(
-      await screen.findByText(/the element has no variables/i),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
+      expect(
+        screen.getByText(/the element has no variables/i),
+      ).toBeInTheDocument();
+    });
     expect(
       screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
