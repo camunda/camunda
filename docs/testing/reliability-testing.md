@@ -342,96 +342,15 @@ After submitting the form you can observe the progress of the load test creation
 ##### Creating manually
 
 As a last resort, if more customization is needed, it is also possible to manually deploy a benchmark.
-
-###### Requirements (local)
-
-To set up a load test from your local machine you need to have several tools installed.
-
-Follow these guide's to install each of them:
-
-* tsh (Teleport CLI) https://goteleport.com/docs/installation/
-* Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
-* Helm 3.*  https://helm.sh/docs/intro/install/
-* docker https://docs.docker.com/install/
-* kubens/kubectx https://github.com/ahmetb/kubectx
-* OPTIONAL go https://golang.org/doc/install
-
-For detailed instructions on accessing the benchmark cluster, see the [benchmark cluster access guide](https://github.com/camunda/infra-core/blob/stage/docs/kubernetes-cluster/benchmark-cluster-access.md).
-
-Some of the necessary steps you need to do are:
-
-```sh
-## Authenticate to the benchmark cluster via Teleport
-tsh login --proxy=camunda.teleport.sh:443
-tsh kube login camunda-benchmark-prod
-
-## Log in to the Harbor container registry
-## Zeebe team members have push access by default.
-## If you don't have access, request it in the #ask-infra Slack channel.
-docker login registry.camunda.cloud
-
-## install helm
-curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
-chmod 700 get_helm.sh
-./get_helm.sh
-
-## add zeebe as helm repo
-helm version
-helm repo add zeebe https://helm.camunda.io
-helm repo add stable https://charts.helm.sh/stable
-helm repo update
-
-## install kubens
-curl -LO https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens
-install kubens /usr/local/bin/
-```
-
-###### Best Practices Windows
-
-Running the load tests with Windows is possible, with the help of the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
-The setup changes slightly compared to the Linux setup.
-
-These are the components to install on Windows:
-* Docker
-
-These are the components to install within the WSL:
-* tsh (Teleport CLI) https://goteleport.com/docs/installation/
-* Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
-* Helm 3.*  https://helm.sh/docs/intro/install/
-* kubens/kubectx https://github.com/ahmetb/kubectx
-
-When following the instructions above, execute all commands that deal with Docker in a Windows shell, and execute all other commands in the WSL shell.
-
-###### Installing manually
-
-The [camunda-load-tests](https://github.com/camunda/camunda-load-tests-helm) Helm chart repository contains a [detailed](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/README.md) guide regarding this.
-
-```shell
-# Add the load test chart to the local repository
-helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/
-# Install a new Helm Chart release to the current namespace
-helm install this-is-a-load-test camunda-load-tests/camunda-load-tests
-```
-
-To apply configuration changes, either edit the existing [values](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/values.yaml) file in the repository (and apply them via `-f`) or set configurations via the `--set` flag. For more information, see also the [related Helm documentation](https://helm.sh/docs/chart_template_guide/values_files/).
+For further details on this topic, follow the [README](../../load-tests/setup/README.md) in our `load-tests/setup` directory.
 
 ##### SaaS Test
 
-One use case to create load tests manually is to run load tests against an SaaS cluster.
+One use case for manually creating load tests is running them against an SaaS cluster.
 
 As a precondition for such tests, you need to create a cluster in SaaS (the stage doesn’t matter, may it be **DEV**, **INT,** or **PROD**). Additionally, we need client credentials deployed with the SaaS load tests, such that the starters and workers can connect to the right cluster.
 
-Replace `PREFIX` with your initials or any other identifiable prefix, to make sure we can identify who created the load test, in case we need to reach out.
-
-```shell
-# Source the downloaded credentials first, before run the following install command
-helm install PREFIX-saas-load-test camunda-load-tests/camunda-load-tests \
-  --set saas.enabled=true \
-  --set saas.credentials.clientId="$ZEEBE_CLIENT_ID" \
-  --set saas.credentials.clientSecret="$ZEEBE_CLIENT_SECRET" \
-  --set saas.credentials.zeebeAddress="$ZEEBE_ADDRESS" \
-  --set saas.credentials.authServer="$ZEEBE_AUTHORIZATION_SERVER_URL"
-```
+For further details on this topic, follow the [README](../../load-tests/setup/README.md#load-testing-camunda-saas) in our `load-tests/setup` directory.
 
 ## Chaos engineering
 
