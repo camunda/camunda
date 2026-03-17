@@ -32,7 +32,7 @@ const sidebars = {
           items: [
             {
               type: 'category',
-              label: 'Identity',
+              label: 'Orchestration Cluster Identity',
               items: [
                 'architecture/components/identity/identity_architecture_docs',
                 {

@@ -3,7 +3,7 @@ toc_min_heading_level: 2
 toc_max_heading_level: 5
 ---
 
-# Identity Architecture Documentation
+# Architecture Documentation
 
 ## 1. Introduction and goals
 
@@ -227,7 +227,7 @@ Main building blocks:
 - Camunda Services: Enhances the commands and queries with the given authentication and the necessary authorizations.
 - Camunda Search Client: Used for querying the secondary database against ES, OS, or RDBMS, depending on the configuration.
 - Authentication: Contains authentication-related converters, helpers, utils, and services among others for spring security.
-- Security: Authorization checks for queries against a secondary database are done via the shared RBAC framework. TODO: and there is also Authentication related stuff...
+- Security: Performs authorization checks for queries against the secondary database via the shared RBAC framework and provides shared security helpers used by authentication components.
 - Zeebe: Is responsible for processing commands and storing state.
 - Engine: Processes commands and applies state changes. Uses (engine) identity to check permissions for user- or client-initiated operations.
 - Engine Identity: Shared RBAC engine used for authorization checks in the engine, lives directly in the engine.
@@ -288,7 +288,7 @@ Key responsibilities:
 - Authentication Provider (`DefaultCamundaAuthenticationProvider`): bridges Spring Security to the Camunda authentication context via `CamundaAuthentication`.
 - Session Repository (`WebSessionRepository`): creates and invalidates server‑side sessions backed by secondary storage.
 
-Extern responsibilities:
+External responsibilities:
 
 - Spring Security (`UsernamePasswordAuthenticationFilter`): performs the actual credential extraction and delegates to the configured converter.
 - Camunda Services: provide access to user, role, group, tenant, and mapping rule data via the Camunda Search Client (secondary database). Used services include `UserServices`, `RoleServices`, `GroupServices`, `TenantServices`, and `MappingRuleServices`.
@@ -312,7 +312,7 @@ flowchart TB
       OIDC_PROVIDER_REPO["OIDC Provider Repository\n(OidcAuthenticationConfigurationRepository)"]
       TOKEN_VALIDATOR["Token Validator Factory\n(TokenValidatorFactory)"]
       AUTHORIZED_CLIENT_MGR["Authorized Client Manager\n(DefaultOAuth2AuthorizedClientManager)"]
-      OICD_USER_SVC["OIDC User Service\n(OidcUserService)"]
+      OIDC_USER_SVC["OIDC User Service\n(OidcUserService)"]
     end
     CLAIMS_CONV["Claims Converter\n(TokenClaimsConverter)"]
     MAPPING_RULES_PROC["Mapping Rules Processor\n(MappingRuleMatcher)"]
@@ -349,7 +349,7 @@ Key responsibilities:
   - Authorized Client Manager (`DefaultOAuth2AuthorizedClientManager`): manages OAuth2 authorized client state; supports the authorization code, refresh token, and client credentials flows (including `private_key_jwt` client authentication).
   - OAuth2AuthorizedClientRepository (`HttpSessionOAuth2AuthorizedClientRepository`): stores authorized client state in the HTTP session.
   - OIDC User Service (`OidcUserService`): loads OIDC user details from the IdP's userinfo endpoint during browser login.
-  - OIDC Token Converter (`OidcTokenAuthenticationConverter`): converts Bearer JWTs (M2M) into a `CamundaAuthentication` (OIDC M2M only)..
+  - OIDC Token Converter (`OidcTokenAuthenticationConverter`): converts Bearer JWTs (M2M) into a `CamundaAuthentication` (OIDC M2M only).
 - Claims Converter (`TokenClaimsConverter`): core converter that extracts username or clientId from token claims and loads group, role, and tenant memberships via `MembershipService`.
 - Mapping Rules Processor (`MappingRuleMatcher`): evaluates JSONPath mapping rules against IdP claims to assign roles, groups, tenants, and authorizations.
 - Authentication Provider (`DefaultCamundaAuthenticationProvider`): bridges Spring Security to the Camunda authentication context via `CamundaAuthentication`.
