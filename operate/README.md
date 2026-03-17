@@ -119,34 +119,6 @@ Sometimes the visual regression tests might fail in the CI and you want to check
 
 <img src="/docs_assets/playwright_report.png" alt="Playwright report artifact download" width="500"/>
 
-## Running e2e tests
-
-Playwright e2e tests run on every push on every branch through Github Actions.
-
-To run these locally you can follow the steps below:
-
-### Run Operate backend
-
-Run regular backend first (it must be run in parallel in order to have access to Elasticsearch):
-
-```
-make env-up
-```
-
-To run E2E dedicated backend (Zeebe on port 26503 + Operate on port 8081):
-
-```
-make start-e2e
-```
-
-To rerun (and clean up data), press Ctrl+C and run the same command again.
-
-### Run Tests
-
-```
-npm run test:e2e
-```
-
 ## Starting up Operate for updating the docs screenshots
 
 ### Run Operate backend
