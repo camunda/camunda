@@ -83,6 +83,7 @@ const sidebars = {
                 },
               ],
             },
+            'architecture/components/identity/management_identity_architecture_docs',
           ],
         },
       ],
