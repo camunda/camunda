@@ -73,7 +73,17 @@ test.describe.parallel('Authentication API Tests', () => {
       );
 
       expect(res.status()).toBe(200);
+      const isOracle = process.env.DATABASE_CONTAINER?.startsWith('oracle');
       const json = await res.json();
+
+      if (isOracle) {
+        json.tenants?.forEach((t: any) => {
+          if (t.description == null) {
+            t.description = '';
+          }
+        });
+      }
+
       assertRequiredFields(json, authenticationRequiredFields);
       assertEqualsForKeys(json, expectedBody, authenticationRequiredFields);
     }).toPass(defaultAssertionOptions);
