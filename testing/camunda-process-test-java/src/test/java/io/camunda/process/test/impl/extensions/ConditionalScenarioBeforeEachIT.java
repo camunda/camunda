@@ -22,8 +22,9 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
-import io.camunda.process.test.api.TestDeployment;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,8 +35,26 @@ import org.junit.jupiter.api.Test;
  * multiple test methods. Each test method gets fresh scenarios.
  */
 @CamundaProcessTest
-@TestDeployment(resources = "conditionalScenarioApi/scenario-api-test.bpmn")
 public class ConditionalScenarioBeforeEachIT {
+
+  private static final String PROCESS_ID = "user-happiness-check";
+  private static final String USER_TASK_ID = "State_Happiness";
+  private static final String SERVICE_TASK_ID = "Export_Happiness";
+  private static final String JOB_TYPE = "io.camunda:http-json:1";
+
+  private static final BpmnModelInstance PROCESS_MODEL =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .userTask(USER_TASK_ID)
+          .zeebeUserTask()
+          .exclusiveGateway("User_Happy_Gateway")
+          .conditionExpression("=happy")
+          .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(JOB_TYPE).zeebeJobRetries("3"))
+          .endEvent()
+          .moveToLastExclusiveGateway()
+          .defaultFlow()
+          .connectTo(USER_TASK_ID)
+          .done();
 
   private static final Map<String, Object> UNHAPPY = Collections.singletonMap("happy", false);
   private static final Map<String, Object> HAPPY = Collections.singletonMap("happy", true);
@@ -47,31 +66,33 @@ public class ConditionalScenarioBeforeEachIT {
 
   @BeforeEach
   void setupScenarios() {
-    processTestContext
-        .when(
-            () ->
-                assertThat(ProcessInstanceSelectors.byProcessId("user-happiness-check"))
-                    .hasActiveElement("State_Happiness", 1))
-        .then(() -> processTestContext.completeUserTask("State_Happiness", UNHAPPY))
-        .then(() -> processTestContext.completeUserTask("State_Happiness", HAPPY));
+    // Deploy the process model
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(PROCESS_MODEL, PROCESS_ID + ".bpmn")
+        .send()
+        .join();
 
     processTestContext
         .when(
             () ->
-                assertThatProcessInstance(
-                        ProcessInstanceSelectors.byProcessId("user-happiness-check"))
-                    .hasActiveElements("Export_Happiness"))
-        .then(() -> processTestContext.completeJob("io.camunda:http-json:1", EXPORT_VARS));
+                assertThat(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElement(USER_TASK_ID, 1))
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, UNHAPPY))
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, HAPPY));
+
+    processTestContext
+        .when(
+            () ->
+                assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElements(SERVICE_TASK_ID))
+        .then(() -> processTestContext.completeJob(JOB_TYPE, EXPORT_VARS));
   }
 
   @Test
   void shouldCompleteProcessFirstRun() {
     final ProcessInstanceEvent processInstanceEvent =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("user-happiness-check")
-            .latestVersion()
-            .execute();
+        client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
 
     assertThatProcessInstance(processInstanceEvent)
         .isCompleted()
@@ -84,11 +105,7 @@ public class ConditionalScenarioBeforeEachIT {
     // Same scenario — proves @BeforeEach re-registers fresh scenarios for each test,
     // including a fresh action chain (happy=false first, then happy=true)
     final ProcessInstanceEvent processInstanceEvent =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("user-happiness-check")
-            .latestVersion()
-            .execute();
+        client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
 
     assertThatProcessInstance(processInstanceEvent)
         .isCompleted()

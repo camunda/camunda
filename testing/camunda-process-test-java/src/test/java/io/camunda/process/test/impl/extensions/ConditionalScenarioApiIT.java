@@ -22,8 +22,9 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
-import io.camunda.process.test.api.TestDeployment;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.RepeatedTest;
@@ -31,14 +32,39 @@ import org.junit.jupiter.api.RepeatedTest;
 @CamundaProcessTest
 public class ConditionalScenarioApiIT {
 
+  private static final String PROCESS_ID = "user-happiness-check";
+  private static final String USER_TASK_ID = "State_Happiness";
+  private static final String SERVICE_TASK_ID = "Export_Happiness";
+  private static final String JOB_TYPE = "io.camunda:http-json:1";
+
+  private static final BpmnModelInstance PROCESS_MODEL =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .userTask(USER_TASK_ID)
+          .zeebeUserTask()
+          .exclusiveGateway("User_Happy_Gateway")
+          .conditionExpression("=happy")
+          .serviceTask(SERVICE_TASK_ID, t -> t.zeebeJobType(JOB_TYPE).zeebeJobRetries("3"))
+          .endEvent()
+          .moveToLastExclusiveGateway()
+          .defaultFlow()
+          .connectTo(USER_TASK_ID)
+          .done();
+
   // injected by the extension
   private CamundaProcessTestContext processTestContext;
   private CamundaClient client;
 
   // ensure repeated tests get fresh scenarios
   @RepeatedTest(value = 2)
-  @TestDeployment(resources = "conditionalScenarioApi/scenario-api-test.bpmn")
   void shouldCompleteProcessWithConditionalScenarios() {
+    // Deploy the process model
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(PROCESS_MODEL, PROCESS_ID + ".bpmn")
+        .send()
+        .join();
+
     final Map<String, Object> unhappy = Collections.singletonMap("happy", false);
     final Map<String, Object> happy = Collections.singletonMap("happy", true);
     final Map<String, Object> exportVars = Collections.singletonMap("exportSuccess", true);
@@ -51,27 +77,22 @@ public class ConditionalScenarioApiIT {
     processTestContext
         .when(
             () ->
-                assertThat(ProcessInstanceSelectors.byProcessId("user-happiness-check"))
-                    .hasActiveElement("State_Happiness", 1))
-        .then(() -> processTestContext.completeUserTask("State_Happiness", unhappy))
-        .then(() -> processTestContext.completeUserTask("State_Happiness", happy));
+                assertThat(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElement(USER_TASK_ID, 1))
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, unhappy))
+        .then(() -> processTestContext.completeUserTask(USER_TASK_ID, happy));
 
     // When Export_Happiness is active, complete the job
     processTestContext
         .when(
             () ->
-                assertThatProcessInstance(
-                        ProcessInstanceSelectors.byProcessId("user-happiness-check"))
-                    .hasActiveElements("Export_Happiness"))
-        .then(() -> processTestContext.completeJob("io.camunda:http-json:1", exportVars));
+                assertThatProcessInstance(ProcessInstanceSelectors.byProcessId(PROCESS_ID))
+                    .hasActiveElements(SERVICE_TASK_ID))
+        .then(() -> processTestContext.completeJob(JOB_TYPE, exportVars));
 
     // Start the process
     final ProcessInstanceEvent processInstanceEvent =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("user-happiness-check")
-            .latestVersion()
-            .execute();
+        client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().execute();
 
     // Assert process completed with expected variables
     assertThatProcessInstance(processInstanceEvent)
