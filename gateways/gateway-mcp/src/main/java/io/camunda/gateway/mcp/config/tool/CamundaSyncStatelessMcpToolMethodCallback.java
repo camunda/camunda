@@ -71,13 +71,11 @@ public class CamundaSyncStatelessMcpToolMethodCallback
       final Object result = callMethod(methodArguments);
 
       return processResult(result);
-    } catch (final ConstraintViolationException cve) {
-      return createSyncErrorResult(
-          new IllegalArgumentException(normalizeConstraintViolationMessage(cve)));
     } catch (final Exception e) {
-      if (e.getCause() instanceof final ConstraintViolationException cve) {
-        return createSyncErrorResult(
-            new IllegalArgumentException(normalizeConstraintViolationMessage(cve)));
+      // Check if this exception or its cause is a ConstraintViolationException
+      final ConstraintViolationException cve = findConstraintViolationException(e);
+      if (cve != null) {
+        return createConstraintViolationErrorResult(cve);
       }
 
       if (toolCallExceptionClass.isInstance(e)) {
@@ -86,6 +84,40 @@ public class CamundaSyncStatelessMcpToolMethodCallback
 
       throw e;
     }
+  }
+
+  /**
+   * Creates an error result for constraint violations without duplication.
+   *
+   * <p>This method creates a CallToolResult directly from the constraint violations without
+   * wrapping them in an IllegalArgumentException, which would cause Spring AI's
+   * createSyncErrorResult to duplicate the message when concatenating exception and root cause.
+   *
+   * @param cve the ConstraintViolationException
+   * @return a CallToolResult with the normalized constraint violation messages
+   */
+  private CallToolResult createConstraintViolationErrorResult(
+      final ConstraintViolationException cve) {
+    return CallToolResult.builder()
+        .isError(true)
+        .addTextContent(normalizeConstraintViolationMessage(cve))
+        .build();
+  }
+
+  /**
+   * Finds a ConstraintViolationException in the exception chain.
+   *
+   * @param e the exception to search
+   * @return the ConstraintViolationException if found, null otherwise
+   */
+  private ConstraintViolationException findConstraintViolationException(final Exception e) {
+    if (e instanceof ConstraintViolationException) {
+      return (ConstraintViolationException) e;
+    }
+    if (e.getCause() instanceof ConstraintViolationException) {
+      return (ConstraintViolationException) e.getCause();
+    }
+    return null;
   }
 
   @Override
