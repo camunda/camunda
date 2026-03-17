@@ -64,6 +64,26 @@ public class MultiInstanceStateTest {
   }
 
   @Test
+  void shouldUpdateExistingInputCollectionOnDuplicateInsert() {
+    // given
+    final long key = 321L;
+    final List<DirectBuffer> initialCollection =
+        List.of(new UnsafeBuffer("foo".getBytes()), new UnsafeBuffer("bar".getBytes()));
+    multiInstanceState.insertInputCollection(key, initialCollection);
+
+    // when - calling insert again with the same key (e.g. on incident resolution re-activation)
+    final List<DirectBuffer> updatedCollection =
+        List.of(new UnsafeBuffer("baz".getBytes()));
+    multiInstanceState.insertInputCollection(key, updatedCollection);
+
+    // then - the value is overwritten without throwing an exception
+    final Optional<List<DirectBuffer>> result = multiInstanceState.getInputCollection(key);
+    assertThat(result).isPresent();
+    assertThat(result.get()).hasSize(1);
+    assertThat(result.get().get(0)).isEqualTo(updatedCollection.get(0));
+  }
+
+  @Test
   void shouldReturnEmptyForMissingInputCollection() {
     // given
     final long key = 789L;
