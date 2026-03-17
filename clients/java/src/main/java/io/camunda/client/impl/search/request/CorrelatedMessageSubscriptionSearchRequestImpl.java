@@ -15,16 +15,16 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.anyPage;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.correlatedMessageSubscriptionFilter;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.correlatedMessageSubscriptionSort;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.request.CorrelatedMessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.CorrelatedMessageSubscription;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.CorrelatedMessageSubscriptionSort;
@@ -90,14 +90,14 @@ public class CorrelatedMessageSubscriptionSearchRequestImpl
   }
 
   @Override
-  public CorrelatedMessageSubscriptionSearchRequest page(final SearchRequestPage value) {
+  public CorrelatedMessageSubscriptionSearchRequest page(final AnyPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public CorrelatedMessageSubscriptionSearchRequest page(final Consumer<SearchRequestPage> fn) {
-    return page(searchRequestPage(fn));
+  public CorrelatedMessageSubscriptionSearchRequest page(final Consumer<AnyPage> fn) {
+    return page(anyPage(fn));
   }
 
   @Override

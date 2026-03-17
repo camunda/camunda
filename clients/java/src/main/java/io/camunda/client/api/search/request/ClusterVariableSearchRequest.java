@@ -16,12 +16,13 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.ClusterVariableFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.ClusterVariable;
 import io.camunda.client.api.search.sort.ClusterVariableSort;
 
 public interface ClusterVariableSearchRequest
     extends TypedSearchRequest<
-            ClusterVariableFilter, ClusterVariableSort, ClusterVariableSearchRequest>,
+            ClusterVariableFilter, ClusterVariableSort, AnyPage, ClusterVariableSearchRequest>,
         FinalSearchRequestStep<ClusterVariable> {
 
   /**

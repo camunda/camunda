@@ -16,10 +16,11 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.sort.ElementInstanceSort;
 
 public interface ElementInstanceSearchRequest
     extends TypedSearchRequest<
-            ElementInstanceFilter, ElementInstanceSort, ElementInstanceSearchRequest>,
+            ElementInstanceFilter, ElementInstanceSort, AnyPage, ElementInstanceSearchRequest>,
         FinalSearchRequestStep<ElementInstance> {}

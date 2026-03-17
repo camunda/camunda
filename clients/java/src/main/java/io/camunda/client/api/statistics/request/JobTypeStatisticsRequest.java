@@ -16,6 +16,7 @@
 package io.camunda.client.api.statistics.request;
 
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.search.page.CursorForwardPage;
 import io.camunda.client.api.search.request.TypedFilterableRequest;
 import io.camunda.client.api.search.request.TypedPageableRequest;
 import io.camunda.client.api.statistics.filter.JobTypeStatisticsFilter;
@@ -27,5 +28,5 @@ import io.camunda.client.api.statistics.response.JobTypeStatistics;
  */
 public interface JobTypeStatisticsRequest
     extends FinalCommandStep<JobTypeStatistics>,
-        TypedPageableRequest<JobTypeStatisticsRequest>,
+        TypedPageableRequest<CursorForwardPage, JobTypeStatisticsRequest>,
         TypedFilterableRequest<JobTypeStatisticsFilter, JobTypeStatisticsRequest> {}

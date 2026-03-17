@@ -16,10 +16,11 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.MappingRuleFilter;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.client.api.search.sort.MappingRuleSort;
 
 public interface MappingRulesByGroupSearchRequest
     extends TypedSearchRequest<
-            MappingRuleFilter, MappingRuleSort, MappingRulesByGroupSearchRequest>,
+            MappingRuleFilter, MappingRuleSort, AnyPage, MappingRulesByGroupSearchRequest>,
         FinalSearchRequestStep<MappingRule> {}
