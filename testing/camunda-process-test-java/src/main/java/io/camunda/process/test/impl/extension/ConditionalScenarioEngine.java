@@ -220,7 +220,7 @@ public class ConditionalScenarioEngine {
 
     private boolean isConditionMet() {
       try {
-        condition.check();
+        condition.verifyCondition();
         return true;
       } catch (final Throwable t) {
         return false;
