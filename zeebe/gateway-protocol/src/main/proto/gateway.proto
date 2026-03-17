@@ -1038,12 +1038,21 @@ service Gateway {
       INVALID_ARGUMENT:
         - the given variables argument is not a valid JSON document; it is expected to be a valid
           JSON document where the root node is an object.
+
+      ALREADY_EXISTS:
+        - the request contains a businessId and an active root process instance with the same businessId
+          already exists for the same process definition and tenant.
    */
   rpc CreateProcessInstance (CreateProcessInstanceRequest) returns (CreateProcessInstanceResponse) {
   }
 
   /*
     Behaves similarly to `rpc CreateProcessInstance`, except that a successful response is received when the process completes successfully.
+
+    Errors:
+      ALREADY_EXISTS:
+        - the request contains a businessId and an active root process instance with the same businessId
+          already exists for the same process definition and tenant.
   */
   rpc CreateProcessInstanceWithResult (CreateProcessInstanceWithResultRequest) returns (CreateProcessInstanceWithResultResponse) {
   }
