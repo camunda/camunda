@@ -807,6 +807,114 @@ sequenceDiagram
   REST-->>CLIENT: 200 OK with process instances
 ```
 
+## 6.6 Creating a new user
+
+Scenario: an administrator creates a new user via the REST API; the command is applied by the Engine, written to the Primary Database via State classes, and then asynchronously propagated to the Secondary Database by the Exporter.
+
+1. Client sends a `POST /v2/users` request with a valid credential and the new user's details (username, password, name, email).
+2. Spring Security authenticates the request and resolves a `CamundaAuthentication` principal.
+3. The REST API delegates to `UserServices` (part of Camunda Services), which issues a `CreateUser` command to the Zeebe Engine.
+4. Before applying the command, the Engine enforces RBAC via `AuthorizationCheckBehavior`, verifying the principal holds the `USER:CREATE` permission by reading from `AuthorizationState` / `MembershipState` via the Primary Database.
+5. The Engine applies the command: `MembershipState` (and related State classes) persist the new user record to the Primary Database (RocksDB).
+6. The Engine returns a command acknowledgement and `UserServices` returns the created user to the REST API, which responds with `201 Created` and the new user key.
+7. Asynchronously, the Camunda Exporter picks up the `UserCreated` event and writes the user record to the Secondary Database (ES/OS/RDBMS), making it available for searches.
+
+```mermaid
+sequenceDiagram
+  box Customer System
+    participant CLIENT as Client
+  end
+  box Orchestration Cluster
+    participant REST as REST APIs
+    participant SS as Spring Security
+    participant CAMUNDA_SERVICES as Camunda Services<br/>(UserServices)
+    participant ENGINE as Engine
+    participant AUTHZ_BEHAVIOR as AuthorizationCheckBehavior
+    participant STATE as State Classes<br/>(AuthorizationState, MembershipState,<br/>MappingRuleState)
+    participant EXPORTER as Camunda Exporter
+  end
+  box External
+    participant PRIMARY_DB as Primary Database (RocksDB)
+    participant SECONDARY_DB as Secondary Database (ES/OS/RDBMS)
+  end
+
+  CLIENT->>REST: POST /v2/users (create user)
+  REST->>SS: Authenticate and authorize request
+  SS-->>REST: CamundaAuthentication principal
+  REST->>CAMUNDA_SERVICES: CreateUser command
+  CAMUNDA_SERVICES->>ENGINE: Issue CreateUser command
+  ENGINE->>AUTHZ_BEHAVIOR: Check USER:CREATE (AuthorizationRequest)
+  AUTHZ_BEHAVIOR->>STATE: Read authorizations, roles for principal
+  STATE->>PRIMARY_DB: Read authorization/membership state
+  PRIMARY_DB-->>STATE: Authorization entries
+  STATE-->>AUTHZ_BEHAVIOR: Authorization entries
+  AUTHZ_BEHAVIOR-->>ENGINE: Permission granted
+  ENGINE->>STATE: Apply CreateUser command
+  STATE->>PRIMARY_DB: Write new user to membership state
+  PRIMARY_DB-->>STATE: State written
+  STATE-->>ENGINE: Command applied
+  ENGINE-->>CAMUNDA_SERVICES: UserCreated event / key
+  CAMUNDA_SERVICES-->>REST: CreateUserResponse
+  REST-->>CLIENT: 201 Created with user key
+  ENGINE-->>EXPORTER: UserCreated event (async)
+  EXPORTER->>SECONDARY_DB: Index user record
+  SECONDARY_DB-->>EXPORTER: Indexed
+```
+
+## 6.7 Creating a new authorization
+
+Scenario: an administrator creates a new authorization (permission grant) via the REST API; the Engine applies and persists it to the Primary Database, and the Exporter propagates it asynchronously to the Secondary Database.
+
+1. Client sends a `POST /v2/authorizations` request with a valid credential and the authorization details (owner, resource type, resource id, permissions).
+2. Spring Security authenticates the request and resolves a `CamundaAuthentication` principal.
+3. The REST API delegates to `AuthorizationServices` (part of Camunda Services), which issues a `CreateAuthorization` command to the Zeebe Engine.
+4. Before applying the command, the Engine enforces RBAC via `AuthorizationCheckBehavior`, verifying the principal holds the `AUTHORIZATION:CREATE` permission by reading from `AuthorizationState` / `MembershipState` via the Primary Database.
+5. The Engine applies the command: `AuthorizationState` persists the new authorization record to the Primary Database (RocksDB).
+6. The Engine returns a command acknowledgement and `AuthorizationServices` returns the created authorization to the REST API, which responds with `201 Created` and the new authorization key.
+7. Asynchronously, the Camunda Exporter picks up the `AuthorizationCreated` event and writes the authorization record to the Secondary Database (ES/OS/RDBMS), making it queryable via the Search API.
+
+```mermaid
+sequenceDiagram
+  box Customer System
+    participant CLIENT as Client
+  end
+  box Orchestration Cluster
+    participant REST as REST APIs
+    participant SS as Spring Security
+    participant CAMUNDA_SERVICES as Camunda Services<br/>(AuthorizationServices)
+    participant ENGINE as Engine
+    participant AUTHZ_BEHAVIOR as AuthorizationCheckBehavior
+    participant STATE as State Classes<br/>(AuthorizationState, MembershipState,<br/>MappingRuleState)
+    participant EXPORTER as Camunda Exporter
+  end
+  box External
+    participant PRIMARY_DB as Primary Database (RocksDB)
+    participant SECONDARY_DB as Secondary Database (ES/OS/RDBMS)
+  end
+
+  CLIENT->>REST: POST /v2/authorizations (create authorization)
+  REST->>SS: Authenticate and authorize request
+  SS-->>REST: CamundaAuthentication principal
+  REST->>CAMUNDA_SERVICES: CreateAuthorization command
+  CAMUNDA_SERVICES->>ENGINE: Issue CreateAuthorization command
+  ENGINE->>AUTHZ_BEHAVIOR: Check AUTHORIZATION:CREATE (AuthorizationRequest)
+  AUTHZ_BEHAVIOR->>STATE: Read authorizations, roles for principal
+  STATE->>PRIMARY_DB: Read authorization/membership state
+  PRIMARY_DB-->>STATE: Authorization entries
+  STATE-->>AUTHZ_BEHAVIOR: Authorization entries
+  AUTHZ_BEHAVIOR-->>ENGINE: Permission granted
+  ENGINE->>STATE: Apply CreateAuthorization command
+  STATE->>PRIMARY_DB: Write new authorization to state
+  PRIMARY_DB-->>STATE: State written
+  STATE-->>ENGINE: Command applied
+  ENGINE-->>CAMUNDA_SERVICES: AuthorizationCreated event / key
+  CAMUNDA_SERVICES-->>REST: CreateAuthorizationResponse
+  REST-->>CLIENT: 201 Created with authorization key
+  ENGINE-->>EXPORTER: AuthorizationCreated event (async)
+  EXPORTER->>SECONDARY_DB: Index authorization record
+  SECONDARY_DB-->>EXPORTER: Indexed
+```
+
 
 # 7. Deployment view
 
